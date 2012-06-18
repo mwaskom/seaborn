@@ -6,11 +6,11 @@ def axes_style(style):
 
     Parameters
     ----------
-    style : "darkgrid" or "whitegrid"
+    style : "darkgrid", "whitegrid", or "nogrid"
         Modfile style to look ggplotish or light grid on white
 
     """
-    grid_params = {"axes.grid" : True,
+    grid_params = {"axes.grid": True,
                    "axes.axisbelow": True}
 
     if style == "darkgrid":
@@ -30,7 +30,15 @@ def axes_style(style):
                             "grid.color": "#222222",
                             "grid.linestyle": ":",
                             "grid.linewidth": .8,})
+        _restore_ticks(grid_params)
         mpl.rcParams.update(grid_params)
+
+    elif style == "nogrid":
+        params = {"axes.grid": False,
+                  "axes.linecolor": 1,
+                  "axes.facecolor": "white"}
+        _restore_ticks(params)
+        mpl.rcParams.update(params)
 
     else:
         raise ValueError("Style %s not recognized" % style)
@@ -44,3 +52,9 @@ def context_setting(context):
     # - paper
 
     raise NotImplementedError
+
+def _restore_ticks(params):
+
+    for axis in ["x", "y"]:
+        for step, size in zip(["major", "minor"], [4, 2]):
+            params["%stick.%s.size" % (axis, step)] = size
