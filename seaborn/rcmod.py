@@ -6,22 +6,26 @@ def axes_style(style):
 
     Parameters
     ----------
-    style : "ggplot" or "grid"
+    style : "darkgrid" or "whitegrid"
         Modfile style to look ggplotish or light grid on white
 
     """
-    if style == "ggplot":
-        mpl.rcparams.update({"axes.axisbelow": True,
-                             "axes.facecolor": "#EAEAF2",
-                             "grid.color": "w",
-                             "grid.linestyle": "-",
-                             "grid.linewidth": 2})
-    elif style == "grid":
-        mpl.rcparams.update({"axes.axisbelow": True,
-                             "axes.facecolor": "white",
-                             "grid.color": "k",
-                             "grid.linestyle": ":",
-                             "grid.linewidth": 1.3})
+    grid_params = {"axes.grid" : True,
+                   "axes.axisbelow": True}
+
+    if style == "darkgrid":
+        grid_params.update({"axes.facecolor": "#EAEAF2",
+                            "grid.color": "w",
+                            "grid.linestyle": "-",
+                            "grid.linewidth": 2})
+        mpl.rcParams.update(grid_params)
+
+    elif style == "whitegrid":
+        grid_params.update({"axes.facecolor": "white",
+                            "grid.color": "222222",
+                            "grid.linestyle": ":",
+                            "grid.linewidth": .8})
+        mpl.rcParams.update(grid_params)
 
     else:
         raise ValueError("Style %s not recognized" % style)
