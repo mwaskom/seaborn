@@ -15,16 +15,21 @@ def axes_style(style):
 
     if style == "darkgrid":
         grid_params.update({"axes.facecolor": "#EAEAF2",
+                            "axes.linewidth": 0,
                             "grid.color": "w",
                             "grid.linestyle": "-",
-                            "grid.linewidth": 2})
+                            "grid.linewidth": 1.5,})
+        for axis in ["x", "y"]:
+            for step in ["major", "minor"]:
+                grid_params["%stick.%s.size" % (axis, step)] = 0
         mpl.rcParams.update(grid_params)
 
     elif style == "whitegrid":
         grid_params.update({"axes.facecolor": "white",
-                            "grid.color": "222222",
+                            "axes.linewidth": 1,
+                            "grid.color": "#222222",
                             "grid.linestyle": ":",
-                            "grid.linewidth": .8})
+                            "grid.linewidth": .8,})
         mpl.rcParams.update(grid_params)
 
     else:
