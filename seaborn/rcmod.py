@@ -18,10 +18,8 @@ def axes_style(style):
                             "axes.linewidth": 0,
                             "grid.color": "w",
                             "grid.linestyle": "-",
-                            "grid.linewidth": 1.5,})
-        for axis in ["x", "y"]:
-            for step in ["major", "minor"]:
-                grid_params["%stick.%s.size" % (axis, step)] = 0
+                            "grid.linewidth": 1.5})
+        _blank_ticks(grid_params)
         mpl.rcParams.update(grid_params)
 
     elif style == "whitegrid":
@@ -29,7 +27,7 @@ def axes_style(style):
                             "axes.linewidth": 1,
                             "grid.color": "#222222",
                             "grid.linestyle": ":",
-                            "grid.linewidth": .8,})
+                            "grid.linewidth": .8})
         _restore_ticks(grid_params)
         mpl.rcParams.update(grid_params)
 
@@ -53,8 +51,34 @@ def context_setting(context):
 
     raise NotImplementedError
 
-def _restore_ticks(params):
 
+def color_palatte(name):
+    """Set the matplotlib color order with one of several palattes."""
+    mpl.rcParams["axes.color_cycle"] = get_color_list(name)
+
+
+def get_color_list(name):
+    """Return matplotlib color codes for a given palette."""
+    palattes = dict(
+        default=["b", "g", "r", "c", "m", "y", "k"],
+        bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
+        muted=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
+        muted2=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
+        pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
+        )
+
+    return palattes[name]
+
+
+def _blank_ticks(params):
+    """Turn off x and y ticks in a param dict (but not labels)."""
+    for axis in ["x", "y"]:
+        for step in ["major", "minor"]:
+            params["%stick.%s.size" % (axis, step)] = 0
+
+
+def _restore_ticks(params):
+    """Reset x and y ticks in a param dict to matplotlib defaults."""
     for axis in ["x", "y"]:
         for step, size in zip(["major", "minor"], [4, 2]):
             params["%stick.%s.size" % (axis, step)] = size
