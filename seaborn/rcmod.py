@@ -61,10 +61,11 @@ def get_color_list(name):
     """Return matplotlib color codes for a given palette."""
     palattes = dict(
         default=["b", "g", "r", "c", "m", "y", "k"],
-        bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
-        muted=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
-        muted2=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
         pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
+        bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
+        muted=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
+        deep=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
+        dark=["#001C7F", "#017517", "#8C0900", "#7600A1", "#007364"],
         )
 
     return palattes[name]
