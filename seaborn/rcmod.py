@@ -1,13 +1,29 @@
 import matplotlib as mpl
 
 
+def setup(context="notebook", style="darkgrid", palette="deep"):
+    """Set new RC params in one step."""
+    context_setting(context)
+    axes_style(style)
+    color_palatte(palette)
+    params = {"figure.figsize": (9, 6.5),
+              "lines.linewidth": 1.4,
+              "patch.linewidth": .3}
+    mpl.rcParams.update(params)
+
+
+def reset_defaults():
+    """Restore all RC params to default settings."""
+    mpl.rcParams.update(mpl.rcParamsDefault)
+
+
 def axes_style(style):
     """Set the axis style.
 
     Parameters
     ----------
-    style : "darkgrid", "whitegrid", or "nogrid"
-        Modfile style to look ggplotish or light grid on white
+    style : darkgrid | whitegrid | nogrid
+        Style of axis background.
 
     """
     grid_params = {"axes.grid": True,
@@ -43,13 +59,41 @@ def axes_style(style):
 
 
 def context_setting(context):
+    """Set some visual parameters based on intended context.
 
-    # Possible values:
-    # - notebook
-    # - talk
-    # - paper
+    Currently just changes font sizes
 
-    raise NotImplementedError
+    Parameters
+    ----------
+    context: notebook | talk | paper
+        Intended context for resulting figures.
+
+    """
+    if context == "talk":
+        params = {"axes.labelsize": 17,
+                  "axes.titlesize": 19,
+                  "xtick.labelsize": 16,
+                  "ytick.labelsize": 16,
+                  }
+
+    elif context == "notebook":
+        params = {"axes.labelsize": 12,
+                  "axes.titlesize": 14,
+                  "xtick.labelsize": 11,
+                  "ytick.labelsize": 11,
+                  }
+
+    elif context == "paper":
+        params = {"axes.labelsize": 13,
+                  "axes.titlesize": 16,
+                  "xtick.labelsize": 12,
+                  "ytick.labelsize": 12,
+                  }
+
+    else:
+        raise ValueError("Context %s is not recognized" % context)
+
+    mpl.rcParams.update(params)
 
 
 def color_palatte(name):
