@@ -6,7 +6,7 @@ def setup(context="notebook", style="darkgrid", palette="deep"):
     context_setting(context)
     axes_style(style)
     color_palatte(palette)
-    params = {"figure.figsize": (9, 6.5),
+    params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
               "patch.linewidth": .3}
     mpl.rcParams.update(params)
@@ -77,17 +77,17 @@ def context_setting(context):
                   }
 
     elif context == "notebook":
-        params = {"axes.labelsize": 12,
-                  "axes.titlesize": 14,
-                  "xtick.labelsize": 11,
-                  "ytick.labelsize": 11,
+        params = {"axes.labelsize": 11,
+                  "axes.titlesize": 12,
+                  "xtick.labelsize": 10,
+                  "ytick.labelsize": 10,
                   }
 
     elif context == "paper":
-        params = {"axes.labelsize": 13,
-                  "axes.titlesize": 16,
-                  "xtick.labelsize": 12,
-                  "ytick.labelsize": 12,
+        params = {"axes.labelsize": 10,
+                  "axes.titlesize": 13,
+                  "xtick.labelsize": 10,
+                  "ytick.labelsize": 10,
                   }
 
     else:
