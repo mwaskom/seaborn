@@ -98,7 +98,9 @@ def context_setting(context):
 
 def color_palatte(name):
     """Set the matplotlib color order with one of several palattes."""
-    mpl.rcParams["axes.color_cycle"] = get_color_list(name)
+    colors = get_color_list(name)
+    mpl.rcParams["axes.color_cycle"] = colors
+    mpl.rcParams["patch.facecolor"] = colors[0]
 
 
 def get_color_list(name):
