@@ -50,6 +50,7 @@ def axes_style(style):
     elif style == "nogrid":
         params = {"axes.grid": False,
                   "axes.linecolor": 1,
+                  "axes.linewidth": 1,
                   "axes.facecolor": "white"}
         _restore_ticks(params)
         mpl.rcParams.update(params)
