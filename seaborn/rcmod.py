@@ -103,8 +103,18 @@ def color_palatte(name):
     mpl.rcParams["patch.facecolor"] = colors[0]
 
 
-def get_color_list(name):
-    """Return matplotlib color codes for a given palette."""
+def get_color_list(name=None):
+    """Return matplotlib color codes for a given palette.
+
+    Parameters
+    ----------
+    name: None or string
+        Name of palatte or None to return current color list
+
+    """
+    if name is None:
+        return mpl.rcParams["axes.color_cycle"]
+
     palattes = dict(
         default=["b", "g", "r", "c", "m", "y", "k"],
         pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
