@@ -1,7 +1,7 @@
 import matplotlib as mpl
 
 
-def setup(context="notebook", style="darkgrid", palette="deep"):
+def set(context="notebook", style="darkgrid", palette="deep"):
     """Set new RC params in one step."""
     context_setting(context)
     axes_style(style)
