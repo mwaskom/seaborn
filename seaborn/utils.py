@@ -19,11 +19,11 @@ def ci_to_errsize(cis, heights):
 
     """
     errsize = []
-    for i, (low, high) in enumerate(cis):
+    for i, (low, high) in enumerate(np.transpose(cis)):
         h = heights[i]
         elow = h - low
         ehigh = high - h
         errsize.append([elow, ehigh])
 
-    errsize = np.transpose(errsize)
+    errsize = np.asarray(errsize).T
     return errsize
