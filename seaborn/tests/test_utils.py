@@ -2,7 +2,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 import nose
-from nose.tools import assert_equal
+from nose.tools import assert_equal, raises
 
 from .. import utils
 
@@ -43,7 +43,7 @@ def test_pmf_hist_bins():
 
 
 def test_ci_to_errsize():
-
+    """Test behavior of ci_to_errsize."""
     cis = [[.5, .5],
            [1.25, 1.5]]
 
@@ -53,5 +53,45 @@ def test_ci_to_errsize():
                                [.25, 0]])
 
     test_errsize = utils.ci_to_errsize(cis, heights)
-
     assert_array_equal(actual_errsize, test_errsize)
+
+
+def test_desaturate():
+    """Test that we get the right return values from desat."""
+    out1 = utils.desaturate("red", .5)
+    assert_equal(out1, (1., .5, .5))
+
+    out2 = utils.desaturate("#00FF00", .5)
+    assert_equal(out2, (.5, 1., .5))
+
+    out3 = utils.desaturate((0, 0, 1), .5)
+    assert_equal(out3, (.5, .5, 1.))
+
+    out4 = utils.desaturate("red", .5, "hls")
+    assert_equal(out4, (.75, .25, .25))
+
+
+@raises(ValueError)
+def test_desaturation_pct():
+    """Test that pct outside of [0, 1] raises exception."""
+    utils.desaturate("blue", 50)
+
+
+def test_saturate():
+    """Test performance of saturation function."""
+    out = utils.saturate((1, .5, .5))
+    assert_equal(out, (1, 0, 0))
+
+
+@raises(ValueError)
+def test_hue_space():
+    """Test that desaturation space choise is constrained."""
+    utils._hue_space_params("cielab")
+
+
+def test_saturation_index():
+    """Test index to saturation channel for different spaces."""
+    hsv, _, _ = utils._hue_space_params("hsv")
+    assert_equal(hsv, 1)
+    hls, _, _ = utils._hue_space_params("hls")
+    assert_equal(hls, 2)
