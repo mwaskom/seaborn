@@ -1,5 +1,7 @@
 """Tests for utils.py."""
+from __future__ import division
 import numpy as np
+
 
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
@@ -13,7 +15,7 @@ def ci_to_errsize(cis, heights):
 
     Returns
     -------
-    errsize : 2 x n array 
+    errsize : 2 x n array
         sequence of error size relative to height values in correct
         format as argument for plt.bar
 
@@ -27,3 +29,29 @@ def ci_to_errsize(cis, heights):
 
     errsize = np.asarray(errsize).T
     return errsize
+
+
+def pmf_hist(a, bins=10):
+    """Return arguments to plt.bar for pmf-like histogram of an array.
+
+    Parameters
+    ----------
+    a: array-like
+        array to make histogram of
+    bins: int
+        number of bins
+
+    Returns
+    -------
+    x: array
+        left x position of bars
+    h: array
+        height of bars
+    w: float
+        width of bars
+
+    """
+    n, x = np.histogram(a, bins)
+    h = n / n.sum()
+    w = x[1] - x[0]
+    return x[:-1], h, w
