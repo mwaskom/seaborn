@@ -10,7 +10,7 @@ def ci_to_errsize(cis, heights):
 
     Parameters
     ----------
-    cis: n x 2 sequence
+    cis: 2 x n sequence
         sequence of confidence interval limits
     heights : n sequence
         sequence of plot heights
