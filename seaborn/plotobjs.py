@@ -4,6 +4,7 @@
 # should take an ``ax`` keyword argument defaulting to None
 # (which creates a new subplot) and an open-ended **kwargs to
 # pass to the underlying matplotlib function being called.
+# The should also return the ``ax`` object.
 
 import numpy as np
 from scipy import stats
@@ -69,6 +70,11 @@ def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
             raise ValueError("%s is not a valid err_style" % style)
         plot_func(ax, x, data, boot_data, central_data, ci, color)
     ax.plot(x, central_data, color=color, **kwargs)
+
+    return ax
+
+# Subroutines for tsplot errorbar plotting
+# ----------------------------------------
 
 
 def _plot_ci_band(ax, x, data, boot_data,
