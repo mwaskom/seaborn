@@ -1,6 +1,9 @@
 import matplotlib as mpl
 
 
+colors = mpl.rcParams["axes.color_cycle"]
+
+
 def set(context="notebook", style="darkgrid", palette="deep"):
     """Set new RC params in one step."""
     context_setting(context)
@@ -122,7 +125,7 @@ def get_color_list(name=None):
         muted=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
         deep=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
         dark=["#001C7F", "#017517", "#8C0900", "#7600A1", "#007364"],
-        )
+    )
 
     return palattes[name]
 
