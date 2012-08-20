@@ -1,4 +1,4 @@
-"""Tests for utils.py."""
+"""Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
 import numpy as np
