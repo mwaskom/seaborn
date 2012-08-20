@@ -91,3 +91,36 @@ def boxplot(vals, color=None, ax=None, **kwargs):
         fly.set_alpha(.6)
 
     return ax
+
+
+def kdeplot(a, npts=1000, ax=None, **kwargs):
+    """Calculate and plot kernel density estimate.
+
+    Parameters
+    ----------
+    a : ndarray
+        input data
+    npts : int, optional
+        number of x points
+    ax : matplotlib axis, optional
+        axis to plot on, otherwise creates new one
+    kwargs : other keyword arguments to plot()
+
+    Returns
+    -------
+    ax : matplotlib axis
+        axis with plot
+
+    """
+    if ax is None:
+        ax = plt.subplot(111)
+    kde = stats.gaussian_kde(a)
+    min = a.min()
+    max = a.max()
+    range = max - min
+    low = min - range * .1
+    high = max + range * .1
+    x = np.linspace(low, high, npts)
+    y = kde(x)
+    ax.plot(x, y, **kwargs)
+    return ax
