@@ -1,3 +1,10 @@
+"""High level plotting functions using matplotlib."""
+
+# Except in strange circumstances, all functions in this module
+# should take an ``ax`` keyword argument defaulting to None
+# (which creates a new subplot) and an open-ended **kwargs to
+# pass to the underlying matplotlib function being called.
+
 import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
@@ -96,7 +103,8 @@ def _plot_obs_points(ax, x, data, boot_data,
     ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
 
 
-def regplot(x, y, ax=None, xlabel=None, ylabel=None, corr_func=stats.pearsonr):
+def regplot(x, y, xlabel=None, ylabel=None, ax=None,
+            corr_func=stats.pearsonr, **kwargs):
     """Plot a regression scatter with correlation value.
 
     Parameters
@@ -105,12 +113,13 @@ def regplot(x, y, ax=None, xlabel=None, ylabel=None, corr_func=stats.pearsonr):
         independent variables
     y : sequence
         dependent variables
-    ax : axis object, optional
-        plot in given axis; if None creates a new figure
     xlabel, ylabel : string, optional
         label names
     corr_func : callable, optional
         correlation function; expected to return (r, p) double
+    ax : axis object, optional
+        plot in given axis; if None creates a new figure
+    kwargs : further keyword arguments for regression line plot
 
     Returns
     -------
@@ -123,7 +132,7 @@ def regplot(x, y, ax=None, xlabel=None, ylabel=None, corr_func=stats.pearsonr):
     a, b = np.polyfit(x, y, 1)
     ax.plot(x, y, "o")
     xlim = ax.get_xlim()
-    ax.plot(xlim, np.polyval([a, b], xlim))
+    ax.plot(xlim, np.polyval([a, b], xlim, **kwargs))
     r, p = stats.pearsonr(x, y)
     ax.set_title("r = %.3f; p = %.3g%s" % (r, p, moss.sig_stars(p)))
     ax.set_xlabel(xlabel)
