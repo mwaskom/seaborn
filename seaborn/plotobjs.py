@@ -53,22 +53,28 @@ def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
     if ax is None:
         ax = plt.subplot(111)
 
+    # Bootstrap the data for confidence intervals
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
                                axis=0, func=central_func)
     ci = moss.percentiles(boot_data, ci, axis=0)
     central_data = central_func(data, axis=0)
 
+    # This is basically a hack because I don't know how to access
+    # the matplotlib color cycle machinery
     line, = ax.plot(x, central_data)
     default_color = line.get_color()
     color = default_color if color is None else color
     line.remove()
 
+    # Use subroutines to plot the uncertainty
     for style in err_style:
         try:
             plot_func = globals()["_plot_%s" % style]
         except KeyError:
             raise ValueError("%s is not a valid err_style" % style)
         plot_func(ax, x, data, boot_data, central_data, ci, color)
+
+    # Replot the central trace so it is prominent
     ax.plot(x, central_data, color=color, **kwargs)
 
     return ax
