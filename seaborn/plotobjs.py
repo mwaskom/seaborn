@@ -237,6 +237,7 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, ax=None, **kwargs):
     high = max + range * .1
     x = np.linspace(low, high, npts)
     y = kde(x)
-    ax.hist(a, nbins, normed=True, alpha=.5)
+    if hist:
+        ax.hist(a, nbins, normed=True, alpha=.5)
     ax.plot(x, y, **kwargs)
     return ax
