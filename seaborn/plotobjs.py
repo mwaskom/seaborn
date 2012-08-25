@@ -58,13 +58,7 @@ def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
                                axis=0, func=central_func)
     ci = moss.percentiles(boot_data, ci, axis=0)
     central_data = central_func(data, axis=0)
-
-    # This is basically a hack because I don't know how to access
-    # the matplotlib color cycle machinery
-    line, = ax.plot(x, central_data)
-    default_color = line.get_color()
-    color = default_color if color is None else color
-    line.remove()
+    color = _get_cycle_state(central_data, ax) if color is None else color
 
     # Use subroutines to plot the uncertainty
     for style in err_style:
@@ -204,7 +198,7 @@ def boxplot(vals, color=None, ax=None, **kwargs):
     return ax
 
 
-def kdeplot(a, npts=1000, hist=False, nbins=20, ax=None, **kwargs):
+def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False, color=None, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -229,7 +223,7 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, ax=None, **kwargs):
     """
     if ax is None:
         ax = plt.subplot(111)
-    kde = stats.gaussian_kde(a)
+    kde = stats.gaussian_kde(a.astype(float))
     min = a.min()
     max = a.max()
     range = max - min
@@ -237,7 +231,27 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, ax=None, **kwargs):
     high = max + range * .1
     x = np.linspace(low, high, npts)
     y = kde(x)
+    color = _get_cycle_state(y, ax) if color is None else color
     if hist:
-        ax.hist(a, nbins, normed=True, alpha=.5)
-    ax.plot(x, y, **kwargs)
+        ax.hist(a, nbins, normed=True, color=color, alpha=.4)
+    ax.plot(x, y, color=color, **kwargs)
+    if stick:
+        stickplot(a, ax=ax, color=color, alpha=.7, linewidth=2)
     return ax
+
+
+def stickplot(a, ymax=None, ax=None, **kwargs):
+    """Plot datapoints in an array as sticks on an axis."""
+    if ax is None:
+        ax = plt.subplot(111)
+    if ymax is None:
+        ymax = ax.get_ylim()[1] * 0.5
+    ax.plot([a, a], [0, ymax], **kwargs)
+    return ax
+
+def _get_cycle_state(d, ax):
+    """Hack to get matplotlib cycle state."""
+    line, = ax.plot(d)
+    color = line.get_color()
+    line.remove()
+    return color
