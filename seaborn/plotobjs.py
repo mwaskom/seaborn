@@ -224,7 +224,7 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
     """
     if ax is None:
         ax = plt.subplot(111)
-    kde = stats.gaussian_kde(a.astype(float).ravel())
+    kde = stats.gaussian_kde(np.asarray(a).astype(float).ravel())
     min = a.min()
     max = a.max()
     range = max - min
