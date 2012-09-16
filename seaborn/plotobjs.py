@@ -109,7 +109,7 @@ def _plot_obs_points(ax, x, data, boot_data,
     ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
 
 
-def regplot(x, y, xlabel=None, ylabel=None, ax=None,
+def regplot(x, y, xlabel="", ylabel="", ax=None,
             corr_func=stats.pearsonr, **kwargs):
     """Plot a regression scatter with correlation value.
 
@@ -224,7 +224,8 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
     """
     if ax is None:
         ax = plt.subplot(111)
-    kde = stats.gaussian_kde(np.asarray(a).astype(float).ravel())
+    a = np.asarray(a)
+    kde = stats.gaussian_kde(a.astype(float).ravel())
     min = a.min()
     max = a.max()
     range = max - min
