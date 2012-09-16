@@ -138,7 +138,7 @@ def regplot(x, y, xlabel="", ylabel="", ax=None,
     a, b = np.polyfit(x, y, 1)
     ax.plot(x, y, "o")
     xlim = ax.get_xlim()
-    ax.plot(xlim, np.polyval([a, b], xlim, **kwargs))
+    ax.plot(xlim, np.polyval([a, b], xlim), **kwargs)
     r, p = stats.pearsonr(x, y)
     ax.set_title("r = %.3f; p = %.3g%s" % (r, p, moss.sig_stars(p)))
     ax.set_xlabel(xlabel)
