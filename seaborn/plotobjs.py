@@ -109,8 +109,8 @@ def _plot_obs_points(ax, x, data, boot_data,
     ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
 
 
-def regplot(x, y, xlabel="", ylabel="", ax=None,
-            corr_func=stats.pearsonr, **kwargs):
+def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
+            ax=None, corr_func=stats.pearsonr, **kwargs):
     """Plot a regression scatter with correlation value.
 
     Parameters
@@ -121,6 +121,8 @@ def regplot(x, y, xlabel="", ylabel="", ax=None,
         dependent variables
     xlabel, ylabel : string, optional
         label names
+    markerstyle : string, optional
+        markerstyle for scatterplot
     corr_func : callable, optional
         correlation function; expected to return (r, p) double
     ax : axis object, optional
@@ -136,7 +138,7 @@ def regplot(x, y, xlabel="", ylabel="", ax=None,
     if ax is None:
         ax = plt.subplot(111)
     a, b = np.polyfit(x, y, 1)
-    ax.plot(x, y, "o")
+    ax.plot(x, y, markerstyle)
     xlim = ax.get_xlim()
     ax.plot(xlim, np.polyval([a, b], xlim), **kwargs)
     r, p = stats.pearsonr(x, y)
