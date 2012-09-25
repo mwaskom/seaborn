@@ -201,7 +201,7 @@ def boxplot(vals, color=None, ax=None, **kwargs):
 
 
 def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
-            color=None, ax=None, **kwargs):
+            shade=False, color=None, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -214,6 +214,8 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
         if True plots (normed) histogram of data
     hist_bins : int, optional
         number of bins if plotting histogram also
+    shade : bool, optional
+        if true shade under KDE curve
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
     kwargs : other keyword arguments for plot()
@@ -241,6 +243,8 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
     ax.plot(x, y, color=color, **kwargs)
     if stick:
         stickplot(a, ax=ax, color=color, alpha=.7, linewidth=2)
+    if shade:
+        ax.fill_between(x, 0, y, color=color, alpha=0.25)
     return ax
 
 
