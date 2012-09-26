@@ -261,8 +261,26 @@ def rugplot(a, height=None, ax=None, **kwargs):
     return ax
 
 
-def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
+def violin(x, inner="box", widths=.3, color=None, ax=None):
     """Create a violin plot (a combination of boxplot and KDE plot.
+
+    Parameters
+    ----------
+    x : array or sequence of arrays
+        data to plot
+    inner : box | sticks
+        plot quartiles or individual sample values inside violin
+    widths : float
+        width of each violin at maximum density
+    color : matplotlib color
+        color for violin fill
+    ax : matplotlib axis
+        axis to plot on, or None to generate new axis
+
+    Returns
+    -------
+    ax: : matplotlib axis
+        axis with violin plot
 
     """
     if ax is None:
@@ -273,7 +291,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
             if hasattr(x[0], 'shape'):
                 x = list(x)
             else:
-                x = [x,]
+                x = [x]
         elif len(x.shape) == 2:
             nr, nc = x.shape
             if nr == 1:
@@ -281,9 +299,9 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
             elif nc == 1:
                 x = [x.ravel()]
             else:
-                x = [x[:,i] for i in xrange(nc)]
+                x = [x[:, i] for i in xrange(nc)]
         else:
-            raise ValueError, "input x can have no more than 2 dimensions"
+            raise ValueError("Input x can have no more than 2 dimensions")
     if not hasattr(x[0], '__len__'):
         x = [x]
 
