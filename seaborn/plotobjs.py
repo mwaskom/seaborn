@@ -200,7 +200,7 @@ def boxplot(vals, color=None, ax=None, **kwargs):
     return ax
 
 
-def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
+def kdeplot(a, npts=1000, hist=False, nbins=20, rug=False,
             shade=False, color=None, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
@@ -212,8 +212,10 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
         number of x points
     hist : bool, optional
         if True plots (normed) histogram of data
-    hist_bins : int, optional
+    nbins : int, optional
         number of bins if plotting histogram also
+    rug : boolean, optional
+        if True, plots rug (vertical lines at data points)
     shade : bool, optional
         if true shade under KDE curve
     ax : matplotlib axis, optional
@@ -230,32 +232,103 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, stick=False,
         ax = plt.subplot(111)
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
-    min = a.min()
-    max = a.max()
-    range = max - min
-    low = min - range * .25
-    high = max + range * .25
-    x = np.linspace(low, high, npts)
+    x = _kde_support(a, kde, npts)
     y = kde(x)
     color = _get_cycle_state(x, y, ax) if color is None else color
     if hist:
         ax.hist(a, nbins, normed=True, color=color, alpha=.4)
     ax.plot(x, y, color=color, **kwargs)
-    if stick:
-        stickplot(a, ax=ax, color=color, alpha=.7, linewidth=2)
+    if rug:
+        rug_height = y.max() * .05
+        rugplot(a, height=rug_height, ax=ax,
+                color=color, alpha=.7, linewidth=2)
+        ymin, ymax = ax.get_ylim()
     if shade:
         ax.fill_between(x, 0, y, color=color, alpha=0.25)
     return ax
 
 
-def stickplot(a, ymax=None, ax=None, **kwargs):
+def rugplot(a, height=None, ax=None, **kwargs):
     """Plot datapoints in an array as sticks on an axis."""
     if ax is None:
         ax = plt.subplot(111)
-    if ymax is None:
-        ymax = ax.get_ylim()[1] * 0.5
-    ax.plot([a, a], [0, ymax], **kwargs)
+    ymin, ymax = ax.get_ylim()
+    if height is None:
+        ymin, ymax = ax.get_ylim()
+        yrange = ymax - ymin
+        height = yrange * .05
+    ax.plot([a, a], [ymin, ymin + height], **kwargs)
     return ax
+
+
+def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
+    """Create a violin plot (a combination of boxplot and KDE plot.
+
+    """
+    if ax is None:
+        ax = plt.subplot(111)
+
+    if hasattr(x, 'shape'):
+        if len(x.shape) == 1:
+            if hasattr(x[0], 'shape'):
+                x = list(x)
+            else:
+                x = [x,]
+        elif len(x.shape) == 2:
+            nr, nc = x.shape
+            if nr == 1:
+                x = [x]
+            elif nc == 1:
+                x = [x.ravel()]
+            else:
+                x = [x[:,i] for i in xrange(nc)]
+        else:
+            raise ValueError, "input x can have no more than 2 dimensions"
+    if not hasattr(x[0], '__len__'):
+        x = [x]
+
+    x = [a.astype(float) for a in x]
+
+    gray = "#555555"
+    for i, a in enumerate(x, 1):
+        kde = stats.gaussian_kde(a)
+        y = _kde_support(a, kde, 1000)
+        dens = kde(y)
+        scl = 1 / (dens.max() / (widths / 2))
+        dens *= scl
+
+        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7)
+        if inner == "box":
+            for side in [-1, 1]:
+                ax.plot((side * dens) + i, y, gray, linewidth=1)
+            for quant in moss.percentiles(a, [25, 75]):
+                q_x = kde(quant) * scl
+                q_x = [i - q_x, i + q_x]
+                ax.plot(q_x, [quant, quant], gray,
+                        linestyle=":", linewidth=1.5)
+            med = np.median(a)
+            m_x = kde(med) * scl
+            m_x = [i - m_x, i + m_x]
+            ax.plot(m_x, [med, med], gray,
+                    linestyle="--", linewidth=1.2)
+        elif inner == "stick":
+            x_vals = kde(a) * scl
+            x_vals = [i - x_vals, i + x_vals]
+            ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
+
+    ax.set_xticks(range(1, len(x) + 1))
+    ax.set_xlim(.5, len(x) + .5)
+
+
+def _kde_support(a, kde, npts):
+    """Establish support for a kernel density estimate."""
+    min = a.min()
+    max = a.max()
+    range = max - min
+    x = np.linspace(min - range, max + range, npts * 2)
+    y = kde(x)
+    mask = y > y.max() * 1e-6
+    return x[mask]
 
 
 def _get_cycle_state(x, y, ax):
