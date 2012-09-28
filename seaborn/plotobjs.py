@@ -262,7 +262,7 @@ def rugplot(a, height=None, ax=None, **kwargs):
 
 
 def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
-    """Create a violin plot (a combination of boxplot and KDE plot.
+    """Create a violin plot (a combination of boxplot and KDE plot).
 
     """
     if ax is None:
