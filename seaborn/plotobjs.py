@@ -346,7 +346,7 @@ def _kde_support(a, kde, npts):
     range = max - min
     x = np.linspace(min - range, max + range, npts * 2)
     y = kde(x)
-    mask = y > y.max() * 1e-6
+    mask = y > y.max() * 1e-4
     return x[mask]
 
 
