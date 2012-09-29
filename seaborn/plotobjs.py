@@ -308,6 +308,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
     x = [a.astype(float) for a in x]
 
     gray = "#555555"
+    color = _get_cycle_state(x, y, ax) if color is None else color
     for i, a in enumerate(x, 1):
         kde = stats.gaussian_kde(a)
         y = _kde_support(a, kde, 1000)
@@ -315,7 +316,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
-        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7)
+        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7, color=color)
         if inner == "box":
             for side in [-1, 1]:
                 ax.plot((side * dens) + i, y, gray, linewidth=1)
