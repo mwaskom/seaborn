@@ -318,8 +318,6 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
 
         ax.fill_betweenx(y, i - dens, i + dens, alpha=.7, color=color)
         if inner == "box":
-            for side in [-1, 1]:
-                ax.plot((side * dens) + i, y, gray, linewidth=1)
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde(quant) * scl
                 q_x = [i - q_x, i + q_x]
@@ -334,6 +332,8 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
             x_vals = kde(a) * scl
             x_vals = [i - x_vals, i + x_vals]
             ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
+        for side in [-1, 1]:
+            ax.plot((side * dens) + i, y, gray, linewidth=1)
 
     ax.set_xticks(range(1, len(x) + 1))
     ax.set_xlim(.5, len(x) + .5)
