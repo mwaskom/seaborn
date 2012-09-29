@@ -308,7 +308,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
     x = [a.astype(float) for a in x]
 
     gray = "#555555"
-    color = _get_cycle_state(x, y, ax) if color is None else color
+    color = _get_cycle_state(x, x, ax) if color is None else color
     for i, a in enumerate(x, 1):
         kde = stats.gaussian_kde(a)
         y = _kde_support(a, kde, 1000)
