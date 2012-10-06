@@ -261,8 +261,26 @@ def rugplot(a, height=None, ax=None, **kwargs):
     return ax
 
 
-def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
-    """Create a violin plot (a combination of boxplot and KDE plot).
+def violin(x, inner="box", widths=.3, color=None, ax=None):
+    """Create a violin plot (a combination of boxplot and KDE plot.
+
+    Parameters
+    ----------
+    x : array or sequence of arrays
+        data to plot
+    inner : box | sticks
+        plot quartiles or individual sample values inside violin
+    widths : float
+        width of each violin at maximum density
+    color : matplotlib color
+        color for violin fill
+    ax : matplotlib axis
+        axis to plot on, or None to generate new axis
+
+    Returns
+    -------
+    ax: : matplotlib axis
+        axis with violin plot
 
     """
     if ax is None:
@@ -273,7 +291,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
             if hasattr(x[0], 'shape'):
                 x = list(x)
             else:
-                x = [x,]
+                x = [x]
         elif len(x.shape) == 2:
             nr, nc = x.shape
             if nr == 1:
@@ -281,15 +299,16 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
             elif nc == 1:
                 x = [x.ravel()]
             else:
-                x = [x[:,i] for i in xrange(nc)]
+                x = [x[:, i] for i in xrange(nc)]
         else:
-            raise ValueError, "input x can have no more than 2 dimensions"
+            raise ValueError("Input x can have no more than 2 dimensions")
     if not hasattr(x[0], '__len__'):
         x = [x]
 
     x = [a.astype(float) for a in x]
 
     gray = "#555555"
+    color = _get_cycle_state(x, x, ax) if color is None else color
     for i, a in enumerate(x, 1):
         kde = stats.gaussian_kde(a)
         y = _kde_support(a, kde, 1000)
@@ -297,10 +316,8 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
-        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7)
+        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7, color=color)
         if inner == "box":
-            for side in [-1, 1]:
-                ax.plot((side * dens) + i, y, gray, linewidth=1)
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde(quant) * scl
                 q_x = [i - q_x, i + q_x]
@@ -315,6 +332,8 @@ def violin(x, inner="box", widths=.3, color=None, ax=None, **kwargs):
             x_vals = kde(a) * scl
             x_vals = [i - x_vals, i + x_vals]
             ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
+        for side in [-1, 1]:
+            ax.plot((side * dens) + i, y, gray, linewidth=1)
 
     ax.set_xticks(range(1, len(x) + 1))
     ax.set_xlim(.5, len(x) + .5)
@@ -327,7 +346,7 @@ def _kde_support(a, kde, npts):
     range = max - min
     x = np.linspace(min - range, max + range, npts * 2)
     y = kde(x)
-    mask = y > y.max() * 1e-6
+    mask = y > y.max() * 1e-4
     return x[mask]
 
 
