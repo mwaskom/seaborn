@@ -203,7 +203,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
         fly.set_alpha(.6)
 
     if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals color=color, alpha=2./3)
+        ax.plot(range(1, len(vals) + 1), vals, color=color, alpha=2./3)
 
     if names is not None:
         if len(x) != len(names):
