@@ -305,7 +305,7 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
     if not hasattr(x[0], '__len__'):
         x = [x]
 
-    x = [a.astype(float) for a in x]
+    x = [np.asarray(a, float) for a in x]
 
     gray = "#555555"
     color = _get_cycle_state(x, x, ax) if color is None else color
