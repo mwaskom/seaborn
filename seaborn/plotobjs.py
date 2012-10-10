@@ -203,7 +203,8 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
         fly.set_alpha(.6)
 
     if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals, color=color, alpha=2./3)
+        ax.plot(range(1, len(np.transpose(vals)) + 1), np.transpose(vals),
+                color=color, alpha=2./3)
 
     if names is not None:
         if len(x) != len(names):
@@ -355,7 +356,8 @@ def violin(x, inner="box", widths=.3, join_rm=False,
             ax.plot((side * dens) + i, y, gray, linewidth=1)
 
     if join_rm:
-        ax.plot(range(1, len(x) + 1), x, color=color, alpha=2./3)
+        ax.plot(range(1, len(np.transpose(x)) + 1), np.transpose(x),
+                color=color, alpha=2./3)
 
     ax.set_xticks(range(1, len(x) + 1))
     if names is not None:
