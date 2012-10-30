@@ -207,7 +207,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
                 color=color, alpha=2./3)
 
     if names is not None:
-        if len(x) != len(names):
+        if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
 
