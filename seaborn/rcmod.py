@@ -86,7 +86,7 @@ def context_setting(context):
                   "ytick.labelsize": 10,
                   }
 
-    elif context == "talk":
+    elif context == "poster":
         params = {"axes.labelsize": 18,
                   "axes.titlesize": 22,
                   "xtick.labelsize": 16,

@@ -148,14 +148,19 @@ def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
     return ax
 
 
-def boxplot(vals, color=None, ax=None, **kwargs):
+def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
     ----------
     vals : sequence of data containers
         data for plot
-    color : matplotlib color
+    join_rm : boolean, optional
+        if True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot
+    names : list of strings, optional
+        names to plot on x axis, otherwise plots numbers
+    color : matplotlib color, optional
         box color
     ax : matplotlib axis, optional
         will plot in axis, or create new figure axis
@@ -196,6 +201,15 @@ def boxplot(vals, color=None, ax=None, **kwargs):
         fly.set_color(gray)
         fly.set_marker("d")
         fly.set_alpha(.6)
+
+    if join_rm:
+        ax.plot(range(1, len(np.transpose(vals)) + 1), np.transpose(vals),
+                color=color, alpha=2./3)
+
+    if names is not None:
+        if len(x) != len(names):
+            raise ValueError("Length of names list must match nuber of bins")
+        ax.set_xticklabels(names)
 
     return ax
 
@@ -261,7 +275,8 @@ def rugplot(a, height=None, ax=None, **kwargs):
     return ax
 
 
-def violin(x, inner="box", widths=.3, color=None, ax=None):
+def violin(x, inner="box", widths=.3, join_rm=False,
+           names=None, color=None, ax=None):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -272,6 +287,11 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
         plot quartiles or individual sample values inside violin
     widths : float
         width of each violin at maximum density
+    join_rm : boolean, optional
+        if True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot
+    names : list of strings, optional
+        names to plot on x axis, otherwise plots numbers
     color : matplotlib color
         color for violin fill
     ax : matplotlib axis
@@ -335,7 +355,15 @@ def violin(x, inner="box", widths=.3, color=None, ax=None):
         for side in [-1, 1]:
             ax.plot((side * dens) + i, y, gray, linewidth=1)
 
+    if join_rm:
+        ax.plot(range(1, len(np.transpose(x)) + 1), np.transpose(x),
+                color=color, alpha=2./3)
+
     ax.set_xticks(range(1, len(x) + 1))
+    if names is not None:
+        if len(x) != len(names):
+            raise ValueError("Length of names list must match nuber of bins")
+        ax.set_xticklabels(names)
     ax.set_xlim(.5, len(x) + .5)
 
 
