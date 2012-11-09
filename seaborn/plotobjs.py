@@ -141,7 +141,7 @@ def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
     ax.plot(x, y, markerstyle)
     xlim = ax.get_xlim()
     ax.plot(xlim, np.polyval([a, b], xlim), **kwargs)
-    r, p = stats.pearsonr(x, y)
+    r, p = corr_func(x, y)
     ax.set_title("r = %.3f; p = %.3g%s" % (r, p, moss.sig_stars(p)))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
