@@ -141,7 +141,7 @@ def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
     ax.plot(x, y, markerstyle)
     xlim = ax.get_xlim()
     ax.plot(xlim, np.polyval([a, b], xlim), **kwargs)
-    r, p = stats.pearsonr(x, y)
+    r, p = corr_func(x, y)
     ax.set_title("r = %.3f; p = %.3g%s" % (r, p, moss.sig_stars(p)))
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -325,7 +325,7 @@ def violin(x, inner="box", widths=.3, join_rm=False,
     if not hasattr(x[0], '__len__'):
         x = [x]
 
-    x = [a.astype(float) for a in x]
+    x = [np.asarray(a, float) for a in x]
 
     gray = "#555555"
     color = _get_cycle_state(x, x, ax) if color is None else color
