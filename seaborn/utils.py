@@ -6,19 +6,19 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 
 
-def color_palatte(name=None, n_colors=8, h=.01, l=.6, s=.65):
+def color_palette(name=None, n_colors=8, h=.01, l=.6, s=.65):
     """Return matplotlib color codes for a given palette.
 
     Parameters
     ----------
     name: None or string
-        Name of palatte or None to return current color list
+        Name of palette or None to return current color list
 
     """
     if name is None:
         return mpl.rcParams["axes.color_cycle"]
 
-    palattes = dict(
+    palettes = dict(
         default=["b", "g", "r", "c", "m", "y", "k"],
         pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
         bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
@@ -30,27 +30,27 @@ def color_palatte(name=None, n_colors=8, h=.01, l=.6, s=.65):
     )
 
     if name == "hls":
-        return hls_palatte(n_colors, h, l, s)
+        return hls_palette(n_colors, h, l, s)
 
     try:
-        return palattes[name]
+        return palettes[name]
     except KeyError:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
         cmap = getattr(mpl.cm, name)
-        palatte = map(tuple, cmap(bins)[:, :3])
-        return palatte
+        palette = map(tuple, cmap(bins)[:, :3])
+        return palette
     except KeyError:
-        raise ValueError("%s is not a valid palatte name" % name)
+        raise ValueError("%s is not a valid palette name" % name)
 
 
-def hls_palatte(n_colors=6, h=.01, l=.6, s=.65):
+def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     """Get a set of evenly spaced colors in HLS hue space.
 
     Parameters
     ----------
 
     n_colors : int
-        number of colors in the palatte
+        number of colors in the palette
     h : float
         first hue
     l : float
@@ -60,15 +60,15 @@ def hls_palatte(n_colors=6, h=.01, l=.6, s=.65):
 
     Returns
     -------
-    palatte : list of tuples
-        color palatte
+    palette : list of tuples
+        color palette
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
     hues += h
     hues -= hues.astype(int)
-    palatte = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
-    return palatte
+    palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
+    return palette
 
 
 def ci_to_errsize(cis, heights):
