@@ -6,7 +6,7 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 
 
-def color_list(name=None, n_colors=8, h=.01, l=.6, s=.65):
+def color_palatte(name=None, n_colors=8, h=.01, l=.6, s=.65):
     """Return matplotlib color codes for a given palette.
 
     Parameters
