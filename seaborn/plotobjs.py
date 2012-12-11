@@ -4,7 +4,7 @@
 # should take an ``ax`` keyword argument defaulting to None
 # (which creates a new subplot) and an open-ended **kwargs to
 # pass to the underlying matplotlib function being called.
-# The should also return the ``ax`` object.
+# They should also return the ``ax`` object.
 
 import numpy as np
 from scipy import stats
@@ -207,7 +207,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
                 color=color, alpha=2./3)
 
     if names is not None:
-        if len(x) != len(names):
+        if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
 
@@ -275,16 +275,18 @@ def rugplot(a, height=None, ax=None, **kwargs):
     return ax
 
 
-def violin(x, inner="box", widths=.3, join_rm=False,
+def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
            names=None, color=None, ax=None):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
     ----------
-    x : array or sequence of arrays
+    vals : array or sequence of arrays
         data to plot
     inner : box | sticks
         plot quartiles or individual sample values inside violin
+    positions : number or sequence of numbers
+        position of first violin or positions of each violin
     widths : float
         width of each violin at maximum density
     join_rm : boolean, optional
@@ -306,65 +308,70 @@ def violin(x, inner="box", widths=.3, join_rm=False,
     if ax is None:
         ax = plt.subplot(111)
 
-    if hasattr(x, 'shape'):
-        if len(x.shape) == 1:
-            if hasattr(x[0], 'shape'):
-                x = list(x)
+    if hasattr(vals, 'shape'):
+        if len(vals.shape) == 1:
+            if hasattr(vals[0], 'shape'):
+                vals = list(vals)
             else:
-                x = [x]
-        elif len(x.shape) == 2:
-            nr, nc = x.shape
+                vals = [vals]
+        elif len(vals.shape) == 2:
+            nr, nc = vals.shape
             if nr == 1:
-                x = [x]
+                vals = [vals]
             elif nc == 1:
-                x = [x.ravel()]
+                vals = [vals.ravel()]
             else:
-                x = [x[:, i] for i in xrange(nc)]
+                vals = [vals[:, i] for i in xrange(nc)]
         else:
             raise ValueError("Input x can have no more than 2 dimensions")
-    if not hasattr(x[0], '__len__'):
-        x = [x]
+    if not hasattr(vals[0], '__len__'):
+        vals = [vals]
 
-    x = [np.asarray(a, float) for a in x]
+    vals = [np.asarray(a, float) for a in vals]
 
     gray = "#555555"
-    color = _get_cycle_state(x, x, ax) if color is None else color
-    for i, a in enumerate(x, 1):
+    color = _get_cycle_state(vals[0], vals[0], ax) if color is None else color
+    if position is None:
+        position = np.arange(1, len(vals) + 1)
+    elif not hasattr(position, "__iter__"):
+        position = np.arange(position, len(vals) + position)
+    for i, a in enumerate(vals):
+        x = position[i]
         kde = stats.gaussian_kde(a)
         y = _kde_support(a, kde, 1000)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
-        ax.fill_betweenx(y, i - dens, i + dens, alpha=.7, color=color)
+        ax.fill_betweenx(y, x - dens, x + dens, alpha=.7, color=color)
         if inner == "box":
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde(quant) * scl
-                q_x = [i - q_x, i + q_x]
+                q_x = [x - q_x, x + q_x]
                 ax.plot(q_x, [quant, quant], gray,
                         linestyle=":", linewidth=1.5)
             med = np.median(a)
             m_x = kde(med) * scl
-            m_x = [i - m_x, i + m_x]
+            m_x = [x - m_x, x + m_x]
             ax.plot(m_x, [med, med], gray,
                     linestyle="--", linewidth=1.2)
         elif inner == "stick":
             x_vals = kde(a) * scl
-            x_vals = [i - x_vals, i + x_vals]
+            x_vals = [x - x_vals, x + x_vals]
             ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
         for side in [-1, 1]:
-            ax.plot((side * dens) + i, y, gray, linewidth=1)
+            ax.plot((side * dens) + x, y, gray, linewidth=1)
 
     if join_rm:
-        ax.plot(range(1, len(np.transpose(x)) + 1), np.transpose(x),
+        ax.plot(range(1, len(np.transpose(vals)) + 1), np.transpose(vals),
                 color=color, alpha=2./3)
 
-    ax.set_xticks(range(1, len(x) + 1))
+    ax.set_xticks(position)
     if names is not None:
-        if len(x) != len(names):
+        if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
-    ax.set_xlim(.5, len(x) + .5)
+    ax.set_xlim(position[0] - .5, position[-1] + .5)
 
 
 def _kde_support(a, kde, npts):
