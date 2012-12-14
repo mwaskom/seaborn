@@ -6,13 +6,28 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 
 
-def color_palette(name=None, n_colors=8, h=.01, l=.6, s=.65):
+def color_palette(name=None, n_colors=8, desat=None, h=.01, l=.6, s=.65):
     """Return matplotlib color codes for a given palette.
 
     Parameters
     ----------
     name: None or string
         Name of palette or None to return current color list
+    n_colors : int
+        number of colors in the palette
+    desat : float
+        desaturation factor for each color
+    h : float
+        first hue
+    l : float
+        lightness
+    s : float
+        saturation
+
+    Returns
+    -------
+    palette : list of colors
+        color palette
 
     """
     if name is None:
@@ -30,17 +45,21 @@ def color_palette(name=None, n_colors=8, h=.01, l=.6, s=.65):
     )
 
     if name == "hls":
-        return hls_palette(n_colors, h, l, s)
+        palette = hls_palette(n_colors, h, l, s)
+    else:
+        try:
+            palette =  palettes[name]
+        except KeyError:
+            bins = np.linspace(0, 1, n_colors + 2)[1:-1]
+            cmap = getattr(mpl.cm, name)
+            palette = map(tuple, cmap(bins)[:, :3])
+        except KeyError:
+            raise ValueError("%s is not a valid palette name" % name)
 
-    try:
-        return palettes[name]
-    except KeyError:
-        bins = np.linspace(0, 1, n_colors + 2)[1:-1]
-        cmap = getattr(mpl.cm, name)
-        palette = map(tuple, cmap(bins)[:, :3])
-        return palette
-    except KeyError:
-        raise ValueError("%s is not a valid palette name" % name)
+    if desat is not None:
+        palette = [desaturate(c, desat) for c in palette]
+
+    return palette
 
 
 def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
