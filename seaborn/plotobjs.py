@@ -380,7 +380,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
 
 
 def corrplot(data, names=None, cmap="Spectral_r", cmap_range=None,
-             colorbar=True, **kwargs):
+             cbar=True, **kwargs):
     """Plot a correlation matrix with heatmap and r values.
 
     Parameters
@@ -394,7 +394,7 @@ def corrplot(data, names=None, cmap="Spectral_r", cmap_range=None,
     cmap_range : None, "full", (low, high)
         either truncate colormap at (-max(abs(r)), max(abs(r))), use the
         full range (-1, 1), or specify (min, max) values for the colormap
-    colorbar : boolean
+    cbar : boolean
         if true, plots the colorbar legend
     kwargs : other keyword arguments
         passed to ax.matshow()
@@ -413,7 +413,7 @@ def corrplot(data, names=None, cmap="Spectral_r", cmap_range=None,
     plotmat[np.triu_indices(nvars)] = np.nan
 
     if cmap_range is None:
-        vmax = np.nanmax(np.abs(plotmat))
+        vmax = min(1, np.nanmax(np.abs(plotmat)) * 1.15)
         vmin = -vmax
     elif cmap_range == "full":
         vmin, vmax = -1, 1
@@ -423,7 +423,7 @@ def corrplot(data, names=None, cmap="Spectral_r", cmap_range=None,
         raise ValueError("cmap_range argument not understood")
 
     mat = ax.matshow(plotmat, cmap=cmap, vmin=vmin, vmax=vmax, **kwargs)
-    if colorbar:
+    if cbar:
         plt.colorbar(mat)
 
     for i, j in zip(*np.triu_indices(nvars, 1)):
