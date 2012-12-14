@@ -11,11 +11,10 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import moss
 
-from .utils import ci_to_errsize
-from .rcmod import get_color_list
+from seaborn.utils import ci_to_errsize
 
 
-def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
+def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
            central_func=np.mean, n_boot=10000, smooth=False,
            ax=None, **kwargs):
     """Plot timeseries from a set of observations.
@@ -26,8 +25,6 @@ def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
         x values
     data : n_obs x n_tp array
         array of timeseries data where first axis is e.g. subjects
-    color : matplotlib color
-        color of plot trace and error
     err_style : list of strings
         names of ways to plot uncertainty across observations from
         set of {ci_band, ci_bars, boot_traces, obs_traces, obs_points}
@@ -50,15 +47,18 @@ def tsplot(x, data, color=None, err_style=["ci_band"], ci=(16, 84),
         axis with plot data
 
     """
-    if ax is None:
-        ax = plt.subplot(111)
+    ax = kwargs.pop("ax", plt.subplot(111))
 
     # Bootstrap the data for confidence intervals
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
                                axis=0, func=central_func)
     ci = moss.percentiles(boot_data, ci, axis=0)
     central_data = central_func(data, axis=0)
-    color = _get_cycle_state(x, central_data, ax) if color is None else color
+
+    # Plot the timeseries line to get its color
+    line, = ax.plot(x, central_data, **kwargs)
+    color = line.get_color()
+    line.remove()
 
     # Use subroutines to plot the uncertainty
     for style in err_style:
@@ -148,7 +148,7 @@ def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
     return ax
 
 
-def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
+def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
@@ -172,10 +172,12 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None, **kwargs):
         axis where boxplot is plotted
 
     """
-    if ax is None:
-        ax = plt.subplot(111)
+    ax = kwargs.pop("ax", plt.subplot(111))
     if color is None:
-        color = get_color_list()[0]
+        pos = kwargs.pop("positions", [1])[0]
+        line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
+        color = line.get_color()
+        line.remove()
 
     boxes = ax.boxplot(vals, patch_artist=True, **kwargs)
 
@@ -330,7 +332,8 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
     vals = [np.asarray(a, float) for a in vals]
 
     gray = "#555555"
-    color = _get_cycle_state(vals[0], vals[0], ax) if color is None else color
+    if color is None:
+        color = _get_cycle_state(vals[0].mean(), vals[0].mean(), ax)
     if position is None:
         position = np.arange(1, len(vals) + 1)
     elif not hasattr(position, "__iter__"):

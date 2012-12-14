@@ -7,7 +7,7 @@ def set(context="notebook", style="darkgrid", palette="deep"):
     """Set new RC params in one step."""
     context_setting(context)
     axes_style(style)
-    set_rc_color_palette(palette)
+    set_color_palette(palette)
     params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
               "patch.linewidth": .3}
@@ -105,8 +105,8 @@ def context_setting(context):
     mpl.rcParams.update(params)
 
 
-def set_rc_color_palette(name, n_colors=8, h=.01, l=.6, s=.65):
-    """Set the matplotlib color order with one of several palettes.
+def set_color_palette(name, n_colors=8, desat=None, h=.01, l=.6, s=.65):
+    """Set the matplotlib color cycle in one of a variety of ways.
 
     Parameters
     ----------
@@ -114,6 +114,8 @@ def set_rc_color_palette(name, n_colors=8, h=.01, l=.6, s=.65):
         palette name
     n_colors : int
         only relevant for hls or matplotlib palettes
+    desat : float
+        desaturation factor for each color
     h : float
         first hue for hls spokes
     l : float
@@ -122,7 +124,7 @@ def set_rc_color_palette(name, n_colors=8, h=.01, l=.6, s=.65):
         saturation of hls spokes
 
     """
-    colors = utils.color_palette(name, n_colors, h, l, s)
+    colors = utils.color_palette(name, n_colors, desat, h, l, s)
     mpl.rcParams["axes.color_cycle"] = colors
     mpl.rcParams["patch.facecolor"] = colors[0]
 
