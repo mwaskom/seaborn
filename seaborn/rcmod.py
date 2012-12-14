@@ -1,14 +1,13 @@
+"""Functions that alter the matplotlib rc dictionary on the fly."""
 import matplotlib as mpl
-
-
-colors = mpl.rcParams["axes.color_cycle"]
+from seaborn import utils
 
 
 def set(context="notebook", style="darkgrid", palette="deep"):
     """Set new RC params in one step."""
     context_setting(context)
     axes_style(style)
-    color_palatte(palette)
+    set_rc_color_palette(palette)
     params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
               "patch.linewidth": .3}
@@ -106,35 +105,26 @@ def context_setting(context):
     mpl.rcParams.update(params)
 
 
-def color_palatte(name):
-    """Set the matplotlib color order with one of several palattes."""
-    colors = get_color_list(name)
-    mpl.rcParams["axes.color_cycle"] = colors
-    mpl.rcParams["patch.facecolor"] = colors[0]
-
-
-def get_color_list(name=None):
-    """Return matplotlib color codes for a given palette.
+def set_rc_color_palette(name, n_colors=8, h=.01, l=.6, s=.65):
+    """Set the matplotlib color order with one of several palettes.
 
     Parameters
     ----------
-    name: None or string
-        Name of palatte or None to return current color list
+    name : hls | matplotlib colormap | seaborn color palette
+        palette name
+    n_colors : int
+        only relevant for hls or matplotlib palettes
+    h : float
+        first hue for hls spokes
+    l : float
+        lightness of hls spokes
+    s : float
+        saturation of hls spokes
 
     """
-    if name is None:
-        return mpl.rcParams["axes.color_cycle"]
-
-    palattes = dict(
-        default=["b", "g", "r", "c", "m", "y", "k"],
-        pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
-        bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
-        muted=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
-        deep=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
-        dark=["#001C7F", "#017517", "#8C0900", "#7600A1", "#007364"],
-    )
-
-    return palattes[name]
+    colors = utils.color_palette(name, n_colors, h, l, s)
+    mpl.rcParams["axes.color_cycle"] = colors
+    mpl.rcParams["patch.facecolor"] = colors[0]
 
 
 def _blank_ticks(params):
