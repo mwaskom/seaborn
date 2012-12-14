@@ -206,7 +206,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
-                color=color, alpha=2./3)
+                color=color, alpha=2. / 3)
 
     if names is not None:
         if len(vals) != len(names):
@@ -367,7 +367,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
 
     if join_rm:
         ax.plot(range(1, len(np.transpose(vals)) + 1), np.transpose(vals),
-                color=color, alpha=2./3)
+                color=color, alpha=2. / 3)
 
     ax.set_xticks(position)
     if names is not None:
@@ -375,6 +375,75 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
     ax.set_xlim(position[0] - .5, position[-1] + .5)
+
+    return ax
+
+
+def corrplot(data, names=None, cmap="Spectral_r", cmap_range=None,
+             colorbar=True, **kwargs):
+    """Plot a correlation matrix with heatmap and r values.
+
+    Parameters
+    ----------
+    data : nvars x nobs array
+        data array where rows are variables and columns are observations
+    names : sequence of strings
+        names to associate with variables; should be short
+    cmap : colormap
+        colormap name as string or colormap object
+    cmap_range : None, "full", (low, high)
+        either truncate colormap at (-max(abs(r)), max(abs(r))), use the
+        full range (-1, 1), or specify (min, max) values for the colormap
+    colorbar : boolean
+        if true, plots the colorbar legend
+    kwargs : other keyword arguments
+        passed to ax.matshow()
+
+    Returns
+    -------
+    ax : matplotlib axis
+        axis object with plot
+
+    """
+    ax = kwargs.pop("ax", plt.subplot(111))
+
+    nvars = len(data)
+    corrmat = np.corrcoef(data)
+    plotmat = corrmat.copy()
+    plotmat[np.triu_indices(nvars)] = np.nan
+
+    if cmap_range is None:
+        vmax = np.nanmax(np.abs(plotmat))
+        vmin = -vmax
+    elif cmap_range == "full":
+        vmin, vmax = -1, 1
+    elif len(cmap_range) == 2:
+        vmin, vmax = cmap_range
+    else:
+        raise ValueError("cmap_range argument not understood")
+
+    mat = ax.matshow(plotmat, cmap=cmap, vmin=vmin, vmax=vmax, **kwargs)
+    if colorbar:
+        plt.colorbar(mat)
+
+    for i, j in zip(*np.triu_indices(nvars, 1)):
+        r = corrmat[i, j]
+        ax.text(j, i, "%.3f" % r, fontdict=dict(ha="center", va="center"))
+
+    if names is None:
+        names = ["var%d" % i for i in range(nvars)]
+    for i, name in enumerate(names):
+        ax.text(i, i, name, fontdict=dict(ha="center", va="center",
+                                          weight="bold"))
+
+    ticks = np.linspace(.5, nvars - .5, nvars)
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xticklabels(())
+    ax.set_yticklabels(())
+    ax.grid(True, linestyle="-")
+
+    return ax
 
 
 def _kde_support(a, kde, npts):
