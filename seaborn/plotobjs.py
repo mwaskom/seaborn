@@ -216,8 +216,8 @@ def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
     return ax
 
 
-def kdeplot(a, npts=1000, hist=False, nbins=20, rug=False,
-            shade=False, color=None, ax=None, **kwargs):
+def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
+            shade=False, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -244,13 +244,16 @@ def kdeplot(a, npts=1000, hist=False, nbins=20, rug=False,
         axis with plot
 
     """
-    if ax is None:
-        ax = plt.subplot(111)
+    ax = kwargs.pop("ax", plt.subplot(111))
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
     x = _kde_support(a, kde, npts)
     y = kde(x)
-    color = _get_cycle_state(x, y, ax) if color is None else color
+
+    line, = ax.plot(x, y, **kwargs)
+    color = line.get_color()
+    line.remove()
+
     if hist:
         ax.hist(a, nbins, normed=True, color=color, alpha=.4)
     ax.plot(x, y, color=color, **kwargs)
@@ -278,7 +281,7 @@ def rugplot(a, height=None, ax=None, **kwargs):
 
 
 def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
-           names=None, color=None, ax=None):
+           names=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -296,10 +299,6 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
         measures and are joined with a line plot
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
-    color : matplotlib color
-        color for violin fill
-    ax : matplotlib axis
-        axis to plot on, or None to generate new axis
 
     Returns
     -------
@@ -307,8 +306,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
         axis with violin plot
 
     """
-    if ax is None:
-        ax = plt.subplot(111)
+    ax = kwargs.pop("ax", plt.subplot(111))
 
     if hasattr(vals, 'shape'):
         if len(vals.shape) == 1:
@@ -331,9 +329,12 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
 
     vals = [np.asarray(a, float) for a in vals]
 
+    line, = ax.plot(vals[0].mean(), vals[0].mean(), **kwargs)
+    color = line.get_color()
+    line.remove()
+
     gray = "#555555"
-    if color is None:
-        color = _get_cycle_state(vals[0].mean(), vals[0].mean(), ax)
+
     if position is None:
         position = np.arange(1, len(vals) + 1)
     elif not hasattr(position, "__iter__"):
@@ -487,11 +488,3 @@ def _kde_support(a, kde, npts):
     y = kde(x)
     mask = y > y.max() * 1e-4
     return x[mask]
-
-
-def _get_cycle_state(x, y, ax):
-    """Hack to get matplotlib cycle state."""
-    line, = ax.plot(x, y)
-    color = line.get_color()
-    line.remove()
-    return color
