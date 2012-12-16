@@ -379,7 +379,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
     return ax
 
 
-def corrplot(data, names=None, sig_stars=True, sig_corr=True, sig_dir="upper",
+def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
              cmap="Spectral_r", cmap_range=None, cbar=True, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
@@ -391,10 +391,10 @@ def corrplot(data, names=None, sig_stars=True, sig_corr=True, sig_dir="upper",
         names to associate with variables; should be short
     sig_stars : bool
         if True, get significance with permutation test and denote with stars
+    sig_tail : both | upper | lower
+        direction for significance test
     sig_corr : bool
         if True, use FWE-corrected significance
-    sig_dir : both | upper | lower
-        direction for significance test
     cmap : colormap
         colormap name as string or colormap object
     cmap_range : None, "full", (low, high)
@@ -414,13 +414,7 @@ def corrplot(data, names=None, sig_stars=True, sig_corr=True, sig_dir="upper",
     corrmat = np.corrcoef(data)
 
     if sig_stars:
-        p_mat = moss.randomize_corrmat(data, sig_corr)
-        if sig_dir == "upper":
-            p_mat = 1 - p_mat
-        elif sig_dir == "both":
-            if sig_corr:
-                raise ValueError("Cannot correct sig with 2-tailed test.")
-            p_mat = np.min([p_mat, 1 - p_mat], 0) * 2
+        p_mat = moss.randomize_corrmat(data, sig_tail, sig_corr)
     else:
         p_mat = None
 
@@ -447,8 +441,8 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
     plotmat[np.triu_indices(nvars)] = np.nan
 
     if cmap_range is None:
-        vmax = np.nanmax(np.abs(plotmat)) * 1.15
-        vmin = -vmax
+        vmax = np.nanmax(plotmat) * 1.15
+        vmin = np.nanmin(plotmat) * 1.15
     elif len(cmap_range) == 2:
         vmin, vmax = cmap_range
     else:
