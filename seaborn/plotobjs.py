@@ -253,6 +253,7 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
     line, = ax.plot(x, y, **kwargs)
     color = line.get_color()
     line.remove()
+    kwargs.pop("color", None)
 
     if hist:
         ax.hist(a, nbins, normed=True, color=color, alpha=.4)
