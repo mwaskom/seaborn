@@ -16,7 +16,7 @@ from seaborn.utils import ci_to_errsize
 
 def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
            central_func=np.mean, n_boot=10000, smooth=False,
-           ax=None, **kwargs):
+           **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
@@ -37,8 +37,6 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
         number of bootstrap iterations
     smooth : boolean
         whether to perform a smooth bootstrap (resample from KDE)
-    ax : matplotlib axis
-        axis to plot onto, or None for new figure
     kwargs : further keyword arguments for main call to plot()
 
     Returns
@@ -47,7 +45,9 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
         axis with plot data
 
     """
-    ax = kwargs.pop("ax", plt.subplot(111))
+    ax = kwargs.pop("ax", None)
+    if ax is None:
+        ax = plt.subplot(111)
 
     # Bootstrap the data for confidence intervals
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
@@ -59,6 +59,7 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
     line, = ax.plot(x, central_data, **kwargs)
     color = line.get_color()
     line.remove()
+    kwargs.pop("color", None)
 
     # Use subroutines to plot the uncertainty
     for style in err_style:
@@ -178,6 +179,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
         line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
         color = line.get_color()
         line.remove()
+        kwargs.pop("color", None)
 
     boxes = ax.boxplot(vals, patch_artist=True, **kwargs)
 
