@@ -111,9 +111,10 @@ def _plot_obs_points(ax, x, data, boot_data,
     ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
 
 
-def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
-            ax=None, corr_func=stats.pearsonr, **kwargs):
-    """Plot a regression scatter with correlation value.
+def regplot(x, y, corr_func=stats.pearsonr,
+            xlabel="", ylabel="", size=None, annotloc=None,
+            reg_kwargs=None, scatter_kwargs=None, kde_kwargs=None):
+    """Scatterplot with regreesion line, marginals, and correlation value.
 
     Parameters
     ----------
@@ -121,33 +122,76 @@ def regplot(x, y, xlabel="", ylabel="", markerstyle="o",
         independent variables
     y : sequence
         dependent variables
+    corr_func : callable, optional
+        correlation function; expected to take two arrays
+        and return a (statistic, pval) tuple
     xlabel, ylabel : string, optional
         label names
-    markerstyle : string, optional
-        markerstyle for scatterplot
-    corr_func : callable, optional
-        correlation function; expected to return (r, p) double
-    ax : axis object, optional
-        plot in given axis; if None creates a new figure
-    kwargs : further keyword arguments for regression line plot
+    size: int
+        figure size (will be a square; only need one int)
+    annotloc : two or three tuple
+        (xpos, ypos [, horizontalalignment])
+    {reg, scatter, kde}_kwargs: dicts
+        further keyword arguments for the constituent plots
 
-    Returns
-    -------
-    ax : matplotlib axis
-        axis object, either one passed in or created within function
 
     """
-    if ax is None:
-        ax = plt.subplot(111)
+    # Set up the figure and axes
+    size = 6 if size is None else size
+    fig = plt.figure(figsize=(size, size))
+    ax_scatter = fig.add_axes([0.05, 0.05, 0.75, 0.75])
+    ax_x_marg = fig.add_axes([0.05, 0.82, 0.75, 0.13])
+    ax_y_marg = fig.add_axes([0.82, 0.05, 0.13, 0.75])
+
+    # Plot the scatter
+    if scatter_kwargs is None:
+        scatter_kwargs = {}
+    marker = scatter_kwargs.pop("markerstyle", "o")
+    ax_scatter.plot(x, y, marker, **scatter_kwargs)
+    ax_scatter.set_xlabel(xlabel)
+    ax_scatter.set_ylabel(ylabel)
+
+    # Marginal plots using our kdeplot function
+    if kde_kwargs is None:
+        kde_kwargs = {}
+    kdeplot(x, ax=ax_x_marg, **kde_kwargs)
+    kdeplot(y, ax=ax_y_marg, vertical=True, **kde_kwargs)
+    for ax in [ax_x_marg, ax_y_marg]:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+
+    ax_x_marg.set_xlim(ax_scatter.get_xlim())
+    ax_x_marg.set_yticks([])
+    ax_y_marg.set_ylim(ax_scatter.get_ylim())
+    ax_y_marg.set_xticks([])
+
+    # Regression line plot
+    xlim = ax_scatter.get_xlim()
     a, b = np.polyfit(x, y, 1)
-    ax.plot(x, y, markerstyle)
-    xlim = ax.get_xlim()
-    ax.plot(xlim, np.polyval([a, b], xlim), **kwargs)
+    if reg_kwargs is None:
+        reg_kwargs = {}
+    ax_scatter.plot(xlim, np.polyval([a, b], xlim), **reg_kwargs)
+
+    # Calcluate a correlation statistic and p value
     r, p = corr_func(x, y)
-    ax.set_title("r = %.3f; p = %.3g%s" % (r, p, moss.sig_stars(p)))
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    return ax
+    msg = "%s: %.3f (p=%.3g%s)" % (corr_func.__name__, r, p, moss.sig_stars(p))
+    if annotloc is None:
+        xmin, xmax = xlim
+        x_range = xmax - xmin
+        if r < 0:
+            xloc, align = xmax - x_range * .02, "right"
+        else:
+            xloc, align = xmin + x_range * .02, "left"
+        ymin, ymax = ax_scatter.get_ylim()
+        y_range = ymax - ymin
+        yloc = ymax - y_range * .02
+    else:
+        if len(annotloc) == 3:
+            xloc, yloc, align = annotloc
+        else:
+            xloc, yloc = annotloc
+            align = "left"
+    ax_scatter.text(xloc, yloc, msg, ha=align, va="top")
 
 
 def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
@@ -222,7 +266,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
 
 
 def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
-            shade=False, ax=None, **kwargs):
+            shade=False, vertical=False, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -255,6 +299,8 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
     kde = stats.gaussian_kde(a.astype(float).ravel())
     x = _kde_support(a, kde, npts)
     y = kde(x)
+    if vertical:
+        y, x = x, y
 
     line, = ax.plot(x, y, **kwargs)
     color = line.get_color()
@@ -262,11 +308,13 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
     kwargs.pop("color", None)
 
     if hist:
-        ax.hist(a, nbins, normed=True, color=color, alpha=.4)
+        orientation = "horizontal" if vertical else "vertical"
+        ax.hist(a, nbins, normed=True, color=color, alpha=.4,
+                orientation=orientation)
     ax.plot(x, y, color=color, **kwargs)
     if rug:
-        rug_height = y.max() * .05
-        rugplot(a, height=rug_height, ax=ax,
+        rug_axis = "y" if vertical else "x"
+        rugplot(a, ax=ax, axis=rug_axis,
                 color=color, alpha=.7, linewidth=2)
         ymin, ymax = ax.get_ylim()
     if shade:
@@ -274,16 +322,19 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
     return ax
 
 
-def rugplot(a, height=None, ax=None, **kwargs):
+def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     """Plot datapoints in an array as sticks on an axis."""
     if ax is None:
         ax = plt.subplot(111)
-    ymin, ymax = ax.get_ylim()
+    other_axis = dict(x="y", y="x")[axis]
+    min, max = getattr(ax, "get_%slim" % other_axis)()
     if height is None:
-        ymin, ymax = ax.get_ylim()
-        yrange = ymax - ymin
-        height = yrange * .05
-    ax.plot([a, a], [ymin, ymin + height], **kwargs)
+        range = max - min
+        height = range * .05
+    if axis == "x":
+        ax.plot([a, a], [min, min + height], **kwargs)
+    else:
+        ax.plot([min, min + height], [a, a], **kwargs)
     return ax
 
 
