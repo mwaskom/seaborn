@@ -178,7 +178,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
     if ax is None:
         ax = plt.subplot(111)
     if color is None:
-        pos = kwargs.pop("positions", [1])[0]
+        pos = kwargs.get("positions", [1])[0]
         line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
         color = line.get_color()
         line.remove()
@@ -210,11 +210,11 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         fly.set_alpha(.6)
 
     if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals,
+        ax.plot(range(1, len(vals.T) + 1), vals.T,
                 color=color, alpha=2. / 3)
 
     if names is not None:
-        if len(vals) != len(names):
+        if len(vals.T) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
 
