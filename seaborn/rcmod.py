@@ -76,6 +76,7 @@ def context_setting(context):
                   "axes.titlesize": 19,
                   "xtick.labelsize": 16,
                   "ytick.labelsize": 16,
+                  "legend.fontsize": 14,
                   }
 
     elif context == "notebook":

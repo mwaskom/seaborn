@@ -111,9 +111,9 @@ def _plot_obs_points(ax, x, data, boot_data,
     ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
 
 
-def regplot(x, y, corr_func=stats.pearsonr,
-            xlabel="", ylabel="", size=None, annotloc=None,
-            reg_kwargs=None, scatter_kwargs=None, kde_kwargs=None):
+def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
+            size=None, annotloc=None, color=None, reg_kwargs=None,
+            scatter_kwargs=None, kde_kwargs=None, text_kwargs=None):
     """Scatterplot with regreesion line, marginals, and correlation value.
 
     Parameters
@@ -131,7 +131,10 @@ def regplot(x, y, corr_func=stats.pearsonr,
         figure size (will be a square; only need one int)
     annotloc : two or three tuple
         (xpos, ypos [, horizontalalignment])
-    {reg, scatter, kde}_kwargs: dicts
+    color : matplotlib color scheme
+        color of everything but the regression line
+        overridden by passing `color` to subfunc kwargs
+    {reg, scatter, kde, text}_kwargs: dicts
         further keyword arguments for the constituent plots
 
 
@@ -146,6 +149,8 @@ def regplot(x, y, corr_func=stats.pearsonr,
     # Plot the scatter
     if scatter_kwargs is None:
         scatter_kwargs = {}
+    if color is not None and "color" not in scatter_kwargs:
+        scatter_kwargs.update(color=color)
     marker = scatter_kwargs.pop("markerstyle", "o")
     ax_scatter.plot(x, y, marker, **scatter_kwargs)
     ax_scatter.set_xlabel(xlabel)
@@ -154,6 +159,8 @@ def regplot(x, y, corr_func=stats.pearsonr,
     # Marginal plots using our kdeplot function
     if kde_kwargs is None:
         kde_kwargs = {}
+    if color is not None and "color" not in kde_kwargs:
+        kde_kwargs.update(color=color)
     kdeplot(x, ax=ax_x_marg, **kde_kwargs)
     kdeplot(y, ax=ax_y_marg, vertical=True, **kde_kwargs)
     for ax in [ax_x_marg, ax_y_marg]:
@@ -191,7 +198,9 @@ def regplot(x, y, corr_func=stats.pearsonr,
         else:
             xloc, yloc = annotloc
             align = "left"
-    ax_scatter.text(xloc, yloc, msg, ha=align, va="top")
+    if text_kwargs is None:
+        text_kwargs = {}
+    ax_scatter.text(xloc, yloc, msg, ha=align, va="top", **text_kwargs)
 
 
 def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
@@ -428,7 +437,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
             ax.plot((side * dens) + x, y, gray, linewidth=1)
 
     if join_rm:
-        ax.plot(range(1, len(np.transpose(vals)) + 1), np.transpose(vals),
+        ax.plot(range(1, len(vals) + 1), vals,
                 color=color, alpha=2. / 3)
 
     ax.set_xticks(position)
