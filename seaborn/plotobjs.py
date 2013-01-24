@@ -16,7 +16,7 @@ from seaborn.utils import ci_to_errsize
 
 def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
            central_func=np.mean, n_boot=10000, smooth=False,
-           **kwargs):
+           ax=None, **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
@@ -37,6 +37,8 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
         number of bootstrap iterations
     smooth : boolean
         whether to perform a smooth bootstrap (resample from KDE)
+    ax : axis object, optional
+        plot in given axis; if None creates a new figure
     kwargs : further keyword arguments for main call to plot()
 
     Returns
@@ -45,7 +47,6 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
         axis with plot data
 
     """
-    ax = kwargs.pop("ax", None)
     if ax is None:
         ax = plt.subplot(111)
 
@@ -193,7 +194,8 @@ def regplot(x, y, corr_func=stats.pearsonr,
     ax_scatter.text(xloc, yloc, msg, ha=align, va="top")
 
 
-def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
+def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
+            **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
@@ -217,9 +219,10 @@ def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
         axis where boxplot is plotted
 
     """
-    ax = kwargs.pop("ax", plt.subplot(111))
+    if ax is None:
+        ax = plt.subplot(111)
     if color is None:
-        pos = kwargs.pop("positions", [1])[0]
+        pos = kwargs.get("positions", [1])[0]
         line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
         color = line.get_color()
         line.remove()
@@ -251,11 +254,11 @@ def boxplot(vals, join_rm=False, names=None, color=None, **kwargs):
         fly.set_alpha(.6)
 
     if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals,
+        ax.plot(range(1, len(vals.T) + 1), vals.T,
                 color=color, alpha=2. / 3)
 
     if names is not None:
-        if len(vals) != len(names):
+        if len(vals.T) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
 
@@ -336,7 +339,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
-           names=None, **kwargs):
+           names=None, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -354,14 +357,17 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
         measures and are joined with a line plot
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
+    ax : matplotlib axis, optional
+        axis to plot on, otherwise creates new one
 
     Returns
     -------
-    ax: : matplotlib axis
+    ax : matplotlib axis
         axis with violin plot
 
     """
-    ax = kwargs.pop("ax", plt.subplot(111))
+    if ax is None:
+        ax = plt.subplot(111)
 
     if hasattr(vals, 'shape'):
         if len(vals.shape) == 1:
@@ -436,7 +442,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
 
 
 def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
-             cmap="Spectral_r", cmap_range=None, cbar=True, **kwargs):
+             cmap="Spectral_r", cmap_range=None, cbar=True, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
     Parameters
@@ -482,15 +488,16 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
     elif cmap_range == "full":
         cmap_range = (-1, 1)
 
-    ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range, cbar, **kwargs)
+    ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range, cbar, ax, **kwargs)
 
     return ax
 
 
 def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
-               cbar=True, **kwargs):
+               cbar=True, ax=None, **kwargs):
     """Plot a symettric matrix with colormap and statistic values."""
-    ax = kwargs.pop("ax", plt.subplot(111))
+    if ax is None:
+        ax = plt.subplot(111)
 
     nvars = len(mat)
     plotmat = mat.copy()
