@@ -4,6 +4,7 @@ import colorsys
 import numpy as np
 import matplotlib as mpl
 import matplotlib.colors as mplcol
+import matplotlib.pyplot as plt
 
 
 def color_palette(name=None, n_colors=8, desat=None, h=.01, l=.6, s=.65):
@@ -221,3 +222,10 @@ def _hue_space_params(space):
     map_out = getattr(colorsys, space + "_to_rgb")
 
     return sat_chan, map_in, map_out
+
+
+def axlabel(xlabel, ylabel, **kwargs):
+    """Grab current axis and label it."""
+    ax = plt.gca()
+    ax.set_xlabel(xlabel, **kwargs)
+    ax.set_ylabel(ylabel, **kwargs)
