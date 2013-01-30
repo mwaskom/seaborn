@@ -274,8 +274,99 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
     return ax
 
 
-def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
-            shade=False, vertical=False, ax=None, **kwargs):
+def distplot(a, hist=True, kde=True, rug=False, fit=None,
+             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+             color=None, vertical=False, ax=None):
+    """Flexibly plot a distribution of observations.
+
+    Parameters
+    ----------
+    a : (squeezable to) 1d array
+        observed data
+    hist : bool, default True
+        whether to plot a (normed) histogram
+    kde : bool, defualt True
+        whether to plot a gaussian kernel density estimate
+    rug : bool, default False
+        whether to draw a rugplot on the support axis
+    fit : random variable object
+        object with `fit` method returning a tuple that can be
+        passed to a `pdf` method a positional arguments following
+        an array of values to evaluate the pdf at
+    {hist, kde, rug, fit}_kws : dictionaries
+        keyword arguments for underlying plotting functions
+    color : matplotlib color, optional
+        color to plot everything but the fitted curve in
+    vertical : bool, default False
+        if True, oberved values are on y-axis
+    ax : matplotlib axis, optional
+        if provided, plot on this axis
+
+    Returns
+    -------
+    ax : matplotlib axis
+
+    """
+    if ax is None:
+        ax = plt.subplot(111)
+    a = np.asarray(a).squeeze()
+
+    if hist_kws is None:
+        hist_kws = dict()
+    if kde_kws is None:
+        kde_kws = dict()
+    if rug_kws is None:
+        rug_kws = dict()
+    if fit_kws is None:
+        fit_kws = dict()
+
+    if color is None:
+        if vertical:
+            line, = ax.plot(0, a.mean())
+        else:
+            line, = ax.plot(a.mean(), 0)
+        color = line.get_color()
+        line.remove()
+
+    if hist:
+        nbins = hist_kws.pop("nbins", 20)
+        hist_alpha = hist_kws.pop("alpha", 0.4)
+        orientation = "horizontal" if vertical else "vertical"
+        hist_color = hist_kws.pop("color", color)
+        ax.hist(a, nbins, normed=True, color=hist_color, alpha=hist_alpha,
+                orientation=orientation, **hist_kws)
+
+    if kde:
+        kde_color = kde_kws.pop("color", color)
+        kde_kws["label"] = "kde"
+        kdeplot(a, vertical=vertical, color=kde_color, ax=ax, **kde_kws)
+
+    if rug:
+        rug_color = rug_kws.pop("color", color)
+        axis = "y" if vertical else "x"
+        rugplot(a, axis=axis, color=rug_color, ax=ax, **rug_kws)
+
+    if fit is not None:
+        fit_color = fit_kws.pop("color", "#282828")
+        npts = fit_kws.pop("npts", 1000)
+        support_thresh = fit_kws.pop("support_thresh", 1e-4)
+        params = fit.fit(a)
+        pdf = lambda x: fit.pdf(x, *params)
+        x = _kde_support(a, pdf, npts, support_thresh)
+        y = pdf(x)
+        if vertical:
+            x, y = y, x
+        fit_kws["label"] = fit.name + " fit"
+        ax.plot(x, y, color=fit_color, **fit_kws)
+
+    ax.legend(loc="best")
+
+    return ax
+
+
+def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
+            support_min=-np.inf, support_max=np.inf,
+            vertical=False, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -284,14 +375,15 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
         input data
     npts : int, optional
         number of x points
-    hist : bool, optional
-        if True plots (normed) histogram of data
-    nbins : int, optional
-        number of bins if plotting histogram also
-    rug : boolean, optional
-        if True, plots rug (vertical lines at data points)
     shade : bool, optional
-        if true shade under KDE curve
+        whether to shade under kde curve
+    support_thresh : float, default 1e-4
+        draw density for values up to support_thresh * max(density)
+    support_{min, max}: float, default to (-) inf
+        if given, do not draw above or below these values
+        (does not affect the actual estimation)
+    vertical : bool, defualt False
+        if True, density is on x-axis
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
     kwargs : other keyword arguments for plot()
@@ -306,7 +398,9 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
         ax = plt.subplot(111)
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
-    x = _kde_support(a, kde, npts)
+    x = _kde_support(a, kde, npts, support_thresh)
+    x = x[x >= support_min]
+    x = x[x <= support_max]
     y = kde(x)
     if vertical:
         y, x = x, y
@@ -316,16 +410,7 @@ def kdeplot(a, npts=1000, hist=True, nbins=20, rug=False,
     line.remove()
     kwargs.pop("color", None)
 
-    if hist:
-        orientation = "horizontal" if vertical else "vertical"
-        ax.hist(a, nbins, normed=True, color=color, alpha=.4,
-                orientation=orientation)
     ax.plot(x, y, color=color, **kwargs)
-    if rug:
-        rug_axis = "y" if vertical else "x"
-        rugplot(a, ax=ax, axis=rug_axis,
-                color=color, alpha=.7, linewidth=2)
-        ymin, ymax = ax.get_ylim()
     if shade:
         ax.fill_between(x, 0, y, color=color, alpha=0.25)
     return ax
@@ -497,7 +582,8 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
     elif cmap_range == "full":
         cmap_range = (-1, 1)
 
-    ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range, cbar, ax, **kwargs)
+    ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range,
+                    cbar, ax, **kwargs)
 
     return ax
 
@@ -550,12 +636,12 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
     return ax
 
 
-def _kde_support(a, kde, npts):
+def _kde_support(a, kde, npts, thresh=1e-4):
     """Establish support for a kernel density estimate."""
     min = a.min()
     max = a.max()
     range = max - min
     x = np.linspace(min - range, max + range, npts * 2)
     y = kde(x)
-    mask = y > y.max() * 1e-4
+    mask = y > y.max() * thresh
     return x[mask]
