@@ -112,8 +112,8 @@ def _plot_obs_points(ax, x, data, boot_data,
 
 
 def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
-            size=None, annotloc=None, color=None, reg_kwargs=None,
-            scatter_kwargs=None, kde_kwargs=None, text_kwargs=None):
+            size=None, annotloc=None, color=None, reg_kws=None,
+            scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regreesion line, marginals, and correlation value.
 
     Parameters
@@ -134,7 +134,7 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     color : matplotlib color scheme
         color of everything but the regression line
         overridden by passing `color` to subfunc kwargs
-    {reg, scatter, kde, text}_kwargs: dicts
+    {reg, scatter, dist, text}_kws: dicts
         further keyword arguments for the constituent plots
 
 
@@ -147,22 +147,22 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     ax_y_marg = fig.add_axes([0.82, 0.05, 0.13, 0.75])
 
     # Plot the scatter
-    if scatter_kwargs is None:
-        scatter_kwargs = {}
-    if color is not None and "color" not in scatter_kwargs:
-        scatter_kwargs.update(color=color)
-    marker = scatter_kwargs.pop("markerstyle", "o")
-    ax_scatter.plot(x, y, marker, **scatter_kwargs)
+    if scatter_kws is None:
+        scatter_kws = {}
+    if color is not None and "color" not in scatter_kws:
+        scatter_kws.update(color=color)
+    marker = scatter_kws.pop("markerstyle", "o")
+    ax_scatter.plot(x, y, marker, **scatter_kws)
     ax_scatter.set_xlabel(xlabel)
     ax_scatter.set_ylabel(ylabel)
 
-    # Marginal plots using our kdeplot function
-    if kde_kwargs is None:
-        kde_kwargs = {}
-    if color is not None and "color" not in kde_kwargs:
-        kde_kwargs.update(color=color)
-    kdeplot(x, ax=ax_x_marg, **kde_kwargs)
-    kdeplot(y, ax=ax_y_marg, vertical=True, **kde_kwargs)
+    # Marginal plots using our distplot function
+    if dist_kws is None:
+        dist_kws = {}
+    if color is not None and "color" not in dist_kws:
+        dist_kws.update(color=color)
+    distplot(x, ax=ax_x_marg, **dist_kws)
+    distplot(y, ax=ax_y_marg, vertical=True, **dist_kws)
     for ax in [ax_x_marg, ax_y_marg]:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -175,9 +175,9 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     # Regression line plot
     xlim = ax_scatter.get_xlim()
     a, b = np.polyfit(x, y, 1)
-    if reg_kwargs is None:
-        reg_kwargs = {}
-    ax_scatter.plot(xlim, np.polyval([a, b], xlim), **reg_kwargs)
+    if reg_kws is None:
+        reg_kws = {}
+    ax_scatter.plot(xlim, np.polyval([a, b], xlim), **reg_kws)
 
     # Calcluate a correlation statistic and p value
     r, p = corr_func(x, y)
@@ -198,9 +198,9 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
         else:
             xloc, yloc = annotloc
             align = "left"
-    if text_kwargs is None:
-        text_kwargs = {}
-    ax_scatter.text(xloc, yloc, msg, ha=align, va="top", **text_kwargs)
+    if text_kws is None:
+        text_kws = {}
+    ax_scatter.text(xloc, yloc, msg, ha=align, va="top", **text_kws)
 
 
 def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
