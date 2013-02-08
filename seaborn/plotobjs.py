@@ -450,7 +450,7 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
     ----------
     vals : array or sequence of arrays
         data to plot
-    inner : box | sticks
+    inner : box | sticks | points
         plot quartiles or individual sample values inside violin
     positions : number or sequence of numbers
         position of first violin or positions of each violin
@@ -528,6 +528,9 @@ def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
             x_vals = kde(a) * scl
             x_vals = [x - x_vals, x + x_vals]
             ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
+        elif inner == "points":
+            x_vals = [x for i in a]
+            ax.plot(x_vals, a, "o", color=gray, alpha=.3)
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, gray, linewidth=1)
 
