@@ -106,7 +106,7 @@ def _plot_obs_traces(ax, x, data, ci, color, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
-            ax.plot(x, obs, color=color[i], alpha=0.2)
+            ax.plot(x, obs, color=color[i], alpha=0.5)
     else:
         ax.plot(x, data.T, color=color, alpha=0.2)
 
