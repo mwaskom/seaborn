@@ -7,7 +7,8 @@
 # They should also return the ``ax`` object.
 
 import numpy as np
-from scipy import stats
+from scipy import stats, interpolate
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
@@ -118,7 +119,39 @@ def _plot_obs_points(ax, x, data, color, **kwargs):
             ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4)
     else:
         ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4)
-    # TODO refactor
+
+
+def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
+    """Plot the kernal density estimate of the bootstrap distribution."""
+    kwargs.pop("data")
+    _ts_kde(ax, x, boot_data, color, **kwargs)
+
+
+def _plot_obs_kde(ax, x, data, color, **kwargs):
+    """Plot the kernal density estimate over the sample."""
+    _ts_kde(ax, x, data, color, **kwargs)
+
+
+def _ts_kde(ax, x, data, color, **kwargs):
+    """Upsample over time and plot a KDE of the bootstrap distribution."""
+    kde_data = []
+    y_min, y_max = ax.get_ylim()
+    y_vals = np.linspace(y_min, y_max, 100)
+    upsampler = interpolate.interp1d(x, data)
+    data_upsample = upsampler(np.linspace(x.min(), x.max(), 100))
+    for pt_data in data_upsample.T:
+        pt_kde = stats.kde.gaussian_kde(pt_data)
+        kde_data.append(pt_kde(y_vals))
+    kde_data = np.transpose(kde_data)
+    rgb = mpl.colors.ColorConverter().to_rgb(color)
+    img = np.zeros((kde_data.shape[0], kde_data.shape[1], 4))
+    img[:, :, :3] = rgb
+    kde_data /= kde_data.max(axis=0)
+    kde_data[kde_data > 1] = 1
+    img[:, :, 3] = kde_data
+    ax.imshow(img, interpolation="spline16", zorder=1,
+              extent=(x.min(), x.max(), y_min, y_max),
+              aspect="auto", origin="lower")
 
 
 def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
