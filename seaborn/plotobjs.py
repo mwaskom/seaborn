@@ -11,12 +11,12 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import moss
 
-from seaborn.utils import ci_to_errsize
+from seaborn.utils import color_palette, ci_to_errsize
 
 
 def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
            central_func=np.mean, n_boot=10000, smooth=False,
-           ax=None, **kwargs):
+           err_palette=None, ax=None, **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
@@ -68,8 +68,14 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
             plot_func = globals()["_plot_%s" % style]
         except KeyError:
             raise ValueError("%s is not a valid err_style" % style)
-        plot_func(ax, x, data, boot_data, central_data, ci, color)
-
+        if err_palette is not None and "obs" in style:
+            orig_color = color
+            color = color_palette(err_palette, len(data), desat=.99)
+        plot_kwargs = dict(ax=ax, x=x, data=data, boot_data=boot_data,
+                           central_data=central_data, ci=ci, color=color)
+        plot_func(**plot_kwargs)
+        if err_palette is not None and "obs" in style:
+            color = orig_color
     # Replot the central trace so it is prominent
     ax.plot(x, central_data, color=color, **kwargs)
 
@@ -79,36 +85,40 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
 # ----------------------------------------
 
 
-def _plot_ci_band(ax, x, data, boot_data,
-                  central_data, ci, color):
+def _plot_ci_band(ax, x, ci, color, **kwargs):
     """Plot translucent error bands around the central tendancy."""
     low, high = ci
     ax.fill_between(x, low, high, color=color, alpha=0.2)
 
 
-def _plot_ci_bars(ax, x, data, boot_data,
-                  central_data, ci, color):
+def _plot_ci_bars(ax, x, central_data, ci, color, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
     ax.errorbar(x, central_data, yerr=err, color=color)
 
 
-def _plot_boot_traces(ax, x, data, boot_data,
-                      central_data, ci, color):
+def _plot_boot_traces(ax, x, boot_data, color, **kwargs):
     """Plot 250 traces from bootstrap."""
     ax.plot(x, boot_data[:250].T, color=color, alpha=0.25, linewidth=0.25)
 
 
-def _plot_obs_traces(ax, x, data, boot_data,
-                     central_data, ci, color):
+def _plot_obs_traces(ax, x, data, ci, color, **kwargs):
     """Plot a trace for each observation in the original data."""
-    ax.plot(x, data.T, color=color, alpha=0.2)
+    if isinstance(color, list):
+        for i, obs in enumerate(data):
+            ax.plot(x, obs, color=color[i], alpha=0.2)
+    else:
+        ax.plot(x, data.T, color=color, alpha=0.2)
 
 
-def _plot_obs_points(ax, x, data, boot_data,
-                     central_data, ci, color):
+def _plot_obs_points(ax, x, data, color, **kwargs):
     """Plot each original data point discretely."""
-    ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=3)
+    if isinstance(color, list):
+        for i, obs in enumerate(data):
+            ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4)
+    else:
+        ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4)
+    # TODO refactor
 
 
 def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
