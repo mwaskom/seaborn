@@ -223,8 +223,8 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
         dist_kws = {}
     if color is not None and "color" not in dist_kws:
         dist_kws.update(color=color)
-    distplot(x, ax=ax_x_marg, **dist_kws)
-    distplot(y, ax=ax_y_marg, vertical=True, **dist_kws)
+    distplot(x, ax=ax_x_marg, legend=False, **dist_kws)
+    distplot(y, ax=ax_y_marg, vertical=True, legend=False, **dist_kws)
     for ax in [ax_x_marg, ax_y_marg]:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -338,7 +338,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
 
 def distplot(a, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, ax=None):
+             color=None, vertical=False, legend=True, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameters
@@ -361,6 +361,8 @@ def distplot(a, hist=True, kde=True, rug=False, fit=None,
         color to plot everything but the fitted curve in
     vertical : bool, default False
         if True, oberved values are on y-axis
+    legend : bool, default True
+        if True, add a legend to the plot
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -421,7 +423,8 @@ def distplot(a, hist=True, kde=True, rug=False, fit=None,
         fit_kws["label"] = fit.name + " fit"
         ax.plot(x, y, color=fit_color, **fit_kws)
 
-    ax.legend(loc="best")
+    if legend:
+        ax.legend(loc="best")
 
     return ax
 
