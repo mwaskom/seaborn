@@ -151,7 +151,7 @@ def _plot_obs_kde(ax, x, data, color, **kwargs):
 def _ts_kde(ax, x, data, color, **kwargs):
     """Upsample over time and plot a KDE of the bootstrap distribution."""
     kde_data = []
-    y_min, y_max = ax.get_ylim()
+    y_min, y_max = moss.percentiles(data, [1, 99])
     y_vals = np.linspace(y_min, y_max, 100)
     upsampler = interpolate.interp1d(x, data)
     data_upsample = upsampler(np.linspace(x.min(), x.max(), 100))
