@@ -15,8 +15,8 @@ import moss
 from seaborn.utils import color_palette, ci_to_errsize
 
 
-def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
-           central_func=np.mean, n_boot=10000, smooth=False,
+def tsplot(x, data, err_style=["ci_band"], ci=68,
+           estimator=np.mean, n_boot=10000, smooth=False,
            err_palette=None, ax=None, **kwargs):
     """Plot timeseries from a set of observations.
 
@@ -27,12 +27,13 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
     data : n_obs x n_tp array
         array of timeseries data where first axis is e.g. subjects
     err_style : list of strings
-        names of ways to plot uncertainty across observations from
-        set of {ci_band, ci_bars, boot_traces, obs_traces, obs_points}
-    ci : two-tuple
-        low, high values for confidence interval
-    central_func : callable
-        function to determine central trace and to pass to bootstrap
+        names of ways to plot uncertainty across observations from set of
+       {ci_band, ci_bars, boot_traces, book_kde, obs_traces, obs_points}
+    ci : int or list of ints
+        confidence interaval size(s). if a list, it will stack the error
+        plots for each confidence interval
+    estimator : callable
+        function to determine centralt tendency and to pass to bootstrap
         must take an ``axis`` argument
     n_boot : int
         number of bootstrap iterations
@@ -53,9 +54,13 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
 
     # Bootstrap the data for confidence intervals
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
-                               axis=0, func=central_func)
-    ci = moss.percentiles(boot_data, ci, axis=0)
-    central_data = central_func(data, axis=0)
+                               axis=0, func=estimator)
+    ci_list = hasattr(ci, "__iter__")
+    if not ci_list:
+        ci = [ci]
+    ci_vals = [(50 - w / 2, 50 + w / 2) for w in ci]
+    cis = [moss.percentiles(boot_data, ci, axis=0) for ci in ci_vals]
+    central_data = estimator(data, axis=0)
 
     # Plot the timeseries line to get its color
     line, = ax.plot(x, central_data, **kwargs)
@@ -65,16 +70,27 @@ def tsplot(x, data, err_style=["ci_band"], ci=(16, 84),
 
     # Use subroutines to plot the uncertainty
     for style in err_style:
+
+        # Grab the function from the global environment
         try:
             plot_func = globals()["_plot_%s" % style]
         except KeyError:
             raise ValueError("%s is not a valid err_style" % style)
+
+        # Possibly set up to plot each observation in a different color
         if err_palette is not None and "obs" in style:
             orig_color = color
             color = color_palette(err_palette, len(data), desat=.99)
-        plot_kwargs = dict(ax=ax, x=x, data=data, boot_data=boot_data,
-                           central_data=central_data, ci=ci, color=color)
-        plot_func(**plot_kwargs)
+
+        plot_kwargs = dict(ax=ax, x=x, data=data,
+                           boot_data=boot_data,
+                           central_data=central_data,
+                           color=color)
+
+        for ci_i in cis:
+            plot_kwargs["ci"] = ci_i
+            plot_func(**plot_kwargs)
+
         if err_palette is not None and "obs" in style:
             color = orig_color
     # Replot the central trace so it is prominent
@@ -95,7 +111,7 @@ def _plot_ci_band(ax, x, ci, color, **kwargs):
 def _plot_ci_bars(ax, x, central_data, ci, color, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
-    ax.errorbar(x, central_data, yerr=err, color=color)
+    ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color)
 
 
 def _plot_boot_traces(ax, x, boot_data, color, **kwargs):
