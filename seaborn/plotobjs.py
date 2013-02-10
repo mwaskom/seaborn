@@ -15,7 +15,7 @@ import moss
 from seaborn.utils import color_palette, ci_to_errsize
 
 
-def tsplot(x, data, err_style=["ci_band"], ci=68,
+def tsplot(x, data, err_style=["ci_band"], ci=68, interpolate=True,
            estimator=np.mean, n_boot=10000, smooth=False,
            err_palette=None, ax=None, **kwargs):
     """Plot timeseries from a set of observations.
@@ -94,7 +94,10 @@ def tsplot(x, data, err_style=["ci_band"], ci=68,
         if err_palette is not None and "obs" in style:
             color = orig_color
     # Replot the central trace so it is prominent
-    ax.plot(x, central_data, color=color, **kwargs)
+    marker = kwargs.pop("marker", "" if interpolate else "o")
+    linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
+    ax.plot(x, central_data, color=color,
+            marker=marker, linestyle=linestyle, **kwargs)
 
     return ax
 
