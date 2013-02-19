@@ -223,8 +223,10 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
         dist_kws = {}
     if color is not None and "color" not in dist_kws:
         dist_kws.update(color=color)
-    distplot(x, ax=ax_x_marg, legend=False, **dist_kws)
-    distplot(y, ax=ax_y_marg, vertical=True, legend=False, **dist_kws)
+    if "legend" not in dist_kws:
+        dist_kws["legend"] = False
+    distplot(x, ax=ax_x_marg, **dist_kws)
+    distplot(y, ax=ax_y_marg, vertical=True, **dist_kws)
     for ax in [ax_x_marg, ax_y_marg]:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
