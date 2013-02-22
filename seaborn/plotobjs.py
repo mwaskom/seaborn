@@ -301,6 +301,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         line.remove()
         kwargs.pop("color", None)
 
+    vals = np.asarray(vals)
     boxes = ax.boxplot(vals, patch_artist=True, **kwargs)
 
     gray = "#555555"
