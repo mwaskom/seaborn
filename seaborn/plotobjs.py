@@ -301,8 +301,8 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         line.remove()
         kwargs.pop("color", None)
 
-    vals = np.asarray(vals)
-    boxes = ax.boxplot(vals, patch_artist=True, **kwargs)
+    widths = kwargs.pop("widths", .5)
+    boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
     gray = "#555555"
     for i, box in enumerate(boxes["boxes"]):
@@ -328,11 +328,11 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         fly.set_alpha(.6)
 
     if join_rm:
-        ax.plot(range(1, len(vals.T) + 1), vals.T,
+        ax.plot(range(1, len(vals) + 1), vals,
                 color=color, alpha=2. / 3)
 
     if names is not None:
-        if len(vals.T) != len(names):
+        if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
 
@@ -500,7 +500,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     return ax
 
 
-def violin(vals, inner="box", position=None, widths=.3, join_rm=False,
+def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
            names=None, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
