@@ -172,9 +172,13 @@ def _ts_kde(ax, x, data, color, **kwargs):
               extent=(x.min(), x.max(), y_min, y_max),
               aspect="auto", origin="lower")
 
+def lmplot(x, y, by):
+    """Docstring."""
+    pass
+
 
 def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
-            ci=68, size=None, annotloc=None, color=None, reg_kws=None,
+            ci=95, size=None, annotloc=None, color=None, reg_kws=None,
             scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regreesion line, marginals, and correlation value.
 
@@ -247,11 +251,7 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     a, b = np.polyfit(x, y, 1)
     if reg_kws is None:
         reg_kws = {}
-    line, = ax_scatter.plot(np.mean(x), np.mean(y), **reg_kws)
-    reg_color = line.get_color()
-    line.remove()
-    reg_kws.pop("color", None)
-
+    reg_color = reg_kws.pop("color", "#222222")
     ax_scatter.plot(xlim, np.polyval([a, b], xlim),
                     color=reg_color, **reg_kws)
 
@@ -264,7 +264,7 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
         boots = moss.bootstrap(x, y, func=_bootstrap_reg)
         ci_lims = [50 - ci / 2., 50 + ci / 2.]
         ci = moss.percentiles(boots, ci_lims, axis=0)
-        ax_scatter.fill_between(xx, *ci, color=reg_color, alpha=.2)
+        ax_scatter.fill_between(xx, *ci, color=reg_color, alpha=.15)
         ax_scatter.set_xlim(xlim)
 
     # Calcluate a correlation statistic and p value
