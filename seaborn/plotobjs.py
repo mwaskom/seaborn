@@ -275,8 +275,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     ms = scatter_kws.pop("ms", 7)
                     mew = scatter_kws.pop("mew", 0)
                     x_vals = data_ijk[x].unique()
-                    y_grouped = [data_ijk[y][data_ijk[x] == v] for v in x_vals]
-                    y_mean = np.mean(y_grouped, axis=1)
+                    y_grouped = [np.array(data_ijk[y][data_ijk[x] == v])
+                                 for v in x_vals]
+                    y_mean = [np.mean(y_i) for y_i in y_grouped]
                     y_boots = [moss.bootstrap(np.array(y_i))
                                for y_i in y_grouped]
                     ci_lims = [50 - x_ci / 2., 50 + x_ci / 2.]
@@ -346,8 +347,8 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     ax.set_xlim(xlim)
 
     # Plot the legend on the upper left facet and adjust the layout
-    if any([row, col, color_factor]):
-        axes[0, 0].legend(loc="best")
+    if color_factor is not None:
+        axes[0, 0].legend(loc="best", title=color_factor)
     plt.tight_layout()
 
 
