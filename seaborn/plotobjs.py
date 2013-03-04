@@ -172,12 +172,186 @@ def _ts_kde(ax, x, data, color, **kwargs):
               extent=(x.min(), x.max(), y_min, y_max),
               aspect="auto", origin="lower")
 
-def lmplot(x, y, by):
-    """Docstring."""
-    pass
+
+def lmplot(x, y, data, color=None, row=None, col=None,
+           x_mean=False, x_ci=95, fit_line=True, ci=95,
+           sharex=True, sharey=True, palette="hls", size=None,
+           scatter_kws=None, line_kws=None, palette_kws=None):
+    """Plot a linear model from a DataFrame.
+
+    Parameters
+    ----------
+    x, y : strings
+        column names in `data` DataFrame for x and y variables
+    data : DataFrame
+        source of data for the model
+    color : string, optional
+        DataFrame column name to group the model by color
+    row, col : strings, optional
+        DataFrame column names to make separate plot facets
+    x_mean, x_ci : bool, int optional
+        if True, take the mean over each unique x value and
+        plot as a point estimate with the given confidence interval
+    fit_line : bool, optional
+        if True fit a regression line by color/row/col and plot
+    ci: int, optional
+        confidence interval for the regression line
+    sharex, sharey : bools, optional
+        only relevant if faceting; passed to plt.subplots
+    palette : seaborn color palette argument
+        if using separate plots by color, draw with this color palette
+    size : float, optional
+        size (plots are square) for each plot facet
+    {scatter, line}_kws : dictionary
+        keyword arguments to pass to the underlying plot functions
+    palette_kws : dictionary
+        keyword arguments for seaborn.color_palette
+
+    """
+    # First sort out the general figure layout
+    if size is None:
+        size = mpl.rcParams["figure.figsize"][1]
+
+    nrow = 1 if row is None else len(data[row].unique())
+    ncol = 1 if col is None else len(data[col].unique())
+
+    f, axes = plt.subplots(nrow, ncol, sharex=sharex, sharey=sharey,
+                           figsize=(size * ncol, size * nrow))
+    axes = np.atleast_2d(axes).reshape(nrow, ncol)
+
+    if nrow == 1:
+        row_masks = [np.repeat(True, len(data))]
+    else:
+        row_vals = data[row].unique()
+        row_masks = [data[row] == val for val in row_vals]
+
+    if ncol == 1:
+        col_masks = [np.repeat(True, len(data))]
+    else:
+        col_vals = data[col].unique()
+        col_masks = [data[col] == val for val in col_vals]
+
+    if palette_kws is None:
+        palette_kws = {}
+
+    # Sort out the plot colors
+    color_factor = color
+    if color is None:
+        hue_masks = [np.repeat(True, len(data))]
+        colors = ["#222222"]
+    else:
+        hue_vals = data[color].unique()
+        hue_masks = [data[color] == val for val in hue_vals]
+        colors = color_palette(palette, len(hue_masks), **palette_kws)
+
+    # Default keyword arguments for plot components
+    if scatter_kws is None:
+        scatter_kws = {}
+    if line_kws is None:
+        line_kws = {}
+
+    # First walk through the facets and plot the scatters
+    for row_i, row_mask in enumerate(row_masks):
+        for col_j, col_mask in enumerate(col_masks):
+            ax = axes[row_i, col_j]
+            ax.set_xlabel(x)
+            ax.set_ylabel(y)
+
+            # Title the plot if we are faceting
+            title = ""
+            if row is not None:
+                title += "%s = %s" % (row, row_vals[row_i])
+            if row is not None and col is not None:
+                title += " | "
+            if col is not None:
+                title += "%s = %s" % (col, col_vals[col_j])
+            ax.set_title(title)
+
+            for hue_k, hue_mask in enumerate(hue_masks):
+                color = colors[hue_k]
+                data_ijk = data[row_mask & col_mask & hue_mask]
+
+                if x_mean:
+                    ms = scatter_kws.pop("ms", 7)
+                    mew = scatter_kws.pop("mew", 0)
+                    x_vals = data_ijk[x].unique()
+                    y_grouped = [data_ijk[y][data_ijk[x] == v] for v in x_vals]
+                    y_mean = np.mean(y_grouped, axis=1)
+                    y_boots = [moss.bootstrap(np.array(y_i))
+                               for y_i in y_grouped]
+                    ci_lims = [50 - x_ci / 2., 50 + x_ci / 2.]
+                    y_ci = [moss.percentiles(y_i, ci_lims) for y_i in y_boots]
+                    y_error = ci_to_errsize(np.transpose(y_ci), y_mean)
+
+                    ax.plot(x_vals, y_mean, "o", mew=mew, ms=ms,
+                            color=color, **scatter_kws)
+                    ax.errorbar(x_vals, y_mean, y_error,
+                                fmt=None, ecolor=color)
+                else:
+                    ms = scatter_kws.pop("ms", 4)
+                    mew = scatter_kws.pop("mew", 0)
+                    ax.plot(data_ijk[x], data_ijk[y], "o",
+                            color=color, mew=mew, ms=ms, **scatter_kws)
+
+    # Make sure that datapoints are not on the edge of the plot
+    xmin, xmax = ax.get_xlim()
+    n_ticks = len(ax.get_xticks())
+    xdelta = (xmax - xmin) / (n_ticks - 1)
+    if data[x].min() == xmin:
+        xmin -= xdelta
+        n_ticks += 1
+        ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
+    if data[x].max() == xmax:
+        xmax += xdelta
+        n_ticks += 1
+        ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
+    ax.set_xlim(xmin, xmax)
+
+    # Now walk through again and plot the regression estimate
+    # and a confidence interval for the regression line
+    if fit_line:
+        for row_i, row_mask in enumerate(row_masks):
+            for col_j, col_mask in enumerate(col_masks):
+                ax = axes[row_i, col_j]
+                xlim = ax.get_xlim()
+                xx = np.linspace(xlim[0], xlim[1], 100)
+
+                # Inner function to bootstrap the regression
+                def _bootstrap_reg(x, y):
+                    fit = np.polyfit(x, y, 1)
+                    return np.polyval(fit, xx)
+
+                for hue_k, hue_mask in enumerate(hue_masks):
+                    color = colors[hue_k]
+                    data_ijk = data[row_mask & col_mask & hue_mask]
+                    x_vals = np.array(data_ijk[x])
+                    y_vals = np.array(data_ijk[y])
+
+                    # Regression line confidence interval
+                    if ci is not None:
+                        ci_lims = [50 - ci / 2., 50 + ci / 2.]
+                        boots = moss.bootstrap(x_vals, y_vals,
+                                               func=_bootstrap_reg)
+                        ci_band = moss.percentiles(boots, ci_lims, axis=0)
+                        ax.fill_between(xx, *ci_band, color=color, alpha=.15)
+
+                    fit = np.polyfit(x_vals, y_vals, 1)
+                    reg = np.polyval(fit, xx)
+                    if color_factor is None:
+                        label = ""
+                    else:
+                        label = hue_vals[hue_k]
+                    ax.plot(xx, reg, color=color,
+                            label=label, **line_kws)
+                    ax.set_xlim(xlim)
+
+    # Plot the legend on the upper left facet and adjust the layout
+    if any([row, col, color_factor]):
+        axes[0, 0].legend(loc="best")
+    plt.tight_layout()
 
 
-def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
+def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
             ci=95, size=None, annotloc=None, color=None, reg_kws=None,
             scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regreesion line, marginals, and correlation value.
@@ -188,6 +362,9 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
         independent variables
     y : sequence
         dependent variables
+    data : dataframe, optional
+        if dataframe is given, x, and y are interpreted as
+        string keys mapping to dataframe column names
     corr_func : callable, optional
         correlation function; expected to take two arrays
         and return a (statistic, pval) tuple
@@ -207,6 +384,12 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
 
 
     """
+    # Interperet inputs
+    if data is not None:
+        xlabel, ylabel = x, y
+        x = np.array(data[x])
+        y = np.array(data[y])
+
     # Set up the figure and axes
     size = 6 if size is None else size
     fig = plt.figure(figsize=(size, size))
@@ -224,7 +407,7 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     alpha = alpha_maker.pdf(len(x)) / alpha_maker.pdf(0)
     alpha = max(alpha, .1)
     alpha = scatter_kws.pop("alpha", alpha)
-    ax_scatter.plot(x, y, marker, alpha=alpha, **scatter_kws)
+    ax_scatter.plot(x, y, marker, alpha=alpha, mew=0, **scatter_kws)
     ax_scatter.set_xlabel(xlabel)
     ax_scatter.set_ylabel(ylabel)
 
@@ -258,13 +441,15 @@ def regplot(x, y, corr_func=stats.pearsonr,  xlabel="", ylabel="",
     # Bootstrapped regression standard error
     if ci is not None:
         xx = np.linspace(xlim[0], xlim[1], 100)
+
         def _bootstrap_reg(x, y):
             fit = np.polyfit(x, y, 1)
             return np.polyval(fit, xx)
+
         boots = moss.bootstrap(x, y, func=_bootstrap_reg)
         ci_lims = [50 - ci / 2., 50 + ci / 2.]
-        ci = moss.percentiles(boots, ci_lims, axis=0)
-        ax_scatter.fill_between(xx, *ci, color=reg_color, alpha=.15)
+        ci_band = moss.percentiles(boots, ci_lims, axis=0)
+        ax_scatter.fill_between(xx, *ci_band, color=reg_color, alpha=.15)
         ax_scatter.set_xlim(xlim)
 
     # Calcluate a correlation statistic and p value
