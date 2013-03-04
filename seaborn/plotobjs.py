@@ -342,7 +342,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     else:
                         label = hue_vals[hue_k]
                     ax.plot(xx, reg, color=color,
-                            label=label, **line_kws)
+                            label=str(label), **line_kws)
                     ax.set_xlim(xlim)
 
     # Plot the legend on the upper left facet and adjust the layout
