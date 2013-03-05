@@ -208,6 +208,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         keyword arguments for seaborn.color_palette
 
     """
+    # TODO
+    # - position_{dodge, jitter}
+    # - xticks adjust looks wrong
+
     # First sort out the general figure layout
     if size is None:
         size = mpl.rcParams["figure.figsize"][1]
@@ -222,13 +226,13 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     if nrow == 1:
         row_masks = [np.repeat(True, len(data))]
     else:
-        row_vals = data[row].unique()
+        row_vals = np.sort(data[row].unique())
         row_masks = [data[row] == val for val in row_vals]
 
     if ncol == 1:
         col_masks = [np.repeat(True, len(data))]
     else:
-        col_vals = data[col].unique()
+        col_vals = np.sort(data[col].unique())
         col_masks = [data[col] == val for val in col_vals]
 
     if palette_kws is None:
@@ -240,7 +244,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         hue_masks = [np.repeat(True, len(data))]
         colors = ["#222222"]
     else:
-        hue_vals = data[color].unique()
+        hue_vals = np.sort(data[color].unique())
         hue_masks = [data[color] == val for val in hue_vals]
         colors = color_palette(palette, len(hue_masks), **palette_kws)
 
