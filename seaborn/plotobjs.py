@@ -210,7 +210,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     """
     # TODO
     # - position_{dodge, jitter}
-    # - xticks adjust looks wrong
+    # - more general x-axis factor summary
 
     # First sort out the general figure layout
     if size is None:
@@ -305,11 +305,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     if data[x].min() == xmin:
         xmin -= xdelta
         n_ticks += 1
-        ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
     if data[x].max() == xmax:
         xmax += xdelta
         n_ticks += 1
-        ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
+    ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
     ax.set_xlim(xmin, xmax)
 
     # Now walk through again and plot the regression estimate
