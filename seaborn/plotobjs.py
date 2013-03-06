@@ -212,6 +212,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     """
     # TODO
     # - position_{dodge, jitter}
+    # - legend when fit_line is False
+    # - truncate fit
+    # - wrap title when wide
+    # - wrap columns
 
     # First sort out the general figure layout
     if size is None:
@@ -259,8 +263,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
             ax = axes[row_i, col_j]
-            ax.set_xlabel(x)
-            ax.set_ylabel(y)
+            if not sharex or row_i == len(row_masks):
+                ax.set_xlabel(x)
+            if not sharey or col_j == 0:
+                ax.set_ylabel(y)
 
             # Title the plot if we are faceting
             title = ""
