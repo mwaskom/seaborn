@@ -298,18 +298,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     ax.plot(data_ijk[x], data_ijk[y], "o",
                             color=color, mew=mew, ms=ms, **scatter_kws)
 
-    # Make sure that datapoints are not on the edge of the plot
-    xmin, xmax = ax.get_xlim()
-    n_ticks = len(ax.get_xticks())
-    xdelta = (xmax - xmin) / (n_ticks - 1)
-    if data[x].min() == xmin:
-        xmin -= xdelta
-        n_ticks += 1
-    if data[x].max() == xmax:
-        xmax += xdelta
-        n_ticks += 1
-    ax.set_xticks(np.linspace(xmin, xmax, n_ticks))
-    ax.set_xlim(xmin, xmax)
+    for ax_i in np.ravel(axes):
+        ax_i.set_xmargin(.15)
+        ax_i.autoscale_view()
 
     # Now walk through again and plot the regression estimate
     # and a confidence interval for the regression line
