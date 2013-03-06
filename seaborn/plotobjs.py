@@ -299,7 +299,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                             color=color, mew=mew, ms=ms, **scatter_kws)
 
     for ax_i in np.ravel(axes):
-        ax_i.set_xmargin(.15)
+        ax_i.set_xmargin(.05)
         ax_i.autoscale_view()
 
     # Now walk through again and plot the regression estimate
