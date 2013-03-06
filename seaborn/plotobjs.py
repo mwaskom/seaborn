@@ -174,7 +174,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
 
 
 def lmplot(x, y, data, color=None, row=None, col=None,
-           x_mean=False, x_ci=95, fit_line=True, ci=95,
+           x_estimator=None, x_ci=95, fit_line=True, ci=95,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -189,9 +189,11 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         DataFrame column name to group the model by color
     row, col : strings, optional
         DataFrame column names to make separate plot facets
-    x_mean, x_ci : bool, int optional
-        if True, take the mean over each unique x value and
-        plot as a point estimate with the given confidence interval
+    x_estimator : callable, optional
+        Interpret X values as factor labels and use this function
+        to plot the point estimate and bootstrapped CI
+    x_ci : int optional
+        size of confidence interval for x_estimator error bars
     fit_line : bool, optional
         if True fit a regression line by color/row/col and plot
     ci: int, optional
@@ -210,7 +212,6 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     """
     # TODO
     # - position_{dodge, jitter}
-    # - more general x-axis factor summary
 
     # First sort out the general figure layout
     if size is None:
@@ -275,22 +276,22 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                 color = colors[hue_k]
                 data_ijk = data[row_mask & col_mask & hue_mask]
 
-                if x_mean:
+                if x_estimator is not None:
                     ms = scatter_kws.pop("ms", 7)
                     mew = scatter_kws.pop("mew", 0)
                     x_vals = data_ijk[x].unique()
                     y_grouped = [np.array(data_ijk[y][data_ijk[x] == v])
                                  for v in x_vals]
-                    y_mean = [np.mean(y_i) for y_i in y_grouped]
-                    y_boots = [moss.bootstrap(np.array(y_i))
+                    y_est = [x_estimator(y_i) for y_i in y_grouped]
+                    y_boots = [moss.bootstrap(np.array(y_i), func=x_estimator)
                                for y_i in y_grouped]
                     ci_lims = [50 - x_ci / 2., 50 + x_ci / 2.]
                     y_ci = [moss.percentiles(y_i, ci_lims) for y_i in y_boots]
-                    y_error = ci_to_errsize(np.transpose(y_ci), y_mean)
+                    y_error = ci_to_errsize(np.transpose(y_ci), y_est)
 
-                    ax.plot(x_vals, y_mean, "o", mew=mew, ms=ms,
+                    ax.plot(x_vals, y_est, "o", mew=mew, ms=ms,
                             color=color, **scatter_kws)
-                    ax.errorbar(x_vals, y_mean, y_error,
+                    ax.errorbar(x_vals, y_est, y_error,
                                 fmt=None, ecolor=color)
                 else:
                     ms = scatter_kws.pop("ms", 4)
