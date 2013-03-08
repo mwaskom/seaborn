@@ -174,7 +174,8 @@ def _ts_kde(ax, x, data, color, **kwargs):
 
 
 def lmplot(x, y, data, color=None, row=None, col=None,
-           x_estimator=None, x_ci=95, fit_line=True, ci=95,
+           x_estimator=None, x_ci=95,
+           fit_line=True, ci=95, truncate=False,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -196,8 +197,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         size of confidence interval for x_estimator error bars
     fit_line : bool, optional
         if True fit a regression line by color/row/col and plot
-    ci: int, optional
+    ci : int, optional
         confidence interval for the regression line
+    truncate : bool, optional
+        if True, only fit line from data min to data max
     sharex, sharey : bools, optional
         only relevant if faceting; passed to plt.subplots
     palette : seaborn color palette argument
@@ -316,18 +319,24 @@ def lmplot(x, y, data, color=None, row=None, col=None,
             for col_j, col_mask in enumerate(col_masks):
                 ax = axes[row_i, col_j]
                 xlim = ax.get_xlim()
-                xx = np.linspace(xlim[0], xlim[1], 100)
-
-                # Inner function to bootstrap the regression
-                def _bootstrap_reg(x, y):
-                    fit = np.polyfit(x, y, 1)
-                    return np.polyval(fit, xx)
 
                 for hue_k, hue_mask in enumerate(hue_masks):
                     color = colors[hue_k]
                     data_ijk = data[row_mask & col_mask & hue_mask]
                     x_vals = np.array(data_ijk[x])
                     y_vals = np.array(data_ijk[y])
+
+                    # Sort out the limit of the fit
+                    if truncate:
+                        xx = np.linspace(x_vals.min(),
+                                         x_vals.max(), 100)
+                    else:
+                        xx = np.linspace(xlim[0], xlim[1], 100)
+
+                    # Inner function to bootstrap the regression
+                    def _bootstrap_reg(x, y):
+                        fit = np.polyfit(x, y, 1)
+                        return np.polyval(fit, xx)
 
                     # Regression line confidence interval
                     if ci is not None:
