@@ -266,7 +266,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
             ax = axes[row_i, col_j]
-            if not sharex or row_i == len(row_masks):
+            if not sharex or (row_i + 1 == len(row_masks)):
                 ax.set_xlabel(x)
             if not sharey or col_j == 0:
                 ax.set_ylabel(y)
