@@ -435,11 +435,6 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
         ax.set_xticklabels([])
         ax.set_yticklabels([])
 
-    ax_x_marg.set_xlim(ax_scatter.get_xlim())
-    ax_x_marg.set_yticks([])
-    ax_y_marg.set_ylim(ax_scatter.get_ylim())
-    ax_y_marg.set_xticks([])
-
     # Regression line plot
     xlim = ax_scatter.get_xlim()
     a, b = np.polyfit(x, y, 1)
@@ -485,6 +480,12 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
     if text_kws is None:
         text_kws = {}
     ax_scatter.text(xloc, yloc, msg, ha=align, va="top", **text_kws)
+
+    # Set the axes on the marginal plots
+    ax_x_marg.set_xlim(ax_scatter.get_xlim())
+    ax_x_marg.set_yticks([])
+    ax_y_marg.set_ylim(ax_scatter.get_ylim())
+    ax_y_marg.set_xticks([])
 
 
 def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
