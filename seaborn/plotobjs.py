@@ -381,7 +381,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         string keys mapping to dataframe column names
     corr_func : callable, optional
         correlation function; expected to take two arrays
-        and return a (statistic, pval) tuple
+        and return a numeric or (statistic, pval) tuple
     func_name : string, optional
         use for fit statistic annotation in lieu of function name
     xlabel, ylabel : string, optional
@@ -463,15 +463,23 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         ax_scatter.fill_between(xx, *ci_band, color=reg_color, alpha=.15)
         ax_scatter.set_xlim(xlim)
 
-    # Calcluate a correlation statistic and p value
-    r, p = corr_func(x, y)
+    # Calcluate a fit statistic and p value
     if func_name is None:
         func_name = corr_func.__name__
-    msg = "%s: %.3f (p=%.3g%s)" % (func_name, r, p, moss.sig_stars(p))
+    out = corr_func(x, y)
+    try:
+        s, p = out
+        msg = "%s: %.3f (p=%.3g%s)" % (func_name, s, p, moss.sig_stars(p))
+    except TypeError:
+        s = corr_func(x, y)
+        msg = "%s: %.3f" % (func_name, s)
+
     if annotloc is None:
         xmin, xmax = xlim
         x_range = xmax - xmin
-        if r < 0:
+        # Assume the fit statistic is correlation-esque for some
+        # intuition on where the fit annotation should go
+        if s < 0:
             xloc, align = xmax - x_range * .02, "right"
         else:
             xloc, align = xmin + x_range * .02, "left"
