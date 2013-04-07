@@ -365,9 +365,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     plt.tight_layout()
 
 
-def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
-            ci=95, size=None, annotloc=None, color=None, reg_kws=None,
-            scatter_kws=None, dist_kws=None, text_kws=None):
+def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
+            xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
+            reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regreesion line, marginals, and correlation value.
 
     Parameters
@@ -382,6 +382,8 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
     corr_func : callable, optional
         correlation function; expected to take two arrays
         and return a (statistic, pval) tuple
+    func_name : string, optional
+        use for fit statistic annotation in lieu of function name
     xlabel, ylabel : string, optional
         label names
     ci : int or None
@@ -463,7 +465,9 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, xlabel="", ylabel="",
 
     # Calcluate a correlation statistic and p value
     r, p = corr_func(x, y)
-    msg = "%s: %.3f (p=%.3g%s)" % (corr_func.__name__, r, p, moss.sig_stars(p))
+    if func_name is None:
+        func_name = corr_func.__name__
+    msg = "%s: %.3f (p=%.3g%s)" % (func_name, r, p, moss.sig_stars(p))
     if annotloc is None:
         xmin, xmax = xlim
         x_range = xmax - xmin
