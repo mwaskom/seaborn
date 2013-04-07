@@ -326,7 +326,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     data_ijk = data[row_mask & col_mask & hue_mask]
                     x_vals = np.array(data_ijk[x])
                     y_vals = np.array(data_ijk[y])
-                    if not x_vals:
+                    if not len(x_vals):
                         continue
 
                     # Sort out the limit of the fit
@@ -360,7 +360,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     ax.set_xlim(xlim)
 
     # Plot the legend on the upper left facet and adjust the layout
-    if color_factor is not None:
+    if color_factor is not None and color_factor not in [row, col]:
         axes[0, 0].legend(loc="best", title=color_factor)
     plt.tight_layout()
 
