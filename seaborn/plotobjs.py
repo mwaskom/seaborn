@@ -175,7 +175,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
 
 def lmplot(x, y, data, color=None, row=None, col=None,
            x_estimator=None, x_ci=95,
-           fit_line=True, ci=95, truncate=False,
+           fit_reg=True, order=1, ci=95, truncate=False,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -195,8 +195,10 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         to plot the point estimate and bootstrapped CI
     x_ci : int optional
         size of confidence interval for x_estimator error bars
-    fit_line : bool, optional
-        if True fit a regression line by color/row/col and plot
+    fit_reg : bool, optional
+        if True fit a regression model by color/row/col and plot
+    order : int, optional
+        order of the regression polynomial to fit (default = 1)
     ci : int, optional
         confidence interval for the regression line
     truncate : bool, optional
@@ -216,7 +218,6 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     # TODO
     # - position_{dodge, jitter}
     # - legend when fit_line is False
-    # - truncate fit
     # - wrap title when wide
     # - wrap columns
 
@@ -314,7 +315,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
 
     # Now walk through again and plot the regression estimate
     # and a confidence interval for the regression line
-    if fit_line:
+    if fit_reg:
         for row_i, row_mask in enumerate(row_masks):
             for col_j, col_mask in enumerate(col_masks):
                 ax = axes[row_i, col_j]
@@ -325,6 +326,8 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     data_ijk = data[row_mask & col_mask & hue_mask]
                     x_vals = np.array(data_ijk[x])
                     y_vals = np.array(data_ijk[y])
+                    if not x_vals:
+                        continue
 
                     # Sort out the limit of the fit
                     if truncate:
@@ -335,7 +338,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
 
                     # Inner function to bootstrap the regression
                     def _bootstrap_reg(x, y):
-                        fit = np.polyfit(x, y, 1)
+                        fit = np.polyfit(x, y, order)
                         return np.polyval(fit, xx)
 
                     # Regression line confidence interval
@@ -346,7 +349,7 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                         ci_band = moss.percentiles(boots, ci_lims, axis=0)
                         ax.fill_between(xx, *ci_band, color=color, alpha=.15)
 
-                    fit = np.polyfit(x_vals, y_vals, 1)
+                    fit = np.polyfit(x_vals, y_vals, order)
                     reg = np.polyval(fit, xx)
                     if color_factor is None:
                         label = ""
