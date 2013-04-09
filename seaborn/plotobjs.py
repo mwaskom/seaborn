@@ -402,7 +402,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     """
     # Interperet inputs
     if data is not None:
-        if xlabel is None and ylabel is None:
+        if any(xlabel, ylabel):
             xlabel, ylabel = x, y
         x = np.array(data[x])
         y = np.array(data[y])
