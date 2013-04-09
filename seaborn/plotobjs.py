@@ -15,7 +15,7 @@ import moss
 from seaborn.utils import color_palette, ci_to_errsize
 
 
-def tsplot(x, data, err_style=["ci_band"], ci=68, interpolate=True,
+def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
            estimator=np.mean, n_boot=10000, smooth=False,
            err_palette=None, ax=None, **kwargs):
     """Plot timeseries from a set of observations.
@@ -26,7 +26,7 @@ def tsplot(x, data, err_style=["ci_band"], ci=68, interpolate=True,
         x values
     data : n_obs x n_tp array
         array of timeseries data where first axis is e.g. subjects
-    err_style : list of strings
+    err_style : string or list of strings
         names of ways to plot uncertainty across observations from set of
        {ci_band, ci_bars, boot_traces, book_kde, obs_traces, obs_points}
     ci : int or list of ints
@@ -69,6 +69,8 @@ def tsplot(x, data, err_style=["ci_band"], ci=68, interpolate=True,
     kwargs.pop("color", None)
 
     # Use subroutines to plot the uncertainty
+    if not hasattr(err_style, "__iter__"):
+        err_style = [err_style]
     for style in err_style:
 
         # Grab the function from the global environment
