@@ -116,30 +116,34 @@ def _plot_ci_band(ax, x, ci, color, **kwargs):
 def _plot_ci_bars(ax, x, central_data, ci, color, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
-    ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color)
+    ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color,
+                label="_nolegend_")
 
 
 def _plot_boot_traces(ax, x, boot_data, color, **kwargs):
     """Plot 250 traces from bootstrap."""
-    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25, linewidth=0.25)
+    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25, linewidth=0.25,
+            label="_nolegend_")
 
 
 def _plot_obs_traces(ax, x, data, ci, color, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
-            ax.plot(x, obs, color=color[i], alpha=0.5)
+            ax.plot(x, obs, color=color[i], alpha=0.5, label="_nolegend_")
     else:
-        ax.plot(x, data.T, color=color, alpha=0.2)
+        ax.plot(x, data.T, color=color, alpha=0.2, label="_nolegend_")
 
 
 def _plot_obs_points(ax, x, data, color, **kwargs):
     """Plot each original data point discretely."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
-            ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4)
+            ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4,
+                    label="_nolegend_")
     else:
-        ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4)
+        ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4,
+                label="_nolegend_")
 
 
 def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
