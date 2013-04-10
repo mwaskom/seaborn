@@ -8,6 +8,7 @@
 
 import numpy as np
 from scipy import stats, interpolate
+import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
@@ -180,8 +181,8 @@ def _ts_kde(ax, x, data, color, **kwargs):
 
 
 def lmplot(x, y, data, color=None, row=None, col=None,
-           x_estimator=None, x_ci=95,
-           fit_reg=True, order=1, ci=95, truncate=False,
+           x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
+           order=1, ci=95, logistic=False, truncate=False,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -201,12 +202,16 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         to plot the point estimate and bootstrapped CI
     x_ci : int optional
         size of confidence interval for x_estimator error bars
+    n_boot : int, optional
+        number of bootstrap iterations to perform
     fit_reg : bool, optional
         if True fit a regression model by color/row/col and plot
     order : int, optional
         order of the regression polynomial to fit (default = 1)
     ci : int, optional
         confidence interval for the regression line
+    logistic : bool, optional
+        fit the regression line with logistic regression
     truncate : bool, optional
         if True, only fit line from data min to data max
     sharex, sharey : bools, optional
@@ -299,7 +304,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     y_grouped = [np.array(data_ijk[y][data_ijk[x] == v])
                                  for v in x_vals]
                     y_est = [x_estimator(y_i) for y_i in y_grouped]
-                    y_boots = [moss.bootstrap(np.array(y_i), func=x_estimator)
+                    y_boots = [moss.bootstrap(np.array(y_i),
+                                              func=x_estimator,
+                                              n_boot=n_boot)
                                for y_i in y_grouped]
                     ci_lims = [50 - x_ci / 2., 50 + x_ci / 2.]
                     y_ci = [moss.percentiles(y_i, ci_lims) for y_i in y_boots]
@@ -341,22 +348,30 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                                          x_vals.max(), 100)
                     else:
                         xx = np.linspace(xlim[0], xlim[1], 100)
+                    xx_ = sm.add_constant(xx, prepend=True)
 
                     # Inner function to bootstrap the regression
-                    def _bootstrap_reg(x, y):
-                        fit = np.polyfit(x, y, order)
-                        return np.polyval(fit, xx)
+                    def _regress(x, y):
+                        if logistic:
+                            x_ = sm.add_constant(x, prepend=True)
+                            fit = sm.GLM(y, x_,
+                                         family=sm.families.Binomial()).fit()
+                            reg = fit.predict(xx_)
+                        else:
+                            fit = np.polyfit(x, y, order)
+                            reg = np.polyval(fit, xx)
+                        return reg
 
                     # Regression line confidence interval
                     if ci is not None:
                         ci_lims = [50 - ci / 2., 50 + ci / 2.]
                         boots = moss.bootstrap(x_vals, y_vals,
-                                               func=_bootstrap_reg)
+                                               func=_regress,
+                                               n_boot=n_boot)
                         ci_band = moss.percentiles(boots, ci_lims, axis=0)
                         ax.fill_between(xx, *ci_band, color=color, alpha=.15)
 
-                    fit = np.polyfit(x_vals, y_vals, order)
-                    reg = np.polyval(fit, xx)
+                    reg = _regress(x_vals, y_vals)
                     if color_factor is None:
                         label = ""
                     else:
