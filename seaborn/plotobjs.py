@@ -183,6 +183,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
 def lmplot(x, y, data, color=None, row=None, col=None,
            x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
+           x_jitter=None, y_jitter=None,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -214,6 +215,8 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         fit the regression line with logistic regression
     truncate : bool, optional
         if True, only fit line from data min to data max
+    {x, y}_jitter : float, optional
+        parameters for uniformly distributed random noise added to positions
     sharex, sharey : bools, optional
         only relevant if faceting; passed to plt.subplots
     palette : seaborn color palette argument
@@ -227,7 +230,6 @@ def lmplot(x, y, data, color=None, row=None, col=None,
 
     """
     # TODO
-    # - position_{dodge, jitter}
     # - legend when fit_line is False
     # - wrap title when wide
     # - wrap columns
@@ -319,8 +321,14 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                 else:
                     ms = scatter_kws.pop("ms", 4)
                     mew = scatter_kws.pop("mew", 0)
-                    ax.plot(data_ijk[x], data_ijk[y], "o",
-                            color=color, mew=mew, ms=ms, **scatter_kws)
+                    x_ = data_ijk[x]
+                    y_ = data_ijk[y]
+                    if x_jitter is not None:
+                        x_ += stats.uniform(-x_jitter, x_jitter).rvs(len(x_))
+                    if y_jitter is not None:
+                        y_ += stats.uniform(-y_jitter, y_jitter).rvs(len(y_))
+                    ax.plot(x_, y_, "o", color=color,
+                            mew=mew, ms=ms, **scatter_kws)
 
     for ax_i in np.ravel(axes):
         ax_i.set_xmargin(.05)
