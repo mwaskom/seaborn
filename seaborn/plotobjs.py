@@ -324,9 +324,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
                     x_ = data_ijk[x]
                     y_ = data_ijk[y]
                     if x_jitter is not None:
-                        x_ += stats.uniform(-x_jitter, x_jitter).rvs(len(x_))
+                        x_ += np.random.uniform(-x_jitter, x_jitter, len(x_))
                     if y_jitter is not None:
-                        y_ += stats.uniform(-y_jitter, y_jitter).rvs(len(y_))
+                        y_ += np.random.uniform(-y_jitter, y_jitter, len(y_))
                     ax.plot(x_, y_, "o", color=color,
                             mew=mew, ms=ms, **scatter_kws)
 
