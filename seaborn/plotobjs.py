@@ -572,28 +572,25 @@ def boxplot(vals, join_rm=False, names=None, color=None,
     widths = kwargs.pop("widths", .5)
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
-    gray = "#555555"
+    gray = "#777777"
     for i, box in enumerate(boxes["boxes"]):
         box.set_color(color)
-        box.set_alpha(.7)
-        box.set_linewidth(1.5)
         box.set_edgecolor(gray)
+        box.set_linewidth(1.5)
     for i, whisk in enumerate(boxes["whiskers"]):
         whisk.set_color(gray)
-        whisk.set_linewidth(2)
-        whisk.set_alpha(.7)
+        whisk.set_linewidth(1.5)
         whisk.set_linestyle("-")
     for i, cap in enumerate(boxes["caps"]):
         cap.set_color(gray)
         cap.set_linewidth(1.5)
-        cap.set_alpha(.7)
     for i, med in enumerate(boxes["medians"]):
         med.set_color(gray)
         med.set_linewidth(1.5)
     for i, fly in enumerate(boxes["fliers"]):
         fly.set_color(gray)
         fly.set_marker("d")
-        fly.set_alpha(.6)
+        fly.set_markeredgecolor(gray)
         fly.set_markersize(fliersize)
 
     if join_rm:
