@@ -533,8 +533,8 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     ax_y_marg.set_xticks([])
 
 
-def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
-            **kwargs):
+def boxplot(vals, join_rm=False, names=None, color=None,
+            fliersize=3, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
@@ -548,6 +548,8 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         names to plot on x axis, otherwise plots numbers
     color : matplotlib color, optional
         box color
+    fliersize : int, optional
+        markersize for the fliers
     ax : matplotlib axis, optional
         will plot in axis, or create new figure axis
     kwargs : additional keyword arguments to boxplot
@@ -592,6 +594,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, ax=None,
         fly.set_color(gray)
         fly.set_marker("d")
         fly.set_alpha(.6)
+        fly.set_markersize(fliersize)
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
