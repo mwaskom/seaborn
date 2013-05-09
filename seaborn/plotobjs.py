@@ -26,7 +26,8 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     x : n_tp array
         x values
     data : n_obs x n_tp array
-        array of timeseries data where first axis is e.g. subjects
+        array of timeseries data where first axis is observations. other
+        objects (e.g. DataFrames) are converted to an array if possible
     err_style : string or list of strings
         names of ways to plot uncertainty across observations from set of
        {ci_band, ci_bars, boot_traces, book_kde, obs_traces, obs_points}
@@ -54,6 +55,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         ax = plt.subplot(111)
 
     # Bootstrap the data for confidence intervals
+    data = np.asarray(data)
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
                                axis=0, func=estimator)
     ci_list = hasattr(ci, "__iter__")
