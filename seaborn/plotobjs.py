@@ -18,7 +18,7 @@ from seaborn.utils import color_palette, ci_to_errsize
 
 def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
            estimator=np.mean, n_boot=10000, smooth=False,
-           err_palette=None, ax=None, **kwargs):
+           err_palette=None, ax=None, err_kws=None, **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
@@ -43,6 +43,9 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         whether to perform a smooth bootstrap (resample from KDE)
     ax : axis object, optional
         plot in given axis; if None creates a new figure
+    err_kws : dict, optional
+        keyword argument dictionary passed through to matplotlib
+        function generating the error plot
     kwargs : further keyword arguments for main call to plot()
 
     Returns
@@ -53,6 +56,9 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     """
     if ax is None:
         ax = plt.subplot(111)
+
+    if err_kws is None:
+        err_kws = {}
 
     # Bootstrap the data for confidence intervals
     data = np.asarray(data)
@@ -90,7 +96,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         plot_kwargs = dict(ax=ax, x=x, data=data,
                            boot_data=boot_data,
                            central_data=central_data,
-                           color=color)
+                           color=color, err_kws=err_kws)
 
         for ci_i in cis:
             plot_kwargs["ci"] = ci_i
@@ -110,43 +116,45 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
 # ----------------------------------------
 
 
-def _plot_ci_band(ax, x, ci, color, **kwargs):
+def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
     """Plot translucent error bands around the central tendancy."""
     low, high = ci
-    ax.fill_between(x, low, high, color=color, alpha=0.2)
+    ax.fill_between(x, low, high, color=color, alpha=0.2, **err_kws)
 
 
-def _plot_ci_bars(ax, x, central_data, ci, color, **kwargs):
+def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
     ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color,
-                label="_nolegend_")
+                label="_nolegend_", **err_kws)
 
 
-def _plot_boot_traces(ax, x, boot_data, color, **kwargs):
+def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25, linewidth=0.25,
-            label="_nolegend_")
+    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25,
+            linewidth=0.25, label="_nolegend_", **err_kws)
 
 
-def _plot_obs_traces(ax, x, data, ci, color, **kwargs):
+def _plot_obs_traces(ax, x, data, ci, color, err_kws, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
-            ax.plot(x, obs, color=color[i], alpha=0.5, label="_nolegend_")
+            ax.plot(x, obs, color=color[i], alpha=0.5,
+                    label="_nolegend_", **err_kws)
     else:
-        ax.plot(x, data.T, color=color, alpha=0.2, label="_nolegend_")
+        ax.plot(x, data.T, color=color, alpha=0.2,
+                label="_nolegend_", **err_kws)
 
 
-def _plot_obs_points(ax, x, data, color, **kwargs):
+def _plot_obs_points(ax, x, data, color, err_kws, **kwargs):
     """Plot each original data point discretely."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
             ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4,
-                    label="_nolegend_")
+                    label="_nolegend_", **err_kws)
     else:
         ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4,
-                label="_nolegend_")
+                label="_nolegend_", **err_kws)
 
 
 def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
