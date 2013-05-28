@@ -777,7 +777,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
-           names=None, ax=None, **kwargs):
+           names=None, kde_thresh=1e-4, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -795,6 +795,8 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
         measures and are joined with a line plot
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
+    kde_thresh : float, optional
+        proportion of maximum at which to threshold the KDE curve
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
 
@@ -841,7 +843,7 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
     for i, a in enumerate(vals):
         x = position[i]
         kde = stats.gaussian_kde(a)
-        y = _kde_support(a, kde, 1000)
+        y = _kde_support(a, kde, 1000, kde_thresh)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
