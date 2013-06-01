@@ -777,7 +777,8 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
-           names=None, kde_thresh=1e-4, ax=None, **kwargs):
+           names=None, kde_thresh=1e-2, inner_kws=None, ax=None,
+           **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -797,6 +798,8 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
         names to plot on x axis, otherwise plots numbers
     kde_thresh : float, optional
         proportion of maximum at which to threshold the KDE curve
+    inner_kws : dict, optional
+        keyword arugments for inner plot
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
 
@@ -836,10 +839,19 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
 
     gray = "#555555"
 
+    if inner_kws is None:
+        inner_kws = {}
+
     if position is None:
         position = np.arange(1, len(vals) + 1)
     elif not hasattr(position, "__iter__"):
         position = np.arange(position, len(vals) + position)
+
+    in_alpha = inner_kws.pop("alpha", .7 if inner == "stick" else .5)
+    in_color = inner_kws.pop("color", gray)
+    in_marker = inner_kws.pop("marker", "o")
+    in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+
     for i, a in enumerate(vals):
         x = position[i]
         kde = stats.gaussian_kde(a)
@@ -853,20 +865,22 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde(quant) * scl
                 q_x = [x - q_x, x + q_x]
-                ax.plot(q_x, [quant, quant], gray,
-                        linestyle=":", linewidth=1.5)
+                ax.plot(q_x, [quant, quant], color=in_color,
+                        linestyle=":", linewidth=in_lw, **inner_kws)
             med = np.median(a)
             m_x = kde(med) * scl
             m_x = [x - m_x, x + m_x]
-            ax.plot(m_x, [med, med], gray,
-                    linestyle="--", linewidth=1.2)
+            ax.plot(m_x, [med, med], color=in_color,
+                    linestyle="--", linewidth=in_lw, **inner_kws)
         elif inner == "stick":
             x_vals = kde(a) * scl
             x_vals = [x - x_vals, x + x_vals]
-            ax.plot(x_vals, [a, a], gray, linewidth=.7, alpha=.7)
+            ax.plot(x_vals, [a, a], color=in_color,
+                    linewidth=in_lw, alpha=in_alpha, **inner_kws)
         elif inner == "points":
-            x_vals = [x for i in a]
-            ax.plot(x_vals, a, "o", color=gray, alpha=.3)
+            x_vals = [x for _ in a]
+            ax.plot(x_vals, a, in_marker, color=in_color,
+                    alpha=in_alpha, **inner_kws)
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, gray, linewidth=1)
 
