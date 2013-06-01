@@ -18,7 +18,7 @@ from seaborn.utils import color_palette, ci_to_errsize
 
 def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
            estimator=np.mean, n_boot=10000, smooth=False,
-           err_palette=None, ax=None, **kwargs):
+           err_palette=None, ax=None, err_kws=None, **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
@@ -26,7 +26,8 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     x : n_tp array
         x values
     data : n_obs x n_tp array
-        array of timeseries data where first axis is e.g. subjects
+        array of timeseries data where first axis is observations. other
+        objects (e.g. DataFrames) are converted to an array if possible
     err_style : string or list of strings
         names of ways to plot uncertainty across observations from set of
        {ci_band, ci_bars, boot_traces, book_kde, obs_traces, obs_points}
@@ -42,6 +43,9 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         whether to perform a smooth bootstrap (resample from KDE)
     ax : axis object, optional
         plot in given axis; if None creates a new figure
+    err_kws : dict, optional
+        keyword argument dictionary passed through to matplotlib
+        function generating the error plot
     kwargs : further keyword arguments for main call to plot()
 
     Returns
@@ -53,7 +57,11 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     if ax is None:
         ax = plt.subplot(111)
 
+    if err_kws is None:
+        err_kws = {}
+
     # Bootstrap the data for confidence intervals
+    data = np.asarray(data)
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
                                axis=0, func=estimator)
     ci_list = hasattr(ci, "__iter__")
@@ -88,7 +96,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         plot_kwargs = dict(ax=ax, x=x, data=data,
                            boot_data=boot_data,
                            central_data=central_data,
-                           color=color)
+                           color=color, err_kws=err_kws)
 
         for ci_i in cis:
             plot_kwargs["ci"] = ci_i
@@ -108,43 +116,45 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
 # ----------------------------------------
 
 
-def _plot_ci_band(ax, x, ci, color, **kwargs):
+def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
     """Plot translucent error bands around the central tendancy."""
     low, high = ci
-    ax.fill_between(x, low, high, color=color, alpha=0.2)
+    ax.fill_between(x, low, high, color=color, alpha=0.2, **err_kws)
 
 
-def _plot_ci_bars(ax, x, central_data, ci, color, **kwargs):
+def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
     ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color,
-                label="_nolegend_")
+                label="_nolegend_", **err_kws)
 
 
-def _plot_boot_traces(ax, x, boot_data, color, **kwargs):
+def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25, linewidth=0.25,
-            label="_nolegend_")
+    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25,
+            linewidth=0.25, label="_nolegend_", **err_kws)
 
 
-def _plot_obs_traces(ax, x, data, ci, color, **kwargs):
+def _plot_obs_traces(ax, x, data, ci, color, err_kws, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
-            ax.plot(x, obs, color=color[i], alpha=0.5, label="_nolegend_")
+            ax.plot(x, obs, color=color[i], alpha=0.5,
+                    label="_nolegend_", **err_kws)
     else:
-        ax.plot(x, data.T, color=color, alpha=0.2, label="_nolegend_")
+        ax.plot(x, data.T, color=color, alpha=0.2,
+                label="_nolegend_", **err_kws)
 
 
-def _plot_obs_points(ax, x, data, color, **kwargs):
+def _plot_obs_points(ax, x, data, color, err_kws, **kwargs):
     """Plot each original data point discretely."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
             ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4,
-                    label="_nolegend_")
+                    label="_nolegend_", **err_kws)
     else:
         ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4,
-                label="_nolegend_")
+                label="_nolegend_", **err_kws)
 
 
 def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
@@ -572,28 +582,25 @@ def boxplot(vals, join_rm=False, names=None, color=None,
     widths = kwargs.pop("widths", .5)
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
-    gray = "#555555"
+    gray = "#777777"
     for i, box in enumerate(boxes["boxes"]):
         box.set_color(color)
-        box.set_alpha(.7)
-        box.set_linewidth(1.5)
         box.set_edgecolor(gray)
+        box.set_linewidth(1.5)
     for i, whisk in enumerate(boxes["whiskers"]):
         whisk.set_color(gray)
-        whisk.set_linewidth(2)
-        whisk.set_alpha(.7)
+        whisk.set_linewidth(1.5)
         whisk.set_linestyle("-")
     for i, cap in enumerate(boxes["caps"]):
         cap.set_color(gray)
         cap.set_linewidth(1.5)
-        cap.set_alpha(.7)
     for i, med in enumerate(boxes["medians"]):
         med.set_color(gray)
         med.set_linewidth(1.5)
     for i, fly in enumerate(boxes["fliers"]):
         fly.set_color(gray)
         fly.set_marker("d")
-        fly.set_alpha(.6)
+        fly.set_markeredgecolor(gray)
         fly.set_markersize(fliersize)
 
     if join_rm:
@@ -770,7 +777,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
-           names=None, ax=None, **kwargs):
+           names=None, kde_thresh=1e-4, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -788,6 +795,8 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
         measures and are joined with a line plot
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
+    kde_thresh : float, optional
+        proportion of maximum at which to threshold the KDE curve
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
 
@@ -834,7 +843,7 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
     for i, a in enumerate(vals):
         x = position[i]
         kde = stats.gaussian_kde(a)
-        y = _kde_support(a, kde, 1000)
+        y = _kde_support(a, kde, 1000, kde_thresh)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl

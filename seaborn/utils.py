@@ -108,6 +108,8 @@ def ci_to_errsize(cis, heights):
         format as argument for plt.bar
 
     """
+    cis = np.atleast_2d(cis).reshape(2, -1)
+    heights = np.atleast_1d(heights)
     errsize = []
     for i, (low, high) in enumerate(np.transpose(cis)):
         h = heights[i]
