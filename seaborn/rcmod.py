@@ -72,11 +72,11 @@ def context_setting(context):
 
     """
     if context == "talk":
-        params = {"axes.labelsize": 17,
+        params = {"axes.labelsize": 16,
                   "axes.titlesize": 19,
-                  "xtick.labelsize": 16,
-                  "ytick.labelsize": 16,
-                  "legend.fontsize": 14,
+                  "xtick.labelsize": 14,
+                  "ytick.labelsize": 14,
+                  "legend.fontsize": 13,
                   }
 
     elif context == "notebook":
