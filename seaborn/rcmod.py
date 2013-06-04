@@ -3,14 +3,15 @@ import matplotlib as mpl
 from seaborn import utils
 
 
-def set(context="notebook", style="darkgrid", palette="deep"):
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
     context_setting(context)
     axes_style(style)
     set_color_palette(palette)
     params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
-              "patch.linewidth": .3}
+              "patch.linewidth": .3,
+              "font.family": font}
     mpl.rcParams.update(params)
 
 
