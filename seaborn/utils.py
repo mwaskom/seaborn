@@ -166,7 +166,7 @@ def desaturate(color, pct, space="hsv"):
 
     """
     # Check inputs
-    if not 0 < pct < 1:
+    if not 0 <= pct <= 1:
         raise ValueError("Pct must be between 0 and 1")
 
     # Get rgb tuple rep
@@ -209,6 +209,33 @@ def saturate(color, space="hsv"):
     inter_rep[sat_chan] = 1
     new_color = map_out(*inter_rep)
     return new_color
+
+
+def set_hls_values(color, h=None, l=None, s=None):
+    """Independently manipulate the h, l, or s channels of a color.
+
+    Parameters
+    ----------
+    color : matplotlib color
+        hex, rgb-tuple, or html color name
+    h, l, s : floats between 0 and 1, or None
+        new values for each channel in hls space
+
+    Returns
+    -------
+    new_color : rgb tuple
+        new color code in RGB tuple representation
+
+    """
+    # Get rgb tuple representation
+    rgb = mplcol.colorConverter.to_rgb(color)
+    vals = list(colorsys.rgb_to_hls(*rgb))
+    for i, val in enumerate([h, l, s]):
+        if val is not None:
+            vals[i] = val
+
+    rgb = colorsys.hls_to_rgb(*vals)
+    return rgb
 
 
 def _hue_space_params(space):
