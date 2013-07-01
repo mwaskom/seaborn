@@ -572,6 +572,8 @@ def boxplot(vals, join_rm=False, names=None, color=None,
     """
     if ax is None:
         ax = plt.subplot(111)
+
+    widths = kwargs.pop("widths", .5)
     if color is None:
         pos = kwargs.get("positions", [1])[0]
         line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
@@ -579,7 +581,6 @@ def boxplot(vals, join_rm=False, names=None, color=None,
         line.remove()
         kwargs.pop("color", None)
 
-    widths = kwargs.pop("widths", .5)
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
     gray = "#777777"
