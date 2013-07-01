@@ -7,7 +7,7 @@ Contains functions and classes to facilitate making attractive plots
 Also provides concise control over the aesthetics of the plots, improving on
 Matplotlib's default look:
 
-![](example_plot.png "Example Seaborn Plot")
+![](examples/example_plot.png "Example Seaborn Plot")
 
 Dependencies
 ------------
