@@ -302,12 +302,14 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
             if col_wrap is not None:
-                row_i = col_j // ncol
-                col_j = col_j % ncol
-            ax = axes[row_i, col_j]
-            if row_i + 1 == nrow:
+                f_row = col_j // ncol
+                f_col = col_j % ncol
+            else:
+                f_row, f_col = row_i, col_j
+            ax = axes[f_row, f_col]
+            if f_row + 1 == nrow:
                 ax.set_xlabel(x)
-            if col_j == 0:
+            if f_col == 0:
                 ax.set_ylabel(y)
 
             # Title the plot if we are faceting
@@ -363,9 +365,11 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
         for row_i, row_mask in enumerate(row_masks):
             for col_j, col_mask in enumerate(col_masks):
                 if col_wrap is not None:
-                    row_i = col_j // ncol
-                    col_j = col_j % ncol
-                ax = axes[row_i, col_j]
+                    f_row = col_j // ncol
+                    f_col = col_j % ncol
+                else:
+                    f_row, f_col = row_i, col_j
+                ax = axes[f_row, f_col]
                 xlim = ax.get_xlim()
 
                 for hue_k, hue_mask in enumerate(hue_masks):
