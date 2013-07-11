@@ -305,9 +305,9 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 row_i = col_j // ncol
                 col_j = col_j % ncol
             ax = axes[row_i, col_j]
-            if not sharex or (row_i + 1 == nrow):
+            if row_i + 1 == nrow:
                 ax.set_xlabel(x)
-            if not sharey or col_j == 0:
+            if col_j == 0:
                 ax.set_ylabel(y)
 
             # Title the plot if we are faceting
