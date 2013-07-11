@@ -5,7 +5,7 @@
 # (which creates a new subplot) and an open-ended **kwargs to
 # pass to the underlying matplotlib function being called.
 # They should also return the ``ax`` object.
-
+from __future__ import division
 import numpy as np
 from scipy import stats, interpolate
 import statsmodels.api as sm
@@ -190,7 +190,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
               aspect="auto", origin="lower")
 
 
-def lmplot(x, y, data, color=None, row=None, col=None,
+def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
            x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
            x_jitter=None, y_jitter=None,
@@ -208,6 +208,8 @@ def lmplot(x, y, data, color=None, row=None, col=None,
         DataFrame column name to group the model by color
     row, col : strings, optional
         DataFrame column names to make separate plot facets
+    col_wrap : int, optional
+        wrap col variable at this width - cannot be used with row facet
     x_estimator : callable, optional
         Interpret X values as factor labels and use this function
         to plot the point estimate and bootstrapped CI
@@ -242,20 +244,28 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     # TODO
     # - legend when fit_line is False
     # - wrap title when wide
-    # - wrap columns
 
     # First sort out the general figure layout
     if size is None:
         size = mpl.rcParams["figure.figsize"][1]
 
+    if col is None and col_wrap is not None:
+        raise ValueError("Need column facet variable for `col_wrap`")
+    if row is not None and col_wrap is not None:
+        raise ValueError("Cannot facet rows when using `col_wrap`")
+
     nrow = 1 if row is None else len(data[row].unique())
     ncol = 1 if col is None else len(data[col].unique())
+
+    if col_wrap is not None:
+        ncol = col_wrap
+        nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
 
     f, axes = plt.subplots(nrow, ncol, sharex=sharex, sharey=sharey,
                            figsize=(size * ncol, size * nrow))
     axes = np.atleast_2d(axes).reshape(nrow, ncol)
 
-    if nrow == 1:
+    if nrow == 1 or col_wrap is not None:
         row_masks = [np.repeat(True, len(data))]
     else:
         row_vals = np.sort(data[row].unique())
@@ -291,8 +301,11 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     scatter_mew = mew = scatter_kws.pop("mew", 0)
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
+            if col_wrap is not None:
+                row_i = col_j // ncol
+                col_j = col_j % ncol
             ax = axes[row_i, col_j]
-            if not sharex or (row_i + 1 == len(row_masks)):
+            if not sharex or (row_i + 1 == nrow):
                 ax.set_xlabel(x)
             if not sharey or col_j == 0:
                 ax.set_ylabel(y)
@@ -349,6 +362,9 @@ def lmplot(x, y, data, color=None, row=None, col=None,
     if fit_reg:
         for row_i, row_mask in enumerate(row_masks):
             for col_j, col_mask in enumerate(col_masks):
+                if col_wrap is not None:
+                    row_i = col_j // ncol
+                    col_j = col_j % ncol
                 ax = axes[row_i, col_j]
                 xlim = ax.get_xlim()
 
@@ -572,6 +588,8 @@ def boxplot(vals, join_rm=False, names=None, color=None,
     """
     if ax is None:
         ax = plt.subplot(111)
+
+    widths = kwargs.pop("widths", .5)
     if color is None:
         pos = kwargs.get("positions", [1])[0]
         line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
@@ -579,7 +597,6 @@ def boxplot(vals, join_rm=False, names=None, color=None,
         line.remove()
         kwargs.pop("color", None)
 
-    widths = kwargs.pop("widths", .5)
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
     gray = "#777777"
