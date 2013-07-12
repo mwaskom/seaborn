@@ -343,7 +343,11 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
 
                     if y_partial is not None:
                         for var in y_partial:
-                            y_vals = moss.vector_reject(y_vals, data_ijk[var])
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_vals.mean()
+                            y_vals = moss.vector_reject(y_vals - y_mean, conf)
+                            y_vals += y_mean
 
                     y_grouped = [np.array(y_vals[data_ijk[x] == v])
                                  for v in x_vals]
@@ -367,10 +371,18 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
 
                     if x_partial is not None:
                         for var in x_partial:
-                            x_ = moss.vector_reject(np.array(x_), data_ijk[var])
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            x_mean = x_.mean()
+                            x_ = moss.vector_reject(x_ - x_mean, conf)
+                            x_ += x_mean
                     if y_partial is not None:
                         for var in y_partial:
-                            y_ = moss.vector_reject(np.array(y_), data_ijk[var])
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_.mean()
+                            y_ = moss.vector_reject(y_ - y_mean, conf)
+                            y_ += y_mean
 
                     if x_jitter is not None:
                         x_ += np.random.uniform(-x_jitter, x_jitter, x_.shape)
@@ -427,10 +439,18 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                     # Remove nuisance variables with vector rejection
                     if x_partial is not None:
                         for var in x_partial:
-                            x_vals = moss.vector_reject(x_vals, data_ijk[var])
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            x_mean = x_vals.mean()
+                            x_vals = moss.vector_reject(x_vals - x_mean, conf)
+                            x_vals += x_mean
                     if y_partial is not None:
                         for var in y_partial:
-                            y_vals = moss.vector_reject(y_vals, data_ijk[var])
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_vals.mean()
+                            y_vals = moss.vector_reject(y_vals - y_mean, conf)
+                            y_vals += y_mean
 
                     # Regression line confidence interval
                     if ci is not None:
