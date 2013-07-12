@@ -23,7 +23,10 @@ Dependencies
 
 - Scientific Python environment (i.e. EPD + nipy)
 
+- [husl](https://github.com/boronine/pyhusl)
+
 - [moss](http://github.com/mwaskom/moss)
+
 
 Installation
 ------------

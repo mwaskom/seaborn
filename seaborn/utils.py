@@ -1,6 +1,7 @@
 """Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
+import husl
 import numpy as np
 import matplotlib as mpl
 import matplotlib.colors as mplcol
@@ -47,6 +48,8 @@ def color_palette(name=None, n_colors=8, desat=None, h=.01, l=.6, s=.65):
 
     if name == "hls":
         palette = hls_palette(n_colors, h, l, s)
+    elif name == "husl":
+        palette = husl_palette(n_colors, h, s, l)
     else:
         try:
             palette =  palettes[name]
@@ -88,6 +91,37 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     hues += h
     hues -= hues.astype(int)
     palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
+    return palette
+
+
+def husl_palette(n_colors=6, h=.01, s=.65, l=.6):
+    """Get a set of evenly spaced colors in HUSL hue space.
+
+    Parameters
+    ----------
+
+    n_colors : int
+        number of colors in the palette
+    h : float
+        first hue
+    s : float
+        saturation
+    l : float
+        lightness
+
+    Returns
+    -------
+    palette : list of tuples
+        color palette
+
+    """
+    hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues += h
+    hues -= hues.astype(int)
+    hues *= 360
+    s *= 100
+    l *= 100
+    palette = [husl.husl_to_rgb(h_i, l, s) for h_i in hues]
     return palette
 
 

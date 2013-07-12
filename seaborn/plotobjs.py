@@ -194,7 +194,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
            x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
-           sharex=True, sharey=True, palette="hls", size=None,
+           sharex=True, sharey=True, palette="husl", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
 
