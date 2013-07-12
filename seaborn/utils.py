@@ -11,10 +11,20 @@ import matplotlib.pyplot as plt
 def color_palette(name=None, n_colors=8, desat=None, h=.01, l=.6, s=.65):
     """Return matplotlib color codes for a given palette.
 
+    Availible seaborn palette names:
+        default, pastel, bright, muted, deep, dark, colorblind
+
+    Other options:
+        hls, husl, any matplotlib palette
+
+    h, l, and s parameters are only relevant when name is hls or husl.
+
     Parameters
     ----------
-    name: None or string
-        Name of palette or None to return current color list
+    name: None, string, or list-ish
+        name of palette or None to return current color list. if
+        list-ish (i.e. arrays work too), input colors are used but
+        possibly desaturated
     n_colors : int
         number of colors in the palette
     desat : float
@@ -46,13 +56,15 @@ def color_palette(name=None, n_colors=8, desat=None, h=.01, l=.6, s=.65):
                     "#CC79A7", "#56B4E9", "#E69F00"],
     )
 
-    if name == "hls":
+    if hasattr(name, "__iter__"):
+        palette = name
+    elif name == "hls":
         palette = hls_palette(n_colors, h, l, s)
     elif name == "husl":
         palette = husl_palette(n_colors, h, s, l)
     else:
         try:
-            palette =  palettes[name]
+            palette = palettes[name]
         except KeyError:
             bins = np.linspace(0, 1, n_colors + 2)[1:-1]
             cmap = getattr(mpl.cm, name)
