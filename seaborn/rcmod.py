@@ -107,26 +107,20 @@ def context_setting(context):
     mpl.rcParams.update(params)
 
 
-def set_color_palette(name, n_colors=8, desat=None, h=.01, l=.6, s=.65):
+def set_color_palette(name, n_colors=8, desat=None):
     """Set the matplotlib color cycle in one of a variety of ways.
 
     Parameters
     ----------
-    name : hls | matplotlib colormap | seaborn color palette
+    name : hls | husl | matplotlib colormap | seaborn color palette
         palette name
     n_colors : int
         only relevant for hls or matplotlib palettes
     desat : float
         desaturation factor for each color
-    h : float
-        first hue for hls spokes
-    l : float
-        lightness of hls spokes
-    s : float
-        saturation of hls spokes
 
     """
-    colors = utils.color_palette(name, n_colors, desat, h, l, s)
+    colors = utils.color_palette(name, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = colors
     mpl.rcParams["patch.facecolor"] = colors[0]
 
