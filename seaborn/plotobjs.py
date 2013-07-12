@@ -193,7 +193,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
 def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
            x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
-           x_jitter=None, y_jitter=None,
+           x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
            sharex=True, sharey=True, palette="hls", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model from a DataFrame.
@@ -227,6 +227,8 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
         fit the regression line with logistic regression
     truncate : bool, optional
         if True, only fit line from data min to data max
+    {x, y}_partial : string or list of strings, optional
+        regress these variables out of the factors before plotting
     {x, y}_jitter : float, optional
         parameters for uniformly distributed random noise added to positions
     sharex, sharey : bools, optional
@@ -276,6 +278,13 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     else:
         col_vals = np.sort(data[col].unique())
         col_masks = [data[col] == val for val in col_vals]
+
+    if x_partial is not None:
+        if not isinstance(x_partial, list):
+            x_partial = [x_partial]
+    if y_partial is not None:
+        if not isinstance(y_partial, list):
+            y_partial = [y_partial]
 
     if palette_kws is None:
         palette_kws = {}
@@ -330,8 +339,15 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                     ms = scatter_kws.pop("ms", 7)
                     mew = scatter_kws.pop("mew", 0)
                     x_vals = data_ijk[x].unique()
-                    y_grouped = [np.array(data_ijk[y][data_ijk[x] == v])
+                    y_vals = data_ijk[y]
+
+                    if y_partial is not None:
+                        for var in y_partial:
+                            y_vals = moss.vector_reject(y_vals, data_ijk[var])
+
+                    y_grouped = [np.array(y_vals[data_ijk[x] == v])
                                  for v in x_vals]
+
                     y_est = [x_estimator(y_i) for y_i in y_grouped]
                     y_boots = [moss.bootstrap(np.array(y_i),
                                               func=x_estimator,
@@ -348,10 +364,18 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 else:
                     x_ = data_ijk[x]
                     y_ = data_ijk[y]
+
+                    if x_partial is not None:
+                        for var in x_partial:
+                            x_ = moss.vector_reject(np.array(x_), data_ijk[var])
+                    if y_partial is not None:
+                        for var in y_partial:
+                            y_ = moss.vector_reject(np.array(y_), data_ijk[var])
+
                     if x_jitter is not None:
-                        x_ += np.random.uniform(-x_jitter, x_jitter, len(x_))
+                        x_ += np.random.uniform(-x_jitter, x_jitter, x_.shape)
                     if y_jitter is not None:
-                        y_ += np.random.uniform(-y_jitter, y_jitter, len(y_))
+                        y_ += np.random.uniform(-y_jitter, y_jitter, y_.shape)
                     ax.plot(x_, y_, "o", color=color,
                             mew=scatter_mew, ms=scatter_ms, **scatter_kws)
 
@@ -400,6 +424,14 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                             reg = np.polyval(fit, xx)
                         return reg
 
+                    # Remove nuisance variables with vector rejection
+                    if x_partial is not None:
+                        for var in x_partial:
+                            x_vals = moss.vector_reject(x_vals, data_ijk[var])
+                    if y_partial is not None:
+                        for var in y_partial:
+                            y_vals = moss.vector_reject(y_vals, data_ijk[var])
+
                     # Regression line confidence interval
                     if ci is not None:
                         ci_lims = [50 - ci / 2., 50 + ci / 2.]
@@ -409,6 +441,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                         ci_band = moss.percentiles(boots, ci_lims, axis=0)
                         ax.fill_between(xx, *ci_band, color=color, alpha=.15)
 
+                    # Regression line
                     reg = _regress(x_vals, y_vals)
                     if color_factor is None:
                         label = ""
