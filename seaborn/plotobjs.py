@@ -617,22 +617,23 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     ax_y_marg.set_xticks([])
 
 
-def boxplot(vals, join_rm=False, names=None, color=None, alpha=None,
-            fliersize=3, widths=.5, ax=None, **kwargs):
+def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
+            fliersize=3, widths=.8, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
     ----------
     vals : sequence of data containers
         data for plot
+    names : list of strings, optional
+        names to plot on x axis, otherwise plots numbers
     join_rm : boolean, optional
         if True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot
-    names : list of strings, optional
-        names to plot on x axis, otherwise plots numbers
     color : mpl color, sequence of colors, or seaborn palette name
         inner box color
-    alpha : transparancy of the inner box color
+    alpha : float
+        transparancy of the inner box color
     fliersize : int, optional
         markersize for the fliers
     ax : matplotlib axis, optional
@@ -654,7 +655,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, alpha=None,
     if color is None:
         colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
     else:
-        if hasattr(color, "__iter__"):
+        if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
         else:
             try:
@@ -666,8 +667,7 @@ def boxplot(vals, join_rm=False, names=None, color=None, alpha=None,
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
-    l = min(light_vals)
-    l = max(l - .15, 0)
+    l = min(light_vals) * .6
     gray = (l, l, l)
 
     for i, box in enumerate(boxes["boxes"]):
@@ -693,8 +693,8 @@ def boxplot(vals, join_rm=False, names=None, color=None, alpha=None,
         fly.set_markersize(fliersize)
 
     if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals,
-                color=colors[0], alpha=2. / 3)
+        ax.plot(range(1, len(vals.T) + 1), vals.T,
+                color=gray, alpha=2. / 3)
 
     if names is not None:
         ax.set_xticklabels(names)
@@ -865,9 +865,9 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, inner="box", color=None, positions=None, names=None,
-           widths=.5, alpha=None, join_rm=False, kde_thresh=1e-2,
+           widths=.8, alpha=None, join_rm=False, kde_thresh=1e-2,
            inner_kws=None, ax=None, **kwargs):
-    """Create a violin plot (a combination of boxplot and KDE plot.
+    """Create a violin plot (a combination of boxplot and KDE plot).
 
     Parameters
     ----------
@@ -881,8 +881,8 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
         position of first violin or positions of each violin
     widths : float
         width of each violin at maximum density
-    alpha : float
-        transparancy of violin inner
+    alpha : float, optional
+        transparancy of violin fill
     join_rm : boolean, optional
         if True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot
@@ -928,7 +928,7 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     if color is None:
         colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
     else:
-        if hasattr(color, "__iter__"):
+        if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
         else:
             try:
@@ -940,8 +940,7 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
-    l = min(light_vals)
-    l = max(0, l - .25)
+    l = min(light_vals) * .6
     gray = (l, l, l)
 
     if inner_kws is None:
@@ -952,7 +951,7 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     elif not hasattr(positions, "__iter__"):
         positions = np.arange(positions, len(vals) + positions)
 
-    in_alpha = inner_kws.pop("alpha", 1)
+    in_alpha = inner_kws.pop("alpha", .6 if inner == "points" else 1)
     in_alpha *= 1 if alpha is None else alpha
     in_color = inner_kws.pop("color", gray)
     in_marker = inner_kws.pop("marker", "o")
@@ -986,9 +985,9 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
         elif inner == "points":
             x_vals = [x for _ in a]
             ax.plot(x_vals, a, in_marker, color=in_color,
-                    alpha=in_alpha, **inner_kws)
+                    alpha=in_alpha, mew=0, **inner_kws)
         for side in [-1, 1]:
-            ax.plot((side * dens) + x, y, c=gray, linewidth=1)
+            ax.plot((side * dens) + x, y, c=gray, linewidth=1.5)
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
