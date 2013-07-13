@@ -6,6 +6,7 @@
 # pass to the underlying matplotlib function being called.
 # They should also return the ``ax`` object.
 from __future__ import division
+import colorsys
 import numpy as np
 from scipy import stats, interpolate
 import statsmodels.api as sm
@@ -616,8 +617,8 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     ax_y_marg.set_xticks([])
 
 
-def boxplot(vals, join_rm=False, names=None, color=None,
-            fliersize=3, ax=None, **kwargs):
+def boxplot(vals, join_rm=False, names=None, color=None, alpha=None,
+            fliersize=3, widths=.5, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
@@ -629,8 +630,9 @@ def boxplot(vals, join_rm=False, names=None, color=None,
         measures and are joined with a line plot
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
-    color : matplotlib color, optional
-        box color
+    color : mpl color, sequence of colors, or seaborn palette name
+        inner box color
+    alpha : transparancy of the inner box color
     fliersize : int, optional
         markersize for the fliers
     ax : matplotlib axis, optional
@@ -646,19 +648,32 @@ def boxplot(vals, join_rm=False, names=None, color=None,
     if ax is None:
         ax = plt.subplot(111)
 
-    widths = kwargs.pop("widths", .5)
-    if color is None:
-        pos = kwargs.get("positions", [1])[0]
-        line, = ax.plot(pos, np.mean(vals[0]), **kwargs)
-        color = line.get_color()
-        line.remove()
-        kwargs.pop("color", None)
-
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
+    vals = np.atleast_2d(vals).T
 
-    gray = "#777777"
+    if color is None:
+        colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
+    else:
+        if hasattr(color, "__iter__"):
+            colors = color
+        else:
+            try:
+                color = mpl.colors.colorConverter.to_rgb(color)
+                colors = [color for _ in vals]
+            except ValueError:
+                colors = color_palette(color, len(vals))
+
+    colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+
+    light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
+    l = min(light_vals)
+    l = max(l - .15, 0)
+    gray = (l, l, l)
+
     for i, box in enumerate(boxes["boxes"]):
-        box.set_color(color)
+        box.set_color(colors[i])
+        if alpha is not None:
+            box.set_alpha(alpha)
         box.set_edgecolor(gray)
         box.set_linewidth(1.5)
     for i, whisk in enumerate(boxes["whiskers"]):
@@ -679,11 +694,12 @@ def boxplot(vals, join_rm=False, names=None, color=None,
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
-                color=color, alpha=2. / 3)
+                color=colors[0], alpha=2. / 3)
 
     if names is not None:
         ax.set_xticklabels(names)
 
+    ax.xaxis.grid(False)
     return ax
 
 
@@ -848,9 +864,9 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     return ax
 
 
-def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
-           names=None, kde_thresh=1e-2, inner_kws=None, ax=None,
-           **kwargs):
+def violin(vals, inner="box", color=None, positions=None, names=None,
+           widths=.5, alpha=None, join_rm=False, kde_thresh=1e-2,
+           inner_kws=None, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot.
 
     Parameters
@@ -859,10 +875,14 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
         data to plot
     inner : box | sticks | points
         plot quartiles or individual sample values inside violin
+    color : mpl color, sequence of colors, or seaborn palette name
+        inner violin colors
     positions : number or sequence of numbers
         position of first violin or positions of each violin
     widths : float
         width of each violin at maximum density
+    alpha : float
+        transparancy of violin inner
     join_rm : boolean, optional
         if True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot
@@ -905,34 +925,48 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
 
     vals = [np.asarray(a, float) for a in vals]
 
-    line, = ax.plot(vals[0].mean(), vals[0].mean(), **kwargs)
-    color = line.get_color()
-    line.remove()
+    if color is None:
+        colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
+    else:
+        if hasattr(color, "__iter__"):
+            colors = color
+        else:
+            try:
+                color = mpl.colors.colorConverter.to_rgb(color)
+                colors = [color for _ in vals]
+            except ValueError:
+                colors = color_palette(color, len(vals))
 
-    gray = "#555555"
+    colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+
+    light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
+    l = min(light_vals)
+    l = max(0, l - .25)
+    gray = (l, l, l)
 
     if inner_kws is None:
         inner_kws = {}
 
-    if position is None:
-        position = np.arange(1, len(vals) + 1)
-    elif not hasattr(position, "__iter__"):
-        position = np.arange(position, len(vals) + position)
+    if positions is None:
+        positions = np.arange(1, len(vals) + 1)
+    elif not hasattr(positions, "__iter__"):
+        positions = np.arange(positions, len(vals) + positions)
 
-    in_alpha = inner_kws.pop("alpha", .7 if inner == "stick" else .5)
+    in_alpha = inner_kws.pop("alpha", 1)
+    in_alpha *= 1 if alpha is None else alpha
     in_color = inner_kws.pop("color", gray)
     in_marker = inner_kws.pop("marker", "o")
     in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
 
     for i, a in enumerate(vals):
-        x = position[i]
+        x = positions[i]
         kde = stats.gaussian_kde(a)
         y = _kde_support(a, kde, 1000, kde_thresh)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
-        ax.fill_betweenx(y, x - dens, x + dens, alpha=.7, color=color)
+        ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
         if inner == "box":
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde(quant) * scl
@@ -954,19 +988,20 @@ def violin(vals, inner="box", position=None, widths=.5, join_rm=False,
             ax.plot(x_vals, a, in_marker, color=in_color,
                     alpha=in_alpha, **inner_kws)
         for side in [-1, 1]:
-            ax.plot((side * dens) + x, y, gray, linewidth=1)
+            ax.plot((side * dens) + x, y, c=gray, linewidth=1)
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
-                color=color, alpha=2. / 3)
+                color=in_color, alpha=2. / 3)
 
-    ax.set_xticks(position)
+    ax.set_xticks(positions)
     if names is not None:
         if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
-    ax.set_xlim(position[0] - .5, position[-1] + .5)
+    ax.set_xlim(positions[0] - .5, positions[-1] + .5)
 
+    ax.xaxis.grid(False)
     return ax
 
 
