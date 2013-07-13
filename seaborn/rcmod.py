@@ -130,7 +130,6 @@ def _blank_ticks(params):
     for axis in ["x", "y"]:
         for step in ["major", "minor"]:
             params["%stick.%s.size" % (axis, step)] = 0
-        params["%stick.%scolor" % axis] = "white"
 
 
 def _restore_ticks(params):
@@ -138,4 +137,3 @@ def _restore_ticks(params):
     for axis in ["x", "y"]:
         for step, size in zip(["major", "minor"], [4, 2]):
             params["%stick.%s.size" % (axis, step)] = size
-        params["%stick.%scolor" % axis] = "white"
