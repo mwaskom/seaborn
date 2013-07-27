@@ -11,7 +11,9 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
               "patch.linewidth": .3,
-              "font.family": font}
+              "font.family": font,
+              "legend.frameon": False,
+              "legend.numpoints": 1}
     mpl.rcParams.update(params)
 
 
