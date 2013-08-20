@@ -5,8 +5,8 @@ from seaborn import utils
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
-    context_setting(context)
-    axes_style(style)
+    set_context(context)
+    set_axes_style(style)
     set_color_palette(palette)
     params = {"figure.figsize": (8, 5.5),
               "lines.linewidth": 1.4,
@@ -22,7 +22,7 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def axes_style(style):
+def set_axes_style(style):
     """Set the axis style.
 
     Parameters
@@ -63,7 +63,7 @@ def axes_style(style):
         raise ValueError("Style %s not recognized" % style)
 
 
-def context_setting(context):
+def set_context(context):
     """Set some visual parameters based on intended context.
 
     Currently just changes font sizes
