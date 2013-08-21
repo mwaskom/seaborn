@@ -93,6 +93,13 @@ def context_setting(context):
                   "xtick.labelsize": 16,
                   "ytick.labelsize": 16,
                   }
+                  
+    elif context == "poster_smallfig":
+        params = {"axes.labelsize": 20,
+                  "axes.titlesize": 22,
+                  "xtick.labelsize": 18,
+                  "ytick.labelsize": 18,
+                  }
 
     elif context == "paper":
         params = {"axes.labelsize": 10,
