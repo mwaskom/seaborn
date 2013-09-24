@@ -5,16 +5,12 @@ from seaborn import utils
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
-    set_context(context)
-    set_axes_style(style)
+    set_axes_style(style, context)
     set_color_palette(palette)
-    params = {"figure.figsize": (8, 5.5),
-              "lines.linewidth": 1.4,
-              "patch.linewidth": .3,
-              "font.family": font,
-              "legend.frameon": False,
-              "legend.numpoints": 1}
-    mpl.rcParams.update(params)
+    mpl.rc("font", family=font)
+    mpl.rc("legend", frameon=False, numpoints=1)
+    mpl.rc("lines", markeredgewidth=0)
+    mpl.rc("figure", figsize=(8, 5.5))
 
 
 def reset_defaults():
@@ -22,91 +18,96 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def set_axes_style(style):
+def set_axes_style(style, context):
     """Set the axis style.
 
     Parameters
     ----------
     style : darkgrid | whitegrid | nogrid
         Style of axis background.
-
-    """
-    grid_params = {"axes.grid": True,
-                   "axes.axisbelow": True}
-
-    if style == "darkgrid":
-        grid_params.update({"axes.facecolor": "#EAEAF2",
-                            "axes.linewidth": 0,
-                            "grid.color": "w",
-                            "grid.linestyle": "-",
-                            "grid.linewidth": 1.5})
-        _blank_ticks(grid_params)
-        mpl.rcParams.update(grid_params)
-
-    elif style == "whitegrid":
-        grid_params.update({"axes.facecolor": "white",
-                            "axes.linewidth": 1,
-                            "grid.color": "#222222",
-                            "grid.linestyle": ":",
-                            "grid.linewidth": .8})
-        _restore_ticks(grid_params)
-        mpl.rcParams.update(grid_params)
-
-    elif style == "nogrid":
-        params = {"axes.grid": False,
-                  "axes.facecolor": "white",
-                  "axes.linewidth": 1}
-        _restore_ticks(params)
-        mpl.rcParams.update(params)
-
-    else:
-        raise ValueError("Style %s not recognized" % style)
-
-
-def set_context(context):
-    """Set some visual parameters based on intended context.
-
-    Currently just changes font sizes
-
-    Parameters
-    ----------
-    context: notebook | talk | paper
+    context: notebook | talk | paper | poster
         Intended context for resulting figures.
 
     """
-    if context == "talk":
-        params = {"axes.labelsize": 16,
-                  "axes.titlesize": 19,
-                  "xtick.labelsize": 14,
-                  "ytick.labelsize": 14,
-                  "legend.fontsize": 13,
-                  }
+    # Validate the arguments
+    if not {"darkgrid", "whitegrid", "nogrid"} & {style}:
+        raise ValueError("Style %s not recognized" % style)
 
-    elif context == "notebook":
-        params = {"axes.labelsize": 11,
-                  "axes.titlesize": 12,
-                  "xtick.labelsize": 10,
-                  "ytick.labelsize": 10,
-                  }
-
-    elif context == "poster":
-        params = {"axes.labelsize": 18,
-                  "axes.titlesize": 22,
-                  "xtick.labelsize": 16,
-                  "ytick.labelsize": 16,
-                  }
-
-    elif context == "paper":
-        params = {"axes.labelsize": 10,
-                  "axes.titlesize": 13,
-                  "xtick.labelsize": 10,
-                  "ytick.labelsize": 10,
-                  }
-
-    else:
+    if not {"notebook", "talk", "paper", "poster"} & {context}:
         raise ValueError("Context %s is not recognized" % context)
 
-    mpl.rcParams.update(params)
+    # Determine the axis parameters
+    if style == "darkgrid":
+        lw = .8 if context  == "paper" else 1.5
+        ax_params = {"axes.facecolor": "#EAEAF2",
+                     "axes.edgecolor": "white",
+                     "axes.linewidth": 0,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "w",
+                     "grid.linestyle": "-",
+                     "grid.linewidth": lw}
+        _blank_ticks(ax_params)
+
+    elif style == "whitegrid":
+        glw = .4 if context == "paper" else .8
+        ax_params = {"axes.facecolor": "white",
+                     "axes.linewidth": 1,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "#222222",
+                     "grid.linestyle": ":",
+                     "grid.linewidth": glw}
+        _restore_ticks(ax_params)
+
+    elif style == "nogrid":
+        ax_params = {"axes.grid": False,
+                     "axes.facecolor": "white",
+                     "axes.linewidth": 1}
+        _restore_ticks(ax_params)
+
+    mpl.rcParams.update(ax_params)
+
+    # Determine the font sizes
+    if context == "talk":
+        font_params = {"axes.labelsize": 16,
+                       "axes.titlesize": 19,
+                       "xtick.labelsize": 14,
+                       "ytick.labelsize": 14,
+                       "legend.fontsize": 13,
+                       }
+
+    elif context == "notebook":
+        font_params = {"axes.labelsize": 11,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 10,
+                       "ytick.labelsize": 10,
+                       "legend.fontsize": 9,
+                       }
+
+    elif context == "poster":
+        font_params = {"axes.labelsize": 18,
+                       "axes.titlesize": 22,
+                       "xtick.labelsize": 16,
+                       "ytick.labelsize": 16,
+                       "legend.fontsize": 16,
+                       }
+
+    elif context == "paper":
+        font_params = {"axes.labelsize": 8,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 8,
+                       "ytick.labelsize": 8,
+                       "legend.fontsize": 8,
+                       }
+
+    mpl.rcParams.update(font_params)
+
+    # Set other parameters
+    mpl.rcParams.update({
+        "lines.linewidth": 1.1 if context == "paper" else 1.4,
+        "patch.linewidth": .1 if context == "paper" else .3
+                         })
 
 
 def set_color_palette(name, n_colors=8, desat=None):

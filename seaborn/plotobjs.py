@@ -618,7 +618,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
 
 
 def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
-            fliersize=3, widths=.8, ax=None, **kwargs):
+            fliersize=3, linewidth=1.5, widths=.8, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
@@ -634,8 +634,10 @@ def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
         inner box color
     alpha : float
         transparancy of the inner box color
-    fliersize : int, optional
+    fliersize : float, optional
         markersize for the fliers
+    linewidth : float, optional
+        width for the box outlines and whiskers
     ax : matplotlib axis, optional
         will plot in axis, or create new figure axis
     kwargs : additional keyword arguments to boxplot
@@ -675,17 +677,17 @@ def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
         if alpha is not None:
             box.set_alpha(alpha)
         box.set_edgecolor(gray)
-        box.set_linewidth(1.5)
+        box.set_linewidth(linewidth)
     for i, whisk in enumerate(boxes["whiskers"]):
         whisk.set_color(gray)
-        whisk.set_linewidth(1.5)
+        whisk.set_linewidth(linewidth)
         whisk.set_linestyle("-")
     for i, cap in enumerate(boxes["caps"]):
         cap.set_color(gray)
-        cap.set_linewidth(1.5)
+        cap.set_linewidth(linewidth)
     for i, med in enumerate(boxes["medians"]):
         med.set_color(gray)
-        med.set_linewidth(1.5)
+        med.set_linewidth(linewidth)
     for i, fly in enumerate(boxes["fliers"]):
         fly.set_color(gray)
         fly.set_marker("d")
