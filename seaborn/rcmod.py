@@ -11,6 +11,7 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("legend", frameon=False, numpoints=1)
     mpl.rc("lines", markeredgewidth=0)
     mpl.rc("figure", figsize=(8, 5.5))
+    mpl.rc("image", cmap="CMRmap")
 
 
 def reset_defaults():
