@@ -51,15 +51,16 @@ def set_axes_style(style, context):
         _blank_ticks(ax_params)
 
     elif style == "whitegrid":
-        glw = .4 if context == "paper" else .8
+        glw = .8 if context == "paper" else 1.5
         ax_params = {"axes.facecolor": "white",
-                     "axes.linewidth": 1,
+                     "axes.edgecolor": "white",
+                     "axes.linewidth": glw + .2,
                      "axes.grid": True,
                      "axes.axisbelow": True,
-                     "grid.color": "#222222",
-                     "grid.linestyle": ":",
+                     "grid.color": "#CCCCCC",
+                     "grid.linestyle": "-",
                      "grid.linewidth": glw}
-        _restore_ticks(ax_params)
+        _blank_ticks(ax_params)
 
     elif style == "nogrid":
         ax_params = {"axes.grid": False,
