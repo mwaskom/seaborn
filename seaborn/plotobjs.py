@@ -10,6 +10,7 @@ import colorsys
 import numpy as np
 from scipy import stats, interpolate
 import statsmodels.api as sm
+import statsmodels.formula.api as sf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
@@ -615,6 +616,82 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     ax_x_marg.set_yticks([])
     ax_y_marg.set_ylim(ax_scatter.get_ylim())
     ax_y_marg.set_xticks([])
+
+
+def coefplot(formula, data, groupby=None, intercept=False, ci=95,
+             palette="husl"):
+    """Plot the coefs from a linear model.
+    
+    Parameters
+    ----------
+    formula : string
+        patsy formula for ols model
+    data : dataframe
+        data for the plot; formula terms must appear in columns
+    groupby : grouping object, optional
+        object to group data with to fit conditional models
+    intercept : bool, optional
+        if False, strips the intercept term before plotting
+    ci : float, optional
+        size of confidence intervals
+    palette : seaborn color palette, optional
+        palette for the horizonal plots
+    
+    """
+    alpha = 1 - ci / 100
+    if groupby is None:
+        coefs = sf.ols(formula, data).fit().params
+        cis = sf.ols(formula, data).fit().conf_int(alpha)
+    else:
+        grouped = data.groupby(groupby)
+        coefs = grouped.apply(lambda d: sf.ols(formula, d).fit().params).T
+        cis = grouped.apply(lambda d: sf.ols(formula, d).fit().conf_int(alpha))
+
+    # Possibly ignore the intercept
+    if not intercept:
+        coefs = coefs.ix[1:]
+
+    n_terms = len(coefs)
+
+    # Plot seperately depending on groupby
+    w, h = mpl.rcParams["figure.figsize"]
+    hsize = lambda n: n * (h / 2)
+    wsize = lambda n: n * (w / (4 * (n / 5)))
+    if groupby is None:
+        colors = color_palette(palette, n_terms)
+        f, ax = plt.subplots(1, 1, figsize=(hsize(n_terms), hsize(1)))
+        for i, term in enumerate(coefs.index):
+            color = colors[i]
+            low, high = cis.ix[term]
+            ax.plot([i, i], [low, high], c=color,
+                    solid_capstyle="round", lw=2.5)
+            ax.plot(i, coefs.ix[term], "o", c=color, ms=8)
+        ax.set_xlim(-.5, n_terms - .5)
+        ax.axhline(0, ls="--", c="dimgray")
+        ax.set_xticks(range(n_terms))
+        ax.set_xticklabels(coefs.index)
+
+    else:
+        n_groups = len(coefs.columns)
+        f, axes = plt.subplots(n_terms, 1, sharex=True,
+                               figsize=(wsize(n_groups), hsize(n_terms)))
+        if n_terms == 1:
+            axes = [axes]
+        colors = color_palette(palette, n_groups)
+        for ax, term in zip(axes, coefs.index):
+            for i, group in enumerate(coefs.columns):
+                color = colors[i]
+                low, high = cis.ix[(group, term)]
+                ax.plot([i, i], [low, high], c=color,
+                        solid_capstyle="round", lw=2.5)
+                ax.plot(i, coefs.loc[term, group], "o", c=color, ms=8)
+            ax.set_xlim(-.5, n_groups - .5)
+            ax.axhline(0, ls="--", c="dimgray")
+            ax.set_title(term)
+        ax.set_xlabel(groupby)
+        ax.set_xticks(range(n_groups))
+        ax.set_xticklabels(coefs.columns)
+                
 
 
 def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
