@@ -622,7 +622,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
 def coefplot(formula, data, groupby=None, intercept=False, ci=95,
              palette="husl"):
     """Plot the coefficients from a linear model.
-    
+
     Parameters
     ----------
     formula : string
@@ -637,7 +637,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         size of confidence intervals
     palette : seaborn color palette, optional
         palette for the horizonal plots
-    
+
     """
     alpha = 1 - ci / 100
     if groupby is None:
@@ -692,7 +692,6 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xlabel(groupby)
         ax.set_xticks(range(n_groups))
         ax.set_xticklabels(coefs.columns)
-                
 
 
 def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
