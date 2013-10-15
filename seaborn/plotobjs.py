@@ -7,6 +7,7 @@
 # They should also return the ``ax`` object.
 from __future__ import division
 import colorsys
+import itertools
 import numpy as np
 from scipy import stats, interpolate
 import statsmodels.api as sm
@@ -620,7 +621,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
 
 def coefplot(formula, data, groupby=None, intercept=False, ci=95,
              palette="husl"):
-    """Plot the coefs from a linear model.
+    """Plot the coefficients from a linear model.
     
     Parameters
     ----------
@@ -658,10 +659,10 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
     hsize = lambda n: n * (h / 2)
     wsize = lambda n: n * (w / (4 * (n / 5)))
     if groupby is None:
-        colors = color_palette(palette, n_terms)
+        colors = itertools.cycle(color_palette(palette, n_terms))
         f, ax = plt.subplots(1, 1, figsize=(hsize(n_terms), hsize(1)))
         for i, term in enumerate(coefs.index):
-            color = colors[i]
+            color = colors.next()
             low, high = cis.ix[term]
             ax.plot([i, i], [low, high], c=color,
                     solid_capstyle="round", lw=2.5)
@@ -677,10 +678,10 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
                                figsize=(wsize(n_groups), hsize(n_terms)))
         if n_terms == 1:
             axes = [axes]
-        colors = color_palette(palette, n_groups)
+        colors = itertools.cycle(color_palette(palette, n_groups))
         for ax, term in zip(axes, coefs.index):
             for i, group in enumerate(coefs.columns):
-                color = colors[i]
+                color = colors.next()
                 low, high = cis.ix[(group, term)]
                 ax.plot([i, i], [low, high], c=color,
                         solid_capstyle="round", lw=2.5)
