@@ -9,6 +9,7 @@ from __future__ import division
 import colorsys
 import itertools
 import numpy as np
+import pandas as pd
 from scipy import stats, interpolate
 import statsmodels.api as sm
 import statsmodels.formula.api as sf
@@ -16,7 +17,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
-from seaborn.utils import color_palette, ci_to_errsize
+from seaborn.utils import (color_palette, ci_to_errsize,
+                           husl_palette, desaturate)
 
 
 def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
@@ -694,14 +696,17 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xticklabels(coefs.columns)
 
 
-def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
-            fliersize=3, linewidth=1.5, widths=.8, ax=None, **kwargs):
+def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
+            alpha=None, fliersize=3, linewidth=1.5, widths=.8, ax=None,
+            **kwargs):
     """Wrapper for matplotlib boxplot that allows better color control.
 
     Parameters
     ----------
     vals : sequence of data containers
         data for plot
+    groupby : grouping object
+        if `vals` is a Series, this is used to group
     names : list of strings, optional
         names to plot on x axis, otherwise plots numbers
     join_rm : boolean, optional
@@ -728,11 +733,32 @@ def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
     if ax is None:
         ax = plt.subplot(111)
 
+    if isinstance(vals, pd.DataFrame):
+        if names is None:
+            names = vals.columns
+        if vals.columns.name is not None:
+            xlabel = vals.columns.name
+        vals = vals.values.T
+
+    elif isinstance(vals, pd.Series) and groupby is not None:
+        if names is None:
+            names = pd.unique(groupby)
+        if hasattr(groupby, "name"):
+            xlabel = groupby.name
+        ylabel = vals.name
+        grouped_vals = pd.groupby(vals, groupby).values
+        if names is None:
+            names = grouped_vals.index
+        vals = grouped_vals.values
+    else:
+        xlabel = None
+        ylabel = None
+
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
     vals = np.atleast_2d(vals).T
 
     if color is None:
-        colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
+        colors = husl_palette(len(vals))
     else:
         if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
@@ -744,6 +770,7 @@ def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
                 colors = color_palette(color, len(vals))
 
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+    colors = [desaturate(c, .75) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
@@ -777,6 +804,10 @@ def boxplot(vals, names=None, join_rm=False, color=None, alpha=None,
 
     if names is not None:
         ax.set_xticklabels(names)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
 
     ax.xaxis.grid(False)
     return ax
@@ -943,8 +974,8 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     return ax
 
 
-def violin(vals, inner="box", color=None, positions=None, names=None,
-           widths=.8, alpha=None, join_rm=False, kde_thresh=1e-2,
+def violin(vals, groupby=None, inner="box", color=None, positions=None,
+           names=None, widths=.8, alpha=None, join_rm=False, kde_thresh=1e-2,
            inner_kws=None, ax=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot).
 
@@ -952,6 +983,8 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     ----------
     vals : array or sequence of arrays
         data to plot
+    groupby : grouping object
+        if `vals` is a Series, this is used to group
     inner : box | sticks | points
         plot quartiles or individual sample values inside violin
     color : mpl color, sequence of colors, or seaborn palette name
@@ -983,6 +1016,25 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     if ax is None:
         ax = plt.subplot(111)
 
+    if isinstance(vals, pd.DataFrame):
+        if names is None:
+            names = vals.columns
+        if vals.columns.name is not None:
+            xlabel = vals.columns.name
+        vals = vals.values.T
+
+    elif isinstance(vals, pd.Series) and groupby is not None:
+        if hasattr(groupby, "name"):
+            xlabel = groupby.name
+        ylabel = vals.name
+        grouped_vals = pd.groupby(vals, groupby).values
+        if names is None:
+            names = grouped_vals.index
+        vals = grouped_vals.values
+    else:
+        xlabel = None
+        ylabel = None
+
     if hasattr(vals, 'shape'):
         if len(vals.shape) == 1:
             if hasattr(vals[0], 'shape'):
@@ -1005,7 +1057,7 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
     vals = [np.asarray(a, float) for a in vals]
 
     if color is None:
-        colors = [mpl.rcParams["patch.facecolor"] for _ in vals]
+        colors = husl_palette(len(vals))
     else:
         if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
@@ -1017,6 +1069,7 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
                 colors = color_palette(color, len(vals))
 
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+    colors = [desaturate(c, .75) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
@@ -1078,6 +1131,11 @@ def violin(vals, inner="box", color=None, positions=None, names=None,
             raise ValueError("Length of names list must match nuber of bins")
         ax.set_xticklabels(names)
     ax.set_xlim(positions[0] - .5, positions[-1] + .5)
+
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
 
     ax.xaxis.grid(False)
     return ax
