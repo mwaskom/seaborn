@@ -738,7 +738,10 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             names = vals.columns
         if vals.columns.name is not None:
             xlabel = vals.columns.name
-        vals = vals.values.T
+        else:
+            xlabel = None
+        vals = vals.values
+        ylabel = None
 
     elif isinstance(vals, pd.Series) and groupby is not None:
         if names is None:
@@ -1021,7 +1024,10 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
             names = vals.columns
         if vals.columns.name is not None:
             xlabel = vals.columns.name
-        vals = vals.values.T
+        else:
+            xlabel = None
+        ylabel = None
+        vals = vals.values
 
     elif isinstance(vals, pd.Series) and groupby is not None:
         if hasattr(groupby, "name"):
