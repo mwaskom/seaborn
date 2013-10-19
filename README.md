@@ -37,3 +37,8 @@ Development
 -----------
 
 https://github.com/mwaskom/seaborn
+
+Celebrity Endorsements
+----------------------
+
+"Those are nice plots" -Hadley Wickham
