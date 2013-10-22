@@ -1148,13 +1148,13 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
 
 
 def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
-             cmap="Spectral_r", cmap_range=None, cbar=True, ax=None, **kwargs):
+             cmap="coolwarm", cmap_range=None, cbar=True, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
     Parameters
     ----------
-    data : nvars x nobs array
-        data array where rows are variables and columns are observations
+    data : Dataframe or nobs x nvars array
+        input data
     names : sequence of strings
         names to associate with variables; should be short
     sig_stars : bool
@@ -1179,10 +1179,15 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
         axis object with plot
 
     """
-    corrmat = np.corrcoef(data)
+    if isinstance(data, pd.DataFrame):
+        names = data.columns
+    else:
+        names = ["var_%d" % i for i in range(data.shape[1])]
+        data = pd.DataFrame(data, columns=names, dtype=np.float)
+    corrmat = data.corr()
 
     if sig_stars:
-        p_mat = moss.randomize_corrmat(data, sig_tail, sig_corr)
+        p_mat = moss.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
 
@@ -1200,14 +1205,18 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
     return ax
 
 
-def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
+def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
                cbar=True, ax=None, **kwargs):
     """Plot a symettric matrix with colormap and statistic values."""
     if ax is None:
         ax = plt.subplot(111)
 
     nvars = len(mat)
-    plotmat = mat.copy()
+    if isinstance(mat, pd.DataFrame):
+        plotmat = mat.values.copy()
+        mat = mat.values
+    else:
+        plotmat = mat.copy()
     plotmat[np.triu_indices(nvars)] = np.nan
 
     if cmap_range is None:
@@ -1221,7 +1230,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
     mat_img = ax.matshow(plotmat, cmap=cmap, vmin=vmin, vmax=vmax, **kwargs)
 
     if cbar:
-        plt.colorbar(mat_img)
+        plt.colorbar(mat_img, shrink=.75)
 
     if p_mat is None:
         p_mat = np.ones((nvars, nvars))
@@ -1236,7 +1245,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Spectral_r", cmap_range=None,
         names = ["var%d" % i for i in range(nvars)]
     for i, name in enumerate(names):
         ax.text(i, i, name, fontdict=dict(ha="center", va="center",
-                                          weight="bold"))
+                                          weight="bold", rotation=45))
 
     ticks = np.linspace(.5, nvars - .5, nvars)
     ax.set_xticks(ticks)
