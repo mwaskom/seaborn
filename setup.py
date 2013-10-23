@@ -30,5 +30,4 @@ if __name__ == "__main__":
         version=VERSION,
         download_url=DOWNLOAD_URL,
         packages=['seaborn', 'seaborn.tests'],
-        scripts=[],
     )
