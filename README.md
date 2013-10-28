@@ -14,9 +14,9 @@ matplotlib's default look:
 Examples
 --------
 
-There are a few tutorial notebooks that both offer some thoughts on visualizing
+There are a few tutorial notebooks that offer some thoughts on visualizing
 statistical data in a general sense and show how to do it using the tools that
-are proided in seaborn. They also serve as the primary test suite for the package.
+are provided in seaborn. They also serve as the primary test suite for the package.
 The notebooks are meant to be fairly, but not completely comprehensive;
 hopefully the docstrings for the specific functions will answer any additional
 questions.
