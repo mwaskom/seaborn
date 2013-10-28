@@ -35,6 +35,10 @@ Dependencies
 
 - [numpy](http://www.numpy.org/)
 
+- [scipy](http://www.scipy.org/)
+
+- [matplotlib](matplotlib.sourceforge.net)
+
 - [pandas](http://pandas.pydata.org/)
 
 - [statsmodels](http://statsmodels.sourceforge.net/)
@@ -61,6 +65,8 @@ Development
 -----------
 
 https://github.com/mwaskom/seaborn
+
+Please submit any bugs you encounter to the Github issue tracker.
 
 
 Celebrity Endorsements
