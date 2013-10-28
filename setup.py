@@ -13,7 +13,7 @@ MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn'
-VERSION = '0.1.dev'
+VERSION = '0.1'
 
 from numpy.distutils.core import setup
 
