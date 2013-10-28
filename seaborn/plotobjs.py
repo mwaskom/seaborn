@@ -1179,26 +1179,38 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
         axis object with plot
 
     """
-    if isinstance(data, pd.DataFrame):
-        names = data.columns
-    else:
-        names = ["var_%d" % i for i in range(data.shape[1])]
+    if not isinstance(data, pd.DataFrame):
+        if names is None:
+            names = ["var_%d" % i for i in range(data.shape[1])]
         data = pd.DataFrame(data, columns=names, dtype=np.float)
+
+    # Calculate the correlation matrix of the dataframe
     corrmat = data.corr()
 
+    # Pandas will drop non-numeric columns; let's keep track of that operation
+    names = corrmat.columns
+    data = data[names]
+
+    # Get p values with a permutation test
     if sig_stars:
         p_mat = moss.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
 
+    # Paternalism
+    if cmap == "Jet":
+        raise ValueError("Never use the 'Jet' colormap!")
+
+    # Sort out the color range
     if cmap_range is None:
-        triu = np.triu_indices(len(data), 1)
-        vmax = min(1, np.max(np.abs(corrmat[triu])) * 1.15)
+        triu = np.triu_indices(len(corrmat), 1)
+        vmax = min(1, np.max(np.abs(corrmat.values[triu])) * 1.15)
         vmin = -vmax
         cmap_range = vmin, vmax
     elif cmap_range == "full":
         cmap_range = (-1, 1)
 
+    # Plot using the more general symmatplot function
     ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range,
                     cbar, ax, **kwargs)
 
