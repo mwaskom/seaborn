@@ -21,11 +21,11 @@ The notebooks are meant to be fairly, but not completely comprehensive;
 hopefully the docstrings for the specific functions will answer any additional
 questions.
 
+[Plotting complex linear models](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/linear_models.ipynb)
+
 [Visualizing distributions of data](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/plotting_distributions.ipynb)
 
 [Representing variability in timeseries plots](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/timeseries_plots.ipynb)
-
-[Plotting complex linear models](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/linear_models.ipynb)
 
 
 Dependencies
