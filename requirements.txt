@@ -1,0 +1,7 @@
+numpy
+scipy
+matplotlib
+statsmodels
+pandas
+husl
+moss
