@@ -1,12 +1,10 @@
-Scientific Plotting Utilities
-=============================
+Seaborn: statistical data visualization
+=======================================
 
 Seaborn is a library of high-level functions that facilitate making informative
-and attractive plots of statistical data (with some emphasis on neuroimaging
-applications) using matplotlib.
-
-It also provides concise control over the aesthetics of the plots, improving on
-matplotlib's default look:
+and attractive plots of statistical data using matplotlib. It also provides
+concise control over the aesthetics of the plots, improving on matplotlib's
+default look.
 
 ![](examples/example_plot.png "Example Seaborn Plot")
 
@@ -43,6 +41,10 @@ Dependencies
 
 - [statsmodels](http://statsmodels.sourceforge.net/)
 
+- [patsy](http://patsy.readthedocs.org/en/latest/)
+
+- [scikit-learn](http://scikit-learn.org)
+
 - [husl](https://github.com/boronine/pyhusl)
 
 - [moss](http://github.com/mwaskom/moss)
@@ -58,7 +60,9 @@ To install the released version, just do
 However, I update the code pretty frequently, so you may want to clone the
 github repository and install with
 
-    python setup.py install
+    pip install -r requirements.txt
+
+from within the source directory.
 
 
 Development

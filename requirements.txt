@@ -3,5 +3,6 @@ scipy
 matplotlib
 statsmodels
 pandas
+scikit-learn
 husl
 moss
