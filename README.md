@@ -1,14 +1,10 @@
 Seaborn: statistical data visualization
 =======================================
 
-<div class="row">
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/anscombes_quartet.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/anscombes_quartet_thumb.png" height="135" width="135">
-</a>
-
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/timeseries_from_dataframe.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/timeseries_from_dataframe_thumb.png" height="135" width="135">
-</a>
+Seaborn is a library of high-level functions that facilitate making informative
+and attractive plots of statistical data using matplotlib. It also provides
+concise control over the aesthetics of the plots, improving on matplotlib's
+default look.
 
 <a href=http://stanford.edu/~mwaskom/software/seaborn/examples/distplot_options.html>
 <img src="http://stanford.edu/~mwaskom/software/seaborn/_static/distplot_options_thumb.png" height="135" width="135">
@@ -80,7 +76,11 @@ Dependencies
 
 ### Recommended
 
-- [statsmodels](http://statsmodels.sourceforge.net/)
+- [patsy](http://patsy.readthedocs.org/en/latest/)
+
+- [scikit-learn](http://scikit-learn.org)
+
+- [husl](https://github.com/boronine/pyhusl)
 
 - [patsy](http://patsy.readthedocs.org/en/latest/)
 
@@ -97,14 +97,9 @@ You may instead want to use the development version from Github, by running
     pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn
 
 
-Testing
--------
+    pip install -r requirements.txt
 
-[![Build Status](https://travis-ci.org/mwaskom/seaborn.png?branch=master)](https://travis-ci.org/mwaskom/seaborn)
-
-To test seaborn, run `make test` in the source directory. This will run the
-unit-test suite (using `nose`). It will also execute the example notebooks and
-compare the outputs of each cell to the data in the stored versions. 
+from within the source directory.
 
 
 Development
