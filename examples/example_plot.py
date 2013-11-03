@@ -62,7 +62,7 @@ rs = np.random.RandomState(8)
 d = rs.normal(0, 1, (n, p))
 d += np.log(np.arange(1, p + 1)) * -5 + 10
 
-sns.violin(d, inner="points", ax=ax, inner_kws={"marker": "."})
+sns.violin(d, inner="points")
 
 # Beta distributions
 # ------------------
@@ -77,7 +77,7 @@ n = 1000
 rs = np.random.RandomState(0)
 d = rs.beta(8, 13, n)
 
-sns.distplot(d, color=r, fit=stats.beta, ax=ax)
+sns.distplot(d, color=r, fit=stats.beta)
 
 ax = plt.subplot(gs[3, 2:], sharey=ax)
 plt.xlim(0, 1)
@@ -85,7 +85,7 @@ plt.xlim(0, 1)
 rs = np.random.RandomState(0)
 d = rs.beta(30, 25, n)
 
-sns.distplot(d, color=b, fit=stats.beta, ax=ax)
+sns.distplot(d, color=b, fit=stats.beta)
 
 f.tight_layout()
 f.savefig("%s/example_plot.png" % os.path.dirname(__file__))
