@@ -315,6 +315,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     # First walk through the facets and plot the scatters
     scatter_ms = scatter_kws.pop("ms", 4)
     scatter_mew = mew = scatter_kws.pop("mew", 0)
+    scatter_alpha = mew = scatter_kws.pop("alpha", .7)
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
             if col_wrap is not None:
@@ -395,7 +396,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                         x_ += np.random.uniform(-x_jitter, x_jitter, x_.shape)
                     if y_jitter is not None:
                         y_ += np.random.uniform(-y_jitter, y_jitter, y_.shape)
-                    ax.plot(x_, y_, "o", color=color,
+                    ax.plot(x_, y_, "o", color=color, alpha=scatter_alpha,
                             mew=scatter_mew, ms=scatter_ms, **scatter_kws)
 
     for ax_i in np.ravel(axes):
