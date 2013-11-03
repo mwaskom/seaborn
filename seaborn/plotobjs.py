@@ -1117,7 +1117,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     in_alpha = inner_kws.pop("alpha", .6 if inner == "points" else 1)
     in_alpha *= 1 if alpha is None else alpha
     in_color = inner_kws.pop("color", gray)
-    in_marker = inner_kws.pop("marker", "o")
+    in_marker = inner_kws.pop("marker", ".")
     in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
 
     for i, a in enumerate(vals):
