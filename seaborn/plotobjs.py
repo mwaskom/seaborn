@@ -816,7 +816,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     return ax
 
 
-def distplot(a, hist=True, kde=True, rug=False, fit=None,
+def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, legend=True, ax=None):
     """Flexibly plot a distribution of observations.
@@ -825,6 +825,8 @@ def distplot(a, hist=True, kde=True, rug=False, fit=None,
     ----------
     a : (squeezable to) 1d array
         observed data
+    bins : argument for matplotlib hist(), or None
+        specification of bins or None to use Freedman-Diaconis rule
     hist : bool, default True
         whether to plot a (normed) histogram
     kde : bool, defualt True
@@ -873,11 +875,14 @@ def distplot(a, hist=True, kde=True, rug=False, fit=None,
         line.remove()
 
     if hist:
-        nbins = hist_kws.pop("nbins", 20)
+        if bins is None:
+            # From http://stats.stackexchange.com/questions/798/
+            h = 2 * moss.iqr(a) * len(a) ** -(1 / 3)
+            bins = (a.max() - a.min()) / h
         hist_alpha = hist_kws.pop("alpha", 0.4)
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
-        ax.hist(a, nbins, normed=True, color=hist_color, alpha=hist_alpha,
+        ax.hist(a, bins, normed=True, color=hist_color, alpha=hist_alpha,
                 orientation=orientation, **hist_kws)
 
     if kde:
