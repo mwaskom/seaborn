@@ -102,6 +102,15 @@ You may instead want to use the development version from Github, by running
 from within the source directory.
 
 
+Testing
+-------
+
+To test seaborn, run `make test` in the source directory. This will execute the
+example notebooks and compare the outputs of each cell to the data in the
+stored versions. There is also a (small) set of unit tests for the utility
+functions that can be tested separately with `nosetests`. 
+
+
 Development
 -----------
 
