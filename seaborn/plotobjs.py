@@ -552,6 +552,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         dist_kws.update(color=color)
     if "legend" not in dist_kws:
         dist_kws["legend"] = False
+    dist_kws["xlabel"] = False
     distplot(x, ax=ax_x_marg, **dist_kws)
     distplot(y, ax=ax_y_marg, vertical=True, **dist_kws)
     for ax in [ax_x_marg, ax_y_marg]:
@@ -818,7 +819,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, legend=True, ax=None):
+             color=None, vertical=False, legend=False, xlabel=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameters
@@ -844,7 +845,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     vertical : bool, default False
         if True, oberved values are on y-axis
     legend : bool, default True
-        if True, add a legend to the plot
+        if True, add a legend to the plot with what the plotted lines are
+    xlabel : string, False, or None
+        name for the x axis label. if None, will try to get it from a.name
+        if False, do not set the x label
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -855,8 +859,18 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     """
     if ax is None:
         ax = plt.subplot(111)
+
+    # Intelligently label the axis
+    label_x = bool(xlabel)
+    if xlabel is None and hasattr(a, "name"):
+        xlabel = a.name
+        if xlabel is not None:
+            label_x = True
+
+    # Make a a 1-d array
     a = np.asarray(a).squeeze()
 
+    # Handle dictionary defaults
     if hist_kws is None:
         hist_kws = dict()
     if kde_kws is None:
@@ -866,6 +880,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     if fit_kws is None:
         fit_kws = dict()
 
+    # Get the color from the current color cycle
     if color is None:
         if vertical:
             line, = ax.plot(0, a.mean())
@@ -905,11 +920,14 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         y = pdf(x)
         if vertical:
             x, y = y, x
-        fit_kws["label"] = fit.name + " fit"
+        fit_kws["label"] = fit.name
         ax.plot(x, y, color=fit_color, **fit_kws)
 
     if legend:
         ax.legend(loc="best")
+
+    if label_x:
+        ax.set_xlabel(xlabel)
 
     return ax
 
