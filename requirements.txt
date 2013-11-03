@@ -2,5 +2,6 @@ numpy
 scipy
 matplotlib
 pandas
-statsmodels
-patsy
+scikit-learn
+husl
+moss
