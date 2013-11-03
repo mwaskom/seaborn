@@ -1,10 +1,12 @@
 """High level plotting functions using matplotlib."""
 
-# Except in strange circumstances, all functions in this module
-# should take an ``ax`` keyword argument defaulting to None
-# (which creates a new subplot) and an open-ended **kwargs to
-# pass to the underlying matplotlib function being called.
-# They should also return the ``ax`` object.
+# There are two different kind of functions here. Some are very high level and
+# expect to have full reign of their figure to draw subplot grids or marginals.
+# Others are constrained to a single axis and should take and return an `ax`
+# argument. When `ax` is None, these functions should grab the current axis and
+# plot into that. These two types of functions may be split into different modules
+# to make the division a little bit more obvious.
+
 from __future__ import division
 import colorsys
 import itertools
@@ -60,7 +62,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
 
     """
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
 
     if err_kws is None:
         err_kws = {}
@@ -732,7 +734,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
 
     """
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
 
     if isinstance(vals, pd.DataFrame):
         if names is None:
@@ -858,7 +860,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     """
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
 
     # Intelligently label the axis
     label_x = bool(xlabel)
@@ -963,7 +965,7 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
 
     """
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
     x = _kde_support(a, kde, npts, support_thresh)
@@ -987,7 +989,7 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
 def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     """Plot datapoints in an array as sticks on an axis."""
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
     other_axis = dict(x="y", y="x")[axis]
     min, max = getattr(ax, "get_%slim" % other_axis)()
     if height is None:
@@ -1040,7 +1042,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
 
     """
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
 
     if isinstance(vals, pd.DataFrame):
         if names is None:
@@ -1244,7 +1246,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
                cbar=True, ax=None, **kwargs):
     """Plot a symettric matrix with colormap and statistic values."""
     if ax is None:
-        ax = plt.subplot(111)
+        ax = plt.gca()
 
     nvars = len(mat)
     if isinstance(mat, pd.DataFrame):
