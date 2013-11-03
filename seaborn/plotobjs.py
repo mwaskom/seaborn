@@ -315,7 +315,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     # First walk through the facets and plot the scatters
     scatter_ms = scatter_kws.pop("ms", 4)
     scatter_mew = mew = scatter_kws.pop("mew", 0)
-    scatter_alpha = mew = scatter_kws.pop("alpha", .7)
+    scatter_alpha = mew = scatter_kws.pop("alpha", .77)
     for row_i, row_mask in enumerate(row_masks):
         for col_j, col_mask in enumerate(col_masks):
             if col_wrap is not None:
@@ -666,7 +666,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
     wsize = lambda n: n * (w / (4 * (n / 5)))
     if groupby is None:
         colors = itertools.cycle(color_palette(palette, n_terms))
-        f, ax = plt.subplots(1, 1, figsize=(hsize(n_terms), hsize(1)))
+        f, ax = plt.subplots(1, 1, figsize=(wsize(n_terms), hsize(1)))
         for i, term in enumerate(coefs.index):
             color = colors.next()
             low, high = cis.ix[term]
