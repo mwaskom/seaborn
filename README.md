@@ -9,6 +9,11 @@ default look.
 ![](examples/example_plot.png "Example Seaborn Plot")
 
 
+Documentation
+-------------
+
+Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/).
+
 Examples
 --------
 
