@@ -12,13 +12,10 @@ around our estimate of the signal.
 
 .. code:: python
 
-    %matplotlib inline
     import numpy as np
     from numpy.random import randn, rand
-    import matplotlib as mpl
     import matplotlib.pyplot as plt
     import seaborn as sns
-    np.random.seed(9221999)
 First let's generate some fake data. We'll use an underlying sine wave
 model
 
@@ -31,6 +28,7 @@ Now, "draw" a sample for each subject with different sources of noise
 
 .. code:: python
 
+    np.random.seed(9221999)
     n_subjs = 20
     subj_noise = rand(20) * 2
     subj_data = np.array([true_data +  # real signal
@@ -105,7 +103,7 @@ when you have multiple traces on the same plot.
     other_data = subj_data + randn(29) / 2 + (x / 4) - 1
     sns.tsplot(x, subj_data, err_style="ci_bars", label="group1")
     sns.tsplot(x, other_data, err_style="ci_bars", label="group2")
-    plt.legend(loc=1);
+    plt.legend(loc=0);
 
 
 .. image:: timeseries_plots_files/timeseries_plots_18_0.png
@@ -122,7 +120,7 @@ linearly interpolated.
 
     sns.tsplot(x, subj_data, err_style="ci_band", label="group1")
     sns.tsplot(x, other_data, err_style="ci_band", label="group2")
-    plt.legend(loc=1);
+    plt.legend(loc=0);
 
 
 .. image:: timeseries_plots_files/timeseries_plots_21_0.png
@@ -195,7 +193,7 @@ You can also plot multiple traces this way.
 
     sns.tsplot(x, subj_data, err_style="boot_traces", label="group1")
     sns.tsplot(x, other_data, err_style="boot_traces", label="group2")
-    plt.legend(loc=1);
+    plt.legend(loc=0);
 
 
 .. image:: timeseries_plots_files/timeseries_plots_31_0.png
