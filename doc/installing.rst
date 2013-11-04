@@ -5,7 +5,7 @@ Installing seaborn
 To install the released version of seaborn, you can use ``pip`` or
 ``easy_install``, (i.e. ``pip install seaborn``). Another option would be to to
 clone the `github repository <https://github.com/mwaskom/seaborn>`_ and install
-with `pip install`. Seaborn itself is pure Python, so installation should be
+with ``pip install``. Seaborn itself is pure Python, so installation should be
 reasonably straightforward.
 
 Dependencies 
