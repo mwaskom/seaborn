@@ -28,6 +28,11 @@ Documentation
 
 Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/).
 
+Documentation
+-------------
+
+Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/).
+
 Examples
 --------
 
