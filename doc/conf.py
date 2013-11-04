@@ -13,8 +13,6 @@
 
 import sys, os
 import sphinx_bootstrap_theme
-import matplotlib as mpl
-mpl.use("Agg")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,21 +26,7 @@ mpl.use("Agg")
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-sys.path.insert(0, os.path.abspath('sphinxext'))
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.doctest',
-              'sphinx.ext.coverage',
-              'sphinx.ext.mathjax',
-              'sphinx.ext.autosummary',
-              'plot_generator',
-              'numpydoc',
-              'ipython_directive',
-              'ipython_console_highlighting',
-              ]
-
-# Generate the API documentation when building
-autosummary_generate = True
-numpydoc_show_class_members = False
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.coverage', 'sphinx.ext.mathjax', 'sphinx.ext.viewcode']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -58,7 +42,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'seaborn'
-copyright = u'2012-2014, Michael Waskom'
+copyright = u'2013, Michael Waskom'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -118,10 +102,8 @@ html_theme = 'bootstrap'
 html_theme_options = {
     'source_link_position': "footer",
     'bootswatch_theme': "flatly",
-    'navbar_sidebarrel': False,
+    'navbar_sidebarrel': True,
     'bootstrap_version': "3",
-    'navbar_links': [("Tutorial", "tutorial"),
-                     ("Gallery", "examples/index")],
 
     }
 
@@ -147,7 +129,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static', 'example_thumbs']
+html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
