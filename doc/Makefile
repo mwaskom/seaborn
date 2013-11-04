@@ -40,15 +40,13 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
-	-rm -rf examples/*
-	-rm -rf example_thumbs/*
-	-rm -rf tutorial/*_files/
-	-rm -rf tutorial/*.rst
 
 notebooks:
 
-	make -C tutorial notebooks
-
+	ipython nbconvert --to rst ../examples/linear_models.ipynb
+	ipython nbconvert --to rst ../examples/plotting_distributions.ipynb
+	ipython nbconvert --to rst ../examples/timeseries_plots.ipynb
+	
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
@@ -164,6 +162,3 @@ upload:
 	rsync -azP $(BUILDDIR)/html/ mwaskom@cardinal.stanford.edu:WWW/software/seaborn
 	@echo "Uploaded to Stanford webspace"
 
-upload-dev:
-	rsync -azP $(BUILDDIR)/html/ mwaskom@cardinal.stanford.edu:WWW/software/seaborn-dev
-	@echo "Uploaded to Stanford webspace (development page)"
