@@ -154,7 +154,7 @@ to use here.
 
 .. code:: python
 
-    tips = pd.read_csv("tips.csv")
+    tips = pd.read_csv("https://raw.github.com/mwaskom/seaborn/master/examples/tips.csv")
     tips["big_tip"] = tips.tip > (.2 * tips.total_bill)
     tips["smoker"] = tips["smoker"] == "Yes"
     tips["female"] = tips["sex"] == "Female"
