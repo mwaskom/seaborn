@@ -102,7 +102,7 @@ def axes_style(style=None, rc=None):
 
     # Determine the axis parameters
     if style == "darkgrid":
-        lw = .8 if context  == "paper" else 1.5
+        lw = .8 if context == "paper" else 1.5
         ax_params = {"axes.facecolor": "#EAEAF2",
                      "axes.edgecolor": "white",
                      "axes.linewidth": 0,
@@ -173,7 +173,7 @@ def axes_style(style=None, rc=None):
     mpl.rcParams.update({
         "lines.linewidth": 1.1 if context == "paper" else 1.4,
         "patch.linewidth": .1 if context == "paper" else .3
-                         })
+        })
 
 
 def set_color_palette(name, n_colors=6, desat=None):
