@@ -4,95 +4,19 @@ import matplotlib as mpl
 
 from . import palettes
 
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
+    """Set new RC params in one step."""
+    set_axes_style(style, context)
+    set_color_palette(palette)
 
-_style_keys = (
-    "axes.facecolor",
-    "axes.edgecolor",
-    "axes.grid",
-    "axes.axisbelow",
-    "axes.linewidth",
-    "axes.labelcolor",
-
-    "grid.color",
-    "grid.linestyle",
-
-    "text.color",
-
-    "xtick.color",
-    "ytick.color",
-    "xtick.direction",
-    "ytick.direction",
-    "xtick.major.size",
-    "ytick.major.size",
-    "xtick.minor.size",
-    "ytick.minor.size",
-
-    "legend.frameon",
-    "legend.numpoints",
-    "legend.scatterpoints",
-
-    "lines.solid_capstyle",
-
-    "image.cmap",
-    "font.family",
-    "pdf.fonttype",
-    "font.sans-serif",
-    )
-
-_context_keys = (
-    "figure.figsize",
-
-    "axes.labelsize",
-    "axes.titlesize",
-    "xtick.labelsize",
-    "ytick.labelsize",
-    "legend.fontsize",
-
-    "grid.linewidth",
-    "lines.linewidth",
-    "patch.linewidth",
-    "lines.markersize",
-    "lines.markeredgewidth",
-
-    "xtick.major.width",
-    "ytick.major.width",
-    "xtick.minor.width",
-    "ytick.minor.width",
-
-    "xtick.major.pad",
-    "ytick.major.pad"
-    )
-
-
-def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, rc=None):
-    """Set aesthetic parameters in one step.
-
-    Each set of parameters can be set directly or temporarily, see the
-    referenced functions below for more information.
-
-    Parameters
-    ----------
-    context : string or dict
-        Plotting context parameters, see :func:`plotting_context`
-    style : string or dict
-        Axes style parameters, see :func:`axes_style`
-    palette : string or sequence
-        Color palette, see :func:`color_palette`
-    font : string
-        Font family, see matplotlib font manager.
-    font_scale : float, optional
-        Separate scaling factor to independently scale the size of the
-        font elements.
-    rc : dict or None
-        Dictionary of rc parameter mappings to override the above.
-
-    """
-    set_context(context, font_scale)
-    set_style(style, rc={"font.family": font})
-    set_palette(palette)
-    if rc is not None:
-        mpl.rcParams.update(rc)
+    # Set the constant defaults
+    mpl.rc("font", family=font)
+    mpl.rc("legend", frameon=False, numpoints=1)
+    mpl.rc("lines", markeredgewidth=0)
+    mpl.rc("figure", figsize=(8, 5.5))
+    mpl.rc("image", cmap="cubehelix")
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
 
 
 def reset_defaults():
@@ -169,282 +93,91 @@ def axes_style(style=None, rc=None):
     color_palette : define the color palette for a plot
 
     """
-    if style is None:
-        style_dict = {k: mpl.rcParams[k] for k in _style_keys}
+    # Validate the arguments
+    if not {"darkgrid", "whitegrid", "nogrid"} & {style}:
+        raise ValueError("Style %s not recognized" % style)
 
-    elif isinstance(style, dict):
-        style_dict = style
+    if not {"notebook", "talk", "paper", "poster"} & {context}:
+        raise ValueError("Context %s is not recognized" % context)
 
-    else:
-        styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
-        if style not in styles:
-            raise ValueError("style must be one of %s" % ", ".join(styles))
+    # Determine the axis parameters
+    if style == "darkgrid":
+        lw = .8 if context  == "paper" else 1.5
+        ax_params = {"axes.facecolor": "#EAEAF2",
+                     "axes.edgecolor": "white",
+                     "axes.linewidth": 0,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "w",
+                     "grid.linestyle": "-",
+                     "grid.linewidth": lw}
+        _blank_ticks(ax_params)
 
-        # Define colors here
-        dark_gray = ".15"
-        light_gray = ".8"
+    elif style == "whitegrid":
+        glw = .8 if context == "paper" else 1.5
+        ax_params = {"axes.facecolor": "white",
+                     "axes.edgecolor": "#CCCCCC",
+                     "axes.linewidth": glw + .2,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "#CCCCCC",
+                     "grid.linestyle": "-",
+                     "grid.linewidth": glw}
+        _blank_ticks(ax_params)
 
-        # Common parameters
-        style_dict = {
-            "text.color": dark_gray,
-            "axes.labelcolor": dark_gray,
-            "legend.frameon": False,
-            "legend.numpoints": 1,
-            "legend.scatterpoints": 1,
-            "xtick.direction": "out",
-            "ytick.direction": "out",
-            "xtick.color": dark_gray,
-            "ytick.color": dark_gray,
-            "axes.axisbelow": True,
-            "image.cmap": "Greys",
-            "font.family": "sans-serif",
-            "font.sans-serif": ["Arial", "Liberation Sans",
-                                "Bitstream Vera Sans", "sans-serif"],
-            "grid.linestyle": "-",
-            "lines.solid_capstyle": "round",
-            "pdf.fonttype": 42,
-            }
+    elif style == "nogrid":
+        ax_params = {"axes.grid": False,
+                     "axes.facecolor": "white",
+                     "axes.edgecolor": "black",
+                     "axes.linewidth": 1}
+        _restore_ticks(ax_params)
 
-        # Set grid on or off
-        if "grid" in style:
-            style_dict.update({
-                "axes.grid": True,
-                })
-        else:
-            style_dict.update({
-                "axes.grid": False,
-                })
+    mpl.rcParams.update(ax_params)
 
-        # Set the color of the background, spines, and grids
-        if style.startswith("dark"):
-            style_dict.update({
-                "axes.facecolor": "#EAEAF2",
-                "axes.edgecolor": "white",
-                "axes.linewidth": 0,
-                "grid.color": "white",
-                })
+    # Determine the font sizes
+    if context == "talk":
+        font_params = {"axes.labelsize": 16,
+                       "axes.titlesize": 19,
+                       "xtick.labelsize": 14,
+                       "ytick.labelsize": 14,
+                       "legend.fontsize": 13,
+                       }
 
-        elif style == "whitegrid":
-            style_dict.update({
-                "axes.facecolor": "white",
-                "axes.edgecolor": light_gray,
-                "axes.linewidth": 1,
-                "grid.color": light_gray,
-                })
+    elif context == "notebook":
+        font_params = {"axes.labelsize": 11,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 10,
+                       "ytick.labelsize": 10,
+                       "legend.fontsize": 9,
+                       }
 
-        elif style in ["white", "ticks"]:
-            style_dict.update({
-                "axes.facecolor": "white",
-                "axes.edgecolor": dark_gray,
-                "axes.linewidth": 1.25,
-                "grid.color": light_gray,
-                })
+    elif context == "poster":
+        font_params = {"axes.labelsize": 18,
+                       "axes.titlesize": 22,
+                       "xtick.labelsize": 16,
+                       "ytick.labelsize": 16,
+                       "legend.fontsize": 16,
+                       }
 
-        # Show or hide the axes ticks
-        if style == "ticks":
-            style_dict.update({
-                "xtick.major.size": 6,
-                "ytick.major.size": 6,
-                "xtick.minor.size": 3,
-                "ytick.minor.size": 3,
-                })
-        else:
-            style_dict.update({
-                "xtick.major.size": 0,
-                "ytick.major.size": 0,
-                "xtick.minor.size": 0,
-                "ytick.minor.size": 0,
-                })
+    elif context == "paper":
+        font_params = {"axes.labelsize": 8,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 8,
+                       "ytick.labelsize": 8,
+                       "legend.fontsize": 8,
+                       }
 
-    # Override these settings with the provided rc dictionary
-    if rc is not None:
-        rc = {k: v for k, v in rc.items() if k in _style_keys}
-        style_dict.update(rc)
+    mpl.rcParams.update(font_params)
 
-    # Wrap in an _AxesStyle object so this can be used in a with statement
-    style_object = _AxesStyle(style_dict)
-
-    return style_object
+    # Set other parameters
+    mpl.rcParams.update({
+        "lines.linewidth": 1.1 if context == "paper" else 1.4,
+        "patch.linewidth": .1 if context == "paper" else .3
+                         })
 
 
-def set_style(style=None, rc=None):
-    """Set the aesthetic style of the plots.
-
-    This affects things like the color of the axes, whether a grid is
-    enabled by default, and other aesthetic elements.
-
-    Parameters
-    ----------
-    style : dict, None, or one of {darkgrid, whitegrid, dark, white, ticks}
-        A dictionary of parameters or the name of a preconfigured set.
-    rc : dict, optional
-        Parameter mappings to override the values in the preset seaborn
-        style dictionaries. This only updates parameters that are
-        considered part of the style definition.
-
-    Examples
-    --------
-    >>> set_style("whitegrid")
-
-    >>> set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
-
-    See Also
-    --------
-    axes_style : return a dict of parameters or use in a ``with`` statement
-                 to temporarily set the style.
-    set_context : set parameters to scale plot elements
-    set_palette : set the default color palette for figures
-
-    """
-    style_object = axes_style(style, rc)
-    mpl.rcParams.update(style_object)
-
-
-def plotting_context(context=None, font_scale=1, rc=None):
-    """Return a parameter dict to scale elements of the figure.
-
-    This affects things like the size of the labels, lines, and other
-    elements of the plot, but not the overall style. The base context
-    is "notebook", and the other contexts are "paper", "talk", and "poster",
-    which are version of the notebook parameters scaled by .8, 1.3, and 1.6,
-    respectively.
-
-    This function returns an object that can be used in a ``with`` statement
-    to temporarily change the context parameters.
-
-    Parameters
-    ----------
-    context : dict, None, or one of {paper, notebook, talk, poster}
-        A dictionary of parameters or the name of a preconfigured set.
-    font_scale : float, optional
-        Separate scaling factor to independently scale the size of the
-        font elements.
-    rc : dict, optional
-        Parameter mappings to override the values in the preset seaborn
-        context dictionaries. This only updates parameters that are
-        considered part of the context definition.
-
-    Examples
-    --------
-    >>> c = plotting_context("poster")
-
-    >>> c = plotting_context("notebook", font_scale=1.5)
-
-    >>> c = plotting_context("talk", rc={"lines.linewidth": 2})
-
-    >>> import matplotlib.pyplot as plt
-    >>> with plotting_context("paper"):
-    ...     f, ax = plt.subplots()
-    ...     ax.plot(x, y)                 # doctest: +SKIP
-
-    See Also
-    --------
-    set_context : set the matplotlib parameters to scale plot elements
-    axes_style : return a dict of parameters defining a figure style
-    color_palette : define the color palette for a plot
-
-    """
-    if context is None:
-        context_dict = {k: mpl.rcParams[k] for k in _context_keys}
-
-    elif isinstance(context, dict):
-        context_dict = context
-
-    else:
-
-        contexts = ["paper", "notebook", "talk", "poster"]
-        if context not in contexts:
-            raise ValueError("context must be in %s" % ", ".join(contexts))
-
-        # Set up dictionary of default parameters
-        base_context = {
-
-            "figure.figsize": np.array([8, 5.5]),
-            "axes.labelsize": 11,
-            "axes.titlesize": 12,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
-            "legend.fontsize": 10,
-
-            "grid.linewidth": 1,
-            "lines.linewidth": 1.75,
-            "patch.linewidth": .3,
-            "lines.markersize": 7,
-            "lines.markeredgewidth": 0,
-
-            "xtick.major.width": 1,
-            "ytick.major.width": 1,
-            "xtick.minor.width": .5,
-            "ytick.minor.width": .5,
-
-            "xtick.major.pad": 7,
-            "ytick.major.pad": 7,
-            }
-
-        # Scale all the parameters by the same factor depending on the context
-        scaling = dict(paper=.8, notebook=1, talk=1.3, poster=1.6)[context]
-        context_dict = {k: v * scaling for k, v in base_context.items()}
-
-        # Now independently scale the fonts
-        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
-                     "xtick.labelsize", "ytick.labelsize"]
-        font_dict = {k: context_dict[k] * font_scale for k in font_keys}
-        context_dict.update(font_dict)
-
-    # Override these settings with the provided rc dictionary
-    if rc is not None:
-        rc = {k: v for k, v in rc.items() if k in _context_keys}
-        context_dict.update(rc)
-
-    # Wrap in a _PlottingContext object so this can be used in a with statement
-    context_object = _PlottingContext(context_dict)
-
-    return context_object
-
-
-def set_context(context=None, font_scale=1, rc=None):
-    """Set the plotting context parameters.
-
-    This affects things like the size of the labels, lines, and other
-    elements of the plot, but not the overall style. The base context
-    is "notebook", and the other contexts are "paper", "talk", and "poster",
-    which are version of the notebook parameters scaled by .8, 1.3, and 1.6,
-    respectively.
-
-    Parameters
-    ----------
-    context : dict, None, or one of {paper, notebook, talk, poster}
-        A dictionary of parameters or the name of a preconfigured set.
-    font_scale : float, optional
-        Separate scaling factor to independently scale the size of the
-        font elements.
-    rc : dict, optional
-        Parameter mappings to override the values in the preset seaborn
-        context dictionaries. This only updates parameters that are
-        considered part of the context definition.
-
-    Examples
-    --------
-    >>> set_context("paper")
-
-    >>> set_context("talk", font_scale=1.4)
-
-    >>> set_context("talk", rc={"lines.linewidth": 2})
-
-    See Also
-    --------
-    plotting_context : return a dictionary of rc parameters, or use in
-                       a ``with`` statement to temporarily set the context.
-    set_style : set the default parameters for figure style
-    set_palette : set the default color palette for figures
-
-    """
-    context_object = plotting_context(context, font_scale, rc)
-    mpl.rcParams.update(context_object)
-
-
-def set_palette(name, n_colors=6, desat=None):
-    """Set the matplotlib color cycle using a seaborn palette.
+def set_color_palette(name, n_colors=6, desat=None):
+    """Set the matplotlib color cycle in one of a variety of ways.
 
     Parameters
     ----------
@@ -454,22 +187,9 @@ def set_palette(name, n_colors=6, desat=None):
     n_colors : int
         Number of colors in the cycle.
     desat : float
-        Factor to desaturate each color by.
-
-    Examples
-    --------
-    >>> set_palette("Reds")
-
-    >>> set_palette("Set1", 8, .75)
-
-    See Also
-    --------
-    color_palette : build a color palette or set the color cycle temporarily
-                    in a ``with`` statement.
-    set_context : set parameters to scale plot elements
-    set_style : set the default parameters for figure style
+        desaturation factor for each color
 
     """
-    colors = palettes.color_palette(name, n_colors, desat)
-    mpl.rcParams["axes.color_cycle"] = list(colors)
+    colors = utils.color_palette(name, n_colors, desat)
+    mpl.rcParams["axes.color_cycle"] = colors
     mpl.rcParams["patch.facecolor"] = colors[0]
