@@ -1,13 +1,228 @@
 """Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
-import warnings
-
+from itertools import cycle
+import husl
 import numpy as np
 from scipy import stats
 import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+
+
+def color_palette(name=None, n_colors=6, desat=None):
+    """Return matplotlib color codes for a given palette.
+
+    Availible seaborn palette names:
+        default, pastel, bright, muted, deep, dark, colorblind
+
+    Other options:
+        hls, husl, any matplotlib palette
+
+    Parameters
+    ----------
+    name: None, string, or list-ish
+        name of palette or None to return current color list. if
+        list-ish (i.e. arrays work too), input colors are used but
+        possibly desaturated
+    n_colors : int
+        number of colors in the palette
+    desat : float
+        desaturation factor for each color
+
+    Returns
+    -------
+    palette : list of colors
+        color palette
+
+    """
+    seaborn_palettes = dict(
+        deep=["#4C72B0", "#55A868", "#C44E52",
+              "#8172B2", "#CCB974", "#64B5CD"],
+        muted=["#4878CF", "#6ACC65", "#D65F5F",
+               "#B47CC7", "#C4AD66", "#77BEDB"],
+        pastel=["#92C6FF", "#97F0AA", "#FF9F9A",
+                "#D0BBFF", "#FFFEA3", "#B0E0E6"],
+        bright=["#003FFF", "#03ED3A", "#E8000B",
+                "#8A2BE2", "#FFC400", "#00D7FF"],
+        dark=["#001C7F", "#017517", "#8C0900",
+              "#7600A1", "#B8860B", "#006374"],
+        colorblind=["#0072B2", "#009E73", "#D55E00",
+                    "#CC79A7", "#F0E442", "#56B4E9"],
+    )
+
+    if name is None:
+        palette = mpl.rcParams["axes.color_cycle"]
+    elif hasattr(name, "__iter__"):
+        palette = name
+    elif name == "hls":
+        palette = hls_palette(n_colors, .01, .6, .65)
+    elif name == "husl":
+        palette = husl_palette(n_colors, .01, .65, .9)
+    elif name in seaborn_palettes:
+        palette = seaborn_palettes[name]
+    elif name in dir(mpl.cm):
+        palette = mpl_palette(name, n_colors)
+    else:
+        raise ValueError("%s is not a valid palette name" % name)
+
+    if desat is not None:
+        palette = [desaturate(c, desat) for c in palette]
+
+    # Always return as many colors as we asked for
+    pal_cycle = cycle(palette)
+    palette = [pal_cycle.next() for _ in range(n_colors)]
+
+    # Always return in r, g, b tuple format
+    palette = map(mpl.colors.colorConverter.to_rgb, palette)
+
+    return palette
+
+
+def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
+    """Get a set of evenly spaced colors in HLS hue space.
+
+    h, l, and s should be between 0 and 1
+
+    Parameters
+    ----------
+
+    n_colors : int
+        number of colors in the palette
+    h : float
+        first hue
+    l : float
+        lightness
+    s : float
+        saturation
+
+    Returns
+    -------
+    palette : list of tuples
+        color palette
+
+    """
+    hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues %= 1
+    hues -= hues.astype(int)
+    palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
+    return palette
+
+
+def husl_palette(n_colors=6, h=.01, s=.65, l=.9):
+    """Get a set of evenly spaced colors in HUSL hue space.
+
+    h, s, and l should be between 0 and 1
+
+    Parameters
+    ----------
+
+    n_colors : int
+        number of colors in the palette
+    h : float
+        first hue
+    s : float
+        saturation
+    l : float
+        lightness
+
+    Returns
+    -------
+    palette : list of tuples
+        color palette
+
+    """
+    hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues += h
+    hues %= 1
+    hues *= 359
+    s *= 99
+    l *= 99
+    palette = [husl.husl_to_rgb(h_i, l, s) for h_i in hues]
+    return palette
+
+
+def mpl_palette(name, n_colors=6):
+    """Return discrete colors from a matplotlib palette.
+
+    Note that this handles the qualitative colorbrewer palettes
+    properly, although if you ask for more colors than a particular
+    qualitative palette can provide you will fewer than you are
+    expecting.
+
+    Parameters
+    ----------
+    name : string
+        name of the palette
+    n_colors : int
+        number of colors in the palette
+
+    Returns
+    -------
+    palette : list of tuples
+        palette colors in r, g, b format
+
+    """
+    brewer_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
+                        "Pastel1": 9, "Pastel2": 8,
+                        "Set1": 9, "Set2": 8, "Set3": 12}
+
+    cmap = getattr(mpl.cm, name)
+    if name in brewer_qual_pals:
+        bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
+    else:
+        bins = np.linspace(0, 1, n_colors + 2)[1:-1]
+    palette = map(tuple, cmap(bins)[:, :3])
+
+    return palette
+
+
+def dark_palette(color, n_colors=6, reverse=False, as_cmap=False):
+    """Make a palette that blends from a deep gray to `color`.
+
+    Parameters
+    ----------
+    color : matplotlib color
+        hex, rgb-tuple, or html color name
+    n_colors : int, optional
+        number of colors in the palette
+    reverse : bool, optional
+        if True, reverse the direction of the blend
+    as_cmap : bool, optional
+        if True, return as a matplotlib colormap instead of list
+
+    Returns
+    -------
+    palette : list or colormap
+
+    """
+    gray = "#222222"
+    colors = [color, gray] if reverse else [gray, color]
+    return blend_palette(colors, n_colors, as_cmap)
+
+
+def blend_palette(colors, n_colors=6, as_cmap=False):
+    """Make a palette that blends between a list of colors.
+
+    Parameters
+    ----------
+    colors : sequence of matplotlib colors
+        hex, rgb-tuple, or html color name
+    n_colors : int, optional
+        number of colors in the palette
+    as_cmap : bool, optional
+        if True, return as a matplotlib colormap instead of list
+
+    Returns
+    -------
+    palette : list or colormap
+
+    """
+    name = "-".join(map(str, colors))
+    pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
+    if not as_cmap:
+        pal = pal(np.linspace(0, 1, n_colors))
+    return pal
 
 
 def ci_to_errsize(cis, heights):
@@ -152,29 +367,8 @@ def axlabel(xlabel, ylabel, **kwargs):
     ax.set_ylabel(ylabel, **kwargs)
 
 
-def despine(fig=None, ax=None, top=True, right=True, left=False,
-            bottom=False, offset=None, trim=False):
-    """Remove the top and right spines from plot(s).
-
-    fig : matplotlib figure, optional
-        Figure to despine all axes of, default uses current figure.
-    ax : matplotlib axes, optional
-        Specific axes object to despine.
-    top, right, left, bottom : boolean, optional
-        If True, remove that spine.
-    offset : int or None  (default), optional
-        Absolute distance, in points, spines should be moved away
-        from the axes (negative values move spines inward).
-    trim : bool, optional
-        If true, limit spines to the smallest and largest major tick
-        on each non-despined axis.
-
-    Returns
-    -------
-    None
-
-    """
-    # Get references to the axes we want
+def despine(fig=None, ax=None):
+    """Remove the top and right spines from plot(s)."""
     if fig is None and ax is None:
         axes = plt.gcf().axes
     elif fig is not None:
@@ -183,176 +377,18 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         axes = [ax]
 
     for ax_i in axes:
-        for side in ["top", "right", "left", "bottom"]:
-            # Toggle the spine objects
-            is_visible = not locals()[side]
-            ax_i.spines[side].set_visible(is_visible)
-            if offset is not None and is_visible:
-                _set_spine_position(ax_i.spines[side], ('outward', offset))
-
-        # Set the ticks appropriately
-        if bottom:
-            ax_i.xaxis.tick_top()
-        if top:
-            ax_i.xaxis.tick_bottom()
-        if left:
-            ax_i.yaxis.tick_right()
-        if right:
-            ax_i.yaxis.tick_left()
-
-        if trim:
-            # clip off the parts of the spines that extend past major ticks
-            xticks = ax_i.get_xticks()
-            firsttick = np.compress(xticks >= ax_i.get_xlim()[0], xticks)[0]
-            lasttick = np.compress(xticks <= ax_i.get_xlim()[-1], xticks)[-1]
-            ax_i.spines['bottom'].set_bounds(firsttick, lasttick)
-            ax_i.spines['top'].set_bounds(firsttick, lasttick)
-            newticks = xticks.compress(xticks <= lasttick)
-            newticks = newticks.compress(newticks >= firsttick)
-            ax_i.set_xticks(newticks)
-
-            yticks = ax_i.get_yticks()
-            firsttick = np.compress(yticks >= ax_i.get_ylim()[0], yticks)[0]
-            lasttick = np.compress(yticks <= ax_i.get_ylim()[-1], yticks)[-1]
-            ax_i.spines['left'].set_bounds(firsttick, lasttick)
-            ax_i.spines['right'].set_bounds(firsttick, lasttick)
-            newticks = yticks.compress(yticks <= lasttick)
-            newticks = newticks.compress(newticks >= firsttick)
-            ax_i.set_yticks(newticks)
+        ax_i.spines["right"].set_visible(False)
+        ax_i.yaxis.tick_left()
+        ax_i.spines["top"].set_visible(False)
+        ax_i.xaxis.tick_bottom()
 
 
-def offset_spines(offset=10, fig=None, ax=None):
-    """Simple function to offset spines away from axes.
-
-    Use this immediately after creating figure and axes objects.
-    Offsetting spines after plotting or manipulating the axes
-    objects may result in loss of labels, ticks, and formatting.
-
-    Parameters
-    ----------
-    offset : int, optional
-        Absolute distance, in points, spines should be moved away
-        from the axes (negative values move spines inward).
-    fig : matplotlib figure, optional
-        Figure to despine all axes of, default uses current figure.
-    ax : matplotlib axes, optional
-        Specific axes object to despine
-
-    Returns
-    -------
-    None
-
-    """
-    warn_msg = "`offset_spines` is deprecated and will be removed in v0.5"
-    warnings.warn(warn_msg, UserWarning)
-
-    # Get references to the axes we want
-    if fig is None and ax is None:
-        axes = plt.gcf().axes
-    elif fig is not None:
-        axes = fig.axes
-    elif ax is not None:
-        axes = [ax]
-
-    for ax_i in axes:
-        for spine in ax_i.spines.values():
-            _set_spine_position(spine, ('outward', offset))
-
-
-def _set_spine_position(spine, position):
-    """
-    Set the spine's position without resetting an associated axis.
-
-    As of matplotlib v. 1.0.0, if a spine has an associated axis, then
-    spine.set_position() calls axis.cla(), which resets locators, formatters,
-    etc.  We temporarily replace that call with axis.reset_ticks(), which is
-    sufficient for our purposes.
-    """
-    axis = spine.axis
-    if axis is not None:
-        cla = axis.cla
-        axis.cla = axis.reset_ticks
-    spine.set_position(position)
-    if axis is not None:
-        axis.cla = cla
-
-
-def _kde_support(data, bw, gridsize, cut, clip):
+def _kde_support(a, kde, npts, thresh=1e-4):
     """Establish support for a kernel density estimate."""
-    support_min = max(data.min() - bw * cut, clip[0])
-    support_max = min(data.max() + bw * cut, clip[1])
-    return np.linspace(support_min, support_max, gridsize)
-
-
-def percentiles(a, pcts, axis=None):
-    """Like scoreatpercentile but can take and return array of percentiles.
-
-    Parameters
-    ----------
-    a : array
-        data
-    pcts : sequence of percentile values
-        percentile or percentiles to find score at
-    axis : int or None
-        if not None, computes scores over this axis
-
-    Returns
-    -------
-    scores: array
-        array of scores at requested percentiles
-        first dimension is length of object passed to ``pcts``
-
-    """
-    scores = []
-    try:
-        n = len(pcts)
-    except TypeError:
-        pcts = [pcts]
-        n = 0
-    for i, p in enumerate(pcts):
-        if axis is None:
-            score = stats.scoreatpercentile(a.ravel(), p)
-        else:
-            score = np.apply_along_axis(stats.scoreatpercentile, axis, a, p)
-        scores.append(score)
-    scores = np.asarray(scores)
-    if not n:
-        scores = scores.squeeze()
-    return scores
-
-
-def ci(a, which=95, axis=None):
-    """Return a percentile range from an array of values."""
-    p = 50 - which / 2, 50 + which / 2
-    return percentiles(a, p, axis)
-
-
-def sig_stars(p):
-    """Return a R-style significance string corresponding to p values."""
-    if p < 0.001:
-        return "***"
-    elif p < 0.01:
-        return "**"
-    elif p < 0.05:
-        return "*"
-    elif p < 0.1:
-        return "."
-    return ""
-
-
-def iqr(a):
-    """Calculate the IQR for an array of numbers."""
-    a = np.asarray(a)
-    q1 = stats.scoreatpercentile(a, 25)
-    q3 = stats.scoreatpercentile(a, 75)
-    return q3 - q1
-
-
-def load_dataset(name):
-    """Load a dataset from the online repository (requires internet)."""
-    path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
-    full_path = path.format(name)
-    df = pd.read_csv(full_path)
-    if df.iloc[-1].isnull().all():
-        df = df.iloc[:-1]
-    return df
+    min = a.min()
+    max = a.max()
+    range = max - min
+    x = np.linspace(min - range, max + range, npts * 2)
+    y = kde(x)
+    mask = y > y.max() * thresh
+    return x[mask]
