@@ -57,41 +57,27 @@ def test_ci_to_errsize():
 
 
 def test_desaturate():
-    """Test that we get the right return values from desat."""
+    """Test color desaturation."""
     out1 = utils.desaturate("red", .5)
-    assert_equal(out1, (1., .5, .5))
+    assert_equal(out1, (.75, .25, .25))
 
     out2 = utils.desaturate("#00FF00", .5)
-    assert_equal(out2, (.5, 1., .5))
+    assert_equal(out2, (.25, .75, .25))
 
     out3 = utils.desaturate((0, 0, 1), .5)
-    assert_equal(out3, (.5, .5, 1.))
+    assert_equal(out3, (.25, .25, .75))
 
-    out4 = utils.desaturate("red", .5, "hls")
+    out4 = utils.desaturate("red", .5)
     assert_equal(out4, (.75, .25, .25))
 
 
 @raises(ValueError)
-def test_desaturation_pct():
+def test_desaturation_prop():
     """Test that pct outside of [0, 1] raises exception."""
     utils.desaturate("blue", 50)
 
 
 def test_saturate():
     """Test performance of saturation function."""
-    out = utils.saturate((1, .5, .5))
+    out = utils.saturate((.75, .25, .25))
     assert_equal(out, (1, 0, 0))
-
-
-@raises(ValueError)
-def test_hue_space():
-    """Test that desaturation space choise is constrained."""
-    utils._hue_space_params("cielab")
-
-
-def test_saturation_index():
-    """Test index to saturation channel for different spaces."""
-    hsv, _, _ = utils._hue_space_params("hsv")
-    assert_equal(hsv, 1)
-    hls, _, _ = utils._hue_space_params("hls")
-    assert_equal(hls, 2)
