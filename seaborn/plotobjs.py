@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import moss
 
 from seaborn.utils import (color_palette, ci_to_errsize,
-                           husl_palette, desaturate)
+                           husl_palette, desaturate, _kde_support)
 
 
 def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
@@ -75,7 +75,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     if not ci_list:
         ci = [ci]
     ci_vals = [(50 - w / 2, 50 + w / 2) for w in ci]
-    cis = [moss.percentiles(boot_data, ci, axis=0) for ci in ci_vals]
+    cis = [moss.percentiles(boot_data, v, axis=0) for v in ci_vals]
     central_data = estimator(data, axis=0)
 
     # Plot the timeseries line to get its color
@@ -1224,8 +1224,8 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
         p_mat = None
 
     # Paternalism
-    if cmap == "Jet":
-        raise ValueError("Never use the 'Jet' colormap!")
+    if cmap == "jet":
+        raise ValueError("Never use the 'jet' colormap!")
 
     # Sort out the color range
     if cmap_range is None:
@@ -1295,12 +1295,23 @@ def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
     return ax
 
 
-def _kde_support(a, kde, npts, thresh=1e-4):
-    """Establish support for a kernel density estimate."""
-    min = a.min()
-    max = a.max()
-    range = max - min
-    x = np.linspace(min - range, max + range, npts * 2)
-    y = kde(x)
-    mask = y > y.max() * thresh
-    return x[mask]
+def palplot(pal, size=1):
+    """Plot the values in a color palette as a horizontal array.
+
+    Parameters
+    ----------
+    pal : sequence of matplotlib colors
+        colors, i.e. as returned by seaborn.color_palette()
+    size :
+        scaling factor for size of plot
+
+    """
+    n = len(pal)
+    f, ax = plt.subplots(1, 1, figsize=(n * size, size))
+    ax.imshow(np.arange(n).reshape(1, n),
+              cmap=mpl.colors.ListedColormap(list(pal)),
+              interpolation="nearest", aspect="auto")
+    ax.set_xticks(np.arange(n) - .5)
+    ax.set_yticks([-.5, .5])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
