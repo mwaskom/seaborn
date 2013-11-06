@@ -1,4 +1,5 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
+import contextlib
 import matplotlib as mpl
 from seaborn import utils
 
@@ -14,8 +15,8 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("lines", markeredgewidth=0)
     mpl.rc("figure", figsize=(8, 5.5))
     mpl.rc("image", cmap="cubehelix")
-    mpl.rc("xtick.major", size=0)
-    mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.major", size=0, pad=7)
+    mpl.rc("ytick.major", size=0, pad=7)
 
 
 def reset_defaults():
@@ -52,7 +53,6 @@ def set_axes_style(style, context):
                      "grid.color": "w",
                      "grid.linestyle": "-",
                      "grid.linewidth": lw}
-        _blank_ticks(ax_params)
 
     elif style == "whitegrid":
         glw = .8 if context == "paper" else 1.5
@@ -64,14 +64,12 @@ def set_axes_style(style, context):
                      "grid.color": "#CCCCCC",
                      "grid.linestyle": "-",
                      "grid.linewidth": glw}
-        _blank_ticks(ax_params)
 
     elif style == "nogrid":
         ax_params = {"axes.grid": False,
                      "axes.facecolor": "white",
                      "axes.edgecolor": "black",
                      "axes.linewidth": 1}
-        _restore_ticks(ax_params)
 
     mpl.rcParams.update(ax_params)
 
@@ -133,3 +131,12 @@ def set_color_palette(name, n_colors=6, desat=None):
     colors = utils.color_palette(name, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = colors
     mpl.rcParams["patch.facecolor"] = colors[0]
+
+
+@contextlib.contextmanager
+def palette_context(palette, n_colors=6, desat=None):
+    """Context manager for temporarily setting the color palette."""
+    orig_palette = mpl.rcParams["axes.color_cycle"]
+    set_color_palette(palette, n_colors, desat)
+    yield
+    set_color_palette(orig_palette, len(orig_palette))
