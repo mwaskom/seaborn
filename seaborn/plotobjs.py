@@ -4,8 +4,8 @@
 # expect to have full reign of their figure to draw subplot grids or marginals.
 # Others are constrained to a single axis and should take and return an `ax`
 # argument. When `ax` is None, these functions should grab the current axis and
-# plot into that. These two types of functions may be split into different modules
-# to make the division a little bit more obvious.
+# plot into that. These two types of functions may be split into different
+# modules to make the division a little bit more obvious.
 
 from __future__ import division
 import colorsys
