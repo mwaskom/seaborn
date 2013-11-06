@@ -1,6 +1,7 @@
 """Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
+from itertools import cycle
 import husl
 import numpy as np
 import matplotlib as mpl
@@ -8,7 +9,7 @@ import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
 
-def color_palette(name=None, n_colors=8, desat=None):
+def color_palette(name=None, n_colors=6, desat=None):
     """Return matplotlib color codes for a given palette.
 
     Availible seaborn palette names:
@@ -34,38 +35,45 @@ def color_palette(name=None, n_colors=8, desat=None):
         color palette
 
     """
-    if name is None:
-        return mpl.rcParams["axes.color_cycle"]
-
-    palettes = dict(
-        default=["b", "g", "r", "c", "m", "y", "k"],
-        pastel=["#92C6FF", "#97F0AA", "#FF9F9A", "#D0BBFF", "#FFFEA3"],
-        bright=["#003FFF", "#03ED3A", "#E8000B", "#00D7FF", "#FFB400"],
-        muted=["#4878CF", "#6ACC65", "#D65F5F", "#B47CC7", "#C4AD66"],
-        deep=["#4C72B0", "#55A868", "#C44E52", "#8172B2", "#CCB974"],
-        dark=["#001C7F", "#017517", "#8C0900", "#7600A1", "#007364"],
-        colorblind=["#0072B2", "#009E73", "#D55E00", "#F0E442",
-                    "#CC79A7", "#56B4E9", "#E69F00"],
+    seaborn_palettes = dict(
+        deep=["#4C72B0", "#55A868", "#C44E52",
+              "#8172B2", "#CCB974", "#64B5CD"],
+        muted=["#4878CF", "#6ACC65", "#D65F5F",
+               "#B47CC7", "#C4AD66", "#77BEDB"],
+        pastel=["#92C6FF", "#97F0AA", "#FF9F9A",
+                "#D0BBFF", "#FFFEA3", "#B0E0E6"],
+        bright=["#003FFF", "#03ED3A", "#E8000B",
+                "#8A2BE2", "#FFC400", "#00D7FF"],
+        dark=["#001C7F", "#017517", "#8C0900",
+              "#7600A1", "#B8860B", "#006374"],
+        colorblind=["#0072B2", "#009E73", "#D55E00",
+                    "#CC79A7", "#F0E442", "#56B4E9"],
     )
 
-    if hasattr(name, "__iter__"):
+    if name is None:
+        palette = mpl.rcParams["axes.color_cycle"]
+    elif hasattr(name, "__iter__"):
         palette = name
     elif name == "hls":
         palette = hls_palette(n_colors, .01, .6, .65)
     elif name == "husl":
         palette = husl_palette(n_colors, .01, .65, .9)
+    elif name in seaborn_palettes:
+        palette = seaborn_palettes[name]
+    elif name in dir(mpl.cm):
+        palette = mpl_palette(name, n_colors)
     else:
-        try:
-            palette = palettes[name]
-        except KeyError:
-            bins = np.linspace(0, 1, n_colors + 2)[1:-1]
-            cmap = getattr(mpl.cm, name)
-            palette = map(tuple, cmap(bins)[:, :3])
-        except KeyError:
-            raise ValueError("%s is not a valid palette name" % name)
+        raise ValueError("%s is not a valid palette name" % name)
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
+
+    # Always return as many colors as we asked for
+    pal_cycle = cycle(palette)
+    palette = [pal_cycle.next() for _ in range(n_colors)]
+
+    # Always return in r, g, b tuple format
+    palette = map(mpl.colors.colorConverter.to_rgb, palette)
 
     return palette
 
@@ -133,6 +141,89 @@ def husl_palette(n_colors=6, h=.01, s=.65, l=.9):
     return palette
 
 
+def mpl_palette(name, n_colors=6):
+    """Return discrete colors from a matplotlib palette.
+
+    Note that this handles the qualitative colorbrewer palettes
+    properly, although if you ask for more colors than a particular
+    qualitative palette can provide you will fewer than you are
+    expecting.
+
+    Parameters
+    ----------
+    name : string
+        name of the palette
+    n_colors : int
+        number of colors in the palette
+
+    Returns
+    -------
+    palette : list of tuples
+        palette colors in r, g, b format
+
+    """
+    brewer_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
+                        "Pastel1": 9, "Pastel2": 8,
+                        "Set1": 9, "Set2": 8, "Set3": 12}
+
+    cmap = getattr(mpl.cm, name)
+    if name in brewer_qual_pals:
+        bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
+    else:
+        bins = np.linspace(0, 1, n_colors + 2)[1:-1]
+    palette = map(tuple, cmap(bins)[:, :3])
+
+    return palette
+
+
+def dark_palette(color, n_colors=6, reverse=False, as_cmap=False):
+    """Make a palette that blends from a deep gray to `color`.
+
+    Parameters
+    ----------
+    color : matplotlib color
+        hex, rgb-tuple, or html color name
+    n_colors : int, optional
+        number of colors in the palette
+    reverse : bool, optional
+        if True, reverse the direction of the blend
+    as_cmap : bool, optional
+        if True, return as a matplotlib colormap instead of list
+
+    Returns
+    -------
+    palette : list or colormap
+
+    """
+    gray = "#222222"
+    colors = [color, gray] if reverse else [gray, color]
+    return blend_palette(colors, n_colors, as_cmap)
+
+
+def blend_palette(colors, n_colors=6, as_cmap=False):
+    """Make a palette that blends between a list of colors.
+
+    Parameters
+    ----------
+    colors : sequence of matplotlib colors
+        hex, rgb-tuple, or html color name
+    n_colors : int, optional
+        number of colors in the palette
+    as_cmap : bool, optional
+        if True, return as a matplotlib colormap instead of list
+
+    Returns
+    -------
+    palette : list or colormap
+
+    """
+    name = "-".join(map(str, colors))
+    pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
+    if not as_cmap:
+        pal = pal(np.linspace(0, 1, n_colors))
+    return pal
+
+
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
 
@@ -189,17 +280,15 @@ def pmf_hist(a, bins=10):
     return x[:-1], h, w
 
 
-def desaturate(color, pct, space="hsv"):
+def desaturate(color, prop):
     """Decrease the saturation channel of a color by some percent.
 
     Parameters
     ----------
     color : matplotlib color
         hex, rgb-tuple, or html color name
-    pct : float
+    prop : float
         saturation channel of color will be multiplied by this value
-    space : hsv | hls
-        intermediate color space to max saturation channel
 
     Returns
     -------
@@ -208,31 +297,31 @@ def desaturate(color, pct, space="hsv"):
 
     """
     # Check inputs
-    if not 0 <= pct <= 1:
-        raise ValueError("Pct must be between 0 and 1")
+    if not 0 <= prop <= 1:
+        raise ValueError("prop must be between 0 and 1")
 
     # Get rgb tuple rep
     rgb = mplcol.colorConverter.to_rgb(color)
 
-    # Get the parameters to map in and out of hue-based space
-    sat_chan, map_in, map_out = _hue_space_params(space)
+    # Convert to hls
+    h, l, s = colorsys.rgb_to_hls(*rgb)
 
-    # Map into the space, desaturate, map back out and return
-    inter_rep = list(map_in(*rgb))
-    inter_rep[sat_chan] *= pct
-    new_color = map_out(*inter_rep)
+    # Desaturate the saturation channel
+    s *= prop
+
+    # Convert back to rgb
+    new_color = colorsys.hls_to_rgb(h, l, s)
+
     return new_color
 
 
-def saturate(color, space="hsv"):
+def saturate(color):
     """Return a fully saturated color with the same hue.
 
     Parameters
     ----------
     color :  matplotlib color
         hex, rgb-tuple, or html color name
-    space : hsv | hls
-        intermediate color space to max saturation channel
 
     Returns
     -------
@@ -240,17 +329,7 @@ def saturate(color, space="hsv"):
         saturated color code in RGB tuple representation
 
     """
-    # Get rgb tuple rep
-    rgb = mplcol.colorConverter.to_rgb(color)
-
-    # Get the parameters to map in and out of hue-based space
-    sat_chan, map_in, map_out = _hue_space_params(space)
-
-    # Map into the space, desaturate, map back out and return
-    inter_rep = list(map_in(*rgb))
-    inter_rep[sat_chan] = 1
-    new_color = map_out(*inter_rep)
-    return new_color
+    return set_hls_values(color, s=1)
 
 
 def set_hls_values(color, h=None, l=None, s=None):
@@ -280,23 +359,35 @@ def set_hls_values(color, h=None, l=None, s=None):
     return rgb
 
 
-def _hue_space_params(space):
-    """Get parameters to go in and out of hue-based color space."""
-    try:
-        sat_chan = dict(hsv=1, hls=2)[space]
-    except KeyError:
-        raise ValueError(space + " is not a valid space value")
-
-    # Get the right function to map into a space with a
-    # saturation channel
-    map_in = getattr(colorsys, "rgb_to_" + space)
-    map_out = getattr(colorsys, space + "_to_rgb")
-
-    return sat_chan, map_in, map_out
-
-
 def axlabel(xlabel, ylabel, **kwargs):
     """Grab current axis and label it."""
     ax = plt.gca()
     ax.set_xlabel(xlabel, **kwargs)
     ax.set_ylabel(ylabel, **kwargs)
+
+
+def despine(fig=None, ax=None):
+    """Remove the top and right spines from plot(s)."""
+    if fig is None and ax is None:
+        axes = plt.gcf().axes
+    elif fig is not None:
+        axes = fig.axes
+    elif ax is not None:
+        axes = [ax]
+
+    for ax_i in axes:
+        ax_i.spines["right"].set_visible(False)
+        ax_i.yaxis.tick_left()
+        ax_i.spines["top"].set_visible(False)
+        ax_i.xaxis.tick_bottom()
+
+
+def _kde_support(a, kde, npts, thresh=1e-4):
+    """Establish support for a kernel density estimate."""
+    min = a.min()
+    max = a.max()
+    range = max - min
+    x = np.linspace(min - range, max + range, npts * 2)
+    y = kde(x)
+    mask = y > y.max() * thresh
+    return x[mask]
