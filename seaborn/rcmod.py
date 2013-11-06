@@ -5,96 +5,19 @@ import matplotlib as mpl
 
 from . import palettes
 
-from . import palettes
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
+    """Set new RC params in one step."""
+    set_axes_style(style, context)
+    set_color_palette(palette)
 
-_style_keys = (
-    "axes.facecolor",
-    "axes.edgecolor",
-    "axes.grid",
-    "axes.axisbelow",
-    "axes.linewidth",
-    "axes.labelcolor",
-
-    "grid.color",
-    "grid.linestyle",
-
-    "text.color",
-
-    "xtick.color",
-    "ytick.color",
-    "xtick.direction",
-    "ytick.direction",
-    "xtick.major.size",
-    "ytick.major.size",
-    "xtick.minor.size",
-    "ytick.minor.size",
-
-    "legend.frameon",
-    "legend.numpoints",
-    "legend.scatterpoints",
-
-    "lines.solid_capstyle",
-
-    "image.cmap",
-    "font.family",
-
-    "pdf.fonttype",
-    )
-
-_context_keys = (
-    "figure.figsize",
-
-    "axes.labelsize",
-    "axes.titlesize",
-    "xtick.labelsize",
-    "ytick.labelsize",
-    "legend.fontsize",
-
-    "grid.linewidth",
-    "lines.linewidth",
-    "patch.linewidth",
-    "lines.markersize",
-    "lines.markeredgewidth",
-
-    "xtick.major.width",
-    "ytick.major.width",
-    "xtick.minor.width",
-    "ytick.minor.width",
-
-    "xtick.major.pad",
-    "ytick.major.pad"
-    )
-
-
-def set(context="notebook", style="darkgrid", palette="deep",
-        font="Arial", font_scale=1, rc=None):
-    """Set aesthetic parameters in one step.
-
-    Each set of parameters can be set directly or temporarily, see the
-    referenced functions below for more information.
-
-    Parameters
-    ----------
-    context : string or dict
-        Plotting context parameters, see :func:`plotting_context`
-    style : string or dict
-        Axes style parameters, see :func:`axes_style`
-    palette : string or sequence
-        Color palette, see :func:`color_palette`
-    font : string
-        Font family, see matplotlib font manager.
-    font_scale : float, optional
-        Separate scaling factor to independently scale the size of the
-        font elements.
-    rc : dict or None
-        Dictionary of rc parameter mappings to override the above.
-
-    """
-    set_context(context, font_scale)
-    set_style(style, rc={"font.family": font})
-    set_palette(palette)
-    if rc is not None:
-        mpl.rcParams.update(rc)
+    # Set the constant defaults
+    mpl.rc("font", family=font)
+    mpl.rc("legend", frameon=False, numpoints=1)
+    mpl.rc("lines", markeredgewidth=0)
+    mpl.rc("figure", figsize=(8, 5.5))
+    mpl.rc("image", cmap="cubehelix")
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
 
 
 def reset_defaults():
@@ -446,12 +369,91 @@ def set_context(context=None, font_scale=1, rc=None):
     set_palette : set the default color palette for figures
 
     """
-    context_object = plotting_context(context, font_scale, rc)
-    mpl.rcParams.update(context_object)
+    # Validate the arguments
+    if not {"darkgrid", "whitegrid", "nogrid"} & {style}:
+        raise ValueError("Style %s not recognized" % style)
+
+    if not {"notebook", "talk", "paper", "poster"} & {context}:
+        raise ValueError("Context %s is not recognized" % context)
+
+    # Determine the axis parameters
+    if style == "darkgrid":
+        lw = .8 if context  == "paper" else 1.5
+        ax_params = {"axes.facecolor": "#EAEAF2",
+                     "axes.edgecolor": "white",
+                     "axes.linewidth": 0,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "w",
+                     "grid.linestyle": "-",
+                     "grid.linewidth": lw}
+        _blank_ticks(ax_params)
+
+    elif style == "whitegrid":
+        glw = .8 if context == "paper" else 1.5
+        ax_params = {"axes.facecolor": "white",
+                     "axes.edgecolor": "#CCCCCC",
+                     "axes.linewidth": glw + .2,
+                     "axes.grid": True,
+                     "axes.axisbelow": True,
+                     "grid.color": "#CCCCCC",
+                     "grid.linestyle": "-",
+                     "grid.linewidth": glw}
+        _blank_ticks(ax_params)
+
+    elif style == "nogrid":
+        ax_params = {"axes.grid": False,
+                     "axes.facecolor": "white",
+                     "axes.edgecolor": "black",
+                     "axes.linewidth": 1}
+        _restore_ticks(ax_params)
+
+    mpl.rcParams.update(ax_params)
+
+    # Determine the font sizes
+    if context == "talk":
+        font_params = {"axes.labelsize": 16,
+                       "axes.titlesize": 19,
+                       "xtick.labelsize": 14,
+                       "ytick.labelsize": 14,
+                       "legend.fontsize": 13,
+                       }
+
+    elif context == "notebook":
+        font_params = {"axes.labelsize": 11,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 10,
+                       "ytick.labelsize": 10,
+                       "legend.fontsize": 9,
+                       }
+
+    elif context == "poster":
+        font_params = {"axes.labelsize": 18,
+                       "axes.titlesize": 22,
+                       "xtick.labelsize": 16,
+                       "ytick.labelsize": 16,
+                       "legend.fontsize": 16,
+                       }
+
+    elif context == "paper":
+        font_params = {"axes.labelsize": 8,
+                       "axes.titlesize": 12,
+                       "xtick.labelsize": 8,
+                       "ytick.labelsize": 8,
+                       "legend.fontsize": 8,
+                       }
+
+    mpl.rcParams.update(font_params)
+
+    # Set other parameters
+    mpl.rcParams.update({
+        "lines.linewidth": 1.1 if context == "paper" else 1.4,
+        "patch.linewidth": .1 if context == "paper" else .3
+                         })
 
 
-def set_palette(name, n_colors=6, desat=None):
-    """Set the matplotlib color cycle using a seaborn palette.
+def set_color_palette(name, n_colors=6, desat=None):
+    """Set the matplotlib color cycle in one of a variety of ways.
 
     Parameters
     ----------
@@ -480,17 +482,3 @@ def set_palette(name, n_colors=6, desat=None):
     colors = palettes.color_palette(name, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
-
-
-def set_color_palette(palette, n_colors=6, desat=None):
-    """Backwards compatibility for set_palette."""
-    warnings.warn("set_color_palette is deprecated, use set_palette instead.",
-                  UserWarning)
-    return set_palette(palette, n_colors, desat)
-
-
-def palette_context(palette, n_colors=6, desat=None):
-    """Backwards compatibility for color_palette."""
-    warnings.warn("palette_context is deprecated, use color_palette directly.",
-                  UserWarning)
-    return palettes.color_palette(palette, n_colors, desat)
