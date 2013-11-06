@@ -7,11 +7,15 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
     set_axes_style(style, context)
     set_color_palette(palette)
+
+    # Set the constant defaults
     mpl.rc("font", family=font)
     mpl.rc("legend", frameon=False, numpoints=1)
     mpl.rc("lines", markeredgewidth=0)
     mpl.rc("figure", figsize=(8, 5.5))
-    mpl.rc("image", cmap="CMRmap")
+    mpl.rc("image", cmap="cubehelix")
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
 
 
 def reset_defaults():
@@ -53,7 +57,7 @@ def set_axes_style(style, context):
     elif style == "whitegrid":
         glw = .8 if context == "paper" else 1.5
         ax_params = {"axes.facecolor": "white",
-                     "axes.edgecolor": "white",
+                     "axes.edgecolor": "#CCCCCC",
                      "axes.linewidth": glw + .2,
                      "axes.grid": True,
                      "axes.axisbelow": True,
@@ -65,6 +69,7 @@ def set_axes_style(style, context):
     elif style == "nogrid":
         ax_params = {"axes.grid": False,
                      "axes.facecolor": "white",
+                     "axes.edgecolor": "black",
                      "axes.linewidth": 1}
         _restore_ticks(ax_params)
 
@@ -112,7 +117,7 @@ def set_axes_style(style, context):
                          })
 
 
-def set_color_palette(name, n_colors=8, desat=None):
+def set_color_palette(name, n_colors=6, desat=None):
     """Set the matplotlib color cycle in one of a variety of ways.
 
     Parameters
@@ -128,17 +133,3 @@ def set_color_palette(name, n_colors=8, desat=None):
     colors = utils.color_palette(name, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = colors
     mpl.rcParams["patch.facecolor"] = colors[0]
-
-
-def _blank_ticks(params):
-    """Turn off x and y ticks in a param dict (but not labels)."""
-    for axis in ["x", "y"]:
-        for step in ["major", "minor"]:
-            params["%stick.%s.size" % (axis, step)] = 0
-
-
-def _restore_ticks(params):
-    """Reset x and y ticks in a param dict to matplotlib defaults."""
-    for axis in ["x", "y"]:
-        for step, size in zip(["major", "minor"], [4, 2]):
-            params["%stick.%s.size" % (axis, step)] = size
