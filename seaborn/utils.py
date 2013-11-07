@@ -14,7 +14,7 @@ def color_palette(name=None, n_colors=6, desat=None):
     """Return matplotlib color codes for a given palette.
 
     Availible seaborn palette names:
-        default, pastel, bright, muted, deep, dark, colorblind
+        deep, muted, bright, pastel, dark, colorblind
 
     Other options:
         hls, husl, any matplotlib palette
@@ -56,9 +56,9 @@ def color_palette(name=None, n_colors=6, desat=None):
     elif hasattr(name, "__iter__"):
         palette = name
     elif name == "hls":
-        palette = hls_palette(n_colors, .01, .6, .65)
+        palette = hls_palette(n_colors)
     elif name == "husl":
-        palette = husl_palette(n_colors, .01, .65, .9)
+        palette = husl_palette(n_colors)
     elif name in seaborn_palettes:
         palette = seaborn_palettes[name]
     elif name in dir(mpl.cm):
@@ -103,6 +103,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues += h
     hues %= 1
     hues -= hues.astype(int)
     palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
