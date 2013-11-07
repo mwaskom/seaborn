@@ -109,7 +109,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     return palette
 
 
-def husl_palette(n_colors=6, h=.01, s=.65, l=.9):
+def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
     """Get a set of evenly spaced colors in HUSL hue space.
 
     h, s, and l should be between 0 and 1
@@ -138,7 +138,7 @@ def husl_palette(n_colors=6, h=.01, s=.65, l=.9):
     hues *= 359
     s *= 99
     l *= 99
-    palette = [husl.husl_to_rgb(h_i, l, s) for h_i in hues]
+    palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
     return palette
 
 
@@ -367,8 +367,18 @@ def axlabel(xlabel, ylabel, **kwargs):
     ax.set_ylabel(ylabel, **kwargs)
 
 
-def despine(fig=None, ax=None):
-    """Remove the top and right spines from plot(s)."""
+def despine(fig=None, ax=None, top=True, right=True,
+            left=False, bottom=False):
+    """Remove the top and right spines from plot(s).
+
+    fig : matplotlib figure
+        figure to despine all axes of, default uses current figure
+    ax : matplotlib axes
+        specific axes object to despine
+    top, right, left, bottom : boolean
+        if True, remove that spine
+
+    """
     if fig is None and ax is None:
         axes = plt.gcf().axes
     elif fig is not None:
@@ -377,10 +387,8 @@ def despine(fig=None, ax=None):
         axes = [ax]
 
     for ax_i in axes:
-        ax_i.spines["right"].set_visible(False)
-        ax_i.yaxis.tick_left()
-        ax_i.spines["top"].set_visible(False)
-        ax_i.xaxis.tick_bottom()
+        for side in ["top", "right", "left", "bottom"]:
+            ax_i.spines[side].set_visible(not locals()[side])
 
 
 def _kde_support(a, kde, npts, thresh=1e-4):
