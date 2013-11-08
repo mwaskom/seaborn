@@ -11,6 +11,7 @@ any additional questions.
 .. toctree::
    :maxdepth: 2
 
+   aesthetics
    linear_models
    plotting_distributions
    timeseries_plots
