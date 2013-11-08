@@ -55,7 +55,9 @@ Examples
 
 The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package. You can also check out the example notebooks:
 
-- [Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
+[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/aesthetics.ipynb)
+
+[Plotting complex linear models](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/linear_models.ipynb)
 
 - [Graphical representations of linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
 
