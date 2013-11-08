@@ -580,7 +580,7 @@ color palettes:
 
     data = randn(30, 10) + np.linspace(-2, 2, 10) ** 2 + 5
     palette = sns.color_palette("Spectral", 10, desat=.5)
-    sns.violin(data, inner="points", inner_kws={"lw": .3}, color=palette);
+    sns.violin(data, inner="points", color=palette);
 
 
 .. image:: plotting_distributions_files/plotting_distributions_75_0.png
