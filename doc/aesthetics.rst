@@ -30,7 +30,7 @@ Axis Styles
 
 
 Let's define a simple function to plot some offset sine waves to help us
-see the different stylistic parameters we can tweak
+see the different stylistic parameters we can tweak.
 
 .. code:: python
 
@@ -189,8 +189,8 @@ Changing style contexts
 
 The seaborn defaults are tailored to make plots that are
 well-proportioned for vieweing on your own computer screen. There are a
-few other styles that try to set parameters like font sizes that are
-more appropriate for other settings, such as a talk or on a poster:
+few other styles that try to set parameters like font sizes to be more
+appropriate for other settings, such as at a talk or on a poster:
 
 .. code:: python
 
