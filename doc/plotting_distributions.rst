@@ -288,7 +288,8 @@ unfilled contours.
     
     f, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
     ax1.contourf(xx, yy, density, 30, cmap="PuRd")
-    ax2.contour(xx, yy, density, 10, cmap="PuRd")
+    cmap = sns.dark_palette("#EA1493", as_cmap=True)
+    ax2.contour(xx, yy, density, 10, cmap=cmap)
     f.tight_layout()
 
 
