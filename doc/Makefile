@@ -43,6 +43,7 @@ clean:
 
 notebooks:
 
+	ipython nbconvert --to rst ../examples/aesthetics.ipynb
 	ipython nbconvert --to rst ../examples/linear_models.ipynb
 	ipython nbconvert --to rst ../examples/plotting_distributions.ipynb
 	ipython nbconvert --to rst ../examples/timeseries_plots.ipynb
