@@ -82,12 +82,8 @@ To install the released version, just do
 
     pip install seaborn
 
-You may instead want to use the development version from Github, by running
 
-    pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn
-
-
-    pip install -r requirements.txt
+    python setup.py install
 
 from within the source directory.
 
