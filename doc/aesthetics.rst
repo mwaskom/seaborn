@@ -318,10 +318,10 @@ are better when the data range from "low" to "high" values.
 
 Categorial data is best represented by a qualitative palette. Seaborn
 fixes some problems inherent in the way matplotlib deals with the
-qualitative palettes from the `colorbrewer <colorbrewer.org>`__ package,
-although they behave a little differently. If you request more colors
-than exist for a given qualitative palette, the colors will cycle, which
-is not the case for other matplotlib-based palettes.
+qualitative palettes from the `colorbrewer <http://colorbrewer.org>`__
+package, although they behave a little differently. If you request more
+colors than exist for a given qualitative palette, the colors will
+cycle, which is not the case for other matplotlib-based palettes.
 
 .. code:: python
 
