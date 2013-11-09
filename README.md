@@ -62,12 +62,12 @@ Installation
 
 To install the released version, just do
 
-    pip install -U seaborn
+    pip install seaborn
 
 However, I update the code pretty frequently, so you may want to clone the
 github repository and install with
 
-    pip install -r requirements.txt
+    python setup.py install
 
 from within the source directory.
 
