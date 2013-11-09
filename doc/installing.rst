@@ -5,8 +5,8 @@ Installing seaborn
 To install the released version of seaborn, you can use ``pip`` or
 ``easy_install``, (i.e. ``pip install seaborn``). Another option would be to to
 clone the `github repository <https://github.com/mwaskom/seaborn>`_ and install
-with ``pip install``. Seaborn itself is pure Python, so installation should be
-reasonably straightforward.
+with ``python setup.py install``. Seaborn itself is pure Python, so
+installation should be reasonably straightforward.
 
 Dependencies 
 ~~~~~~~~~~~~
@@ -39,6 +39,9 @@ installable with ``pip``.
 
 -  `moss <http://github.com/mwaskom/moss>`__
 
+These dependencies can be easily installed from the source directory by running
+`pip install -r requirements.txt`.
+
 Testing
 ~~~~~~~
 
@@ -46,7 +49,7 @@ To test seaborn, run ``make test`` in the root directory of the source
 distribution. This runs the unit test suite of the plotting utilities (which
 can also be exercised separately by running ``nosetests``). It also runs the code
 in the tutorial notebooks, comparing the output to what is stored in the
-notebook files.
+notebook files and reporting any discrepencies.
 
 Bugs
 ~~~~
