@@ -765,7 +765,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     vals = np.atleast_2d(vals).T
 
     if color is None:
-        colors = husl_palette(len(vals))
+        colors = husl_palette(len(vals), l=.7)
     else:
         if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
@@ -777,7 +777,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
                 colors = color_palette(color, len(vals))
 
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-    colors = [desaturate(c, .75) for c in colors]
+    colors = [desaturate(c, .7) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
@@ -1089,7 +1089,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     vals = [np.asarray(a, float) for a in vals]
 
     if color is None:
-        colors = husl_palette(len(vals))
+        colors = husl_palette(len(vals), l=.7)
     else:
         if hasattr(color, "__iter__") and not isinstance(color, tuple):
             colors = color
@@ -1101,7 +1101,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
                 colors = color_palette(color, len(vals))
 
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-    colors = [desaturate(c, .75) for c in colors]
+    colors = [desaturate(c, .7) for c in colors]
 
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
