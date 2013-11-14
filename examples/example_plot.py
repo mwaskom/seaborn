@@ -72,7 +72,7 @@ plt.title("distplot()")
 plt.xlim(0, 1)
 ax.set_xticklabels([])
 
-b, _, r = sns.color_palette("dark", desat=.4)[:3]
+b, _, r = sns.color_palette("dark", desat=.6)[:3]
 n = 1000
 rs = np.random.RandomState(0)
 d = rs.beta(8, 13, n)
