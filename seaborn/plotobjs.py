@@ -749,13 +749,11 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
 
     elif isinstance(vals, pd.Series) and groupby is not None:
         if names is None:
-            names = pd.unique(groupby)
+            names = np.sort(pd.unique(groupby))
         if hasattr(groupby, "name"):
             xlabel = groupby.name
         ylabel = vals.name
         grouped_vals = pd.groupby(vals, groupby).values
-        if names is None:
-            names = grouped_vals.index
         vals = grouped_vals.values
     else:
         xlabel = None
@@ -1058,10 +1056,10 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     elif isinstance(vals, pd.Series) and groupby is not None:
         if hasattr(groupby, "name"):
             xlabel = groupby.name
+        if names is None:
+            names = np.sort(pd.unique(groupby))
         ylabel = vals.name
         grouped_vals = pd.groupby(vals, groupby).values
-        if names is None:
-            names = grouped_vals.index
         vals = grouped_vals.values
     else:
         xlabel = None
