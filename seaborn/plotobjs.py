@@ -764,7 +764,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     if color is None:
         colors = husl_palette(len(vals), .7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if hasattr(color, "__iter__") and not isinstance(color, (str, )):
             colors = color
         else:
             try:
@@ -1088,7 +1088,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     if color is None:
         colors = husl_palette(len(vals), .7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if hasattr(color, "__iter__") and not isinstance(color, (str, )):
             colors = color
         else:
             try:
