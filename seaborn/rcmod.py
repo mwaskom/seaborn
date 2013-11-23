@@ -12,7 +12,7 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     # Set the constant defaults
     mpl.rc("font", family=font)
     mpl.rc("legend", frameon=False, numpoints=1)
-    mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
+    mpl.rc("lines", markeredgewidth=0)
     mpl.rc("figure", figsize=(8, 5.5))
     mpl.rc("image", cmap="cubehelix")
     mpl.rc("xtick.major", size=0, pad=7)
@@ -61,7 +61,7 @@ def set_axes_style(style, context):
                      "axes.linewidth": glw + .2,
                      "axes.grid": True,
                      "axes.axisbelow": True,
-                     "grid.color": "#DDDDDD",
+                     "grid.color": "#CCCCCC",
                      "grid.linestyle": "-",
                      "grid.linewidth": glw}
 
@@ -87,7 +87,7 @@ def set_axes_style(style, context):
                        "axes.titlesize": 12,
                        "xtick.labelsize": 10,
                        "ytick.labelsize": 10,
-                       "legend.fontsize": 10,
+                       "legend.fontsize": 9,
                        }
 
     elif context == "poster":
