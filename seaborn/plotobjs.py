@@ -23,15 +23,14 @@ from seaborn.utils import (color_palette, ci_to_errsize,
                            husl_palette, desaturate, _kde_support)
 
 
-def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
-           estimator=np.mean, n_boot=10000, smooth=False,
-           err_palette=None, ax=None, err_kws=None, **kwargs):
+def tsplot(data, time=None, unit=None, condition=None, value=None,
+           err_style="ci_band", ci=68, interpolate=True, color=None,
+           estimator=np.mean, n_boot=10000, err_palette=None, err_kws=None,
+           legend=True, ax=None, **kwargs):
     """Plot timeseries from a set of observations.
 
     Parameters
     ----------
-    x : n_tp array
-        x values
     data : n_obs x n_tp array
         array of timeseries data where first axis is observations. other
         objects (e.g. DataFrames) are converted to an array if possible
@@ -42,12 +41,10 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         confidence interaval size(s). if a list, it will stack the error
         plots for each confidence interval
     estimator : callable
-        function to determine centralt tendency and to pass to bootstrap
+        function to determine central tendency and to pass to bootstrap
         must take an ``axis`` argument
     n_boot : int
         number of bootstrap iterations
-    smooth : boolean
-        whether to perform a smooth bootstrap (resample from KDE)
     ax : axis object, optional
         plot in given axis; if None creates a new figure
     err_kws : dict, optional
@@ -61,61 +58,165 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
         axis with plot data
 
     """
+    # Sort out default values for the parameters
     if ax is None:
         ax = plt.gca()
 
     if err_kws is None:
         err_kws = {}
 
-    # Bootstrap the data for confidence intervals
-    data = np.asarray(data)
-    boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
-                               axis=0, func=estimator)
-    ci_list = hasattr(ci, "__iter__")
-    if not ci_list:
-        ci = [ci]
-    ci_vals = [(50 - w / 2, 50 + w / 2) for w in ci]
-    cis = [moss.percentiles(boot_data, v, axis=0) for v in ci_vals]
-    central_data = estimator(data, axis=0)
+    # Handle case where data is an array
+    if isinstance(data, pd.DataFrame):
 
-    # Plot the timeseries line to get its color
-    line, = ax.plot(x, central_data, **kwargs)
-    color = line.get_color()
-    line.remove()
-    kwargs.pop("color", None)
+        xlabel = time
+        ylabel = value
 
-    # Use subroutines to plot the uncertainty
+        # Condition is optional
+        if condition is None:
+            condition = pd.Series(np.ones(len(data)))
+            legend = False
+            legend_name = None
+            n_cond = 1
+        else:
+            legend = True and legend
+            legend_name = condition
+            n_cond = len(data[condition].unique())
+
+    else:
+        data = np.asarray(data)
+
+        # Data can be a timecourse from a single unit or
+        # several observations in one condition
+        if data.ndim == 1:
+            data = data[np.newaxis, :, np.newaxis]
+        elif data.ndim == 2:
+            data = data[:, :, np.newaxis]
+        n_unit, n_time, n_cond = data.shape
+
+        # Units are experimental observations. Maybe subjects, or neurons
+        if unit is None:
+            units = np.arange(n_unit)
+        unit = "unit"
+        units = np.repeat(units, n_time * n_cond)
+        ylabel = None
+        if hasattr(unit, "name"):
+            ylabel = unit.name
+
+        # Time forms the xaxis of the plot
+        if time is None:
+            times = np.arange(n_time)
+        else:
+            times = np.asarray(time)
+        xlabel = None
+        if hasattr(time, "name"):
+            xlabel = time.name
+        time = "time"
+        times = np.tile(np.repeat(times, n_cond), n_unit)
+
+        # Conditions split the timeseries plots
+        if condition is None:
+            conds = range(n_cond)
+            legend = False
+        else:
+            conds = np.asarray(condition)
+            legend = True and legend
+            if hasattr(condition, "name"):
+                legend_name = condition.name
+            else:
+                legend_name = None
+        condition = "cond"
+        conds = np.tile(conds, n_unit * n_time)
+
+        # Value forms the y value in the plot
+        if value is None:
+            ylabel = None
+        else:
+            ylabel = value
+        value = "value"
+
+        # Convert to long-form DataFrame
+        data = pd.DataFrame(dict(value=data.ravel(),
+                                 time=times,
+                                 unit=units,
+                                 cond=conds))
+
+    # Set up the err_style and ci arguments for teh loop below
     if not hasattr(err_style, "__iter__"):
         err_style = [err_style]
-    for style in err_style:
+    if not hasattr(ci, "__iter__"):
+        ci = [ci]
 
-        # Grab the function from the global environment
+    # Set up the color palette
+    if color is None:
+        colors = color_palette()
+    else:
         try:
-            plot_func = globals()["_plot_%s" % style]
-        except KeyError:
-            raise ValueError("%s is not a valid err_style" % style)
+            colors = color_palette(color, n_cond)
+        except ValueError:
+            color = mpl.colors.colorConverter.to_rgb(color)
+            colors = [color] * n_cond
 
-        # Possibly set up to plot each observation in a different color
-        if err_palette is not None and "obs" in style:
-            orig_color = color
-            color = color_palette(err_palette, len(data), desat=.99)
+    # Do a groupby with condition and plot each trace
+    for c, (cond, df_c) in enumerate(data.groupby(condition)):
 
-        plot_kwargs = dict(ax=ax, x=x, data=data,
-                           boot_data=boot_data,
-                           central_data=central_data,
-                           color=color, err_kws=err_kws)
+        df_c = df_c.pivot(unit, time, value)
+        x = df_c.columns.values.astype(np.float)
 
-        for ci_i in cis:
-            plot_kwargs["ci"] = ci_i
-            plot_func(**plot_kwargs)
+        # Bootstrap the data for confidence intervals
+        boot_data = moss.bootstrap(df_c.values, n_boot=n_boot,
+                                   axis=0, func=estimator)
+        cis = [moss.ci(boot_data, v, axis=0) for v in ci]
+        central_data = estimator(df_c.values, axis=0)
 
-        if err_palette is not None and "obs" in style:
-            color = orig_color
-    # Replot the central trace so it is prominent
-    marker = kwargs.pop("marker", "" if interpolate else "o")
-    linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
-    ax.plot(x, central_data, color=color,
-            marker=marker, linestyle=linestyle, **kwargs)
+        # Get the color for this condition
+        color = colors[c]
+
+        # Use subroutines to plot the uncertainty
+        for style in err_style:
+
+            # Grab the function from the global environment
+            try:
+                plot_func = globals()["_plot_%s" % style]
+            except KeyError:
+                raise ValueError("%s is not a valid err_style" % style)
+
+            # Possibly set up to plot each observation in a different color
+            if err_palette is not None and "obs" in style:
+                orig_color = color
+                color = color_palette(err_palette, len(data), desat=.99)
+
+            # Pass all parameters to the error plotter as keyword args
+            plot_kwargs = dict(ax=ax, x=x, data=df_c.values,
+                               boot_data=boot_data,
+                               central_data=central_data,
+                               color=color, err_kws=err_kws)
+
+            # Plot the error representation, possibly for multiple cis
+            for ci_i in cis:
+                plot_kwargs["ci"] = ci_i
+                plot_func(**plot_kwargs)
+
+            if err_palette is not None and "obs" in style:
+                color = orig_color
+
+        # Plot the central trace
+        marker = kwargs.pop("marker", "" if interpolate else "o")
+        linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
+        label = cond if legend else "_nolegend_"
+        ax.plot(x, central_data, color=color, label=label,
+                marker=marker, linestyle=linestyle,  **kwargs)
+
+    ax.set_xlim(x.min(), x.max())
+    x_diff = x[1] - x[0]
+    if not interpolate:
+        ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
+
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if legend:
+        ax.legend(loc=0, title=legend_name)
 
     return ax
 
@@ -133,12 +234,12 @@ def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
     """Plot error bars at each data point."""
     err = ci_to_errsize(ci, central_data)
     ax.errorbar(x, central_data, yerr=err, fmt=None, ecolor=color,
-                label="_nolegend_", **err_kws)
+                label="_nolegend_", solid_capstyle="round", **err_kws)
 
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    ax.plot(x, boot_data[:250].T, color=color, alpha=0.25,
+    ax.plot(x, boot_data.T, color=color, alpha=0.25,
             linewidth=0.25, label="_nolegend_", **err_kws)
 
 
@@ -178,7 +279,7 @@ def _plot_obs_kde(ax, x, data, color, **kwargs):
 def _ts_kde(ax, x, data, color, **kwargs):
     """Upsample over time and plot a KDE of the bootstrap distribution."""
     kde_data = []
-    y_min, y_max = moss.percentiles(data, [1, 99])
+    y_min, y_max = data.min(), data.max()
     y_vals = np.linspace(y_min, y_max, 100)
     upsampler = interpolate.interp1d(x, data)
     data_upsample = upsampler(np.linspace(x.min(), x.max(), 100))
@@ -192,7 +293,7 @@ def _ts_kde(ax, x, data, color, **kwargs):
     kde_data /= kde_data.max(axis=0)
     kde_data[kde_data > 1] = 1
     img[:, :, 3] = kde_data
-    ax.imshow(img, interpolation="spline16", zorder=1,
+    ax.imshow(img, interpolation="spline16", zorder=2,
               extent=(x.min(), x.max(), y_min, y_max),
               aspect="auto", origin="lower")
 
@@ -517,7 +618,6 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         overridden by passing `color` to subfunc kwargs
     {reg, scatter, dist, text}_kws: dicts
         further keyword arguments for the constituent plots
-
 
     """
     # Interperet inputs
