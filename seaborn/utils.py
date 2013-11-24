@@ -52,14 +52,14 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     if name is None:
         palette = mpl.rcParams["axes.color_cycle"]
-    elif hasattr(name, "__iter__"):
+    elif isinstance(name, str) and name in seaborn_palettes:
+        palette = seaborn_palettes[name]
+    elif hasattr(name, "__iter__") and not isinstance(name, str):
         palette = name
     elif name == "hls":
         palette = hls_palette(n_colors)
     elif name == "husl":
         palette = husl_palette(n_colors)
-    elif name in seaborn_palettes:
-        palette = seaborn_palettes[name]
     elif name in dir(mpl.cm):
         palette = mpl_palette(name, n_colors)
     else:
@@ -70,10 +70,10 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     # Always return as many colors as we asked for
     pal_cycle = cycle(palette)
-    palette = [pal_cycle.next() for _ in range(n_colors)]
+    palette = [next(pal_cycle) for _ in range(n_colors)]
 
     # Always return in r, g, b tuple format
-    palette = map(mpl.colors.colorConverter.to_rgb, palette)
+    palette = list(map(mpl.colors.colorConverter.to_rgb, palette))
 
     return palette
 
@@ -172,7 +172,7 @@ def mpl_palette(name, n_colors=6):
         bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
-    palette = map(tuple, cmap(bins)[:, :3])
+    palette = list(map(tuple, cmap(bins)[:, :3]))
 
     return palette
 

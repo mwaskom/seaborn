@@ -72,7 +72,7 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     boot_data = moss.bootstrap(data, n_boot=n_boot, smooth=smooth,
                                axis=0, func=estimator)
     ci_list = hasattr(ci, "__iter__")
-    if not ci_list:
+    if not ci_list or isinstance(ci_list, str):
         ci = [ci]
     ci_vals = [(50 - w / 2, 50 + w / 2) for w in ci]
     cis = [moss.percentiles(boot_data, v, axis=0) for v in ci_vals]
@@ -85,10 +85,9 @@ def tsplot(x, data, err_style="ci_band", ci=68, interpolate=True,
     kwargs.pop("color", None)
 
     # Use subroutines to plot the uncertainty
-    if not hasattr(err_style, "__iter__"):
+    if not hasattr(err_style, "__iter__") or isinstance(err_style, str):
         err_style = [err_style]
     for style in err_style:
-
         # Grab the function from the global environment
         try:
             plot_func = globals()["_plot_%s" % style]
@@ -668,7 +667,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         colors = itertools.cycle(color_palette(palette, n_terms))
         f, ax = plt.subplots(1, 1, figsize=(wsize(n_terms), hsize(1)))
         for i, term in enumerate(coefs.index):
-            color = colors.next()
+            color = next(colors)
             low, high = cis.ix[term]
             ax.plot([i, i], [low, high], c=color,
                     solid_capstyle="round", lw=2.5)
@@ -687,7 +686,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         colors = itertools.cycle(color_palette(palette, n_groups))
         for ax, term in zip(axes, coefs.index):
             for i, group in enumerate(coefs.columns):
-                color = colors.next()
+                color = next(colors)
                 low, high = cis.ix[(group, term)]
                 ax.plot([i, i], [low, high], c=color,
                         solid_capstyle="round", lw=2.5)
@@ -765,7 +764,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if hasattr(color, "__iter__") and not isinstance(color, (str, )):
             colors = color
         else:
             try:
@@ -1078,7 +1077,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
             elif nc == 1:
                 vals = [vals.ravel()]
             else:
-                vals = [vals[:, i] for i in xrange(nc)]
+                vals = [vals[:, i] for i in range(nc)]
         else:
             raise ValueError("Input x can have no more than 2 dimensions")
     if not hasattr(vals[0], '__len__'):
@@ -1089,7 +1088,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if hasattr(color, "__iter__") and not isinstance(color, (str, )):
             colors = color
         else:
             try:

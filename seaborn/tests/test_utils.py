@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 import nose
 from nose.tools import assert_equal, raises
 
-from .. import utils
+from seaborn import utils
 
 
 a_norm = np.random.randn(100)
