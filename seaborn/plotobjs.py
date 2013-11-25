@@ -27,30 +27,70 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
            err_style="ci_band", ci=68, interpolate=True, color=None,
            estimator=np.mean, n_boot=10000, err_palette=None, err_kws=None,
            legend=True, ax=None, **kwargs):
-    """Plot timeseries from a set of observations.
+    """Plot one or more timeseries with flexible representation of uncertainty.
+
+    This function can take data specified either as a long-form (tidy)
+    DataFrame or as an ndarray with dimensions for sampling unit, time, and
+    (optionally) condition. The interpretation of some of the other parameters
+    changes depending on the type of object passed as data.
 
     Parameters
     ----------
-    data : n_obs x n_tp array
-        array of timeseries data where first axis is observations. other
-        objects (e.g. DataFrames) are converted to an array if possible
-    err_style : string or list of strings
-        names of ways to plot uncertainty across observations from set of
-       {ci_band, ci_bars, boot_traces, book_kde, obs_traces, obs_points}
-    ci : int or list of ints
-        confidence interaval size(s). if a list, it will stack the error
-        plots for each confidence interval
+    data : DataFrame or ndarray
+        Data for the plot. Should either be a "long form" dataframe or an
+        array with dimensions (unit, time, condition). In both cases, the
+        condition field/dimension is optional. The type of this argument
+        determines the interpretation of the next few parameters.
+    time : string or series-like
+        Either the name of the field corresponding to time in the data
+        DataFrame or x values for a plot when data is an array. If a Series,
+        the name will be used to label the x axis.
+    value : string
+        Either the name of the field corresponding to the data values in
+        the data DataFrame (i.e. the y coordinate) or a string that forms
+        the y axis label when data is an array.
+    unit : string
+        Field in the data DataFrame identifying the sampling unit (e.g.
+        subject, neuron, etc.). The error representation will collapse over
+        units at each time/condition observation. This has no role when data
+        is an array.
+    condition : string or Series-like
+        Either the name of the field identifying the condition an observation
+        falls under in the data DataFrame, or a sequence of names with a length
+        equal to the size of the third dimension of data. There will be a
+        separate trace plotted for each condition. If condition is a Series
+        with a name attribute, the name will form the title for the plot
+        legend (unless legend is set to False).
+    err_style : string or list of strings or None
+        Names of ways to plot uncertainty across units from set of
+       {ci_band, ci_bars, boot_traces, book_kde, unit_traces, unit_points}.
+       Can use one or more than one method.
+    ci : float or list of floats in [0, 100]
+        Confidence interaval size(s). If a list, it will stack the error
+        plots for each confidence interval. Only relevant for error styles
+        with "ci" in the name.
+    interpolate : boolean
+        Whether to do a linear interpolation between each timepoint when
+        plotting. The value of this parameter also determines the marker
+        used for the main plot traces, unless marker is specified as a keyword
+        argument.
+    color : seaborn palette or matplotlib color name
+        Palette or color for the main plots and error representation (unless
+        plotting by unit, which can be separately controlled with err_palette).
     estimator : callable
-        function to determine central tendency and to pass to bootstrap
-        must take an ``axis`` argument
+        Function to determine central tendency and to pass to bootstrap
+        must take an ``axis`` argument.
     n_boot : int
-        number of bootstrap iterations
-    ax : axis object, optional
-        plot in given axis; if None creates a new figure
+        Number of bootstrap iterations.
+    err_palette: seaborn palette
+        Palette name or list of colors used when plotting data for each unit.
     err_kws : dict, optional
-        keyword argument dictionary passed through to matplotlib
-        function generating the error plot
-    kwargs : further keyword arguments for main call to plot()
+        Keyword argument dictionary passed through to matplotlib function
+        generating the error plot,
+    ax : axis object, optional
+        Plot in given axis; if None creates a new figure
+    kwargs :
+        Other keyword arguments are passed to main plot() call
 
     Returns
     -------
@@ -99,8 +139,6 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         unit = "unit"
         units = np.repeat(units, n_time * n_cond)
         ylabel = None
-        if hasattr(unit, "name"):
-            ylabel = unit.name
 
         # Time forms the xaxis of the plot
         if time is None:
@@ -143,6 +181,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     # Set up the err_style and ci arguments for teh loop below
     if not hasattr(err_style, "__iter__"):
         err_style = [err_style]
+    elif err_style is None:
+        err_style = []
     if not hasattr(ci, "__iter__"):
         ci = [ci]
 
@@ -157,7 +197,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
             colors = [color] * n_cond
 
     # Do a groupby with condition and plot each trace
-    for c, (cond, df_c) in enumerate(data.groupby(condition)):
+    for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
 
         df_c = df_c.pivot(unit, time, value)
         x = df_c.columns.values.astype(np.float)
@@ -206,11 +246,13 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         ax.plot(x, central_data, color=color, label=label,
                 marker=marker, linestyle=linestyle,  **kwargs)
 
+    # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
     x_diff = x[1] - x[0]
     if not interpolate:
         ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
 
+    # Add the plot labels
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
@@ -239,11 +281,13 @@ def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    ax.plot(x, boot_data.T, color=color, alpha=0.25,
-            linewidth=0.25, label="_nolegend_", **err_kws)
+    alpha = err_kws.pop("alpha", 0.25)
+    lw = err_kws.pop("linewidth", 0.25)
+    ax.plot(x, boot_data.T, color=color, alpha=alpha,
+            linewidth=lw, label="_nolegend_", **err_kws)
 
 
-def _plot_obs_traces(ax, x, data, ci, color, err_kws, **kwargs):
+def _plot_unit_traces(ax, x, data, ci, color, err_kws, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
@@ -254,7 +298,7 @@ def _plot_obs_traces(ax, x, data, ci, color, err_kws, **kwargs):
                 label="_nolegend_", **err_kws)
 
 
-def _plot_obs_points(ax, x, data, color, err_kws, **kwargs):
+def _plot_unit_points(ax, x, data, color, err_kws, **kwargs):
     """Plot each original data point discretely."""
     if isinstance(color, list):
         for i, obs in enumerate(data):
@@ -271,7 +315,7 @@ def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
     _ts_kde(ax, x, boot_data, color, **kwargs)
 
 
-def _plot_obs_kde(ax, x, data, color, **kwargs):
+def _plot_unit_kde(ax, x, data, color, **kwargs):
     """Plot the kernal density estimate over the sample."""
     _ts_kde(ax, x, data, color, **kwargs)
 
