@@ -47,9 +47,9 @@ d = d * np.array([1, -1])[rs.binomial(1, .3, 3)][:, np.newaxis, np.newaxis]
 d = d + rs.normal(0, .15, (3, n))[:, :, np.newaxis]
 d = d + rs.uniform(0, .25, 3)[:, np.newaxis, np.newaxis]
 d *= 10
+d = d.transpose((1, 2, 0))
 
-for d_i in d:
-    sns.tsplot(x, d_i, ax=ax)
+sns.tsplot(d, time=x, ax=ax)
 
 # Violin plots
 # ------------
@@ -83,9 +83,9 @@ ax = plt.subplot(gs[3, 2:], sharey=ax)
 plt.xlim(0, 1)
 
 rs = np.random.RandomState(0)
-d = rs.beta(30, 25, n)
+d = rs.beta(30, 25, n / 10)
 
-sns.distplot(d, color=b)
+sns.distplot(d, hist=False, rug=True, color=b, kde_kws=dict(shade=True))
 
 f.tight_layout()
 f.savefig("%s/example_plot.png" % os.path.dirname(__file__))
