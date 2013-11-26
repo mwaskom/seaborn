@@ -1138,6 +1138,15 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     ax.plot(x, y, color=color, **kwargs)
     if shade:
         ax.fill_between(x, 0, y, color=color, alpha=0.25)
+
+    # Sometimes this can mess with the limits at the bottom of the plot
+    if vertical:
+        max = ax.get_xlim()[1]
+        ax.set_xlim(0, max)
+    else:
+        max = ax.get_ylim()[1]
+        ax.set_ylim(0, max)
+
     return ax
 
 
