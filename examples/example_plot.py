@@ -85,7 +85,7 @@ plt.xlim(0, 1)
 rs = np.random.RandomState(0)
 d = rs.beta(30, 25, n / 10)
 
-sns.distplot(d, hist=False, rug=True, color=b)
+sns.distplot(d, hist=False, rug=True, color=b, kde_kws=dict(shade=True))
 
 f.tight_layout()
 f.savefig("%s/example_plot.png" % os.path.dirname(__file__))
