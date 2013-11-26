@@ -445,7 +445,7 @@ To show such an effect, use the ``join_rm`` argument.
 
     pre = randn(25)
     post = pre + np.random.rand(25)
-    sns.boxplot([pre, post], ["pre", "post"], color="coral", join_rm=True);
+    sns.boxplot([pre, post], names=["pre", "post"], color="coral", join_rm=True);
 
 
 .. image:: plotting_distributions_files/plotting_distributions_56_0.png
@@ -506,6 +506,33 @@ could slip through.
 (Of course, if you looked at each distribution with a histogram/KDE plot
 as above, you might have caught this before making any comparisons.)
 
+Both the boxplot and violin functions can take a Pandas Series object as
+the data and an object that can be used to perform a ``groupby`` on the
+data to group it into the boxes/violins.
+
+.. code:: python
+
+    y = np.random.randn(200)
+    g = np.random.choice(list("abcdef"), 200)
+    for i, l in enumerate("abcdef"):
+        y[g == l] += i / 2
+    df = pd.DataFrame(dict(y=y, g=g))
+    sns.boxplot(df.y, df.g);
+
+
+.. image:: plotting_distributions_files/plotting_distributions_65_0.png
+
+
+
+
+.. code:: python
+
+    sns.violin(df.y, df.g, color="Paired");
+
+
+.. image:: plotting_distributions_files/plotting_distributions_67_0.png
+
+
 The violin plot by default plots the median, along with the 25th and
 75th percentile -- the same information we get from the boxplot. There
 are, however, other options. You might want to plot each observation
@@ -514,7 +541,7 @@ to accomplish this.
 
 .. code:: python
 
-    data = pd.melt(data.ix[:50]).rename(columns={"value": "y", "variable": "group"})
+    data = pd.melt(data.ix[:50], value_name="y", var_name="group")
 .. code:: python
 
     f, (ax_l, ax_r) = plt.subplots(1, 2)
@@ -523,7 +550,7 @@ to accomplish this.
     plt.tight_layout()
 
 
-.. image:: plotting_distributions_files/plotting_distributions_65_0.png
+.. image:: plotting_distributions_files/plotting_distributions_70_0.png
 
 
 Of course, you can plot repeated-measures data with the violin as well.
@@ -532,10 +559,10 @@ Of course, you can plot repeated-measures data with the violin as well.
 
     pre = randn(20)
     data = pd.DataFrame(dict(pre=pre, post=pre + 1 + randn(20)), columns=["pre", "post"])
-    sns.violin(data, "points", join_rm=True, color="RdGy_r");
+    sns.violin(data, inner="points", join_rm=True, color="RdGy_r");
 
 
-.. image:: plotting_distributions_files/plotting_distributions_67_0.png
+.. image:: plotting_distributions_files/plotting_distributions_72_0.png
 
 
 Using a palette colorscheme can be particularly useful if you have many
@@ -550,7 +577,7 @@ bins.
     sns.boxplot(data);
 
 
-.. image:: plotting_distributions_files/plotting_distributions_70_0.png
+.. image:: plotting_distributions_files/plotting_distributions_75_0.png
 
 
 Chose the color scheme carefully! The above is good for categorigal
@@ -562,7 +589,7 @@ bins, but perhaps there is some ordering to the grouping variable:
     sns.boxplot(data, widths=.8, color="cubehelix");
 
 
-.. image:: plotting_distributions_files/plotting_distributions_72_0.png
+.. image:: plotting_distributions_files/plotting_distributions_77_0.png
 
 
 Different kinds of relationships lend themselves to different kinds of
@@ -574,7 +601,7 @@ color palettes:
     sns.violin(data, color="coolwarm");
 
 
-.. image:: plotting_distributions_files/plotting_distributions_74_0.png
+.. image:: plotting_distributions_files/plotting_distributions_79_0.png
 
 
 .. code:: python
@@ -584,9 +611,9 @@ color palettes:
     sns.violin(data, inner="points", color=palette);
 
 
-.. image:: plotting_distributions_files/plotting_distributions_75_0.png
+.. image:: plotting_distributions_files/plotting_distributions_80_0.png
 
 
-.. code:: python
 
-    
+
+
