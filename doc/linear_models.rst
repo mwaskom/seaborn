@@ -198,7 +198,7 @@ correlations are mostly positive. By default the colormap is centered on
 zero and covers the range of the data (plus a bit), but you can also
 manually give the range.
 
-Don't even try using the "Jet" map; you'll get a ``ValueError``.
+Don't even try using the "jet" map; you'll get a ``ValueError``.
 
 It's additionally possible to control the direction of the significance
 test; in this case, an upper-tail test would be appropriate.
