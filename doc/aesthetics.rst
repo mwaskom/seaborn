@@ -127,7 +127,7 @@ foreground and look fine with the whitegrid style:
     pos = np.arange(6) + .6
     h = data.mean(axis=0)
     err = data.std() / np.sqrt(len(data))
-    plt.bar(pos, h, yerr=err, color=sns.husl_palette(6, s=.7), ecolor="#333333");
+    plt.bar(pos, h, yerr=err, color=sns.husl_palette(6, s=.75), ecolor="#333333");
 
 
 .. image:: aesthetics_files/aesthetics_17_0.png
