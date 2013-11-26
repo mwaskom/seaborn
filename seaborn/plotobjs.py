@@ -25,7 +25,7 @@ from seaborn.utils import (color_palette, ci_to_errsize,
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
            err_style="ci_band", ci=68, interpolate=True, color=None,
-           estimator=np.mean, n_boot=10000, err_palette=None, err_kws=None,
+           estimator=np.mean, n_boot=5000, err_palette=None, err_kws=None,
            legend=True, ax=None, **kwargs):
     """Plot one or more timeseries with flexible representation of uncertainty.
 
@@ -74,9 +74,10 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         plotting. The value of this parameter also determines the marker
         used for the main plot traces, unless marker is specified as a keyword
         argument.
-    color : seaborn palette or matplotlib color name
+    color : seaborn palette or matplotlib color name or dictionary
         Palette or color for the main plots and error representation (unless
         plotting by unit, which can be separately controlled with err_palette).
+        If a dictionary, should map condition name to color spec.
     estimator : callable
         Function to determine central tendency and to pass to bootstrap
         must take an ``axis`` argument.
@@ -155,6 +156,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         if condition is None:
             conds = range(n_cond)
             legend = False
+            if isinstance(color, dict):
+                raise ValueError("Must have condition names if using color dict.")
         else:
             conds = np.asarray(condition)
             legend = True and legend
@@ -189,6 +192,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     # Set up the color palette
     if color is None:
         colors = color_palette()
+    elif isinstance(color, dict):
+        colors = [color[c] for c in data[condition].unique()]
     else:
         try:
             colors = color_palette(color, n_cond)
@@ -221,9 +226,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                 raise ValueError("%s is not a valid err_style" % style)
 
             # Possibly set up to plot each observation in a different color
-            if err_palette is not None and "obs" in style:
+            if err_palette is not None and "unit" in style:
                 orig_color = color
-                color = color_palette(err_palette, len(data), desat=.99)
+                color = color_palette(err_palette, len(df_c.values))
 
             # Pass all parameters to the error plotter as keyword args
             plot_kwargs = dict(ax=ax, x=x, data=df_c.values,
@@ -236,7 +241,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                 plot_kwargs["ci"] = ci_i
                 plot_func(**plot_kwargs)
 
-            if err_palette is not None and "obs" in style:
+            if err_palette is not None and "unit" in style:
                 color = orig_color
 
         # Plot the central trace
@@ -269,7 +274,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
     """Plot translucent error bands around the central tendancy."""
     low, high = ci
-    ax.fill_between(x, low, high, color=color, alpha=0.2, **err_kws)
+    if "alpha" not in err_kws:
+        err_kws["alpha"] = 0.2
+    ax.fill_between(x, low, high, color=color, **err_kws)
 
 
 def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
@@ -281,21 +288,26 @@ def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    alpha = err_kws.pop("alpha", 0.25)
-    lw = err_kws.pop("linewidth", 0.25)
-    ax.plot(x, boot_data.T, color=color, alpha=alpha,
-            linewidth=lw, label="_nolegend_", **err_kws)
+    if "alpha" not in err_kws:
+        err_kws["alpha"] = 0.25
+    if "lw" in err_kws:
+        err_kws["linewidth"] = err_kws.pop("lw")
+    if "linewidth" not in err_kws:
+        err_kws["linewidth"] = 0.25
+    ax.plot(x, boot_data.T, color=color, label="_nolegend_", **err_kws)
 
 
 def _plot_unit_traces(ax, x, data, ci, color, err_kws, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
+        if "alpha" not in err_kws:
+            err_kws["alpha"] = .5
         for i, obs in enumerate(data):
-            ax.plot(x, obs, color=color[i], alpha=0.5,
-                    label="_nolegend_", **err_kws)
+            ax.plot(x, obs, color=color[i], label="_nolegend_", **err_kws)
     else:
-        ax.plot(x, data.T, color=color, alpha=0.2,
-                label="_nolegend_", **err_kws)
+        if "alpha" not in err_kws:
+            err_kws["alpha"] = .2
+        ax.plot(x, data.T, color=color, label="_nolegend_", **err_kws)
 
 
 def _plot_unit_points(ax, x, data, color, err_kws, **kwargs):
