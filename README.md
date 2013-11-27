@@ -63,7 +63,7 @@ The documentation has an [example gallery](http://stanford.edu/~mwaskom/software
 
 - [Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
 
-- [Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
+[Plotting statistical timeseries data](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/timeseries_plots.ipynb)
 
 
 Dependencies
