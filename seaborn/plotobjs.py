@@ -282,7 +282,6 @@ def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
 def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
     """Plot error bars at each data point."""
     for x_i, y_i, (low, high) in zip(x, central_data, ci.T):
-        ax.plot(x_i, y_i, "o", color=color, **err_kws)
         ax.plot([x_i, x_i], [low, high], color=color,
                 solid_capstyle="round", **err_kws)
 
