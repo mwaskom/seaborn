@@ -219,6 +219,10 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         # Use subroutines to plot the uncertainty
         for style in err_style:
 
+            # Allow for null style (only plot central tendency)
+            if style is None:
+                continue
+
             # Grab the function from the global environment
             try:
                 plot_func = globals()["_plot_%s" % style]
