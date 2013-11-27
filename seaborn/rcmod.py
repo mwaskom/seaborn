@@ -15,8 +15,8 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
     mpl.rc("figure", figsize=(8, 5.5))
     mpl.rc("image", cmap="cubehelix")
-    mpl.rc("xtick.major", size=0, pad=7)
-    mpl.rc("ytick.major", size=0, pad=7)
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
 
 
 def reset_defaults():
@@ -444,7 +444,9 @@ def set_context(context=None, font_scale=1, rc=None):
     # Set other parameters
     mpl.rcParams.update({
         "lines.linewidth": 1.1 if context == "paper" else 1.4,
-        "patch.linewidth": .1 if context == "paper" else .3
+        "patch.linewidth": .1 if context == "paper" else .3,
+        "xtick.major.pad": 3.5 if context == "paper" else 7,
+        "ytick.major.pad": 3.5 if context == "paper" else 7,
         })
 
 
