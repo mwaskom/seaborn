@@ -251,7 +251,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         # Plot the central trace
         marker = kwargs.pop("marker", "" if interpolate else "o")
         linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
-        label = cond if legend else "_nolegend_"
+        label = kwargs.pop("label", cond if legend else "_nolegend_")
         ax.plot(x, central_data, color=color, label=label,
                 marker=marker, linestyle=linestyle,  **kwargs)
 
