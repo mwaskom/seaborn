@@ -1340,8 +1340,9 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     return ax
 
 
-def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
-             cmap="coolwarm", cmap_range=None, cbar=True, ax=None, **kwargs):
+def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
+             sig_corr=True, cmap="coolwarm", cmap_range=None, cbar=True,
+             diag_names=True, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
     Parameters
@@ -1385,7 +1386,7 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
     data = data[names]
 
     # Get p values with a permutation test
-    if sig_stars:
+    if annot and sig_stars:
         p_mat = moss.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
@@ -1405,13 +1406,13 @@ def corrplot(data, names=None, sig_stars=True, sig_tail="both", sig_corr=True,
 
     # Plot using the more general symmatplot function
     ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range,
-                    cbar, ax, **kwargs)
+                    cbar, annot, diag_names, ax, **kwargs)
 
     return ax
 
 
 def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
-               cbar=True, ax=None, **kwargs):
+               cbar=True, annot=True, diag_names=True, ax=None, **kwargs):
     """Plot a symettric matrix with colormap and statistic values."""
     if ax is None:
         ax = plt.gca()
@@ -1440,24 +1441,40 @@ def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
     if p_mat is None:
         p_mat = np.ones((nvars, nvars))
 
-    for i, j in zip(*np.triu_indices(nvars, 1)):
-        val = mat[i, j]
-        stars = moss.sig_stars(p_mat[i, j])
-        ax.text(j, i, "\n%.3g\n%s" % (val, stars),
-                fontdict=dict(ha="center", va="center"))
+    if annot:
+        for i, j in zip(*np.triu_indices(nvars, 1)):
+            val = mat[i, j]
+            stars = moss.sig_stars(p_mat[i, j])
+            ax.text(j, i, "\n%.3g\n%s" % (val, stars),
+                    fontdict=dict(ha="center", va="center"))
+    else:
+        fill = np.ones_like(plotmat)
+        fill[np.tril_indices_from(fill, -1)] = np.nan
+        ax.matshow(fill, cmap="Greys", vmin=0, vmax=0, zorder=2)
 
     if names is None:
         names = ["var%d" % i for i in range(nvars)]
-    for i, name in enumerate(names):
-        ax.text(i, i, name, fontdict=dict(ha="center", va="center",
-                                          weight="bold", rotation=45))
+    
+    if diag_names:
+        for i, name in enumerate(names):
+            ax.text(i, i, name, fontdict=dict(ha="center", va="center",
+                                              weight="bold", rotation=45))
+        ax.set_xticklabels(())
+        ax.set_yticklabels(())
+    else:
+        ax.xaxis.set_ticks_position("bottom")
+        ax.set_xticklabels(names[:-1], rotation=90)
+        ax.set_yticklabels(names[1:])
 
-    ticks = np.linspace(.5, nvars - .5, nvars)
-    ax.set_xticks(ticks)
-    ax.set_yticks(ticks)
-    ax.set_xticklabels(())
-    ax.set_yticklabels(())
-    ax.grid(True, linestyle="-")
+    
+    minor_ticks = np.linspace(-.5, nvars - 1.5, nvars)
+    ax.set_xticks(minor_ticks, True)
+    ax.set_yticks(minor_ticks, True)
+    major_ticks = np.linspace(0, nvars - 1, nvars)
+    ax.set_xticks(major_ticks[:-1])
+    ax.set_yticks(major_ticks[1:])
+    ax.grid(False, which="major")
+    ax.grid(True, which="minor", linestyle="-")
 
     return ax
 
