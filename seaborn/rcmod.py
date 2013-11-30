@@ -17,6 +17,8 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("image", cmap="cubehelix")
     mpl.rc("xtick.major", size=0)
     mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.minor", size=0)
+    mpl.rc("ytick.minor", size=0)
 
 
 def reset_defaults():
