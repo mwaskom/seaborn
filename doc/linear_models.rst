@@ -189,7 +189,7 @@ Don't even try using the "jet" map; you'll get a ``ValueError``.
 
 .. code:: python
 
-    sns.corrplot(tips, sig_stars=False, cmap="RdGy_r");
+    sns.corrplot(tips, sig_stars=False, cmap="RdBu_r");
 
 
 .. image:: linear_models_files/linear_models_27_0.png
@@ -235,7 +235,9 @@ off:
 
     f, ax = plt.subplots(1, 1, figsize=(10, 10))
     x = np.random.randn(100, 30)
-    sns.corrplot(x, annot=False, diag_names=False, cmap="RdBu_r", ax=ax);
+    cmap = sns.blend_palette(["#00008B", "#6A5ACD", "#F0F8FF",
+                              "#FFE6F8", "#C71585", "#8B0000"], as_cmap=True)
+    sns.corrplot(x, annot=False, diag_names=False, cmap=cmap, ax=ax);
 
 
 .. image:: linear_models_files/linear_models_33_0.png
