@@ -38,15 +38,13 @@ Examples
 
 The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package. You can also check out the example notebooks:
 
-[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/aesthetics.ipynb)
+[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
 
-[Plotting complex linear models](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/linear_models.ipynb)
+[Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/linear_models.ipynb)
 
-- [Graphical representations of linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
+[Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/plotting_distributions.ipynb)
 
-- [Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
-
-[Plotting statistical timeseries data](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/timeseries_plots.ipynb)
+[Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
 
 
 Dependencies
