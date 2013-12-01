@@ -24,13 +24,13 @@ The notebooks are meant to be fairly, but not completely comprehensive;
 hopefully the docstrings for the specific functions will answer any additional
 questions.
 
-[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/aesthetics.ipynb)
+[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
 
-[Plotting complex linear models](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/linear_models.ipynb)
+[Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/linear_models.ipynb)
 
-[Visualizing distributions of data](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/plotting_distributions.ipynb)
+[Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/plotting_distributions.ipynb)
 
-[Plotting statistical timeseries data](http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/timeseries_plots.ipynb)
+[Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
 
 
 Dependencies
@@ -42,7 +42,7 @@ Dependencies
 
 - [scipy](http://www.scipy.org/)
 
-- [matplotlib](matplotlib.sourceforge.net)
+- [matplotlib](http://matplotlib.sourceforge.net)
 
 - [pandas](http://pandas.pydata.org/)
 
