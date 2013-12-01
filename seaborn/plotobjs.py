@@ -1348,29 +1348,33 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     Parameters
     ----------
     data : Dataframe or nobs x nvars array
-        input data
+        Rectangular nput data with variabes in the columns.
     names : sequence of strings
-        names to associate with variables; should be short
+        Names to associate with variables if `data` is not a DataFrame.
+    annot : bool
+        Whether to annotate the upper triangle with correlation coefficients.
     sig_stars : bool
-        if True, get significance with permutation test and denote with stars
+        If True, get significance with permutation test and denote with stars.
     sig_tail : both | upper | lower
-        direction for significance test
+        Direction for significance test. Also controls the default colorbar.
     sig_corr : bool
-        if True, use FWE-corrected significance
+        If True, use FWE-corrected p values for the sig stars.
     cmap : colormap
-        colormap name as string or colormap object
+        Colormap name as string or colormap object.
     cmap_range : None, "full", (low, high)
-        either truncate colormap at (-max(abs(r)), max(abs(r))), use the
-        full range (-1, 1), or specify (min, max) values for the colormap
-    cbar : boolean
-        if true, plots the colorbar legend
+        Either truncate colormap at (-max(abs(r)), max(abs(r))), use the
+        full range (-1, 1), or specify (min, max) values for the colormap.
+    cbar : bool
+        If true, plot the colorbar legend.
+    ax : matplotlib axis
+        Axis to draw plot in.
     kwargs : other keyword arguments
-        passed to ax.matshow()
+        Passed to ax.matshow()
 
     Returns
     -------
     ax : matplotlib axis
-        axis object with plot
+        Axis object with plot.
 
     """
     if not isinstance(data, pd.DataFrame):
