@@ -1341,7 +1341,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
 
 
 def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
-             sig_corr=True, cmap="coolwarm", cmap_range=None, cbar=True,
+             sig_corr=True, cmap=None, cmap_range=None, cbar=True,
              diag_names=True, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
@@ -1391,18 +1391,33 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     else:
         p_mat = None
 
-    # Paternalism
-    if cmap == "jet":
-        raise ValueError("Never use the 'jet' colormap!")
-
     # Sort out the color range
     if cmap_range is None:
         triu = np.triu_indices(len(corrmat), 1)
         vmax = min(1, np.max(np.abs(corrmat.values[triu])) * 1.15)
         vmin = -vmax
-        cmap_range = vmin, vmax
+        if sig_tail == "both":
+            cmap_range = vmin, vmax
+        elif sig_tail == "upper":
+            cmap_range = 0, vmax
+        elif sig_tail == "lower":
+            cmap_range = vmin, 0
     elif cmap_range == "full":
         cmap_range = (-1, 1)
+
+    # Find a colormapping, somewhat intelligently
+    if cmap is None:
+        if min(cmap_range) >= 0:
+            cmap = "PuRd"
+        elif max(cmap_range) <= 0:
+            cmap = "GnBu_r"
+        else:
+            cmap = "coolwarm"
+    if cmap == "jet":
+        # Paternalism
+        raise ValueError("Never use the 'jet' colormap!")
+
+
 
     # Plot using the more general symmatplot function
     ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range,
@@ -1411,7 +1426,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     return ax
 
 
-def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
+def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
                cbar=True, annot=True, diag_names=True, ax=None, **kwargs):
     """Plot a symettric matrix with colormap and statistic values."""
     if ax is None:
@@ -1463,16 +1478,20 @@ def symmatplot(mat, p_mat=None, names=None, cmap="coolwarm", cmap_range=None,
         ax.set_yticklabels(())
     else:
         ax.xaxis.set_ticks_position("bottom")
-        ax.set_xticklabels(names[:-1], rotation=90)
-        ax.set_yticklabels(names[1:])
+        xnames = names if annot else names[:-1]
+        ax.set_xticklabels(xnames, rotation=90)
+        ynames = names if annot else names[1:]
+        ax.set_yticklabels(ynames)
 
     
     minor_ticks = np.linspace(-.5, nvars - 1.5, nvars)
     ax.set_xticks(minor_ticks, True)
     ax.set_yticks(minor_ticks, True)
     major_ticks = np.linspace(0, nvars - 1, nvars)
-    ax.set_xticks(major_ticks[:-1])
-    ax.set_yticks(major_ticks[1:])
+    xticks = major_ticks if annot else major_ticks[:-1]
+    ax.set_xticks(xticks)
+    yticks = major_ticks if annot else major_ticks[1:]
+    ax.set_yticks(yticks)
     ax.grid(False, which="major")
     ax.grid(True, which="minor", linestyle="-")
 
