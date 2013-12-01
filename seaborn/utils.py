@@ -54,12 +54,12 @@ def color_palette(name=None, n_colors=6, desat=None):
         palette = mpl.rcParams["axes.color_cycle"]
     elif isinstance(name, str) and name in seaborn_palettes:
         palette = seaborn_palettes[name]
-    elif hasattr(name, "__iter__") and not isinstance(name, str):
-        palette = name
     elif name == "hls":
         palette = hls_palette(n_colors)
     elif name == "husl":
         palette = husl_palette(n_colors)
+    elif hasattr(name, "__iter__") and not isinstance(name, str):
+        palette = name
     elif name in dir(mpl.cm):
         palette = mpl_palette(name, n_colors)
     else:

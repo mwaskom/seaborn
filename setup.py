@@ -24,20 +24,20 @@ if __name__ == "__main__":
         os.remove('MANIFEST')
 
     setup(name=DISTNAME,
-        maintainer=MAINTAINER,
-        maintainer_email=MAINTAINER_EMAIL,
-        description=DESCRIPTION,
-        license=LICENSE,
-        url=URL,
-        version=VERSION,
-        download_url=DOWNLOAD_URL,
-        packages=['seaborn', 'seaborn.tests'],
-        classifiers=['Intended Audience :: Science/Research',
-                     'Programming Language :: Python',
-                     'License :: OSI Approved',
-                     'Topic :: Scientific/Engineering',           
-                     'Operating System :: POSIX',
-                     'Operating System :: Unix',
-                     'Operating System :: MacOS']
-        
+          maintainer=MAINTAINER,
+          maintainer_email=MAINTAINER_EMAIL,
+          description=DESCRIPTION,
+          license=LICENSE,
+          url=URL,
+          version=VERSION,
+          download_url=DOWNLOAD_URL,
+          packages=['seaborn', 'seaborn.tests'],
+          classifiers=['Intended Audience :: Science/Research',
+                       'Programming Language :: Python',
+                       'License :: OSI Approved',
+                       'Topic :: Scientific/Engineering',
+                       'Operating System :: POSIX',
+                       'Operating System :: Unix',
+                       'Operating System :: MacOS']
+
           )
