@@ -184,31 +184,61 @@ Note that if you have a huge dataset, the permutation test will take a
 while. Of course, if you have a huge dataset, *p* values will not be
 particularly relevant, so you can turn off the significance testing.
 
+It's also possible to choose a different colormap, but choose wisely!
+Don't even try using the "jet" map; you'll get a ``ValueError``.
+
 .. code:: python
 
-    sns.corrplot(tips, sig_stars=False);
+    sns.corrplot(tips, sig_stars=False, cmap="RdGy_r");
 
 
 .. image:: linear_models_files/linear_models_27_0.png
 
 
-You can also choose the colormap and the range it corresponds to, but
-choose wisely! Here we might just want a sequential colormap, as the
-correlations are mostly positive. By default the colormap is centered on
-zero and covers the range of the data (plus a bit), but you can also
-manually give the range.
+By default, the colormap is centered on 0 and uses a diverging map,
+which is appropriate since 0 is a meaningful boundary and both large
+positive and negative values are interesting.
 
-Don't even try using the "jet" map; you'll get a ``ValueError``.
-
-It's additionally possible to control the direction of the significance
-test; in this case, an upper-tail test would be appropriate.
+Sometimes, though, you are only interested in either positive or
+negative values. In these cases, you can set the tail for the
+significance test, which will also change the default colormap to a
+sequential map.
 
 .. code:: python
 
-    sns.corrplot(tips, sig_tail="upper", cmap="PuRd", cmap_range=(-.2, .8));
+    sns.corrplot(tips, sig_tail="upper");
 
 
 .. image:: linear_models_files/linear_models_29_0.png
+
+
+It's also possible to specify the range for the colormap. Note that
+setting the test direction modifies the colormap and range, but this
+does not happen in reverse.
+
+Additionally, if your variable names are long, you may want to move them
+to the sides of the plot; you can also turn off the colorbar.
+
+.. code:: python
+
+    sns.corrplot(tips, cmap_range=(-.3, 0), cbar=False, diag_names=False);
+
+
+.. image:: linear_models_files/linear_models_31_0.png
+
+
+You might also have many variables, in which case the correlation
+coefficient annotation may not fit well. In this case, it can be turned
+off:
+
+.. code:: python
+
+    f, ax = plt.subplots(1, 1, figsize=(10, 10))
+    x = np.random.randn(100, 30)
+    sns.corrplot(x, annot=False, diag_names=False, cmap="RdBu_r", ax=ax);
+
+
+.. image:: linear_models_files/linear_models_33_0.png
 
 
 Complex regression scatterplots
@@ -228,7 +258,7 @@ that ``lmplot`` only works with DataFrames.
     sns.lmplot("total_bill", "tip", tips)
 
 
-.. image:: linear_models_files/linear_models_33_0.png
+.. image:: linear_models_files/linear_models_37_0.png
 
 
 The advantage to using ``lmplot`` over ``regplot`` is that you can
@@ -241,7 +271,7 @@ comparisons involves separating subgroups by color.
     sns.lmplot("total_bill", "tip", tips, color="time")
 
 
-.. image:: linear_models_files/linear_models_35_0.png
+.. image:: linear_models_files/linear_models_39_0.png
 
 
 The default color palette is ``husl``, but you can use any of the
@@ -252,7 +282,7 @@ The default color palette is ``husl``, but you can use any of the
     sns.lmplot("total_bill", "tip", tips, color="day", palette="muted", ci=None)
 
 
-.. image:: linear_models_files/linear_models_37_0.png
+.. image:: linear_models_files/linear_models_41_0.png
 
 
 It's not actually neccesary to fit a regression line to the data, if you
@@ -264,7 +294,7 @@ up when using color grouping -- this doesn't work at the moment).
     sns.lmplot("total_bill", "tip", tips, fit_reg=False)
 
 
-.. image:: linear_models_files/linear_models_39_0.png
+.. image:: linear_models_files/linear_models_43_0.png
 
 
 Higher-order trends
@@ -281,7 +311,7 @@ like.
     sns.lmplot("total_bill", "tip_sqr", tips, order=2)
 
 
-.. image:: linear_models_files/linear_models_42_0.png
+.. image:: linear_models_files/linear_models_46_0.png
 
 
 Logistic Regression
@@ -301,7 +331,7 @@ influene whether diners leave a relatively "big" tip?
     sns.lmplot("size", "big_tip", tips)
 
 
-.. image:: linear_models_files/linear_models_45_0.png
+.. image:: linear_models_files/linear_models_49_0.png
 
 
 This plot suggets that big groups are relatively less likely to leave a
@@ -316,7 +346,7 @@ adding a bit of jitter to the scatter plot.
     sns.lmplot("size", "big_tip", tips, x_jitter=.3, y_jitter=.075)
 
 
-.. image:: linear_models_files/linear_models_47_0.png
+.. image:: linear_models_files/linear_models_51_0.png
 
 
 A more fundamental problem follows from using basic linear regression
@@ -332,7 +362,7 @@ regression fit is much more computationally intensive.
     sns.lmplot("size", "big_tip", tips, x_jitter=.3, y_jitter=.075, logistic=True, n_boot=1000)
 
 
-.. image:: linear_models_files/linear_models_49_0.png
+.. image:: linear_models_files/linear_models_53_0.png
 
 
 Faceted plots
@@ -350,7 +380,7 @@ rows.
     sns.lmplot("total_bill", "tip", tips, col="sex")
 
 
-.. image:: linear_models_files/linear_models_52_0.png
+.. image:: linear_models_files/linear_models_56_0.png
 
 
 Which doesn't mean you can't keep an association between colors and
@@ -361,7 +391,7 @@ factors
     sns.lmplot("total_bill", "tip", tips, color="sex", col="sex")
 
 
-.. image:: linear_models_files/linear_models_54_0.png
+.. image:: linear_models_files/linear_models_58_0.png
 
 
 By default, the same ``x`` and ``y`` axes are used for all facets, but
@@ -373,7 +403,7 @@ you don't care about.
     sns.lmplot("total_bill", "tip", tips, col="sex", sharey=False)
 
 
-.. image:: linear_models_files/linear_models_56_0.png
+.. image:: linear_models_files/linear_models_60_0.png
 
 
 Plotting with discrete predictor variables
@@ -388,7 +418,7 @@ discrete. Although this works fine out of the box:
     sns.lmplot("size", "tip", tips)
 
 
-.. image:: linear_models_files/linear_models_59_0.png
+.. image:: linear_models_files/linear_models_63_0.png
 
 
 And can be improved with a bit of jitter:
@@ -398,7 +428,7 @@ And can be improved with a bit of jitter:
     sns.lmplot("size", "tip", tips, x_jitter=.15)
 
 
-.. image:: linear_models_files/linear_models_61_0.png
+.. image:: linear_models_files/linear_models_65_0.png
 
 
 It might be more informative to estimate the central tendency of each
@@ -412,7 +442,7 @@ estimator will be bootstrapped and a confidence interval will be plotted
     sns.lmplot("size", "tip", tips, x_estimator=mean)
 
 
-.. image:: linear_models_files/linear_models_63_0.png
+.. image:: linear_models_files/linear_models_67_0.png
 
 
 Sometimes you may want to plot binary factors and not extrapolate with
@@ -428,7 +458,7 @@ string variables will be implemented.
     sns.lmplot("smoker", "size", tips, ci=None, x_estimator=mean, x_ci=68, truncate=True)
 
 
-.. image:: linear_models_files/linear_models_65_0.png
+.. image:: linear_models_files/linear_models_69_0.png
 
 
 You can plot data on both the rows and columns to compare multiple
@@ -439,7 +469,7 @@ factors at once.
     sns.lmplot("total_bill", "tip", tips, row="sex", col="day", size=4)
 
 
-.. image:: linear_models_files/linear_models_67_0.png
+.. image:: linear_models_files/linear_models_71_0.png
 
 
 And, of course, you can compose the color grouping with facets as well
@@ -450,7 +480,7 @@ to facilitate comparisons within a complicated model structure.
     sns.lmplot("total_bill", "tip", tips, col="day", color="sex", size=4)
 
 
-.. image:: linear_models_files/linear_models_69_0.png
+.. image:: linear_models_files/linear_models_73_0.png
 
 
 If you have many of levels for some factor (say, your population of
@@ -462,7 +492,7 @@ wide:
     sns.lmplot("total_bill", "tip", tips, ci=None, col="day", col_wrap=2, color="day", size=4)
 
 
-.. image:: linear_models_files/linear_models_71_0.png
+.. image:: linear_models_files/linear_models_75_0.png
 
 
 Plotting partial regressions
@@ -485,7 +515,7 @@ related:
     sns.lmplot("b", "c", df)
 
 
-.. image:: linear_models_files/linear_models_76_0.png
+.. image:: linear_models_files/linear_models_80_0.png
 
 
 However, we could remove the influence of the third variable to see if
@@ -496,7 +526,7 @@ any residual relationship exists:
     sns.lmplot("b", "c", df, x_partial="a")
 
 
-.. image:: linear_models_files/linear_models_78_0.png
+.. image:: linear_models_files/linear_models_82_0.png
 
 
 Plotting linear model parameters: ``coefplot``
@@ -520,7 +550,7 @@ specification for the model structure.
     sns.coefplot("tip ~ day + time * size", tips)
 
 
-.. image:: linear_models_files/linear_models_82_0.png
+.. image:: linear_models_files/linear_models_86_0.png
 
 
 .. code:: python
@@ -528,7 +558,7 @@ specification for the model structure.
     sns.coefplot("total_bill ~ day + time + smoker", tips, ci=68, palette="muted")
 
 
-.. image:: linear_models_files/linear_models_83_0.png
+.. image:: linear_models_files/linear_models_87_0.png
 
 
 When you have repeated measures in your dataset (e.g. an experiment
@@ -542,5 +572,5 @@ example above.
     sns.coefplot("tip ~ time * sex", tips, "size", intercept=True)
 
 
-.. image:: linear_models_files/linear_models_85_0.png
+.. image:: linear_models_files/linear_models_89_0.png
 
