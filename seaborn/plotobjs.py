@@ -1095,7 +1095,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
             support_min=-np.inf, support_max=np.inf,
-            vertical=False, ax=None, **kwargs):
+            vertical=False, legend=False, ax=None, **kwargs):
     """Calculate and plot kernel density estimate.
 
     Parameters
@@ -1113,6 +1113,8 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
         (does not affect the actual estimation)
     vertical : bool, defualt False
         if True, density is on x-axis
+    legend : bool, default True
+        if True, add a legend to the plot with what the plotted lines are
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
     kwargs : other keyword arguments for plot()
@@ -1150,6 +1152,9 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     else:
         max = ax.get_ylim()[1]
         ax.set_ylim(0, max)
+
+    if legend:
+        ax.legend(loc="best")
 
     return ax
 
