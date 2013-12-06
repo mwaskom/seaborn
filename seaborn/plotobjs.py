@@ -1128,16 +1128,15 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     if ax is None:
         ax = plt.gca()
 
-    # If the input data is a Pandas data frame or series then we can use its name
-    # attribute to label it. However, if the user sets a label in the function
-    # call, use that value instead of the object name. If there's no label set
-    # but the user wants a legend anyway then use "kde" as a default name.
-    if isinstance(a, pd.DataFrame) or isinstance(a, pd.Series):
-        if "label" not in kwargs:
-            if a.name:
-                kwargs["label"] = a.name
-            else:
-                kwargs["label"] = "kde"
+    # If the input data has a name attribute then we can use it as a label.
+    # However, if the user sets a label in the function call, use that value
+    # instead of the object name. If there's no label set but the user wants
+    # a legend anyway then use "kde" as a default name.
+    if "label" not in kwargs:
+        if a.name:
+            kwargs["label"] = a.name
+        else:
+            kwargs["label"] = "kde"
     else:
         if "label" not in kwargs:
             kwargs["label"] = "kde"
