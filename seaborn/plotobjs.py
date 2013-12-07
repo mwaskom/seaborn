@@ -978,9 +978,10 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     return ax
 
 
-def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
-             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, legend=False, xlabel=None, ax=None):
+def distplot(a, bins=None, hist=True, kde=True, kde_label=False,
+             rug=False, fit=None, hist_kws=None, kde_kws=None,
+             rug_kws=None, fit_kws=None, color=None,
+             vertical=False, legend=False, xlabel=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameters
@@ -991,8 +992,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         specification of bins or None to use Freedman-Diaconis rule
     hist : bool, default True
         whether to plot a (normed) histogram
-    kde : bool, defualt True
+    kde : bool, default True
         whether to plot a gaussian kernel density estimate
+    kde_label: bool, default False
+        whether to include a legend when plotting a KDE
     rug : bool, default False
         whether to draw a rugplot on the support axis
     fit : random variable object
@@ -1063,7 +1066,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kde_kws["label"] = "kde"
+	if kde_label == True:
+            kde_kws["label"] = "kde"
         kdeplot(a, vertical=vertical, color=kde_color, ax=ax, **kde_kws)
 
     if rug:
@@ -1128,18 +1132,25 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     if ax is None:
         ax = plt.gca()
 
-    # If the input data has a name attribute then we can use it as a label.
-    # However, if the user sets a label in the function call, use that value
-    # instead of the object name. If there's no label set but the user wants
-    # a legend anyway then use "kde" as a default name.
-    if "label" not in kwargs:
-        if a.name:
+    # If we don't catch this then legend gets set to False later
+    if legend == True and "label" in kwargs:
+        pass
+    # If the user explicitly asks for a legend then give them one.
+    elif legend == True and "label" not in kwargs:
+        # Use the object name attribute, if it has one.
+        if hasattr(a, "name"):
             kwargs["label"] = a.name
+        # If the user wants a legend, provides no label, and the object
+	# doesn't have one, give them a default of "kde".
         else:
             kwargs["label"] = "kde"
+    # If the user provides a label then give them a legend.
+    elif legend == False and "label" in kwargs:
+        legend = True
+    # If the user does not ask for a legend and does not pass a label then
+    # they get no legend.
     else:
-        if "label" not in kwargs:
-            kwargs["label"] = "kde"
+        legend = False
 
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
@@ -1161,11 +1172,12 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
 
     # Sometimes this can mess with the limits at the bottom of the plot
     if vertical:
-        max = ax.get_xlim()[1]
-        ax.set_xlim(0, max)
+        #xmax = ax.get_xlim()[1]
+	xmax = max(ax.get_xlim()[1], np.amax(x))
+        ax.set_xlim(0, xmax)
     else:
-        max = ax.get_ylim()[1]
-        ax.set_ylim(0, max)
+        ymax = max(ax.get_ylim()[1], np.amax(y))
+        ax.set_ylim(0, ymax)
 
     if legend:
         ax.legend(loc="best")
