@@ -653,39 +653,50 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
 
     Parameters
     ----------
-    x : sequence
-        independent variables
-    y : sequence
-        dependent variables
+    x : sequence or string
+        Independent variable.
+    y : sequence or string
+        Dependent variable.
     data : dataframe, optional
-        if dataframe is given, x, and y are interpreted as
-        string keys mapping to dataframe column names
+        If dataframe is given, x, and y are interpreted as string keys
+        for selecting to dataframe column names.
     corr_func : callable, optional
-        correlation function; expected to take two arrays
-        and return a numeric or (statistic, pval) tuple
+        Correlation function; expected to take two arrays and return a
+        numeric or (statistic, pval) tuple.
     func_name : string, optional
-        use for fit statistic annotation in lieu of function name
+        Use in lieu of function name for fit statistic annotation.
     xlabel, ylabel : string, optional
-        label names
+        Axis label names if inputs are not Pandas objects or to override.
     ci : int or None
-        confidence interval for the regression line
+        Confidence interval for the regression estimate.
     size: int
-        figure size (will be a square; only need one int)
+        Figure size (will be a square; only need one int).
     annotloc : two or three tuple
-        (xpos, ypos [, horizontalalignment])
+        Specified with (xpos, ypos [, horizontalalignment]).
     color : matplotlib color scheme
-        color of everything but the regression line
-        overridden by passing `color` to subfunc kwargs
+        Color of everything but the regression line; can be overridden by
+        passing `color` to subfunc kwargs.
     {reg, scatter, dist, text}_kws: dicts
-        further keyword arguments for the constituent plots
+        Further keyword arguments for the constituent plots.
 
     """
     # Interperet inputs
     if data is not None:
-        if not any(map(bool, [xlabel, ylabel])):
-            xlabel, ylabel = x, y
-        x = np.array(data[x])
-        y = np.array(data[y])
+        if not xlabel:
+            xlabel = x
+        if not ylabel:
+            ylabel = y
+        x = data[x].values
+        y = data[y].values
+    else:
+        if hasattr(x, "name") and not xlabel:
+            if x.name is not None:
+                xlabel = x.name
+        if hasattr(y, "name") and not ylabel:
+            if y.name is not None:
+                ylabel = y.name
+        x = np.asarray(x)
+        y = np.asarray(y)
 
     # Set up the figure and axes
     size = 6 if size is None else size
