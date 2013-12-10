@@ -6,6 +6,12 @@ from . import palettes
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
+    # Set defaults that may be overruled below.
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.minor", size=0)
+    mpl.rc("ytick.minor", size=0)
+
     set_axes_style(style, context)
     set_color_palette(palette)
 
@@ -15,10 +21,6 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
     mpl.rc("figure", figsize=(8, 5.5))
     mpl.rc("image", cmap="cubehelix")
-    mpl.rc("xtick.major", size=0)
-    mpl.rc("ytick.major", size=0)
-    mpl.rc("xtick.minor", size=0)
-    mpl.rc("ytick.minor", size=0)
 
 
 def reset_defaults():
@@ -70,33 +72,14 @@ def axes_style(style=None, rc=None):
 
     Parameters
     ----------
-    style : dict, None, or one of {darkgrid, whitegrid, dark, white, ticks}
-        A dictionary of parameters or the name of a preconfigured set.
-    rc : dict, optional
-        Parameter mappings to override the values in the preset seaborn
-        style dictionaries. This only updates parameters that are
-        considered part of the style definition.
-
-    Examples
-    --------
-    >>> st = axes_style("whitegrid")
-
-    >>> set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
-
-    >>> import matplotlib.pyplot as plt
-    >>> with axes_style("white"):
-    ...     f, ax = plt.subplots()
-    ...     ax.plot(x, y)               # doctest: +SKIP
-
-    See Also
-    --------
-    set_style : set the matplotlib parameters for a seaborn theme
-    plotting_context : return a parameter dict to to scale plot elements
-    color_palette : define the color palette for a plot
+    style : darkgrid | whitegrid | nogrid | ticks
+        Style of axis background.
+    context: notebook | talk | paper | poster
+        Intended context for resulting figures.
 
     """
     # Validate the arguments
-    if not {"darkgrid", "whitegrid", "nogrid"} & {style}:
+    if not {"darkgrid", "whitegrid", "nogrid", "ticks"} & {style}:
         raise ValueError("Style %s not recognized" % style)
 
     if not {"notebook", "talk", "paper", "poster"} & {context}:
@@ -130,6 +113,16 @@ def axes_style(style=None, rc=None):
                      "axes.facecolor": "white",
                      "axes.edgecolor": "black",
                      "axes.linewidth": 1}
+
+    elif style == "ticks":
+        ax_params = {"axes.grid": False,
+                     "axes.facecolor": "white",
+                     "axes.edgecolor": "black",
+                     "axes.linewidth": 1,
+                     "xtick.major.size": 10,
+                     "xtick.minor.size": 5,
+                     "ytick.major.size": 10,
+                     "ytick.minor.size": 5}
 
     mpl.rcParams.update(ax_params)
 
