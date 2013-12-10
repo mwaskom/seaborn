@@ -48,13 +48,15 @@ Dependencies
 
 - [statsmodels](http://statsmodels.sourceforge.net/)
 
-- [patsy](http://patsy.readthedocs.org/en/latest/)
-
 - [scikit-learn](http://scikit-learn.org)
+
+- [patsy](http://patsy.readthedocs.org/en/latest/)
 
 - [husl](https://github.com/boronine/pyhusl)
 
 - [moss](http://github.com/mwaskom/moss)
+
+Installing with `pip` will automatically install `patsy`, `husl`, and `moss`, which are the only dependencies not included in Anaconda.
 
 
 Installation

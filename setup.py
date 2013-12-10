@@ -16,8 +16,7 @@ LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn'
 VERSION = '0.2.dev'
 
-from numpy.distutils.core import setup
-
+from setuptools import setup
 
 if __name__ == "__main__":
     if os.path.exists('MANIFEST'):
@@ -38,6 +37,7 @@ if __name__ == "__main__":
                      'Topic :: Scientific/Engineering',           
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
-                     'Operating System :: MacOS']
+                     'Operating System :: MacOS'],
+        install_requires=["husl", "moss", "patsy"],
         
           )
