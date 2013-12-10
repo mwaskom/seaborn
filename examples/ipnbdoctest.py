@@ -40,6 +40,8 @@ def sanitize(s):
     
     fix universal newlines, strip trailing newlines, and normalize likely random values (memory addresses and UUIDs)
     """
+    if not isinstance(s, basestring):
+        return s
     # normalize newline:
     s = s.replace('\r\n', '\n')
     
@@ -75,10 +77,7 @@ def consolidate_outputs(outputs):
 
 def compare_outputs(test, ref, skip_compare=('png', 'traceback', 'latex', 'prompt_number')):
     for key in ref:
-        # MLW hack to fix problem I don't understand
-        if key == "metadata":
-            continue
-        if key not in test and key != "metadata":  
+        if key not in test:
             print "missing key: %s != %s" % (test.keys(), ref.keys())
             return False
         elif key not in skip_compare and sanitize(test[key]) != sanitize(ref[key]):
@@ -117,6 +116,7 @@ def run_cell(shell, iopub, cell):
             out.stream = content['name']
             out.text = content['data']
         elif msg_type in ('display_data', 'pyout'):
+            out['metadata'] = content['metadata']
             for mime, data in content['data'].iteritems():
                 attr = mime.split('/')[-1].lower()
                 # this gets most right, but fix svg+html, plain
