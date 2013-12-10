@@ -24,36 +24,7 @@ LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.5.dev'
 
-try:
-    from setuptools import setup
-    _has_setuptools = True
-except ImportError:
-    from distutils.core import setup
-
-def check_dependencies():
-    install_requires = []
-
-    # Just make sure dependencies exist, I haven't rigorously
-    # tested what the minimal versions that will work are
-    # (help on that would be awesome)
-    try:
-        import numpy
-    except ImportError:
-        install_requires.append('numpy')
-    try:
-        import scipy
-    except ImportError:
-        install_requires.append('scipy')
-    try:
-        import matplotlib
-    except ImportError:
-        install_requires.append('matplotlib')
-    try:
-        import pandas
-    except ImportError:
-        install_requires.append('pandas')
-
-    return install_requires
+from setuptools import setup
 
 if __name__ == "__main__":
 
@@ -87,4 +58,6 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
+        install_requires=["husl", "moss", "patsy"],
+        
           )
