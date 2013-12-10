@@ -81,13 +81,15 @@ Dependencies
 
 ### Recommended
 
-- [patsy](http://patsy.readthedocs.org/en/latest/)
-
 - [scikit-learn](http://scikit-learn.org)
+
+- [patsy](http://patsy.readthedocs.org/en/latest/)
 
 - [husl](https://github.com/boronine/pyhusl)
 
 - [patsy](http://patsy.readthedocs.org/en/latest/)
+
+Installing with `pip` will automatically install `patsy`, `husl`, and `moss`, which are the only dependencies not included in Anaconda.
 
 
 Installation

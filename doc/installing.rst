@@ -15,9 +15,10 @@ Because seaborn is a high-level package, it has a relatively large number of
 required dependencies. For the most part these tools are part of the general
 scientific Python ecosystem, and almost all can be easily installed with a
 distribution such as `Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
-The two exceptions are ``husl`` and ``moss``, which provide utility support for the
-aesthetics and statistics, respectively. Both are pure Python and easily
-installable with ``pip``.
+Installing seaborn with ``pip`` will automatically install ``patsy``, ``husl``,
+and ``moss`` if they are missing, which are the only dependencies not included
+in Anaconda.
+
 
 -  Python 2.7
 
@@ -31,16 +32,14 @@ installable with ``pip``.
 
 -  `statsmodels <http://statsmodels.sourceforge.net/>`__
 
--  `patsy <http://patsy.readthedocs.org/en/latest/>`__
-
 -  `scikit-learn <http://scikit-learn.org>`__
+
+-  `patsy <http://patsy.readthedocs.org/en/latest/>`__
 
 -  `husl <https://github.com/boronine/pyhusl>`__
 
 -  `moss <http://github.com/mwaskom/moss>`__
 
-These dependencies can be easily installed from the source directory by running
-`pip install -r requirements.txt`.
 
 Testing
 ~~~~~~~
