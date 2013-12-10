@@ -40,9 +40,9 @@ The documentation has an [example gallery](http://stanford.edu/~mwaskom/software
 
 [Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
 
-[Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/linear_models.ipynb)
+[Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
 
-[Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/master/blob/examples/plotting_distributions.ipynb)
+[Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
 
 [Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
 
