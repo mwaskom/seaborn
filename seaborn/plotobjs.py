@@ -157,7 +157,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
             conds = range(n_cond)
             legend = False
             if isinstance(color, dict):
-                raise ValueError("Must have condition names if using color dict.")
+                err = "Must have condition names if using color dict."
+                raise ValueError(err)
         else:
             conds = np.asarray(condition)
             legend = True and legend
@@ -871,6 +872,104 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xticklabels(coefs.columns)
 
 
+def interactplot(x1, x2, y, data=None, cmap=None, colorbar=True,
+                 n_contours=40, scatter_kws=None, ax=None):
+    """Visualize a continuous two-way interaction with a contour plot.
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    ax : Matplotlib axis
+        Axis with the contour plot.
+    """
+    # Handle the form of the data
+    if data is not None:
+        x1 = data[x1]
+        x2 = data[x2]
+        y = data[y]
+    if hasattr(x1, "name"):
+        xlabel = x1.name
+    else:
+        xlabel = None
+    if hasattr(x2, "name"):
+        ylabel = x2.name
+    else:
+        ylabel = None
+    if hasattr(y, "name"):
+        clabel = y.name
+    else:
+        clabel = None
+    x1 = np.asarray(x1)
+    x2 = np.asarray(x2)
+    y = np.asarray(y)
+
+    # Initialize the scatter keyword dictionary
+    if scatter_kws is None:
+        scatter_kws = {}
+    if not ("color" in scatter_kws or "c" in scatter_kws):
+        scatter_kws["color"] = "#222222"
+
+    # Initialize the axis
+    if ax is None:
+        ax = plt.gca()
+
+    # Plot once to let matplotlib sort out the axis limits
+    ax.plot(x1, x2, "o", **scatter_kws)
+
+    # Find the plot limits
+    x1min, x1max = ax.get_xlim()
+    x2min, x2max = ax.get_ylim()
+
+    # Make the grid for the contour plot
+    x1_points = np.linspace(x1min, x1max, 100)
+    x2_points = np.linspace(x2min, x2max, 100)
+    xx1, xx2 = np.meshgrid(x1_points, x2_points)
+
+    # Fit the model with an interaction
+    X = np.c_[np.ones(x1.size), x1, x2, x1 * x2]
+    lm = sm.OLS(y, X).fit()
+
+    # Evaluate the model on the grid
+    eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
+    yhat = eval(xx1, xx2)
+
+    # Sort out the color mapping
+    if yhat.min() < 0 < yhat.max():
+        vmax = np.abs(yhat.max())
+        vmin = -vmax
+        cmap = "coolwarm" if cmap is None else cmap
+    elif yhat.min() > 0:
+        vmin = yhat.min()
+        vmax = yhat.max()
+        cmap = "RdPu" if cmap is None else cmap
+    elif yhat.max() < 0:
+        vmin = yhat.min()
+        vmax = yhat.max()
+        cmap = "GnBu_r" if cmap is None else cmap
+
+    # Draw the contour plot
+    c = ax.contourf(xx1, xx2, yhat, n_contours, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    # Draw a colorbar, maybe
+    if colorbar:
+        bar = plt.colorbar(c)
+
+    # Draw the scatter again so it's visible
+    ax.plot(x1, x2, "o", **scatter_kws)
+
+    # Label the axes
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if clabel is not None and colorbar:
+        bar.set_label(clabel, rotation=270)
+
+    return ax
+
+
 def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             alpha=None, fliersize=3, linewidth=1.5, widths=.8, ax=None,
             **kwargs):
@@ -1464,7 +1563,6 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         raise ValueError("Never use the 'jet' colormap!")
 
 
-
     # Plot using the more general symmatplot function
     ax = symmatplot(corrmat, p_mat, names, cmap, cmap_range,
                     cbar, annot, diag_names, ax, **kwargs)
@@ -1515,7 +1613,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
 
     if names is None:
         names = ["var%d" % i for i in range(nvars)]
-    
+
     if diag_names:
         for i, name in enumerate(names):
             ax.text(i, i, name, fontdict=dict(ha="center", va="center",
@@ -1529,7 +1627,6 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
         ynames = names if annot else names[1:]
         ax.set_yticklabels(ynames)
 
-    
     minor_ticks = np.linspace(-.5, nvars - 1.5, nvars)
     ax.set_xticks(minor_ticks, True)
     ax.set_yticks(minor_ticks, True)
