@@ -872,8 +872,8 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xticklabels(coefs.columns)
 
 
-def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
-                 levels=30, contour_kws=None, scatter_kws=None, ax=None):
+def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True, levels=30,
+                 logistic=False, contour_kws=None, scatter_kws=None, ax=None):
     """Visualize a continuous two-way interaction with a contour plot.
 
     Parameters
@@ -928,6 +928,8 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
         scatter_kws = {}
     if not ("color" in scatter_kws or "c" in scatter_kws):
         scatter_kws["color"] = "#222222"
+    if not  "alpha" in scatter_kws:
+        scatter_kws["alpha"] = 0.75
 
     # Intialize the contour keyword dictionary
     if contour_kws is None:
@@ -951,7 +953,10 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
 
     # Fit the model with an interaction
     X = np.c_[np.ones(x1.size), x1, x2, x1 * x2]
-    lm = sm.OLS(y, X).fit()
+    if logistic:
+        lm = sm.GLM(y, X, family=sm.families.Binomial()).fit()
+    else:
+        lm = sm.OLS(y, X).fit()
 
     # Evaluate the model on the grid
     eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
@@ -976,6 +981,7 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if clabel is not None and colorbar:
+        clabel = "P(%s)" % clabel if logistic else clabel
         bar.set_label(clabel, labelpad=15, rotation=270)
 
     return ax
