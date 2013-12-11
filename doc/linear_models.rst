@@ -3,23 +3,23 @@ Graphical representations of linear models
 ==========================================
 
 
-This notebook is intended to provide examples for how four functions in
+This notebook is intended to provide examples for how five functions in
 the `seaborn <https://github.com/mwaskom/seaborn>`__ plotting library,
-``regplot``, ``corrplot``, ``lmplot``, and ``coefplot``, can be used to
-informatively visualize the relationships between variables in a
-dataset. The functions are intended to produce plots that are attractive
-and that can be specified without much work. The goal of these
-visualizations, which the functions attempt to make achievable, is to
-emphasize important comparisons in the dataset and provide supporting
-information without distraction.
+``regplot``, ``corrplot``, ``lmplot``, ``interactplot``, and
+``coefplot``, can be used to informatively visualize the relationships
+between variables in a dataset. The functions are intended to produce
+plots that are attractive and that can be specified without much work.
+The goal of these visualizations, which the functions attempt to make
+achievable, is to emphasize important comparisons in the dataset and
+provide supporting information without distraction.
 
 These functions are a a bit higher-level than the ones covered in the
 `distributions <http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/plotting_distributions.ipynb>`__
 and
 `timeseries <http://nbviewer.ipython.org/urls/raw.github.com/mwaskom/seaborn/master/examples/timeseries_plots.ipynb>`__
-tutorials. Instead of plotting into an existing axis, these functions
-expect to have the whole figure to themselves, and they are frequently
-composed of multiple axes.
+tutorials. Instead of plotting into an existing axis, most expect to
+have the whole figure to themselves, and they are frequently composed of
+multiple axes.
 
 All of the functions covered here are Pandas-aware, and both ``lmplot``
 and ``coefplot`` require that the data be in a Pandas dataframe.
@@ -40,7 +40,7 @@ and ``coefplot`` require that the data be in a Pandas dataframe.
 .. code:: python
 
     sns.set(palette="Purples_r")
-    mpl.rc("figure", figsize=(5, 5))
+    mpl.rc("figure", figsize=(6, 6))
     np.random.seed(9221999)
 Plotting a simple regression: ``regplot``
 -----------------------------------------
@@ -98,9 +98,6 @@ computed and displayed in the scatterplot. If your data are not normally
 distributed, you can provide a different function to calculate a
 correlation metric; anything that takes two arrays of data and returns a
 ``stat`` numeric or ``(stat, p)`` tuple will work.
-
-It would probably also be nice to print the intercept and slope of the
-regression, which is something I hope to add when I get a chance.
 
 .. code:: python
 
@@ -531,6 +528,100 @@ any residual relationship exists:
 .. image:: linear_models_files/linear_models_82_0.png
 
 
+Plotting interactions between continuous variables: ``interactplot``
+--------------------------------------------------------------------
+
+
+Faceting and binning the regression by color can make it easy to unpack
+interactions between the predictor variables in your dataset. However,
+these methods really only work when, at most, one of your variables is
+continuous. Two-way interactions between continuous variables are often
+interesting, though, but difficult to visualize.
+
+Let's make some fake data with an interaction of this sort and explore
+how we might visualize it.
+
+.. code:: python
+
+    x1 = randn(80)
+    x2 = randn(80)
+    y = .5 + 2 * x1 - x2 + 2.5 * x1 * x2 + 3 * randn(80)
+    y_logistic = 1 / (1 + np.exp(-y))
+    y_flip = [np.random.binomial(1, p) for p in y_logistic]
+    df = pd.DataFrame(dict(x1=x1, x2=x2, y=y, y_flip=y_flip))
+    mpl.rc("figure", figsize=(7, 5.5))
+One approach is to bin one of the predictors and then plot the data as
+before, pretending the predictor is categorical.
+
+.. code:: python
+
+    bins = np.linspace(-3.5, 3.5, 8)
+    binned = bins[np.digitize(x2, bins)] - .5
+    binned[binned < -1] = -1
+    binned[binned > 1] = 1
+    df["x2_binned"] = binned
+.. code:: python
+
+    pal = sns.dark_palette("crimson", 3)
+    sns.lmplot("x1", "y", df, col="x2_binned", color="x2_binned", palette=pal, ci=None, size=3.5)
+
+
+.. image:: linear_models_files/linear_models_88_0.png
+
+
+This is servicable, but lacking in several ways. It requires several
+cumbersome steps, the choice of the bin size is arbitrary, and
+collapsing the continuous data into categories loses information.
+
+An alternative approach plots the two independent variables on the x and
+y axes of a plot and color-encodes the model predictions with a contour
+plot. This maintains the continuous nature of the data. The seaborn
+function ``interactplot`` draws such a plot, with an interface similar
+to ``regplot``:
+
+.. code:: python
+
+    sns.interactplot(df.x1, df.x2, df.y);
+
+
+.. image:: linear_models_files/linear_models_90_0.png
+
+
+Naturally, you can directly pass a dataframe, and also adjust the
+aesthetics of the plot.
+
+.. code:: python
+
+    sns.interactplot("x1", "x2", "y", df, cmap="coolwarm", levels=25);
+
+
+.. image:: linear_models_files/linear_models_92_0.png
+
+
+The two underlying plot functions are ``contourf()`` and ``plot()``,
+both of which can be tweaked with a keyword argument dictionary.
+
+.. code:: python
+
+    sns.interactplot("x1", "x2", "y", df, cmap="GnBu",
+                     scatter_kws={"markersize": 8, "alpha": .6},
+                     contour_kws={"alpha": .5});
+
+
+.. image:: linear_models_files/linear_models_94_0.png
+
+
+This works for logistic regression models, as well.
+
+.. code:: python
+
+    pal = sns.blend_palette(["ghostwhite", "salmon"], as_cmap=True)
+    sns.interactplot("x1", "x2", "y_flip", df, cmap=pal, logistic=True);
+
+
+.. image:: linear_models_files/linear_models_96_0.png
+
+
 Plotting linear model parameters: ``coefplot``
 ----------------------------------------------
 
@@ -552,7 +643,7 @@ specification for the model structure.
     sns.coefplot("tip ~ day + time * size", tips)
 
 
-.. image:: linear_models_files/linear_models_86_0.png
+.. image:: linear_models_files/linear_models_100_0.png
 
 
 .. code:: python
@@ -560,7 +651,7 @@ specification for the model structure.
     sns.coefplot("total_bill ~ day + time + smoker", tips, ci=68, palette="muted")
 
 
-.. image:: linear_models_files/linear_models_87_0.png
+.. image:: linear_models_files/linear_models_101_0.png
 
 
 When you have repeated measures in your dataset (e.g. an experiment
@@ -574,5 +665,5 @@ example above.
     sns.coefplot("tip ~ time * sex", tips, "size", intercept=True)
 
 
-.. image:: linear_models_files/linear_models_89_0.png
+.. image:: linear_models_files/linear_models_103_0.png
 
