@@ -872,17 +872,33 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xticklabels(coefs.columns)
 
 
-def interactplot(x1, x2, y, data=None, cmap=None, colorbar=True,
-                 n_contours=40, scatter_kws=None, ax=None):
+def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
+                 contour_kws=None, scatter_kws=None, ax=None):
     """Visualize a continuous two-way interaction with a contour plot.
 
     Parameters
     ----------
+    x1, x2, y, strings or array-like
+        Either the two independent variables and the dependent variable,
+        or keys to extract them from `data`
+    data : DataFrame
+        Pandas DataFrame with the data in the columns.
+    cmap : matplotlib colormap
+        Colormap to represent yhat in the countour plot.
+    colorbar : bool
+        Whether to draw the colorbar for interpreting the color values.
+    contour_kws : dictionary
+        Keyword arguments for contourf().
+    scatter_kws : dictionary
+        Keyword arguments for plot().
+    ax : matplotlib axis
+        Axis to draw plot in.
 
     Returns
     -------
     ax : Matplotlib axis
         Axis with the contour plot.
+
     """
     # Handle the form of the data
     if data is not None:
@@ -935,22 +951,11 @@ def interactplot(x1, x2, y, data=None, cmap=None, colorbar=True,
     eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
     yhat = eval(xx1, xx2)
 
-    # Sort out the color mapping
-    if yhat.min() < 0 < yhat.max():
-        vmax = np.abs(yhat.max())
-        vmin = -vmax
-        cmap = "coolwarm" if cmap is None else cmap
-    elif yhat.min() > 0:
-        vmin = yhat.min()
-        vmax = yhat.max()
-        cmap = "RdPu" if cmap is None else cmap
-    elif yhat.max() < 0:
-        vmin = yhat.min()
-        vmax = yhat.max()
-        cmap = "GnBu_r" if cmap is None else cmap
-
     # Draw the contour plot
-    c = ax.contourf(xx1, xx2, yhat, n_contours, cmap=cmap, vmin=vmin, vmax=vmax)
+    vmin = min(y.min(), yhat.min())
+    vmax = max(y.max(), yhat.max())
+    c = ax.contourf(xx1, xx2, yhat, n_contours,
+                    cmap=cmap,vmin=vmin, vmax=vmax)
 
     # Draw a colorbar, maybe
     if colorbar:
@@ -965,7 +970,7 @@ def interactplot(x1, x2, y, data=None, cmap=None, colorbar=True,
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if clabel is not None and colorbar:
-        bar.set_label(clabel, rotation=270)
+        bar.set_label(clabel, labelpad=15, rotation=270)
 
     return ax
 
