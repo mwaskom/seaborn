@@ -873,7 +873,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
 
 
 def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
-                 contour_kws=None, scatter_kws=None, ax=None):
+                 levels=30, contour_kws=None, scatter_kws=None, ax=None):
     """Visualize a continuous two-way interaction with a contour plot.
 
     Parameters
@@ -887,6 +887,8 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
         Colormap to represent yhat in the countour plot.
     colorbar : bool
         Whether to draw the colorbar for interpreting the color values.
+    levels : int or sequence
+        Number or position of contour plot levels.
     contour_kws : dictionary
         Keyword arguments for contourf().
     scatter_kws : dictionary
@@ -927,6 +929,10 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
     if not ("color" in scatter_kws or "c" in scatter_kws):
         scatter_kws["color"] = "#222222"
 
+    # Intialize the contour keyword dictionary
+    if contour_kws is None:
+        contour_kws = {}
+
     # Initialize the axis
     if ax is None:
         ax = plt.gca()
@@ -952,10 +958,10 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True,
     yhat = eval(xx1, xx2)
 
     # Draw the contour plot
-    vmin = min(y.min(), yhat.min())
-    vmax = max(y.max(), yhat.max())
-    c = ax.contourf(xx1, xx2, yhat, n_contours,
-                    cmap=cmap,vmin=vmin, vmax=vmax)
+    vmin = contour_kws.pop("vmin", min(y.min(), yhat.min()))
+    vmax = contour_kws.pop("vmax", max(y.max(), yhat.max()))
+    c = ax.contourf(xx1, xx2, yhat, levels, cmap=cmap,
+                    vmin=vmin, vmax=vmax, **contour_kws)
 
     # Draw a colorbar, maybe
     if colorbar:
