@@ -1263,7 +1263,7 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
         if hasattr(a, "name"):
             kwargs["label"] = a.name
         # If the user wants a legend, provides no label, and the object
-	# doesn't have one, give them a default of "kde".
+        # doesn't have one, give them a default of "kde".
         else:
             kwargs["label"] = "kde"
     # If the user provides a label then give them a legend.
@@ -1295,7 +1295,7 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     # Sometimes this can mess with the limits at the bottom of the plot
     if vertical:
         #xmax = ax.get_xlim()[1]
-	xmax = max(ax.get_xlim()[1], np.amax(x))
+        xmax = max(ax.get_xlim()[1], np.amax(x))
         ax.set_xlim(0, xmax)
     else:
         ymax = max(ax.get_ylim()[1], np.amax(y))
