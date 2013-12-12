@@ -1647,3 +1647,17 @@ def palplot(pal, size=1):
     ax.set_yticks([-.5, .5])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+
+
+def puppyplot(grown_up=False):
+    """Plot today's daily puppy. Only works in the IPython notebook."""
+    import urllib2
+    from bs4 import BeautifulSoup
+    from IPython.display import HTML
+    url = "http://www.dailypuppy.com"
+    if grown_up:
+        url += "/dogs"
+    html_doc = urllib2.urlopen(url)
+    soup = BeautifulSoup(html_doc)
+    puppy = soup.find("div", {"class": "daily_puppy"})
+    return HTML(str(puppy.img))
