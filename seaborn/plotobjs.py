@@ -978,14 +978,13 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     return ax
 
 
-def distplot(a, bins=None, hist=True, kde=True, kde_label=False,
+def distplot(a, bins=None, hist=True, kde=True,
              rug=False, fit=None, hist_kws=None, kde_kws=None,
              rug_kws=None, fit_kws=None, color=None,
              vertical=False, legend=False, xlabel=None, ax=None):
     """Flexibly plot a distribution of observations.
 
-    Parameters
-    ----------
+    Parameter
     a : (squeezable to) 1d array
         observed data
     bins : argument for matplotlib hist(), or None
@@ -994,8 +993,6 @@ def distplot(a, bins=None, hist=True, kde=True, kde_label=False,
         whether to plot a (normed) histogram
     kde : bool, default True
         whether to plot a gaussian kernel density estimate
-    kde_label: bool, default False
-        whether to include a legend when plotting a KDE
     rug : bool, default False
         whether to draw a rugplot on the support axis
     fit : random variable object
@@ -1066,8 +1063,6 @@ def distplot(a, bins=None, hist=True, kde=True, kde_label=False,
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-	if kde_label == True:
-            kde_kws["label"] = "kde"
         kdeplot(a, vertical=vertical, color=kde_color, ax=ax, **kde_kws)
 
     if rug:
@@ -1132,7 +1127,7 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     if ax is None:
         ax = plt.gca()
 
-    # If we don't catch this then legend gets set to False later
+    # If we don't catch this then legend gets set to False later.
     if legend == True and "label" in kwargs:
         pass
     # If the user explicitly asks for a legend then give them one.
