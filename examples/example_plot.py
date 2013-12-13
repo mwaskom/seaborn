@@ -93,7 +93,6 @@ sns.interactplot(x1, x2, y, colorbar=False, ax=ax)
 # ------------------
 
 ax = plt.subplot(gs[4:, 0])
-plt.title("corrplot()")
 
 rs = np.random.RandomState(0)
 x0, x1 = rs.randn(2, 60)
@@ -103,6 +102,7 @@ x4 = x1 + rs.randn(60) * 2
 data = np.c_[x0, x1, x2, x3, x4]
 
 sns.corrplot(data, ax=ax)
+ax.set_title("corrplot()", verticalalignment="top")
 
 
 # Beta distributions
