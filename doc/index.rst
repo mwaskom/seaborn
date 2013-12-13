@@ -18,4 +18,4 @@ Documentation contents
 
    installing
    tutorials
-
+   api
