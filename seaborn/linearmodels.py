@@ -380,8 +380,6 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         dist_kws = {}
     if color is not None and "color" not in dist_kws:
         dist_kws.update(color=color)
-    if "legend" not in dist_kws:
-        dist_kws["legend"] = False
     dist_kws["xlabel"] = False
     distplot(x, ax=ax_x_marg, **dist_kws)
     distplot(y, ax=ax_y_marg, vertical=True, **dist_kws)
