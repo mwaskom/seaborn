@@ -14,7 +14,7 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def set_axes_style(style, context, font):
+def set_axes_style(style, context, font="Arial"):
     """Set the axis style.
 
     Parameters
