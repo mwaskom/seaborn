@@ -6,69 +6,16 @@ from . import palettes
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
-    # Set defaults that may be overruled below.
-    mpl.rc("xtick.major", size=0)
-    mpl.rc("ytick.major", size=0)
-    mpl.rc("xtick.minor", size=0)
-    mpl.rc("ytick.minor", size=0)
-
-    set_axes_style(style, context)
+    set_axes_style(style, context, font)
     set_color_palette(palette)
-
-    # Set the constant defaults
-    mpl.rc("font", family=font)
-    mpl.rc("legend", frameon=False, numpoints=1)
-    mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
-    mpl.rc("figure", figsize=(8, 5.5))
-    mpl.rc("image", cmap="cubehelix")
-
 
 def reset_defaults():
     """Restore all RC params to default settings."""
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def reset_orig():
-    """Restore all RC params to original settings (respects custom rc)."""
-    mpl.rcParams.update(mpl.rcParamsOrig)
-
-
-class _AxesStyle(dict):
-    """Light wrapper on a dict to set style temporarily."""
-    def __enter__(self):
-        """Open the context."""
-        rc = mpl.rcParams
-        self._orig_style = {k: rc[k] for k in _style_keys}
-        set_style(self)
-        return self
-
-    def __exit__(self, *args):
-        """Close the context."""
-        set_style(self._orig_style)
-
-
-class _PlottingContext(dict):
-    """Light wrapper on a dict to set context temporarily."""
-    def __enter__(self):
-        """Open the context."""
-        rc = mpl.rcParams
-        self._orig_context = {k: rc[k] for k in _context_keys}
-        set_context(self)
-        return self
-
-    def __exit__(self, *args):
-        """Close the context."""
-        set_context(self._orig_context)
-
-
-def axes_style(style=None, rc=None):
-    """Return a parameter dict for the aesthetic style of the plots.
-
-    This affects things like the color of the axes, whether a grid is
-    enabled by default, and other aesthetic elements.
-
-    This function returns an object that can be used in a ``with`` statement
-    to temporarily change the style parameters.
+def set_axes_style(style, context, font):
+    """Set the axis style.
 
     Parameters
     ----------
@@ -76,6 +23,8 @@ def axes_style(style=None, rc=None):
         Style of axis background.
     context: notebook | talk | paper | poster
         Intended context for resulting figures.
+    font : matplotlib font spec
+        Font to use for text in the figures.
 
     """
     # Validate the arguments
@@ -168,6 +117,17 @@ def axes_style(style=None, rc=None):
         "xtick.major.pad": 3.5 if context == "paper" else 7,
         "ytick.major.pad": 3.5 if context == "paper" else 7,
         })
+
+    # Set the constant defaults
+    mpl.rc("font", family=font)
+    mpl.rc("legend", frameon=False, numpoints=1)
+    mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
+    mpl.rc("figure", figsize=(8, 5.5))
+    mpl.rc("image", cmap="cubehelix")
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.minor", size=0)
+    mpl.rc("ytick.minor", size=0)
 
 
 def set_color_palette(name, n_colors=6, desat=None):
