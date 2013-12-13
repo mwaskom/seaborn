@@ -136,4 +136,4 @@ sns.despine(ax=ax)
 # -------------
 
 f.tight_layout()
-f.savefig("%s/example_plot.png" % os.path.dirname(__file__), dpi=200)
+f.savefig("%s/example_plot.png" % os.path.dirname(__file__))
