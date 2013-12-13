@@ -21,8 +21,9 @@ MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
-DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.4.dev'
+DOWNLOAD_URL = ('https://github.com/mwaskom/seaborn/zipball/master'
+                '#egg=seaborn=dev')
+VERSION = '0.2.dev'
 
 from setuptools import setup
 
