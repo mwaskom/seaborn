@@ -5,7 +5,7 @@ import seaborn as sns
 from scipy import stats
 import moss
 
-f = plt.figure(figsize=(10, 13))
+f = plt.figure(figsize=(10, 12))
 gs = plt.GridSpec(6, 2)
 np.random.seed(0)
 
@@ -55,7 +55,7 @@ sns.tsplot(d, time=x, ax=ax)
 # Violin plots
 # ------------
 
-sns.set(style="nogrid")
+sns.set(style="whitegrid")
 
 ax = plt.subplot(gs[2:4, 0])
 plt.title("violin()")
@@ -68,7 +68,7 @@ d += np.log(np.arange(1, p + 1)) * -5 + 10
 
 sns.violin(d, inner="points")
 
-sns.despine(ax=ax)
+#sns.despine(ax=ax)
 
 # Continuous interaction
 # ----------------------
@@ -98,6 +98,7 @@ plt.title("corrplot()")
 rs = np.random.RandomState(0)
 x0, x1 = rs.randn(2, 60)
 x2, x3 = rs.multivariate_normal([0, 0], [(1, -.5), (-.5, 1)], 60).T
+x2 += x0 / 8
 x4 = x1 + rs.randn(60) * 2
 data = np.c_[x0, x1, x2, x3, x4]
 
@@ -107,28 +108,27 @@ sns.corrplot(data, ax=ax)
 # Beta distributions
 # ------------------
 
-sns.set(style="whitegrid")
+sns.set(style="nogrid")
 
 ax = plt.subplot(gs[4, 1])
 plt.title("distplot()")
 plt.xlim(0, 1)
 ax.set_xticklabels([])
 
-b, _, r = sns.color_palette("dark", desat=.6)[:3]
+g, _, p = sns.color_palette("Set2", 3, desat=.75)
 n = 1000
 rs = np.random.RandomState(0)
 d = rs.beta(8, 13, n)
 
-sns.distplot(d, color=r)
+sns.distplot(d, color=g)
 sns.despine(ax=ax)
 
 ax = plt.subplot(gs[5, 1], sharey=ax)
 plt.xlim(0, 1)
 
-rs = np.random.RandomState(0)
-d = rs.beta(30, 25, n / 15)
+d = rs.beta(50, 25, n / 15)
 
-sns.distplot(d, hist=False, rug=True, color=b, kde_kws=dict(shade=True))
+sns.distplot(d, hist=False, rug=True, color=p, kde_kws=dict(shade=True))
 sns.despine(ax=ax)
 
 
