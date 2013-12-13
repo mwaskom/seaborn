@@ -6,6 +6,12 @@ from seaborn import utils
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
+    # Set defaults that may be overruled below.
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.minor", size=0)
+    mpl.rc("ytick.minor", size=0)
+
     set_axes_style(style, context)
     set_color_palette(palette)
 
@@ -15,10 +21,6 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
     mpl.rc("figure", figsize=(8, 5.5))
     mpl.rc("image", cmap="cubehelix")
-    mpl.rc("xtick.major", size=0)
-    mpl.rc("ytick.major", size=0)
-    mpl.rc("xtick.minor", size=0)
-    mpl.rc("ytick.minor", size=0)
 
 
 def reset_defaults():
@@ -31,14 +33,14 @@ def set_axes_style(style, context):
 
     Parameters
     ----------
-    style : darkgrid | whitegrid | nogrid
+    style : darkgrid | whitegrid | nogrid | ticks
         Style of axis background.
     context: notebook | talk | paper | poster
         Intended context for resulting figures.
 
     """
     # Validate the arguments
-    if not {"darkgrid", "whitegrid", "nogrid"} & {style}:
+    if not {"darkgrid", "whitegrid", "nogrid", "ticks"} & {style}:
         raise ValueError("Style %s not recognized" % style)
 
     if not {"notebook", "talk", "paper", "poster"} & {context}:
@@ -72,6 +74,16 @@ def set_axes_style(style, context):
                      "axes.facecolor": "white",
                      "axes.edgecolor": "black",
                      "axes.linewidth": 1}
+
+    elif style == "ticks":
+        ax_params = {"axes.grid": False,
+                     "axes.facecolor": "white",
+                     "axes.edgecolor": "black",
+                     "axes.linewidth": 1,
+                     "xtick.major.size": 10,
+                     "xtick.minor.size": 5,
+                     "ytick.major.size": 10,
+                     "ytick.minor.size": 5}
 
     mpl.rcParams.update(ax_params)
 
