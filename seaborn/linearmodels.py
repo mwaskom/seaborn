@@ -525,8 +525,9 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         ax.set_xticklabels(coefs.columns)
 
 
-def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True, levels=30,
-                 logistic=False, contour_kws=None, scatter_kws=None, ax=None):
+def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
+                 colorbar=True, levels=30, logistic=False,
+                 contour_kws=None, scatter_kws=None, ax=None):
     """Visualize a continuous two-way interaction with a contour plot.
 
     Parameters
@@ -536,14 +537,18 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True, levels=30,
         or keys to extract them from `data`
     data : DataFrame
         Pandas DataFrame with the data in the columns.
+    filled : bool
+        Whether to plot with filled or unfilled contours
     cmap : matplotlib colormap
         Colormap to represent yhat in the countour plot.
     colorbar : bool
         Whether to draw the colorbar for interpreting the color values.
     levels : int or sequence
         Number or position of contour plot levels.
+    logistic : bool
+        Fit a logistic regression model instead of linear regression.
     contour_kws : dictionary
-        Keyword arguments for contourf().
+        Keyword arguments for contour[f]().
     scatter_kws : dictionary
         Keyword arguments for plot().
     ax : matplotlib axis
@@ -615,18 +620,27 @@ def interactplot(x1, x2, y, data=None, cmap="RdPu", colorbar=True, levels=30,
     eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
     yhat = eval(xx1, xx2)
 
+    # Default color limits put the midpoint at mean(y)
+    y_bar = y.mean()
+    c_min = min(y.min(), yhat.min())
+    c_max = max(y.max(), yhat.max())
+    delta = max(c_max - y_bar, y_bar - c_min)
+    c_min, cmax = y_bar - delta, y_bar + delta
+    vmin = contour_kws.pop("vmin", c_min)
+    vmax = contour_kws.pop("vmax", c_max)
+
     # Draw the contour plot
-    vmin = contour_kws.pop("vmin", min(y.min(), yhat.min()))
-    vmax = contour_kws.pop("vmax", max(y.max(), yhat.max()))
-    c = ax.contourf(xx1, xx2, yhat, levels, cmap=cmap,
-                    vmin=vmin, vmax=vmax, **contour_kws)
+    func_name = "contourf" if filled else "contour"
+    contour = getattr(ax, func_name)
+    c = contour(xx1, xx2, yhat, levels, cmap=cmap,
+                vmin=vmin, vmax=vmax, **contour_kws)
+
+    # Draw the scatter again so it's visible
+    ax.plot(x1, x2, "o", **scatter_kws)
 
     # Draw a colorbar, maybe
     if colorbar:
         bar = plt.colorbar(c)
-
-    # Draw the scatter again so it's visible
-    ax.plot(x1, x2, "o", **scatter_kws)
 
     # Label the axes
     if xlabel is not None:
