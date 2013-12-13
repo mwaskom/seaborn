@@ -1,8 +1,6 @@
-.. _api_ref:
-
 .. currentmodule:: seaborn
 
-API reference
+API Reference
 =============
 
 Linear model plots
@@ -12,14 +10,10 @@ Linear model plots
     :toctree: generated/
 
     lmplot
-    factorplot
     regplot
-    interactplot
-    residplot
-    pointplot
-    barplot
     coefplot
     corrplot
+    interactplot
 
 Distribution plots
 ------------------
@@ -27,9 +21,8 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
-    jointplot
     boxplot
-    violinplot
+    violin
     distplot
     kdeplot
     rugplot
@@ -50,15 +43,6 @@ Miscellaneous plots
 
     palplot
 
-Axis grids
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-    FacetGrid
-    JointGrid
-
 Style frontend
 --------------
 
@@ -66,12 +50,10 @@ Style frontend
     :toctree: generated/
 
     set
-    axes_style
-    set_style
-    plotting_context
-    set_context
+    set_axes_style
+    set_color_palette
+    palette_context
     reset_defaults
-    reset_orig
 
 Color palettes
 --------------
@@ -79,14 +61,12 @@ Color palettes
 .. autosummary::
     :toctree: generated/
 
-    set_palette
     color_palette
     hls_palette
     husl_palette
     mpl_palette
     dark_palette
     blend_palette
-    cubehelix_palette
 
 
 Utility functions
@@ -101,3 +81,5 @@ Utility functions
     set_hls_values
     ci_to_errsize
     axlabel
+    pmf_hist
+
