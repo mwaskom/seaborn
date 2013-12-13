@@ -6,27 +6,15 @@ from seaborn import utils
 
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
     """Set new RC params in one step."""
-    set_axes_style(style, context)
+    set_axes_style(style, context, font)
     set_color_palette(palette)
-
-    # Set the constant defaults
-    mpl.rc("font", family=font)
-    mpl.rc("legend", frameon=False, numpoints=1)
-    mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
-    mpl.rc("figure", figsize=(8, 5.5))
-    mpl.rc("image", cmap="cubehelix")
-    mpl.rc("xtick.major", size=0)
-    mpl.rc("ytick.major", size=0)
-    mpl.rc("xtick.minor", size=0)
-    mpl.rc("ytick.minor", size=0)
-
 
 def reset_defaults():
     """Restore all RC params to default settings."""
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def set_axes_style(style, context):
+def set_axes_style(style, context, font):
     """Set the axis style.
 
     Parameters
@@ -35,6 +23,8 @@ def set_axes_style(style, context):
         Style of axis background.
     context: notebook | talk | paper | poster
         Intended context for resulting figures.
+    font : matplotlib font spec
+        Font to use for text in the figures.
 
     """
     # Validate the arguments
@@ -117,6 +107,17 @@ def set_axes_style(style, context):
         "xtick.major.pad": 3.5 if context == "paper" else 7,
         "ytick.major.pad": 3.5 if context == "paper" else 7,
         })
+
+    # Set the constant defaults
+    mpl.rc("font", family=font)
+    mpl.rc("legend", frameon=False, numpoints=1)
+    mpl.rc("lines", markeredgewidth=0, solid_capstyle="round")
+    mpl.rc("figure", figsize=(8, 5.5))
+    mpl.rc("image", cmap="cubehelix")
+    mpl.rc("xtick.major", size=0)
+    mpl.rc("ytick.major", size=0)
+    mpl.rc("xtick.minor", size=0)
+    mpl.rc("ytick.minor", size=0)
 
 
 def set_color_palette(name, n_colors=6, desat=None):
