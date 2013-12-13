@@ -1105,38 +1105,35 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     return ax
 
 
-def distplot(a, bins=None, hist=True, kde=True,
-             rug=False, fit=None, hist_kws=None, kde_kws=None,
-             rug_kws=None, fit_kws=None, color=None,
-             vertical=False, legend=False, xlabel=None, ax=None):
+def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
+             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+             color=None, vertical=False, xlabel=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameter
     a : (squeezable to) 1d array
-        observed data
+        Observed data.
     bins : argument for matplotlib hist(), or None
-        specification of bins or None to use Freedman-Diaconis rule
+        Specification of hist bins, or None to use Freedman-Diaconis rule.
     hist : bool, default True
-        whether to plot a (normed) histogram
+        Whether to plot a (normed) histogram.
     kde : bool, default True
-        whether to plot a gaussian kernel density estimate
+        Whether to plot a gaussian kernel density estimate.
     rug : bool, default False
-        whether to draw a rugplot on the support axis
+        Whether to draw a rugplot on the support axis.
     fit : random variable object
-        object with `fit` method returning a tuple that can be
-        passed to a `pdf` method a positional arguments following
-        an array of values to evaluate the pdf at
+        An object with `fit` method, returning a tuple that can be passed to a
+        `pdf` method a positional arguments following an grid of values to
+        evaluate the pdf on.
     {hist, kde, rug, fit}_kws : dictionaries
-        keyword arguments for underlying plotting functions
+        Keyword arguments for underlying plotting functions.
     color : matplotlib color, optional
-        color to plot everything but the fitted curve in
+        Color to plot everything but the fitted curve in.
     vertical : bool, default False
-        if True, oberved values are on y-axis
-    legend : bool, default True
-        if True, add a legend to the plot with what the plotted lines are
+        If True, oberved values are on y-axis.
     xlabel : string, False, or None
-        name for the x axis label. if None, will try to get it from a.name
-        if False, do not set the x label
+        Name for the x axis label. if None, will try to get it from a.name
+        if False, do not set the x label.
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -1207,11 +1204,7 @@ def distplot(a, bins=None, hist=True, kde=True,
         y = pdf(x)
         if vertical:
             x, y = y, x
-        fit_kws["label"] = fit.name
         ax.plot(x, y, color=fit_color, **fit_kws)
-
-    if legend:
-        ax.legend(loc="best")
 
     if label_x:
         ax.set_xlabel(xlabel)
@@ -1219,61 +1212,51 @@ def distplot(a, bins=None, hist=True, kde=True,
     return ax
 
 
-def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
+def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
             support_min=-np.inf, support_max=np.inf,
-            vertical=False, legend=False, ax=None, **kwargs):
-    """Calculate and plot kernel density estimate.
+            vertical=False, ax=None, **kwargs):
+    """Calculate and plot a one-dimentional kernel density estimate.
 
     Parameters
     ----------
     a : ndarray
-        input data
-    npts : int, optional
-        number of x points
+        Input data.
     shade : bool, optional
-        whether to shade under kde curve
-    support_thresh : float, default 1e-4
-        draw density for values up to support_thresh * max(density)
-    support_{min, max}: float, default to (-) inf
-        if given, do not draw above or below these values
+        If true, shade in the area under the KDE curve.
+    npts : int, optional
+        Number of points in the evaluation grid.
+    support_thresh : float, optional
+        Draw density for values up to support_thresh * max(density).
+    support_{min, max}: floats, optional
+        If provided, do not draw above or below these values
         (does not affect the actual estimation)
-    vertical : bool, defualt False
-        if True, density is on x-axis
-    legend : bool, default True
-        if True, add a legend to the plot with what the plotted lines are
+    vertical : bool
+        If True, density is on x-axis.
     ax : matplotlib axis, optional
-        axis to plot on, otherwise creates new one
+        Axis to plot on, otherwise uses current axis.
     kwargs : other keyword arguments for plot()
 
     Returns
     -------
     ax : matplotlib axis
-        axis with plot
+        Axis with plot.
 
     """
     if ax is None:
         ax = plt.gca()
 
-    # If we don't catch this then legend gets set to False later.
-    if legend == True and "label" in kwargs:
-        pass
-    # If the user explicitly asks for a legend then give them one.
-    elif legend == True and "label" not in kwargs:
-        # Use the object name attribute, if it has one.
-        if hasattr(a, "name"):
-            kwargs["label"] = a.name
-        # If the user wants a legend, provides no label, and the object
-        # doesn't have one, give them a default of "kde".
-        else:
-            kwargs["label"] = "kde"
-    # If the user provides a label then give them a legend.
-    elif legend == False and "label" in kwargs:
-        legend = True
-    # If the user does not ask for a legend and does not pass a label then
-    # they get no legend.
-    else:
-        legend = False
+    # Check if a label was specified in the call
+    label = kwargs.pop("label", None)
 
+    # Otherwise check if the data object has a name
+    if label is None and hasattr(a, "name"):
+        label = a.name
+
+    # Decide if we're going to add a legend
+    legend = not label is None
+    label = "_nolegend_" if label is None else label
+
+    # Compute the KDE
     a = np.asarray(a)
     kde = stats.gaussian_kde(a.astype(float).ravel())
     x = _kde_support(a, kde, npts, support_thresh)
@@ -1283,24 +1266,18 @@ def kdeplot(a, npts=1000, shade=False, support_thresh=1e-4,
     if vertical:
         y, x = x, y
 
+    # Find a color for the plot in a way that uses the active color cycle
     line, = ax.plot(x, y, **kwargs)
     color = line.get_color()
     line.remove()
     kwargs.pop("color", None)
 
-    ax.plot(x, y, color=color, **kwargs)
+    # Draw the KDE plot and, optionally, shade
+    ax.plot(x, y, color=color, label=label, **kwargs)
     if shade:
-        ax.fill_between(x, 0, y, color=color, alpha=0.25)
+        ax.fill_between(x, 1e-12, y, color=color, alpha=0.25)
 
-    # Sometimes this can mess with the limits at the bottom of the plot
-    if vertical:
-        #xmax = ax.get_xlim()[1]
-        xmax = max(ax.get_xlim()[1], np.amax(x))
-        ax.set_xlim(0, xmax)
-    else:
-        ymax = max(ax.get_ylim()[1], np.amax(y))
-        ax.set_ylim(0, ymax)
-
+    # Draw the legend here
     if legend:
         ax.legend(loc="best")
 
