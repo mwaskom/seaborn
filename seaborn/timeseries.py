@@ -5,13 +5,9 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import moss
 
-from .external.six import string_types
-
-
-from . import utils
-from . import algorithms as algo
-from .palettes import color_palette
+from seaborn.utils import color_palette
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
@@ -36,15 +32,15 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Either the name of the field corresponding to time in the data
         DataFrame or x values for a plot when data is an array. If a Series,
         the name will be used to label the x axis.
+    value : string
+        Either the name of the field corresponding to the data values in
+        the data DataFrame (i.e. the y coordinate) or a string that forms
+        the y axis label when data is an array.
     unit : string
         Field in the data DataFrame identifying the sampling unit (e.g.
         subject, neuron, etc.). The error representation will collapse over
         units at each time/condition observation. This has no role when data
         is an array.
-    value : string
-        Either the name of the field corresponding to the data values in
-        the data DataFrame (i.e. the y coordinate) or a string that forms
-        the y axis label when data is an array.
     condition : string or Series-like
         Either the name of the field identifying the condition an observation
         falls under in the data DataFrame, or a sequence of names with a length
@@ -54,8 +50,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         legend (unless legend is set to False).
     err_style : string or list of strings or None
         Names of ways to plot uncertainty across units from set of
-        {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
-        Can use one or more than one method.
+       {ci_band, ci_bars, boot_traces, book_kde, unit_traces, unit_points}.
+       Can use one or more than one method.
     ci : float or list of floats in [0, 100]
         Confidence interaval size(s). If a list, it will stack the error
         plots for each confidence interval. Only relevant for error styles
@@ -97,7 +93,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     if err_kws is None:
         err_kws = {}
 
-    # Handle different types of input data
+    # Handle case where data is an array
     if isinstance(data, pd.DataFrame):
 
         xlabel = time
@@ -174,7 +170,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                                  cond=conds))
 
     # Set up the err_style and ci arguments for teh loop below
-    if isinstance(err_style, string_types):
+    if not hasattr(err_style, "__iter__"):
         err_style = [err_style]
     elif err_style is None:
         err_style = []
@@ -200,9 +196,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
+        boot_data = moss.bootstrap(df_c.values, n_boot=n_boot,
                                    axis=0, func=estimator)
-        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
+        cis = [moss.ci(boot_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
 
         # Get the color for this condition
@@ -241,11 +237,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                 color = orig_color
 
         # Plot the central trace
-        kwargs.setdefault("marker", "" if interpolate else "o")
-        ls = kwargs.pop("ls", "-" if interpolate else "")
-        kwargs.setdefault("linestyle", ls)
-        label = cond if legend else "_nolegend_"
-        ax.plot(x, central_data, color=color, label=label, **kwargs)
+        marker = kwargs.pop("marker", "" if interpolate else "o")
+        linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
+        label = kwargs.pop("label", cond if legend else "_nolegend_")
+        ax.plot(x, central_data, color=color, label=label,
+                marker=marker, linestyle=linestyle,  **kwargs)
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
@@ -284,10 +280,12 @@ def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    err_kws.setdefault("alpha", 0.25)
-    err_kws.setdefault("linewidth", 0.25)
+    if "alpha" not in err_kws:
+        err_kws["alpha"] = 0.25
     if "lw" in err_kws:
         err_kws["linewidth"] = err_kws.pop("lw")
+    if "linewidth" not in err_kws:
+        err_kws["linewidth"] = 0.25
     ax.plot(x, boot_data.T, color=color, label="_nolegend_", **err_kws)
 
 
