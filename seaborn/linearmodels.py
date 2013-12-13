@@ -305,7 +305,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
 def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
             xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
             reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
-    """Scatterplot with regreesion line, marginals, and correlation value.
+    """Scatterplot with regresion line, marginals, and correlation value.
 
     Parameters
     ----------
