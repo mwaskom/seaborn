@@ -54,6 +54,9 @@ sns.tsplot(d, time=x, ax=ax)
 
 # Violin plots
 # ------------
+
+sns.set(style="nogrid")
+
 ax = plt.subplot(gs[2:4, 0])
 plt.title("violin()")
 
@@ -65,8 +68,12 @@ d += np.log(np.arange(1, p + 1)) * -5 + 10
 
 sns.violin(d, inner="points")
 
+sns.despine(ax=ax)
+
 # Continuous interaction
 # ----------------------
+
+sns.set(style="darkgrid")
 
 ax = plt.subplot(gs[2:4, 1])
 plt.title("interactplot()")
@@ -79,7 +86,7 @@ x2 = x1 / 5 + rs.randn(n)
 b0, b1, b2, b3 = 1.5, 4, -1, 3
 y = b0  + b1 * x1 + b2 * x2 + b3 * x1 * x2 + rs.randn(n)
 
-sns.interactplot(x1, x2, y, cmap="coolwarm", ax=ax)
+sns.interactplot(x1, x2, y, colorbar=False, ax=ax)
 
 
 # Correlation matrix
@@ -100,6 +107,8 @@ sns.corrplot(data, ax=ax)
 # Beta distributions
 # ------------------
 
+sns.set(style="whitegrid")
+
 ax = plt.subplot(gs[4, 1])
 plt.title("distplot()")
 plt.xlim(0, 1)
@@ -111,6 +120,7 @@ rs = np.random.RandomState(0)
 d = rs.beta(8, 13, n)
 
 sns.distplot(d, color=r)
+sns.despine(ax=ax)
 
 ax = plt.subplot(gs[5, 1], sharey=ax)
 plt.xlim(0, 1)
@@ -119,6 +129,7 @@ rs = np.random.RandomState(0)
 d = rs.beta(30, 25, n / 15)
 
 sns.distplot(d, hist=False, rug=True, color=b, kde_kws=dict(shade=True))
+sns.despine(ax=ax)
 
 
 # Save the plot
