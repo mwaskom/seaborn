@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.spatial import distance
 import statsmodels.api as sm
 import statsmodels.formula.api as sf
 import matplotlib as mpl
@@ -15,61 +16,63 @@ from seaborn.distributions import distplot
 
 
 def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
-           x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
+           x_estimator=None, x_ci=95, x_bins=None, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
            sharex=True, sharey=True, palette="husl", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
-    """Plot a linear model from a DataFrame.
+    """Plot a linear model with faceting, color binning, and other options.
 
     Parameters
     ----------
     x, y : strings
-        column names in `data` DataFrame for x and y variables
+        Column names in `data` DataFrame for x and y variables.
     data : DataFrame
-        source of data for the model
+        Dource of data for the model.
     color : string, optional
-        DataFrame column name to group the model by color
+        DataFrame column name to group the model by color.
     row, col : strings, optional
-        DataFrame column names to make separate plot facets
+        DataFrame column names to make separate plot facets.
     col_wrap : int, optional
-        wrap col variable at this width - cannot be used with row facet
+        Wrap col variable at this width - cannot be used with row facet.
     x_estimator : callable, optional
         Interpret X values as factor labels and use this function
-        to plot the point estimate and bootstrapped CI
+        to plot the point estimate and bootstrapped CI.
     x_ci : int optional
-        size of confidence interval for x_estimator error bars
+        Size of confidence interval for x_estimator error bars.
+    x_bins : sequence of floats, optional
+        Bin the x variable with these values. Implies that x_estimator is
+        mean, unless otherwise provided.
     n_boot : int, optional
-        number of bootstrap iterations to perform
+        Number of bootstrap iterations to perform.
     fit_reg : bool, optional
-        if True fit a regression model by color/row/col and plot
+        If True fit a regression model by color/row/col and plot.
     order : int, optional
-        order of the regression polynomial to fit (default = 1)
+        Order of the regression polynomial to fit.
     ci : int, optional
-        confidence interval for the regression line
+        Confidence interval for the regression line.
     logistic : bool, optional
-        fit the regression line with logistic regression
+        Fit the regression line with logistic regression.
     truncate : bool, optional
-        if True, only fit line from data min to data max
+        If True, only fit line from data min to data max.
     {x, y}_partial : string or list of strings, optional
-        regress these variables out of the factors before plotting
+        Regress these variables out of the factors before plotting.
     {x, y}_jitter : float, optional
-        parameters for uniformly distributed random noise added to positions
+        Parameters for uniformly distributed random noise added to positions.
     sharex, sharey : bools, optional
-        only relevant if faceting; passed to plt.subplots
+        Only relevant if faceting; passed to plt.subplots.
     palette : seaborn color palette argument
-        if using separate plots by color, draw with this color palette
+        If using separate plots by color, draw with this color palette.
     size : float, optional
-        size (plots are square) for each plot facet
+        Size (plots are square) for each plot facet.
     {scatter, line}_kws : dictionary
-        keyword arguments to pass to the underlying plot functions
+        Keyword arguments to pass to the underlying plot functions.
     palette_kws : dictionary
-        keyword arguments for seaborn.color_palette
+        Keyword arguments for seaborn.color_palette.
 
     """
     # TODO
     # - legend when fit_line is False
-    # - wrap title when wide
 
     # First sort out the general figure layout
     if size is None:
@@ -102,6 +105,10 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     else:
         col_vals = np.sort(data[col].unique())
         col_masks = [data[col] == val for val in col_vals]
+
+    if x_bins is not None:
+        x_estimator = np.mean if x_estimator is None else x_estimator
+        x_bins = np.c_[x_bins]
 
     if x_partial is not None:
         if not isinstance(x_partial, list):
@@ -154,6 +161,8 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 title += " | "
             if col is not None:
                 title += "%s = %s" % (col, col_vals[col_j])
+            if size < 3:
+                title = title.replace(" | ", "\n")
             ax.set_title(title)
 
             for hue_k, hue_mask in enumerate(hue_masks):
@@ -163,7 +172,14 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 if x_estimator is not None:
                     ms = scatter_kws.pop("ms", 7)
                     mew = scatter_kws.pop("mew", 0)
-                    x_vals = data_ijk[x].unique()
+                    if x_bins is None:
+                        x_vals = data_ijk[x].unique()
+                        x_data = data_ijk[x]
+                    else:
+                        dist = distance.cdist(np.c_[data_ijk[x]], x_bins)
+                        x_vals = x_bins.ravel()
+                        x_data = x_bins[np.argmin(dist, axis=1)].ravel()
+
                     y_vals = data_ijk[y]
 
                     if y_partial is not None:
@@ -174,7 +190,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                             y_vals = moss.vector_reject(y_vals - y_mean, conf)
                             y_vals += y_mean
 
-                    y_grouped = [np.array(y_vals[data_ijk[x] == v])
+                    y_grouped = [np.array(y_vals[x_data == v])
                                  for v in x_vals]
 
                     y_est = [x_estimator(y_i) for y_i in y_grouped]
