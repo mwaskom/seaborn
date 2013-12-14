@@ -4,6 +4,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from scipy import stats
+from scipy.spatial import distance
 import statsmodels.api as sm
 import statsmodels.formula.api as sf
 import matplotlib as mpl
@@ -15,7 +16,7 @@ from seaborn.distributions import distplot
 
 
 def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
-           x_estimator=None, x_ci=95, n_boot=5000, fit_reg=True,
+           x_estimator=None, x_ci=95, x_bins=None, n_boot=5000, fit_reg=True,
            order=1, ci=95, logistic=False, truncate=False,
            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
            sharex=True, sharey=True, palette="husl", size=None,
@@ -39,6 +40,9 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
         to plot the point estimate and bootstrapped CI
     x_ci : int optional
         size of confidence interval for x_estimator error bars
+    x_bins : sequence of floats, optional
+        bin the x variable with these values. implies that x_estimator is
+        mean, unless otherwise provided.
     n_boot : int, optional
         number of bootstrap iterations to perform
     fit_reg : bool, optional
@@ -103,6 +107,10 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
         col_vals = np.sort(data[col].unique())
         col_masks = [data[col] == val for val in col_vals]
 
+    if x_bins is not None:
+        x_estimator = np.mean if x_estimator is None else x_estimator
+        x_bins = np.c_[x_bins]
+
     if x_partial is not None:
         if not isinstance(x_partial, list):
             x_partial = [x_partial]
@@ -163,7 +171,14 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 if x_estimator is not None:
                     ms = scatter_kws.pop("ms", 7)
                     mew = scatter_kws.pop("mew", 0)
-                    x_vals = data_ijk[x].unique()
+                    if x_bins is None:
+                        x_vals = data_ijk[x].unique()
+                        x_data = data_ijk[x]
+                    else:
+                        dist = distance.cdist(np.c_[data_ijk[x]], x_bins)
+                        x_vals = x_bins.ravel()
+                        x_data = x_bins[np.argmin(dist, axis=1)].ravel()
+
                     y_vals = data_ijk[y]
 
                     if y_partial is not None:
@@ -174,7 +189,7 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                             y_vals = moss.vector_reject(y_vals - y_mean, conf)
                             y_vals += y_mean
 
-                    y_grouped = [np.array(y_vals[data_ijk[x] == v])
+                    y_grouped = [np.array(y_vals[x_data == v])
                                  for v in x_vals]
 
                     y_est = [x_estimator(y_i) for y_i in y_grouped]
