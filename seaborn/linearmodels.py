@@ -73,7 +73,6 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     """
     # TODO
     # - legend when fit_line is False
-    # - wrap title when wide
 
     # First sort out the general figure layout
     if size is None:
@@ -162,6 +161,8 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
                 title += " | "
             if col is not None:
                 title += "%s = %s" % (col, col_vals[col_j])
+            if size < 3:
+                title = title.replace(" | ", "\n")
             ax.set_title(title)
 
             for hue_k, hue_mask in enumerate(hue_masks):
