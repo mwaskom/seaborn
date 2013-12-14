@@ -21,54 +21,54 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
            sharex=True, sharey=True, palette="husl", size=None,
            scatter_kws=None, line_kws=None, palette_kws=None):
-    """Plot a linear model from a DataFrame.
+    """Plot a linear model with faceting, color binning, and other options.
 
     Parameters
     ----------
     x, y : strings
-        column names in `data` DataFrame for x and y variables
+        Column names in `data` DataFrame for x and y variables.
     data : DataFrame
-        source of data for the model
+        Dource of data for the model.
     color : string, optional
-        DataFrame column name to group the model by color
+        DataFrame column name to group the model by color.
     row, col : strings, optional
-        DataFrame column names to make separate plot facets
+        DataFrame column names to make separate plot facets.
     col_wrap : int, optional
-        wrap col variable at this width - cannot be used with row facet
+        Wrap col variable at this width - cannot be used with row facet.
     x_estimator : callable, optional
         Interpret X values as factor labels and use this function
-        to plot the point estimate and bootstrapped CI
+        to plot the point estimate and bootstrapped CI.
     x_ci : int optional
-        size of confidence interval for x_estimator error bars
+        Size of confidence interval for x_estimator error bars.
     x_bins : sequence of floats, optional
-        bin the x variable with these values. implies that x_estimator is
+        Bin the x variable with these values. Implies that x_estimator is
         mean, unless otherwise provided.
     n_boot : int, optional
-        number of bootstrap iterations to perform
+        Number of bootstrap iterations to perform.
     fit_reg : bool, optional
-        if True fit a regression model by color/row/col and plot
+        If True fit a regression model by color/row/col and plot.
     order : int, optional
-        order of the regression polynomial to fit (default = 1)
+        Order of the regression polynomial to fit.
     ci : int, optional
-        confidence interval for the regression line
+        Confidence interval for the regression line.
     logistic : bool, optional
-        fit the regression line with logistic regression
+        Fit the regression line with logistic regression.
     truncate : bool, optional
-        if True, only fit line from data min to data max
+        If True, only fit line from data min to data max.
     {x, y}_partial : string or list of strings, optional
-        regress these variables out of the factors before plotting
+        Regress these variables out of the factors before plotting.
     {x, y}_jitter : float, optional
-        parameters for uniformly distributed random noise added to positions
+        Parameters for uniformly distributed random noise added to positions.
     sharex, sharey : bools, optional
-        only relevant if faceting; passed to plt.subplots
+        Only relevant if faceting; passed to plt.subplots.
     palette : seaborn color palette argument
-        if using separate plots by color, draw with this color palette
+        If using separate plots by color, draw with this color palette.
     size : float, optional
-        size (plots are square) for each plot facet
+        Size (plots are square) for each plot facet.
     {scatter, line}_kws : dictionary
-        keyword arguments to pass to the underlying plot functions
+        Keyword arguments to pass to the underlying plot functions.
     palette_kws : dictionary
-        keyword arguments for seaborn.color_palette
+        Keyword arguments for seaborn.color_palette.
 
     """
     # TODO
