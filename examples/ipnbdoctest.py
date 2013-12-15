@@ -15,13 +15,11 @@ import os
 import sys
 import re
 import difflib
-import itertools
 
 from collections import defaultdict
 from Queue import Empty
 
 from IPython.kernel import KernelManager
-
 from IPython.nbformat.current import reads, NotebookNode
 
 SKIP_COMPARE = ('traceback', 'latex', 'prompt_number')
@@ -73,6 +71,30 @@ def consolidate_outputs(outputs):
     return data
 
 
+def image_diff(test, ref, key="image", prompt_num=None):
+    """Diff two base64-encoded images."""
+    if test == ref:
+        return True, ""
+
+    message = "Mismatch in %s output" % key
+    if prompt_num is not None:
+        message += " (#%d)" % prompt_num
+
+    try:
+        import Image
+        import numpy as np
+        test = test.decode("base64")
+        test = np.array(Image.open(test)).astype(np.float) / 255.
+        ref = ref.decde("base64")
+        ref = np.array(Image.open(ref)).astype(np.float) / 255.
+        diff = np.abs(test - ref).sum()
+        diff /= len(diff.flat) * 100
+        message += ": %.1g%% difference" % diff
+    except ImportError:
+        pass
+    return False, message
+
+
 def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
     """Test whether the stored outputs match the execution outputs."""
 
@@ -91,25 +113,11 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
                 continue
 
             if key in IMAGE_OUTPUTS:
-                if test_value != ref_value:
-                    message = "Mismatch in %s output" % key
 
-                    if prompt_num is not None:
-                        num = " (#%d)" % prompt_num
-                        message += num
-
-                    """
-                    # This is currently not working
-                    ref_img = ref_value.decode("base64")
-                    test_img = test_value.decode("base64")
-                    img_zip = itertools.izip(test_img, ref_img)
-                    diff = [a != b for a, b in img_zip]
-                    diff_pct = 100 * (sum(diff) / float(len(diff)))
-                    message += ": %.1f%% difference" % diff_pct
-                    """
-
-                    comparison["message"] += message
-                    comparison["match"] = False
+                match, message = image_diff(test_value, ref_value,
+                                            key, prompt_num)
+                comparison["message"] += message
+                comparison["match"] = False
 
             else:
                 diff = difflib.context_diff(test_value, ref_value,
