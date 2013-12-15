@@ -72,6 +72,13 @@ def consolidate_outputs(outputs):
     return data
 
 
+def base64_to_array(data):
+    """Convert a base64 image to an array."""
+    import numpy as np
+    import Image
+    return np.array(Image.open(StringIO(data.decode("base64")))) / 255.
+
+
 def image_diff(test, ref, key="image", prompt_num=None):
     """Diff two base64-encoded images."""
     if test == ref:
@@ -82,16 +89,15 @@ def image_diff(test, ref, key="image", prompt_num=None):
         message += " (#%d)" % prompt_num
 
     try:
-        import Image
         import numpy as np
-        test = np.array(Image.open(StringIO(test.decode("base64")))) / 255.
-        ref = np.array(Image.open(StringIO(ref.decode("base64")))) / 255.
-        try:
+        test = base64_to_array(test)
+        ref = base64_to_array(ref)
+        if test.shape != ref.shape:
+            diff = 100
+        else:
             diff = np.abs(test - ref).sum()
             diff /= len(diff.flat) * 100
-        except ValueError:
-            diff = 100
-        message += ": %.1g%% difference" % diff
+        message += ": %.3g%% difference" % diff
     except ImportError:
         pass
     return False, message
@@ -132,7 +138,7 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
             match = False
             diff = difflib.context_diff(test_value, ref_value,
                                         "test output", "reference output")
-            message += "".join(list(diff))
+            message += "".join(diff)
 
     return match, message
 
