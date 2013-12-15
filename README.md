@@ -109,6 +109,11 @@ License
 
 Released under a BSD (3-clause) license
 
+License
+-------
+
+Released under a BSD (3-clause) license
+
 
 Celebrity Endorsements
 ----------------------
