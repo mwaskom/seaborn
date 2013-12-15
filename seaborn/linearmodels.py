@@ -778,7 +778,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
         for i, j in zip(*np.triu_indices(nvars, 1)):
             val = mat[i, j]
             stars = moss.sig_stars(p_mat[i, j])
-            ax.text(j, i, "\n%.3g\n%s" % (val, stars),
+            ax.text(j, i, "\n%.2g\n%s" % (val, stars),
                     fontdict=dict(ha="center", va="center"))
     else:
         fill = np.ones_like(plotmat)
