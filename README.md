@@ -121,6 +121,16 @@ https://github.com/mwaskom/seaborn
 
 Please [submit](https://github.com/mwaskom/seaborn/issues/new) any bugs you encounter to the Github issue tracker.
 
+License
+-------
+
+Released under a BSD (3-clause) license
+
+License
+-------
+
+Released under a BSD (3-clause) license
+
 
 Celebrity Endorsements
 ----------------------
