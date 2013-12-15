@@ -4,56 +4,53 @@ simple example script for running and testing notebooks.
 
 Usage: `ipnbdoctest.py foo.ipynb [bar.ipynb [...]]`
 
-Each cell is submitted to the kernel, and the outputs are compared with those stored in the notebook.
+Each cell is submitted to the kernel, and the outputs are compared with those
+stored in the notebook.
 
 From https://gist.github.com/minrk/2620735
 
 """
-
-import os,sys,time
-import base64
+from __future__ import print_function
+import os
+import sys
 import re
+import difflib
+import itertools
 
 from collections import defaultdict
 from Queue import Empty
 
-try:
-    from IPython.kernel import KernelManager
-except ImportError:
-    from IPython.zmq.blockingkernelmanager import BlockingKernelManager as KernelManager
+from IPython.kernel import KernelManager
 
 from IPython.nbformat.current import reads, NotebookNode
 
+SKIP_COMPARE = ('traceback', 'latex', 'prompt_number')
+IMAGE_OUTPUTS = ('png', 'svg', 'jpeg')
 
-def compare_png(a64, b64):
-    """compare two b64 PNGs (incomplete)"""
-    try:
-        import Image
-    except ImportError:
-        pass
-    adata = base64.decodestring(a64)
-    bdata = base64.decodestring(b64)
-    return True
 
 def sanitize(s):
-    """sanitize a string for comparison.
-    
-    fix universal newlines, strip trailing newlines, and normalize likely random values (memory addresses and UUIDs)
+    """Sanitize a string for comparison.
+
+    - Fix universal newlines
+    - Strip trailing newlines
+    - Normalize likely random values (memory addresses and UUIDs)
+
     """
     if not isinstance(s, basestring):
         return s
-    # normalize newline:
+
+    # Formalize newline:
     s = s.replace('\r\n', '\n')
-    
-    # ignore trailing newlines (but not space)
+
+    # Ignore trailing newlines (but not space)
     s = s.rstrip('\n')
-    
-    # normalize hex addresses:
+
+    # Normalize hex addresses:
     s = re.sub(r'0x[a-f0-9]+', '0xFFFFFFFF', s)
-    
-    # normalize UUIDs:
+
+    # Normalize UUIDs:
     s = re.sub(r'[a-f0-9]{8}(\-[a-f0-9]{4}){3}\-[a-f0-9]{12}', 'U-U-I-D', s)
-    
+
     return s
 
 
@@ -62,31 +59,65 @@ def consolidate_outputs(outputs):
     data = defaultdict(list)
     data['stdout'] = ''
     data['stderr'] = ''
-    
+
     for out in outputs:
         if out.type == 'stream':
             data[out.stream] += out.text
         elif out.type == 'pyerr':
             data['pyerr'] = dict(ename=out.ename, evalue=out.evalue)
         else:
-            for key in ('png', 'svg', 'latex', 'html', 'javascript', 'text', 'jpeg',):
+            for key in ('png', 'svg', 'latex', 'html',
+                        'javascript', 'text', 'jpeg',):
                 if key in out:
                     data[key].append(out[key])
     return data
 
 
-def compare_outputs(test, ref, skip_compare=('png', 'traceback', 'latex', 'prompt_number')):
+def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
+    """Test whether the stored outputs match the execution outputs."""
+
+    comparison = dict(match=True, message="")
+
     for key in ref:
+        test_value = sanitize(test[key])
+        ref_value = sanitize(ref[key])
         if key not in test:
-            print "missing key: %s != %s" % (test.keys(), ref.keys())
-            return False
-        elif key not in skip_compare and sanitize(test[key]) != sanitize(ref[key]):
-            print "mismatch %s:" % key
-            print test[key]
-            print '  !=  '
-            print ref[key]
-            return False
-    return True
+            comparison["message"] += "'%s' field not in test" % key
+            comparison["match"] = False
+
+        elif key not in skip_compare:
+
+            if test_value == ref_value:
+                continue
+
+            if key in IMAGE_OUTPUTS:
+                if test_value != ref_value:
+                    message = "Mismatch in %s output" % key
+
+                    if prompt_num is not None:
+                        num = " (#%d)" % prompt_num
+                        message += num
+
+                    """
+                    # This is currently not working
+                    ref_img = ref_value.decode("base64")
+                    test_img = test_value.decode("base64")
+                    img_zip = itertools.izip(test_img, ref_img)
+                    diff = [a != b for a, b in img_zip]
+                    diff_pct = 100 * (sum(diff) / float(len(diff)))
+                    message += ": %.1f%% difference" % diff_pct
+                    """
+
+                    comparison["message"] += message
+                    comparison["match"] = False
+
+            else:
+                diff = difflib.context_diff(test_value, ref_value,
+                                            "test output", "reference output")
+                comparison["message"] += "".join(list(diff))
+                comparison["match"] = False
+
+    return comparison
 
 
 def run_cell(shell, iopub, cell):
@@ -95,7 +126,7 @@ def run_cell(shell, iopub, cell):
     # wait for finish, maximum 20s
     shell.get_msg(timeout=20)
     outs = []
-    
+
     while True:
         try:
             msg = iopub.get_msg(timeout=0.2)
@@ -107,11 +138,11 @@ def run_cell(shell, iopub, cell):
         elif msg_type == 'clear_output':
             outs = []
             continue
-        
+
         content = msg['content']
         # print msg_type, content
         out = NotebookNode(output_type=msg_type)
-        
+
         if msg_type == 'stream':
             out.stream = content['name']
             out.text = content['data']
@@ -129,15 +160,21 @@ def run_cell(shell, iopub, cell):
             out.evalue = content['evalue']
             out.traceback = content['traceback']
         else:
-            print "unhandled iopub msg:", msg_type
-        
+            print("unhandled iopub msg:", msg_type)
+
         outs.append(out)
     return outs
-    
+
 
 def test_notebook(nb):
+    """Main function to run tests at the level of one notebook."""
+    # Boot up the kernel, assume inline plotting
     km = KernelManager()
-    km.start_kernel(extra_arguments=['--pylab=inline'], stderr=open(os.devnull, 'w'))
+    km.start_kernel(extra_arguments=["--matplotlib=inline",
+                                     "--colors=NoColor"],
+                    stderr=open(os.devnull, 'w'))
+
+    # Connect, allowing for older IPythons
     try:
         kc = km.client()
         kc.start_channels()
@@ -148,56 +185,100 @@ def test_notebook(nb):
         kc.start_channels()
         iopub = kc.sub_channel
     shell = kc.shell_channel
-    
-    # run %pylab inline, because some notebooks assume this
-    # even though they shouldn't
-    shell.execute("pass")
-    shell.get_msg()
-    while True:
-        try:
-            iopub.get_msg(timeout=1)
-        except Empty:
-            break
-    
+
+    # Initialize the result tracking
     successes = 0
     failures = 0
     errors = 0
+    fail_messages = []
+    err_messages = []
+
+    # Iterate the notebook, testing only code cells
     for ws in nb.worksheets:
         for cell in ws.cells:
             if cell.cell_type != 'code':
                 continue
+
+            # Try and get the prompt number for easier reference
+            try:
+                prompt_num = cell.prompt_number
+            except AttributeError:
+                prompt_num = None
+
+            # Try to execute the cell, catch errors from test execution
             try:
                 outs = run_cell(shell, iopub, cell)
             except Exception as e:
-                print "failed to run cell:", repr(e)
-                print cell.input
+                message = "Error while running cell:\n%s" % repr(e)
+                err_messages.append(message)
                 errors += 1
+                sys.stdout.write("E")
                 continue
-            
+
+            errored = False
             failed = False
+
             for out, ref in zip(outs, cell.outputs):
-                if not compare_outputs(out, ref):
-                    failed = True
+
+                # Now check for an error in the cell execution itself
+                bad_error = (out.output_type == "pyerr"
+                             and not ref.output_type == "pyerr")
+                if bad_error:
+                    message = "\nError in code cell"
+                    if prompt_num is not None:
+                        message = " %s (#%d)" % (message, prompt_num)
+                    message = "%s:\n%s" % (message, "".join(out.traceback))
+                    err_messages.append(message)
+                    errored = True
+
+                # Otherwise check whether the stored and achived outputs match
+                else:
+                    try:
+                        comparison = compare_outputs(out, ref,
+                                                     prompt_num=prompt_num)
+                        if not comparison["match"]:
+                            failed = True
+                            fail_messages.append(comparison["message"])
+
+                    except Exception as e:
+                        message = "Error while comparing output:\n%s" % repr(e)
+                        err_messages.append(message)
+                        errors += 1
+                        sys.stdout.write("E")
+                        continue
+
             if failed:
                 failures += 1
+                dot = "F"
+            elif errored:
+                errors += 1
+                dot = "E"
             else:
                 successes += 1
-            sys.stdout.write('.')
+                dot = "."
+            sys.stdout.write(dot)
 
-    print
-    print "tested notebook %s" % nb.metadata.name
-    print "    %3i cells successfully replicated" % successes
+    print()
+    print("    %3i cells successfully replicated" % successes)
     if failures:
-        print "    %3i cells mismatched output" % failures
+        print("    %3i cells mismatched output" % failures)
+        print("\n" + "\n".join(fail_messages) + "\n")
     if errors:
-        print "    %3i cells failed to complete" % errors
+        print("    %3i cells failed to complete" % errors)
+        print("\n" + "\n".join(err_messages) + "\n")
     kc.stop_channels()
     km.shutdown_kernel()
     del km
 
+    return int(bool(failures + errors))
+
 if __name__ == '__main__':
+
+    status = 0
     for ipynb in sys.argv[1:]:
-        print "testing %s" % ipynb
+        print("testing %s" % ipynb)
         with open(ipynb) as f:
             nb = reads(f.read(), 'json')
-        test_notebook(nb)
+
+        status += test_notebook(nb)
+    sys.exit(status)
