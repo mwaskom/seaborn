@@ -18,6 +18,7 @@ import difflib
 
 from collections import defaultdict
 from Queue import Empty
+from StringIO import StringIO
 
 from IPython.kernel import KernelManager
 from IPython.nbformat.current import reads, NotebookNode
@@ -83,10 +84,13 @@ def image_diff(test, ref, key="image", prompt_num=None):
     try:
         import Image
         import numpy as np
-        test = np.array(Image.open(test.decode("base64"))) / 255.
-        ref = np.array(Image.open(ref.decode("base64"))) / 255.
-        diff = np.abs(test - ref).sum()
-        diff /= len(diff.flat) * 100
+        test = np.array(Image.open(StringIO(test.decode("base64")))) / 255.
+        ref = np.array(Image.open(StringIO(ref.decode("base64")))) / 255.
+        try:
+            diff = np.abs(test - ref).sum()
+            diff /= len(diff.flat) * 100
+        except ValueError:
+            diff = 100
         message += ": %.1g%% difference" % diff
     except ImportError:
         pass
@@ -96,34 +100,41 @@ def image_diff(test, ref, key="image", prompt_num=None):
 def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
     """Test whether the stored outputs match the execution outputs."""
 
-    comparison = dict(match=True, message="")
+    match, message = True, ""
 
     for key in ref:
-        test_value = sanitize(test[key])
-        ref_value = sanitize(ref[key])
-        if key not in test:
-            comparison["message"] += "'%s' field not in test" % key
-            comparison["match"] = False
 
-        elif key not in skip_compare:
+        if key not in test:
+            match = False
+            message += "'%s' field not in test" % key
+            continue
+
+        if key in skip_compare:
+            continue
+
+        test_value = test[key]
+        ref_value = ref[key]
+
+        if key in IMAGE_OUTPUTS:
+
+            mtch, msg = image_diff(test_value, ref_value, key, prompt_num)
+            match = match and mtch
+            message += msg
+
+        else:
+
+            test_value = sanitize(test_value)
+            ref_value = sanitize(ref_value)
 
             if test_value == ref_value:
                 continue
 
-            if key in IMAGE_OUTPUTS:
+            match = False
+            diff = difflib.context_diff(test_value, ref_value,
+                                        "test output", "reference output")
+            message += "".join(list(diff))
 
-                match, message = image_diff(test_value, ref_value,
-                                            key, prompt_num)
-                comparison["message"] += message
-                comparison["match"] = False
-
-            else:
-                diff = difflib.context_diff(test_value, ref_value,
-                                            "test output", "reference output")
-                comparison["message"] += "".join(list(diff))
-                comparison["match"] = False
-
-    return comparison
+    return match, message
 
 
 def run_cell(shell, iopub, cell):
@@ -240,11 +251,10 @@ def test_notebook(nb):
                 # Otherwise check whether the stored and achived outputs match
                 else:
                     try:
-                        comparison = compare_outputs(out, ref,
-                                                     prompt_num=prompt_num)
-                        if not comparison["match"]:
+                        match, message = compare_outputs(out, ref, prompt_num)
+                        if not match:
                             failed = True
-                            fail_messages.append(comparison["message"])
+                            fail_messages.append(message)
 
                     except Exception as e:
                         message = "Error while comparing output:\n%s" % repr(e)
