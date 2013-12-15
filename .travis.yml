@@ -6,7 +6,7 @@ python:
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
-  - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
+  - conda install --yes ipython==1.1.0 PIL pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
   - pip install .
 
 before_install:
