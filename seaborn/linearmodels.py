@@ -383,11 +383,12 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     if color is not None and "color" not in scatter_kws:
         scatter_kws.update(color=color)
     marker = scatter_kws.pop("markerstyle", "o")
+    mew = scatter_kws.pop("mew", 0)
     alpha_maker = stats.norm(0, 100)
     alpha = alpha_maker.pdf(len(x)) / alpha_maker.pdf(0)
     alpha = max(alpha, .1)
     alpha = scatter_kws.pop("alpha", alpha)
-    ax_scatter.plot(x, y, marker, alpha=alpha, mew=0, **scatter_kws)
+    ax_scatter.plot(x, y, marker, alpha=alpha, mew=mew, **scatter_kws)
     ax_scatter.set_xlabel(xlabel)
     ax_scatter.set_ylabel(ylabel)
 
