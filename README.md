@@ -90,6 +90,11 @@ https://github.com/mwaskom/seaborn
 
 Please submit any bugs you encounter to the Github issue tracker.
 
+License
+-------
+
+Released under a BSD (3-clause) license
+
 
 Celebrity Endorsements
 ----------------------
