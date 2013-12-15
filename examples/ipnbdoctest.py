@@ -83,10 +83,8 @@ def image_diff(test, ref, key="image", prompt_num=None):
     try:
         import Image
         import numpy as np
-        test = test.decode("base64")
-        test = np.array(Image.open(test)).astype(np.float) / 255.
-        ref = ref.decde("base64")
-        ref = np.array(Image.open(ref)).astype(np.float) / 255.
+        test = np.array(Image.open(test.decode("base64"))) / 255.
+        ref = np.array(Image.open(ref.decode("base64"))) / 255.
         diff = np.abs(test - ref).sum()
         diff /= len(diff.flat) * 100
         message += ": %.1g%% difference" % diff
