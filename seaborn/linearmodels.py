@@ -371,7 +371,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         y = np.asarray(y)
 
     # Set up the figure and axes
-    size = mpl.rcParams["figure.figsize"][0] if size is None else size
+    size = mpl.rcParams["figure.figsize"][1] if size is None else size
     fig = plt.figure(figsize=(size, size))
     ax_scatter = fig.add_axes([0.05, 0.05, 0.75, 0.75])
     ax_x_marg = fig.add_axes([0.05, 0.82, 0.75, 0.13])
