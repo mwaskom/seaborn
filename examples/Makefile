@@ -4,7 +4,7 @@ test:
 
 pat = 'Figure at 0x[a-f0-9]*>'
 rep = 'Figure at 0xFFFFFFFFF>'
-sed = sed s/$(pat)/$(rep)/
+sed = sed s/$(pat)/$(rep)/ | sed s/}\n\r/}/
 dir = .
 
 hexstrip:
