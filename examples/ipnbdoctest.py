@@ -113,7 +113,10 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
 
         if key not in test:
             match = False
-            message += "'%s' field not in test" % key
+            msg = "'%s' field not in test" % key
+            if prompt_num is not None:
+                msg += " (#%d)" % prompt_num
+            message += msg + "\n"
             continue
 
         if key in skip_compare:
@@ -145,7 +148,7 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
             message += "Textual output does not match"
             if prompt_num is not None:
                 message += " (#%d)\n" % prompt_num
-            message += "\n".join(diff)
+            message += "\n".join(diff) + "\n"
 
     return match, message
 
