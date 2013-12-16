@@ -81,6 +81,5 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["husl", "moss", "patsy", "pandas",
-                          "statsmodels", "scikit-learn"],
+        install_requires=["husl", "moss", "patsy", "pandas", "statsmodels"],
           )
