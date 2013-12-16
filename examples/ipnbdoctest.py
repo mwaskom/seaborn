@@ -314,10 +314,6 @@ def test_notebook(nb):
 
 if __name__ == '__main__':
 
-    # Filter all warnings, probably make configurable
-    import warnings
-    warnings.filterwarnings("ignore")
-
     status = 0
     for ipynb in sys.argv[1:]:
         print("testing %s" % ipynb)
