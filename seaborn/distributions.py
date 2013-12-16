@@ -327,7 +327,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 def violin(vals, groupby=None, inner="box", color=None, positions=None,
            names=None, widths=.8, alpha=None, join_rm=False, kde_thresh=1e-2,
-           inner_kws=None, ax=None, **kwargs):
+           inner_kws=None, ax=None, bw_method=None, **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot).
 
     Parameters
@@ -357,6 +357,8 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
         keyword arugments for inner plot
     ax : matplotlib axis, optional
         axis to plot on, otherwise creates new one
+    bw_method : KDE method to use in gaussian_kde
+    kwargs : additional parameters to fill_betweenx
 
     Returns
     -------
@@ -366,6 +368,15 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     """
     if ax is None:
         ax = plt.gca()
+
+    # Not the most elegant solution...
+    if 'lw' in kwargs or 'linewidth' in kwargs:
+        try:
+            linewidth = kwargs['linewidth']
+        except KeyError:
+            linewidth = kwargs['lw']
+    else:
+        linewidth = 1.5
 
     if isinstance(vals, pd.DataFrame):
         if names is None:
@@ -445,7 +456,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
 
     for i, a in enumerate(vals):
         x = positions[i]
-        kde = stats.gaussian_kde(a)
+        kde = stats.gaussian_kde(a, bw_method=bw_method)
         y = _kde_support(a, kde, 1000, kde_thresh)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
@@ -473,7 +484,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
             ax.plot(x_vals, a, in_marker, color=in_color,
                     alpha=in_alpha, mew=0, **inner_kws)
         for side in [-1, 1]:
-            ax.plot((side * dens) + x, y, c=gray, linewidth=1.5)
+            ax.plot((side * dens) + x, y, c=gray, linewidth=linewidth)
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
