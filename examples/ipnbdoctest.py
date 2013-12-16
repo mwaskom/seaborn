@@ -95,6 +95,9 @@ def image_diff(test, ref, key="image", prompt_num=None):
             import numpy as np
             diff = np.abs(test - ref).sum()
             diff /= len(diff.flat) * 100
+            # TODO hardcode eps, make configurable later
+            if diff < 1:
+                return True, ""
             message += ": %.3g%% difference" % diff
         else:
             message += ": Test image (%dx%d); " % test.shape[:2]
@@ -106,25 +109,29 @@ def image_diff(test, ref, key="image", prompt_num=None):
 
 def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
     """Test whether the stored outputs match the execution outputs."""
-
     match, message = True, ""
 
+    # Iterate through the reference output fields
     for key in ref:
 
+        # Don't check everything
+        if key in skip_compare:
+            continue
+
+        # Report when test output is missing a field
         if key not in test:
             match = False
-            msg = "'%s' field not in test" % key
+            msg = "Mismatch: '%s' field not in test output" % key
             if prompt_num is not None:
                 msg += " (#%d)" % prompt_num
             message += msg + "\n"
             continue
 
-        if key in skip_compare:
-            continue
-
+        # Obtain the field values
         test_value = test[key]
         ref_value = ref[key]
 
+        # Diff images seperately
         if key in IMAGE_OUTPUTS:
 
             mtch, msg = image_diff(test_value, ref_value, key, prompt_num)
@@ -133,22 +140,23 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
 
         else:
 
+            # Clean up some randomness and check the match
             test_value = sanitize(test_value)
             ref_value = sanitize(ref_value)
-
             if test_value == ref_value:
                 continue
 
+            # Build a textual diff report
             match = False
             diff = difflib.context_diff(test_value.split("\n"),
                                         ref_value.split("\n"),
                                         "Test output",
                                         "Reference output",
                                         n=1, lineterm="")
-            message += "Textual output does not match"
+            message += "Mismatch in textual output"
             if prompt_num is not None:
                 message += " (#%d)\n" % prompt_num
-            message += "\n".join(diff) + "\n"
+            message += "\n  ".join(diff) + "\n"
 
     return match, message
 
@@ -305,6 +313,10 @@ def test_notebook(nb):
     return int(bool(failures + errors))
 
 if __name__ == '__main__':
+
+    # Filter all warnings, probably make configurable
+    import warnings
+    warnings.filterwarnings("ignore")
 
     status = 0
     for ipynb in sys.argv[1:]:
