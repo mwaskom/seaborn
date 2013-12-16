@@ -89,15 +89,16 @@ def image_diff(test, ref, key="image", prompt_num=None):
         message += " (#%d)" % prompt_num
 
     try:
-        import numpy as np
         test = base64_to_array(test)
         ref = base64_to_array(ref)
-        if test.shape != ref.shape:
-            diff = 100
-        else:
+        if test.shape == ref.shape:
+            import numpy as np
             diff = np.abs(test - ref).sum()
             diff /= len(diff.flat) * 100
-        message += ": %.3g%% difference" % diff
+            message += ": %.3g%% difference" % diff
+        else:
+            message += ": Test image (%dx%d); " % test.shape[:2]
+            message += "; Ref image (%dx%d)" % ref.shape[:2]
     except ImportError:
         pass
     return False, message
@@ -136,9 +137,12 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
                 continue
 
             match = False
-            diff = difflib.context_diff(test_value, ref_value,
-                                        "test output", "reference output")
-            message += "".join(diff)
+            diff = difflib.context_diff(test_value.split("\n"),
+                                        ref_value.split("\n"),
+                                        "Test output",
+                                        "Reference output",
+                                        n=1, lineterm="")
+            message += "\n".join(diff)
 
     return match, message
 
