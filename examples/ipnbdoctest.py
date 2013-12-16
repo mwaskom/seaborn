@@ -156,7 +156,7 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
             message += "Mismatch in textual output"
             if prompt_num is not None:
                 message += " (#%d)\n" % prompt_num
-            message += "\n  ".join(diff) + "\n"
+            message += "  " + "\n  ".join(diff) + "\n"
 
     return match, message
 
