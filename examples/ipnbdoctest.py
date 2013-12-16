@@ -142,6 +142,9 @@ def compare_outputs(test, ref, prompt_num=None, skip_compare=SKIP_COMPARE):
                                         "Test output",
                                         "Reference output",
                                         n=1, lineterm="")
+            message += "Textual output does not match"
+            if prompt_num is not None:
+                message += " (#%d)\n" % prompt_num
             message += "\n".join(diff)
 
     return match, message
