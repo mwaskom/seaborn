@@ -6,9 +6,7 @@ and attractive plots of statistical data using matplotlib. It also provides
 concise control over the aesthetics of the plots, improving on matplotlib's
 default look.
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/distplot_options.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/distplot_options_thumb.png" height="135" width="135">
-</a>    
+![](examples/example_plot.png "Example Seaborn Plots")
 
 <a href=http://stanford.edu/~mwaskom/software/seaborn/examples/regression_marginals.html>
 <img src="http://stanford.edu/~mwaskom/software/seaborn/_static/regression_marginals_thumb.png" height="135" width="135">
@@ -55,13 +53,13 @@ Examples
 
 The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package. You can also check out the example notebooks:
 
-[Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
+- [Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
 
-[Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
+- [Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
 
-[Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
+- [Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
 
-[Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
+- [Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
 
 
 Dependencies
@@ -81,15 +79,13 @@ Dependencies
 
 ### Recommended
 
-- [scikit-learn](http://scikit-learn.org)
-
 - [patsy](http://patsy.readthedocs.org/en/latest/)
 
 - [husl](https://github.com/boronine/pyhusl)
 
 - [patsy](http://patsy.readthedocs.org/en/latest/)
 
-Installing with `pip` will automatically install `patsy`, `husl`, and `moss`, which are the only dependencies not included in Anaconda.
+Installing with `pip` will automatically install aside from `numpy`, `scipy`, and `matplotlib`.
 
 
 Installation
@@ -99,14 +95,15 @@ To install the released version, just do
 
     pip install seaborn
 
+You may instead want to use the development version from Github, by running
 
-    python setup.py install
-
-from within the source directory.
+    pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn
 
 
 Testing
 -------
+
+[![Build Status](https://travis-ci.org/mwaskom/seaborn.png?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 
 To test seaborn, run `make test` in the source directory. This will execute the
 example notebooks and compare the outputs of each cell to the data in the
@@ -120,16 +117,6 @@ Development
 https://github.com/mwaskom/seaborn
 
 Please [submit](https://github.com/mwaskom/seaborn/issues/new) any bugs you encounter to the Github issue tracker.
-
-License
--------
-
-Released under a BSD (3-clause) license
-
-License
--------
-
-Released under a BSD (3-clause) license
 
 
 Celebrity Endorsements
