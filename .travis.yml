@@ -6,7 +6,8 @@ python:
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
-  - conda install --yes ipython==1.1.0 PIL pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
+  - conda install --yes ipython==1.1.0 PIL pyzmq numpy scipy nose matplotlib pandas statsmodels
+  - pip install git+git://github.com/mwaskom/moss.git#egg=moss
   - pip install .
 
 before_install:
@@ -17,4 +18,4 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
 
-script: sudo make test
+script: make test
