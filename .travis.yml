@@ -17,4 +17,4 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
 
-script: make test
+script: sudo make test
