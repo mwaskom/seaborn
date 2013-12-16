@@ -371,7 +371,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         y = np.asarray(y)
 
     # Set up the figure and axes
-    size = mpl.rcParams["figure.figsize"][0] if size is None else size
+    size = mpl.rcParams["figure.figsize"][1] if size is None else size
     fig = plt.figure(figsize=(size, size))
     ax_scatter = fig.add_axes([0.05, 0.05, 0.75, 0.75])
     ax_x_marg = fig.add_axes([0.05, 0.82, 0.75, 0.13])
@@ -383,11 +383,12 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     if color is not None and "color" not in scatter_kws:
         scatter_kws.update(color=color)
     marker = scatter_kws.pop("markerstyle", "o")
+    mew = scatter_kws.pop("mew", 0)
     alpha_maker = stats.norm(0, 100)
     alpha = alpha_maker.pdf(len(x)) / alpha_maker.pdf(0)
     alpha = max(alpha, .1)
     alpha = scatter_kws.pop("alpha", alpha)
-    ax_scatter.plot(x, y, marker, alpha=alpha, mew=0, **scatter_kws)
+    ax_scatter.plot(x, y, marker, alpha=alpha, mew=mew, **scatter_kws)
     ax_scatter.set_xlabel(xlabel)
     ax_scatter.set_ylabel(ylabel)
 
@@ -409,8 +410,11 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     if reg_kws is None:
         reg_kws = {}
     reg_color = reg_kws.pop("color", "#222222")
-    ax_scatter.plot(xlim, np.polyval([a, b], xlim),
-                    color=reg_color, **reg_kws)
+    yhat = np.polyval([a, b], xlim)
+    ax_scatter.plot(xlim, yhat, color=reg_color, **reg_kws)
+
+    # This is a hack to get the annotation to work
+    reg = ax_scatter.plot(xlim, yhat, lw=0)
 
     # Bootstrapped regression standard error
     if ci is not None:
@@ -432,32 +436,14 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     out = corr_func(x, y)
     try:
         s, p = out
-        msg = "%s: %.3f (p=%.3g%s)" % (func_name, s, p, moss.sig_stars(p))
+        msg = "%s: %.2g (p=%.2g%s)" % (func_name, s, p, moss.sig_stars(p))
     except TypeError:
         s = corr_func(x, y)
         msg = "%s: %.3f" % (func_name, s)
 
-    if annotloc is None:
-        xmin, xmax = xlim
-        x_range = xmax - xmin
-        # Assume the fit statistic is correlation-esque for some
-        # intuition on where the fit annotation should go
-        if s < 0:
-            xloc, align = xmax - x_range * .02, "right"
-        else:
-            xloc, align = xmin + x_range * .02, "left"
-        ymin, ymax = ax_scatter.get_ylim()
-        y_range = ymax - ymin
-        yloc = ymax - y_range * .02
-    else:
-        if len(annotloc) == 3:
-            xloc, yloc, align = annotloc
-        else:
-            xloc, yloc = annotloc
-            align = "left"
     if text_kws is None:
         text_kws = {}
-    ax_scatter.text(xloc, yloc, msg, ha=align, va="top", **text_kws)
+    ax_scatter.legend(reg, [msg], loc="best", prop=text_kws)
 
     # Set the axes on the marginal plots
     ax_x_marg.set_xlim(ax_scatter.get_xlim())
@@ -792,7 +778,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
         for i, j in zip(*np.triu_indices(nvars, 1)):
             val = mat[i, j]
             stars = moss.sig_stars(p_mat[i, j])
-            ax.text(j, i, "\n%.3g\n%s" % (val, stars),
+            ax.text(j, i, "\n%.2g\n%s" % (val, stars),
                     fontdict=dict(ha="center", va="center"))
     else:
         fill = np.ones_like(plotmat)
