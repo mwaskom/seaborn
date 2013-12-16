@@ -359,7 +359,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
         axis to plot on, otherwise creates new one
     bw_method : KDE method to use in gaussian_kde
     kwargs : additional parameters to fill_betweenx
-    
+
     Returns
     -------
     ax : matplotlib axis
@@ -370,7 +370,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
         ax = plt.gca()
 
     # Not the most elegant solution...
-    if 'lw' or 'linewidth' in kwargs:
+    if 'lw' in kwargs or 'linewidth' in kwargs:
         try:
             linewidth = kwargs['linewidth']
         except KeyError:
