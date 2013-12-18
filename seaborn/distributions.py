@@ -328,9 +328,17 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     return ax
 
 
-def violin(vals, groupby=None, inner="box", color=None, positions=None,
-           names=None, bw=None, widths=.8, alpha=None, join_rm=False,
-           kde_thresh=1e-2, inner_kws=None, ax=None,  **kwargs):
+def violin(*args, **kwargs):
+    """Deprecated old name for violinplot. Please update your code."""
+    import warnings
+    warnings.warn("violin() is deprecated; please use violinplot()",
+                  UserWarning)
+    return violinplot(*args, **kwargs)
+
+
+def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
+               names=None, bw=None, widths=.8, alpha=None, join_rm=False,
+               kde_thresh=1e-2, inner_kws=None, ax=None,  **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot).
 
     Parameters
