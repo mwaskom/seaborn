@@ -58,7 +58,7 @@ sns.tsplot(d, time=x, ax=ax)
 sns.set(style="whitegrid")
 
 ax = plt.subplot(gs[2:4, 0])
-plt.title("violin()")
+plt.title("violinplot()")
 
 n = 40
 p = 8
@@ -66,7 +66,7 @@ rs = np.random.RandomState(8)
 d = rs.normal(0, 1, (n, p))
 d += np.log(np.arange(1, p + 1)) * -5 + 10
 
-sns.violin(d, inner="points")
+sns.violinplot(d, inner="points")
 
 #sns.despine(ax=ax)
 
