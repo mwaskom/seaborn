@@ -326,8 +326,8 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 
 
 def violin(vals, groupby=None, inner="box", color=None, positions=None,
-           names=None, widths=.8, alpha=None, join_rm=False, kde_thresh=1e-2,
-           inner_kws=None, ax=None, bw_method=None, **kwargs):
+           names=None, bw=None, widths=.8, alpha=None, join_rm=False,
+           kde_thresh=1e-2, inner_kws=None, ax=None,  **kwargs):
     """Create a violin plot (a combination of boxplot and KDE plot).
 
     Parameters
@@ -342,6 +342,11 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
         inner violin colors
     positions : number or sequence of numbers
         position of first violin or positions of each violin
+    names : list of strings, optional
+        names to plot on x axis, otherwise plots numbers
+    bw : {'scott' | 'silverman' | scalar | callable}
+        name of method to determine kernel size, scalar factor, or callable
+        to determine size given a kde instance
     widths : float
         width of each violin at maximum density
     alpha : float, optional
@@ -349,15 +354,12 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     join_rm : boolean, optional
         if True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot
-    names : list of strings, optional
-        names to plot on x axis, otherwise plots numbers
     kde_thresh : float, optional
         proportion of maximum at which to threshold the KDE curve
     inner_kws : dict, optional
         keyword arugments for inner plot
     ax : matplotlib axis, optional
-        axis to plot on, otherwise creates new one
-    bw_method : KDE method to use in gaussian_kde
+        axis to plot on, otherwise grab current axis
     kwargs : additional parameters to fill_betweenx
 
     Returns
@@ -368,15 +370,6 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     """
     if ax is None:
         ax = plt.gca()
-
-    # Not the most elegant solution...
-    if 'lw' in kwargs or 'linewidth' in kwargs:
-        try:
-            linewidth = kwargs['linewidth']
-        except KeyError:
-            linewidth = kwargs['lw']
-    else:
-        linewidth = 1.5
 
     if isinstance(vals, pd.DataFrame):
         if names is None:
@@ -454,9 +447,15 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
     in_marker = inner_kws.pop("marker", ".")
     in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
 
+    # Set the default linewidth if not provided in kwargs
+    try:
+        lw = ({"lw", "linewidth"} & set(kwargs)).pop()
+    except KeyError:
+        lw = 1.5
+
     for i, a in enumerate(vals):
         x = positions[i]
-        kde = stats.gaussian_kde(a, bw_method=bw_method)
+        kde = stats.gaussian_kde(a, bw_method=bw)
         y = _kde_support(a, kde, 1000, kde_thresh)
         dens = kde(y)
         scl = 1 / (dens.max() / (widths / 2))
@@ -484,7 +483,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
             ax.plot(x_vals, a, in_marker, color=in_color,
                     alpha=in_alpha, mew=0, **inner_kws)
         for side in [-1, 1]:
-            ax.plot((side * dens) + x, y, c=gray, linewidth=linewidth)
+            ax.plot((side * dens) + x, y, c=gray, lw=lw)
 
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
