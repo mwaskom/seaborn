@@ -22,7 +22,7 @@ Distribution plots
     :toctree: generated/
 
     boxplot
-    violin
+    violinplot
     distplot
     kdeplot
     rugplot
