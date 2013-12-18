@@ -238,7 +238,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 
 def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
-            support_min=-np.inf, support_max=np.inf,
+            support_min=-np.inf, support_max=np.inf, bw=None,
             vertical=False, ax=None, **kwargs):
     """Calculate and plot a one-dimentional kernel density estimate.
 
@@ -255,6 +255,9 @@ def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
     support_{min, max}: floats, optional
         If provided, do not draw above or below these values
         (does not affect the actual estimation)
+    bw : {'scott' | 'silverman' | scalar | callable}
+        name of method to determine kernel size, scalar factor, or callable
+        to determine size given a kde instance
     vertical : bool
         If True, density is on x-axis.
     ax : matplotlib axis, optional
@@ -283,7 +286,7 @@ def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
 
     # Compute the KDE
     a = np.asarray(a)
-    kde = stats.gaussian_kde(a.astype(float).ravel())
+    kde = stats.gaussian_kde(a.astype(float).ravel(), bw_method=bw)
     x = _kde_support(a, kde, npts, support_thresh)
     x = x[x >= support_min]
     x = x[x <= support_max]
@@ -449,7 +452,7 @@ def violin(vals, groupby=None, inner="box", color=None, positions=None,
 
     # Set the default linewidth if not provided in kwargs
     try:
-        lw = ({"lw", "linewidth"} & set(kwargs)).pop()
+        lw = kwargs[({"lw", "linewidth"} & set(kwargs)).pop()]
     except KeyError:
         lw = 1.5
 
