@@ -63,6 +63,8 @@ def color_palette(name=None, n_colors=6, desat=None):
         palette = seaborn_palettes[name]
     elif name in dir(mpl.cm):
         palette = mpl_palette(name, n_colors)
+    elif name[:-2] in dir(mpl.cm):
+        palette = mpl_palette(name, n_colors)
     else:
         raise ValueError("%s is not a valid palette name" % name)
 
@@ -168,7 +170,12 @@ def mpl_palette(name, n_colors=6):
                         "Pastel1": 9, "Pastel2": 8,
                         "Set1": 9, "Set2": 8, "Set3": 12}
 
-    cmap = getattr(mpl.cm, name)
+    if name.endswith("_d"):
+        pal = ["#333333"]
+        pal.extend(color_palette(name.replace("_d", "_r"), 2))
+        cmap = blend_palette(pal, n_colors, as_cmap=True)
+    else:
+        cmap = getattr(mpl.cm, name)
     if name in brewer_qual_pals:
         bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
     else:
