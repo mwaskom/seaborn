@@ -5,13 +5,14 @@ import seaborn as sns
 from scipy import stats
 import moss
 
-f = plt.figure(figsize=(10, 8))
-gs = plt.GridSpec(4, 4)
+f = plt.figure(figsize=(10, 12))
+gs = plt.GridSpec(6, 2)
+np.random.seed(0)
 
 # Linear regression
 # -----------------
 
-ax = plt.subplot(gs[:2, :2])
+ax = plt.subplot(gs[:2, 0])
 plt.title("lmplot()")
 
 n = 80
@@ -32,7 +33,7 @@ ax.fill_between(xx, *ci, alpha=.15, color=c)
 # Timeseries plot
 # ---------------
 
-ax = plt.subplot(gs[:2, 2:])
+ax = plt.subplot(gs[:2, 1])
 plt.title("tsplot()")
 
 n = 20
@@ -53,8 +54,11 @@ sns.tsplot(d, time=x, ax=ax)
 
 # Violin plots
 # ------------
-ax = plt.subplot(gs[2:, :2])
-plt.title("violin()")
+
+sns.set(style="whitegrid")
+
+ax = plt.subplot(gs[2:4, 0])
+plt.title("violinplot()")
 
 n = 40
 p = 8
@@ -62,30 +66,74 @@ rs = np.random.RandomState(8)
 d = rs.normal(0, 1, (n, p))
 d += np.log(np.arange(1, p + 1)) * -5 + 10
 
-sns.violin(d, inner="points")
+sns.violinplot(d, inner="points")
+
+#sns.despine(ax=ax)
+
+# Continuous interaction
+# ----------------------
+
+sns.set(style="darkgrid")
+
+ax = plt.subplot(gs[2:4, 1])
+plt.title("interactplot()")
+
+rs = np.random.RandomState(11)
+
+n = 80
+x1 = rs.randn(n)
+x2 = x1 / 5 + rs.randn(n)
+b0, b1, b2, b3 = 1.5, 4, -1, 3
+y = b0  + b1 * x1 + b2 * x2 + b3 * x1 * x2 + rs.randn(n)
+
+sns.interactplot(x1, x2, y, colorbar=False, ax=ax)
+
+
+# Correlation matrix
+# ------------------
+
+ax = plt.subplot(gs[4:, 0])
+
+rs = np.random.RandomState(0)
+x0, x1 = rs.randn(2, 60)
+x2, x3 = rs.multivariate_normal([0, 0], [(1, -.5), (-.5, 1)], 60).T
+x2 += x0 / 8
+x4 = x1 + rs.randn(60) * 2
+data = np.c_[x0, x1, x2, x3, x4]
+
+sns.corrplot(data, ax=ax)
+ax.set_title("corrplot()", verticalalignment="top")
+
 
 # Beta distributions
 # ------------------
 
-ax = plt.subplot(gs[2, 2:])
+sns.set(style="nogrid")
+
+ax = plt.subplot(gs[4, 1])
 plt.title("distplot()")
 plt.xlim(0, 1)
 ax.set_xticklabels([])
 
-b, _, r = sns.color_palette("dark", desat=.6)[:3]
+g, _, p = sns.color_palette("Set2", 3, desat=.75)
 n = 1000
 rs = np.random.RandomState(0)
 d = rs.beta(8, 13, n)
 
-sns.distplot(d, color=r)
+sns.distplot(d, color=g)
+sns.despine(ax=ax)
 
-ax = plt.subplot(gs[3, 2:], sharey=ax)
+ax = plt.subplot(gs[5, 1], sharey=ax)
 plt.xlim(0, 1)
 
-rs = np.random.RandomState(0)
-d = rs.beta(30, 25, n / 10)
+d = rs.beta(50, 25, n / 15)
 
-sns.distplot(d, hist=False, rug=True, color=b, kde_kws=dict(shade=True))
+sns.distplot(d, hist=False, rug=True, color=p, kde_kws=dict(shade=True))
+sns.despine(ax=ax)
+
+
+# Save the plot
+# -------------
 
 f.tight_layout()
 f.savefig("%s/example_plot.png" % os.path.dirname(__file__))
