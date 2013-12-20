@@ -4,11 +4,12 @@ import colorsys
 import numpy as np
 import pandas as pd
 from scipy import stats
+import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
-from seaborn.utils import (color_palette, husl_palette,
+from seaborn.utils import (color_palette, husl_palette, blend_palette,
                            desaturate, _kde_support)
 
 
@@ -237,14 +238,91 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     return ax
 
 
-def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
-            support_min=-np.inf, support_max=np.inf, bw=None,
-            vertical=False, ax=None, **kwargs):
+def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
+                    clip, ax, **kwargs):
+    """Plot a univariate kernel density estimate on one of the axes."""
+
+    # Calculate the KDE
+    fft = kernel == "gau"
+    kde = sm.nonparametric.KDEUnivariate(data)
+    kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
+    x, y = kde.support, kde.density
+
+    # Check if a label was specified in the call
+    label = kwargs.pop("label", None)
+
+    # Otherwise check if the data object has a name
+    if label is None and hasattr(data, "name"):
+        label = data.name
+
+    # Decide if we're going to add a legend
+    legend = not label is None
+    label = "_nolegend_" if label is None else label
+
+    # Use the active color cycle to find the plot color
+    line, = ax.plot(x, y, **kwargs)
+    color = line.get_color()
+    line.remove()
+    kwargs.pop("color", None)
+
+    # Draw the KDE plot and, optionally, shade
+    if vertical:
+        x, y = y, x
+    ax.plot(x, y, color=color, label=label, **kwargs)
+    alpha = kwargs.pop("alpha", 0.25)
+    if shade:
+        ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
+
+    # Draw the legend here
+    if legend:
+        ax.legend(loc="best")
+
+    return ax
+
+
+def _multivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
+                      **kwargs):
+    """Plot a multivariate contour estimate as a contour plot."""
+
+    # Calculate the KDE
+    if isinstance(bw, str):
+        bw_func = getattr(sm.nonparametric.bandwidths, "bw_" + bw)
+        x_bw = bw_func(x)
+        y_bw = bw_func(y)
+        bw = [x_bw, y_bw]
+    kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
+    x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
+    y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
+    xx, yy = np.meshgrid(x_support, y_support)
+    z = kde.pdf([xx.ravel(), yy.ravel()]).reshape(xx.shape)
+
+    # Plot the contours
+    n_levels = kwargs.pop("n_levels", 10)
+    cmap = kwargs.pop("cmap", "BuPu" if filled else "PuBu_d")
+    if isinstance(cmap, str):
+        if cmap.endswith("_d"):
+            pal = ["#333333"]
+            pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
+            cmap = blend_palette(pal, as_cmap=True)
+    contour_func = ax.contourf if filled else ax.contour
+    contour_func(xx, yy, z, n_levels, cmap=cmap, **kwargs)
+
+    # Label the axes
+    if hasattr(x, "name"):
+        ax.set_xlabel(x.name)
+    if hasattr(y, "name"):
+        ax.set_ylabel(y.name)
+
+    return ax
+
+
+def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
+            gridsize=100, cut=3, clip=(-np.inf, np.inf), ax=None, **kwargs):
     """Calculate and plot a one-dimentional kernel density estimate.
 
     Parameters
     ----------
-    a : ndarray
+    data : ndarray
         Input data.
     shade : bool, optional
         If true, shade in the area under the KDE curve.
@@ -273,41 +351,24 @@ def kdeplot(a, shade=False, npts=1000, support_thresh=1e-4,
     if ax is None:
         ax = plt.gca()
 
-    # Check if a label was specified in the call
-    label = kwargs.pop("label", None)
+    multivariate = False
+    if isinstance(data, np.ndarray) and np.ndim(data) > 1:
+        multivariate = True
+        x, y = data.T
+    elif isinstance(data, pd.DataFrame) and np.ndim(data) > 1:
+        multivariate = True
+        x = data.iloc[:, 0]
+        y = data.iloc[:, 1]
+    elif isinstance(data, list) and len(data) > 1:
+        multivariate = True
+        x, y = data
 
-    # Otherwise check if the data object has a name
-    if label is None and hasattr(a, "name"):
-        label = a.name
-
-    # Decide if we're going to add a legend
-    legend = not label is None
-    label = "_nolegend_" if label is None else label
-
-    # Compute the KDE
-    a = np.asarray(a)
-    kde = stats.gaussian_kde(a.astype(float).ravel(), bw_method=bw)
-    x = _kde_support(a, kde, npts, support_thresh)
-    x = x[x >= support_min]
-    x = x[x <= support_max]
-    y = kde(x)
-    if vertical:
-        y, x = x, y
-
-    # Find a color for the plot in a way that uses the active color cycle
-    line, = ax.plot(x, y, **kwargs)
-    color = line.get_color()
-    line.remove()
-    kwargs.pop("color", None)
-
-    # Draw the KDE plot and, optionally, shade
-    ax.plot(x, y, color=color, label=label, **kwargs)
-    if shade:
-        ax.fill_between(x, 1e-12, y, color=color, alpha=0.25)
-
-    # Draw the legend here
-    if legend:
-        ax.legend(loc="best")
+    if multivariate:
+        ax = _multivariate_kde(x, y, shade, kernel, bw, gridsize,
+                               cut, clip, ax, **kwargs)
+    else:
+        ax = _univariate_kde(data, shade, vertical, kernel, bw,
+                             gridsize, cut, clip, ax, **kwargs)
 
     return ax
 
