@@ -372,14 +372,15 @@ def despine(fig=None, ax=None, top=True, right=True,
             left=False, bottom=False):
     """Remove the top and right spines from plot(s).
 
-    fig : matplotlib figure
+    fig : matplotlib figure, optional
         figure to despine all axes of, default uses current figure
-    ax : matplotlib axes
+    ax : matplotlib axes, optional
         specific axes object to despine
-    top, right, left, bottom : boolean
+    top, right, left, bottom : boolean, optional
         if True, remove that spine
 
     """
+    # Get references to the axes we want
     if fig is None and ax is None:
         axes = plt.gcf().axes
     elif fig is not None:
@@ -389,7 +390,18 @@ def despine(fig=None, ax=None, top=True, right=True,
 
     for ax_i in axes:
         for side in ["top", "right", "left", "bottom"]:
+            # Toggle the spine objects
             ax_i.spines[side].set_visible(not locals()[side])
+
+        # Set the ticks appropriately
+        if top:
+            ax_i.xaxis.tick_bottom()
+        if bottom:
+            ax_i.xaxis.tick_top()
+        if left:
+            ax_i.yaxis.tick_right()
+        if right:
+            ax_i.yaxis.tick_left()
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
