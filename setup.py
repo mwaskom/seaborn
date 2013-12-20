@@ -13,7 +13,8 @@ MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'https://github.com/mwaskom/seaborn'
 LICENSE = 'BSD (3-clause)'
-DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn'
+DOWNLOAD_URL = ('https://github.com/mwaskom/seaborn/zipball/master'
+                '#egg=seaborn=dev')
 VERSION = '0.2.dev'
 
 from setuptools import setup
@@ -38,6 +39,5 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["husl", "moss", "patsy"],
-        
+        install_requires=["husl", "moss", "patsy", "pandas", "statsmodels"],
           )
