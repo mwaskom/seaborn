@@ -3,7 +3,6 @@ from __future__ import division
 import colorsys
 import numpy as np
 import pandas as pd
-from scipy import stats
 import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -133,7 +132,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, xlabel=None, ax=None):
+             color=None, vertical=False, axlabel=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameter
@@ -157,9 +156,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Color to plot everything but the fitted curve in.
     vertical : bool, default False
         If True, oberved values are on y-axis.
-    xlabel : string, False, or None
-        Name for the x axis label. if None, will try to get it from a.name
-        if False, do not set the x label.
+    axlabel : string, False, or None
+        Name for the support axis label. If None, will try to get it
+        from a.namel if False, do not set a label.
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -171,12 +170,12 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     if ax is None:
         ax = plt.gca()
 
-    # Intelligently label the axis
-    label_x = bool(xlabel)
-    if xlabel is None and hasattr(a, "name"):
-        xlabel = a.name
-        if xlabel is not None:
-            label_x = True
+    # Intelligently label the support axis
+    label_ax = bool(axlabel)
+    if axlabel is None and hasattr(a, "name"):
+        axlabel = a.name
+        if axlabel is not None:
+            label_ax = True
 
     # Make a a 1-d array
     a = np.asarray(a).squeeze()
@@ -222,18 +221,23 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     if fit is not None:
         fit_color = fit_kws.pop("color", "#282828")
-        npts = fit_kws.pop("npts", 1000)
-        support_thresh = fit_kws.pop("support_thresh", 1e-4)
+        gridsize = fit_kws.pop("gridsize", 500)
+        cut = fit_kws.pop("cut", 3)
+        clip = fit_kws.pop("clip", (-np.inf, np.inf))
+        bw = sm.nonparametric.bandwidths.bw_scott(a)
+        x = _kde_support(a, bw, gridsize, cut, clip)
         params = fit.fit(a)
         pdf = lambda x: fit.pdf(x, *params)
-        x = _kde_support(a, pdf, npts, support_thresh)
         y = pdf(x)
         if vertical:
             x, y = y, x
         ax.plot(x, y, color=fit_color, **fit_kws)
 
-    if label_x:
-        ax.set_xlabel(xlabel)
+    if label_ax:
+        if vertical:
+            ax.set_ylabel(axlabel)
+        else:
+            ax.set_xlabel(axlabel)
 
     return ax
 
@@ -242,11 +246,17 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
                     clip, ax, **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
+    # Sort out the clipping
+    if clip is None:
+        clip = (-np.inf, np.inf)
+
     # Calculate the KDE
     fft = kernel == "gau"
     kde = sm.nonparametric.KDEUnivariate(data)
     kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
     x, y = kde.support, kde.density
+    if vertical:
+        x, y = y, x
 
     # Check if a label was specified in the call
     label = kwargs.pop("label", None)
@@ -266,8 +276,6 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
     kwargs.pop("color", None)
 
     # Draw the KDE plot and, optionally, shade
-    if vertical:
-        x, y = y, x
     ax.plot(x, y, color=color, label=label, **kwargs)
     alpha = kwargs.pop("alpha", 0.25)
     if shade:
@@ -280,9 +288,15 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
     return ax
 
 
-def _multivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
-                      **kwargs):
-    """Plot a multivariate contour estimate as a contour plot."""
+def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
+                   **kwargs):
+    """Plot a joint KDE estimate as a bivariate contour plot."""
+
+    # Determine the clipping
+    if clip is None:
+        clip = [(-np.inf, np.inf), (-np.inf, np.inf)]
+    elif np.ndim(clip) == 1:
+        clip = [clip, clip]
 
     # Calculate the KDE
     if isinstance(bw, str):
@@ -290,6 +304,8 @@ def _multivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
         x_bw = bw_func(x)
         y_bw = bw_func(y)
         bw = [x_bw, y_bw]
+    elif np.isscalar(bw):
+        bw = [bw, bw]
     kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
@@ -298,7 +314,7 @@ def _multivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
-    cmap = kwargs.pop("cmap", "BuPu" if filled else "PuBu_d")
+    cmap = kwargs.pop("cmap", "BuGn" if filled else "BuGn_d")
     if isinstance(cmap, str):
         if cmap.endswith("_d"):
             pal = ["#333333"]
@@ -317,27 +333,33 @@ def _multivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
 
 
 def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
-            gridsize=100, cut=3, clip=(-np.inf, np.inf), ax=None, **kwargs):
+            gridsize=100, cut=3, clip=None, ax=None, **kwargs):
     """Calculate and plot a one-dimentional kernel density estimate.
 
     Parameters
     ----------
-    data : ndarray
-        Input data.
+    data : array, series, dataframe, or list of arrays.
+        Input data. Should either univariate (a 1d array or series) or
+        bivariate (a list of arrays/series or dataframe). Type of plot
+        depends on which form data takes.
     shade : bool, optional
-        If true, shade in the area under the KDE curve.
-    npts : int, optional
-        Number of points in the evaluation grid.
-    support_thresh : float, optional
-        Draw density for values up to support_thresh * max(density).
-    support_{min, max}: floats, optional
-        If provided, do not draw above or below these values
-        (does not affect the actual estimation)
-    bw : {'scott' | 'silverman' | scalar | callable}
-        name of method to determine kernel size, scalar factor, or callable
-        to determine size given a kde instance
+        If true, shade in the area under the KDE curve (or draw with filled
+        contours when data is bivariate).
     vertical : bool
         If True, density is on x-axis.
+    kernel : {'gau' | 'cos' | 'biw' | 'epa' | 'tri' | 'triw' }, optional
+        Code for shape of kernel to fit with. Bivariate KDE can only use
+        gaussian kernel.
+    bw : {'scott' | 'silverman' | scalar | pair of scalars }, optional
+        Name of reference method to determine kernel size, scalar factor,
+        or scalar for each dimension of the bivariate plot.
+    gridsize : int, optional
+        Number of discrete points in the evaluation grid.
+    cut : scalar, optional
+        Draw the estimate to cut * bw from the extreme data points.
+    clip : pair of scalars, or pair of pair of scalars, optional
+        Lower and upper bounds for datapoints used to fit KDE. Can provide
+        a pair of (low, high) bounds for bivariate plots.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
     kwargs : other keyword arguments for plot()
@@ -351,21 +373,21 @@ def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
     if ax is None:
         ax = plt.gca()
 
-    multivariate = False
+    bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
-        multivariate = True
+        bivariate = True
         x, y = data.T
     elif isinstance(data, pd.DataFrame) and np.ndim(data) > 1:
-        multivariate = True
+        bivariate = True
         x = data.iloc[:, 0]
         y = data.iloc[:, 1]
     elif isinstance(data, list) and len(data) > 1:
-        multivariate = True
+        bivariate = True
         x, y = data
 
-    if multivariate:
-        ax = _multivariate_kde(x, y, shade, kernel, bw, gridsize,
-                               cut, clip, ax, **kwargs)
+    if bivariate:
+        ax = _bivariate_kde(x, y, shade, kernel, bw, gridsize,
+                            cut, clip, ax, **kwargs)
     else:
         ax = _univariate_kde(data, shade, vertical, kernel, bw,
                              gridsize, cut, clip, ax, **kwargs)
@@ -374,7 +396,26 @@ def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
 
 
 def rugplot(a, height=None, axis="x", ax=None, **kwargs):
-    """Plot datapoints in an array as sticks on an axis."""
+    """Plot datapoints in an array as sticks on an axis.
+
+    Parameters
+    ----------
+    a : vector
+        1D array of datapoints.
+    height : scalar, optional
+        Height of ticks, if None draw at 5% of axis range.
+    axis : {'x' | 'y'}, optional
+        Axis to draw rugplot on.
+    ax : matplotlib axis
+        Axis to draw plot into; otherwise grabs current axis.
+    kwargs : other keyword arguments for plt.plot()
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis with rugplot.
+
+    """
     if ax is None:
         ax = plt.gca()
     other_axis = dict(x="y", y="x")[axis]
@@ -398,51 +439,58 @@ def violin(*args, **kwargs):
 
 
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, bw=None, widths=.8, alpha=None, join_rm=False,
-               kde_thresh=1e-2, inner_kws=None, ax=None,  **kwargs):
+               names=None, kernel="gau", bw="scott", widths=.8, alpha=None,
+               join_rm=False, gridsize=100, cut=3, inner_kws=None, ax=None,
+               **kwargs):
+
     """Create a violin plot (a combination of boxplot and KDE plot).
 
     Parameters
     ----------
     vals : array or sequence of arrays
-        data to plot
+        Data to plot.
     groupby : grouping object
-        if `vals` is a Series, this is used to group
+        If `vals` is a Series, this is used to group.
     inner : box | sticks | points
-        plot quartiles or individual sample values inside violin
+        Plot quartiles or individual sample values inside violin.
     color : mpl color, sequence of colors, or seaborn palette name
-        inner violin colors
+        Inner violin colors
     positions : number or sequence of numbers
-        position of first violin or positions of each violin
+        Position of first violin or positions of each violin.
     names : list of strings, optional
-        names to plot on x axis, otherwise plots numbers
-    bw : {'scott' | 'silverman' | scalar | callable}
-        name of method to determine kernel size, scalar factor, or callable
-        to determine size given a kde instance
+        Names to plot on x axis; otherwise plots numbers.
+    kernel : {'gau' | 'cos' | 'biw' | 'epa' | 'tri' | 'triw' }
+        Code for shape of kernel to fit with.
+    bw : {'scott' | 'silverman' | scalar}
+        Name of reference method to determine kernel size, or size as a
+        scalar.
     widths : float
-        width of each violin at maximum density
+        Width of each violin at maximum density.
     alpha : float, optional
-        transparancy of violin fill
+        Transparancy of violin fill.
     join_rm : boolean, optional
-        if True, positions in the input arrays are treated as repeated
-        measures and are joined with a line plot
-    kde_thresh : float, optional
-        proportion of maximum at which to threshold the KDE curve
+        If True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot.
+    gridsize : int
+        Number of discrete gridpoints to evaluate the density on.
+    cut : scalar
+        Draw the estimate to cut * bw from the extreme data points.
     inner_kws : dict, optional
-        keyword arugments for inner plot
+        Keyword arugments for inner plot.
     ax : matplotlib axis, optional
-        axis to plot on, otherwise grab current axis
+        Axis to plot on, otherwise grab current axis.
     kwargs : additional parameters to fill_betweenx
 
     Returns
     -------
     ax : matplotlib axis
-        axis with violin plot
+        Axis with violin plot.
 
     """
     if ax is None:
         ax = plt.gca()
 
+    # Find existing names
     if isinstance(vals, pd.DataFrame):
         if names is None:
             names = vals.columns
@@ -453,6 +501,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         ylabel = None
         vals = vals.values
 
+    # Possibly perform a group-by to get the batches
     elif isinstance(vals, pd.Series) and groupby is not None:
         if hasattr(groupby, "name"):
             xlabel = groupby.name
@@ -465,6 +514,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         xlabel = None
         ylabel = None
 
+    # Handle the input data (from pyplot.boxplot)
     if hasattr(vals, 'shape'):
         if len(vals.shape) == 1:
             if hasattr(vals[0], 'shape'):
@@ -486,6 +536,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
     vals = [np.asarray(a, float) for a in vals]
 
+    # Sort out the plot colors
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
@@ -498,26 +549,29 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             except ValueError:
                 colors = color_palette(color, len(vals))
 
+    # Use somewhat desaturated colors because we're drawing patches
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
     colors = [desaturate(c, .7) for c in colors]
 
+    # Find the shade of gray for lines
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
     gray = (l, l, l)
 
+    # Initialize the kwarg dict for the inner plot
     if inner_kws is None:
         inner_kws = {}
-
-    if positions is None:
-        positions = np.arange(1, len(vals) + 1)
-    elif not hasattr(positions, "__iter__"):
-        positions = np.arange(positions, len(vals) + positions)
-
     in_alpha = inner_kws.pop("alpha", .6 if inner == "points" else 1)
     in_alpha *= 1 if alpha is None else alpha
     in_color = inner_kws.pop("color", gray)
     in_marker = inner_kws.pop("marker", ".")
     in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+
+    # Find where the violins are going
+    if positions is None:
+        positions = np.arange(1, len(vals) + 1)
+    elif not hasattr(positions, "__iter__"):
+        positions = np.arange(positions, len(vals) + positions)
 
     # Set the default linewidth if not provided in kwargs
     try:
@@ -525,28 +579,33 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     except KeyError:
         lw = 1.5
 
+    # Iterate over the variables
     for i, a in enumerate(vals):
+
+        # Fit the KDE
         x = positions[i]
-        kde = stats.gaussian_kde(a, bw_method=bw)
-        y = _kde_support(a, kde, 1000, kde_thresh)
-        dens = kde(y)
+        kde = sm.nonparametric.KDEUnivariate(a)
+        fft = kernel == "gau"
+        kde.fit(bw=bw, kernel=kernel, gridsize=gridsize, cut=cut, fft=fft)
+        y, dens = kde.support, kde.density
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
+        # Draw the violin
         ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
         if inner == "box":
             for quant in moss.percentiles(a, [25, 75]):
-                q_x = kde(quant) * scl
+                q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
                 ax.plot(q_x, [quant, quant], color=in_color,
                         linestyle=":", linewidth=in_lw, **inner_kws)
             med = np.median(a)
-            m_x = kde(med) * scl
+            m_x = kde.evaluate(med) * scl
             m_x = [x - m_x, x + m_x]
             ax.plot(m_x, [med, med], color=in_color,
                     linestyle="--", linewidth=in_lw, **inner_kws)
         elif inner == "stick":
-            x_vals = kde(a) * scl
+            x_vals = kde.evaluate(a) * scl
             x_vals = [x - x_vals, x + x_vals]
             ax.plot(x_vals, [a, a], color=in_color,
                     linewidth=in_lw, alpha=in_alpha, **inner_kws)
@@ -557,10 +616,12 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, c=gray, lw=lw)
 
+    # Draw the repeated measure bridges
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
                 color=in_color, alpha=2. / 3)
 
+    # Add in semantic labels
     ax.set_xticks(positions)
     if names is not None:
         if len(vals) != len(names):
