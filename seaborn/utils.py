@@ -391,12 +391,8 @@ def despine(fig=None, ax=None, top=True, right=True,
             ax_i.spines[side].set_visible(not locals()[side])
 
 
-def _kde_support(a, kde, npts, thresh=1e-4):
+def _kde_support(data, bw, gridsize, cut, clip):
     """Establish support for a kernel density estimate."""
-    min = a.min()
-    max = a.max()
-    range = max - min
-    x = np.linspace(min - range, max + range, npts * 2)
-    y = kde(x)
-    mask = y > y.max() * thresh
-    return x[mask]
+    support_min = max(data.min() - bw * cut, clip[0])
+    support_max = min(data.max() + bw * cut, clip[1])
+    return np.linspace(support_min, support_max, gridsize)
