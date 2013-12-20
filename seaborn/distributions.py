@@ -334,7 +334,7 @@ def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
 
 def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
             gridsize=100, cut=3, clip=None, ax=None, **kwargs):
-    """Calculate and plot a one-dimentional kernel density estimate.
+    """Fit and plot a univariate or bivarate kernel density estimate.
 
     Parameters
     ----------
