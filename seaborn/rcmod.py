@@ -64,14 +64,22 @@ def set_axes_style(style, context, font="Arial"):
                      "axes.linewidth": 1}
 
     elif style == "ticks":
+        ticksize = 3. if context == "paper" else 6.
+        tickwidth = .5 if context == "paper" else 1
         ax_params = {"axes.grid": False,
                      "axes.facecolor": "white",
                      "axes.edgecolor": "black",
                      "axes.linewidth": 1,
-                     "xtick.major.size": 10,
-                     "xtick.minor.size": 5,
-                     "ytick.major.size": 10,
-                     "ytick.minor.size": 5}
+                     "xtick.direction": "out",
+                     "ytick.direction": "out",
+                     "xtick.major.width": tickwidth,
+                     "ytick.major.width": tickwidth,
+                     "xtick.minor.width": tickwidth,
+                     "xtick.minor.width": tickwidth,
+                     "xtick.major.size": ticksize,
+                     "xtick.minor.size": ticksize / 2,
+                     "ytick.major.size": ticksize,
+                     "ytick.minor.size": ticksize / 2}
 
     mpl.rcParams.update(ax_params)
 
