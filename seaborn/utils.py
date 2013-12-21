@@ -400,10 +400,10 @@ def despine(fig=None, ax=None, top=True, right=True,
             ax_i.spines[side].set_visible(not locals()[side])
 
         # Set the ticks appropriately
-        if top:
-            ax_i.xaxis.tick_bottom()
         if bottom:
             ax_i.xaxis.tick_top()
+        if top:
+            ax_i.xaxis.tick_bottom()
         if left:
             ax_i.yaxis.tick_right()
         if right:
