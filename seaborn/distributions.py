@@ -332,16 +332,18 @@ def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
     return ax
 
 
-def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
-            gridsize=100, cut=3, clip=None, ax=None, **kwargs):
+def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
+            bw="scott", gridsize=100, cut=3, clip=None, ax=None, **kwargs):
     """Fit and plot a univariate or bivarate kernel density estimate.
 
     Parameters
     ----------
-    data : array, series, dataframe, or list of arrays.
-        Input data. Should either univariate (a 1d array or series) or
-        bivariate (a list of arrays/series or dataframe). Type of plot
-        depends on which form data takes.
+    data : 1d or 2d array-like
+        Input data. If two-dimensional, assumed to be shaped (n_unit x n_var),
+        and a bivariate contour plot will be drawn.
+    data2: 1d array-like
+        Second input data. If provided `data` must be one-dimensional, and
+        a bivariate plot is produced.
     shade : bool, optional
         If true, shade in the area under the KDE curve (or draw with filled
         contours when data is bivariate).
@@ -381,9 +383,10 @@ def kdeplot(data, shade=False, vertical=False, kernel="gau", bw="scott",
         bivariate = True
         x = data.iloc[:, 0]
         y = data.iloc[:, 1]
-    elif isinstance(data, list) and len(data) > 1:
+    elif data2 is not None:
         bivariate = True
-        x, y = data
+        x = data
+        y = data2
 
     if bivariate:
         ax = _bivariate_kde(x, y, shade, kernel, bw, gridsize,
