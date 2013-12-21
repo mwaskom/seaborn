@@ -243,7 +243,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 
 def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
-                    clip, ax, **kwargs):
+                    clip, legend, ax, **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
     # Sort out the clipping
@@ -266,7 +266,7 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
         label = data.name
 
     # Decide if we're going to add a legend
-    legend = not label is None
+    legend = not label is None and legend
     label = "_nolegend_" if label is None else label
 
     # Use the active color cycle to find the plot color
@@ -288,7 +288,7 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
     return ax
 
 
-def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
+def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel, ax,
                    **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
 
@@ -324,16 +324,17 @@ def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, ax,
     contour_func(xx, yy, z, n_levels, cmap=cmap, **kwargs)
 
     # Label the axes
-    if hasattr(x, "name"):
+    if hasattr(x, "name") and axlabel:
         ax.set_xlabel(x.name)
-    if hasattr(y, "name"):
+    if hasattr(y, "name") and axlabel:
         ax.set_ylabel(y.name)
 
     return ax
 
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
-            bw="scott", gridsize=100, cut=3, clip=None, ax=None, **kwargs):
+            bw="scott", gridsize=100, cut=3, clip=None, legend=True, ax=None,
+            **kwargs):
     """Fit and plot a univariate or bivarate kernel density estimate.
 
     Parameters
@@ -362,6 +363,8 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     clip : pair of scalars, or pair of pair of scalars, optional
         Lower and upper bounds for datapoints used to fit KDE. Can provide
         a pair of (low, high) bounds for bivariate plots.
+    legend : bool, optoinal
+        If True, add a legend or label the axes when possible.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
     kwargs : other keyword arguments for plot()
@@ -390,10 +393,10 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
     if bivariate:
         ax = _bivariate_kde(x, y, shade, kernel, bw, gridsize,
-                            cut, clip, ax, **kwargs)
+                            cut, clip, legend, ax, **kwargs)
     else:
         ax = _univariate_kde(data, shade, vertical, kernel, bw,
-                             gridsize, cut, clip, ax, **kwargs)
+                             gridsize, cut, clip, legend, ax, **kwargs)
 
     return ax
 
