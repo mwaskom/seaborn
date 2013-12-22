@@ -16,6 +16,7 @@ Documentation contents
 .. toctree::
    :maxdepth: 2
 
+   whatsnew
    installing
    tutorials
    api
