@@ -21,7 +21,6 @@ from collections import defaultdict
 from io import StringIO, BytesIO
 from six.moves import queue
 from six import string_types
-from PIL import Image
 
 from IPython.kernel import KernelManager
 from IPython.nbformat.current import reads, NotebookNode
