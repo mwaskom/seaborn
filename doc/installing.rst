@@ -3,10 +3,12 @@ Installing seaborn
 ------------------
 
 To install the released version of seaborn, you can use ``pip`` or
-``easy_install``, (i.e. ``pip install seaborn``). Another option would be to to
-clone the `github repository <https://github.com/mwaskom/seaborn>`_ and install
-with ``python setup.py install``. Seaborn itself is pure Python, so
-installation should be reasonably straightforward.
+``easy_install``, (i.e. ``pip install seaborn``). Alternatively, you can use
+``pip`` to install the development version, with the command ``pip install
+git+git://github.com/mwaskom/seaborn.git#egg=seaborn``. Another option would be
+to to clone the `github repository <https://github.com/mwaskom/seaborn>`_ and
+install with ``pip install .`` from the source directory. Seaborn itself is pure
+Python, so installation should be reasonably straightforward.
 
 Dependencies 
 ~~~~~~~~~~~~
@@ -15,10 +17,8 @@ Because seaborn is a high-level package, it has a relatively large number of
 required dependencies. For the most part these tools are part of the general
 scientific Python ecosystem, and almost all can be easily installed with a
 distribution such as `Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
-Installing seaborn with ``pip`` will automatically install ``patsy``, ``husl``,
-and ``moss`` if they are missing, which are the only dependencies not included
-in Anaconda.
-
+Installing seaborn with ``pip`` will automatically include all missing
+dependencies other than ``numpy``, ``scipy``, and ``matplotlib``.
 
 -  Python 2.7
 
@@ -46,13 +46,16 @@ Testing
 
 To test seaborn, run ``make test`` in the root directory of the source
 distribution. This runs the unit test suite of the plotting utilities (which
-can also be exercised separately by running ``nosetests``). It also runs the code
-in the tutorial notebooks, comparing the output to what is stored in the
-notebook files and reporting any discrepencies.
+can also be exercised separately by running ``nosetests``). It also runs the
+code in the tutorial notebooks, comparing the output to what is stored in the
+notebook files and reporting any discrepancies. Testing requires the Python
+Image Library, which is not a dependency of the main package.
 
 Bugs
 ~~~~
 
 Please report any bugs you encounter through the github `issue tracker
-<https://github.com/mwaskom/seaborn/issues?state=open>`_.
+<https://github.com/mwaskom/seaborn/issues/new>`_. It will be most helpful to
+upload an IPython notebook that can reproduce the error in a `gist
+<http://gist.github.com>`_ and link to that gist in the bug report.
 
