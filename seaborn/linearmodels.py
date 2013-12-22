@@ -495,7 +495,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         colors = itertools.cycle(color_palette(palette, n_terms))
         f, ax = plt.subplots(1, 1, figsize=(wsize(n_terms), hsize(1)))
         for i, term in enumerate(coefs.index):
-            color = colors.next()
+            color = next(colors)
             low, high = cis.ix[term]
             ax.plot([i, i], [low, high], c=color,
                     solid_capstyle="round", lw=2.5)
@@ -514,7 +514,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         colors = itertools.cycle(color_palette(palette, n_groups))
         for ax, term in zip(axes, coefs.index):
             for i, group in enumerate(coefs.columns):
-                color = colors.next()
+                color = next(colors)
                 low, high = cis.ix[(group, term)]
                 ax.plot([i, i], [low, high], c=color,
                         solid_capstyle="round", lw=2.5)
