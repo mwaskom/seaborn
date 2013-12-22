@@ -10,6 +10,8 @@ with dataframes, the new function ``interactplot()`` for visualizing continuous
 interactions, bivariate kernel density estimates in ``kdeplot()``, and
 significant improvements to color palette handling.
 
+Version 0.2 also introduces experimental support for Python 3.
+
 In addition to the library enhancements, the documentation has been
 substantially rewritten to reflect the new features and improve the
 presentation of the ideas behind the package.
