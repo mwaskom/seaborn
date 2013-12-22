@@ -48,9 +48,7 @@ The documentation has an [example gallery](http://stanford.edu/~mwaskom/software
 Dependencies
 ------------
 
-- Python 2.7 or 3.3+
-
-### Mandatory
+- Python 2.7 or 3.3
 
 - [numpy](http://www.numpy.org/)
 
