@@ -79,8 +79,11 @@ Plotting functions
   attributes in several distribution plot functions and ``tsplot()`` for
   smarter Pandas integration.
 
-- Scatter points in ``lmplot()`` are slightly transparent so it is easy to see where
-  observations overlap.
+- Scatter points in ``lmplot()`` are slightly transparent so it is easy to see
+  where observations overlap.
+
+- Added the ``order`` parameter to ``boxplot()`` and ``violinplot()`` to
+  control the order of the bins when using a Pandas object.
 
 - When an ``ax`` argument is not provided to a plotting function, it grabs the
   currently active axis instead of drawing a new one.
@@ -129,7 +132,7 @@ General package issues
 Bug fixes
 ~~~~~~~~~
 
-- Fixed a bug where labels did not match data for ``boxplot`` and ``violinplot``
+- Fixed a bug where labels did not match data for ``boxplot()`` and ``violinplot()``
   when using a groupby.
 
 - Fixed a bug in the ``desaturate()`` function.
@@ -137,6 +140,8 @@ Bug fixes
 - Fixed a bug in the ``coefplot`` figure size calculation.
 
 - Fixed a bug where ``regplot()`` choked on list input.
+
+- Fixed buggy behavior when drawing horizontal boxplots.
 
 - Specifying bins for the ``distplot`` histogram now works.
 
