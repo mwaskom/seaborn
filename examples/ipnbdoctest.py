@@ -21,6 +21,7 @@ from collections import defaultdict
 from io import StringIO, BytesIO
 from six.moves import queue
 from six import string_types
+from PIL import Image
 
 from IPython.kernel import KernelManager
 from IPython.nbformat.current import reads, NotebookNode
@@ -100,7 +101,7 @@ def image_diff(test, ref, key="image", prompt_num=None):
         if test.shape == ref.shape:
             import numpy as np
             diff = np.abs(test - ref).mean() * 100
-            # TODO hardcode eps, make configurable later
+            # TODO hardcode tol, make configurable later
             if diff < 1:
                 return True, ""
             message += ": %.3g%% difference" % diff
