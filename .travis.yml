@@ -6,7 +6,8 @@ python:
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
-  - conda install --yes ipython==1.1.0 imaging pyzmq numpy scipy nose matplotlib pandas statsmodels
+  - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else conda install --yes pillow; fi
   - pip install git+git://github.com/mwaskom/moss.git#egg=moss
   - pip install .
 

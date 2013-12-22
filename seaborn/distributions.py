@@ -6,6 +6,8 @@ import pandas as pd
 import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from six import string_types
+from six.moves import range
 import moss
 
 from seaborn.utils import (color_palette, husl_palette, blend_palette,
@@ -77,7 +79,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if not isinstance(color, string_types) and not isinstance(color, tuple):
             colors = color
         else:
             try:
@@ -534,7 +536,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             elif nc == 1:
                 vals = [vals.ravel()]
             else:
-                vals = [vals[:, i] for i in xrange(nc)]
+                vals = [vals[:, i] for i in range(nc)]
         else:
             raise ValueError("Input x can have no more than 2 dimensions")
     if not hasattr(vals[0], '__len__'):
@@ -546,7 +548,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if hasattr(color, "__iter__") and not isinstance(color, tuple):
+        if not isinstance(color, string_types) and not isinstance(color, tuple):
             colors = color
         else:
             try:
