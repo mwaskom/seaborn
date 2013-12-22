@@ -11,7 +11,7 @@ DISTNAME = 'seaborn'
 DESCRIPTION = descr
 MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
-URL = 'https://github.com/mwaskom/seaborn'
+URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = ('https://github.com/mwaskom/seaborn/zipball/master'
                 '#egg=seaborn=dev')
@@ -32,12 +32,15 @@ if __name__ == "__main__":
         version=VERSION,
         download_url=DOWNLOAD_URL,
         packages=['seaborn', 'seaborn.tests'],
-        classifiers=['Intended Audience :: Science/Research',
-                     'Programming Language :: Python',
-                     'License :: OSI Approved',
-                     'Topic :: Scientific/Engineering',           
+        classifiers=[
+                     'Intended Audience :: Science/Research',
+                     'Programming Language :: Python :: 2.7',
+                     'Programming Language :: Python :: 3.3',
+                     'License :: OSI Approved :: BSD License',
+                     'Topic :: Scientific/Engineering :: Visualization',
+                     'Topic :: Multimedia :: Graphics',
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["husl", "moss", "patsy", "pandas", "statsmodels"],
+        install_requires=["husl", "moss>0.1", "patsy", "pandas", "statsmodels"],
           )
