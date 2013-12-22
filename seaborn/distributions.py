@@ -14,9 +14,9 @@ from seaborn.utils import (color_palette, husl_palette, blend_palette,
                            desaturate, _kde_support)
 
 
-def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
-            alpha=None, fliersize=3, linewidth=1.5, widths=.8, ax=None,
-            **kwargs):
+def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
+            color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
+            ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
@@ -32,6 +32,9 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
         pd.groupby(vals, groupby).
     names : list of strings, optional
         Names to plot on x axis, otherwise plots numbers.
+    order : list of strings, optional
+        If vals is a Pandas object with name information, you can control the
+        order of the boxes by providing the box names in your preferred order.
     join_rm : boolean, optional
         If True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot.
@@ -64,6 +67,9 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             xlabel = vals.columns.name
         else:
             xlabel = None
+        if order is not None:
+            vals = vals[order]
+            names = order
         vals = vals.values
         ylabel = None
 
@@ -75,6 +81,9 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             xlabel = groupby.name
         ylabel = vals.name
         grouped_vals = pd.groupby(vals, groupby).values
+        if order is not None:
+            grouped_vals = grouped_vals[order]
+            names = order
         vals = grouped_vals.values
     else:
         xlabel = None
@@ -136,7 +145,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
 
     # Draw the joined repeated measures
     if join_rm:
-        x, y = np.arange(1, len(vals.T)), vals.T
+        x, y = np.arange(1, len(vals.T) + 1), vals.T
         if not vertical:
             x, y = y, x
         ax.plot(x, y, color=gray, alpha=2. / 3)
@@ -172,9 +181,9 @@ def violin(*args, **kwargs):
 
 
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, kernel="gau", bw="scott", widths=.8, alpha=None,
-               join_rm=False, gridsize=100, cut=3, inner_kws=None, ax=None,
-               **kwargs):
+               names=None, order=None, kernel="gau", bw="scott", widths=.8,
+               alpha=None, join_rm=False, gridsize=100, cut=3, inner_kws=None,
+               ax=None, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
@@ -197,6 +206,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Position of first violin or positions of each violin.
     names : list of strings, optional
         Names to plot on x axis; otherwise plots numbers.
+    order : list of strings, optional
+        If vals is a Pandas object with name information, you can control the
+        order of the plot by providing the violin names in your preferred order.
     kernel : {'gau' | 'cos' | 'biw' | 'epa' | 'tri' | 'triw' }
         Code for shape of kernel to fit with.
     bw : {'scott' | 'silverman' | scalar}
@@ -237,6 +249,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         else:
             xlabel = None
         ylabel = None
+        if order is not None:
+            vals = vals[order]
+            names = order
         vals = vals.values
 
     # Possibly perform a group-by to get the batches
@@ -247,6 +262,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             names = np.sort(pd.unique(groupby))
         ylabel = vals.name
         grouped_vals = pd.groupby(vals, groupby).values
+        if order is not None:
+            grouped_vals = grouped_vals[order]
+            names = order
         vals = grouped_vals.values
     else:
         xlabel = None
