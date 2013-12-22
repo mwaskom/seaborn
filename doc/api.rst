@@ -1,6 +1,6 @@
 .. currentmodule:: seaborn
 
-API Reference
+API reference
 =============
 
 Linear model plots
