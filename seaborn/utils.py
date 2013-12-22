@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+from six import string_types
+from six.moves import range
 
 
 def color_palette(name=None, n_colors=6, desat=None):
@@ -52,7 +54,7 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     if name is None:
         palette = mpl.rcParams["axes.color_cycle"]
-    elif hasattr(name, "__iter__"):
+    elif not isinstance(name, string_types):
         palette = name
     elif name == "hls":
         palette = hls_palette(n_colors)
@@ -72,10 +74,13 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     # Always return as many colors as we asked for
     pal_cycle = cycle(palette)
-    palette = [pal_cycle.next() for _ in range(n_colors)]
+    palette = [next(pal_cycle) for _ in range(n_colors)]
 
     # Always return in r, g, b tuple format
-    palette = map(mpl.colors.colorConverter.to_rgb, palette)
+    try:
+        palette = list(map(mpl.colors.colorConverter.to_rgb, palette))
+    except ValueError:
+        raise ValueError("Could not generate a palette for %s" % str(name))
 
     return palette
 

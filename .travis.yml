@@ -2,12 +2,14 @@ language: python
 
 python:
   - 2.7
+  - 3.3
 
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - source activate testenv
-  - conda install --yes ipython==1.1.0 imaging pyzmq numpy scipy nose matplotlib pandas statsmodels
-  - pip install git+git://github.com/mwaskom/moss.git#egg=moss
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else pip install pillow; fi
+  - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
+  - pip install --no-deps git+git://github.com/mwaskom/moss.git#egg=moss
   - pip install .
 
 before_install:
