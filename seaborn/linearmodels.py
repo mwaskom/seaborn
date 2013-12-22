@@ -728,9 +728,9 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     # Find a colormapping, somewhat intelligently
     if cmap is None:
         if min(cmap_range) >= 0:
-            cmap = "PuRd"
+            cmap = "OrRd"
         elif max(cmap_range) <= 0:
-            cmap = "GnBu_r"
+            cmap = "PuBu_r"
         else:
             cmap = "coolwarm"
     if cmap == "jet":
