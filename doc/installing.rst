@@ -20,7 +20,7 @@ distribution such as `Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
 Installing seaborn with ``pip`` will automatically include all missing
 dependencies other than ``numpy``, ``scipy``, and ``matplotlib``.
 
--  Python 2.7
+-  Python 2.7 or 3.3
 
 -  `numpy <http://www.numpy.org/>`__
 
