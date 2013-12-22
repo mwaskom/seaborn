@@ -105,7 +105,7 @@ def image_diff(test, ref, key="image", prompt_num=None):
                 return True, ""
             message += ": %.3g%% difference" % diff
         else:
-            message += ": Test image (%dx%d); " % test.shape[:2]
+            message += ": Test image (%dx%d)" % test.shape[:2]
             message += "; Ref image (%dx%d)" % ref.shape[:2]
     except ImportError:
         pass
@@ -170,7 +170,7 @@ def run_cell(shell, iopub, cell):
     # print cell.input
     shell.execute(cell.input)
     # wait for finish, maximum 20s
-    shell.get_msg(timeout=20)
+    shell.get_msg(timeout=30)
     outs = []
 
     while True:
