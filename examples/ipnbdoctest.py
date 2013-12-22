@@ -105,7 +105,7 @@ def image_diff(test, ref, key="image", prompt_num=None):
                 return True, ""
             message += ": %.3g%% difference" % diff
         else:
-            message += ": Test image (%dx%d); " % test.shape[:2]
+            message += ": Test image (%dx%d)" % test.shape[:2]
             message += "; Ref image (%dx%d)" % ref.shape[:2]
     except ImportError:
         pass
