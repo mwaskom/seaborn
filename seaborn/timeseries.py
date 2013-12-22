@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from six import string_types
 import moss
 
 from seaborn.utils import color_palette
@@ -93,7 +94,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     if err_kws is None:
         err_kws = {}
 
-    # Handle case where data is an array
+    # Handle different types of input data
     if isinstance(data, pd.DataFrame):
 
         xlabel = time
@@ -170,7 +171,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                                  cond=conds))
 
     # Set up the err_style and ci arguments for teh loop below
-    if not hasattr(err_style, "__iter__"):
+    if isinstance(err_style, string_types):
         err_style = [err_style]
     elif err_style is None:
         err_style = []
