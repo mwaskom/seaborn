@@ -15,10 +15,12 @@ import os
 import sys
 import re
 import difflib
+import base64
 
 from collections import defaultdict
-from Queue import Empty
-from StringIO import StringIO
+from io import StringIO, BytesIO
+from six.moves import queue
+from six import string_types
 
 from IPython.kernel import KernelManager
 from IPython.nbformat.current import reads, NotebookNode
@@ -35,7 +37,7 @@ def sanitize(s):
     - Normalize likely random values (memory addresses and UUIDs)
 
     """
-    if not isinstance(s, basestring):
+    if not isinstance(s, string_types):
         return s
 
     # Formalize newline:
@@ -75,8 +77,12 @@ def consolidate_outputs(outputs):
 def base64_to_array(data):
     """Convert a base64 image to an array."""
     import numpy as np
-    import Image
-    return np.array(Image.open(StringIO(data.decode("base64")))) / 255.
+    from PIL import Image
+    try:
+        data = StringIO(base64.b64decode(data))
+    except TypeError:
+        data = BytesIO(base64.b64decode(data))
+    return np.array(Image.open(data)) / 255.
 
 
 def image_diff(test, ref, key="image", prompt_num=None):
@@ -93,9 +99,8 @@ def image_diff(test, ref, key="image", prompt_num=None):
         ref = base64_to_array(ref)
         if test.shape == ref.shape:
             import numpy as np
-            diff = np.abs(test - ref).sum()
-            diff /= len(diff.flat) * 100
-            # TODO hardcode eps, make configurable later
+            diff = np.abs(test - ref).mean() * 100
+            # TODO hardcode tol, make configurable later
             if diff < 1:
                 return True, ""
             message += ": %.3g%% difference" % diff
@@ -171,7 +176,7 @@ def run_cell(shell, iopub, cell):
     while True:
         try:
             msg = iopub.get_msg(timeout=0.2)
-        except Empty:
+        except queue.Empty:
             break
         msg_type = msg['msg_type']
         if msg_type in ('status', 'pyin'):
@@ -189,7 +194,7 @@ def run_cell(shell, iopub, cell):
             out.text = content['data']
         elif msg_type in ('display_data', 'pyout'):
             out['metadata'] = content['metadata']
-            for mime, data in content['data'].iteritems():
+            for mime, data in content['data'].items():
                 attr = mime.split('/')[-1].lower()
                 # this gets most right, but fix svg+html, plain
                 attr = attr.replace('+xml', '').replace('plain', 'text')
@@ -296,15 +301,21 @@ def test_notebook(nb):
             else:
                 successes += 1
                 dot = "."
-            sys.stdout.write(dot)
+            print(dot, end="")
 
     print()
     print("    %3i cells successfully replicated" % successes)
     if failures:
         print("    %3i cells mismatched output" % failures)
-        print("\n" + "\n".join(fail_messages) + "\n")
     if errors:
         print("    %3i cells failed to complete" % errors)
+    if failures:
+        print("Failures:")
+        print("-" * 20)
+        print("\n" + "\n".join(fail_messages) + "\n")
+    if errors:
+        print("Errors:")
+        print("-" * 20)
         print("\n" + "\n".join(err_messages) + "\n")
     kc.stop_channels()
     km.shutdown_kernel()
