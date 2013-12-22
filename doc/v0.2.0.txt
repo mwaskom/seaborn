@@ -1,0 +1,146 @@
+
+v0.2.0 (December ??, 2013)
+--------------------------
+
+This is a major release from 0.1 with a number of API changes, enhancements,
+and bug fixes.
+
+Highlights include an overhaul of timeseries plotting to work intelligently
+with dataframes, the new function ``interactplot()`` for visualizing continuous
+interactions, bivariate kernel density estimates in ``kdeplot()``, and
+significant improvements to color palette handling.
+
+In addition to the library enhancements, the documentation has been
+substantially rewritten to reflect the new features and improve the
+presentation of the ideas behind the package.
+
+API changes
+~~~~~~~~~~~
+
+- The ``tsplot()`` function was rewritten to accept data in a long-form
+  ``DataFrame`` and to plot different traces by condition. This introduced a
+  relatively minor but unavoidable API change, where instead of doing
+  ``sns.tsplot(time, heights)``, you now must do ``sns.tsplot(heights,
+  time=time)`` (the ``time`` parameter is now optional, for quicker
+  specification of simple plots). Additionally, the ``"obs_traces"`` and
+  ``"obs_points"`` error styles in ``tsplot()`` have been renamed to
+  ``"unit_traces"`` and ``"unit_points"``, respectively.
+
+- Functions that fit kernel density estimates (``kdeplot()`` and
+  ``violinplot()``) now use ``statsmodels`` instead of ``scipy``, and the
+  parameters that influence the density estimate have changed accordingly. This
+  allows for increased flexibility in specifying the bandwidth and kernel, and
+  smarter choices for defining the range of the support. Default options should
+  produce plots that are very close to the old defaults.
+  
+- The ``kdeplot()`` function now takes a second positional argument of data for
+  drawing bivariate densities.
+
+- The ``violin()`` function has been changed to ``violinplot()``, for consistency.
+  In 0.2, ``violin`` will still work, but it will fire a ``UserWarning``.
+
+New plotting functions
+~~~~~~~~~~~~~~~~~~~~~~
+
+- The ``interactplot()`` function draws a contour plot for an interactive
+  linear model (i.e., the contour shows ``y-hat`` from the model ``y ~ x1 *
+  x2``) over a scatterplot between the two predictor variables. This plot
+  should aid the understanding of an interaction between two continuous
+  variables.
+
+- The ``kdeplot()`` function can now draw a bivariate density estimate as a
+  contour plot if provided with two-dimensional input data.
+
+- The ``palplot()`` function provides a simple grid-based visualization of a
+  color palette.
+
+Other changes
+~~~~~~~~~~~~~
+
+Plotting functions
+^^^^^^^^^^^^^^^^^^
+
+- The ``corrplot()`` function can be drawn without the correlation coefficient
+  annotation and with variable names on the side of the plot to work with large
+  datasets.
+
+- Additionally, ``corrplot()`` sets the color palette intelligently based on
+  the direction of the specified test.
+
+- The ``distplot()`` histogram uses a reference rule to choose the bin size if it
+  is not provided.
+
+- Added the ``x_bins`` option in ``lmplot()`` for binning a continuous
+  predictor variable, allowing for clearer trends with many datapoints.
+
+- Enhanced support for labeling plot elements and axes based on ``name``
+  attributes in several distribution plot functions and ``tsplot()`` for
+  smarter Pandas integration.
+
+- Scatter points in ``lmplot()`` are slightly transparent so it is easy to see where
+  observations overlap.
+
+- When an ``ax`` argument is not provided to a plotting function, it grabs the
+  currently active axis instead of drawing a new one.
+
+Color palettes
+^^^^^^^^^^^^^^
+
+- Added the ``dark_palette()`` and ``blend_palette()`` for on-the-fly creation
+  of blended color palettes.
+
+- The color palette machinery is now intelligent about qualitative ColorBrewer
+  palettes (``Set1``, ``Paired``, etc.), which are properly treated as discrete.
+
+- Seaborn color palettes (``deep``, ``muted``, etc.) have been standardized in
+  terms of basic hue sequence, and all palettes now have 6 colors.
+
+- Introduced ``{mpl_palette}_d`` palettes, which make a palette with the basic
+  color scheme of the source palette, but with a sequential blend from dark
+  instead of light colors for use with line/scatter/contour plots.
+
+- Added the ``palette_context()`` function for blockwise color palettes
+  controlled by a ``with`` statement.
+
+Plot styling
+^^^^^^^^^^^^
+
+- Added the ``despine()`` function for easily removing plot spines.
+
+- A new plot style, ``"ticks"`` has been added.
+
+- Tick labels are padded a bit farther from the axis in all styles, avoiding
+  collisions at (0, 0).
+
+General package issues
+^^^^^^^^^^^^^^^^^^^^^^
+
+- Reorganized the package by breaking up the monolithic ``plotobjs`` module
+  into smaller modules grouped by general objective of the constituent plots.
+
+- Removed the ``scikits-learn`` dependency in ``moss``.
+
+- Installing with ``pip`` should automatically install most missing dependencies.
+
+- The example notebooks are now used as an automated test suite.
+
+Bug fixes
+~~~~~~~~~
+
+- Fixed a bug where labels did not match data for ``boxplot`` and ``violinplot``
+  when using a groupby.
+
+- Fixed a bug in the ``desaturate()`` function.
+
+- Fixed a bug in the ``coefplot`` figure size calculation.
+
+- Fixed a bug where ``regplot()`` choked on list input.
+
+- Specifying bins for the ``distplot`` histogram now works.
+
+- Fixed a bug where ``kdeplot`` would reset the axis height and cut off
+  existing data.
+
+- All axis styling has been moved out of the top-level ``seaborn.set()``
+  function, so context or color palette can be cleanly changed.
+
