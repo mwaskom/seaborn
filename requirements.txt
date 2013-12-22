@@ -2,6 +2,5 @@ numpy
 scipy
 matplotlib
 pandas
-scikit-learn
 husl
-moss
+moss>0.1
