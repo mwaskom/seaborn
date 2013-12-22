@@ -36,7 +36,7 @@ questions.
 Dependencies
 ------------
 
-- Python 2.7
+- Python 2.7 or 3.3
 
 - [numpy](http://www.numpy.org/)
 
