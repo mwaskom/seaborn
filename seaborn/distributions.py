@@ -17,40 +17,46 @@ from seaborn.utils import (color_palette, husl_palette, blend_palette,
 def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             alpha=None, fliersize=3, linewidth=1.5, widths=.8, ax=None,
             **kwargs):
-    """Wrapper for matplotlib boxplot that allows better color control.
+    """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
     ----------
-    vals : sequence of data containers
-        data for plot
+    vals : DataFrame, sequence of vectors, or Series.
+        Data for plot. DataFrames are assuemd to be "wide" with each column
+        mapping to a box. Other two-dimensional data is assumed to be a
+        sequence where each item is the data that will go into a box. Can
+        also provide one long Series in conjunction with a grouping element
+        as the `groupy` parameter.
     groupby : grouping object
-        if `vals` is a Series, this is used to group
+        If `vals` is a Series, this is used to group into boxes by calling
+        pd.groupby(vals, groupby).
     names : list of strings, optional
-        names to plot on x axis, otherwise plots numbers
+        Names to plot on x axis, otherwise plots numbers.
     join_rm : boolean, optional
-        if True, positions in the input arrays are treated as repeated
-        measures and are joined with a line plot
+        If True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot.
     color : mpl color, sequence of colors, or seaborn palette name
-        inner box color
+        Inner box color.
     alpha : float
-        transparancy of the inner box color
+        Transparancy of the inner box color.
     fliersize : float, optional
-        markersize for the fliers
+        Markersize for the fliers.
     linewidth : float, optional
-        width for the box outlines and whiskers
+        Width for the box outlines and whiskers.
     ax : matplotlib axis, optional
-        will plot in axis, or create new figure axis
+        Existing axis to plot into, otherwise grab current axis.
     kwargs : additional keyword arguments to boxplot
 
     Returns
     -------
     ax : matplotlib axis
-        axis where boxplot is plotted
+        Axis where boxplot is plotted.
 
     """
     if ax is None:
         ax = plt.gca()
 
+    # Handle case where data is a wide DataFrame
     if isinstance(vals, pd.DataFrame):
         if names is None:
             names = vals.columns
@@ -61,6 +67,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
         vals = vals.values
         ylabel = None
 
+    # Handle case where data is a long Series and there is a grouping object
     elif isinstance(vals, pd.Series) and groupby is not None:
         if names is None:
             names = np.sort(pd.unique(groupby))
@@ -73,13 +80,17 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
         xlabel = None
         ylabel = None
 
+    # Draw the boxplot using matplotlib
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
     vals = np.atleast_2d(vals).T
 
+    # Sort out the inner box color
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if not isinstance(color, string_types) and not isinstance(color, tuple):
+        color_is_color = (not isinstance(color, string_types)
+                          and not isinstance(color, tuple))
+        if color_is_color:
             colors = color
         else:
             try:
@@ -88,13 +99,16 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
             except ValueError:
                 colors = color_palette(color, len(vals))
 
+    # Desaturate a bit because these are patches
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
     colors = [desaturate(c, .7) for c in colors]
 
+    # Determine the gray color for the lines
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
     l = min(light_vals) * .6
     gray = (l, l, l)
 
+    # Set the new aesthetics
     for i, box in enumerate(boxes["boxes"]):
         box.set_color(colors[i])
         if alpha is not None:
@@ -117,18 +131,35 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, color=None,
         fly.set_markeredgecolor(gray)
         fly.set_markersize(fliersize)
 
-    if join_rm:
-        ax.plot(range(1, len(vals.T) + 1), vals.T,
-                color=gray, alpha=2. / 3)
+    # Is this a vertical plot?
+    vertical = kwargs.get("vert", True)
 
+    # Draw the joined repeated measures
+    if join_rm:
+        x, y = np.arange(1, len(vals.T)), vals.T
+        if not vertical:
+            x, y = y, x
+        ax.plot(x, y, color=gray, alpha=2. / 3)
+
+    # Label the axes and ticks
+    if not vertical:
+        xlabel, ylabel = ylabel, xlabel
     if names is not None:
-        ax.set_xticklabels(names)
+        if vertical:
+            ax.set_xticklabels(names)
+        else:
+            ax.set_yticklabels(names)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
 
-    ax.xaxis.grid(False)
+    # Turn off the grid parallel to the boxes
+    if vertical:
+        ax.xaxis.grid(False)
+    else:
+        ax.yaxis.grid(False)
+
     return ax
 
 
@@ -145,14 +176,19 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                join_rm=False, gridsize=100, cut=3, inner_kws=None, ax=None,
                **kwargs):
 
-    """Create a violin plot (a combination of boxplot and KDE plot).
+    """Create a violin plot (a combination of boxplot and kernel density plot).
 
     Parameters
     ----------
-    vals : array or sequence of arrays
-        Data to plot.
+    vals : DataFrame, sequence of vectors, or Series.
+        Data for plot. DataFrames are assuemd to be "wide" with each column
+        mapping to a box. Other two-dimensional data is assumed to be a
+        sequence where each item is the data that will go into a box. Can
+        also provide one long Series in conjunction with a grouping element
+        as the `groupy` parameter.
     groupby : grouping object
-        If `vals` is a Series, this is used to group.
+        If `vals` is a Series, this is used to group into boxes by calling
+        pd.groupby(vals, groupby).
     inner : box | sticks | points
         Plot quartiles or individual sample values inside violin.
     color : mpl color, sequence of colors, or seaborn palette name
@@ -242,7 +278,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     if color is None:
         colors = husl_palette(len(vals), l=.7)
     else:
-        if not isinstance(color, string_types) and not isinstance(color, tuple):
+        color_is_color = (not isinstance(color, string_types)
+                          and not isinstance(color, tuple))
+        if color_is_color:
             colors = color
         else:
             try:
