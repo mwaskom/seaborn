@@ -1,0 +1,96 @@
+<style>
+
+div.inner-item {
+    text-align: left;
+}
+
+div.banner-container{
+    width: 100%;
+}
+
+div#examples_carousel .carousel-control {
+    position: absolute;
+    top: 97%;
+    left: 213px;
+    width: 25px;
+    height: 25px;
+    font-size: 37px;
+    line-height: 19px;
+    color: rgba(35, 47, 62, 1);
+    background: #FFFFFF;
+}
+
+div#examples_carousel .carousel-control.right {
+    left: 385px;
+}
+
+div#index_carousel_tn {
+    width: 600px;
+}
+
+div#examples_carousel .carousel-indicators {
+    position: absolute;
+    top: 98%;
+    left: 313px;
+}
+
+div#examples_carousel .carousel-indicators .active {
+    background-color: rgba(35, 47, 62, 1);
+}
+
+div#examples_carousel .carousel-indicators li {
+    background-color: rgba(35, 47, 62, .45);
+}
+
+</style>
+
+<div class="container">
+  <div class="hidden-phone">
+    <div id="examples_carousel" class="carousel slide", data-interval="false">
+      <ol id="seaborn_index_indicators" class="carousel-indicators">
+        <li data-target="#examples_carousel" data-slide-to="0" class="active"></li>
+        <li data-target="#examples_carousel" data-slide-to="1"></li>
+        <li data-target="#examples_carousel" data-slide-to="2"></li>
+        <li data-target="#examples_carousel" data-slide-to="3"></li>
+        <li data-target="#examples_carousel" data-slide-to="4"></li>
+        <li data-target="#examples_carousel" data-slide-to="5"></li>
+      </ol>
+      <!-- Carousel items -->
+      <div class="carousel-inner">
+        <div class="active item">
+          <div class="inner-item">
+            <img src="_static/examples/lmplot.png">
+          </div>
+        </div>
+        <div class="item">
+          <div class="inner-item">
+            <img src="_static/examples/tsplot.png">
+          </div>
+        </div>
+        <div class="item">
+          <div class="inner-item">
+            <img src="_static/examples/violinplot.png">
+          </div>
+        </div>
+        <div class="item">
+          <div class="inner-item">
+            <img src="_static/examples/interactplot.png">
+          </div>
+        </div>
+        <div class="item">
+          <div class="inner-item">
+            <img src="_static/examples/corrplot.png">
+          </div>
+        </div>
+        <div class="item">
+          <div class="inner-item">
+            <img src="_static/examples/distplot.png">
+          </div>
+        </div>
+      </div>
+      <!-- Carousel nav -->
+      <a class="carousel-control left" href="#examples_carousel" data-slide="prev">&lsaquo;</a>
+      <a class="carousel-control right" href="#examples_carousel" data-slide="next">&rsaquo;</a>
+    </div>
+  </div>
+</div>
