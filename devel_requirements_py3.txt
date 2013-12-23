@@ -3,4 +3,3 @@ sphinx>=1.2
 sphinx_bootstrap_theme
 numpydoc
 pillow
-nose
