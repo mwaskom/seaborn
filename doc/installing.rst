@@ -1,6 +1,7 @@
+.. _installing:
 
-Installing seaborn
-------------------
+Installing and getting started
+------------------------------
 
 To install the released version of seaborn, you can use ``pip`` or
 ``easy_install``, (i.e. ``pip install seaborn``). Alternatively, you can use
