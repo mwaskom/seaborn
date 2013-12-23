@@ -1,6 +1,7 @@
+.. _whatsnew:
 
-What's new in seaborn
-=====================
+What's new in the package
+=========================
 
 A catalog of new features, improvements, and bug-fixes in each release.
 

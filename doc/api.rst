@@ -1,3 +1,5 @@
+.. _api_ref:
+
 .. currentmodule:: seaborn
 
 API reference
