@@ -137,15 +137,15 @@ Bug fixes
 
 - Fixed a bug in the ``desaturate()`` function.
 
-- Fixed a bug in the ``coefplot`` figure size calculation.
+- Fixed a bug in the ``coefplot()`` figure size calculation.
 
 - Fixed a bug where ``regplot()`` choked on list input.
 
 - Fixed buggy behavior when drawing horizontal boxplots.
 
-- Specifying bins for the ``distplot`` histogram now works.
+- Specifying bins for the ``distplot()`` histogram now works.
 
-- Fixed a bug where ``kdeplot`` would reset the axis height and cut off
+- Fixed a bug where ``kdeplot()`` would reset the axis height and cut off
   existing data.
 
 - All axis styling has been moved out of the top-level ``seaborn.set()``
