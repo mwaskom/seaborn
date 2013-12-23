@@ -1,6 +1,6 @@
 
-v0.2.0 (December ??, 2013)
---------------------------
+v0.2.0 (December 2013)
+----------------------
 
 This is a major release from 0.1 with a number of API changes, enhancements,
 and bug fixes.
