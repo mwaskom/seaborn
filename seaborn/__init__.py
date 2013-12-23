@@ -6,4 +6,4 @@ from .timeseries import *
 from .miscplot import *
 set()
 
-__version__ = "0.2.dev"
+__version__ = "0.2.0"
