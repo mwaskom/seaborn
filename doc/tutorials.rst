@@ -1,3 +1,4 @@
+.. _tutorials:
 
 Tutorial notebooks
 ==================
