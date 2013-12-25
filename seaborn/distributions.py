@@ -237,6 +237,8 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     if ax is None:
         ax = plt.gca()
 
+    xlabel = None
+
     # Find existing names
     if isinstance(vals, pd.DataFrame):
         if vals.columns.name is not None:
@@ -252,14 +254,17 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
     # Possibly perform a group-by to get the batches
     elif isinstance(vals, pd.Series) and groupby is not None:
+        groups = pd.groupby(vals, groupby).groups
         if names is None:
-            names = np.sort(pd.unique(groupby))
+            names = groups.keys()
+            #names = np.sort(pd.unique(groupby))
         order = names if order is None else order
         if hasattr(groupby, "name"):
             xlabel = groupby.name
         ylabel = vals.name
-        groups = pd.groupby(vals, groupby).groups
-        vals = [vals.reindex(groups[name]) for name in order]
+        #groups = pd.groupby(vals, groupby).groups
+        vals = [vals.reindex(groups[group]) for group in groups]
+        #vals = [vals.reindex(groups[name]) for name in order]
     else:
         xlabel = None
         ylabel = None
