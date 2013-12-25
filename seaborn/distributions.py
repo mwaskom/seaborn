@@ -61,15 +61,14 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
     # Handle case where data is a wide DataFrame
     if isinstance(vals, pd.DataFrame):
-        if names is None:
-            names = vals.columns
         if vals.columns.name is not None:
             xlabel = vals.columns.name
         else:
             xlabel = None
         if order is not None:
             vals = vals[order]
-            names = order
+        if names is None:
+            names = vals.columns
         vals = vals.values
         ylabel = None
 
@@ -77,14 +76,12 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     elif isinstance(vals, pd.Series) and groupby is not None:
         if names is None:
             names = np.sort(pd.unique(groupby))
+        order = names if order is None else order
         if hasattr(groupby, "name"):
             xlabel = groupby.name
         ylabel = vals.name
-        grouped_vals = pd.groupby(vals, groupby).values
-        if order is not None:
-            grouped_vals = grouped_vals[order]
-            names = order
-        vals = grouped_vals.values
+        groups = pd.groupby(vals, groupby).groups
+        vals = [vals.reindex(groups[name]) for name in order]
     else:
         xlabel = None
         ylabel = None
@@ -242,30 +239,27 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
     # Find existing names
     if isinstance(vals, pd.DataFrame):
-        if names is None:
-            names = vals.columns
         if vals.columns.name is not None:
             xlabel = vals.columns.name
         else:
             xlabel = None
-        ylabel = None
         if order is not None:
             vals = vals[order]
-            names = order
+        if names is None:
+            names = vals.columns
         vals = vals.values
+        ylabel = None
 
     # Possibly perform a group-by to get the batches
     elif isinstance(vals, pd.Series) and groupby is not None:
-        if hasattr(groupby, "name"):
-            xlabel = groupby.name
         if names is None:
             names = np.sort(pd.unique(groupby))
+        order = names if order is None else order
+        if hasattr(groupby, "name"):
+            xlabel = groupby.name
         ylabel = vals.name
-        grouped_vals = pd.groupby(vals, groupby).values
-        if order is not None:
-            grouped_vals = grouped_vals[order]
-            names = order
-        vals = grouped_vals.values
+        groups = pd.groupby(vals, groupby).groups
+        vals = [vals.reindex(groups[name]) for name in order]
     else:
         xlabel = None
         ylabel = None
