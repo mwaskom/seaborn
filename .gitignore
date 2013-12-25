@@ -4,3 +4,6 @@ build/
 .ipynb_checkpoints/
 dist/
 seaborn.egg-info/
+
+# PyCharm's bs
+.idea/
