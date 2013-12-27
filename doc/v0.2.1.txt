@@ -1,0 +1,15 @@
+
+v0.2.1 (December 2013)
+----------------------
+
+This is a bugfix release, with no new features.
+
+Bug fixes
+~~~~~~~~~
+
+- Changed the mechanics of ``violinplot()`` and ``boxplot())`` when using a
+  ``Series`` object as data and performing a ``groupby`` to assign data to
+  bins to address a problem that arises in Pandas 0.13.
+
+- Additionally fixed the ``groupby`` code to work with all styles of group
+  specification (specifically, using a dictionary or a function now works).
