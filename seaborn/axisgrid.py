@@ -62,7 +62,7 @@ class Facets(object):
         self._legend = None
         self._legend_data = {}
 
-        #fig.tight_layout()
+        fig.tight_layout()
         if despine:
             utils.despine(self._fig)
 
@@ -74,7 +74,8 @@ class Facets(object):
 
         pass
 
-    def map(self, func, x_var, y_var=None, **kwargs):
+
+    def _iter_masks(self):
 
         if self._nrow == 1 or self._col_wrap is not None:
             row_masks = [np.repeat(True, len(self._data))]
@@ -94,39 +95,47 @@ class Facets(object):
             hue_vals = np.sort(self._data[self._hue_var].unique())
             hue_masks = [self._data[self._hue_var] == val for val in hue_vals]
 
+        # Probably can use an itertools thing here
         for row_i, row_mask in enumerate(row_masks):
             for col_j, col_mask in enumerate(col_masks):
-
-                if self._col_wrap is not None:
-                    f_row = col_j // self._ncol
-                    f_col = col_j % self._ncol
-                else:
-                    f_row, f_col = row_i, col_j
-
-                ax = self._axes[f_row, f_col]
-                plt.sca(ax)
-
                 for hue_k, hue_mask in enumerate(hue_masks):
-
                     data_ijk = self._data[row_mask & col_mask & hue_mask]
+                    yield (row_i, col_j, hue_k), data_ijk
 
-                    kwargs["color"] = self._colors[hue_k]
+    def map(self, func, x_var, y_var=None, **kwargs):
 
-                    if self._draw_legend:
-                        kwargs["label"] = self._hue_vals[hue_k]
 
-                    if y_var is None:
-                        func(data_ijk[x_var].values, **kwargs)
-                    else:
-                        func(data_ijk[x_var].values,
-                             data_ijk[y_var].values, **kwargs)
+        for (row_i, col_j, hue_k), data_ijk in self._iter_masks():
 
-                    ax.set_xlabel("")
-                    ax.set_ylabel("")
-                    ax.legend_ = None
+            if self._col_wrap is not None:
+                f_row = col_j // self._ncol
+                f_col = col_j % self._ncol
+            else:
+                f_row, f_col = row_i, col_j
 
-                if self._draw_legend:
-                    self._update_legend_data(ax)
+            ax = self._axes[f_row, f_col]
+            plt.sca(ax)
+
+            if not data_ijk.values.tolist():
+                continue
+
+            kwargs["color"] = self._colors[hue_k]
+
+            if self._hue_var is not None:
+                kwargs["label"] = self._hue_vals[hue_k]
+
+            if y_var is None:
+                func(data_ijk[x_var].values, **kwargs)
+            else:
+                func(data_ijk[x_var].values,
+                     data_ijk[y_var].values, **kwargs)
+
+
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.legend_ = None
+
+            self._update_legend_data(ax)
 
         if y_var is not None:
             for ax in self._axes[:, 0]:
@@ -136,11 +145,6 @@ class Facets(object):
 
         if self._draw_legend:
             self._make_legend()
-            space = .08
-            right = 1 - self._space_needed
-            self._fig.subplots_adjust(right=right,
-                                      hspace=space,
-                                      wspace=space)
         else:
             self._fig.tight_layout()
         self._set_title()
@@ -187,10 +191,12 @@ class Facets(object):
         data = {l: h for h, l in zip(handles, labels)}
         self._legend_data.update(data)
 
-    def _make_legend(self):
+    def _make_legend(self, legend_data=None, title=None):
 
+        legend_data = self._legend_data if legend_data is None else legend_data
         labels = sorted(self._legend_data.keys())
-        handles = [self._legend_data[l] for l in labels]
+        handles = [legend_data[l] for l in labels]
+        title = self._hue_var if title is None else title
         figlegend = plt.figlegend(handles, labels, "center right",
                                   title=self._hue_var)
         self._legend = figlegend
@@ -205,3 +211,6 @@ class Facets(object):
         space_needed = legend_width / (figure_width + legend_width)
         margin = .04 if self._margin_titles else .01
         self._space_needed = margin + space_needed
+
+        right = 1 - self._space_needed
+        self._fig.subplots_adjust(right=right)
