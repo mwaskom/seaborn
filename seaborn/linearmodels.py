@@ -11,8 +11,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
-from seaborn.utils import color_palette, ci_to_errsize
-from seaborn.distributions import distplot
+from six.moves import range
+
+from .utils import color_palette, ci_to_errsize
+from .distributions import distplot
+from .axisgrid import Facets
 
 
 def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
@@ -316,6 +319,98 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     if color_factor is not None and color_factor not in [row, col]:
         axes[0, 0].legend(loc="best", title=color_factor)
     plt.tight_layout()
+
+
+def factorplot(x, y, data, color=None, row=None, col=None, kind="bar",
+               estimator=np.mean, ci=95, size=5, aspect=1, palette="husl",
+               dodge=0, link=True):
+
+
+    facet = Facets(data, row, col, color, size=size, aspect=aspect)
+
+    mask_gen = facet._iter_masks()
+
+    x_order = sorted(data[x].unique())
+
+    if color is None:
+        colors = ["#777777" if kind == "bar" else "#333333"]
+        n_colors = 1
+        width = .8
+        pos_adjust = [0]
+    else:
+        color_order = sorted(data[color].unique()) 
+        n_colors = len(color_order)
+        colors = color_palette(palette, n_colors)
+        if color == row  or color == col or color == x:
+            width = .8
+            pos_adjust = [0] * n_colors
+        else:
+            width = .8 / n_colors
+            if kind == "bar":
+                pos_adjust = np.linspace(0, .8 - width, n_colors)
+                pos_adjust -= pos_adjust.mean()
+            elif kind == "point" and dodge:
+                pos_adjust = np.linspace(0, dodge, n_colors)
+                pos_adjust -= pos_adjust.mean()
+            else:
+                pos_adjust = [0] * n_colors
+
+    draw_legend = color is not None and color not in [x, row, col]
+
+    for (row_i, col_j, hue_k), data_ijk in mask_gen:
+
+        ax = facet._axes[row_i, col_j]
+
+        grouped = {g: data[y] for g, data in data_ijk.groupby(x)}
+
+        plot_pos = []
+        plot_heights = []
+        plot_cis = []
+        for pos, var in enumerate(x_order):
+
+            if var not in grouped:
+                continue
+
+            plot_pos.append(pos + pos_adjust[hue_k])
+            plot_heights.append(estimator(grouped[var]))
+            if ci is not None:
+                boots = moss.bootstrap(grouped[var].values, func=estimator)
+                plot_cis.append(moss.ci(boots, ci))
+
+        kwargs = {}
+        if draw_legend:
+            kwargs["label"] = facet._hue_vals[hue_k]
+
+        if kind == "bar":
+
+            ax.bar(plot_pos, plot_heights, width, align="center",
+                   color=colors[hue_k], **kwargs)
+            facet._update_legend_data(ax)
+            if ci is not None:
+                for pos, ci_ in zip(plot_pos, plot_cis):
+                    ax.plot([pos, pos], ci_, linewidth=2.5, color="#222222")
+
+        elif kind == "point":
+
+            hue = colors[hue_k]
+            ls = "-" if link else ""
+            ax.plot(plot_pos, plot_heights, color=hue, marker="o", ms=9,
+                    ls=ls, lw=3, **kwargs)
+            facet._update_legend_data(ax)
+            if ci is not None:
+                for pos, ci_ in zip(plot_pos, plot_cis):
+                    ax.plot([pos, pos], ci_, linewidth=2.5, color=hue)
+
+    n_x = len(x_order)
+    facet.set(xticks=range(n_x), xticklabels=x_order, xlim=(-.5, n_x - .5))
+
+    for ax in facet._axes.flat:
+        ax.xaxis.grid(False)
+
+    facet._set_axis_labels(x, y)
+    facet._set_title()
+    if draw_legend:
+        facet._make_legend()
 
 
 def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
