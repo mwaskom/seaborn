@@ -13,57 +13,18 @@ import moss
 
 from six.moves import range
 
-from .utils import color_palette
-from .axisgrid import FacetGrid
+from .utils import color_palette, ci_to_errsize
+from .distributions import distplot
+from .axisgrid import Facets
 
 
-def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
-           col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
-           col_order=None, row_order=None, hue_order=None, dropna=True,
-           legend=True, legend_out=True, **kwargs):
-
-    # Backwards-compatibility warning layer
-    if "color" in kwargs:
-        msg = "`color` is deprecated and will be removed; using `hue` instead."
-        warnings.warn(msg, UserWarning)
-        hue = kwargs.pop("color")
-
-    # Reduce the dataframe to only needed columns
-    # Otherwise when dropna is True we could lose data because it is missing
-    # in a column that isn't relevant ot this plot
-    cases = kwargs.get("cases", None)
-    x_partial = kwargs.get("x_partial", None)
-    y_partial = kwargs.get("y_partial", None)
-    need_cols = [x, y, hue, col, row, cases, x_partial, y_partial]
-    cols = [a for a in need_cols if a is not None]
-    data = data[cols]
-
-    # Initialize the grid
-    facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
-                       col_order=col_order, hue_order=hue_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap,
-                       legend=legend, legend_out=legend_out)
-
-    # Hack to set the x limits properly, which needs to happen here
-    # because the extent of the regression estimate is determined
-    # by the limits of the plot
-    if sharex:
-        for ax in facets.axes.flat:
-            scatter = ax.scatter(data[x], np.ones(len(data)) * data[y].mean())
-            scatter.remove()
-
-    # Draw the regression plot on each facet
-    facets.map_dataframe(regplot, x, y, **kwargs)
-    return facets
-
-
-def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
-               x_order=None, hue_order=None, col_order=None, row_order=None,
-               kind="auto", dodge=0, join=True, size=5, aspect=1,
-               palette=None, legend=True, legend_out=True, dropna=True,
-               sharex=True, sharey=True):
-    """Plot a dependent variable with uncertainty sorted by discrete factors.
+def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
+           x_estimator=None, x_ci=95, x_bins=None, n_boot=5000, fit_reg=True,
+           order=1, ci=95, logistic=False, truncate=False,
+           x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
+           sharex=True, sharey=True, palette="husl", size=None,
+           scatter_kws=None, line_kws=None, palette_kws=None):
+    """Plot a linear model with faceting, color binning, and other options.
 
     Parameters
     ----------
@@ -646,6 +607,284 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             ax=None):
     """Draw a scatter plot between x and y with a regression line.
 
+    # First walk through the facets and plot the scatters
+    scatter_ms = scatter_kws.pop("ms", 4)
+    scatter_mew = mew = scatter_kws.pop("mew", 0)
+    scatter_alpha = mew = scatter_kws.pop("alpha", .77)
+    for row_i, row_mask in enumerate(row_masks):
+        for col_j, col_mask in enumerate(col_masks):
+            if col_wrap is not None:
+                f_row = col_j // ncol
+                f_col = col_j % ncol
+            else:
+                f_row, f_col = row_i, col_j
+            ax = axes[f_row, f_col]
+            if f_row + 1 == nrow:
+                ax.set_xlabel(x)
+            if f_col == 0:
+                ax.set_ylabel(y)
+
+            # Title the plot if we are faceting
+            title = ""
+            if row is not None:
+                title += "%s = %s" % (row, row_vals[row_i])
+            if row is not None and col is not None:
+                title += " | "
+            if col is not None:
+                title += "%s = %s" % (col, col_vals[col_j])
+            if size < 3:
+                title = title.replace(" | ", "\n")
+            ax.set_title(title)
+
+            for hue_k, hue_mask in enumerate(hue_masks):
+                color = colors[hue_k]
+                data_ijk = data[row_mask & col_mask & hue_mask]
+
+                if x_estimator is not None:
+                    ms = scatter_kws.pop("ms", 7)
+                    mew = scatter_kws.pop("mew", 0)
+                    if x_bins is None:
+                        x_vals = data_ijk[x].unique()
+                        x_data = data_ijk[x]
+                    else:
+                        dist = distance.cdist(np.c_[data_ijk[x]], x_bins)
+                        x_vals = x_bins.ravel()
+                        x_data = x_bins[np.argmin(dist, axis=1)].ravel()
+
+                    y_vals = data_ijk[y]
+
+                    if y_partial is not None:
+                        for var in y_partial:
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_vals.mean()
+                            y_vals = moss.vector_reject(y_vals - y_mean, conf)
+                            y_vals += y_mean
+
+                    y_grouped = [np.array(y_vals[x_data == v])
+                                 for v in x_vals]
+
+                    y_est = [x_estimator(y_i) for y_i in y_grouped]
+                    y_boots = [moss.bootstrap(np.array(y_i),
+                                              func=x_estimator,
+                                              n_boot=n_boot)
+                               for y_i in y_grouped]
+                    ci_lims = [50 - x_ci / 2., 50 + x_ci / 2.]
+                    y_ci = [moss.percentiles(y_i, ci_lims) for y_i in y_boots]
+                    y_error = ci_to_errsize(np.transpose(y_ci), y_est)
+
+                    ax.plot(x_vals, y_est, "o", mew=mew, ms=ms,
+                            color=color, **scatter_kws)
+                    ax.errorbar(x_vals, y_est, y_error,
+                                fmt=None, ecolor=color)
+                else:
+                    x_ = data_ijk[x]
+                    y_ = data_ijk[y]
+
+                    if x_partial is not None:
+                        for var in x_partial:
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            x_mean = x_.mean()
+                            x_ = moss.vector_reject(x_ - x_mean, conf)
+                            x_ += x_mean
+                    if y_partial is not None:
+                        for var in y_partial:
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_.mean()
+                            y_ = moss.vector_reject(y_ - y_mean, conf)
+                            y_ += y_mean
+
+                    if x_jitter is not None:
+                        x_ += np.random.uniform(-x_jitter, x_jitter, x_.shape)
+                    if y_jitter is not None:
+                        y_ += np.random.uniform(-y_jitter, y_jitter, y_.shape)
+                    ax.plot(x_, y_, "o", color=color, alpha=scatter_alpha,
+                            mew=scatter_mew, ms=scatter_ms, **scatter_kws)
+
+    for ax_i in np.ravel(axes):
+        ax_i.set_xmargin(.05)
+        ax_i.autoscale_view()
+
+    # Now walk through again and plot the regression estimate
+    # and a confidence interval for the regression line
+    if fit_reg:
+        for row_i, row_mask in enumerate(row_masks):
+            for col_j, col_mask in enumerate(col_masks):
+                if col_wrap is not None:
+                    f_row = col_j // ncol
+                    f_col = col_j % ncol
+                else:
+                    f_row, f_col = row_i, col_j
+                ax = axes[f_row, f_col]
+                xlim = ax.get_xlim()
+
+                for hue_k, hue_mask in enumerate(hue_masks):
+                    color = colors[hue_k]
+                    data_ijk = data[row_mask & col_mask & hue_mask]
+                    x_vals = np.array(data_ijk[x])
+                    y_vals = np.array(data_ijk[y])
+                    if not len(x_vals):
+                        continue
+
+                    # Sort out the limit of the fit
+                    if truncate:
+                        xx = np.linspace(x_vals.min(),
+                                         x_vals.max(), 100)
+                    else:
+                        xx = np.linspace(xlim[0], xlim[1], 100)
+                    xx_ = sm.add_constant(xx, prepend=True)
+
+                    # Inner function to bootstrap the regression
+                    def _regress(x, y):
+                        if logistic:
+                            x_ = sm.add_constant(x, prepend=True)
+                            fit = sm.GLM(y, x_,
+                                         family=sm.families.Binomial()).fit()
+                            reg = fit.predict(xx_)
+                        else:
+                            fit = np.polyfit(x, y, order)
+                            reg = np.polyval(fit, xx)
+                        return reg
+
+                    # Remove nuisance variables with vector rejection
+                    if x_partial is not None:
+                        for var in x_partial:
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            x_mean = x_vals.mean()
+                            x_vals = moss.vector_reject(x_vals - x_mean, conf)
+                            x_vals += x_mean
+                    if y_partial is not None:
+                        for var in y_partial:
+                            conf = data_ijk[var]
+                            conf -= conf.mean()
+                            y_mean = y_vals.mean()
+                            y_vals = moss.vector_reject(y_vals - y_mean, conf)
+                            y_vals += y_mean
+
+                    # Regression line confidence interval
+                    if ci is not None:
+                        ci_lims = [50 - ci / 2., 50 + ci / 2.]
+                        boots = moss.bootstrap(x_vals, y_vals,
+                                               func=_regress,
+                                               n_boot=n_boot)
+                        ci_band = moss.percentiles(boots, ci_lims, axis=0)
+                        ax.fill_between(xx, *ci_band, color=color, alpha=.15)
+
+                    # Regression line
+                    reg = _regress(x_vals, y_vals)
+                    if color_factor is None:
+                        label = ""
+                    else:
+                        label = hue_vals[hue_k]
+                    ax.plot(xx, reg, color=color,
+                            label=str(label), **line_kws)
+                    ax.set_xlim(xlim)
+
+    # Plot the legend on the upper left facet and adjust the layout
+    if color_factor is not None and color_factor not in [row, col]:
+        axes[0, 0].legend(loc="best", title=color_factor)
+    plt.tight_layout()
+
+
+def factorplot(x, y, data, color=None, row=None, col=None, kind="bar",
+               estimator=np.mean, ci=95, size=5, aspect=1, palette="husl",
+               dodge=0, link=True):
+
+
+    facet = Facets(data, row, col, color, size=size, aspect=aspect)
+
+    mask_gen = facet._iter_masks()
+
+    x_order = sorted(data[x].unique())
+
+    if color is None:
+        colors = ["#777777" if kind == "bar" else "#333333"]
+        n_colors = 1
+        width = .8
+        pos_adjust = [0]
+    else:
+        color_order = sorted(data[color].unique()) 
+        n_colors = len(color_order)
+        colors = color_palette(palette, n_colors)
+        if color == row  or color == col or color == x:
+            width = .8
+            pos_adjust = [0] * n_colors
+        else:
+            width = .8 / n_colors
+            if kind == "bar":
+                pos_adjust = np.linspace(0, .8 - width, n_colors)
+                pos_adjust -= pos_adjust.mean()
+            elif kind == "point" and dodge:
+                pos_adjust = np.linspace(0, dodge, n_colors)
+                pos_adjust -= pos_adjust.mean()
+            else:
+                pos_adjust = [0] * n_colors
+
+    draw_legend = color is not None and color not in [x, row, col]
+
+    for (row_i, col_j, hue_k), data_ijk in mask_gen:
+
+        ax = facet._axes[row_i, col_j]
+
+        grouped = {g: data[y] for g, data in data_ijk.groupby(x)}
+
+        plot_pos = []
+        plot_heights = []
+        plot_cis = []
+        for pos, var in enumerate(x_order):
+
+            if var not in grouped:
+                continue
+
+            plot_pos.append(pos + pos_adjust[hue_k])
+            plot_heights.append(estimator(grouped[var]))
+            if ci is not None:
+                boots = moss.bootstrap(grouped[var].values, func=estimator)
+                plot_cis.append(moss.ci(boots, ci))
+
+        kwargs = {}
+        if draw_legend:
+            kwargs["label"] = facet._hue_vals[hue_k]
+
+        if kind == "bar":
+
+            ax.bar(plot_pos, plot_heights, width, align="center",
+                   color=colors[hue_k], **kwargs)
+            facet._update_legend_data(ax)
+            if ci is not None:
+                for pos, ci_ in zip(plot_pos, plot_cis):
+                    ax.plot([pos, pos], ci_, linewidth=2.5, color="#222222")
+
+        elif kind == "point":
+
+            hue = colors[hue_k]
+            ls = "-" if link else ""
+            ax.plot(plot_pos, plot_heights, color=hue, marker="o", ms=9,
+                    ls=ls, lw=3, **kwargs)
+            facet._update_legend_data(ax)
+            if ci is not None:
+                for pos, ci_ in zip(plot_pos, plot_cis):
+                    ax.plot([pos, pos], ci_, linewidth=2.5, color=hue)
+
+    n_x = len(x_order)
+    facet.set(xticks=range(n_x), xticklabels=x_order, xlim=(-.5, n_x - .5))
+
+    for ax in facet._axes.flat:
+        ax.xaxis.grid(False)
+
+    facet._set_axis_labels(x, y)
+    facet._set_title()
+    if draw_legend:
+        facet._make_legend()
+
+
+def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
+            xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
+            reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
+    """Scatterplot with regresion line, marginals, and correlation value.
 
     Parameters
     ----------

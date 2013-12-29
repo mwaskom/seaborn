@@ -1,3 +1,4 @@
+from itertools import product
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -43,7 +44,7 @@ class Facets(object):
         self._nrow = nrow
         self._row_var = row
         if row is None:
-            self._row_values = []
+            self._row_names = []
         else:
             self._row_names = sorted(data[row].unique())
         self._ncol = ncol
@@ -95,12 +96,11 @@ class Facets(object):
             hue_vals = np.sort(self._data[self._hue_var].unique())
             hue_masks = [self._data[self._hue_var] == val for val in hue_vals]
 
-        # Probably can use an itertools thing here
-        for row_i, row_mask in enumerate(row_masks):
-            for col_j, col_mask in enumerate(col_masks):
-                for hue_k, hue_mask in enumerate(hue_masks):
-                    data_ijk = self._data[row_mask & col_mask & hue_mask]
-                    yield (row_i, col_j, hue_k), data_ijk
+        for (i, row), (j, col), (k, hue) in product(enumerate(row_masks),
+                                                    enumerate(col_masks),
+                                                    enumerate(hue_masks)):
+            data_ijk = self._data[row & col & hue]
+            yield (i, j, k), data_ijk
 
     def map(self, func, x_var, y_var=None, **kwargs):
 
@@ -130,12 +130,24 @@ class Facets(object):
                 func(data_ijk[x_var].values,
                      data_ijk[y_var].values, **kwargs)
 
-
-            ax.set_xlabel("")
-            ax.set_ylabel("")
-            ax.legend_ = None
-
             self._update_legend_data(ax)
+
+        self._set_axis_labels(x_var, y_var)
+
+        if self._draw_legend:
+            self._make_legend()
+        else:
+            self._fig.tight_layout()
+        self._set_title()
+
+    def set(self, **kwargs):
+
+        for key, val in kwargs.items():
+            for ax in self._axes.flat:
+                setter = getattr(ax, "set_%s" % key)
+                setter(val)
+
+    def _set_axis_labels(self, x_var, y_var=None):
 
         if y_var is not None:
             for ax in self._axes[:, 0]:
@@ -143,11 +155,11 @@ class Facets(object):
         for ax in self._axes[-1, :]:
             ax.set_xlabel(x_var)
 
-        if self._draw_legend:
-            self._make_legend()
-        else:
-            self._fig.tight_layout()
-        self._set_title()
+    def _clean_axis(self, ax):
+
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.legend_ = None
 
     def _set_title(self):
 
