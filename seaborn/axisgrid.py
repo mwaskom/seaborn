@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from . import utils
 
 
-class Facets(object):
+class FacetGrid(object):
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
