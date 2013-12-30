@@ -913,19 +913,21 @@ def _regress_fast(grid, x, y, ci, n_boot):
     grid = np.c_[np.ones(len(grid)), grid]
     reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
     y_hat = grid.dot(reg_func(X, y))
+    if ci is None:
+        return y_hat, None
     beta_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot).T
     y_hat_boots = grid.dot(beta_boots).T
-    err_bands = moss.ci(y_hat_boots, ci, axis=0)
-    return y_hat, err_bands
+    return y_hat, y_hat_boots
 
 
 def _regress_poly(grid, x, y, order, ci, n_boot):
 
     reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
     y_hat = reg_func(x, y)
+    if ci is None:
+        return y_hat, None
     y_hat_boots = moss.bootstrap(x, y, func=reg_func, n_boot=n_boot)
-    err_bands = moss.ci(y_hat_boots, ci, axis=0)
-    return y_hat, err_bands
+    return y_hat, y_hat_boots
 
 
 def _regress_statsmodels(grid, x, y, model, kwargs, ci, n_boot):
@@ -934,50 +936,66 @@ def _regress_statsmodels(grid, x, y, model, kwargs, ci, n_boot):
     grid = np.c_[np.ones(len(grid)), grid]
     reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
     y_hat = reg_func(X, y)
+    if ci is None:
+        return y_hat, None
     y_hat_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot)
-    err_bands = moss.ci(y_hat_boots, ci, axis=0)
-    return y_hat, err_bands
+    return y_hat, y_hat_boots
 
 
-def _bootstrap_reg(func, x, y, grid, n_boot, ci):
-
-    boots = moss.bootstrap(x, y, func=func, n_boot=n_boot)
-    y_hats = grid.dot(boots.reshape(-1, n_boot))
-    ci = moss.ci(y_hats, ci, axis=1).squeeze()
-    return ci
-
-
-def regplot(x, y, x_estimator=None, x_ci=95, x_bins=None, n_boot=5000,
-            fit_reg=True, order=1, ci=95, logistic=False, truncate=False,
-            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
-            color=None, scatter_kws=None, line_kws=None, ax=None):
+def regplot(x, y, x_estimator=None, x_ci=95, x_bins=None,
+            fit_reg=True, ci=95, n_boot=5000,
+            order=1, logistic=False, robust=False, partial=None,
+            truncate=False, x_jitter=None, y_jitter=None,
+            color=None, scatter_kws=None, line_kws=None,
+            ax=None):
 
     if ax is None:
         ax = plt.gca()
 
-    if color is None:
-        color = mpl.rcParams["axes.color_cycle"][0]
-
     x = np.asarray(x)
     y = np.asarray(y)
 
-    ax.scatter(x, y, color=color, alpha=.8)
+    if color is None:
+        lines, = plt.plot(x.mean(), y.mean())
+        color = lines.get_color()
+        lines.remove()
+
+    if partial is None:
+        y_scatter = y
+    else:
+        X = np.c_[np.ones_like(x), x, partial]
+        y_scatter = y - X[:, 2].dot(np.linalg.pinv(X).dot(y)[2])
+
+    ax.scatter(x, y_scatter, color=color, alpha=.8)
 
     x_min, x_max = ax.get_xlim()
     grid = np.linspace(x_min, x_max, 100)
 
+    if sum((order > 1, logistic, robust, partial is not None)) > 1:
+        raise ValueError("`order` > 1 and `logistic` are mutally exclusive")
+
     if order > 1:
-        y_hat, err_bands = _regress_poly(grid, x, y, order, ci, n_boot)
+        y_hat, y_hat_boots = _regress_poly(grid, x, y, order, ci, n_boot)
+
     elif logistic:
         kwargs = dict(family=sm.families.Binomial())
-        y_hat, err_bands = _regress_statsmodels(grid, x, y, sm.GLM, kwargs,
-                                                ci, n_boot)
-    #elif robust:
-    #    kwargs = dict()
-    #    y_hat, err_bands = _regress_statsmodels(grid, x, y, sm.RLM, kwargs,
-    #                                            ci, n_boot)
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.GLM, kwargs,
+                                                  ci, n_boot)
+    elif robust:
+        kwargs = dict()
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.RLM, kwargs,
+                                                  ci, n_boot)
+    elif partial is not None:
+        _x = np.c_[x, partial]
+        _grid = np.c_[grid, np.zeros((grid.size, partial.shape[1]))]
+        kwargs = dict()
+        y_hat, y_hat_boots = _regress_statsmodels(_grid, _x, y, sm.OLS, kwargs,
+                                                  ci, n_boot)
     else:
-        y_hat, err_bands = _regress_fast(grid, x, y, ci, n_boot)
+        y_hat, y_hat_boots = _regress_fast(grid, x, y, ci, n_boot)
+
+    if ci is not None:
+        err_bands = moss.ci(y_hat_boots, ci, axis=0)
 
     ax.plot(grid, y_hat, color=color, lw=2)
     ax.fill_between(grid, *err_bands, color=color, alpha=.15)
