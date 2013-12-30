@@ -789,16 +789,39 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     plt.tight_layout()
 
 
-def factorplot(x, y, data, color=None, row=None, col=None, kind="bar",
-               estimator=np.mean, ci=95, size=5, aspect=1, palette="husl",
-               dodge=0, link=True):
+def factorplot(x, y=None, data=None, color=None, row=None, col=None,
+               col_wrap=None, kind="auto", estimator=np.mean, ci=95, size=5,
+               aspect=1, palette=None, dodge=0, link=True, legend=True,
+               legend_out=True):
 
+    if color is not None and palette is None:
+        palette = "husl"
+    elif color is None and palette is not None:
+        color = x
 
-    facet = Facets(data, row, col, color, size=size, aspect=aspect)
+    facet = Facets(data, row, col, color, col_wrap=col_wrap, size=size,
+                   aspect=aspect, legend=legend, legend_out=legend_out,
+                   palette=palette)
+
+    if kind == "auto":
+        if y is None:
+            kind = "bar"
+        elif (data[y].mean() / data[y].std()) < 2.5:
+            kind = "bar"
+        else:
+            kind = "point"
 
     mask_gen = facet._iter_masks()
 
     x_order = sorted(data[x].unique())
+
+    if y is None:
+        estimator = len
+        ci = None
+        y = x
+        y_count = True
+    else:
+        y_count = False
 
     if color is None:
         colors = ["#777777" if kind == "bar" else "#333333"]
@@ -806,10 +829,10 @@ def factorplot(x, y, data, color=None, row=None, col=None, kind="bar",
         width = .8
         pos_adjust = [0]
     else:
-        color_order = sorted(data[color].unique()) 
+        color_order = sorted(data[color].unique())
         n_colors = len(color_order)
         colors = color_palette(palette, n_colors)
-        if color == row  or color == col or color == x:
+        if color == row or color == col or color == x:
             width = .8
             pos_adjust = [0] * n_colors
         else:
@@ -875,10 +898,13 @@ def factorplot(x, y, data, color=None, row=None, col=None, kind="bar",
     for ax in facet._axes.flat:
         ax.xaxis.grid(False)
 
-    facet._set_axis_labels(x, y)
+    y_label = "count" if y_count else y
+    facet._set_axis_labels(x, y_label)
     facet._set_title()
     if draw_legend:
         facet._make_legend()
+
+    return facet
 
 
 def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
