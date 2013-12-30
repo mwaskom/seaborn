@@ -15,7 +15,7 @@ from six.moves import range
 
 from .utils import color_palette, ci_to_errsize
 from .distributions import distplot
-from .axisgrid import Facets
+from .axisgrid import FacetGrid
 
 
 def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
@@ -331,9 +331,9 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
     elif color is None and palette is not None:
         color = x
 
-    facet = Facets(data, row, col, color, col_wrap=col_wrap, size=size,
-                   aspect=aspect, legend=legend, legend_out=legend_out,
-                   palette=palette)
+    facet = FacetGrid(data, row, col, color, col_wrap=col_wrap, size=size,
+                      aspect=aspect, legend=legend, legend_out=legend_out,
+                      palette=palette)
 
     if kind == "auto":
         if y is None:
@@ -439,9 +439,87 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
     return facet
 
 
-def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
-            xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
-            reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
+def _regress_fast(grid, x, y, ci, n_boot):
+
+    X = np.c_[np.ones(len(x)), x]
+    grid = np.c_[np.ones(len(grid)), grid]
+    reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
+    y_hat = grid.dot(reg_func(X, y))
+    beta_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot).T
+    y_hat_boots = grid.dot(beta_boots).T
+    err_bands = moss.ci(y_hat_boots, ci, axis=0)
+    return y_hat, err_bands
+
+
+def _regress_poly(grid, x, y, order, ci, n_boot):
+
+    reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
+    y_hat = reg_func(x, y)
+    y_hat_boots = moss.bootstrap(x, y, func=reg_func, n_boot=n_boot)
+    err_bands = moss.ci(y_hat_boots, ci, axis=0)
+    return y_hat, err_bands
+
+
+def _regress_statsmodels(grid, x, y, model, kwargs, ci, n_boot):
+
+    X = np.c_[np.ones(len(x)), x]
+    grid = np.c_[np.ones(len(grid)), grid]
+    reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
+    y_hat = reg_func(X, y)
+    y_hat_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot)
+    err_bands = moss.ci(y_hat_boots, ci, axis=0)
+    return y_hat, err_bands
+
+
+def _bootstrap_reg(func, x, y, grid, n_boot, ci):
+
+    boots = moss.bootstrap(x, y, func=func, n_boot=n_boot)
+    y_hats = grid.dot(boots.reshape(-1, n_boot))
+    ci = moss.ci(y_hats, ci, axis=1).squeeze()
+    return ci
+
+
+def regplot(x, y, x_estimator=None, x_ci=95, x_bins=None, n_boot=5000,
+            fit_reg=True, order=1, ci=95, logistic=False, truncate=False,
+            x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
+            color=None, scatter_kws=None, line_kws=None, ax=None):
+
+    if ax is None:
+        ax = plt.gca()
+
+    if color is None:
+        color = mpl.rcParams["axes.color_cycle"][0]
+
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    ax.scatter(x, y, color=color, alpha=.8)
+
+    x_min, x_max = ax.get_xlim()
+    grid = np.linspace(x_min, x_max, 100)
+
+    if order > 1:
+        y_hat, err_bands = _regress_poly(grid, x, y, order, ci, n_boot)
+    elif logistic:
+        kwargs = dict(family=sm.families.Binomial())
+        y_hat, err_bands = _regress_statsmodels(grid, x, y, sm.GLM, kwargs,
+                                                ci, n_boot)
+    #elif robust:
+    #    kwargs = dict()
+    #    y_hat, err_bands = _regress_statsmodels(grid, x, y, sm.RLM, kwargs,
+    #                                            ci, n_boot)
+    else:
+        y_hat, err_bands = _regress_fast(grid, x, y, ci, n_boot)
+
+    ax.plot(grid, y_hat, color=color, lw=2)
+    ax.fill_between(grid, *err_bands, color=color, alpha=.15)
+
+    ax.set_xlim(x_min, x_max)
+
+
+def regplot_off(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
+                xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
+                reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regresion line, marginals, and correlation value.
 
     Parameters
