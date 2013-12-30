@@ -10,7 +10,7 @@ class Facets(object):
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
-                 color="#333333", legend=True, despine=True,
+                 color="#333333", legend=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None):
 
         nrow = 1 if row is None else len(data[row].unique())
@@ -60,8 +60,11 @@ class Facets(object):
         self._colors = colors
         self._draw_legend = ((hue is not None and hue not in [col, row])
                              and legend)
+        self._legend_out = legend_out
         self._legend = None
         self._legend_data = {}
+        self._x_var = None
+        self._y_var = None
 
         fig.tight_layout()
         if despine:
@@ -74,7 +77,6 @@ class Facets(object):
     def __exit__(self, exc_type, value, traceback):
 
         pass
-
 
     def _iter_masks(self):
 
@@ -103,7 +105,6 @@ class Facets(object):
             yield (i, j, k), data_ijk
 
     def map(self, func, x_var, y_var=None, **kwargs):
-
 
         for (row_i, col_j, hue_k), data_ijk in self._iter_masks():
 
@@ -150,16 +151,44 @@ class Facets(object):
     def _set_axis_labels(self, x_var, y_var=None):
 
         if y_var is not None:
-            for ax in self._axes[:, 0]:
-                ax.set_ylabel(y_var)
-        for ax in self._axes[-1, :]:
-            ax.set_xlabel(x_var)
+            self._y_var = y_var
+            self.set_ylabel(y_var)
+        self.set_xlabel(x_var)
+        self._x_var = x_var
 
     def _clean_axis(self, ax):
 
         ax.set_xlabel("")
         ax.set_ylabel("")
         ax.legend_ = None
+
+    def set_xlabel(self, label=None, **kwargs):
+
+        if label is None:
+            label = self._x_var
+        for ax in self._axes[-1, :]:
+            ax.set_xlabel(label, **kwargs)
+
+    def set_ylabel(self, label=None, **kwargs):
+
+        if label is None:
+            label = self._y_var
+        for ax in self._axes[:, 0]:
+            ax.set_ylabel(label, **kwargs)
+
+    def set_xticklabels(self, labels=None, **kwargs):
+
+        for ax in self._axes[-1, :]:
+            if labels is None:
+                labels = [l.get_text() for l in ax.get_xticklabels()]
+            ax.set_xticklabels(labels, **kwargs)
+
+    def set_yticklabels(self, labels=None, **kwargs):
+
+        for ax in self._axes[-1, :]:
+            if labels is None:
+                labels = [l.get_text() for l in ax.get_yticklabels()]
+            ax.set_yticklabels(labels, **kwargs)
 
     def _set_title(self):
 
@@ -209,20 +238,28 @@ class Facets(object):
         labels = sorted(self._legend_data.keys())
         handles = [legend_data[l] for l in labels]
         title = self._hue_var if title is None else title
-        figlegend = plt.figlegend(handles, labels, "center right",
-                                  title=self._hue_var)
-        self._legend = figlegend
 
-        plt.draw()
-        legend_width = figlegend.get_window_extent().width / self._fig.dpi
-        figure_width = self._fig.get_figwidth()
-        self._fig.set_figwidth(figure_width + legend_width)
+        if self._legend_out:
 
-        plt.draw()
-        legend_width = figlegend.get_window_extent().width / self._fig.dpi
-        space_needed = legend_width / (figure_width + legend_width)
-        margin = .04 if self._margin_titles else .01
-        self._space_needed = margin + space_needed
+            figlegend = plt.figlegend(handles, labels, "center right",
+                                      title=self._hue_var)
+            self._legend = figlegend
 
-        right = 1 - self._space_needed
-        self._fig.subplots_adjust(right=right)
+            plt.draw()
+            legend_width = figlegend.get_window_extent().width / self._fig.dpi
+            figure_width = self._fig.get_figwidth()
+            self._fig.set_figwidth(figure_width + legend_width)
+
+            plt.draw()
+            legend_width = figlegend.get_window_extent().width / self._fig.dpi
+            space_needed = legend_width / (figure_width + legend_width)
+            margin = .04 if self._margin_titles else .01
+            self._space_needed = margin + space_needed
+
+            right = 1 - self._space_needed
+            self._fig.subplots_adjust(right=right)
+
+        else:
+
+            self._axes[0, 0].legend(handles, labels, loc="best",
+                                    title=self._hue_var)
