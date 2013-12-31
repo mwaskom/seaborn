@@ -440,82 +440,279 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
 
 
 def _regress_fast(grid, x, y, ci, n_boot):
-
+    """Low-level regression and prediction using linear algebra."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
     reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
     y_hat = grid.dot(reg_func(X, y))
     if ci is None:
         return y_hat, None
+
     beta_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot).T
     y_hat_boots = grid.dot(beta_boots).T
     return y_hat, y_hat_boots
 
 
 def _regress_poly(grid, x, y, order, ci, n_boot):
-
+    """Regression using numpy polyfit for higher-order trends."""
     reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
     y_hat = reg_func(x, y)
     if ci is None:
         return y_hat, None
+
     y_hat_boots = moss.bootstrap(x, y, func=reg_func, n_boot=n_boot)
     return y_hat, y_hat_boots
 
 
-def _regress_statsmodels(grid, x, y, model, kwargs, ci, n_boot):
-
+def _regress_statsmodels(grid, x, y, model, ci, n_boot, **kwargs):
+    """More general regression function using statsmodels objects."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
     reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
     y_hat = reg_func(X, y)
     if ci is None:
         return y_hat, None
+
     y_hat_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot)
     return y_hat, y_hat_boots
 
 
-def regplot(x, y, x_estimator=None, x_ci=95, x_bins=None,
-            fit_reg=True, ci=95, n_boot=5000,
+def _bin_predictor(x, bins):
+    """Discretize a continuous predictor by assigning value to closest bin."""
+    if np.isscalar(bins):
+        bins = np.c_[np.linspace(x.min(), x.max(), bins + 2)[1:-1]]
+    else:
+        bins = np.c_[np.ravel(bins)]
+
+    dist = distance.cdist(np.c_[x], bins)
+    x_binned = bins[np.argmin(dist, axis=1)].ravel()
+
+    return x_binned, bins.ravel()
+
+
+def _point_est(x, y, estimator, ci, n_boot):
+    """Find point estimate and bootstrapped ci for discrete x values."""
+    vals = sorted(np.unique(x))
+    points, cis = [], []
+    for val in vals:
+
+        _y = y[x == val]
+        est = estimator(_y)
+        points.append(est)
+
+        _ci = moss.ci(moss.bootstrap(_y, func=estimator, n_boot=n_boot), ci)
+        cis.append(_ci)
+
+    return vals, points, cis
+
+
+def regplot(x, y, data=None, x_estimator=None, x_bins=None,
+            fit_reg=True, ci=95, n_boot=1000,
             order=1, logistic=False, robust=False, partial=None,
             truncate=False, x_jitter=None, y_jitter=None,
+            xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
             ax=None):
+    """Draw a scatter plot between x and y with a regression line.
 
+
+    Parameters
+    ----------
+    x : vector or string
+        Data or column name in `data` for the predictor variable.
+    y : vector or string
+        Data or column name in `data` for response predictor variable.
+    data : DataFrame, optional
+        DataFrame to use if `x` and `y` are column names.
+    x_estimator : function that aggregates a vector into one value, optional
+        When `x` is a discrete variable, apply this estimator to the data
+        at each value and plot the data as a series of point estimates and
+        confidence intervals rather than a scatter plot.
+    x_ci: int between 0 and 100, optional
+        Confidence interval to compute and draw around the point estimates
+        when `x` is treated as a discrete variable.
+    x_bins : int or vector, optional
+        When `x` is a continuous variable, use the values in this vector (or
+        a vector of evenly spaced values with this length) to discretize the
+        data by assigning each point to the closest bin value. This applies
+        only to the plot; the regression is fit to the original data. This
+        implies that `x_estimator` is numpy.mean if not otherwise provided.
+    fit_reg : boolean, optional
+        If False, don't fit a regression; just draw the scatterplot.
+    ci : int between 0 and 100 or None, optional
+        Confidence interval to compute for regression estimate, which is drawn
+        as translucent bands around the regression line.
+    n_boot : int, optional
+        Number of bootstrap resamples used to compute the confidence intervals.
+    order : int, optional
+        Order of the polynomial to fit. Use order > 1 to explore higher-order
+        trends in the relationship.
+    logistic : boolean, optional
+        Fit a logistic regression model. This requires `y` to be dichotomous
+        with values of either 0 or 1.
+    robust : boolean, optional
+        Fit a robust linear regression, which may be useful when the data
+        appear to have outliers.
+    partial : matrix or string(s) , optional
+        Matrix with same first dimension as x and y, or column name(s) in
+        `data`. These variables are treated as confounding and are removed from
+        the data.
+    truncate : boolean, optional
+        If true, truncate the regression estimate at the minimum and maximum
+        values of the `x` variable.
+    {x, y}_jitter : floats, optional
+        Add uniform random noise from within this range (in data coordinates)
+        to each datapoint in the x and/or y direction. This can be helpful when
+        plotting discrete values.
+    {x, y}_label : None, string, or boolean, optional
+        If None, try to infer variable names from the data objects and use them
+        to annotate the plot. Otherwise, use the names provided here. Set to
+        False to avoid altering the axis labels.
+    label : string, optional
+        Label to use for the regression line, or for the scatterplot if not
+        fitting a regression.
+    color : matplotlib color, optional
+        Color to use for all elements of the plot. Can set the scatter and
+        regression colors separately using the `kws` dictionaries. If not
+        provided, the current color in the axis cycle is used.
+    {scatter, line}_kws : dictionaries, optional
+        Additional keyword arguments passed to scatter() and plot() for drawing
+        the components of the plot.
+    ax : matplotlib axis, optional
+        Plot into this axis, otherwise grab the current axis or make a new
+        one if not existing.
+
+    Returns
+    -------
+    ax: matplotlib axis
+        Axis with the regression plot.
+
+    See Also
+    --------
+    TODO
+
+    """
     if ax is None:
         ax = plt.gca()
 
-    x = np.asarray(x)
-    y = np.asarray(y)
+    # Get the variables
+    if data is not None:
+        x = data[x]
+        y = data[y]
 
+    # Try to find variable names
+    x_name, y_name = None, None
+    if hasattr(x, "name"):
+        x_name = x.name
+    if hasattr(y, "name"):
+        y_name = y.name
+
+    # Apply names to the plot
+    if xlabel is None and x_name is not None:
+        ax.set_xlabel(x_name)
+    elif xlabel:
+        ax.set_xlabel(x_name)
+    if ylabel is None and y_name is not None:
+        ax.set_ylabel(y_name)
+    elif ylabel:
+        ax.set_ylabel(y_name)
+
+    # Coerce the input data to arrays
+    x = np.asarray(x, dtype=np.float)
+    y = np.asarray(y, dtype=np.float)
+    if partial is not None:
+        # This is a heuristic but unlikely to be wrong
+        if data is not None and len(partial) != len(x):
+            partial = data[partial]
+        partial = np.asarray(partial, dtype=np.float)
+
+    # Set mutable default arguments
+    if scatter_kws is None:
+        scatter_kws = {}
+    if line_kws is None:
+        line_kws = {}
+
+    # Label the proper plot element
+    if fit_reg:
+        line_kws["label"] = label
+    else:
+        scatter_kws["label"] = label
+
+    # Grab the current color in the cycle if one isn't provided
     if color is None:
         lines, = plt.plot(x.mean(), y.mean())
         color = lines.get_color()
         lines.remove()
 
+    # Possibly regress confounding variables out of the dependent variable
     if partial is None:
-        y_scatter = y
+        y_scatter = y.copy()
     else:
         X = np.c_[np.ones_like(x), x, partial]
-        y_scatter = y - X[:, 2].dot(np.linalg.pinv(X).dot(y)[2])
+        y_scatter = y - X[:, 2:].dot(np.linalg.pinv(X).dot(y)[2:])
 
-    ax.scatter(x, y_scatter, color=color, alpha=.8)
+    # Possibly bin the predictor variable, which implies a point estimate
+    if x_bins is not None:
+        x_estimator = np.mean if x_estimator is None else x_estimator
+        x_discrete, x_bins = _bin_predictor(x, x_bins)
 
-    x_min, x_max = ax.get_xlim()
+    # Add in some jitter
+    if x_jitter is None:
+        x_scatter = x
+    else:
+        x_scatter = x + np.random.uniform(-x_jitter, x_jitter, x.size)
+    if y_jitter is not None:
+        y_scatter += np.random.uniform(-y_jitter, y_jitter, y.size)
+
+    # Get some defaults
+    scatter_color = scatter_kws.pop("c", color)
+    scatter_color = scatter_kws.pop("color", scatter_color)
+    lw = scatter_kws.pop("lw", mpl.rcParams["lines.linewidth"] * 1.75)
+    lw = scatter_kws.pop("linewidth", lw)
+
+    # Draw the datapoints either as a scatter or point estimate with CIs
+    if x_estimator is None:
+        alpha = scatter_kws.pop("alpha", .8)
+        ax.scatter(x_scatter, y_scatter,
+                   color=scatter_color, alpha=alpha, **scatter_kws)
+    else:
+        if x_bins is None:
+            x_discrete = x
+        point_data = _point_est(x_discrete, y_scatter,
+                                x_estimator, ci, n_boot)
+        for x_val, height, ci_bounds in zip(*point_data):
+            size = scatter_kws.pop("s", 50)
+            size = scatter_kws.pop("size", size)
+            ax.scatter(x_val, height, size, color=scatter_color, **scatter_kws)
+            ax.plot([x_val, x_val], ci_bounds, color=scatter_color,
+                    lw=lw, **scatter_kws)
+
+    # Just bail out here if we don't want a regression
+    if not fit_reg:
+        return ax
+
+    # Get the plot limits and set up a grid for the regression
+    if truncate:
+        x_min, x_max = x.min(), x.max()
+    else:
+        x_min, x_max = ax.get_xlim()
     grid = np.linspace(x_min, x_max, 100)
 
+    # Validate the regression parameters
     if sum((order > 1, logistic, robust, partial is not None)) > 1:
-        raise ValueError("`order` > 1 and `logistic` are mutally exclusive")
+        raise ValueError("`order` > 1 and `logistic` are mutually exclusive")
 
+    # Fit the regression and bootstrap the prediction.
+    # This gets delegated to one of several functions depending on the options.
     if order > 1:
         y_hat, y_hat_boots = _regress_poly(grid, x, y, order, ci, n_boot)
 
     elif logistic:
-        kwargs = dict(family=sm.families.Binomial())
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.GLM, kwargs,
-                                                  ci, n_boot)
+        binomial = sm.families.Binomial()
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.GLM, ci,
+                                                  n_boot, family=binomial)
     elif robust:
-        kwargs = dict()
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.RLM, kwargs,
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.RLM,
                                                   ci, n_boot)
     elif partial is not None:
         _x = np.c_[x, partial]
@@ -526,18 +723,28 @@ def regplot(x, y, x_estimator=None, x_ci=95, x_bins=None,
     else:
         y_hat, y_hat_boots = _regress_fast(grid, x, y, ci, n_boot)
 
+    # Compute the confidence interval for the regression estimate
     if ci is not None:
         err_bands = moss.ci(y_hat_boots, ci, axis=0)
 
-    ax.plot(grid, y_hat, color=color, lw=2)
-    ax.fill_between(grid, *err_bands, color=color, alpha=.15)
+    # Draw the regression and standard error bands
+    lw = line_kws.pop("linewidth", mpl.rcParams["lines.linewidth"] * 1.4)
+    lw = line_kws.pop("lw", lw)
+    _color = line_kws.pop("c", color)
+    _color = line_kws.pop("color", _color)
+    ax.plot(grid, y_hat, lw=lw, color=_color, **line_kws)
+    if ci is not None:
+        ax.fill_between(grid, *err_bands, color=_color, alpha=.15)
 
+    # Reset the x limits in case they got stretched from fill bleedover
     ax.set_xlim(x_min, x_max)
 
+    return ax
 
-def regplot_off(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
-                xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
-                reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
+
+def _regplot_old(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
+                 xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
+                 reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regresion line, marginals, and correlation value.
 
     Parameters
