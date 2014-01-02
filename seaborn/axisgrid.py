@@ -1,5 +1,6 @@
 from itertools import product
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -11,7 +12,7 @@ class FacetGrid(object):
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
                  color="#333333", legend=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None):
+                 margin_titles=False, xlim=None, ylim=None, dropna=True):
 
         nrow = 1 if row is None else len(data[row].unique())
         ncol = 1 if col is None else len(data[col].unique())
@@ -30,13 +31,26 @@ class FacetGrid(object):
 
         hue_var = hue
         if hue is None:
-            hue_vals = None
+            hue_names = None
             hue_masks = [np.repeat(True, len(data))]
             colors = [color]
         else:
-            hue_vals = np.sort(data[hue].unique())
-            hue_masks = [data[hue] == val for val in hue_vals]
+            hue_names = np.sort(data[hue].unique())
+            if dropna:
+                hue_names = list(filter(pd.notnull, hue_names))
+            if isinstance(palette, dict):
+                palette = [palette[h] for h in hue_names]
+            hue_masks = [data[hue] == val for val in hue_names]
             colors = utils.color_palette(palette, len(hue_masks))
+
+        all_na = np.zeros(len(data), np.bool)
+        if dropna:
+            row_na = all_na if row is None else data[row].isnull()
+            col_na = all_na if col is None else data[col].isnull()
+            hue_na = all_na if hue is None else data[hue].isnull()
+            not_na = ~(row_na & col_na & hue_na)
+        else:
+            not_na = ~all_na
 
         self._data = data
         self._fig = fig
@@ -46,17 +60,24 @@ class FacetGrid(object):
         if row is None:
             self._row_names = []
         else:
-            self._row_names = sorted(data[row].unique())
+            row_names = sorted(data[row].unique())
+            if dropna:
+                row_names = list(filter(pd.notnull, row_names))
+            self._row_names = row_names
+
         self._ncol = ncol
         self._col_var = col
         if col is None:
             self._col_names = []
         else:
-            self._col_names = sorted(data[col].unique())
+            col_names = sorted(data[col].unique())
+            if dropna:
+                col_names = list(filter(pd.notnull, col_names))
+            self._col_names = col_names
         self._margin_titles = margin_titles
         self._col_wrap = col_wrap
         self._hue_var = hue_var
-        self._hue_vals = hue_vals
+        self._hue_names = hue_names
         self._colors = colors
         self._draw_legend = ((hue is not None and hue not in [col, row])
                              and legend)
@@ -65,46 +86,39 @@ class FacetGrid(object):
         self._legend_data = {}
         self._x_var = None
         self._y_var = None
+        self._dropna = dropna
+        self._not_na = not_na
 
         fig.tight_layout()
         if despine:
             utils.despine(self._fig)
 
-    def __enter__(self):
+    def facet_data(self):
 
-        return self
-
-    def __exit__(self, exc_type, value, traceback):
-
-        pass
-
-    def _iter_masks(self):
+        data = self._data
 
         if self._nrow == 1 or self._col_wrap is not None:
             row_masks = [np.repeat(True, len(self._data))]
         else:
-            row_vals = np.sort(self._data[self._row_var].unique())
-            row_masks = [self._data[self._row_var] == val for val in row_vals]
+            row_masks = [data[self._row_var] == n for n in self._row_names]
 
         if self._ncol == 1:
             col_masks = [np.repeat(True, len(self._data))]
         else:
-            col_vals = np.sort(self._data[self._col_var].unique())
-            col_masks = [self._data[self._col_var] == val for val in col_vals]
+            col_masks = [data[self._col_var] == n for n in self._col_names]
 
         if len(self._colors) == 1:
             hue_masks = [np.repeat(True, len(self._data))]
         else:
-            hue_vals = np.sort(self._data[self._hue_var].unique())
-            hue_masks = [self._data[self._hue_var] == val for val in hue_vals]
+            hue_masks = [data[self._hue_var] == n for n in self._hue_names]
 
         for (i, row), (j, col), (k, hue) in product(enumerate(row_masks),
                                                     enumerate(col_masks),
                                                     enumerate(hue_masks)):
-            data_ijk = self._data[row & col & hue]
+            data_ijk = data[row & col & hue & self._not_na]
             yield (i, j, k), data_ijk
 
-    def map(self, func, x_var, y_var=None, **kwargs):
+    def map(self, func, *args, **kwargs):
 
         for (row_i, col_j, hue_k), data_ijk in self._iter_masks():
 
@@ -123,17 +137,18 @@ class FacetGrid(object):
             kwargs["color"] = self._colors[hue_k]
 
             if self._hue_var is not None:
-                kwargs["label"] = self._hue_vals[hue_k]
+                kwargs["label"] = self._hue_names[hue_k]
 
-            if y_var is None:
-                func(data_ijk[x_var].values, **kwargs)
-            else:
-                func(data_ijk[x_var].values,
-                     data_ijk[y_var].values, **kwargs)
+            plot_data = data_ijk[list(args)]
+            if self._dropna:
+                plot_data = plot_data.dropna()
+            plot_args = [v.values for k, v in plot_data.iteritems()]
+            func(*plot_args, **kwargs)
 
             self._update_legend_data(ax)
+            self._clean_axis(ax)
 
-        self._set_axis_labels(x_var, y_var)
+        self._set_axis_labels(*args[:2])
 
         if self._draw_legend:
             self._make_legend()
@@ -148,7 +163,11 @@ class FacetGrid(object):
                 setter = getattr(ax, "set_%s" % key)
                 setter(val)
 
-    def _set_axis_labels(self, x_var, y_var=None):
+    def despine(self, **kwargs):
+
+        utils.despine(self._fig, **kwargs)
+
+    def set_axis_labels(self, x_var, y_var=None):
 
         if y_var is not None:
             self._y_var = y_var
@@ -156,20 +175,14 @@ class FacetGrid(object):
         self.set_xlabel(x_var)
         self._x_var = x_var
 
-    def _clean_axis(self, ax):
-
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-        ax.legend_ = None
-
-    def set_xlabel(self, label=None, **kwargs):
+    def set_xlabels(self, label=None, **kwargs):
 
         if label is None:
             label = self._x_var
         for ax in self._axes[-1, :]:
             ax.set_xlabel(label, **kwargs)
 
-    def set_ylabel(self, label=None, **kwargs):
+    def set_ylabels(self, label=None, **kwargs):
 
         if label is None:
             label = self._y_var
@@ -189,6 +202,12 @@ class FacetGrid(object):
             if labels is None:
                 labels = [l.get_text() for l in ax.get_yticklabels()]
             ax.set_yticklabels(labels, **kwargs)
+
+    def _clean_axis(self, ax):
+
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.legend_ = None
 
     def _set_title(self):
 
