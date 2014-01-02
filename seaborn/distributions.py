@@ -120,7 +120,7 @@ def _box_colors(vals, color):
 
 def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            ax=None, **kwargs):
+            label=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
@@ -180,6 +180,8 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             box.set_alpha(alpha)
         box.set_edgecolor(gray)
         box.set_linewidth(linewidth)
+        if label is not None:
+            box.set_label(label)
     for i, whisk in enumerate(boxes["whiskers"]):
         whisk.set_color(gray)
         whisk.set_linewidth(linewidth)
@@ -391,33 +393,35 @@ def _freedman_diaconis_bins(a):
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, axlabel=None, ax=None):
+             color=None, vertical=False, axlabel=None, label=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameter
     a : (squeezable to) 1d array
         Observed data.
-    bins : argument for matplotlib hist(), or None
+    bins : argument for matplotlib hist(), or None, optional
         Specification of hist bins, or None to use Freedman-Diaconis rule.
-    hist : bool, default True
+    hist : bool, optional
         Whether to plot a (normed) histogram.
-    kde : bool, default True
+    kde : bool, optional
         Whether to plot a gaussian kernel density estimate.
-    rug : bool, default False
+    rug : bool, optional
         Whether to draw a rugplot on the support axis.
-    fit : random variable object
+    fit : random variable object, optional
         An object with `fit` method, returning a tuple that can be passed to a
         `pdf` method a positional arguments following an grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries
+    {hist, kde, rug, fit}_kws : dictionaries, optional
         Keyword arguments for underlying plotting functions.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
-    vertical : bool, default False
+    vertical : bool, optional
         If True, oberved values are on y-axis.
-    axlabel : string, False, or None
+    axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
         from a.namel if False, do not set a label.
+    label : string, optional
+        Legend label for the relevent component of the plot
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -457,6 +461,17 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             line, = ax.plot(a.mean(), 0)
         color = line.get_color()
         line.remove()
+
+    # Plug the label into the right kwarg dictionary
+    if label is not None:
+        if hist:
+            hist_kws["label"] = label
+        elif kde:
+            kde_kws["label"] = label
+        elif rug:
+            rug_kws["label"] = label
+        elif fit:
+            fit_kws["label"] = label
 
     if hist:
         if bins is None:
