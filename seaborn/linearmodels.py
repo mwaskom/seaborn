@@ -18,12 +18,38 @@ from .distributions import distplot
 from .axisgrid import FacetGrid
 
 
-def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
-           x_estimator=None, x_ci=95, x_bins=None, n_boot=5000, fit_reg=True,
-           order=1, ci=95, logistic=False, truncate=False,
-           x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
-           sharex=True, sharey=True, palette="husl", size=None,
-           scatter_kws=None, line_kws=None, palette_kws=None):
+def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
+           size=5, aspect=1, sharex=True, sharey=True, **kwargs):
+
+    # Backwards-compatibility warning layer
+    if "color" in kwargs:
+        msg = "`color` is deprecated and will be removed; using `hue` instead."
+        warnings.warn(msg, UserWarning)
+        hue = kwargs.pop("color")
+
+    # Initialize the grid
+    facets = FacetGrid(data, row, col, hue, palette=palette,
+                       size=size, aspect=aspect)
+
+    # Hack to set the x limits properly, which needs to happen here
+    # because the extent of the regression estimate is determined
+    # by the limits of the plot
+    if sharex:
+        for ax in facets._axes.flat:
+            scatter = ax.scatter(data[x], np.ones(len(data)) * data[y].mean())
+            scatter.remove()
+
+    # Draw the regression plot on each facet
+    facets.map(regplot, x, y, **kwargs)
+    return facets
+
+
+def lmplot_old(x, y, data, color=None, row=None, col=None, col_wrap=None,
+               x_estimator=None, x_ci=95, x_bins=None, n_boot=5000,
+               fit_reg=True, order=1, ci=95, logistic=False, truncate=False,
+               x_partial=None, y_partial=None, x_jitter=None, y_jitter=None,
+               sharex=True, sharey=True, palette="husl", size=None,
+               scatter_kws=None, line_kws=None, palette_kws=None):
     """Plot a linear model with faceting, color binning, and other options.
 
     Parameters
@@ -422,119 +448,9 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
         else:
             palette = [color]
     else:
-        if hue_order is None:
-            hue_order = sorted(pd.unique(hue))
-        if dropna:
-            hue_order = list(filter(pd.notnull, hue_order))
-        if isinstance(palette, dict):
-            palette = [palette[h] for h in hue_order]
-        n_colors = len(hue_order)
-        palette = color_palette(palette, n_colors)
-        pos_adjust = np.linspace(0, dodge, n_colors)
-        pos_adjust -= pos_adjust.mean()
-
-    plot_data, case_data = _discrete_plot_data(x, y, hue, cases)
-
-    boot_kws = dict(n_boot=n_boot, func=estimator)
-    lw = mpl.rcParams["lines.linewidth"] * 1.5
-    ls = "-" if join else ""
-    kwargs = dict(ls=ls, lw=lw, marker="o", ms=9)
-    boot_kws = dict(n_boot=n_boot, func=estimator)
-    plot_pos = np.arange(len(x_order))
-    if hue is not None:
-        for j, hue_j in enumerate(hue_order):
-            heights = [estimator(plot_data[x_i][hue_j]) for x_i in x_order]
-            hue_pos = plot_pos + pos_adjust[j]
-            color = palette[j]
-            plt.plot(hue_pos, heights, color=color, label=hue_j, **kwargs)
-
-            for i, x_i in enumerate(x_order):
-                bin_data = plot_data[x_i][hue_j].values
-                if cases is not None:
-                    boot_kws["cases"] = case_data[x_i][hue_j]
-                if ci is not None:
-                    ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-                    ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-                    pos = [i + pos_adjust[j]] * 2
-                    ax.plot(pos, ci_, linewidth=lw, color=color)
-
-    else:
-        heights = [estimator(plot_data[x_i]) for x_i in x_order]
-        color = palette[0]
-        plt.plot(plot_pos, heights, color=color,  **kwargs)
-
-        for i, x_i in enumerate(x_order):
-            bin_data = plot_data[x_i].values
-            if cases is not None:
-                boot_kws["cases"] = case_data[x_i]
-            if ci is not None:
-                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-                ax.plot([i, i], ci_, linewidth=lw, color=color)
-
-    if hue is not None and legend:
-        title_size = mpl.rcParams["axes.labelsize"] * .8
-        ax.legend(loc="best").set_title(hue_name, prop={"size": title_size})
-    xlim = -.3, max(plot_pos) + .3
-    n_x = len(x_order)
-    ax.set(xlabel=x_name, ylabel=y_name, xlim=xlim,
-           xticks=np.arange(n_x), xticklabels=x_order)
-
-    return ax
-
-
-def _discrete_plot_data(x, y=None, hue=None, cases=None):
-            
-    plot_data = dict()
-    case_data = dict()
-
-    for x_i in pd.unique(x):
-        x_data = dict()
-        x_cases = dict()
-        if hue is not None:
-            for hue_j in pd.unique(hue):
-                mask = (x == x_i) & (hue == hue_j)
-                x_data[hue_j] = y[mask]
-                if cases is not None:
-                    x_cases[hue_j] = cases[mask]
-        else:
-            mask = x == x_i
-            x_data = y[mask]
-            if cases is not None:
-                x_cases = cases[mask]
-
-        plot_data[x_i] = x_data
-        case_data[x_i] = x_cases
-
-    case_data = None if cases is None else case_data
-
-    return plot_data, case_data
-
-
-def _regress_fast(grid, x, y, cases, ci, n_boot):
-    """Low-level regression and prediction using linear algebra."""
-    X = np.c_[np.ones(len(x)), x]
-    grid = np.c_[np.ones(len(grid)), grid]
-    reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
-    y_hat = grid.dot(reg_func(X, y))
-    if ci is None:
-        return y_hat, None
-
-    beta_boots = moss.bootstrap(X, y, func=reg_func,
-                                n_boot=n_boot, cases=cases).T
-    y_hat_boots = grid.dot(beta_boots).T
-    return y_hat, y_hat_boots
-
-
-def _regress_poly(grid, x, y, cases, order, ci, n_boot):
-    """Regression using numpy polyfit for higher-order trends."""
-    reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
-    y_hat = reg_func(x, y)
-    if ci is None:
-        return y_hat, None
-
-    y_hat_boots = moss.bootstrap(x, y, func=reg_func,
-                                 n_boot=n_boot, cases=cases)
-    return y_hat, y_hat_boots
+        hue_names = np.sort(data[color].unique())
+        hue_masks = [data[color] == val for val in hue_names]
+        colors = color_palette(palette, len(hue_masks), **palette_kws)
 
 
 def _regress_statsmodels(grid, x, y, cases, model, ci, n_boot, **kwargs):
@@ -778,7 +694,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
                     if color_factor is None:
                         label = ""
                     else:
-                        label = hue_vals[hue_k]
+                        label = hue_names[hue_k]
                     ax.plot(xx, reg, color=color,
                             label=str(label), **line_kws)
                     ax.set_xlim(xlim)
@@ -789,23 +705,25 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     plt.tight_layout()
 
 
-def factorplot(x, y=None, data=None, color=None, row=None, col=None,
+def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
                col_wrap=None, kind="auto", estimator=np.mean, ci=95, size=5,
                aspect=1, palette=None, dodge=0, link=True, legend=True,
-               legend_out=True):
+               legend_out=True, dropna=True):
 
-    if color is not None and palette is None:
+    if hue is not None and palette is None:
         palette = "husl"
-    elif color is None and palette is not None:
-        color = x
+    elif hue is None and palette is not None:
+        hue = x
 
-    facet = FacetGrid(data, row, col, color, col_wrap=col_wrap, size=size,
+    facet = FacetGrid(data, row, col, hue, col_wrap=col_wrap, size=size,
                       aspect=aspect, legend=legend, legend_out=legend_out,
-                      palette=palette)
+                      palette=palette, dropna=True)
 
     if kind == "auto":
         if y is None:
             kind = "bar"
+        elif (data[y] <= 1).all():
+            kind = "point"
         elif (data[y].mean() / data[y].std()) < 2.5:
             kind = "bar"
         else:
@@ -814,6 +732,8 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
     mask_gen = facet._iter_masks()
 
     x_order = sorted(data[x].unique())
+    if dropna:
+        x_order = list(filter(pd.notnull, x_order))
 
     if y is None:
         estimator = len
@@ -823,16 +743,20 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
     else:
         y_count = False
 
-    if color is None:
+    if hue is None:
         colors = ["#777777" if kind == "bar" else "#333333"]
         n_colors = 1
         width = .8
         pos_adjust = [0]
     else:
-        color_order = sorted(data[color].unique())
-        n_colors = len(color_order)
+        hue_order = sorted(data[hue].unique())
+        if dropna:
+            hue_order = list(filter(pd.notnull, hue_order))
+        if isinstance(palette, dict):
+            palette = [palette[h] for h in hue_order]
+        n_colors = len(hue_order)
         colors = color_palette(palette, n_colors)
-        if color == row or color == col or color == x:
+        if hue == row or hue == col or hue == x:
             width = .8
             pos_adjust = [0] * n_colors
         else:
@@ -846,13 +770,17 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
             else:
                 pos_adjust = [0] * n_colors
 
-    draw_legend = color is not None and color not in [x, row, col]
+    draw_legend = hue is not None and hue not in [x, row, col]
 
     for (row_i, col_j, hue_k), data_ijk in mask_gen:
 
         ax = facet._axes[row_i, col_j]
 
-        grouped = {g: data[y] for g, data in data_ijk.groupby(x)}
+        plot_data = data_ijk[[x] if y_count else [x, y]]
+        if dropna:
+            plot_data.dropna()
+
+        grouped = {g: data[y] for g, data in plot_data.groupby(x)}
 
         plot_pos = []
         plot_heights = []
@@ -870,7 +798,7 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
 
         kwargs = {}
         if draw_legend:
-            kwargs["label"] = facet._hue_vals[hue_k]
+            kwargs["label"] = facet._hue_names[hue_k]
 
         if kind == "bar":
 
@@ -977,7 +905,7 @@ def _point_est(x, y, estimator, ci, n_boot):
 def regplot(x, y, data=None, x_estimator=None, x_bins=None,
             fit_reg=True, ci=95, n_boot=1000,
             order=1, logistic=False, robust=False, partial=None,
-            truncate=False, x_jitter=None, y_jitter=None,
+            truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
             ax=None):
@@ -1026,8 +954,10 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None,
         `data`. These variables are treated as confounding and are removed from
         the data.
     truncate : boolean, optional
-        If true, truncate the regression estimate at the minimum and maximum
+        If True, truncate the regression estimate at the minimum and maximum
         values of the `x` variable.
+    dropna : boolean, optional
+        Remove observations that are NA in at least one of the variables.
     {x, y}_jitter : floats, optional
         Add uniform random noise from within this range (in data coordinates)
         to each datapoint in the x and/or y direction. This can be helpful when
@@ -1067,6 +997,12 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None,
     if data is not None:
         x = data[x]
         y = data[y]
+
+    # Drop NA values
+    if dropna:
+        not_na = pd.notnull(x) & pd.notnull(y)
+        x = x[not_na]
+        y = y[not_na]
 
     # Try to find variable names
     x_name, y_name = None, None
@@ -1206,6 +1142,10 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None,
 
     # Reset the x limits in case they got stretched from fill bleedover
     ax.set_xlim(x_min, x_max)
+
+    # Reset the y limits if this is a logistic plot to incude 0 and 1
+    ymin, ymax = ax.get_ylim()
+    ax.set_ylim(min(ymin, 0), max(ymax, 1))
 
     return ax
 
