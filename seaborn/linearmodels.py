@@ -45,7 +45,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
 def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
                col_wrap=None, kind="auto", estimator=np.mean, ci=95, size=5,
-               aspect=1, palette=None, dodge=0, link=True, legend=True,
+               aspect=1, palette=None, dodge=0, join=True, legend=True,
                legend_out=True, dropna=True):
 
     if hue is not None and palette is None:
@@ -150,7 +150,7 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
         elif kind == "point":
 
             hue = colors[hue_k]
-            ls = "-" if link else ""
+            ls = "-" if join else ""
             ax.plot(plot_pos, plot_heights, color=hue, marker="o", ms=9,
                     ls=ls, lw=3, **kwargs)
             facet._update_legend_data(ax)
