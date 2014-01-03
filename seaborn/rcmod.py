@@ -1,5 +1,6 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 import contextlib
+from numpy import isreal
 import matplotlib as mpl
 from seaborn import utils
 
