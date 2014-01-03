@@ -60,7 +60,7 @@ def set_axes_style(style, context, font="Arial", gridweight=None):
     }
     if gridweight is None:
         if context == "paper":
-            glw = gridweights["extra heavy"]
+            glw = gridweights["light"]
         else:
             glw = gridweights['medium']
     elif isreal(gridweight):
