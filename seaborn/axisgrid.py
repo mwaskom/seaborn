@@ -11,12 +11,53 @@ class FacetGrid(object):
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
-                 color="#333333", legend=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, dropna=True):
+                 dropna=True, legend=True, legend_out=True, despine=True,
+                 margin_titles=False, xlim=None, ylim=None):
+        """Initialize the plot figure and FacetGrid object.
 
+        Parameters
+        ----------
+        data : DataFrame
+            Tidy (long-form) dataframe where each column is a variable and
+            each row is an observation.
+        row, col, hue : strings, optional
+            Variable (column) names to subset the data for the facets.
+        col_wrap : int, optional
+            Wrap the column variable at this width. Incompatible with `row`.
+        share{x, y}: booleans, optional
+            Lock the limits of the vertical and horizontal axes across the
+            facets.
+        size : scalar, optional
+            Height (in inches) of each facet.
+        aspect : scalar, optional
+            Aspect * size gives the width (in inches) of each facet.
+        palette : seaborn color palette
+            Set of colors for mapping the `hue` variable.
+        dropna : boolean, optional
+            Drop missing values from the data before plotting.
+        legend : boolean, optional
+            Draw a legend for the data when using a `hue` variable.
+        legend_out: boolean, optional
+            Draw the legend outside the grid of plots.
+        despine : boolean, optional
+            Remove the top and right spines from the plots.
+        margin_titles : boolean, optional
+            Write the column and row variable labels on the margins of the
+            grid rather than above each plot.
+        {x, y}lim: two-tuples, optional
+            Limits for each of the axes on each facet when share{x, y} is True.
+
+        Returns
+        -------
+        FacetGrid
+
+        """
+        # Compute the grid shape
         nrow = 1 if row is None else len(data[row].unique())
         ncol = 1 if col is None else len(data[col].unique())
 
+        # Calculate the base figure size
+        # This can get stretched later by a legend
         figsize = (ncol * size * aspect, nrow * size)
 
         subplot_kw = {}
@@ -25,6 +66,7 @@ class FacetGrid(object):
         if ylim is not None:
             subplot_kw["ylim"] = ylim
 
+        # Initialize the subplot grid
         fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False,
                                  sharex=sharex, sharey=sharey,
                                  subplot_kw=subplot_kw)
@@ -33,7 +75,7 @@ class FacetGrid(object):
         if hue is None:
             hue_names = None
             hue_masks = [np.repeat(True, len(data))]
-            colors = [color]
+            colors = None
         else:
             hue_names = np.sort(data[hue].unique())
             if dropna:
@@ -134,7 +176,9 @@ class FacetGrid(object):
             if not data_ijk.values.tolist():
                 continue
 
-            kwargs["color"] = self._colors[hue_k]
+            color = self._colors[hue_k]
+            if color is not None:
+                kwargs["color"]
 
             if self._hue_var is not None:
                 kwargs["label"] = self._hue_names[hue_k]
