@@ -5,7 +5,7 @@ import matplotlib as mpl
 
 from . import palettes
 
-def set(context="notebook", style="darkgrid", palette="deep", font="Arial", gridweight="medium"):
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial", gridweight=None):
     """Set new RC params in one step."""
     set_axes_style(style, context, font=font, gridweight=gridweight)
     set_color_palette(palette)
@@ -15,7 +15,7 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def set_axes_style(style, context, font="Arial", gridweight="medium"):
+def set_axes_style(style, context, font="Arial", gridweight=None):
     """Set the axis style.
 
     Parameters
@@ -26,7 +26,7 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
         Intended context for resulting figures.
     font : matplotlib font spec
         Font to use for text in the figures.
-    gridweight : extra heavy | heavy | medium (default) | light
+    gridweight : extra heavy | heavy | medium | light
         Width of the grid lines. None
 
     """
@@ -39,7 +39,7 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
         raise ValueError("Context %s is not recognized" % context)
 
     if not isreal(gridweight) and \
-      (not {"extra heavy", "heavy", "medium", "light"} & {gridweight}):
+      (not {"None", "extra heavy", "heavy", "medium", "light"} & {gridweight}):
         raise ValueError("Gridweight %s is not recognized" % gridweight)
 
     # Determine the axis parameters
@@ -58,7 +58,12 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
         'medium': 0.8,
         'light': 0.5,
     }
-    if isreal(gridweight):
+    if gridweight is None:
+        if context == "paper":
+            glw = gridweights["extra heavy"]
+        else:
+            glw = gridweights['medium']
+    elif isreal(gridweight):
         glw = gridweight
     else:
         glw = gridweights[gridweight]
@@ -72,7 +77,7 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
                      "axes.axisbelow": True,
                      "grid.color": "w",
                      "grid.linestyle": "-",
-                     "grid.linewidth": lw}
+                     "grid.linewidth": glw}
 
     elif style == "whitegrid":
         lw = 1.0 if context == "paper" else 1.7
