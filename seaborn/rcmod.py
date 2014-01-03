@@ -26,7 +26,7 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
         Intended context for resulting figures.
     font : matplotlib font spec
         Font to use for text in the figures.
-    gridweight : heavy | medium | light
+    gridweight : extra heavy | heavy | medium (default) | light
         Width of the grid lines. None
 
     """
@@ -78,7 +78,7 @@ def set_axes_style(style, context, font="Arial", gridweight="medium"):
         lw = 1.0 if context == "paper" else 1.7
         ax_params = {"axes.facecolor": "white",
                      "axes.edgecolor": "#CCCCCC",
-                     "axes.linewidth": lw + .2,
+                     "axes.linewidth": lw,
                      "axes.grid": True,
                      "axes.axisbelow": True,
                      "grid.color": "#DDDDDD",
