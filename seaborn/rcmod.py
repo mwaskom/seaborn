@@ -1,12 +1,13 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 import contextlib
+from numpy import isreal
 import matplotlib as mpl
 from seaborn import utils
 
 
-def set(context="notebook", style="darkgrid", palette="deep", font="Arial"):
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial", gridweight=None):
     """Set new RC params in one step."""
-    set_axes_style(style, context, font)
+    set_axes_style(style, context, font=font, gridweight=gridweight)
     set_color_palette(palette)
 
 def reset_defaults():
@@ -14,7 +15,7 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def set_axes_style(style, context, font="Arial"):
+def set_axes_style(style, context, font="Arial", gridweight=None):
     """Set the axis style.
 
     Parameters
@@ -25,14 +26,21 @@ def set_axes_style(style, context, font="Arial"):
         Intended context for resulting figures.
     font : matplotlib font spec
         Font to use for text in the figures.
+    gridweight : extra heavy | heavy | medium | light
+        Width of the grid lines. None
 
     """
+
     # Validate the arguments
     if not {"darkgrid", "whitegrid", "nogrid", "ticks"} & {style}:
         raise ValueError("Style %s not recognized" % style)
 
     if not {"notebook", "talk", "paper", "poster"} & {context}:
         raise ValueError("Context %s is not recognized" % context)
+
+    if not isreal(gridweight) and \
+      (not {"None", "extra heavy", "heavy", "medium", "light"} & {gridweight}):
+        raise ValueError("Gridweight %s is not recognized" % gridweight)
 
     # Determine the axis parameters
     # -----------------------------
@@ -43,6 +51,23 @@ def set_axes_style(style, context, font="Arial"):
     mpl.rc("xtick.minor", size=0)
     mpl.rc("ytick.minor", size=0)
 
+    # select grid line width:
+    gridweights = {
+        'extra heavy': 1.5,
+        'heavy': 1.1,
+        'medium': 0.8,
+        'light': 0.5,
+    }
+    if gridweight is None:
+        if context == "paper":
+            glw = gridweights["light"]
+        else:
+            glw = gridweights['medium']
+    elif isreal(gridweight):
+        glw = gridweight
+    else:
+        glw = gridweights[gridweight]
+
     if style == "darkgrid":
         lw = .8 if context == "paper" else 1.5
         ax_params = {"axes.facecolor": "#EAEAF2",
@@ -52,13 +77,13 @@ def set_axes_style(style, context, font="Arial"):
                      "axes.axisbelow": True,
                      "grid.color": "w",
                      "grid.linestyle": "-",
-                     "grid.linewidth": lw}
+                     "grid.linewidth": glw}
 
     elif style == "whitegrid":
-        glw = .8 if context == "paper" else 1.5
+        lw = 1.0 if context == "paper" else 1.7
         ax_params = {"axes.facecolor": "white",
                      "axes.edgecolor": "#CCCCCC",
-                     "axes.linewidth": glw + .2,
+                     "axes.linewidth": lw,
                      "axes.grid": True,
                      "axes.axisbelow": True,
                      "grid.color": "#DDDDDD",
