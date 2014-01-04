@@ -449,6 +449,11 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     -------
     ax : matplotlib axis
 
+    Examples
+    --------
+    >>> np.random.seed(9221999)
+    >>> data = np.random.randn(200)
+    >>> sns.distplot(data)
     """
     if ax is None:
         ax = plt.gca()
@@ -657,6 +662,17 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     ax : matplotlib axis
         Axis with plot.
 
+    Examples
+    --------
+    If `data` is 1d
+
+    >>> data = np.random.randn(30)
+    >>> sns.kdeplot(data)
+
+    If `data` is 2d
+
+    >>> data = np.hstack([data, np.random.exponential(size=30)]).reshape(30, 2)
+    >>> sns.kdeplot(data)
     """
     if ax is None:
         ax = plt.gca()
@@ -704,6 +720,10 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     ax : matplotlib axis
         Axis with rugplot.
 
+    Examples
+    --------
+    >>> data = np.random.randn(30)
+    >>> sns.rugplot(data)  XXX all different colors
     """
     if ax is None:
         ax = plt.gca()
