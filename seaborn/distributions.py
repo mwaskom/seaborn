@@ -307,6 +307,22 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     ax : matplotlib axis
         Axis with violin plot.
 
+    Examples
+    --------
+
+    From a Series with groupby
+
+    >>> np.random.seed(42)
+    >>> grouper = pd.Series(np.random.choice(['a', 'b'], size=50))
+    >>> s = pd.Series(np.random.pareto(2, size=50))
+    >>> sns.violinplot(s, groupby=grouper)
+
+    From a DataFrame
+
+    >>> df = pd.DataFrame([np.random.pareto(shape, size=50)
+                           for shape in [2, 2.5, 2.75, 3]]).T
+    >>> sns.violinplot(df, names=["2", "2.5", "2.75", "3"])
+
     """
     if ax is None:
         ax = plt.gca()
