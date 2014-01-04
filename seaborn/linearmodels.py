@@ -70,6 +70,17 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
     palette_kws : dictionary
         Keyword arguments for seaborn.color_palette.
 
+    Examples
+    --------
+
+    >>> grouper = np.array(50 * ['a'] + 50 * ['b'])
+    >>> x = np.hstack([2 + np.random.randn(50), 4 + np.random.randn(50)])
+    >>> y = x + np.random.randn(100)
+    >>> df = pd.DataFrame([x, y], index=['x', 'y']).T
+    >>> df['group'] = grouper
+    >>> sns.lmplot('x', 'y', df, color='group')
+
+    XXX Runtime error
     """
     # TODO
     # - legend when fit_line is False
@@ -351,6 +362,18 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     {reg, scatter, dist, text}_kws: dicts
         Further keyword arguments for the constituent plots.
 
+    Examples
+    --------
+    >>> df = pd.DataFrame({"x": np.random.poisson(size=80),
+                           "y": np.random.exponential(size=80)}).cumsum()
+
+    With a DataFrame
+
+    >>> sns.regplot("x", "y", data=df)
+
+    From two Series
+
+    >>> sns.regplot(df['x'], df['y'])
     """
     # Interperet inputs
     if data is not None:
