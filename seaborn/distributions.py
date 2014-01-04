@@ -157,6 +157,24 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     ax : matplotlib axis
         Axis where boxplot is plotted.
 
+    Examples
+    --------
+
+    From a DataFrame or list of vectors:
+
+    >>> np.random.seed(42)
+    >>> df = pd.DataFrame([np.random.uniform(size=50), np.random.randn(50),
+    ...                  np.random.exponential(size=50)]).T
+    >>> sns.boxplot(df)
+
+    Grouping by a series
+
+    >>> grouper = pd.Series(np.random.choice(['a', 'b'], size=50))
+    >>> vals = pd.Series(np.random.randn(50))  # XXX must be Series
+    >>> sns.boxplot(vals, groupby=grouper)
+
+    XXX shoudl be able to pass a df for vals and groupby a column name, drop that col from the plot groups
+
     """
     if ax is None:
         ax = plt.gca()
