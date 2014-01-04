@@ -159,7 +159,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
     Examples
     --------
-
     From a DataFrame or list of vectors:
 
     >>> np.random.seed(42)
@@ -174,7 +173,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     >>> sns.boxplot(vals, groupby=grouper)
 
     XXX shoudl be able to pass a df for vals and groupby a column name, drop that col from the plot groups
-
     """
     if ax is None:
         ax = plt.gca()
@@ -309,7 +307,6 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
     Examples
     --------
-
     From a Series with groupby
 
     >>> np.random.seed(42)
@@ -322,7 +319,6 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     >>> df = pd.DataFrame([np.random.pareto(shape, size=50)
                            for shape in [2, 2.5, 2.75, 3]]).T
     >>> sns.violinplot(df, names=["2", "2.5", "2.75", "3"])
-
     """
     if ax is None:
         ax = plt.gca()
