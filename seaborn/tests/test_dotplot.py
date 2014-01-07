@@ -4,9 +4,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 
-import sys
-sys.path = [x for x in sys.path if "seaborn" not in x]
-import seaborn as sns
+#import sys
+#sys.path = [x for x in sys.path if "seaborn" not in x]
+#import seaborn as sns
 
 pdf = PdfPages("test_dotplot.pdf")
 
