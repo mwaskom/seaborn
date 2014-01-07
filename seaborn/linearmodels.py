@@ -34,7 +34,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     # because the extent of the regression estimate is determined
     # by the limits of the plot
     if sharex:
-        for ax in facets._axes.flat:
+        for ax in facets.axes.flat:
             scatter = ax.scatter(data[x], np.ones(len(data)) * data[y].mean())
             scatter.remove()
 
@@ -112,7 +112,7 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
     for (row_i, col_j, hue_k), data_ijk in mask_gen:
 
-        ax = facet._axes[row_i, col_j]
+        ax = facet.axes[row_i, col_j]
 
         plot_data = data_ijk[[x] if y_count else [x, y]]
         if dropna:
@@ -136,7 +136,7 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
         kwargs = {}
         if draw_legend:
-            kwargs["label"] = facet._hue_names[hue_k]
+            kwargs["label"] = facet.hue_names[hue_k]
 
         if kind == "bar":
 
@@ -161,14 +161,14 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
     n_x = len(x_order)
     facet.set(xticks=range(n_x), xticklabels=x_order, xlim=(-.5, n_x - .5))
 
-    for ax in facet._axes.flat:
+    for ax in facet.axes.flat:
         ax.xaxis.grid(False)
 
     y_label = "count" if y_count else y
-    facet._set_axis_labels(x, y_label)
-    facet._set_title()
+    facet.set_axis_labels(x, y_label)
+    facet.set_titles()
     if draw_legend:
-        facet._make_legend()
+        facet.set_legend()
 
     return facet
 
