@@ -343,7 +343,7 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
         else:
             kind = "point"
 
-    mask_gen = facet._iter_masks()
+    mask_gen = facet.facet_data()
 
     x_order = sorted(data[x].unique())
 
