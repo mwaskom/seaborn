@@ -834,6 +834,9 @@ def dotplot(vals, point, interval=None, groupby=None,
     else:
         stackd = 0.
 
+    # Map from style codes to positions.
+    style_codes_map = {style_codes.index[x]: x for x in style_codes}
+
     # Setup default styles
     colors = husl_palette(nval)
     if style_props is None:
@@ -943,7 +946,8 @@ def dotplot(vals, point, interval=None, groupby=None,
                 # Calculate the vertical offset
                 yo = 0
                 if stackd != 0:
-                    yo = -dy/5 + ji*stackd
+                    sc = vals.loc[jp,styles]
+                    yo = -dy/5 + stackd*style_codes_map[sc]
 
                 pt = vals.loc[jp,point]
 
