@@ -137,14 +137,13 @@ class FacetGrid(object):
         # ---------------------------
 
         # First the public API
-        # TODO decide what we want to go here...
-        self._data = data
-        self._fig = fig
-        self._axes = axes
+        self.data = data
+        self.fig = fig
+        self.axes = axes
 
-        self._row_names = row_names
-        self._col_names = col_names
-        self._hue_names = hue_names
+        self.row_names = row_names
+        self.col_names = col_names
+        self.hue_names = hue_names
 
         # Next the private variables
         self._nrow = nrow
@@ -169,7 +168,7 @@ class FacetGrid(object):
         # Make the axes look good
         fig.tight_layout()
         if despine:
-            utils.despine(self._fig)
+            utils.despine(self.fig)
 
     def facet_data(self):
         """Generator for name indices and data subsets for each facet.
@@ -184,25 +183,25 @@ class FacetGrid(object):
             is None.
 
         """
-        data = self._data
+        data = self.data
 
         # Construct masks for the row variable
         if self._nrow == 1 or self._col_wrap is not None:
-            row_masks = [np.repeat(True, len(self._data))]
+            row_masks = [np.repeat(True, len(self.data))]
         else:
-            row_masks = [data[self._row_var] == n for n in self._row_names]
+            row_masks = [data[self._row_var] == n for n in self.row_names]
 
         # Construct masks for the column variable
         if self._ncol == 1:
-            col_masks = [np.repeat(True, len(self._data))]
+            col_masks = [np.repeat(True, len(self.data))]
         else:
-            col_masks = [data[self._col_var] == n for n in self._col_names]
+            col_masks = [data[self._col_var] == n for n in self.col_names]
 
         # Construct masks for the hue variable
         if len(self._colors) == 1:
-            hue_masks = [np.repeat(True, len(self._data))]
+            hue_masks = [np.repeat(True, len(self.data))]
         else:
-            hue_masks = [data[self._hue_var] == n for n in self._hue_names]
+            hue_masks = [data[self._hue_var] == n for n in self.hue_names]
 
         # Here is the main generator loop
         for (i, row), (j, col), (k, hue) in product(enumerate(row_masks),
@@ -253,7 +252,7 @@ class FacetGrid(object):
                 f_row, f_col = row_i, col_j
 
             # Get a reference to the axes object we want, and make it active
-            ax = self._axes[f_row, f_col]
+            ax = self.axes[f_row, f_col]
             plt.sca(ax)
 
             # Decide what color to plot with
@@ -265,7 +264,7 @@ class FacetGrid(object):
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
-                kwargs["label"] = self._hue_names[hue_k]
+                kwargs["label"] = self.hue_names[hue_k]
 
             # Get the actual data we are going to plot with
             plot_data = data_ijk[list(args)]
@@ -283,9 +282,9 @@ class FacetGrid(object):
         # Finalize the annotations and layout
         self.set_axis_labels(*args[:2])
         if self._draw_legend:
-            self._make_legend()
+            self.set_legend()
         else:
-            self._fig.tight_layout()
+            self.fig.tight_layout()
         self.set_titles()
 
         return self
@@ -298,7 +297,7 @@ class FacetGrid(object):
 
         """
         for key, val in kwargs.items():
-            for ax in self._axes.flat:
+            for ax in self.axes.flat:
                 setter = getattr(ax, "set_%s" % key)
                 setter(val)
 
@@ -306,7 +305,7 @@ class FacetGrid(object):
 
     def despine(self, **kwargs):
         """Remove axis spines from the facets."""
-        utils.despine(self._fig, **kwargs)
+        utils.despine(self.fig, **kwargs)
         return self
 
     def set_axis_labels(self, x_var, y_var=None):
@@ -322,7 +321,7 @@ class FacetGrid(object):
         """Label the x axis on the bottom row of the grid."""
         if label is None:
             label = self._x_var
-        for ax in self._axes[-1, :]:
+        for ax in self.axes[-1, :]:
             ax.set_xlabel(label, **kwargs)
         return self
 
@@ -330,13 +329,13 @@ class FacetGrid(object):
         """Label the y axis on the left column of the grid."""
         if label is None:
             label = self._y_var
-        for ax in self._axes[:, 0]:
+        for ax in self.axes[:, 0]:
             ax.set_ylabel(label, **kwargs)
         return self
 
     def set_xticklabels(self, labels=None, **kwargs):
         """Set x axis tick labels on the bottom row of the grid."""
-        for ax in self._axes[-1, :]:
+        for ax in self.axes[-1, :]:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_xticklabels()]
             ax.set_xticklabels(labels, **kwargs)
@@ -344,7 +343,7 @@ class FacetGrid(object):
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
-        for ax in self._axes[-1, :]:
+        for ax in self.axes[-1, :]:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_yticklabels()]
             ax.set_yticklabels(labels, **kwargs)
@@ -360,10 +359,10 @@ class FacetGrid(object):
             Template for all titles with the formatting keys {col_var} and
             {col_name} (if using a `col` faceting variable) and/or {row_var}
             and {row_name} (if using a `row` faceting variable).
-        row_template: 
+        row_template:
             Template for the row variable when titles are drawn on the grid
             margins. Must have {row_var} and {row_name} formatting keys.
-        col_template: 
+        col_template:
             Template for the row variable when titles are drawn on the grid
             margins. Must have {col_var} and {col_name} formatting keys.
 
@@ -390,46 +389,86 @@ class FacetGrid(object):
                 template = " | ".join([row_template, col_template])
 
         if self._margin_titles:
-            if self._row_names:
+            if self.row_names:
                 # Draw the row titles on the right edge of the grid
-                for i, row_name in enumerate(self._row_names):
-                    ax = self._axes[i, -1]
+                for i, row_name in enumerate(self.row_names):
+                    ax = self.axes[i, -1]
                     args.update(dict(row_name=row_name))
                     title = row_template.format(**args)
-                    trans = self._fig.transFigure.inverted()
+                    trans = self.fig.transFigure.inverted()
                     bbox = ax.bbox.transformed(trans)
                     x = bbox.xmax + 0.01
                     y = bbox.ymax - (bbox.height / 2)
-                    self._fig.text(x, y, title, rotation=270,
-                                   ha="left", va="center", **kwargs)
-            if self._col_names:
+                    self.fig.text(x, y, title, rotation=270,
+                                  ha="left", va="center", **kwargs)
+            if self.col_names:
                 # Draw the column titles  as normal titles
-                for j, col_name in enumerate(self._col_names):
+                for j, col_name in enumerate(self.col_names):
                     args.update(dict(col_name=col_name))
                     title = col_template.format(**args)
-                    self._axes[0, j].set_title(title, **kwargs)
+                    self.axes[0, j].set_title(title, **kwargs)
 
             return self
 
         # Otherwise title each facet with all the necessary information
         if (self._row_var is not None) and (self._col_var is not None):
-            for i, row_name in enumerate(self._row_names):
-                for j, col_name in enumerate(self._col_names):
+            for i, row_name in enumerate(self.row_names):
+                for j, col_name in enumerate(self.col_names):
                     args.update(dict(row_name=row_name, col_name=col_name))
                     title = template.format(**args)
-                    self._axes[i, j].set_title(title, **kwargs)
-        elif self._row_names:
-            for i, row_name in enumerate(self._row_names):
+                    self.axes[i, j].set_title(title, **kwargs)
+        elif self.row_names:
+            for i, row_name in enumerate(self.row_names):
                 args.update(dict(row_name=row_name))
                 title = template.format(**args)
-                self._axes[i, 0].set_title(title, **kwargs)
-        elif self._col_names:
-            for i, col_name in enumerate(self._col_names):
+                self.axes[i, 0].set_title(title, **kwargs)
+        elif self.col_names:
+            for i, col_name in enumerate(self.col_names):
                 args.update(dict(col_name=col_name))
                 title = template.format(**args)
                 # Index the flat array so col_wrap works
-                self._axes.flat[i].set_title(title, **kwargs)
+                self.axes.flat[i].set_title(title, **kwargs)
         return self
+
+    def set_legend(self, legend_data=None, title=None):
+        """Draw a legend, possibly resizing the figure."""
+        # Find the data for the legend
+        legend_data = self._legend_data if legend_data is None else legend_data
+        labels = sorted(self._legend_data.keys())
+        handles = [legend_data[l] for l in labels]
+        title = self._hue_var if title is None else title
+
+        if self._legend_out:
+            # Draw a full-figure legend outside the grid
+            figlegend = plt.figlegend(handles, labels, "center right",
+                                      title=self._hue_var)
+            self._legend = figlegend
+
+            # Draw the plot to set the bounding boxes correctly
+            plt.draw()
+
+            # Calculate and set the new width of the figure so the legend fits
+            legend_width = figlegend.get_window_extent().width / self.fig.dpi
+            figure_width = self.fig.get_figwidth()
+            self.fig.set_figwidth(figure_width + legend_width)
+
+            # Draw the plot again to get the new transformations
+            plt.draw()
+
+            # Now calculate how much space we need on the right side
+            legend_width = figlegend.get_window_extent().width / self.fig.dpi
+            space_needed = legend_width / (figure_width + legend_width)
+            margin = .04 if self._margin_titles else .01
+            self._space_needed = margin + space_needed
+            right = 1 - self._space_needed
+
+            # Place the subplot axes to give space for the legend
+            self.fig.subplots_adjust(right=right)
+
+        else:
+            # Draw a legend in the first axis
+            self.axes[0, 0].legend(handles, labels, loc="best",
+                                   title=self._hue_var)
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
@@ -443,35 +482,3 @@ class FacetGrid(object):
         handles, labels = ax.get_legend_handles_labels()
         data = {l: h for h, l in zip(handles, labels)}
         self._legend_data.update(data)
-
-    def _make_legend(self, legend_data=None, title=None):
-        """Draw a legend, possibly resizing the figure."""
-        legend_data = self._legend_data if legend_data is None else legend_data
-        labels = sorted(self._legend_data.keys())
-        handles = [legend_data[l] for l in labels]
-        title = self._hue_var if title is None else title
-
-        if self._legend_out:
-
-            figlegend = plt.figlegend(handles, labels, "center right",
-                                      title=self._hue_var)
-            self._legend = figlegend
-
-            plt.draw()
-            legend_width = figlegend.get_window_extent().width / self._fig.dpi
-            figure_width = self._fig.get_figwidth()
-            self._fig.set_figwidth(figure_width + legend_width)
-
-            plt.draw()
-            legend_width = figlegend.get_window_extent().width / self._fig.dpi
-            space_needed = legend_width / (figure_width + legend_width)
-            margin = .04 if self._margin_titles else .01
-            self._space_needed = margin + space_needed
-
-            right = 1 - self._space_needed
-            self._fig.subplots_adjust(right=right)
-
-        else:
-
-            self._axes[0, 0].legend(handles, labels, loc="best",
-                                    title=self._hue_var)
