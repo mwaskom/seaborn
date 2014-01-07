@@ -702,16 +702,13 @@ def dotplot(vals, point, interval=None, groupby=None,
     Parameters
     ----------
     vals : DataFrame
-
         Data for dotplot.
 
     point : string
-
         The name of the variable in the DataFrame defining the
         coordinates of the plotted points.
 
     interval : string or sequence of two strings
-
         If `interval` is a single string, this is the name of the
         variable that defines one-half of the length of the symmetric
         interval that is plotted around the point.  If `interval` is
@@ -720,22 +717,18 @@ def dotplot(vals, point, interval=None, groupby=None,
         interval that is plotted around the point.
 
     groupby : string
-
         This is a variable name that determines which points are drawn
         on the same line of the dotplot.
 
     style : string
-
         This is a variable name that is used to determine the point
         style (symbol and color).
 
     section : string
-
         This is a variable name that is used to define groups of
         lines that are placed in the same section
 
     split_names : string
-
         If not None, this is used to split the values of groupby into
         substrings that are drawn in the left and right margins,
         respectively.
@@ -774,8 +767,6 @@ def dotplot(vals, point, interval=None, groupby=None,
 
     if ax is None:
         ax = plt.gca()
-
-    vals = vals.copy()
 
     if groupby is None:
         groupby = "__groupby"
