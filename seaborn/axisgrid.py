@@ -61,6 +61,10 @@ class FacetGrid(object):
         nrow = 1 if row is None else len(data[row].unique())
         ncol = 1 if col is None else len(data[col].unique())
 
+        if col_wrap is not None:
+            ncol = col_wrap
+            nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
+
         # Calculate the base figure size
         # This can get stretched later by a legend
         figsize = (ncol * size * aspect, nrow * size)
