@@ -127,3 +127,7 @@ class TestRegPlot(object):
         _, _, wee_cis = lm._point_est(self.x_discrete, self.y,
                                       np.mean, 15, self.n_boot)
         npt.assert_array_less(np.diff(wee_cis), np.diff(big_cis))
+
+        _, _, no_cis = lm._point_est(self.x_discrete, self.y,
+                                     np.mean, None, self.n_boot)
+        npt.assert_array_equal(no_cis, [None] * len(no_cis))

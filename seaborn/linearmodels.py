@@ -242,13 +242,17 @@ def _point_est(x, y, estimator, ci, n_boot):
         est = estimator(_y)
         points.append(est)
 
-        _ci = moss.ci(moss.bootstrap(_y, func=estimator, n_boot=n_boot), ci)
-        cis.append(_ci)
+        if ci is None:
+            cis.append(None)
+        else:
+            _ci = moss.ci(moss.bootstrap(_y, func=estimator,
+                                         n_boot=n_boot), ci)
+            cis.append(_ci)
 
     return vals, points, cis
 
 
-def regplot(x, y, data=None, x_estimator=None, x_bins=None,
+def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             fit_reg=True, ci=95, n_boot=1000,
             order=1, logistic=False, robust=False, partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
@@ -270,15 +274,15 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None,
         When `x` is a discrete variable, apply this estimator to the data
         at each value and plot the data as a series of point estimates and
         confidence intervals rather than a scatter plot.
-    x_ci: int between 0 and 100, optional
-        Confidence interval to compute and draw around the point estimates
-        when `x` is treated as a discrete variable.
     x_bins : int or vector, optional
         When `x` is a continuous variable, use the values in this vector (or
         a vector of evenly spaced values with this length) to discretize the
         data by assigning each point to the closest bin value. This applies
         only to the plot; the regression is fit to the original data. This
         implies that `x_estimator` is numpy.mean if not otherwise provided.
+    x_ci: int between 0 and 100, optional
+        Confidence interval to compute and draw around the point estimates
+        when `x` is treated as a discrete variable.
     fit_reg : boolean, optional
         If False, don't fit a regression; just draw the scatterplot.
     ci : int between 0 and 100 or None, optional
@@ -429,7 +433,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None,
         if x_bins is None:
             x_discrete = x
         point_data = _point_est(x_discrete, y_scatter,
-                                x_estimator, ci, n_boot)
+                                x_estimator, x_ci, n_boot)
         for x_val, height, ci_bounds in zip(*point_data):
             size = scatter_kws.pop("s", 50)
             size = scatter_kws.pop("size", size)
