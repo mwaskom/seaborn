@@ -768,6 +768,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     """
     if ax is None:
         ax = plt.gca()
+    a = np.asarray(a)
     other_axis = dict(x="y", y="x")[axis]
     min, max = getattr(ax, "get_%slim" % other_axis)()
     if height is None:
