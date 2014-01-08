@@ -18,7 +18,8 @@ from .axisgrid import FacetGrid
 
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
-           size=5, aspect=1, sharex=True, sharey=True, **kwargs):
+           col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
+           **kwargs):
 
     # Backwards-compatibility warning layer
     if "color" in kwargs:
@@ -28,7 +29,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette,
-                       size=size, aspect=aspect)
+                       size=size, aspect=aspect, col_wrap=col_wrap)
 
     # Hack to set the x limits properly, which needs to happen here
     # because the extent of the regression estimate is determined
@@ -157,12 +158,13 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
             hue = colors[hue_k]
             ls = "-" if join else ""
+            lw = mpl.rcParams["lines.linewidth"] * 1.2
             ax.plot(plot_pos, plot_heights, color=hue, marker="o", ms=9,
-                    ls=ls, lw=3, **kwargs)
+                    ls=ls, lw=lw, **kwargs)
             facet._update_legend_data(ax)
             if ci is not None:
                 for pos, ci_ in zip(plot_pos, plot_cis):
-                    ax.plot([pos, pos], ci_, linewidth=2.5, color=hue)
+                    ax.plot([pos, pos], ci_, linewidth=lw, color=hue)
 
     n_x = len(x_order)
     facet.set(xticks=range(n_x), xticklabels=x_order, xlim=(-.5, n_x - .5))
