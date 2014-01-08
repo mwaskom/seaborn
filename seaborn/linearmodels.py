@@ -112,7 +112,13 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
     for (row_i, col_j, hue_k), data_ijk in mask_gen:
 
-        ax = facet.axes[row_i, col_j]
+        if col_wrap is not None:
+            f_row = col_j // facet._ncol
+            f_col = col_j % facet._ncol
+        else:
+            f_row, f_col = row_i, col_j
+
+        ax = facet.axes[f_row, f_col]
 
         plot_data = data_ijk[[x] if y_count else [x, y]]
         if dropna:
