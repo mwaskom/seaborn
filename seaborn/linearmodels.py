@@ -495,8 +495,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     ax.set_xlim(x_min, x_max)
 
     # Reset the y limits if this is a logistic plot to incude 0 and 1
-    ymin, ymax = ax.get_ylim()
-    ax.set_ylim(min(ymin, 0), max(ymax, 1))
+    if logistic:
+        ymin, ymax = ax.get_ylim()
+        ax.set_ylim(min(ymin, 0), max(ymax, 1))
 
     return ax
 
