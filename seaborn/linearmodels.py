@@ -319,7 +319,8 @@ def lmplot(x, y, data, color=None, row=None, col=None, col_wrap=None,
 
 
 def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
-            xlabel="", ylabel="", ci=95, size=None, annotloc=None, color=None,
+            xlabel="", ylabel="", ci=95, size=None, annotloc=None,
+            color=None, xlim=None, ylim=None,
             reg_kws=None, scatter_kws=None, dist_kws=None, text_kws=None):
     """Scatterplot with regresion line, marginals, and correlation value.
 
@@ -405,7 +406,7 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
         ax.set_yticklabels([])
 
     # Regression line plot
-    xlim = ax_scatter.get_xlim()
+    xlim = ax_scatter.get_xlim() if xlim is None else xlim
     a, b = np.polyfit(x, y, 1)
     if reg_kws is None:
         reg_kws = {}
@@ -446,9 +447,10 @@ def regplot(x, y, data=None, corr_func=stats.pearsonr, func_name=None,
     ax_scatter.legend(reg, [msg], loc="best", prop=text_kws)
 
     # Set the axes on the marginal plots
-    ax_x_marg.set_xlim(ax_scatter.get_xlim())
+    ax_x_marg.set_xlim(xlim)
     ax_x_marg.set_yticks([])
-    ax_y_marg.set_ylim(ax_scatter.get_ylim())
+    ylim = ax_scatter.get_ylim() if ylim is None else ylim
+    ax_y_marg.set_ylim(ylim)
     ax_y_marg.set_xticks([])
 
 
