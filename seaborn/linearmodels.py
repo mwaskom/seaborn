@@ -47,7 +47,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
                col_wrap=None, kind="auto", estimator=np.mean, ci=95, size=5,
                aspect=1, palette=None, dodge=0, join=True, legend=True,
-               legend_out=True, dropna=True):
+               legend_out=True, dropna=True, sharex=True, sharey=True):
 
     if hue is not None and palette is None:
         palette = "husl"
@@ -56,7 +56,8 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
     facet = FacetGrid(data, row, col, hue, col_wrap=col_wrap, size=size,
                       aspect=aspect, legend=legend, legend_out=legend_out,
-                      palette=palette, dropna=True)
+                      palette=palette, dropna=True,
+                      sharex=sharex, sharey=sharey)
 
     if kind == "auto":
         if y is None:
@@ -158,7 +159,7 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
             hue = colors[hue_k]
             ls = "-" if join else ""
-            lw = mpl.rcParams["lines.linewidth"] * 1.2
+            lw = mpl.rcParams["lines.linewidth"] * 1.5
             ax.plot(plot_pos, plot_heights, color=hue, marker="o", ms=9,
                     ls=ls, lw=lw, **kwargs)
             facet._update_legend_data(ax)
