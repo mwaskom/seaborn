@@ -316,8 +316,8 @@ def _point_est(x, y, estimator, ci, n_boot):
 
 
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
-            fit_reg=True, ci=95, n_boot=1000,
-            order=1, logistic=False, robust=False, partial=None,
+            scatter=True, fit_reg=True, ci=95, n_boot=1000,
+            order=1, logistic=False, lowess=False, robust=False, partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
@@ -346,6 +346,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     x_ci: int between 0 and 100, optional
         Confidence interval to compute and draw around the point estimates
         when `x` is treated as a discrete variable.
+    scatter : boolean, optional
+        Draw the scatter plot or point estimates with CIs representing the
+        observed data.
     fit_reg : boolean, optional
         If False, don't fit a regression; just draw the scatterplot.
     ci : int between 0 and 100 or None, optional
@@ -359,6 +362,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     logistic : boolean, optional
         Fit a logistic regression model. This requires `y` to be dichotomous
         with values of either 0 or 1.
+    lowess : boolean, optional
+        Plot a lowess model (locally weighted nonparametric regression).
     robust : boolean, optional
         Fit a robust linear regression, which may be useful when the data
         appear to have outliers.
@@ -488,21 +493,23 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     lw = scatter_kws.pop("linewidth", lw)
 
     # Draw the datapoints either as a scatter or point estimate with CIs
-    if x_estimator is None:
-        alpha = scatter_kws.pop("alpha", .8)
-        ax.scatter(x_scatter, y_scatter,
-                   color=scatter_color, alpha=alpha, **scatter_kws)
-    else:
-        if x_bins is None:
-            x_discrete = x
-        point_data = _point_est(x_discrete, y_scatter,
-                                x_estimator, x_ci, n_boot)
-        for x_val, height, ci_bounds in zip(*point_data):
-            size = scatter_kws.pop("s", 50)
-            size = scatter_kws.pop("size", size)
-            ax.scatter(x_val, height, size, color=scatter_color, **scatter_kws)
-            ax.plot([x_val, x_val], ci_bounds, color=scatter_color,
-                    lw=lw, **scatter_kws)
+    if scatter:
+        if x_estimator is None:
+            alpha = scatter_kws.pop("alpha", .8)
+            ax.scatter(x_scatter, y_scatter,
+                       color=scatter_color, alpha=alpha, **scatter_kws)
+        else:
+            if x_bins is None:
+                x_discrete = x
+            point_data = _point_est(x_discrete, y_scatter,
+                                    x_estimator, x_ci, n_boot)
+            for x_val, height, ci_bounds in zip(*point_data):
+                size = scatter_kws.pop("s", 50)
+                size = scatter_kws.pop("size", size)
+                ax.scatter(x_val, height, size, color=scatter_color,
+                           **scatter_kws)
+                ax.plot([x_val, x_val], ci_bounds, color=scatter_color,
+                        lw=lw, **scatter_kws)
 
     # Just bail out here if we don't want a regression
     if not fit_reg:
@@ -516,8 +523,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     grid = np.linspace(x_min, x_max, 100)
 
     # Validate the regression parameters
-    if sum((order > 1, logistic, robust, partial is not None)) > 1:
-        raise ValueError("`order` > 1 and `logistic` are mutually exclusive")
+    if sum((order > 1, logistic, robust, lowess, partial is not None)) > 1:
+        raise ValueError("Mutually exclusive regression options were used.")
 
     # Fit the regression and bootstrap the prediction.
     # This gets delegated to one of several functions depending on the options.
@@ -528,6 +535,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         binomial = sm.families.Binomial()
         y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.GLM, ci,
                                                   n_boot, family=binomial)
+    elif lowess:
+        ci = None
+        grid, y_hat = sm.nonparametric.lowess(y, x).T
     elif robust:
         y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.RLM,
                                                   ci, n_boot)
