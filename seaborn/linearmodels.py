@@ -45,10 +45,71 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
 
 def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None, kind="auto", estimator=np.mean, ci=95, size=5,
-               aspect=1, palette=None, dodge=0, join=True, legend=True,
-               legend_out=True, dropna=True, sharex=True, sharey=True):
+               col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
+               kind="auto", dodge=0, join=True, size=5, aspect=1, palette=None,
+               legend=True, legend_out=True, dropna=True,
+               sharex=True, sharey=True):
+    """Plot a dependent variable with uncertainty sorted by discrete factors.
 
+    Parameters
+    ----------
+    x : string
+        Variable name in `data` for splitting the plot on the x axis.
+    y : string, optional
+        Variable name in `data` for the dependent variable. If omitted, the
+        counts within each bin are plotted (without confidence intervals).
+    data : DataFrame
+        Long-form (tidy) dataframe with variables in columns and observations
+        in rows.
+    hue : string, optional
+        Variable name in `data` for splitting the plot by color. In the case
+        of `kind="bar"`, this also influences the placement on the x axis.
+    row, col : strings, optional
+        Variable name(s) in `data` for splitting the plot into a facet grid
+        along row and columns.
+    col_wrap : int or None, optional
+        Wrap the column variable at this width (incompatible with `row`).
+    estimator : vector -> scalar function, optional
+        Function to aggregate `y` values at each level of the factors.
+    ci : int in {0, 100}, optional
+        Size of confidene interval to draw around the aggregated value.
+    n_boot : int, optional
+        Number of bootstrap resamples used to compute confidence interval.
+    kind : {"auto", "point", "bar"}, optional
+        Visual representation of the plot. "auto" uses a few heuristics to
+        guess whether "bar" or "point" is more appropriate.
+    dodge : positive scalar, optional
+        Horizontal offset applies to different `hue` levels. Only relevant
+        when kind is "point".
+    join : boolean, optional
+        Whether points from the same level of `hue` should be joined. Only
+        relevant when kind is "point".
+    size : positive scalar, optional
+        Height (in inches) of each facet.
+    aspect : positive scalar, optional
+        Ratio of facet width to facet height.
+    palette : seaborn color palette, optional
+        Palette to map `hue` variable with (or `x` variable when `hue` is
+        None).
+    legend : boolean, optional
+        Draw a legend, only if `hue` is used and does not overlap with other
+        variables.
+    legend_out : boolean, optional
+        Draw the legend outside the grid; otherwise it is placed within the
+        first facet.
+    dropna : boolean, optional
+        Remove observations that are NA within any variables used to make
+        the plot.
+    share{x, y} : booleans, optional
+        Lock the limits of the vertical and/or horizontal axes across the
+        facets.
+
+    Returns
+    -------
+    facet : FacetGrid
+        FacetGrid with the plot on it.
+
+    """
     if hue is not None and palette is None:
         palette = "husl"
     elif hue is None and palette is not None:
@@ -139,7 +200,8 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
             plot_pos.append(pos + pos_adjust[hue_k])
             plot_heights.append(estimator(grouped[var]))
             if ci is not None:
-                boots = moss.bootstrap(grouped[var].values, func=estimator)
+                boots = moss.bootstrap(grouped[var].values,
+                                       func=estimator, n_boot=n_boot)
                 plot_cis.append(moss.ci(boots, ci))
 
         kwargs = {}
@@ -483,7 +545,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         err_bands = moss.ci(y_hat_boots, ci, axis=0)
 
     # Draw the regression and standard error bands
-    lw = line_kws.pop("linewidth", mpl.rcParams["lines.linewidth"] * 1.4)
+    lw = line_kws.pop("linewidth", mpl.rcParams["lines.linewidth"] * 1.5)
     lw = line_kws.pop("lw", lw)
     _color = line_kws.pop("c", color)
     _color = line_kws.pop("color", _color)
