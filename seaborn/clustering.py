@@ -416,6 +416,7 @@ def heatmap(df,
 
     if label_rows:
         yticklabels = [yticklabels[i] for i in row_dendrogram['leaves']]
+        despine(ax=heatmap_ax, bottom=True, left=True)
         heatmap_ax.set_yticks(np.arange(df.shape[0]) + 0.5)
         heatmap_ax.yaxis.set_ticks_position('right')
         heatmap_ax.set_yticklabels(yticklabels, fontsize=ylabel_fontsize)
@@ -473,5 +474,5 @@ def heatmap(df,
         t.set_fontsize(colorbar_ticklabels_fontsize)
 
     fig.tight_layout()
-    despine(fig, top=True, bottom=True, left=True, bottom=True)
+    #despine(fig, top=True, bottom=True, left=True, right=True)
     return fig, row_dendrogram, col_dendrogram
