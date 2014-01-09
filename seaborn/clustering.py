@@ -36,7 +36,7 @@ def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
     return matrix, cmap
 
 
-def heatmap(df,
+def clusterplot(df,
             title=None,
             title_fontsize=12,
             colorbar_label='values',
@@ -354,6 +354,13 @@ def heatmap(df,
     else:
         col_dendrogram = {'leaves': list(range(df.shape[1]))}
 
+    # Can this hackery be avoided?
+    despine(ax=col_dendrogram_ax, bottom=True, left=True)
+    col_dendrogram_ax.set_axis_bgcolor('white')
+    col_dendrogram_ax.grid(False)
+    col_dendrogram_ax.set_yticks([])
+    col_dendrogram_ax.set_xticks([])
+
     # TODO: Allow for array of color labels
     ### col colorbar ###
     if col_side_colors is not None:
@@ -366,8 +373,10 @@ def heatmap(df,
             col_side_matrix, cmap=col_cmap,
             edgecolor=edgecolor, linewidth=linewidth)
         column_colorbar_ax.set_xlim(0, col_side_matrix.shape[1])
+        column_colorbar_ax.set_yticks([])
+        column_colorbar_ax.set_xticks([])
 
-    ### row dendrogram ###
+    ### row dendrogram ##
     row_dendrogram_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 1])
     if cluster_rows:
         row_dendrogram = \
@@ -377,6 +386,11 @@ def heatmap(df,
                            color_list=[almost_black])
     else:
         row_dendrogram ={'leaves': list(range(df.shape[0]))}
+    despine(ax=row_dendrogram_ax, bottom=True, left=True)
+    row_dendrogram_ax.set_axis_bgcolor('white')
+    row_dendrogram_ax.grid(False)
+    row_dendrogram_ax.set_yticks([])
+    row_dendrogram_ax.set_xticks([])
 
 
     ### row colorbar ###
@@ -389,6 +403,8 @@ def heatmap(df,
         row_colorbar_ax.pcolormesh(row_side_matrix, cmap=row_cmap,
                                    edgecolors=edgecolor, linewidth=linewidth)
         row_colorbar_ax.set_ylim(0, row_side_matrix.shape[0])
+        row_colorbar_ax.set_xticks([])
+        row_colorbar_ax.set_yticks([])
 
     ### heatmap ####
     heatmap_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, ncols - 1])
@@ -413,6 +429,8 @@ def heatmap(df,
                                  "0]={})".format(len(label_rows), df.shape[0]))
     elif label_rows:
         yticklabels = df.index
+    else:
+        heatmap_ax.set_yticklabels([])
 
     if label_rows:
         yticklabels = [yticklabels[i] for i in row_dendrogram['leaves']]
@@ -436,6 +454,8 @@ def heatmap(df,
                                  "1]={})".format(len(label_cols), df.shape[1]))
     elif label_cols:
         xticklabels = df.columns
+    else:
+        heatmap_ax.set_xticklabels([])
 
     if label_cols:
         xticklabels = [xticklabels[i] for i in col_dendrogram['leaves']]
