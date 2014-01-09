@@ -1,3 +1,4 @@
+import numpy as np
 
 
 def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
@@ -49,59 +50,96 @@ def heatmap(df,
             colorbar_loc="upper left",
             use_fastcluster=False,
             metric='euclidean'):
-    """
+    """Plot a clustered heatmap of matrix data
     @author Olga Botvinnik olga.botvinnik@gmail.com
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
     Many thanks to Christopher DeBoever and Mike Lovci for providing heatmap
     guidance.
 
-
-
-
-    :param title_fontsize:
-    :param colorbar_ticklabels_fontsize:
-    :param colorbar_loc: Can be 'upper left' (in the corner), 'right',
-    or 'bottom'
-
-
-    :param df: The dataframe you want to cluster on
-    :param title: Title of the figure
-    :param colorbar_label: What to colorbar (color scale of the heatmap)
-    :param col_side_colors: Label the columns with a color
-    :param row_side_colors: Label the rows with a color
-    :param color_scale: Either 'linear' or 'log'
-    :param cmap: A matplotlib colormap, default is mpl.cm.Blues_r if data is
-    sequential, or mpl.cm.RdBu_r if data is divergent (has both positive and
-    negative numbers)
-    :param figsize: Size of the figure. The default is a function of the
-    dataframe size.
-    :param label_rows: Can be boolean or a list of strings, with exactly the
-    length of the number of rows in df.
-    :param label_cols: Can be boolean or a list of strings, with exactly the
-    length of the number of columns in df.
-    :param col_labels: If True, label with df.columns. If False, unlabeled.
-    Else, this can be an iterable to relabel the columns with labels of your own
-    choosing. This is helpful if you have duplicate column names and pandas
-    won't let you reindex it.
-    :param row_labels: If True, label with df.index. If False, unlabeled.
-    Else, this can be an iterable to relabel the row names with labels of your
-    own choosing. This is helpful if you have duplicate index names and pandas
-    won't let you reindex it.
-    :param xlabel_fontsize: Default 12pt
-    :param ylabel_fontsize: Default 10pt
-    :param cluster_cols: Boolean, whether or not to cluster the columns
-    :param cluster_rows:
-    :param plot_df: The dataframe you want to plot. This can contain NAs and
-    other nasty things.
-    :param row_linkage_method:
-    :param col_linkage_method:
-    :param vmin: Minimum value to plot on heatmap
-    :param vmax: Maximum value to plot on heatmap
-    :param linewidth: Linewidth of lines around heatmap box elements
-    (default 0)
-    :param edgecolor: Color of lines around heatmap box elements (default
-    white)
+    Parameters
+    ----------
+    df: DataFrame
+        Data for clustering. Should be a dataframe with no NAs. If you
+        still want to plot a dataframe with NAs, provide a non-NA dataframe
+        to df (with NAs replaced by 0 or something by your choice) and your
+        NA-full dataframe to plot_df
+    title: string, optional
+        Title of the figure. Default None
+    title_fontsize: int, optional
+        Size of the plot title. Default 12
+    colorbar_label: string, optional
+        Label the colorbar, e.g. "density" or "gene expression". Default
+        "values"
+    col_side_colors: list of matplotlib colors, optional
+        Label the columns with the group they are in with a color. Useful for
+        evaluating whether samples within a group are clustered together.
+    row_side_colors: list of matplotlib colors, optional
+        Label the rows (index of a dataframe) with the group they are in with a
+        color. Useful for evaluating whether samples within a group are
+        clustered together.
+    color_scale: string, 'log' or 'linear'
+        How to scale the colors plotted in the heatmap. Default "linear"
+    cmap: matplotlib colormap
+        How to color the data values. Default is YlGnBu ('yellow-green-blue')
+        for positive- or negative-only data, and RdBu_r ('red-blue-reversed'
+        so blue is "cold," negative numbers and red is "hot," positive
+        numbers) for divergent data, i.e. if your data has both positive and
+        negative values.
+    linkage_method: string
+        Which linkage method to use for calculating clusters.
+        See scipy.cluster.hierarchy.linkage documentation for more information:
+        http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
+        Default "average"
+    figsize: tuple of two ints
+        Size of the figure to create. Default is a function of the dataframe
+        size.
+    label_rows: bool or list of strings, optional
+        Label the rows with the index labels of the dataframe. Optionally
+        provide another list of strings of the same length as the number of
+        rows. Can also be False. Default True.
+    label_cols: bool or list of strings, optional
+        Label the columns with the column labels of the dataframe. Optionally
+        provide another list of strings of the same length as the number of
+        column. Can also be False. Default True.
+    vmin: int or float
+        Minimum value to plot on the heatmap. Default the smallest value in
+        the dataframe.
+    vmax: int or float
+        Maximum value to plot on the heatmap. Default the largest value in
+        the dataframe.
+    xlabel_fontsize: int
+        Size of the x tick labels on the heatmap. Default 12
+    ylabel_fontsize: int
+        Size of the y tick labels on the heatmap. Default 10
+    cluster_cols: bool or dendrogram in the dict format returned by
+    scipy.cluster.hierarchy.dendrogram
+        Whether or not to cluster the columns of the data. Default True. Can
+        provide your own dendrogram if you have separately performed
+        clustering.
+    cluster_rows: bool or dendrogram in the dict format returned by
+    scipy.cluster.hierarchy.dendrogram
+        Whether or not to cluster the columns of the data. Default True. Can
+        provide your own dendrogram if you have separately performed
+        clustering.
+    linewidth: int
+        Width of lines to draw on top of the heatmap to separate the cells
+        from one another. Default 0 (no lines)
+    edgecolor: matplotlib color
+        Color of the lines to draw on top of the heatmap to separate cells
+        from one another. Default "white"
+    plot_df: Dataframe
+        The dataframe to plot. May have NAs, unlike the "df" argument.
+    colorbar_ticklabels_fontsize: int
+        Size of the tick labels on the colorbar
+    use_fastcluster: bool
+        Whether or not to use the "fastcluster" module in Python,
+        which calculates linkage several times faster than scipy.cluster.hierachy
+        Default False except for datasets with more than 1000 rows or columns.
+    metric: string
+        Distance metric to use for the data. Default is "euclidean." See
+        scipy.spatial.distance.pdist documentation for more options
+        http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
     """
     #@return: fig, row_dendrogram, col_dendrogram
     #@rtype: matplotlib.figure.Figure, dict, dict
