@@ -1,11 +1,22 @@
 import numpy as np
 
+from seaborn.utils import despine
+
 
 def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
     """
     For 'heatmap()'
     This only works for 1-column color lists..
     TODO: Support multiple color labels on an element in the heatmap
+
+    Parameters
+    ----------
+    color_list: list of matplotlib colors
+        Colors to label the rows or columns of a dataframe.
+    ind: list of ints
+        Ordering of the rows or columns, to reorder the original color_list
+    row: bool
+        Is this to label the rows or columns? Default True.
     """
     import matplotlib as mpl
 
@@ -140,6 +151,19 @@ def heatmap(df,
         Distance metric to use for the data. Default is "euclidean." See
         scipy.spatial.distance.pdist documentation for more options
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+
+    Returns
+    -------
+    fig: matplotlib Figure
+        Figure containing multiple axes where the clustered heatmap is plotted.
+    row_dendrogram: dict
+        dict with keys 'leaves', 'icoords' (coordinates of the cluster nodes
+        along the data, here the y-axis coords), 'dcoords' (coordinates of the
+        cluster nodes along the dendrogram height, here the x-axis coords)
+    col_dendrogram: dict
+        dict with keys 'leaves', 'icoords' (coordinates of the cluster nodes
+        along the data, here the x-axis coords), 'dcoords' (coordinates of the
+        cluster nodes along the dendrogram height, here the y-axis coords)
     """
     #@return: fig, row_dendrogram, col_dendrogram
     #@rtype: matplotlib.figure.Figure, dict, dict
@@ -257,16 +281,23 @@ def heatmap(df,
         half_dendrogram, 1.0), and if there are then the tuple is of size 4 (
         half_dendrogram, half_dendrogram, 0.05, 1.0)
 
-        :param side_colors:
-        :type side_colors:
-        :param colorbar_loc:
-        :type colorbar_loc:
-        :param dimension:
-        :type dimension:
-        :param side_colors_ratio:
-        :type side_colors_ratio:
-        :return:
-        :rtype:
+        TODO: Add option for lower right corner.
+
+        side_colors: list of colors, or empty list
+        colorbar_loc: string
+            Where the colorbar will be. Valid locations: 'upper left', 'right',
+            'bottom'
+        dimension: string
+            Which dimension are we trying to find the axes locations for.
+            Valid strings: 'height', 'width'
+        side_colors_ratio: float
+            How much space the side colors labeling the rows or columns
+            should take up. Default 0.05
+
+        Returns
+        -------
+        ratios: list of ratios
+            Ratios of axes on the figure at this dimension
         """
         i = 0 if dimension == 'height' else 1
         half_dendrogram = shape[i] * 0.1/shape[i]
@@ -322,7 +353,6 @@ def heatmap(df,
                                         color_list=[almost_black])
     else:
         col_dendrogram = {'leaves': list(range(df.shape[1]))}
-    _clean_axis(col_dendrogram_ax)
 
     # TODO: Allow for array of color labels
     ### col colorbar ###
@@ -336,7 +366,6 @@ def heatmap(df,
             col_side_matrix, cmap=col_cmap,
             edgecolor=edgecolor, linewidth=linewidth)
         column_colorbar_ax.set_xlim(0, col_side_matrix.shape[1])
-        _clean_axis(column_colorbar_ax)
 
     ### row dendrogram ###
     row_dendrogram_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 1])
@@ -347,8 +376,8 @@ def heatmap(df,
                            orientation='right',
                            color_list=[almost_black])
     else:
-        row_dendrogram = {'leaves': list(range(df.shape[0]))}
-    _clean_axis(row_dendrogram_ax)
+        row_dendrogram ={'leaves': list(range(df.shape[0]))}
+
 
     ### row colorbar ###
     if row_side_colors is not None:
@@ -360,7 +389,6 @@ def heatmap(df,
         row_colorbar_ax.pcolormesh(row_side_matrix, cmap=row_cmap,
                                    edgecolors=edgecolor, linewidth=linewidth)
         row_colorbar_ax.set_ylim(0, row_side_matrix.shape[0])
-        _clean_axis(row_colorbar_ax)
 
     ### heatmap ####
     heatmap_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, ncols - 1])
@@ -373,7 +401,6 @@ def heatmap(df,
 
     heatmap_ax.set_ylim(0, df.shape[0])
     heatmap_ax.set_xlim(0, df.shape[1])
-    _clean_axis(heatmap_ax)
 
     ## row labels ##
     if isinstance(label_rows, Iterable):
@@ -446,4 +473,5 @@ def heatmap(df,
         t.set_fontsize(colorbar_ticklabels_fontsize)
 
     fig.tight_layout()
+    despine(fig, top=True, bottom=True, left=True, bottom=True)
     return fig, row_dendrogram, col_dendrogram
