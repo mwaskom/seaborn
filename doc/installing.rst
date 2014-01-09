@@ -33,8 +33,6 @@ dependencies other than ``numpy``, ``scipy``, and ``matplotlib``.
 
 -  `statsmodels <http://statsmodels.sourceforge.net/>`__
 
--  `scikit-learn <http://scikit-learn.org>`__
-
 -  `patsy <http://patsy.readthedocs.org/en/latest/>`__
 
 -  `husl <https://github.com/boronine/pyhusl>`__
