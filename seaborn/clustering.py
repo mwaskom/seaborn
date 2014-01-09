@@ -36,6 +36,7 @@ def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
     return matrix, cmap
 
 
+
 def clusterplot(df,
             title=None,
             title_fontsize=12,
