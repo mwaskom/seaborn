@@ -413,6 +413,10 @@ def factorplot(x, y=None, data=None, color=None, row=None, col=None,
                 for pos, ci_ in zip(plot_pos, plot_cis):
                     ax.plot([pos, pos], ci_, linewidth=2.5, color="#222222")
 
+            if ax.get_xlim()[0] < 0 and not hue_k:
+                lw = mpl.rcParams["lines.linewidth"] * .75
+                ax.axhline(0, c="#444444", lw=lw)
+
         elif kind == "point":
 
             hue = colors[hue_k]
