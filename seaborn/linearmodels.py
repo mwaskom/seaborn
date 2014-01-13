@@ -25,7 +25,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     if "color" in kwargs:
         msg = "`color` is deprecated and will be removed; using `hue` instead."
         warnings.warn(msg, UserWarning)
-        hue = kwargs.pop("color")
+        kwargs["hue"] = kwargs.pop("color")
 
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette,
