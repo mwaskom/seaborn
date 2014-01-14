@@ -2,11 +2,13 @@
 from __future__ import division
 import colorsys
 import numpy as np
+from scipy import stats
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from six.moves import range
+import warnings
 import moss
 
 from seaborn.utils import (color_palette, husl_palette, blend_palette,
@@ -114,6 +116,7 @@ def _box_colors(vals, color):
     gray = (l, l, l)
 
     return colors, gray
+
 
 def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
@@ -225,7 +228,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
 def violin(*args, **kwargs):
     """Deprecated old name for violinplot. Please update your code."""
-    import warnings
     warnings.warn("violin() is deprecated; please use violinplot()",
                   UserWarning)
     return violinplot(*args, **kwargs)
@@ -379,6 +381,14 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     return ax
 
 
+def _freedman_diaconis_bins(a):
+    """Calculate number of hist bins using Freedman-Diaconis rule."""
+    # From http://stats.stackexchange.com/questions/798/
+    a = np.asarray(a)
+    h = 2 * moss.iqr(a) / (len(a) ** (1 / 3))
+    return np.ceil((a.max() - a.min()) / h)
+
+
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, axlabel=None, ax=None):
@@ -450,9 +460,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     if hist:
         if bins is None:
-            # From http://stats.stackexchange.com/questions/798/
-            h = 2 * moss.iqr(a) * len(a) ** -(1 / 3)
-            bins = (a.max() - a.min()) / h
+            bins = _freedman_diaconis_bins(a)
         hist_alpha = hist_kws.pop("alpha", 0.4)
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
@@ -491,8 +499,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     return ax
 
 
-def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
-                    clip, legend, ax, **kwargs):
+def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
+                        clip, legend, ax, **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
     # Sort out the clipping
@@ -500,10 +508,22 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
         clip = (-np.inf, np.inf)
 
     # Calculate the KDE
-    fft = kernel == "gau"
-    kde = sm.nonparametric.KDEUnivariate(data)
-    kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
-    x, y = kde.support, kde.density
+    try:
+        # Prefer using statsmodels for kernel flexibility
+        x, y = _statsmodels_univariate_kde(data, kernel, bw,
+                                           gridsize, cut, clip)
+    except ImportError:
+        # Fall back to scipy if missing statsmodels
+        if kernel != "gau":
+            kernel = "gau"
+            msg = "Kernel other than `gau` requires statsmodels."
+            warnings.warn(msg, UserWarning)
+        x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
+
+    # Make sure the density is nonnegative
+    y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
+
+    # Flip the data if the plot should be on the y axis
     if vertical:
         x, y = y, x
 
@@ -537,8 +557,29 @@ def _univariate_kde(data, shade, vertical, kernel, bw, gridsize, cut,
     return ax
 
 
-def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel, ax,
-                   **kwargs):
+def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip):
+    """Compute a univariate kernel density estimate using statsmodels."""
+    from statsmodels import nonparametric
+    fft = kernel == "gau"
+    kde = nonparametric.kde.KDEUnivariate(data)
+    kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
+    grid, y = kde.support, kde.density
+    return grid, y
+
+
+def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
+    """Compute a univariate kernel density estimate using scipy."""
+    kde = stats.gaussian_kde(data, bw_method=bw)
+    if isinstance(bw, str):
+        bw = "scotts" if bw == "scott" else bw
+        bw = getattr(kde, "%s_factor" % bw)()
+    grid = _kde_support(data, bw, gridsize, cut, clip)
+    y = kde(grid)
+    return grid, y
+
+
+def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
+                       ax, **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
 
     # Determine the clipping
@@ -548,18 +589,10 @@ def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel, ax,
         clip = [clip, clip]
 
     # Calculate the KDE
-    if isinstance(bw, str):
-        bw_func = getattr(sm.nonparametric.bandwidths, "bw_" + bw)
-        x_bw = bw_func(x)
-        y_bw = bw_func(y)
-        bw = [x_bw, y_bw]
-    elif np.isscalar(bw):
-        bw = [bw, bw]
-    kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
-    x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
-    y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
-    xx, yy = np.meshgrid(x_support, y_support)
-    z = kde.pdf([xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    try:
+        xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
+    except ImportError:
+        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip)
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
@@ -579,6 +612,38 @@ def _bivariate_kde(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel, ax,
         ax.set_ylabel(y.name)
 
     return ax
+
+
+def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
+    """Compute a bivariate kde using statsmodels."""
+    from statsmodels import nonparametric
+    if isinstance(bw, str):
+        bw_func = getattr(nonparametric.bandwidths, "bw_" + bw)
+        x_bw = bw_func(x)
+        y_bw = bw_func(y)
+        bw = [x_bw, y_bw]
+    elif np.isscalar(bw):
+        bw = [bw, bw]
+    kde = nonparametric.kernel_density.KDEMultivariate([x, y], "cc", bw)
+    x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
+    y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
+    xx, yy = np.meshgrid(x_support, y_support)
+    z = kde.pdf([xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    return xx, yy, z
+
+
+def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
+    """Compute a bivariate kde using scipy."""
+    data = np.c_[x, y]
+    kde = stats.gaussian_kde(data.T)
+    if isinstance(bw, str):
+        bw = "scotts" if bw == "scott" else bw
+        bw = getattr(kde, "%s_factor" % bw)()
+    x_support = _kde_support(data[:, 0], bw, gridsize, cut, clip[0])
+    y_support = _kde_support(data[:, 1], bw, gridsize, cut, clip[1])
+    xx, yy = np.meshgrid(x_support, y_support)
+    z = kde([xx.ravel(), yy.ravel()]).reshape(xx.shape)
+    return xx, yy, z
 
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
@@ -630,22 +695,22 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
         bivariate = True
-        x, y = data.T
+        x, y = data.astype(np.float64).T
     elif isinstance(data, pd.DataFrame) and np.ndim(data) > 1:
         bivariate = True
-        x = data.iloc[:, 0]
-        y = data.iloc[:, 1]
+        x = data.iloc[:, 0].values.astype(np.float64)
+        y = data.iloc[:, 1].values.astype(np.float64)
     elif data2 is not None:
         bivariate = True
         x = data
         y = data2
 
     if bivariate:
-        ax = _bivariate_kde(x, y, shade, kernel, bw, gridsize,
-                            cut, clip, legend, ax, **kwargs)
+        ax = _bivariate_kdeplot(x, y, shade, kernel, bw, gridsize,
+                                cut, clip, legend, ax, **kwargs)
     else:
-        ax = _univariate_kde(data, shade, vertical, kernel, bw,
-                             gridsize, cut, clip, legend, ax, **kwargs)
+        ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
+                                 gridsize, cut, clip, legend, ax, **kwargs)
 
     return ax
 
