@@ -7,7 +7,7 @@ This is a bugfix release, with no new features.
 Bug fixes
 ~~~~~~~~~
 
-- Changed the mechanics of ``violinplot()`` and ``boxplot())`` when using a
+- Changed the mechanics of ``violinplot()`` and ``boxplot()`` when using a
   ``Series`` object as data and performing a ``groupby`` to assign data to
   bins to address a problem that arises in Pandas 0.13.
 
