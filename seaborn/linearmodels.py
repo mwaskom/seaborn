@@ -45,9 +45,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
 
 def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
-               kind="auto", dodge=0, join=True, size=5, aspect=1, palette=None,
-               legend=True, legend_out=True, dropna=True,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
+               x_order=None, hue_order=None, col_order=None, row_order=None,
+               kind="auto", dodge=0, join=True, size=5, aspect=1,
+               palette=None, legend=True, legend_out=True, dropna=True,
                sharex=True, sharey=True):
     """Plot a dependent variable with uncertainty sorted by discrete factors.
 
@@ -114,10 +115,11 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
         palette = "husl"
     elif hue is None and palette is not None:
         hue = x
+        hue_order = x_order
 
     facet = FacetGrid(data, row, col, hue, col_wrap=col_wrap, size=size,
                       aspect=aspect, legend=legend, legend_out=legend_out,
-                      palette=palette, dropna=True,
+                      palette=palette, dropna=True, hue_order=hue_order,
                       sharex=sharex, sharey=sharey)
 
     if kind == "auto":
@@ -132,7 +134,8 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
     mask_gen = facet.facet_data()
 
-    x_order = sorted(data[x].unique())
+    if x_order is None:
+        x_order = sorted(data[x].unique())
     if dropna:
         x_order = list(filter(pd.notnull, x_order))
 
