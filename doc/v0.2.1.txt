@@ -13,3 +13,12 @@ Bug fixes
 
 - Additionally fixed the ``groupby`` code to work with all styles of group
   specification (specifically, using a dictionary or a function now works).
+
+- Fixed a bug where artifacts from the kde fitting could undershoot and create
+  a plot where the density axis starts below 0.
+
+- Ensured that data used for kde fitting is double-typed to avoid a low-level
+  statsmodels error.
+
+- Changed the implementation of the histogram bin-width reference rule to
+  take a ceiling of the estimated number of bins.
