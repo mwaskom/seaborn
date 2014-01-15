@@ -1,5 +1,5 @@
 
-v0.2.1 (December 2013)
+v0.2.1 (January 2014)
 ----------------------
 
 This is a bugfix release, with no new features.

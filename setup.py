@@ -15,7 +15,7 @@ URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = ('https://github.com/mwaskom/seaborn/zipball/master'
                 '#egg=seaborn=dev')
-VERSION = '0.2.0'
+VERSION = '0.2.1'
 
 from setuptools import setup
 
