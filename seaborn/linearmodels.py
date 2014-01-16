@@ -19,6 +19,7 @@ from .axisgrid import FacetGrid
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
+           col_order=None, row_order=None, hue_order=None,
            **kwargs):
 
     # Backwards-compatibility warning layer
@@ -28,7 +29,8 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
         kwargs["hue"] = kwargs.pop("color")
 
     # Initialize the grid
-    facets = FacetGrid(data, row, col, hue, palette=palette,
+    facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
+                       col_order=col_order, hue_order=hue_order,
                        size=size, aspect=aspect, col_wrap=col_wrap)
 
     # Hack to set the x limits properly, which needs to happen here
