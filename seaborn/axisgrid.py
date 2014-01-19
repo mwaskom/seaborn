@@ -237,7 +237,6 @@ class FacetGrid(object):
             Returns self.
 
         """
-
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
 
@@ -248,23 +247,11 @@ class FacetGrid(object):
             if not data_ijk.values.tolist():
                 continue
 
-            # Calculate the actual indices of the axes to plot on
-            if self._col_wrap is not None:
-                f_row = col_j // self._ncol
-                f_col = col_j % self._ncol
-            else:
-                f_row, f_col = row_i, col_j
-
-            # Get a reference to the axes object we want, and make it active
-            ax = self.axes[f_row, f_col]
-            plt.sca(ax)
+            # Get the current axis
+            ax = self._facet_axis(row_i, col_j)
 
             # Decide what color to plot with
-            color = self._colors[hue_k]
-            if kw_color is not None:
-                kwargs["color"] = kw_color
-            elif color is not None:
-                kwargs["color"] = color
+            kwargs["color"] = self._facet_color(hue_k, kw_color)
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
@@ -281,21 +268,112 @@ class FacetGrid(object):
                 plot_args = [v.values for v in plot_args]
 
             # Draw the plot
-            func(*plot_args, **kwargs)
-
-            # Sort out the supporting information
-            self._update_legend_data(ax)
-            self._clean_axis(ax)
+            self._facet_plot(func, ax, plot_args, kwargs)
 
         # Finalize the annotations and layout
-        self.set_axis_labels(*args[:2])
+        self._finalize_grid(args[:2])
+
+        return self
+
+    def map_dataframe(self, func, *args, **kwargs):
+        """Like `map` but passes args as strings and inserts data in kwargs.
+
+        This method is suitable for plotting with functions that accept a
+        long-form DataFrame as a `data` keyword argument and access the
+        data in that DataFrame using string variable names.
+
+        Parameters
+        ----------
+        func : callable
+            A plotting function that takes data and keyword arguments. Unlike
+            the `map` method, a function used here must "understand" Pandas
+            objects. It also must plot to the currently active matplotlib Axes
+            and take a `color` keyword argument. If faceting on the `hue`
+            dimension, it must also take a `label` keyword argument.
+        args : strings
+            Column names in self.data that identify variables with data to
+            plot. The data for each variable is passed to `func` in the
+            order the variables are specified in the call.
+        kwargs : keyword arguments
+            All keyword arguments are passed to the plotting function.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+
+        """
+
+        # If color was a keyword argument, grab it here
+        kw_color = kwargs.pop("color", None)
+
+        # Iterate over the data subsets
+        for (row_i, col_j, hue_k), data_ijk in self.facet_data():
+
+            # If this subset is null, move on
+            if not data_ijk.values.tolist():
+                continue
+
+            # Get the current axis
+            ax = self._facet_axis(row_i, col_j)
+
+            # Decide what color to plot with
+            kwargs["color"] = self._facet_color(hue_k, kw_color)
+
+            # Insert a label in the keyword arguments for the legend
+            if self._hue_var is not None:
+                kwargs["label"] = self.hue_names[hue_k]
+
+            # Stick the facet dataframe into the kwargs
+            if self._dropna:
+                data_ijk = data_ijk.dropna()
+            kwargs["data"] = data_ijk
+
+            # Draw the plot
+            self._facet_plot(func, ax, args, kwargs)
+
+        # Finalize the annotations and layout
+        self._finalize_grid(args[:2])
+
+        return self
+
+    def _facet_color(self, hue_index, kw_color):
+
+        color = self._colors[hue_index]
+        if kw_color is not None:
+            return kw_color
+        elif color is not None:
+            return color
+
+    def _facet_plot(self, func, ax, plot_args, plot_kwargs):
+
+        # Draw the plot
+        func(*plot_args, **plot_kwargs)
+
+        # Sort out the supporting information
+        self._update_legend_data(ax)
+        self._clean_axis(ax)
+
+    def _finalize_grid(self, axlabels):
+        """Finalize the annotations and layout."""
+        self.set_axis_labels(*axlabels)
         if self._draw_legend:
             self.set_legend()
         else:
             self.fig.tight_layout()
         self.set_titles()
 
-        return self
+    def _facet_axis(self, row_i, col_j):
+
+        # Calculate the actual indices of the axes to plot on
+        if self._col_wrap is not None:
+            ax = self.axes.flat[col_j]
+        else:
+            ax = self.axes[row_i, col_j]
+
+        # Get a reference to the axes object we want, and make it active
+        plt.sca(ax)
+        return ax
 
     def set(self, **kwargs):
         """Set axis attributes on each facet.
@@ -445,7 +523,7 @@ class FacetGrid(object):
         labels = sorted(self._legend_data.keys())
         handles = [legend_data[l] for l in labels]
         title = self._hue_var if title is None else title
-        title_size = mpl.rcParams["axes.labelsize"] * .75
+        title_size = mpl.rcParams["axes.labelsize"] * .85
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
