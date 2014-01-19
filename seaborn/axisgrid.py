@@ -445,12 +445,13 @@ class FacetGrid(object):
         labels = sorted(self._legend_data.keys())
         handles = [legend_data[l] for l in labels]
         title = self._hue_var if title is None else title
+        title_size = mpl.rcParams["axes.labelsize"] * .75
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, labels, "center right",
-                                      title=self._hue_var)
+            figlegend = plt.figlegend(handles, labels, "center right")
             self._legend = figlegend
+            figlegend.set_title(self._hue_var, prop={"size": title_size})
 
             # Draw the plot to set the bounding boxes correctly
             plt.draw()
@@ -475,8 +476,8 @@ class FacetGrid(object):
 
         else:
             # Draw a legend in the first axis
-            self.axes[0, 0].legend(handles, labels, loc="best",
-                                   title=self._hue_var)
+            leg = self.axes[0, 0].legend(handles, labels, loc="best")
+            leg.set_title(self._hue_var, prop={"size": title_size})
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
