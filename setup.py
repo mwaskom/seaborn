@@ -42,5 +42,6 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["husl", "moss>0.1", "patsy", "pandas", "statsmodels"],
+        install_requires=["husl", "moss>0.1", "patsy",
+                          "pandas", "statsmodels", "six"],
           )
