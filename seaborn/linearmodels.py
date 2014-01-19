@@ -19,7 +19,7 @@ from .axisgrid import FacetGrid
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
-           col_order=None, row_order=None, hue_order=None,
+           col_order=None, row_order=None, hue_order=None, dropna=True,
            **kwargs):
 
     # Backwards-compatibility warning layer
@@ -30,7 +30,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
-                       col_order=col_order, hue_order=hue_order,
+                       col_order=col_order, hue_order=hue_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap)
 
     # Hack to set the x limits properly, which needs to happen here
@@ -42,12 +42,12 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
             scatter.remove()
 
     # Draw the regression plot on each facet
-    facets.map(regplot, x, y, **kwargs)
+    facets.map_dataframe(regplot, x, y, **kwargs)
     return facets
 
 
 def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
                x_order=None, hue_order=None, col_order=None, row_order=None,
                kind="auto", dodge=0, join=True, size=5, aspect=1,
                palette=None, legend=True, legend_out=True, dropna=True,
@@ -176,6 +176,9 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
             else:
                 pos_adjust = [0] * n_colors
 
+    if cases is not None:
+        cases = data[cases]
+
     draw_legend = hue is not None and hue not in [x, row, col]
 
     for (row_i, col_j, hue_k), data_ijk in mask_gen:
@@ -191,8 +194,11 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
         plot_data = data_ijk[[x] if y_count else [x, y]]
         if dropna:
             plot_data.dropna()
+        plot_data = data_ijk
 
         grouped = {g: data[y] for g, data in plot_data.groupby(x)}
+        if cases is not None:
+            cases = {g: data.values for g, data in cases.groupby(x)}
 
         plot_pos = []
         plot_heights = []
@@ -205,8 +211,12 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
             plot_pos.append(pos + pos_adjust[hue_k])
             plot_heights.append(estimator(grouped[var]))
             if ci is not None:
-                boots = moss.bootstrap(grouped[var].values,
-                                       func=estimator, n_boot=n_boot)
+                if cases is not None:
+                    cases_ = cases[var]
+                else:
+                    cases_ = None
+                boots = moss.bootstrap(grouped[var].values, func=estimator,
+                                       n_boot=n_boot, cases=cases_)
                 plot_cis.append(moss.ci(boots, ci))
 
         kwargs = {}
@@ -253,7 +263,7 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
     return facet
 
 
-def _regress_fast(grid, x, y, ci, n_boot):
+def _regress_fast(grid, x, y, cases, ci, n_boot):
     """Low-level regression and prediction using linear algebra."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
@@ -262,23 +272,25 @@ def _regress_fast(grid, x, y, ci, n_boot):
     if ci is None:
         return y_hat, None
 
-    beta_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot).T
+    beta_boots = moss.bootstrap(X, y, func=reg_func,
+                                n_boot=n_boot, cases=cases).T
     y_hat_boots = grid.dot(beta_boots).T
     return y_hat, y_hat_boots
 
 
-def _regress_poly(grid, x, y, order, ci, n_boot):
+def _regress_poly(grid, x, y, cases, order, ci, n_boot):
     """Regression using numpy polyfit for higher-order trends."""
     reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
     y_hat = reg_func(x, y)
     if ci is None:
         return y_hat, None
 
-    y_hat_boots = moss.bootstrap(x, y, func=reg_func, n_boot=n_boot)
+    y_hat_boots = moss.bootstrap(x, y, func=reg_func,
+                                 n_boot=n_boot, cases=cases)
     return y_hat, y_hat_boots
 
 
-def _regress_statsmodels(grid, x, y, model, ci, n_boot, **kwargs):
+def _regress_statsmodels(grid, x, y, cases, model, ci, n_boot, **kwargs):
     """More general regression function using statsmodels objects."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
@@ -287,7 +299,8 @@ def _regress_statsmodels(grid, x, y, model, ci, n_boot, **kwargs):
     if ci is None:
         return y_hat, None
 
-    y_hat_boots = moss.bootstrap(X, y, func=reg_func, n_boot=n_boot)
+    y_hat_boots = moss.bootstrap(X, y, func=reg_func,
+                                 n_boot=n_boot, cases=cases)
     return y_hat, y_hat_boots
 
 
@@ -304,7 +317,7 @@ def _bin_predictor(x, bins):
     return x_binned, bins.ravel()
 
 
-def _point_est(x, y, estimator, ci, n_boot):
+def _point_est(x, y, estimator, ci, cases, n_boot):
     """Find point estimate and bootstrapped ci for discrete x values."""
     vals = sorted(np.unique(x))
     points, cis = [], []
@@ -317,15 +330,18 @@ def _point_est(x, y, estimator, ci, n_boot):
         if ci is None:
             cis.append(None)
         else:
-            _ci = moss.ci(moss.bootstrap(_y, func=estimator,
-                                         n_boot=n_boot), ci)
+            _cases = cases
+            if cases is not None:
+                _cases = cases[x == val]
+            _ci = moss.ci(moss.bootstrap(_y, func=estimator, n_boot=n_boot,
+                                         cases=_cases), ci)
             cis.append(_ci)
 
     return vals, points, cis
 
 
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
-            scatter=True, fit_reg=True, ci=95, n_boot=1000,
+            scatter=True, fit_reg=True, ci=95, n_boot=1000, cases=None,
             order=1, logistic=False, lowess=False, robust=False, partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
@@ -424,6 +440,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     if data is not None:
         x = data[x]
         y = data[y]
+        if cases is not None:
+            cases = data[cases].values
 
     # Drop NA values
     if dropna:
@@ -511,7 +529,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             if x_bins is None:
                 x_discrete = x
             point_data = _point_est(x_discrete, y_scatter,
-                                    x_estimator, x_ci, n_boot)
+                                    x_estimator, x_ci, cases, n_boot)
             for x_val, height, ci_bounds in zip(*point_data):
                 size = scatter_kws.pop("s", 50)
                 size = scatter_kws.pop("size", size)
@@ -538,26 +556,26 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     # Fit the regression and bootstrap the prediction.
     # This gets delegated to one of several functions depending on the options.
     if order > 1:
-        y_hat, y_hat_boots = _regress_poly(grid, x, y, order, ci, n_boot)
+        y_hat, y_hat_boots = _regress_poly(grid, x, y, cases, order, ci, n_boot)
 
     elif logistic:
         binomial = sm.families.Binomial()
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.GLM, ci,
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, cases, sm.GLM, ci,
                                                   n_boot, family=binomial)
     elif lowess:
         ci = None
         grid, y_hat = sm.nonparametric.lowess(y, x).T
     elif robust:
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, sm.RLM,
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, cases, sm.RLM,
                                                   ci, n_boot)
     elif partial is not None:
         _x = np.c_[x, partial]
         _grid = np.c_[grid, np.zeros((grid.size, partial.shape[1]))]
         kwargs = dict()
-        y_hat, y_hat_boots = _regress_statsmodels(_grid, _x, y, sm.OLS, kwargs,
-                                                  ci, n_boot)
+        y_hat, y_hat_boots = _regress_statsmodels(_grid, _x, y, cases, sm.OLS,
+                                                  kwargs, ci, n_boot)
     else:
-        y_hat, y_hat_boots = _regress_fast(grid, x, y, ci, n_boot)
+        y_hat, y_hat_boots = _regress_fast(grid, x, y, cases, ci, n_boot)
 
     # Compute the confidence interval for the regression estimate
     if ci is not None:
