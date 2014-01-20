@@ -28,6 +28,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
         warnings.warn(msg, UserWarning)
         hue = kwargs.pop("color")
 
+    cases = kwargs.get("cases", None)
+    cols = [a for a in [x, y, hue, col, row, cases] if a is not None]
+    data = data[cols]
+
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
                        col_order=col_order, hue_order=hue_order, dropna=dropna,
@@ -46,7 +50,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     return facets
 
 
-def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
+def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
                col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
                x_order=None, hue_order=None, col_order=None, row_order=None,
                kind="auto", dodge=0, join=True, size=5, aspect=1,
@@ -261,6 +265,256 @@ def factorplot(x, y=None, data=None, hue=None, row=None, col=None,
         facet.set_legend()
 
     return facet
+
+
+def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
+               x_order=None, hue_order=None, col_order=None, row_order=None,
+               kind="auto", dodge=0, join=True, size=5, aspect=1,
+               palette=None, legend=True, legend_out=True, dropna=True,
+               sharex=True, sharey=True):
+
+
+
+    cols = [a for a in [x, y, hue, col, row, cases] if a is not None]
+    data = data[cols]
+
+    # Initialize the grid
+    facets = FacetGrid(data, row, col, palette=None, row_order=row_order,
+                       col_order=col_order, dropna=dropna, size=size,
+                       aspect=aspect, col_wrap=col_wrap)
+
+    if kind == "auto":
+        if y is None:
+            kind = "bar"
+        elif (data[y] <= 1).all():
+            kind = "point"
+        elif (data[y].mean() / data[y].std()) < 2.5:
+            kind = "bar"
+        else:
+            kind = "point"
+
+    # Draw the plot on each facet
+    kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, cases=cases,
+                  x_order=x_order, hue_order=hue_order, palette=palette,
+                  color=None)
+
+    if kind == "bar":
+        facets.map_dataframe(barplot, x, y, hue, **kwargs)
+    else:
+        kwargs.update(dict(dodge=dodge, join=join))
+        facets.map_dataframe(pointplot, x, y, hue, **kwargs)
+
+    return facets
+
+
+def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
+            ci=95, n_boot=1000, cases=None, x_order=None, hue_order=None,
+            color=None, palette=None, legend=True, dropna=True, ax=None,
+            **kwargs):
+
+    if data is not None:
+        x = data[x]
+        if y is not None:
+            y = data[y]
+        if hue is not None:
+            hue = data[hue]
+        if cases is not None:
+            cases = data[cases]
+
+    if ax is None:
+        ax = plt.gca()
+
+    x_name, y_name, hue_name = None, None, None
+    if hasattr(x, "name"):
+        x_name = x.name
+    if hasattr(y, "name"):
+        y_name = y.name
+    if hasattr(hue, "name"):
+        hue_name = hue.name
+
+    if x_order is None:
+        x_order = sorted(pd.unique(x))
+
+    if hue is None:
+        n_colors = 1
+        width = .8
+        pos_adjust = [0]
+        if color is None:
+            palette = [mpl.rcParams["axes.color_cycle"][0]]
+        else:
+            palette = [color]
+    else:
+        if hue_order is None:
+            hue_order = sorted(pd.unique(hue))
+        if dropna:
+            hue_order = list(filter(pd.notnull, hue_order))
+        if isinstance(palette, dict):
+            palette = [palette[h] for h in hue_order]
+        n_colors = len(hue_order)
+        colors = color_palette(palette, n_colors)
+        width = .8 / n_colors
+        pos_adjust = np.linspace(0, .8 - width, n_colors)
+        pos_adjust -= pos_adjust.mean()
+
+    plot_data, case_data = _discrete_plot_data(x, y, hue, cases)
+
+    boot_kws = dict(n_boot=n_boot, func=estimator)
+    lw = mpl.rcParams["lines.linewidth"] * 1.5
+    ecolor = "#444444"
+    for i, x_i in enumerate(x_order):
+        if hue is not None:
+            for j, hue_j in enumerate(hue_order):
+                bin_data = plot_data[x_i][hue_j]
+                height = estimator(bin_data)
+                pos = i + pos_adjust[j]
+                label = "_nolegend_" if i else hue_j
+                ax.bar(pos, height, width, align="center",
+                       color=colors[j], label=label)
+                if cases is not None:
+                    boot_kws["cases"] = case_data[x_i][hue_j]
+                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+        else:
+            bin_data = plot_data[x_i]
+            height = estimator(bin_data)
+            pos = i
+            ax.bar(pos, height, width, align="center", color=color)
+            if cases is not None:
+                boot_kws["cases"] = case_data[x_i]
+            ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+            ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+
+    if hue is not None and legend:
+        title_size = mpl.rcParams["axes.labelsize"] * .8
+        ax.legend(loc="best").set_title(hue_name, prop={"size": title_size})
+    xlim = -.5, len(x_order) - .5
+    n_x = len(x_order)
+    ax.set(xlabel=x_name, ylabel=y_name, xlim=xlim,
+           xticks=np.arange(n_x), xticklabels=x_order)
+
+    return ax
+
+
+def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
+              ci=95, n_boot=1000, cases=None, dodge=0, color=None,
+              palette=None, x_order=None, hue_order=None, legend=True,
+              dropna=True, ax=None, **kwargs):
+
+    if data is not None:
+        x = data[x]
+        if y is not None:
+            y = data[y]
+        if hue is not None:
+            hue = data[hue]
+        if cases is not None:
+            cases = data[cases]
+
+    if ax is None:
+        ax = plt.gca()
+
+    x_name, y_name, hue_name = None, None, None
+    if hasattr(x, "name"):
+        x_name = x.name
+    if hasattr(y, "name"):
+        y_name = y.name
+    if hasattr(hue, "name"):
+        hue_name = hue.name
+
+    if x_order is None:
+        x_order = sorted(pd.unique(x))
+
+    if hue is None:
+        n_colors = 1
+        pos_adjust = [0]
+        if color is None:
+            palette = [mpl.rcParams["axes.color_cycle"][0]]
+        else:
+            palette = [color]
+    else:
+        if hue_order is None:
+            hue_order = sorted(pd.unique(hue))
+        if dropna:
+            hue_order = list(filter(pd.notnull, hue_order))
+        if isinstance(palette, dict):
+            palette = [palette[h] for h in hue_order]
+        n_colors = len(hue_order)
+        palette = color_palette(palette, n_colors)
+        pos_adjust = np.linspace(0, dodge, n_colors)
+        pos_adjust -= pos_adjust.mean()
+
+    plot_data, case_data = _discrete_plot_data(x, y, hue, cases)
+
+    boot_kws = dict(n_boot=n_boot, func=estimator)
+    lw = mpl.rcParams["lines.linewidth"] * 1.5
+    ls = "-" if join else ""
+    kwargs = dict(ls=ls, lw=lw, marker="o", ms=9)
+    boot_kws = dict(n_boot=n_boot, func=estimator)
+    plot_pos = np.arange(len(x_order))
+    if hue is not None:
+        for j, hue_j in enumerate(hue_order):
+            heights = [estimator(plot_data[x_i][hue_j]) for x_i in x_order]
+            hue_pos = plot_pos + pos_adjust[j]
+            color = palette[j]
+            plt.plot(hue_pos, heights, color=color, label=hue_j, **kwargs)
+
+            for i, x_i in enumerate(x_order):
+                bin_data = plot_data[x_i][hue_j]
+                if cases is not None:
+                    boot_kws["cases"] = case_data[x_i][hue_j]
+                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                pos = [i + pos_adjust[j]] * 2
+                ax.plot(pos, ci_, linewidth=lw, color=color)
+
+    else:
+        heights = [estimator(plot_data[x_i]) for x_i in x_order]
+        color = palette[0]
+        plt.plot(plot_pos, heights, color=color,  **kwargs)
+
+        for i, x_i in enumerate(x_order):
+            bin_data = plot_data[x_i]
+            if cases is not None:
+                boot_kws["cases"] = case_data[x_i]
+            ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+            ax.plot([i, i], ci_, linewidth=lw, color=color)
+
+    if hue is not None and legend:
+        title_size = mpl.rcParams["axes.labelsize"] * .8
+        ax.legend(loc="best").set_title(hue_name, prop={"size": title_size})
+    xlim = -.3, max(plot_pos) + .3
+    n_x = len(x_order)
+    ax.set(xlabel=x_name, ylabel=y_name, xlim=xlim,
+           xticks=np.arange(n_x), xticklabels=x_order)
+
+    return ax
+
+
+
+def _discrete_plot_data(x, y, hue=None, cases=None):
+            
+    plot_data = dict()
+    case_data = dict()
+    for x_i in pd.unique(x):
+        x_data = dict()
+        x_cases = dict()
+        if hue is not None:
+            for hue_j in pd.unique(hue):
+                mask = (x == x_i) & (hue == hue_j)
+                x_data[hue_j] = y[mask]
+                if cases is not None:
+                    x_cases[hue_j] = cases[mask]
+        else:
+            mask = x == x_i
+            x_data = y[mask]
+            if cases is not None:
+                x_cases = cases[mask]
+
+        plot_data[x_i] = x_data
+        case_data[x_i] = x_cases
+
+    case_data = None if cases is None else case_data
+
+    return plot_data, case_data
 
 
 def _regress_fast(grid, x, y, cases, ci, n_boot):
