@@ -248,7 +248,7 @@ class FacetGrid(object):
                 continue
 
             # Get the current axis
-            ax = self._facet_axis(row_i, col_j)
+            ax = self.facet_axis(row_i, col_j)
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
@@ -315,7 +315,7 @@ class FacetGrid(object):
                 continue
 
             # Get the current axis
-            ax = self._facet_axis(row_i, col_j)
+            ax = self.facet_axis(row_i, col_j)
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
@@ -357,13 +357,13 @@ class FacetGrid(object):
     def _finalize_grid(self, axlabels):
         """Finalize the annotations and layout."""
         self.set_axis_labels(*axlabels)
+        self.set_titles()
+        self.fig.tight_layout()
         if self._draw_legend:
             self.set_legend()
-        else:
-            self.fig.tight_layout()
-        self.set_titles()
 
-    def _facet_axis(self, row_i, col_j):
+    def facet_axis(self, row_i, col_j):
+        """Make the axis identified by these indices active and return it."""
 
         # Calculate the actual indices of the axes to plot on
         if self._col_wrap is not None:
