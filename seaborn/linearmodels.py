@@ -20,7 +20,7 @@ from .axisgrid import FacetGrid
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
            col_order=None, row_order=None, hue_order=None, dropna=True,
-           **kwargs):
+           legend=True, legend_out=True, **kwargs):
 
     # Backwards-compatibility warning layer
     if "color" in kwargs:
@@ -35,7 +35,8 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
                        col_order=col_order, hue_order=hue_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap)
+                       size=size, aspect=aspect, col_wrap=col_wrap,
+                       legend=legend, legend_out=legend_out)
 
     # Hack to set the x limits properly, which needs to happen here
     # because the extent of the regression estimate is determined
