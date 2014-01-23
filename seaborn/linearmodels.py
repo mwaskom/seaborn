@@ -238,8 +238,8 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
                     ax.plot([pos, pos], ci_, linewidth=2.5, color="#222222")
 
             if ax.get_xlim()[0] < 0 and not hue_k:
-                lw = mpl.rcParams["lines.linewidth"] * .75
-                ax.axhline(0, c="#444444", lw=lw)
+                zlw = mpl.rcParams["lines.linewidth"] * .75
+                ax.axhline(0, c="#444444", lw=zlw)
 
         elif kind == "point":
 
@@ -283,7 +283,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     # Initialize the grid
     facets = FacetGrid(data, row, col, palette=None, row_order=row_order,
                        col_order=col_order, dropna=dropna, size=size,
-                       aspect=aspect, col_wrap=col_wrap)
+                       aspect=aspect, col_wrap=col_wrap, legend=legend,
+                       legend_out=legend_out)
 
     if kind == "auto":
         if y is None:
@@ -305,6 +306,9 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     else:
         kwargs.update(dict(dodge=dodge, join=join))
         facets.map_dataframe(pointplot, x, y, hue, **kwargs)
+
+    if legend and hue is not None and hue not in [x, row, col]:
+        facets.set_legend(title=hue)
 
     return facets
 
@@ -366,7 +370,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
     for i, x_i in enumerate(x_order):
         if hue is not None:
             for j, hue_j in enumerate(hue_order):
-                bin_data = plot_data[x_i][hue_j]
+                bin_data = plot_data[x_i][hue_j].values
                 height = estimator(bin_data)
                 pos = i + pos_adjust[j]
                 label = "_nolegend_" if i else hue_j
@@ -376,8 +380,12 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
                     boot_kws["cases"] = case_data[x_i][hue_j]
                 ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                 ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+
+                if ax.get_xlim()[0] < 0 and not j:
+                    zlw = mpl.rcParams["lines.linewidth"] * .75
+                    ax.axhline(0, c="#444444", lw=zlw)
         else:
-            bin_data = plot_data[x_i]
+            bin_data = plot_data[x_i].values
             height = estimator(bin_data)
             pos = i
             ax.bar(pos, height, width, align="center", color=color)
@@ -385,6 +393,9 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
                 boot_kws["cases"] = case_data[x_i]
             ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
             ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+            if ax.get_xlim()[0] < 0 and not j:
+                zlw = mpl.rcParams["lines.linewidth"] * .75
+                ax.axhline(0, c="#444444", lw=zlw)
 
     if hue is not None and legend:
         title_size = mpl.rcParams["axes.labelsize"] * .8
@@ -460,7 +471,7 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
             plt.plot(hue_pos, heights, color=color, label=hue_j, **kwargs)
 
             for i, x_i in enumerate(x_order):
-                bin_data = plot_data[x_i][hue_j]
+                bin_data = plot_data[x_i][hue_j].values
                 if cases is not None:
                     boot_kws["cases"] = case_data[x_i][hue_j]
                 ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
@@ -473,7 +484,7 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
         plt.plot(plot_pos, heights, color=color,  **kwargs)
 
         for i, x_i in enumerate(x_order):
-            bin_data = plot_data[x_i]
+            bin_data = plot_data[x_i].values
             if cases is not None:
                 boot_kws["cases"] = case_data[x_i]
             ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
