@@ -28,8 +28,14 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
         warnings.warn(msg, UserWarning)
         hue = kwargs.pop("color")
 
+    # Reduce the dataframe to only needed columns
+    # Otherwise when dropna is True we could lose data because it is missing
+    # in a column that isn't relevant ot this plot
     cases = kwargs.get("cases", None)
-    cols = [a for a in [x, y, hue, col, row, cases] if a is not None]
+    partial = kwargs.get("partial", None)
+    semipartial = kwargs.get("semipartial", None)
+    need_cols = [x, y, hue, col, row, cases, partial, semipartial]
+    cols = [a for a in need_cols if a is not None]
     data = data[cols]
 
     # Initialize the grid
@@ -501,7 +507,6 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
     return ax
 
 
-
 def _discrete_plot_data(x, y, hue=None, cases=None):
             
     plot_data = dict()
@@ -606,9 +611,20 @@ def _point_est(x, y, estimator, ci, cases, n_boot):
     return vals, points, cis
 
 
+def _regress_out(a, b):
+    """Regress b from a keeping a's original mean."""
+    a_mean = a.mean()
+    a = a - a_mean
+    b = b - b.mean()
+    b = np.c_[b]
+    a_prime = a - b.dot(np.linalg.pinv(b).dot(a))
+    return (a_prime + a_mean).reshape(a.shape)
+
+
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             scatter=True, fit_reg=True, ci=95, n_boot=1000, cases=None,
-            order=1, logistic=False, lowess=False, robust=False, partial=None,
+            order=1, logistic=False, lowess=False, robust=False,
+            partial=None, semipartial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
@@ -661,7 +677,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     partial : matrix or string(s) , optional
         Matrix with same first dimension as x and y, or column name(s) in
         `data`. These variables are treated as confounding and are removed from
-        the data.
+        both the `x` and `y` variables before plotting.
+    semipartial : matrix or string(s) , optional
+        Similar to `partial` but only remove the confound from the `x` variable.
     truncate : boolean, optional
         If True, truncate the regression estimate at the minimum and maximum
         values of the `x` variable.
@@ -735,11 +753,14 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     # Coerce the input data to arrays
     x = np.asarray(x, dtype=np.float)
     y = np.asarray(y, dtype=np.float)
+
+    # This is a heuristic but unlikely to be wrong
     if partial is not None:
-        # This is a heuristic but unlikely to be wrong
         if data is not None and len(partial) != len(x):
             partial = data[partial]
-        partial = np.asarray(partial, dtype=np.float)
+    if semipartial is not None:
+        if data is not None and len(semipartial) != len(x):
+            semipartial = data[semipartial]
 
     # Set mutable default arguments
     if scatter_kws is None:
@@ -760,11 +781,11 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         lines.remove()
 
     # Possibly regress confounding variables out of the dependent variable
-    if partial is None:
-        y_scatter = y.copy()
-    else:
-        X = np.c_[np.ones_like(x), x, partial]
-        y_scatter = y - X[:, 2:].dot(np.linalg.pinv(X).dot(y)[2:])
+    if partial is not None:
+        x = _regress_out(x, partial)
+        y = _regress_out(y, partial)
+    if semipartial is not None:
+        x = _regress_out(x, semipartial)
 
     # Possibly bin the predictor variable, which implies a point estimate
     if x_bins is not None:
@@ -777,7 +798,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     else:
         x_scatter = x + np.random.uniform(-x_jitter, x_jitter, x.size)
     if y_jitter is not None:
-        y_scatter += np.random.uniform(-y_jitter, y_jitter, y.size)
+        y = + np.random.uniform(-y_jitter, y_jitter, y.size)
 
     # Get some defaults
     scatter_color = scatter_kws.pop("c", color)
@@ -789,12 +810,12 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     if scatter:
         if x_estimator is None:
             alpha = scatter_kws.pop("alpha", .8)
-            ax.scatter(x_scatter, y_scatter,
+            ax.scatter(x_scatter, y,
                        color=scatter_color, alpha=alpha, **scatter_kws)
         else:
             if x_bins is None:
                 x_discrete = x
-            point_data = _point_est(x_discrete, y_scatter,
+            point_data = _point_est(x_discrete, y,
                                     x_estimator, x_ci, cases, n_boot)
             for x_val, height, ci_bounds in zip(*point_data):
                 size = scatter_kws.pop("s", 50)
@@ -816,7 +837,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     grid = np.linspace(x_min, x_max, 100)
 
     # Validate the regression parameters
-    if sum((order > 1, logistic, robust, lowess, partial is not None)) > 1:
+    if sum((order > 1, logistic, robust, lowess)) > 1:
         raise ValueError("Mutually exclusive regression options were used.")
 
     # Fit the regression and bootstrap the prediction.
@@ -834,12 +855,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     elif robust:
         y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, cases, sm.RLM,
                                                   ci, n_boot)
-    elif partial is not None:
-        _x = np.c_[x, partial]
-        _grid = np.c_[grid, np.zeros((grid.size, partial.shape[1]))]
-        kwargs = dict()
-        y_hat, y_hat_boots = _regress_statsmodels(_grid, _x, y, cases, sm.OLS,
-                                                  kwargs, ci, n_boot)
     else:
         y_hat, y_hat_boots = _regress_fast(grid, x, y, cases, ci, n_boot)
 
