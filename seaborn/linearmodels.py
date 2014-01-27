@@ -797,7 +797,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     if x_partial is not None:
         x = _regress_out(x, x_partial)
     if y_partial is not None:
-        y = _regress_out(x, y_partial)
+        y = _regress_out(y, y_partial)
 
     # Possibly bin the predictor variable, which implies a point estimate
     if x_bins is not None:
