@@ -32,9 +32,9 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     # Otherwise when dropna is True we could lose data because it is missing
     # in a column that isn't relevant ot this plot
     cases = kwargs.get("cases", None)
-    partial = kwargs.get("partial", None)
-    semipartial = kwargs.get("semipartial", None)
-    need_cols = [x, y, hue, col, row, cases, partial, semipartial]
+    x_partial = kwargs.get("x_partial", None)
+    y_partial = kwargs.get("y_partial", None)
+    need_cols = [x, y, hue, col, row, cases, x_partial, y_partial]
     cols = [a for a in need_cols if a is not None]
     data = data[cols]
 
@@ -284,6 +284,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
 
     cols = [a for a in [x, y, hue, col, row, cases] if a is not None]
+    cols = pd.unique(cols).tolist()
     data = data[cols]
 
     # Initialize the grid
@@ -324,10 +325,14 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
             color=None, palette=None, legend=True, dropna=True, ax=None,
             **kwargs):
 
+    if y is None:
+        estimator = len
+        ci = None
+        y = x
+
     if data is not None:
         x = data[x]
-        if y is not None:
-            y = data[y]
+        y = data[y]
         if hue is not None:
             hue = data[hue]
         if cases is not None:
@@ -384,8 +389,9 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
                        color=colors[j], label=label)
                 if cases is not None:
                     boot_kws["cases"] = case_data[x_i][hue_j]
-                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-                ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+                if ci is not None:
+                    ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                    ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
 
                 if ax.get_xlim()[0] < 0 and not j:
                     zlw = mpl.rcParams["lines.linewidth"] * .75
@@ -397,9 +403,10 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
             ax.bar(pos, height, width, align="center", color=color)
             if cases is not None:
                 boot_kws["cases"] = case_data[x_i]
-            ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-            ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
-            if ax.get_xlim()[0] < 0 and not j:
+            if ci is not None:
+                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
+            if ax.get_xlim()[0] < 0:
                 zlw = mpl.rcParams["lines.linewidth"] * .75
                 ax.axhline(0, c="#444444", lw=zlw)
 
@@ -414,19 +421,23 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
     return ax
 
 
-def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
+def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
               ci=95, n_boot=1000, cases=None, dodge=0, color=None,
               palette=None, x_order=None, hue_order=None, legend=True,
               dropna=True, ax=None, **kwargs):
 
     if data is not None:
-        x = data[x]
-        if y is not None:
+        if y is None:
+            y = data[x]
+        else:
             y = data[y]
+        x = data[x]
         if hue is not None:
             hue = data[hue]
         if cases is not None:
             cases = data[cases]
+    elif y is None:
+        y = x
 
     if ax is None:
         ax = plt.gca()
@@ -480,9 +491,11 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
                 bin_data = plot_data[x_i][hue_j].values
                 if cases is not None:
                     boot_kws["cases"] = case_data[x_i][hue_j]
-                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-                pos = [i + pos_adjust[j]] * 2
-                ax.plot(pos, ci_, linewidth=lw, color=color)
+                if ci is not None:
+                    ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                    ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                    pos = [i + pos_adjust[j]] * 2
+                    ax.plot(pos, ci_, linewidth=lw, color=color)
 
     else:
         heights = [estimator(plot_data[x_i]) for x_i in x_order]
@@ -493,8 +506,9 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
             bin_data = plot_data[x_i].values
             if cases is not None:
                 boot_kws["cases"] = case_data[x_i]
-            ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
-            ax.plot([i, i], ci_, linewidth=lw, color=color)
+            if ci is not None:
+                ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
+                ax.plot([i, i], ci_, linewidth=lw, color=color)
 
     if hue is not None and legend:
         title_size = mpl.rcParams["axes.labelsize"] * .8
@@ -507,10 +521,11 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, join=True,
     return ax
 
 
-def _discrete_plot_data(x, y, hue=None, cases=None):
+def _discrete_plot_data(x, y=None, hue=None, cases=None):
             
     plot_data = dict()
     case_data = dict()
+
     for x_i in pd.unique(x):
         x_data = dict()
         x_cases = dict()
@@ -624,7 +639,7 @@ def _regress_out(a, b):
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             scatter=True, fit_reg=True, ci=95, n_boot=1000, cases=None,
             order=1, logistic=False, lowess=False, robust=False,
-            partial=None, semipartial=None,
+            x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
@@ -674,12 +689,10 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     robust : boolean, optional
         Fit a robust linear regression, which may be useful when the data
         appear to have outliers.
-    partial : matrix or string(s) , optional
-        Matrix with same first dimension as x and y, or column name(s) in
-        `data`. These variables are treated as confounding and are removed from
-        both the `x` and `y` variables before plotting.
-    semipartial : matrix or string(s) , optional
-        Similar to `partial` but only remove the confound from the `x` variable.
+    {x, y}_partial : matrix or string(s) , optional
+        Matrix with same first dimension as `x`, or column name(s) in `data`.
+        These variables are treated as confounding and are removed from
+        the `x` or `y` variables before plotting.
     truncate : boolean, optional
         If True, truncate the regression estimate at the minimum and maximum
         values of the `x` variable.
@@ -755,12 +768,12 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     y = np.asarray(y, dtype=np.float)
 
     # This is a heuristic but unlikely to be wrong
-    if partial is not None:
-        if data is not None and len(partial) != len(x):
-            partial = data[partial]
-    if semipartial is not None:
-        if data is not None and len(semipartial) != len(x):
-            semipartial = data[semipartial]
+    if x_partial is not None:
+        if data is not None and len(x_partial) != len(x):
+            x_partial = data[x_partial]
+    if y_partial is not None:
+        if data is not None and len(y_partial) != len(y):
+            y_partial = data[y_partial]
 
     # Set mutable default arguments
     if scatter_kws is None:
@@ -781,11 +794,10 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         lines.remove()
 
     # Possibly regress confounding variables out of the dependent variable
-    if partial is not None:
-        x = _regress_out(x, partial)
-        y = _regress_out(y, partial)
-    if semipartial is not None:
-        x = _regress_out(x, semipartial)
+    if x_partial is not None:
+        x = _regress_out(x, x_partial)
+    if y_partial is not None:
+        y = _regress_out(x, y_partial)
 
     # Possibly bin the predictor variable, which implies a point estimate
     if x_bins is not None:
