@@ -380,7 +380,7 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False):
+            left=False, bottom=False, spinesep=0):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -389,6 +389,9 @@ def despine(fig=None, ax=None, top=True, right=True,
         specific axes object to despine
     top, right, left, bottom : boolean, optional
         if True, remove that spine
+    spinesep : int or float, optional
+        distance, in points, to move axis spines outward (negative
+        values move spines inward)
 
     """
     # Get references to the axes we want
@@ -403,6 +406,8 @@ def despine(fig=None, ax=None, top=True, right=True,
         for side in ["top", "right", "left", "bottom"]:
             # Toggle the spine objects
             ax_i.spines[side].set_visible(not locals()[side])
+            if spinesep != 0:
+                ax_i.spines[side].set_position(('outward', spinesep))
 
         # Set the ticks appropriately
         if bottom:
