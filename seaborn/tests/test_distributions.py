@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 import nose.tools as nt
@@ -213,3 +215,20 @@ class TestKDE(object):
         nt.assert_equal(x.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
+
+    def test_statsmodels_kde_cumulative(self):
+        grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
+                                                   self.bw, self.gridsize,
+                                                   self.cut, self.clip,
+                                                   cumulative=True)
+        nt.assert_equal(len(grid), self.gridsize)
+        nt.assert_equal(len(y), self.gridsize)
+        # make sure y is monotonically increasing
+        npt.assert_((np.diff(y) > 0).all())
+
+    # skip for travis matplotlib backend failures
+    @npt.decorators.skipif("DISPLAY" not in os.environ)
+    def test_kde_cummulative_2d(self):
+        # skip for travis matplotlib backend failures
+        with npt.assert_raises(TypeError):
+            dist.kdeplot(self.x, data2=self.y, cumulative=True)
