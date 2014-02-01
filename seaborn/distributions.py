@@ -500,7 +500,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 
 def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
-                        clip, legend, ax, **kwargs):
+                        clip, legend, ax, cumulative=False, **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
     # Sort out the clipping
@@ -511,13 +511,18 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     try:
         # Prefer using statsmodels for kernel flexibility
         x, y = _statsmodels_univariate_kde(data, kernel, bw,
-                                           gridsize, cut, clip)
+                                           gridsize, cut, clip,
+                                           cumulative=cumulative)
     except ImportError:
         # Fall back to scipy if missing statsmodels
         if kernel != "gau":
             kernel = "gau"
             msg = "Kernel other than `gau` requires statsmodels."
             warnings.warn(msg, UserWarning)
+        if cumulative:
+            raise ImportError("Cumulative distributions are currently"
+                              "only implemented in statsmodels."
+                              "Please install statsmodels.")
         x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
 
     # Make sure the density is nonnegative
@@ -557,13 +562,17 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     return ax
 
 
-def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip):
+def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
+                                cumulative=False):
     """Compute a univariate kernel density estimate using statsmodels."""
     from statsmodels import nonparametric
     fft = kernel == "gau"
     kde = nonparametric.kde.KDEUnivariate(data)
     kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
-    grid, y = kde.support, kde.density
+    if cumulative:
+        grid, y = kde.support, kde.cdf
+    else:
+        grid, y = kde.support, kde.density
     return grid, y
 
 
@@ -648,7 +657,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             bw="scott", gridsize=100, cut=3, clip=None, legend=True, ax=None,
-            **kwargs):
+            cumulative=False, **kwargs):
     """Fit and plot a univariate or bivarate kernel density estimate.
 
     Parameters
@@ -681,6 +690,8 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         If True, add a legend or label the axes when possible.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
+    cumulative : bool
+        If draw, draw the cumulative distribution estimated by the kde.
     kwargs : other keyword arguments for plot()
 
     Returns
@@ -705,12 +716,16 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         x = data
         y = data2
 
+    if bivariate and cumulative:
+        raise TypeError("Cumulative distribution plots are not"
+                        "supported for bivariate distributions.")
     if bivariate:
         ax = _bivariate_kdeplot(x, y, shade, kernel, bw, gridsize,
                                 cut, clip, legend, ax, **kwargs)
     else:
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
-                                 gridsize, cut, clip, legend, ax, **kwargs)
+                                 gridsize, cut, clip, legend, ax,
+                                 cumulative=cumulative, **kwargs)
 
     return ax
 
