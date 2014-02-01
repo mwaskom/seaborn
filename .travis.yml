@@ -11,7 +11,7 @@ install:
   - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
   - pip install --no-deps git+git://github.com/mwaskom/moss.git#egg=moss
   - pip install .
-  - echo "backend : Agg" > .matplotlibrc
+  - echo backend : Agg > matplotlibrc
 
 before_install:
   - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
