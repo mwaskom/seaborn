@@ -5,7 +5,8 @@ import matplotlib as mpl
 
 from . import palettes
 
-def set(context="notebook", style="darkgrid", palette="deep", font="Arial", gridweight=None):
+def set(context="notebook", style="darkgrid", palette="deep", font="Arial",
+        gridweight=None):
     """Set new RC params in one step."""
     set_axes_style(style, context, font=font, gridweight=gridweight)
     set_color_palette(palette)
@@ -60,9 +61,9 @@ def set_axes_style(style, context, font="Arial", gridweight=None):
     }
     if gridweight is None:
         if context == "paper":
-            glw = gridweights["light"]
+            glw = gridweights["medium"]
         else:
-            glw = gridweights['medium']
+            glw = gridweights['extra heavy']
     elif isreal(gridweight):
         glw = gridweight
     else:
