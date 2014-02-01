@@ -217,6 +217,7 @@ class TestKDE(object):
         nt.assert_equal(len(z), self.gridsize)
 
     def test_statsmodels_kde_cumulative(self):
+        """Test computation of cumulative KDE."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
                                                    self.bw, self.gridsize,
                                                    self.cut, self.clip,
@@ -226,9 +227,7 @@ class TestKDE(object):
         # make sure y is monotonically increasing
         npt.assert_((np.diff(y) > 0).all())
 
-    # skip for travis matplotlib backend failures
-    @npt.decorators.skipif("DISPLAY" not in os.environ)
     def test_kde_cummulative_2d(self):
-        # skip for travis matplotlib backend failures
+        """Check error if args indicate bivariate KDE and cumulative."""
         with npt.assert_raises(TypeError):
             dist.kdeplot(self.x, data2=self.y, cumulative=True)
