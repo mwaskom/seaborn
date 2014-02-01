@@ -2,8 +2,8 @@ export SHELL := /bin/bash
 
 test:
 
-	make -C examples test
 	nosetests
+	make -C examples test
 
 
 hexstrip:
