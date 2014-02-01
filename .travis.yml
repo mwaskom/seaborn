@@ -10,6 +10,8 @@ install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else pip install pillow; fi
   - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
   - pip install --no-deps git+git://github.com/mwaskom/moss.git#egg=moss
+  - pip install pep8
+  - pip install https://github.com/dcramer/pyflakes/tarball/master  
   - pip install .
   - cp testing/matplotlibrc .
 
@@ -20,5 +22,8 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
   - export PATH=/home/travis/anaconda/bin:$PATH
+
+before_script:
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then make lint; fi
 
 script: make test
