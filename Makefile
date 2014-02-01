@@ -10,6 +10,10 @@ coverage:
 
 	nosetests --with-coverage --cover-package seaborn
 
+lint:
+
+	pyflakes -x W seaborn
+	pep8 seaborn
 
 hexstrip:
 
