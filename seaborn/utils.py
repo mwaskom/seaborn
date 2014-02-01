@@ -407,7 +407,10 @@ def despine(fig=None, ax=None, top=True, right=True,
             # Toggle the spine objects
             ax_i.spines[side].set_visible(not locals()[side])
             if offset != 0:
+                xlabel, ylabel = ax_i.get_xlabel(), ax_i.get_ylabel()
                 ax_i.spines[side].set_position(('outward', offset))
+                ax_i.set_xlabel(xlabel)
+                ax_i.set_ylabel(ylabel)
 
         # Set the ticks appropriately
         if bottom:
