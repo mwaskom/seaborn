@@ -11,6 +11,7 @@ def set(context="notebook", style="darkgrid", palette="deep", font="Arial",
     set_axes_style(style, context, font=font, gridweight=gridweight)
     set_color_palette(palette)
 
+
 def reset_defaults():
     """Restore all RC params to default settings."""
     mpl.rcParams.update(mpl.rcParamsDefault)
@@ -40,7 +41,8 @@ def set_axes_style(style, context, font="Arial", gridweight=None):
         raise ValueError("Context %s is not recognized" % context)
 
     if not isreal(gridweight) and \
-      (not {"None", "extra heavy", "heavy", "medium", "light"} & {gridweight}):
+       (not {"None", "extra heavy", "heavy",
+             "medium", "light"} & {gridweight}):
         raise ValueError("Gridweight %s is not recognized" % gridweight)
 
     # Determine the axis parameters
