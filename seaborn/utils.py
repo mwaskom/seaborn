@@ -380,7 +380,7 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False, offset=0):
+            left=False, bottom=False, offset=0, tickresolve=None):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -392,6 +392,8 @@ def despine(fig=None, ax=None, top=True, right=True,
     offset : int or float, optional
         distance, in points, to move axis spines outward (negative
         values move spines inward)
+    tickresolve : str ("expand" or "contract") or None, optional
+        method of removing exes spines dangling past last ticks.
 
     """
     # Get references to the axes we want
@@ -411,6 +413,25 @@ def despine(fig=None, ax=None, top=True, right=True,
                 ax_i.spines[side].set_position(('outward', offset))
                 ax_i.set_xlabel(xlabel)
                 ax_i.set_ylabel(ylabel)
+
+        xticks =  ax.get_xticks()
+        if tickresolve == 'expand':
+            firsttick = xticks.compress(xticks <= ax.get_xlim()[0])[0]
+            lasttick = xticks.compress(xticks >= ax.get_xlim()[-1])[-1]
+            ax.spines['bottom'].set_bounds(firsttick, lasttick)
+            ax.set_xlim(firsttick, lasttick)
+
+
+        elif tickresolve == 'contract':
+            firsttick = np.compress(xticks > ax.get_xlim()[0], xticks)[0]
+            lasttick = np.compress(xticks < ax.get_xlim()[-1], xticks)[-1]
+            ax.spines['bottom'].set_bounds(firsttick, lasttick)
+            newticks = xticks.compress(xticks <= lasttick)
+            newticks = newticks.compress(newticks >= firsttick)
+            ax.set_xticks(newticks)
+
+        elif tickresolve is not None:
+            raise ValueError('`tickresolve` must be either "expand", "contract", or None')
 
         # Set the ticks appropriately
         if bottom:
