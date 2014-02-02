@@ -3,7 +3,7 @@ Contributing code
 
 To contribute code to seaborn, it's best to follow the usual github workflow:
 
-- Fork the [https://github.com/mwaskom/seaborn](main seaborn repository)
+- Fork the [main seaborn repository](https://github.com/mwaskom/seaborn)
 - Create a feature branch with `git checkout -b <feature_name>`
 - Add some new code
 - Push to your fork with `git push origin <feature_name>`
