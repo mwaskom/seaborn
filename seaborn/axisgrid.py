@@ -394,13 +394,14 @@ class FacetGrid(object):
         utils.despine(self.fig, **kwargs)
         return self
 
-    def set_axis_labels(self, x_var, y_var=None):
+    def set_axis_labels(self, x_var=None, y_var=None):
         """Set axis labels on the left column and bottom row of the grid."""
+        if x_var is not None:
+            self._x_var = x_var
+            self.set_xlabels(x_var)
         if y_var is not None:
             self._y_var = y_var
             self.set_ylabels(y_var)
-        self._x_var = x_var
-        self.set_xlabels(x_var)
         return self
 
     def set_xlabels(self, label=None, **kwargs):
@@ -529,7 +530,7 @@ class FacetGrid(object):
             # Draw a full-figure legend outside the grid
             figlegend = plt.figlegend(handles, labels, "center right")
             self._legend = figlegend
-            figlegend.set_title(self._hue_var, prop={"size": title_size})
+            figlegend.set_title(title, prop={"size": title_size})
 
             # Draw the plot to set the bounding boxes correctly
             plt.draw()
@@ -555,7 +556,7 @@ class FacetGrid(object):
         else:
             # Draw a legend in the first axis
             leg = self.axes[0, 0].legend(handles, labels, loc="best")
-            leg.set_title(self._hue_var, prop={"size": title_size})
+            leg.set_title(title, prop={"size": title_size})
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
