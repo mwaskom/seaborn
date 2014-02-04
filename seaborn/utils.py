@@ -380,7 +380,7 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False, offset=0, tickresolve=None):
+            left=False, bottom=False, offset=0, trim=True):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -392,8 +392,8 @@ def despine(fig=None, ax=None, top=True, right=True,
     offset : int or float, optional
         distance, in points, to move axis spines outward (negative
         values move spines inward)
-    tickresolve : str ("expand" or "contract") or None, optional
-        method of removing exes spines dangling past last ticks.
+    trim : bool (default = True), optional
+        Toggles removing parts of spines dangling past last ticks.
 
     """
     # Get references to the axes we want
@@ -405,33 +405,12 @@ def despine(fig=None, ax=None, top=True, right=True,
         axes = [ax]
 
     for ax_i in axes:
+        if offset != 0:
+            offset_spines(ax_i, offset=offset, trim=trim)
+
         for side in ["top", "right", "left", "bottom"]:
             # Toggle the spine objects
             ax_i.spines[side].set_visible(not locals()[side])
-            if offset != 0:
-                xlabel, ylabel = ax_i.get_xlabel(), ax_i.get_ylabel()
-                ax_i.spines[side].set_position(('outward', offset))
-                ax_i.set_xlabel(xlabel)
-                ax_i.set_ylabel(ylabel)
-
-        xticks =  ax.get_xticks()
-        if tickresolve == 'expand':
-            firsttick = xticks.compress(xticks <= ax.get_xlim()[0])[0]
-            lasttick = xticks.compress(xticks >= ax.get_xlim()[-1])[-1]
-            ax.spines['bottom'].set_bounds(firsttick, lasttick)
-            ax.set_xlim(firsttick, lasttick)
-
-
-        elif tickresolve == 'contract':
-            firsttick = np.compress(xticks > ax.get_xlim()[0], xticks)[0]
-            lasttick = np.compress(xticks < ax.get_xlim()[-1], xticks)[-1]
-            ax.spines['bottom'].set_bounds(firsttick, lasttick)
-            newticks = xticks.compress(xticks <= lasttick)
-            newticks = newticks.compress(newticks >= firsttick)
-            ax.set_xticks(newticks)
-
-        elif tickresolve is not None:
-            raise ValueError('`tickresolve` must be either "expand", "contract", or None')
 
         # Set the ticks appropriately
         if bottom:
@@ -442,6 +421,82 @@ def despine(fig=None, ax=None, top=True, right=True,
             ax_i.yaxis.tick_right()
         if right:
             ax_i.yaxis.tick_left()
+
+
+def offset_spines(ax, offset=10, trim=True):
+    """Create a buffer between axes spines and a plot
+
+    ax : matplotlib axes, optional
+        specific axes object to despine
+    offset : int or float, optional
+        distance, in points, to move axis spines outward (negative
+        values move spines inward)
+    trim : bool (default = True), optional
+        Toggles removing parts of spines dangling past last ticks.
+
+    """
+    # helper function for restoring MPL Artist properties
+    def try_update(artist, p):
+        for k, v in p.items():
+            try:
+                artist.update({k: v})
+            except:
+                pass
+
+    # The main methods used to cache spine properties don't work on minor ticks
+    # for some reason. So we have to cache the minor ticks in a more manual way.
+    xlabels = [t.get_text() for t in ax.get_xticklabels(minor=True)]
+    if len(xlabels) > 0:
+        xlabelrot = ax.get_xticklabels(minor=True)[0].get_rotation()
+
+    ylabels = [t.get_text() for t in ax.get_yticklabels(minor=True)]
+    if len(ylabels) > 0:
+        ylabelrot = ax.get_yticklabels(minor=True)[0].get_rotation()
+
+    # loop through each spine, save the axis props and tick labels (again, as
+    # of Feb 2013, MPL v1.3.1, this doesn't work with minor ticks)
+    for name, spine in ax.spines.items():
+        paxis = spine.axis.properties()
+        pmajortick = [
+            label.properties() for label in spine.axis.get_ticklabels()
+        ]
+
+        # move the spine, restore the axis properties
+        spine.set_position(('outward', offset))
+        try_update(spine.axis, paxis)
+
+        # restore the major tick label properties
+        for label, p in zip(spine.axis.get_ticklabels(), pmajortick):
+            p.pop("transform")
+            p.pop("scale", None)
+            try_update(label, p)
+
+    # restore minor tick properties if they exist
+    if len(xlabels) > 0:
+        ax.set_xticklabels(xlabels, rotation=xlabelrot, minor=True)
+
+    if len(ylabels) > 0:
+        ax.set_yticklabels(ylabels, rotation=ylabelrot, minor=True)
+
+    if trim:
+        # clip off the parts of the spines that extend past the last major tick
+        xticks = ax.get_xticks()
+        firsttick = np.compress(xticks >= ax.get_xlim()[0], xticks)[0]
+        lasttick = np.compress(xticks <= ax.get_xlim()[-1], xticks)[-1]
+        ax.spines['bottom'].set_bounds(firsttick, lasttick)
+        ax.spines['top'].set_bounds(firsttick, lasttick)
+        newticks = xticks.compress(xticks <= lasttick)
+        newticks = newticks.compress(newticks >= firsttick)
+        ax.set_xticks(newticks)
+
+        yticks = ax.get_yticks()
+        firsttick = np.compress(yticks >= ax.get_ylim()[0], yticks)[0]
+        lasttick = np.compress(yticks <= ax.get_ylim()[-1], yticks)[-1]
+        ax.spines['left'].set_bounds(firsttick, lasttick)
+        ax.spines['right'].set_bounds(firsttick, lasttick)
+        newticks = yticks.compress(yticks <= lasttick)
+        newticks = newticks.compress(newticks >= firsttick)
+        ax.set_yticks(newticks)
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
