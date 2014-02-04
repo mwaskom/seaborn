@@ -19,18 +19,19 @@ class TestRegPlot(object):
     ci = 95
     bins_numeric = 3
     bins_given = [-1, 0, 1]
+    units = None
 
     def test_regress_fast(self):
         """Validate fast regression fit and bootstrap."""
 
         # Fit with the "fast" function, which just does linear algebra
-        fast = lm._regress_fast(self.grid, self.x, self.y,
+        fast = lm._regress_fast(self.grid, self.x, self.y, self.units,
                                 self.ci, self.n_boot)
         yhat_fast, _ = fast
 
         # Fit using the statsmodels function with an OLS model
-        smod = lm._regress_statsmodels(self.grid, self.x, self.y, sm.OLS,
-                                       self.ci, self.n_boot)
+        smod = lm._regress_statsmodels(self.grid, self.x, self.y, self.units,
+                                       sm.OLS, self.ci, self.n_boot)
         yhat_smod, _ = smod
 
         # Compare the vector of y_hat values
@@ -40,13 +41,13 @@ class TestRegPlot(object):
         """Validate polyfit-based regression fit and bootstrap."""
 
         # Fit an first-order polynomial
-        poly = lm._regress_poly(self.grid, self.x, self.y, 1,
+        poly = lm._regress_poly(self.grid, self.x, self.y, self.units, 1,
                                 self.ci, self.n_boot)
         yhat_poly, _ = poly
 
         # Fit using the statsmodels function with an OLS model
-        smod = lm._regress_statsmodels(self.grid, self.x, self.y, sm.OLS,
-                                       self.ci, self.n_boot)
+        smod = lm._regress_statsmodels(self.grid, self.x, self.y, self.units,
+                                       sm.OLS, self.ci, self.n_boot)
         yhat_smod, _ = smod
 
         # Compare the vector of y_hat values
@@ -54,7 +55,7 @@ class TestRegPlot(object):
 
     def test_regress_n_boot(self):
         """Test correct bootstrap size for internal regression functions."""
-        args = self.grid, self.x, self.y
+        args = self.grid, self.x, self.y, self.units
 
         # Fast (linear algebra) version
         fast = lm._regress_fast(*args, ci=self.ci, n_boot=self.n_boot)
@@ -74,7 +75,7 @@ class TestRegPlot(object):
 
     def test_regress_noboot(self):
         """Test that regression functions return None if not bootstrapping."""
-        args = self.grid, self.x, self.y
+        args = self.grid, self.x, self.y, self.units
 
         # Fast (linear algebra) version
         fast = lm._regress_fast(*args, ci=None, n_boot=self.n_boot)
@@ -114,7 +115,7 @@ class TestRegPlot(object):
     def test_point_est(self):
         """Test statistic estimation for discrete input data."""
         x_vals, points, cis = lm._point_est(self.x_discrete, self.y, np.mean,
-                                            self.ci, self.n_boot)
+                                            self.ci, self.units, self.n_boot)
 
         npt.assert_array_equal(x_vals, sorted(np.unique(self.x_discrete)))
         nt.assert_equal(len(points), np.unique(self.x_discrete).size)
@@ -123,11 +124,11 @@ class TestRegPlot(object):
     def test_point_ci(self):
         """Test the confidence interval in the point estimate function."""
         _, _, big_cis = lm._point_est(self.x_discrete, self.y,
-                                      np.mean, 95, self.n_boot)
+                                      np.mean, 95, self.units, self.n_boot)
         _, _, wee_cis = lm._point_est(self.x_discrete, self.y,
-                                      np.mean, 15, self.n_boot)
+                                      np.mean, 15, self.units, self.n_boot)
         npt.assert_array_less(np.diff(wee_cis), np.diff(big_cis))
 
         _, _, no_cis = lm._point_est(self.x_discrete, self.y,
-                                     np.mean, None, self.n_boot)
+                                     np.mean, None, self.units, self.n_boot)
         npt.assert_array_equal(no_cis, [None] * len(no_cis))

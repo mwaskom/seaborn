@@ -31,10 +31,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     # Reduce the dataframe to only needed columns
     # Otherwise when dropna is True we could lose data because it is missing
     # in a column that isn't relevant ot this plot
-    cases = kwargs.get("cases", None)
+    units = kwargs.get("units", None)
     x_partial = kwargs.get("x_partial", None)
     y_partial = kwargs.get("y_partial", None)
-    need_cols = [x, y, hue, col, row, cases, x_partial, y_partial]
+    need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
     cols = [a for a in need_cols if a is not None]
     data = data[cols]
 
@@ -58,7 +58,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
 
 def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, units=None,
                x_order=None, hue_order=None, col_order=None, row_order=None,
                kind="auto", dodge=0, join=True, size=5, aspect=1,
                palette=None, legend=True, legend_out=True, dropna=True,
@@ -187,8 +187,8 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
             else:
                 pos_adjust = [0] * n_colors
 
-    if cases is not None:
-        cases = data[cases]
+    if units is not None:
+        units = data[units]
 
     draw_legend = hue is not None and hue not in [x, row, col]
 
@@ -208,8 +208,8 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
         plot_data = data_ijk
 
         grouped = {g: data[y] for g, data in plot_data.groupby(x)}
-        if cases is not None:
-            cases = {g: data.values for g, data in cases.groupby(x)}
+        if units is not None:
+            units = {g: data.values for g, data in units.groupby(x)}
 
         plot_pos = []
         plot_heights = []
@@ -222,12 +222,12 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
             plot_pos.append(pos + pos_adjust[hue_k])
             plot_heights.append(estimator(grouped[var]))
             if ci is not None:
-                if cases is not None:
-                    cases_ = cases[var]
+                if units is not None:
+                    units_ = units[var]
                 else:
-                    cases_ = None
+                    units_ = None
                 boots = moss.bootstrap(grouped[var].values, func=estimator,
-                                       n_boot=n_boot, cases=cases_)
+                                       n_boot=n_boot, units=units_)
                 plot_cis.append(moss.ci(boots, ci))
 
         kwargs = {}
@@ -275,7 +275,7 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
 
 def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, cases=None,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, units=None,
                x_order=None, hue_order=None, col_order=None, row_order=None,
                kind="auto", dodge=0, join=True, size=5, aspect=1,
                palette=None, legend=True, legend_out=True, dropna=True,
@@ -283,7 +283,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
 
 
-    cols = [a for a in [x, y, hue, col, row, cases] if a is not None]
+    cols = [a for a in [x, y, hue, col, row, units] if a is not None]
     cols = pd.unique(cols).tolist()
     data = data[cols]
 
@@ -304,7 +304,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
             kind = "point"
 
     # Draw the plot on each facet
-    kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, cases=cases,
+    kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
                   x_order=x_order, hue_order=hue_order, palette=palette,
                   color=None)
 
@@ -321,7 +321,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
 
 def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
-            ci=95, n_boot=1000, cases=None, x_order=None, hue_order=None,
+            ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
             color=None, palette=None, legend=True, dropna=True, ax=None,
             **kwargs):
 
@@ -335,8 +335,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
         y = data[y]
         if hue is not None:
             hue = data[hue]
-        if cases is not None:
-            cases = data[cases]
+        if units is not None:
+            units = data[units]
 
     if ax is None:
         ax = plt.gca()
@@ -373,7 +373,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
         pos_adjust = np.linspace(0, .8 - width, n_colors)
         pos_adjust -= pos_adjust.mean()
 
-    plot_data, case_data = _discrete_plot_data(x, y, hue, cases)
+    plot_data, case_data = _discrete_plot_data(x, y, hue, units)
 
     boot_kws = dict(n_boot=n_boot, func=estimator)
     lw = mpl.rcParams["lines.linewidth"] * 1.5
@@ -387,8 +387,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
                 label = "_nolegend_" if i else hue_j
                 ax.bar(pos, height, width, align="center",
                        color=colors[j], label=label)
-                if cases is not None:
-                    boot_kws["cases"] = case_data[x_i][hue_j]
+                if units is not None:
+                    boot_kws["units"] = case_data[x_i][hue_j]
                 if ci is not None:
                     ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                     ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
@@ -401,8 +401,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
             height = estimator(bin_data)
             pos = i
             ax.bar(pos, height, width, align="center", color=color)
-            if cases is not None:
-                boot_kws["cases"] = case_data[x_i]
+            if units is not None:
+                boot_kws["units"] = case_data[x_i]
             if ci is not None:
                 ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                 ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
@@ -422,7 +422,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
 
 
 def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
-              ci=95, n_boot=1000, cases=None, dodge=0, color=None,
+              ci=95, n_boot=1000, units=None, dodge=0, color=None,
               palette=None, x_order=None, hue_order=None, legend=True,
               dropna=True, ax=None, **kwargs):
 
@@ -434,8 +434,8 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
         x = data[x]
         if hue is not None:
             hue = data[hue]
-        if cases is not None:
-            cases = data[cases]
+        if units is not None:
+            units = data[units]
     elif y is None:
         y = x
 
@@ -472,7 +472,7 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
         pos_adjust = np.linspace(0, dodge, n_colors)
         pos_adjust -= pos_adjust.mean()
 
-    plot_data, case_data = _discrete_plot_data(x, y, hue, cases)
+    plot_data, case_data = _discrete_plot_data(x, y, hue, units)
 
     boot_kws = dict(n_boot=n_boot, func=estimator)
     lw = mpl.rcParams["lines.linewidth"] * 1.5
@@ -489,8 +489,8 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
 
             for i, x_i in enumerate(x_order):
                 bin_data = plot_data[x_i][hue_j].values
-                if cases is not None:
-                    boot_kws["cases"] = case_data[x_i][hue_j]
+                if units is not None:
+                    boot_kws["units"] = case_data[x_i][hue_j]
                 if ci is not None:
                     ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                     ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
@@ -504,8 +504,8 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
 
         for i, x_i in enumerate(x_order):
             bin_data = plot_data[x_i].values
-            if cases is not None:
-                boot_kws["cases"] = case_data[x_i]
+            if units is not None:
+                boot_kws["units"] = case_data[x_i]
             if ci is not None:
                 ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                 ax.plot([i, i], ci_, linewidth=lw, color=color)
@@ -521,35 +521,35 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
     return ax
 
 
-def _discrete_plot_data(x, y=None, hue=None, cases=None):
+def _discrete_plot_data(x, y=None, hue=None, units=None):
             
     plot_data = dict()
     case_data = dict()
 
     for x_i in pd.unique(x):
         x_data = dict()
-        x_cases = dict()
+        x_units = dict()
         if hue is not None:
             for hue_j in pd.unique(hue):
                 mask = (x == x_i) & (hue == hue_j)
                 x_data[hue_j] = y[mask]
-                if cases is not None:
-                    x_cases[hue_j] = cases[mask]
+                if units is not None:
+                    x_units[hue_j] = units[mask]
         else:
             mask = x == x_i
             x_data = y[mask]
-            if cases is not None:
-                x_cases = cases[mask]
+            if units is not None:
+                x_units = units[mask]
 
         plot_data[x_i] = x_data
-        case_data[x_i] = x_cases
+        case_data[x_i] = x_units
 
-    case_data = None if cases is None else case_data
+    case_data = None if units is None else case_data
 
     return plot_data, case_data
 
 
-def _regress_fast(grid, x, y, cases, ci, n_boot):
+def _regress_fast(grid, x, y, units, ci, n_boot):
     """Low-level regression and prediction using linear algebra."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
@@ -559,12 +559,12 @@ def _regress_fast(grid, x, y, cases, ci, n_boot):
         return y_hat, None
 
     beta_boots = moss.bootstrap(X, y, func=reg_func,
-                                n_boot=n_boot, cases=cases).T
+                                n_boot=n_boot, units=units).T
     y_hat_boots = grid.dot(beta_boots).T
     return y_hat, y_hat_boots
 
 
-def _regress_poly(grid, x, y, cases, order, ci, n_boot):
+def _regress_poly(grid, x, y, units, order, ci, n_boot):
     """Regression using numpy polyfit for higher-order trends."""
     reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
     y_hat = reg_func(x, y)
@@ -572,11 +572,11 @@ def _regress_poly(grid, x, y, cases, order, ci, n_boot):
         return y_hat, None
 
     y_hat_boots = moss.bootstrap(x, y, func=reg_func,
-                                 n_boot=n_boot, cases=cases)
+                                 n_boot=n_boot, units=units)
     return y_hat, y_hat_boots
 
 
-def _regress_statsmodels(grid, x, y, cases, model, ci, n_boot, **kwargs):
+def _regress_statsmodels(grid, x, y, units, model, ci, n_boot, **kwargs):
     """More general regression function using statsmodels objects."""
     X = np.c_[np.ones(len(x)), x]
     grid = np.c_[np.ones(len(grid)), grid]
@@ -586,7 +586,7 @@ def _regress_statsmodels(grid, x, y, cases, model, ci, n_boot, **kwargs):
         return y_hat, None
 
     y_hat_boots = moss.bootstrap(X, y, func=reg_func,
-                                 n_boot=n_boot, cases=cases)
+                                 n_boot=n_boot, units=units)
     return y_hat, y_hat_boots
 
 
@@ -603,7 +603,7 @@ def _bin_predictor(x, bins):
     return x_binned, bins.ravel()
 
 
-def _point_est(x, y, estimator, ci, cases, n_boot):
+def _point_est(x, y, estimator, ci, units, n_boot):
     """Find point estimate and bootstrapped ci for discrete x values."""
     vals = sorted(np.unique(x))
     points, cis = [], []
@@ -616,11 +616,11 @@ def _point_est(x, y, estimator, ci, cases, n_boot):
         if ci is None:
             cis.append(None)
         else:
-            _cases = cases
-            if cases is not None:
-                _cases = cases[x == val]
+            _units = units
+            if units is not None:
+                _units = units[x == val]
             _ci = moss.ci(moss.bootstrap(_y, func=estimator, n_boot=n_boot,
-                                         cases=_cases), ci)
+                                         units=_units), ci)
             cis.append(_ci)
 
     return vals, points, cis
@@ -637,7 +637,7 @@ def _regress_out(a, b):
 
 
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
-            scatter=True, fit_reg=True, ci=95, n_boot=1000, cases=None,
+            scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
             x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
@@ -737,8 +737,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     if data is not None:
         x = data[x]
         y = data[y]
-        if cases is not None:
-            cases = data[cases].values
+        if units is not None:
+            units = data[units].values
 
     # Drop NA values
     if dropna:
@@ -828,7 +828,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             if x_bins is None:
                 x_discrete = x
             point_data = _point_est(x_discrete, y,
-                                    x_estimator, x_ci, cases, n_boot)
+                                    x_estimator, x_ci, units, n_boot)
             for x_val, height, ci_bounds in zip(*point_data):
                 size = scatter_kws.pop("s", 50)
                 size = scatter_kws.pop("size", size)
@@ -855,20 +855,20 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     # Fit the regression and bootstrap the prediction.
     # This gets delegated to one of several functions depending on the options.
     if order > 1:
-        y_hat, y_hat_boots = _regress_poly(grid, x, y, cases, order, ci, n_boot)
+        y_hat, y_hat_boots = _regress_poly(grid, x, y, units, order, ci, n_boot)
 
     elif logistic:
         binomial = sm.families.Binomial()
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, cases, sm.GLM, ci,
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units, sm.GLM, ci,
                                                   n_boot, family=binomial)
     elif lowess:
         ci = None
         grid, y_hat = sm.nonparametric.lowess(y, x).T
     elif robust:
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, cases, sm.RLM,
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units, sm.RLM,
                                                   ci, n_boot)
     else:
-        y_hat, y_hat_boots = _regress_fast(grid, x, y, cases, ci, n_boot)
+        y_hat, y_hat_boots = _regress_fast(grid, x, y, units, ci, n_boot)
 
     # Compute the confidence interval for the regression estimate
     if ci is not None:
