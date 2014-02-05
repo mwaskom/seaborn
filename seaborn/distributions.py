@@ -7,6 +7,7 @@ import pandas as pd
 import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as transforms
 from six.moves import range
 import warnings
 import moss
@@ -762,4 +763,437 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
         ax.plot([a, a], [min, min + height], **kwargs)
     else:
         ax.plot([min, min + height], [a, a], **kwargs)
+    return ax
+
+
+
+
+def dotplot(vals, points, intervals=None, lines=None,
+            styles=None, sections=None, split_names=None,
+            marker_props=None, line_props=None, striped=False,
+            stacked=False, gridlines=False, section_order=None,
+            line_order=None, horizontal=True, ax=None):
+    """
+    Produce a dotplot similar in style to those in Cleveland's
+    "Visualizing Data" book (also known as a "forest plot").  Several
+    extensions to the basic dotplot are also implemented: intervals
+    can be plotted along with the dots, and multiple points and
+    intervals can be drawn on each line of the dotplot.
+
+    Parameters
+    ----------
+    vals : DataFrame
+        Data for dotplot.
+
+    points : string
+        The name of the variable in the DataFrame defining the
+        coordinates of the plotted points.
+
+    intervals : string or sequence of two strings
+        If `interval` is a single string, this is the name of the
+        variable that defines one-half of the length of the symmetric
+        interval that is plotted around the point.  If `interval` is
+        a sequence of two strings, the two strings are variable names
+        that define the lengths of the left and right sides of the
+        interval that is plotted around the point.
+
+    lines : string
+        This is a variable name that determines which points are drawn
+        on the same line of the dotplot.
+
+    styles : string
+        This is a variable name that is used to determine the point
+        style (symbol and color).
+
+    sections : string
+        This is a variable name that is used to define groups of
+        lines that are placed in the same section
+
+    split_names : string
+        If not None, this is used to split the values of groupby into
+        substrings that are drawn in the left and right margins,
+        respectively.
+
+    marker_props : dict
+        A dictionary mapping styles for the points (coded as in column
+        `style` of `vals` to keyword arguments to the plot function.
+
+    line_props : dict
+        A dictionary mapping styles for the interval lines (coded as
+        in column `style` of `vals`) to keyword arguments to the plot
+        function.
+
+    striped : bool
+        If True, draw a shaded box around every other line of the
+        dotplot.
+
+    stacked : bool
+        If true, when multiple points are present on a line, offset
+        them from each other.
+
+    gridlines : bool
+        If true, draw the gridlines as grey lines.
+
+    section_order : list of strings
+        If provided, order the sections in the given order.
+
+    line_order : list of strings
+        If provided, order the lines of the dotplot in the given
+        order.
+
+    horizontal : bool
+        If True, the axis lines are horizontal, otherwise the axis
+        lines are vertical.
+
+    ax : matplotlib.axes
+        The axes on which the dotplot is drawn.
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis object with plot.
+
+    References
+    ----------
+      * Cleveland, William S. (1993). "Visualizing Data". Hobart
+        Press.
+      * Jacoby, William G. (2006) "The Dot Plot: A Graphical Display
+        for Labeled Quantitative Values." The Political Methodologist
+        14(1): 6-14.
+    """
+
+    if ax is None:
+        ax = plt.gca()
+
+    # Total number of points
+    npoint = vals.shape[0]
+
+    # We will be modifying the data frame.
+    vals = vals.copy()
+
+    # Set default line values if needed
+    if lines is None:
+        lines = "_lines"
+        vals[lines] = np.arange(npoint)
+
+    # Set default section values if needed
+    if sections is None:
+        sections = "_sections"
+        vals[sections] = np.zeros(npoint)
+
+    # Set default style values if needed
+    if styles is None:
+        styles = "_styles"
+        vals[styles] = np.zeros(npoint)
+
+    # The vertical space (in inches) for a section title
+    section_title_space = 0.5
+
+    # The number of sections
+    nsect = len(set(vals[sections]))
+
+    # The number of section titles
+    nsect_title = nsect if nsect > 1 else 0
+
+    # The total vertical space devoted to section titles.
+    section_space_total = section_title_space * nsect_title
+
+    # Add a bit of room so that points that fall at the axis limits
+    # are not cut in half.
+    ax.set_xmargin(0.02)
+    ax.set_ymargin(0.02)
+
+    if section_order is None:
+        lines0 = list(set(vals[sections]))
+        lines0.sort()
+    else:
+        lines0 = section_order
+
+    if line_order is None:
+        lines1 = list(set(vals[lines]))
+        lines1.sort()
+    else:
+        lines1 = line_order
+
+    # A map from (section,line) codes to index positions.
+    lines_map = {}
+    for i in range(npoint):
+        ky = (vals[sections][i], vals[lines][i])
+        if ky not in lines_map:
+            lines_map[ky] = []
+        lines_map[ky].append(i)
+
+    # Get the size of the axes on the parent figure in inches
+    fig = ax.figure
+    bbox = ax.get_window_extent().transformed(
+        fig.dpi_scale_trans.inverted())
+    awidth, aheight = bbox.width, bbox.height
+
+    # The number of lines in the plot.
+    nrows = len(lines_map)
+
+    # The positions of the lowest and highest guideline in axes
+    # coordinates (for horizontal dotplots), or the leftmost and
+    # rightmost guidelines (for vertical dotplots).
+    bottom,top = 0,1
+
+    if horizontal:
+        # x coordinate is data, y coordinate is axes
+        trans = transforms.blended_transform_factory(ax.transData,
+                                                     ax.transAxes)
+    else:
+        # x coordinate is axes, y coordinate is data
+        trans = transforms.blended_transform_factory(ax.transAxes,
+                                                     ax.transData)
+
+    # Space used for a section title, in axes coordinates
+    title_space_axes = section_title_space / aheight
+
+    # Space between lines
+    if horizontal:
+        dpos = (top - bottom - nsect_title*title_space_axes) /\
+            float(nrows)
+    else:
+        dpos = (top - bottom) / float(nrows)
+
+    # Determine the spacing for stacked points
+    # The maximum number of points on one line.
+    style_codes = list(set(vals[styles]))
+    style_codes.sort()
+    nval = len(style_codes)
+    if nval > 1:
+        stackd = dpos / (2.5*(float(nval)-1))
+    else:
+        stackd = 0.
+
+    if nval == 1 and stacked == True:
+        warnings.warn("dotplot: stacked is True but there is only one style group")
+
+    # Map from style code to its integer position
+    style_codes_map = {x: style_codes.index(x) for x in style_codes}
+
+    # Setup default marker styles
+    colors = husl_palette(nval)
+    if marker_props is None:
+        marker_props = {x: {} for x in style_codes}
+    for j in range(nval):
+        sc = style_codes[j]
+        if "color" not in marker_props[sc]:
+            marker_props[sc]["color"] = colors[j % len(colors)]
+        if "marker" not in marker_props[sc]:
+            marker_props[sc]["marker"] = "o"
+        if "ms" not in marker_props[sc]:
+            marker_props[sc]["ms"] = 10 if stackd == 0 else 6
+
+    # Setup default line styles
+    if line_props is None:
+        line_props = {x: {} for x in style_codes}
+    for j in range(nval):
+        sc = style_codes[j]
+        if "color" not in line_props[sc]:
+            line_props[sc]["color"] = "grey"
+        if "linewidth" not in line_props[sc]:
+            line_props[sc]["linewidth"] = 2 if stackd > 0 else 8
+
+    if horizontal:
+        # The vertical position of the first line.
+        pos = top - dpos/2 if nsect == 1 else top
+    else:
+        # The horizontal position of the first line.
+        pos = bottom + dpos/2
+
+    # Points that have already been labeled
+    labeled = set()
+
+    # Positions of the axis grid lines
+    tickpos = []
+
+    # Loop through the sections
+    for k0 in lines0:
+
+        # Draw a section title
+        if nsect_title > 0:
+
+            # Title for a horizontal dotplot
+            if horizontal:
+
+                y0 = pos + dpos/2 if k0 == lines0[0] else pos
+
+                ax.fill_between((0, 1), (y0,y0),
+                                (pos-0.7*title_space_axes,
+                                 pos-0.7*title_space_axes),
+                                color='darkgrey',
+                                transform=ax.transAxes,
+                                zorder=1)
+
+                txt = ax.text(0.5, pos - 0.35*title_space_axes, k0,
+                              horizontalalignment='center',
+                              verticalalignment='center',
+                              transform=ax.transAxes)
+                txt.set_fontweight("bold")
+                pos -= title_space_axes
+
+            # Title for a vertical dotplot
+            else:
+
+                m = len([k for k in lines_map if k[0] == k0])
+
+                ax.fill_between((pos-dpos/2+0.01,
+                                 pos+(m-1)*dpos+dpos/2-0.01),
+                                (1.01,1.01), (1.06,1.06),
+                                color='darkgrey',
+                                transform=ax.transAxes,
+                                zorder=1, clip_on=False)
+
+                txt = ax.text(pos + (m-1)*dpos/2, 1.02, k0,
+                              horizontalalignment='center',
+                              verticalalignment='bottom',
+                              transform=ax.transAxes)
+                txt.set_fontweight("bold")
+
+        jrow = 0
+        for k1 in lines1:
+
+            # No data to plot
+            if (k0, k1) not in lines_map:
+                continue
+
+            # Set up the labels
+            if split_names is not None:
+                us = k1.split(split_names)
+                if len(us) >= 2:
+                    left_label, right_label = us[0], us[1]
+                else:
+                    left_label, right_label = k1, None
+            else:
+                left_label, right_label = k1, None
+
+            # Draw the stripe
+            if striped and jrow % 2 == 0:
+                if horizontal:
+                    ax.fill_between((0, 1), (pos-dpos/2, pos-dpos/2),
+                                    (pos+dpos/2, pos+dpos/2),
+                                    color='lightgrey',
+                                    transform=ax.transAxes,
+                                    zorder=0)
+                else:
+                    ax.fill_between((pos-dpos/2, pos+dpos/2),
+                                    (0, 0), (1, 1),
+                                    color='lightgrey',
+                                    transform=ax.transAxes,
+                                    zorder=0)
+
+            # Draw the guideline
+            if gridlines:
+                if horizontal:
+                    ax.axhline(y=pos, color='grey')
+                else:
+                    # axvline seems not to work as expected
+                    #ax.axvline(x=pos, color='green')
+                    plt.plot([pos, pos], [0, 1], color='grey',
+                             transform=ax.transAxes)
+
+            jrow += 1
+
+            # Draw the left margin label
+            if horizontal:
+                ax.text(-0.1/awidth, pos, left_label,
+                           horizontalalignment="right",
+                           verticalalignment='center',
+                           transform=ax.transAxes, family='monospace')
+            else:
+                ax.text(pos, -0.1/aheight, left_label,
+                           horizontalalignment="center",
+                           verticalalignment='top',
+                           transform=ax.transAxes, family='monospace')
+
+            # Draw the right margin label
+            if right_label is not None:
+                if horizontal:
+                    ax.text(1 + 0.1/awidth, pos, right_label,
+                            horizontalalignment="left",
+                            verticalalignment='center',
+                            transform=ax.transAxes,
+                            family='monospace')
+                else:
+                    ax.text(pos, 1 + 0.1/aheight, right_label,
+                            horizontalalignment="center",
+                            verticalalignment='bottom',
+                            transform=ax.transAxes,
+                            family='monospace')
+
+            # Save the position so that we can place the tick marks
+            tickpos.append(pos)
+
+            # Loop over the points in one line
+            for ji,jp in enumerate(lines_map[(k0,k1)]):
+
+                # Calculate the vertical offset
+                yo = 0
+                if stacked:
+                    style = vals[styles][jp]
+                    yo = -dpos/5 + style_codes_map[style]*stackd
+
+                pt = vals[points][jp]
+
+                # Plot the interval
+                if intervals is not None:
+
+                    # Symmetric interval
+                    if np.isscalar(intervals):
+                        lcb, ucb = pt - vals[intervals][jp],\
+                            pt + vals[intervals][jp]
+
+                    # Nonsymmetric interval
+                    else:
+                        lcb, ucb = pt - vals[intervals[0]][jp],\
+                            pt + vals[intervals[1]][jp]
+
+                    # Draw the interval
+                    if horizontal:
+                        ax.plot([lcb, ucb], [pos+yo, pos+yo], '-',
+                                transform=trans,
+                                **line_props[vals[styles][jp]])
+                    else:
+                        ax.plot([pos+yo, pos+yo], [lcb, ucb], '-',
+                                transform=trans,
+                                **line_props[vals[styles][jp]])
+
+
+                # Plot the point
+                sl = vals[styles][jp]
+                sll = sl if sl not in labeled else None
+                labeled.add(sl)
+                if horizontal:
+                    ax.plot([pt,], [pos+yo,], ls='None',
+                            transform=trans, label=sll,
+                            **marker_props[sl])
+                else:
+                    ax.plot([pos+yo,], [pt,], ls='None',
+                            transform=trans, label=sll,
+                            **marker_props[sl])
+
+            if horizontal:
+                pos -= dpos
+            else:
+                pos += dpos
+
+    # Set up the axis
+    if horizontal:
+        ax.xaxis.set_ticks_position("bottom")
+        ax.yaxis.set_ticks_position("none")
+        ax.set_yticklabels([])
+        ax.spines['bottom'].set_position(('axes', -0.1/aheight))
+        ax.set_ylim(0, 1)
+        ax.yaxis.set_ticks(tickpos)
+        ax.autoscale_view(scaley=False, tight=True)
+    else:
+        ax.yaxis.set_ticks_position("left")
+        ax.xaxis.set_ticks_position("none")
+        ax.set_xticklabels([])
+        ax.spines['left'].set_position(('axes', -0.1/awidth))
+        ax.set_xlim(0, 1)
+        ax.xaxis.set_ticks(tickpos)
+        ax.autoscale_view(scalex=False, tight=True)
+
     return ax
