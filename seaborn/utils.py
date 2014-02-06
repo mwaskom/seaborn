@@ -380,17 +380,23 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False, trim=True):
+            left=False, bottom=False, trim=False):
     """Remove the top and right spines from plot(s).
 
+    Parameters
+    ----------
     fig : matplotlib figure, optional
         figure to despine all axes of, default uses current figure
     ax : matplotlib axes, optional
         specific axes object to despine
     top, right, left, bottom : boolean, optional
         if True, remove that spine
-    trim : bool (default = True), optional
+    trim : bool (default = False), optional
         Toggles removing parts of spines dangling past last ticks.
+
+    Returns
+    -------
+    None
 
     """
     # Get references to the axes we want
@@ -444,6 +450,8 @@ def despine(fig=None, ax=None, top=True, right=True,
 def spine_offset(offset, fig=None, ax=None):
     """Simple function to offset spines away from axes
 
+    Parameters
+    ----------
     offset : int
         absolute distance, in points, spines should be moved away
         from the axes (negative values move spines inward).
@@ -451,6 +459,16 @@ def spine_offset(offset, fig=None, ax=None):
         figure to despine all axes of, default uses current figure
     ax : matplotlib axes, optional
         specific axes object to despine
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Use this immediantely after creating figure and axes objects.
+        Offsetting spines after plotting or manipulating the axes objects may
+        result in loss of labels, ticks, and formatting.
 
     """
     # Get references to the axes we want
