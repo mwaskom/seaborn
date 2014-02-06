@@ -425,7 +425,6 @@ def despine(fig=None, ax=None, top=True, right=True,
         if right:
             ax_i.yaxis.tick_left()
 
-
         if trim:
             # clip off the parts of the spines that extend past major ticks
             xticks = ax_i.get_xticks()
