@@ -11,6 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
+from six import string_types
 from six.moves import range
 
 from .utils import color_palette
@@ -39,8 +40,9 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     data = data[cols]
 
     # Initialize the grid
-    facets = FacetGrid(data, row, col, hue, palette=palette, row_order=row_order,
-                       col_order=col_order, hue_order=hue_order, dropna=dropna,
+    facets = FacetGrid(data, row, col, hue, palette=palette,
+                       row_order=row_order, col_order=col_order,
+                       hue_order=hue_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
                        legend=legend, legend_out=legend_out)
 
@@ -58,11 +60,11 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
 
 def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, units=None,
-               x_order=None, hue_order=None, col_order=None, row_order=None,
-               kind="auto", dodge=0, join=True, size=5, aspect=1,
-               palette=None, legend=True, legend_out=True, dropna=True,
-               sharex=True, sharey=True):
+                col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
+                units=None, x_order=None, hue_order=None, col_order=None,
+                row_order=None, kind="auto", dodge=0, join=True, size=5,
+                aspect=1, palette=None, legend=True, legend_out=True,
+                dropna=True, sharex=True, sharey=True):
     """Plot a dependent variable with uncertainty sorted by discrete factors.
 
     Parameters
@@ -275,13 +277,11 @@ def _factorplot(x, y=None, data=None, hue=None, row=None, col=None,
 
 
 def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000, units=None,
-               x_order=None, hue_order=None, col_order=None, row_order=None,
-               kind="auto", dodge=0, join=True, size=5, aspect=1,
-               palette=None, legend=True, legend_out=True, dropna=True,
-               sharex=True, sharey=True):
-
-
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
+               units=None, x_order=None, hue_order=None, col_order=None,
+               row_order=None, kind="auto", dodge=0, join=True, size=5,
+               aspect=1, palette=None, legend=True, legend_out=True,
+               dropna=True, sharex=True, sharey=True):
 
     cols = [a for a in [x, y, hue, col, row, units] if a is not None]
     cols = pd.unique(cols).tolist()
@@ -318,6 +318,186 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         facets.set_legend(title=hue)
 
     return facets
+
+
+class _DiscretePlotter(object):
+
+    def __init__(self, x, y=None, hue=None, data=None, units=None,
+                 x_order=None, hue_order=None, color=None, palette=None,
+                 kind="auto", dodge=0, estimator=np.mean, ci=95, n_boot=1000):
+
+        # This implies we have a single bar/point for each level of `x`
+        # but that the different levels should be mapped with a palette
+        if hue is None and palette is not None:
+            hue = x
+            hue_order = x_order
+
+        # Set class attributes based on inputs
+        self.estimator = estimator
+        self.ci = ci
+        self.n_boot = n_boot
+
+        # Other attributs that are hardcoded for now
+        self.bar_widths = .8
+        self.err_color = "#444444"
+
+        # Ascertain which values will be associated with what values
+        self.establish_variables(x, y, hue, units, data, x_order, hue_order)
+
+        # Settle whe kind of plot this is going to be
+        self.establish_plot_kind(kind)
+
+        # Determine the color palette
+        self.establish_palette(color, palette)
+
+        # Figure out where the data should be drawn
+        self.establish_positions(dodge)
+
+    def establish_variables(self, x, y, hue, units, data,  x_order, hue_order):
+        """Extract variables from data or use directly."""
+        self.data = data
+
+        # Determine the value for each variable, which could be passed
+        # as an array-like, a key into the `data` DataFrame, or as a
+        # statement to eval in the DataFrame context
+        for var in ["x", "y", "hue", "units"]:
+            val = locals()[var]
+            if isinstance(val, string_types):
+                setattr(self, var, data[val])
+            else:
+                setattr(self, var, val)
+
+        # Determine the order that levels of `x` and `hue` should appear
+        x_sorted = np.sort(pd.unique(self.x))
+        self.x_order = x_sorted if x_order is None else x_order
+
+        if self.hue is not None:
+            hue_sorted = np.sort(pd.unique(self.hue))
+            self.hue_order = hue_sorted if hue_order is None else hue_order
+        else:
+            self.hue_order = [None]
+
+    def establish_palette(self, color, palette):
+        """Set a list of colors for each plot element."""
+        if self.hue is None:
+            if color is None:
+                color = color_palette()[0]
+            palette = [color for _ in self.x_order]
+        elif palette is None:
+            palette = color_palette(n_colors=len(self.hue_order))
+        elif isinstance(palette, dict):
+            palette = [palette[k] for k in self.hue_order]
+            palette = color_palette(palette, len(self.hue_order))
+        else:
+            palette = color_palette(palette, len(self.hue_order))
+        self.palette = palette
+
+        if self.kind == "point":
+            self.err_palette = palette
+        else:
+            # TODO make this smarter
+            self.err_palette = [self.err_color] * len(palette)
+
+    def establish_positions(self, dodge):
+        """Make list of center values for each x and offset for each hue."""
+        self.positions = np.arange(len(self.x_order))
+
+        # If there's no hue variable kind is irrelevant
+        if self.hue is None:
+            n_hues = 1
+            width = .8
+            offset = np.zeros(n_hues)
+        else:
+            n_hues = len(self.hue_order)
+
+            # Bar offset is set by hardcoded bar width
+            if self.kind == "bar":
+                width = self.bar_widths / n_hues
+                offset = np.linspace(0, self.bar_widths - width, n_hues)
+                self.bar_widths = width
+
+            # Point offset is set by `dodge` parameter
+            elif self.kind == "point":
+                offset = np.linspace(0, dodge, n_hues)
+            offset -= offset.mean()
+
+        self.offset = offset
+
+    def establish_plot_kind(self, kind):
+        """Use specified kind of apply heuristics to decide automatically."""
+        if kind == "auto":
+            y = self.y
+
+            # Walk through some heuristics to automatically assign a kind
+            if y is None:
+                kind = "bar"
+            elif y.max() <= 1:
+                kind = "point"
+            elif (y.mean() / y.std()) < 2.5:
+                kind = "bar"
+            else:
+                kind = "point"
+            self.kind = kind
+        elif kind in ["bar", "point"]:
+            self.kind = kind
+        else:
+            raise ValueError("%s is not a valid kind of plot" % kind)
+
+    @property
+    def plot_data(self):
+
+        # First iterate through the hues, as plots are drawn for all
+        # positions of a given hue at the same time
+        for i, hue in enumerate(self.hue_order):
+
+            # Build intermediate lists of the values for each drawing
+            pos = []
+            height = []
+            ci = []
+            for j, x in enumerate(self.x_order):
+
+                pos.append(self.positions[j] + self.offset[i])
+
+                # Focus on the data for this specific bar/point
+                current_data = (self.x == x) & (self.hue == hue)
+                y_data = self.y[current_data]
+                if self.units is None:
+                    unit_data = None
+                else:
+                    unit_data = self.units[current_data]
+
+                # This is where the main computation happens
+                height.append(self.estimator(y_data))
+                if self.ci is not None:
+                    boots = moss.bootstrap(y_data, func=self.estimator,
+                                           n_boot=self.n_boot,
+                                           units=unit_data)
+                    ci.append(moss.ci(boots, self.ci))
+
+            yield pos, height, ci
+
+    def plot(self, ax):
+        """Plot based on the stored value for kind of plot."""
+        if self.kind == "bar":
+            self.barplot(ax)
+        else:
+            self.pointplot(ax)
+
+    def barplot(self, ax):
+        """Draw the plot with a bar representation."""
+        for i, (pos, height, ci) in enumerate(self.plot_data):
+
+            color = self.palette[i]
+            ecolor = self.err_palette[i]
+            label = self.hue_order[i]
+
+            # The main plot
+            ax.bar(pos, height, self.bar_widths, color=color,
+                        label=label, align="center")
+
+            # The error bars
+            for x, (low, high) in zip(pos, ci):
+                ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
 
 
 def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
@@ -522,7 +702,7 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
 
 
 def _discrete_plot_data(x, y=None, hue=None, units=None):
-            
+
     plot_data = dict()
     case_data = dict()
 
@@ -855,12 +1035,14 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     # Fit the regression and bootstrap the prediction.
     # This gets delegated to one of several functions depending on the options.
     if order > 1:
-        y_hat, y_hat_boots = _regress_poly(grid, x, y, units, order, ci, n_boot)
+        y_hat, y_hat_boots = _regress_poly(grid, x, y, units,
+                                           order, ci, n_boot)
 
     elif logistic:
         binomial = sm.families.Binomial()
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units, sm.GLM, ci,
-                                                  n_boot, family=binomial)
+        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units,
+                                                  sm.GLM, ci, n_boot,
+                                                  family=binomial)
     elif lowess:
         ci = None
         grid, y_hat = sm.nonparametric.lowess(y, x).T
