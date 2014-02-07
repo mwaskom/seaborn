@@ -1,10 +1,13 @@
 import numpy as np
 import statsmodels.api as sm
+import pandas as pd
+import moss
 
 import nose.tools as nt
 import numpy.testing as npt
 
 from .. import linearmodels as lm
+from ..utils import color_palette
 
 rs = np.random.RandomState(0)
 
@@ -132,3 +135,182 @@ class TestRegPlot(object):
         _, _, no_cis = lm._point_est(self.x_discrete, self.y,
                                      np.mean, None, self.units, self.n_boot)
         npt.assert_array_equal(no_cis, [None] * len(no_cis))
+
+
+class TestDiscretePlotter(object):
+
+    rs = np.random.RandomState(341)
+    df = pd.DataFrame(dict(x=np.repeat(list("abc"), 30),
+                           y=rs.randn(90),
+                           g=np.tile(list("xy"), 45),
+                           u=np.tile(list("123456"), 15)))
+
+    def test_variables_from_frame(self):
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df, units="u")
+
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y)
+        npt.assert_array_equal(p.hue, self.df.g)
+        npt.assert_array_equal(p.units, self.df.u)
+        npt.assert_array_equal(p.data, self.df)
+
+    def test_variables_from_series(self):
+
+        p = lm._DiscretePlotter(self.df.x, self.df.y, self.df.g,
+                                units=self.df.u)
+
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y)
+        npt.assert_array_equal(p.hue, self.df.g)
+        npt.assert_array_equal(p.units, self.df.u)
+        nt.assert_is(p.data, None)
+
+    def test_variables_from_mix(self):
+
+        p = lm._DiscretePlotter("x", self.df.y + 1, data=self.df)
+
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y + 1)
+        npt.assert_array_equal(p.data, self.df)
+
+    def test_variables_var_order(self):
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df)
+
+        npt.assert_array_equal(p.x_order, list("abc"))
+        npt.assert_array_equal(p.hue_order, list("xy"))
+
+        x_order = list("bca")
+        hue_order = list("yx")
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df,
+                                x_order=x_order, hue_order=hue_order)
+
+        npt.assert_array_equal(p.x_order, x_order)
+        npt.assert_array_equal(p.hue_order, hue_order)
+
+    def test_variables_hue_as_x(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, palette="husl")
+        npt.assert_array_equal(p.hue, self.df.x)
+        npt.assert_array_equal(p.hue_order, np.sort(self.df.x.unique()))
+
+    def test_palette(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df)
+        nt.assert_equal(p.palette, [color_palette()[0]] * 3)
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, color="green")
+        nt.assert_equal(p.palette, ["green"] * 3)
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, palette="husl")
+        nt.assert_equal(p.palette, color_palette("husl", 3))
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df)
+        nt.assert_equal(p.palette, color_palette(n_colors=2))
+
+        pal = {"x": "pink", "y": "green"}
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df, palette=pal)
+        nt.assert_equal(p.palette, color_palette(["pink", "green"], 2))
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df,
+                                palette=pal, hue_order=list("yx"))
+        nt.assert_equal(p.palette, color_palette(["green", "pink"], 2))
+
+    def test_plot_kind(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, kind="bar")
+        nt.assert_equal(p.kind, "bar")
+        
+        p = lm._DiscretePlotter("x", "y", data=self.df, kind="point")
+        nt.assert_equal(p.kind, "point")
+
+        p = lm._DiscretePlotter("x", data=self.df, kind="auto")
+        nt.assert_equal(p.kind, "bar")
+
+        p = lm._DiscretePlotter("x", np.ones(len(self.df)),
+                                data=self.df, kind="auto")
+        nt.assert_equal(p.kind, "point")
+
+    def test_positions(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, kind="bar")
+        npt.assert_array_equal(p.positions, [0, 1, 2])
+        npt.assert_array_equal(p.offset, [0])
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="bar")
+        npt.assert_array_equal(p.positions, [0, 1, 2])
+        npt.assert_array_equal(p.offset, [-.2, .2])
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="point")
+        npt.assert_array_equal(p.positions, [0, 1, 2])
+        npt.assert_array_equal(p.offset, [0, 0])
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df,
+                                kind="point", dodge=.4)
+        npt.assert_array_equal(p.positions, [0, 1, 2])
+        npt.assert_array_equal(p.offset, [-.2, .2])
+
+    def test_plot_data(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df)
+        nt.assert_equal(len(list(p.plot_data)), 1)
+        pos, height, ci = p.plot_data.next()
+
+        npt.assert_array_equal(pos, [0, 1, 2])
+
+        height_want = self.df.groupby("x").y.mean()
+        npt.assert_array_equal(height, height_want)
+
+        get_cis = lambda x: moss.ci(moss.bootstrap(x, random_seed=0), 95)
+        ci_want = np.array(self.df.groupby("x").y.apply(get_cis).tolist())
+        npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df)
+        nt.assert_equal(len(list(p.plot_data)), 2)
+        data_gen = p.plot_data
+
+        first_hue = self.df[self.df.g == "x"]
+        pos, height, ci = data_gen.next()
+
+        npt.assert_array_equal(pos, [-.2, .8, 1.8])
+
+        height_want = first_hue.groupby("x").y.mean()
+        npt.assert_array_equal(height, height_want)
+
+        ci_want = np.array(first_hue.groupby("x").y.apply(get_cis).tolist())
+        npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
+
+        second_hue = self.df[self.df.g == "y"]
+        pos, height, ci = data_gen.next()
+
+        npt.assert_array_equal(pos, [.2, 1.2, 2.2])
+
+        height_want = second_hue.groupby("x").y.mean()
+        npt.assert_array_equal(height, height_want)
+
+        ci_want = np.array(second_hue.groupby("x").y.apply(get_cis).tolist())
+        npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
+
+    def test_plot_cis(self):
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, ci=95)
+        _, _, ci_big = p.plot_data.next()
+        ci_big = np.diff(ci_big, axis=1)
+
+        p = lm._DiscretePlotter("x", "y", data=self.df, ci=68)
+        _, _, ci_wee = p.plot_data.next()
+        ci_wee = np.diff(ci_wee, axis=1)
+
+        npt.assert_array_less(ci_wee, ci_big)
+
+    def test_plot_units(self):
+        p = lm._DiscretePlotter("x", "y", data=self.df, units="u")
+        _, _, ci_big = p.plot_data.next()
+        ci_big = np.diff(ci_big, axis=1)
+
+        p = lm._DiscretePlotter("x", "y", data=self.df)
+        _, _, ci_wee = p.plot_data.next()
+        ci_wee = np.diff(ci_wee, axis=1)
+
+        npt.assert_array_less(ci_wee, ci_big)
