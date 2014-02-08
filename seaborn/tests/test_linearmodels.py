@@ -331,7 +331,7 @@ class TestDiscretePlotter(object):
         nt.assert_equal(ax.legend_.get_title().get_text(), "g")
 
 
-class TestFactorPlot(object):
+class TestDiscretePlots(object):
 
     rs = np.random.RandomState(341)
     df = pd.DataFrame(dict(x=np.repeat(list("abc"), 30),
