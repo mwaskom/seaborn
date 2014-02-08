@@ -287,10 +287,13 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     cols = pd.unique(cols).tolist()
     data = data[cols]
 
+    facet_hue = hue if hue in [row, col] else None
+    facet_palette = palette if hue in [row, col] else None
+
     # Initialize the grid
-    facets = FacetGrid(data, row, col, palette=None, row_order=row_order,
-                       col_order=col_order, dropna=dropna, size=size,
-                       aspect=aspect, col_wrap=col_wrap, legend=legend,
+    facets = FacetGrid(data, row, col, facet_hue, palette=facet_palette,
+                       row_order=row_order, col_order=col_order, dropna=dropna,
+                       size=size, aspect=aspect, col_wrap=col_wrap, legend=legend,
                        legend_out=legend_out)
 
     if kind == "auto":
@@ -305,8 +308,12 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-                  x_order=x_order, hue_order=hue_order, palette=palette,
-                  color=None)
+                  x_order=x_order, hue_order=hue_order)
+
+    if hue in [row, col]:
+        hue = None
+    else:
+        kwargs["palette"] = palette
 
     if kind == "bar":
         facets.map_dataframe(barplot, x, y, hue, **kwargs)
@@ -314,7 +321,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         kwargs.update(dict(dodge=dodge, join=join))
         facets.map_dataframe(pointplot, x, y, hue, **kwargs)
 
-    if legend and hue is not None and hue not in [x, row, col]:
+    if legend and (hue is not None) and (hue not in [x, row, col]):
         facets.set_legend(title=hue)
 
     return facets
@@ -324,22 +331,29 @@ class _DiscretePlotter(object):
 
     def __init__(self, x, y=None, hue=None, data=None, units=None,
                  x_order=None, hue_order=None, color=None, palette=None,
-                 kind="auto", dodge=0, estimator=np.mean, ci=95, n_boot=1000):
+                 kind="auto", dodge=0, join=True, hline=0,
+                 estimator=np.mean, ci=95, n_boot=1000):
 
         # This implies we have a single bar/point for each level of `x`
         # but that the different levels should be mapped with a palette
-        if hue is None and palette is not None:
-            hue = x
-            hue_order = x_order
+        self.x_palette = hue is None and palette is not None
 
         # Set class attributes based on inputs
-        self.estimator = estimator
-        self.ci = ci
+        self.estimator = len if y is None else estimator
+        self.ci = None if y is None else ci
+        self.join = join
         self.n_boot = n_boot
+        self.hline = hline
 
         # Other attributs that are hardcoded for now
         self.bar_widths = .8
         self.err_color = "#444444"
+
+        # Once we've set the above values, if `y` is None we want the actual
+        # y values to be the x values so we can count them
+        self.y_count = y is None
+        if y is None:
+            y = x
 
         # Ascertain which values will be associated with what values
         self.establish_variables(x, y, hue, units, data, x_order, hue_order)
@@ -358,8 +372,7 @@ class _DiscretePlotter(object):
         self.data = data
 
         # Determine the value for each variable, which could be passed
-        # as an array-like, a key into the `data` DataFrame, or as a
-        # statement to eval in the DataFrame context
+        # as an array-like or a key into the `data` DataFrame
         for var in ["x", "y", "hue", "units"]:
             val = locals()[var]
             if isinstance(val, string_types):
@@ -379,17 +392,19 @@ class _DiscretePlotter(object):
 
     def establish_palette(self, color, palette):
         """Set a list of colors for each plot element."""
-        if self.hue is None:
+        n_hues = len(self.x_order) if self.x_palette else len(self.hue_order)
+        hue_names = self.x_order if self.x_palette else self.hue_order
+        if self.hue is None and not self.x_palette:
             if color is None:
                 color = color_palette()[0]
             palette = [color for _ in self.x_order]
         elif palette is None:
-            palette = color_palette(n_colors=len(self.hue_order))
+            palette = color_palette(n_colors=n_hues)
         elif isinstance(palette, dict):
-            palette = [palette[k] for k in self.hue_order]
-            palette = color_palette(palette, len(self.hue_order))
+            palette = [palette[k] for k in hue_names]
+            palette = color_palette(palette, n_hues)
         else:
-            palette = color_palette(palette, len(self.hue_order))
+            palette = color_palette(palette, n_hues)
         self.palette = palette
 
         if self.kind == "point":
@@ -429,7 +444,7 @@ class _DiscretePlotter(object):
             y = self.y
 
             # Walk through some heuristics to automatically assign a kind
-            if y is None:
+            if self.y_count:
                 kind = "bar"
             elif y.max() <= 1:
                 kind = "point"
@@ -478,32 +493,109 @@ class _DiscretePlotter(object):
 
     def plot(self, ax):
         """Plot based on the stored value for kind of plot."""
-        if self.kind == "bar":
-            self.barplot(ax)
+        plotter = getattr(self, self.kind + "plot")
+        plotter(ax)
+
+        # Set the plot attributes (these are shared across plot kinds
+        if self.hue is not None:
+            leg = ax.legend(loc="best", scatterpoints=1)
+            if hasattr(self.hue, "name"):
+                leg.set_title(self.hue.name,
+                              prop={"size": mpl.rcParams["axes.labelsize"]})
+        ax.xaxis.grid(False)
+        ax.set_xticks(self.positions)
+        ax.set_xticklabels(self.x_order)
+        if hasattr(self.x, "name"):
+            ax.set_xlabel(self.x.name)
+        if self.y_count:
+            ax.set_ylabel("count")
         else:
-            self.pointplot(ax)
+            if hasattr(self.y, "name"):
+                ax.set_ylabel(self.y.name)
+
+        if self.hline is not None:
+            ymin, ymax = ax.get_ylim()
+            if self.hline > ymin and self.hline < ymax:
+                ax.axhline(self.hline, c="#666666")
 
     def barplot(self, ax):
         """Draw the plot with a bar representation."""
         for i, (pos, height, ci) in enumerate(self.plot_data):
 
-            color = self.palette[i]
+            color = self.palette if self.x_palette else self.palette[i]
             ecolor = self.err_palette[i]
             label = self.hue_order[i]
 
             # The main plot
             ax.bar(pos, height, self.bar_widths, color=color,
-                        label=label, align="center")
+                   label=label, align="center")
 
             # The error bars
             for x, (low, high) in zip(pos, ci):
                 ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
 
+        # Set the x limits
+        offset = .5
+        xlim = self.positions.min() - offset, self.positions.max() + offset
+        ax.set_xlim(xlim)
 
-def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
+    def pointplot(self, ax):
+        """Draw the plot with a point representation."""
+        for i, (pos, height, ci) in enumerate(self.plot_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            err_palette =  self.err_palette
+            label = self.hue_order[i]
+
+            # The error bars
+            for j, (x, (low, high)) in enumerate(zip(pos, ci)):
+                ecolor = err_palette[j] if self.x_palette else err_palette[i]
+                ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
+
+            # The main plot
+            ax.scatter(pos, height, s=75, color=color, label=label)
+
+            # The join line
+            if self.join:
+                ax.plot(pos, height, color=color, linewidth=2.5)
+
+        # Set the x limits
+        xlim = (self.positions.min() + self.offset.min() - .3,
+                self.positions.max() + self.offset.max() + .3)
+        ax.set_xlim(xlim)
+
+# TODO dropna
+
+def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
             ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-            color=None, palette=None, legend=True, dropna=True, ax=None,
-            **kwargs):
+            color=None, palette=None, label=None, ax=None):
+
+    plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
+                               color, palette, "bar", 0, False, hline,
+                               estimator, ci, n_boot)
+
+    if ax is None:
+        ax = plt.gca()
+    plotter.plot(ax)
+    return ax
+
+
+def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=True,
+              ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
+              dodge=0, color=None, palette=None, join=True, label=None, ax=None):
+
+    plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
+                               color, palette, "point", dodge, join, hline,
+                               estimator, ci, n_boot)
+
+    if ax is None:
+        ax = plt.gca()
+    plotter.plot(ax)
+    return ax
+
+
+# XXX Can remove
+def _barplot_old(**kwargs):
 
     if y is None:
         estimator = len
@@ -573,7 +665,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
                     ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                     ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
 
-                if ax.get_xlim()[0] < 0 and not j:
+                if ax.get_xlim()[0] < 0 and not j and zeroline:
                     zlw = mpl.rcParams["lines.linewidth"] * .75
                     ax.axhline(0, c="#444444", lw=zlw)
         else:
@@ -586,7 +678,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
             if ci is not None:
                 ci_ = moss.ci(moss.bootstrap(bin_data, **boot_kws), ci)
                 ax.plot([pos, pos], ci_, linewidth=lw, color=ecolor)
-            if ax.get_xlim()[0] < 0:
+            if ax.get_xlim()[0] < 0 and zeroline:
                 zlw = mpl.rcParams["lines.linewidth"] * .75
                 ax.axhline(0, c="#444444", lw=zlw)
 
@@ -601,7 +693,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean,
     return ax
 
 
-def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
+# XXX can remove
+def _pointplot_old(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
               ci=95, n_boot=1000, units=None, dodge=0, color=None,
               palette=None, x_order=None, hue_order=None, legend=True,
               dropna=True, ax=None, **kwargs):
@@ -700,7 +793,7 @@ def pointplot(x, y=None, hue=None, data=None, estimator=np.mean, join=True,
 
     return ax
 
-
+# XXX Can Remove
 def _discrete_plot_data(x, y=None, hue=None, units=None):
 
     plot_data = dict()
