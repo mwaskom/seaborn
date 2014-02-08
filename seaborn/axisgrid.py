@@ -527,7 +527,8 @@ class FacetGrid(object):
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, labels, "center right")
+            figlegend = plt.figlegend(handles, labels, "center right",
+                                      scatterpoints=1)
             self._legend = figlegend
             figlegend.set_title(self._hue_var, prop={"size": title_size})
 
