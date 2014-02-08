@@ -8,6 +8,7 @@ test:
 
 coverage:
 
+	rm .coverage
 	nosetests --with-coverage --cover-package seaborn
 
 lint:
