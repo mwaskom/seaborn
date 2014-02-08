@@ -36,7 +36,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     x_partial = kwargs.get("x_partial", None)
     y_partial = kwargs.get("y_partial", None)
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
-    cols = [a for a in need_cols if a is not None]
+    cols = np.unique([a for a in need_cols if a is not None]).tolist()
     data = data[cols]
 
     # Initialize the grid
@@ -59,7 +59,12 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     return facets
 
 
-def _factorplot():
+def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
+               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
+               units=None, x_order=None, hue_order=None, col_order=None,
+               row_order=None, kind="auto", dodge=0, join=True, size=5,
+               aspect=1, palette=None, legend=True, legend_out=True,
+               dropna=True, sharex=True, sharey=True):
     """Plot a dependent variable with uncertainty sorted by discrete factors.
 
     Parameters
@@ -121,15 +126,6 @@ def _factorplot():
         FacetGrid with the plot on it.
 
     """
-
-
-def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
-               units=None, x_order=None, hue_order=None, col_order=None,
-               row_order=None, kind="auto", dodge=0, join=True, size=5,
-               aspect=1, palette=None, legend=True, legend_out=True,
-               dropna=True, sharex=True, sharey=True):
-
     cols = [a for a in [x, y, hue, col, row, units] if a is not None]
     cols = pd.unique(cols).tolist()
     data = data[cols]
@@ -157,7 +153,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
                   x_order=x_order, hue_order=hue_order)
 
-    if hue in [row, col]:
+    if hue is not None and hue in [row, col]:
         hue = None
     else:
         kwargs["palette"] = palette
@@ -427,7 +423,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
     return ax
 
 
-def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=True,
+def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=0,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
               dodge=0, color=None, palette=None, join=True, label=None, ax=None):
 
