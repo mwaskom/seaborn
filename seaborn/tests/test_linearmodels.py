@@ -1,5 +1,6 @@
 import numpy as np
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
 import pandas as pd
 import moss
 
@@ -143,7 +144,9 @@ class TestDiscretePlotter(object):
     df = pd.DataFrame(dict(x=np.repeat(list("abc"), 30),
                            y=rs.randn(90),
                            g=np.tile(list("xy"), 45),
-                           u=np.tile(list("123456"), 15)))
+                           u=np.tile(np.arange(6), 15)))
+    bw_err = rs.randn(6)[df.u.values]
+    df.y += bw_err
 
     def test_variables_from_frame(self):
 
@@ -189,11 +192,12 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(p.x_order, x_order)
         npt.assert_array_equal(p.hue_order, hue_order)
 
-    def test_variables_hue_as_x(self):
+    def test_count_x(self):
 
-        p = lm._DiscretePlotter("x", "y", data=self.df, palette="husl")
-        npt.assert_array_equal(p.hue, self.df.x)
-        npt.assert_array_equal(p.hue_order, np.sort(self.df.x.unique()))
+        p = lm._DiscretePlotter("x", hue="g", data=self.df)
+        nt.assert_true(p.y_count)
+        nt.assert_is(p.x, p.y)
+        nt.assert_is(p.estimator, len)
 
     def test_palette(self):
 
@@ -205,6 +209,7 @@ class TestDiscretePlotter(object):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, palette="husl")
         nt.assert_equal(p.palette, color_palette("husl", 3))
+        nt.assert_true(p.x_palette)
 
         p = lm._DiscretePlotter("x", "y", "g", data=self.df)
         nt.assert_equal(p.palette, color_palette(n_colors=2))
@@ -305,6 +310,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_less(ci_wee, ci_big)
 
     def test_plot_units(self):
+
         p = lm._DiscretePlotter("x", "y", data=self.df, units="u")
         _, _, ci_big = p.plot_data.next()
         ci_big = np.diff(ci_big, axis=1)
@@ -314,3 +320,61 @@ class TestDiscretePlotter(object):
         ci_wee = np.diff(ci_wee, axis=1)
 
         npt.assert_array_less(ci_wee, ci_big)
+
+    def test_annotations(self):
+
+        f, ax = plt.subplots()
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df)
+        p.plot(ax)
+        nt.assert_equal(ax.get_xlabel(), "x")
+        nt.assert_equal(ax.get_ylabel(), "y")
+        nt.assert_equal(ax.legend_.get_title().get_text(), "g")
+
+
+class TestFactorPlot(object):
+
+    rs = np.random.RandomState(341)
+    df = pd.DataFrame(dict(x=np.repeat(list("abc"), 30),
+                           y=rs.randn(90),
+                           g=np.tile(list("xy"), 45),
+                           u=np.tile(np.arange(6), 15)))
+    bw_err = rs.randn(6)[df.u.values]
+    df.y += bw_err
+
+    def test_barplot(self):
+
+        f, ax = plt.subplots()
+        lm.barplot("x", "y", data=self.df, hline=None, ax=ax)
+
+        nt.assert_equal(len(ax.patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
+
+        f, ax = plt.subplots()
+        lm.barplot("x", "y", data=self.df, palette="husl",
+                   hline=None, ax=ax)
+
+        nt.assert_equal(len(ax.patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
+        bar_colors = np.array([el.get_facecolor() for el in ax.patches])
+        npt.assert_array_equal(color_palette("husl", 3), bar_colors[:, :3])
+
+        plt.close("all")
+
+    def test_barplot_data(self):
+
+        f, ax = plt.subplots()
+        lm.barplot("x", "y", data=self.df, hline=None, ax=ax)
+
+        nt.assert_equal(len(ax.patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
+
+        f, ax = plt.subplots()
+        lm.barplot("x", "y", data=self.df, palette="husl",
+                   hline=None, ax=ax)
+
+        nt.assert_equal(len(ax.patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
+        bar_colors = np.array([el.get_facecolor() for el in ax.patches])
+        npt.assert_array_equal(color_palette("husl", 3), bar_colors[:, :3])
+
+        plt.close("all")
