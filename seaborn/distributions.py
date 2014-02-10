@@ -180,8 +180,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             box.set_alpha(alpha)
         box.set_edgecolor(gray)
         box.set_linewidth(linewidth)
-        if label is not None:
-            box.set_label(label)
     for i, whisk in enumerate(boxes["whiskers"]):
         whisk.set_color(gray)
         whisk.set_linewidth(linewidth)
@@ -197,6 +195,15 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
         fly.set_marker("d")
         fly.set_markeredgecolor(gray)
         fly.set_markersize(fliersize)
+
+    # This is a hack to get labels to work
+    # It's unclear whether this is actually broken in matplotlib or just not
+    # implemented, either way it's annoying.
+    if label is not None:
+        pos = kwargs.get("positions", [1])[0]
+        med = np.median(vals[0])
+        color = colors[0]
+        ax.add_patch(plt.Rectangle([pos, med], 0, 0, color=color, label=label))
 
     # Is this a vertical plot?
     vertical = kwargs.get("vert", True)
