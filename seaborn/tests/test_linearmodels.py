@@ -260,7 +260,7 @@ class TestDiscretePlotter(object):
 
         p = lm._DiscretePlotter("x", "y", data=self.df)
         nt.assert_equal(len(list(p.plot_data)), 1)
-        pos, height, ci = p.plot_data.next()
+        pos, height, ci = next(p.plot_data)
 
         npt.assert_array_equal(pos, [0, 1, 2])
 
@@ -276,7 +276,7 @@ class TestDiscretePlotter(object):
         data_gen = p.plot_data
 
         first_hue = self.df[self.df.g == "x"]
-        pos, height, ci = data_gen.next()
+        pos, height, ci = next(data_gen)
 
         npt.assert_array_equal(pos, [-.2, .8, 1.8])
 
@@ -287,7 +287,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
 
         second_hue = self.df[self.df.g == "y"]
-        pos, height, ci = data_gen.next()
+        pos, height, ci = next(data_gen)
 
         npt.assert_array_equal(pos, [.2, 1.2, 2.2])
 
@@ -300,11 +300,11 @@ class TestDiscretePlotter(object):
     def test_plot_cis(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, ci=95)
-        _, _, ci_big = p.plot_data.next()
+        _, _, ci_big = next(p.plot_data)
         ci_big = np.diff(ci_big, axis=1)
 
         p = lm._DiscretePlotter("x", "y", data=self.df, ci=68)
-        _, _, ci_wee = p.plot_data.next()
+        _, _, ci_wee = next(p.plot_data)
         ci_wee = np.diff(ci_wee, axis=1)
 
         npt.assert_array_less(ci_wee, ci_big)
@@ -312,11 +312,11 @@ class TestDiscretePlotter(object):
     def test_plot_units(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, units="u")
-        _, _, ci_big = p.plot_data.next()
+        _, _, ci_big = next(p.plot_data)
         ci_big = np.diff(ci_big, axis=1)
 
         p = lm._DiscretePlotter("x", "y", data=self.df)
-        _, _, ci_wee = p.plot_data.next()
+        _, _, ci_wee = next(p.plot_data)
         ci_wee = np.diff(ci_wee, axis=1)
 
         npt.assert_array_less(ci_wee, ci_big)
