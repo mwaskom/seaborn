@@ -17,6 +17,7 @@ from six.moves import range
 from .utils import color_palette
 from .axisgrid import FacetGrid
 
+
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
            col_order=None, row_order=None, hue_order=None, dropna=True,
@@ -135,8 +136,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     # Initialize the grid
     facets = FacetGrid(data, row, col, facet_hue, palette=facet_palette,
                        row_order=row_order, col_order=col_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap, legend=legend,
-                       legend_out=legend_out)
+                       size=size, aspect=aspect, col_wrap=col_wrap,
+                       legend=legend, legend_out=legend_out)
 
     if kind == "auto":
         if y is None:
@@ -427,7 +428,7 @@ class _DiscretePlotter(object):
         for i, (pos, height, ci) in enumerate(self.plot_data):
 
             color = self.palette if self.x_palette else self.palette[i]
-            err_palette =  self.err_palette
+            err_palette = self.err_palette
             label = self.hue_order[i]
 
             # The error bars
@@ -447,6 +448,7 @@ class _DiscretePlotter(object):
                 self.positions.max() + self.offset.max() + .3)
         ax.set_xlim(xlim)
 
+
 # TODO dropna
 
 def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
@@ -465,7 +467,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
 
 def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=0,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-              dodge=0, color=None, palette=None, join=True, label=None, ax=None):
+              dodge=0, color=None, palette=None, join=True, label=None,
+              ax=None):
 
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "point", dodge, join, hline,
