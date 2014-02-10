@@ -114,7 +114,7 @@ class FacetGrid(object):
             row_na = none_na if row is None else data[row].isnull()
             col_na = none_na if col is None else data[col].isnull()
             hue_na = none_na if hue is None else data[hue].isnull()
-            not_na = ~(row_na & col_na & hue_na)
+            not_na = ~(row_na | col_na | hue_na)
         else:
             not_na = ~none_na
 
@@ -172,7 +172,7 @@ class FacetGrid(object):
         # Make the axes look good
         fig.tight_layout()
         if despine:
-            utils.despine(self.fig)
+            self.despine()
 
     def facet_data(self):
         """Generator for name indices and data subsets for each facet.
