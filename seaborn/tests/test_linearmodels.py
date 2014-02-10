@@ -226,7 +226,7 @@ class TestDiscretePlotter(object):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="bar")
         nt.assert_equal(p.kind, "bar")
-        
+
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="point")
         nt.assert_equal(p.kind, "point")
 
