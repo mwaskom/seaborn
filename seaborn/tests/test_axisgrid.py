@@ -1,15 +1,12 @@
 import numpy as np
 import pandas as pd
-from scipy import stats
 import matplotlib.pyplot as plt
 
 import nose.tools as nt
 import numpy.testing as npt
 
 from .. import axisgrid as ag
-from ..palettes import color_palette
-from ..distributions import kdeplot
-from ..linearmodels import pointplot
+from ..utils import color_palette
 
 rs = np.random.RandomState(0)
 
@@ -20,7 +17,7 @@ class TestFacetGrid(object):
                            y=rs.gamma(4, size=60),
                            a=np.repeat(list("abc"), 20),
                            b=np.tile(list("mn"), 30),
-                           c=np.tile(list("tuv"), 20),
+                           c=rs.choice(list("tuv"), 60),
                            d=np.tile(list("abcdefghij"), 6)))
 
     def test_self_data(self):
@@ -71,61 +68,9 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes.shape, (1, 10))
         nt.assert_is(g.facet_axis(0, 8), g.axes[0, 8])
 
-        g_wrap = ag.FacetGrid(self.df, col="d", col_wrap=4)
-        nt.assert_equal(g_wrap.axes.shape, (10,))
-        nt.assert_is(g_wrap.facet_axis(0, 8), g_wrap.axes[8])
-        nt.assert_equal(g_wrap._ncol, 4)
-        nt.assert_equal(g_wrap._nrow, 3)
-
-        plt.close("all")
-
-    def test_normal_axes(self):
-
-        null = np.empty(0, object).flat
-
-        g = ag.FacetGrid(self.df)
-        npt.assert_array_equal(g._bottom_axes, g.axes.flat)
-        npt.assert_array_equal(g._not_bottom_axes, null)
-        npt.assert_array_equal(g._left_axes, g.axes.flat)
-        npt.assert_array_equal(g._not_left_axes, null)
-        npt.assert_array_equal(g._inner_axes, null)
-
-        g = ag.FacetGrid(self.df, col="c")
-        npt.assert_array_equal(g._bottom_axes, g.axes.flat)
-        npt.assert_array_equal(g._not_bottom_axes, null)
-        npt.assert_array_equal(g._left_axes, g.axes[:, 0].flat)
-        npt.assert_array_equal(g._not_left_axes, g.axes[:, 1:].flat)
-        npt.assert_array_equal(g._inner_axes, null)
-
-        g = ag.FacetGrid(self.df, row="c")
-        npt.assert_array_equal(g._bottom_axes, g.axes[-1, :].flat)
-        npt.assert_array_equal(g._not_bottom_axes, g.axes[:-1, :].flat)
-        npt.assert_array_equal(g._left_axes, g.axes.flat)
-        npt.assert_array_equal(g._not_left_axes, null)
-        npt.assert_array_equal(g._inner_axes, null)
-
-        g = ag.FacetGrid(self.df, col="a", row="c")
-        npt.assert_array_equal(g._bottom_axes, g.axes[-1, :].flat)
-        npt.assert_array_equal(g._not_bottom_axes, g.axes[:-1, :].flat)
-        npt.assert_array_equal(g._left_axes, g.axes[:, 0].flat)
-        npt.assert_array_equal(g._not_left_axes, g.axes[:, 1:].flat)
-        npt.assert_array_equal(g._inner_axes, g.axes[:-1, 1:].flat)
-
-        plt.close("all")
-
-    def test_wrapped_axes(self):
-
-        null = np.empty(0, object).flat
-
-        g = ag.FacetGrid(self.df, col="a", col_wrap=2)
-        npt.assert_array_equal(g._bottom_axes,
-                               g.axes[np.array([1, 2])].flat)
-        npt.assert_array_equal(g._not_bottom_axes, g.axes[:1].flat)
-        npt.assert_array_equal(g._left_axes, g.axes[np.array([0, 2])].flat)
-        npt.assert_array_equal(g._not_left_axes, g.axes[np.array([1])].flat)
-        npt.assert_array_equal(g._inner_axes, null)
-
-        plt.close("all")
+        g_wrap = ag.FacetGrid(self.df, col="d", col_wrap=5)
+        nt.assert_equal(g_wrap.axes.shape, (2, 5))
+        nt.assert_is(g_wrap.facet_axis(0, 8), g_wrap.axes[1, 3])
 
     def test_figure_size(self):
 
@@ -154,60 +99,6 @@ class TestFacetGrid(object):
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
 
         plt.close("all")
-
-    def test_legend_data(self):
-
-        g1 = ag.FacetGrid(self.df, hue="a")
-        g1.map(plt.plot, "x", "y")
-        palette = color_palette("husl", 3)
-
-        nt.assert_equal(g1._legend.get_title().get_text(), "a")
-
-        a_levels = sorted(self.df.a.unique())
-
-        lines = g1._legend.get_lines()
-        nt.assert_equal(len(lines), len(a_levels))
-
-        for line, hue in zip(lines, palette):
-            nt.assert_equal(line.get_color(), hue)
-
-        labels = g1._legend.get_texts()
-        nt.assert_equal(len(labels), len(a_levels))
-
-        for label, level in zip(labels, a_levels):
-            nt.assert_equal(label.get_text(), level)
-
-        plt.close("all")
-
-    def test_get_boolean_legend_data(self):
-
-        self.df["b_bool"] = self.df.b == "m"
-        g1 = ag.FacetGrid(self.df, hue="b_bool")
-        g1.map(plt.plot, "x", "y")
-        palette = color_palette("husl", 2)
-
-        nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
-
-        b_levels = sorted(map(str, self.df.b_bool.unique()))
-
-        lines = g1._legend.get_lines()
-        nt.assert_equal(len(lines), len(b_levels))
-
-        for line, hue in zip(lines, palette):
-            nt.assert_equal(line.get_color(), hue)
-
-        labels = g1._legend.get_texts()
-        nt.assert_equal(len(labels), len(b_levels))
-
-        for label, level in zip(labels, b_levels):
-            nt.assert_equal(label.get_text(), level)
-
-        plt.close("all")
-
-    def test_legend_options(self):
-
-        g1 = ag.FacetGrid(self.df, hue="b")
-        g1.map(plt.plot, "x", "y")
 
     def test_data_generator(self):
 
@@ -322,10 +213,6 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[0, 0].get_title(), "b = m")
         nt.assert_equal(g.axes[0, 1].get_title(), "b = n")
 
-        # test with dropna=False
-        g = ag.FacetGrid(self.df, col="b", hue="b", dropna=False)
-        g.map(plt.plot, 'x', 'y')
-
         plt.close("all")
 
     def test_set_titles_margin_titles(self):
@@ -358,27 +245,6 @@ class TestFacetGrid(object):
 
         got_x = [l.get_text() + "h" for l in g.axes[1, 1].get_xticklabels()]
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
-        npt.assert_array_equal(got_x, xlab)
-        npt.assert_array_equal(got_y, ylab)
-
-        x, y = np.arange(10), np.arange(10)
-        df = pd.DataFrame(np.c_[x, y], columns=["x", "y"])
-        g = ag.FacetGrid(df).map(pointplot, "x", "y")
-        g.set_xticklabels(step=2)
-        got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
-        npt.assert_array_equal(x[::2], got_x)
-
-    def test_set_axis_labels(self):
-
-        g = ag.FacetGrid(self.df, row="a", col="b")
-        g.map(plt.plot, "x", "y")
-        xlab = 'xx'
-        ylab = 'yy'
-
-        g.set_axis_labels(xlab, ylab)
-
-        got_x = [ax.get_xlabel() for ax in g.axes[-1, :]]
-        got_y = [ax.get_ylabel() for ax in g.axes[:, 0]]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
 
@@ -427,172 +293,18 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
-    def test_dropna(self):
+    def test_drop_na(self):
 
         df = self.df.copy()
-        hasna = pd.Series(np.tile(np.arange(6), 10), dtype=np.float)
-        hasna[hasna == 5] = np.nan
-        df["hasna"] = hasna
-        g = ag.FacetGrid(df, dropna=False, row="hasna")
+        df["n"] = np.repeat(list("abc"), 20)
+        df.loc[[10, 20, 30], "n"] = np.nan
+        g = ag.FacetGrid(df, dropna=False, row="n")
         nt.assert_equal(g._not_na.sum(), 60)
 
-        g = ag.FacetGrid(df, dropna=True, row="hasna")
-        nt.assert_equal(g._not_na.sum(), 50)
+        g = ag.FacetGrid(df, dropna=True, row="n")
+        nt.assert_equal(g._not_na.sum(), 57)
 
         plt.close("all")
-
-    @classmethod
-    def teardown_class(cls):
-        """Ensure that all figures are closed on exit."""
-        plt.close("all")
-
-
-class TestJointGrid(object):
-
-    rs = np.random.RandomState(sum(map(ord, "JointGrid")))
-    x = rs.randn(100)
-    y = rs.randn(100)
-    x_na = x.copy()
-    x_na[10] = np.nan
-    x_na[20] = np.nan
-    data = pd.DataFrame(dict(x=x, y=y, x_na=x_na))
-
-    def test_margin_grid_from_arrays(self):
-
-        g = ag.JointGrid(self.x, self.y)
-        npt.assert_array_equal(g.x, self.x)
-        npt.assert_array_equal(g.y, self.y)
-        plt.close("all")
-
-    def test_margin_grid_from_series(self):
-
-        g = ag.JointGrid(self.data.x, self.data.y)
-        npt.assert_array_equal(g.x, self.x)
-        npt.assert_array_equal(g.y, self.y)
-        plt.close("all")
-
-    def test_margin_grid_from_dataframe(self):
-
-        g = ag.JointGrid("x", "y", self.data)
-        npt.assert_array_equal(g.x, self.x)
-        npt.assert_array_equal(g.y, self.y)
-        plt.close("all")
-
-    def test_margin_grid_axis_labels(self):
-
-        g = ag.JointGrid("x", "y", self.data)
-
-        xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
-        nt.assert_equal(xlabel, "x")
-        nt.assert_equal(ylabel, "y")
-
-        g.set_axis_labels("x variable", "y variable")
-        xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
-        nt.assert_equal(xlabel, "x variable")
-        nt.assert_equal(ylabel, "y variable")
-        plt.close("all")
-
-    def test_dropna(self):
-
-        g = ag.JointGrid("x_na", "y", self.data, dropna=False)
-        nt.assert_equal(len(g.x), len(self.x_na))
-
-        g = ag.JointGrid("x_na", "y", self.data, dropna=True)
-        nt.assert_equal(len(g.x), pd.notnull(self.x_na).sum())
-        plt.close("all")
-
-    def test_axlims(self):
-
-        lim = (-3, 3)
-        g = ag.JointGrid("x", "y", self.data, xlim=lim, ylim=lim)
-
-        nt.assert_equal(g.ax_joint.get_xlim(), lim)
-        nt.assert_equal(g.ax_joint.get_ylim(), lim)
-
-        nt.assert_equal(g.ax_marg_x.get_xlim(), lim)
-        nt.assert_equal(g.ax_marg_y.get_ylim(), lim)
-
-    def test_marginal_ticks(self):
-
-        g = ag.JointGrid("x", "y", self.data)
-        nt.assert_true(~len(g.ax_marg_x.get_xticks()))
-        nt.assert_true(~len(g.ax_marg_y.get_yticks()))
-        plt.close("all")
-
-    def test_bivariate_plot(self):
-
-        g = ag.JointGrid("x", "y", self.data)
-        g.plot_joint(plt.plot)
-
-        x, y = g.ax_joint.lines[0].get_xydata().T
-        npt.assert_array_equal(x, self.x)
-        npt.assert_array_equal(y, self.y)
-        plt.close("all")
-
-    def test_univariate_plot(self):
-
-        g = ag.JointGrid("x", "x", self.data)
-        g.plot_marginals(kdeplot)
-
-        _, y1 = g.ax_marg_x.lines[0].get_xydata().T
-        y2, _ = g.ax_marg_y.lines[0].get_xydata().T
-        npt.assert_array_equal(y1, y2)
-        plt.close("all")
-
-    def test_plot(self):
-
-        g = ag.JointGrid("x", "x", self.data)
-        g.plot(plt.plot, kdeplot)
-
-        x, y = g.ax_joint.lines[0].get_xydata().T
-        npt.assert_array_equal(x, self.x)
-        npt.assert_array_equal(y, self.x)
-
-        _, y1 = g.ax_marg_x.lines[0].get_xydata().T
-        y2, _ = g.ax_marg_y.lines[0].get_xydata().T
-        npt.assert_array_equal(y1, y2)
-
-        plt.close("all")
-
-    def test_annotate(self):
-
-        g = ag.JointGrid("x", "y", self.data)
-        rp = stats.pearsonr(self.x, self.y)
-
-        g.annotate(stats.pearsonr)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "pearsonr = %.2g; p = %.2g" % rp)
-
-        g.annotate(stats.pearsonr, stat="correlation")
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "correlation = %.2g; p = %.2g" % rp)
-
-        def rsquared(x, y):
-            return stats.pearsonr(x, y)[0] ** 2
-
-        r2 = rsquared(self.x, self.y)
-        g.annotate(rsquared)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "rsquared = %.2g" % r2)
-
-        template = "{stat} = {val:.3g} (p = {p:.3g})"
-        g.annotate(stats.pearsonr, template=template)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, template.format(stat="pearsonr",
-                                                    val=rp[0], p=rp[1]))
-
-        plt.close("all")
-
-    def test_space(self):
-
-        g = ag.JointGrid("x", "y", self.data, space=0)
-
-        joint_bounds = g.ax_joint.bbox.bounds
-        marg_x_bounds = g.ax_marg_x.bbox.bounds
-        marg_y_bounds = g.ax_marg_y.bbox.bounds
-
-        nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
-        nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
 
     @classmethod
     def teardown_class(cls):
