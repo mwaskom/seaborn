@@ -17,7 +17,6 @@ from six.moves import range
 from .utils import color_palette
 from .axisgrid import FacetGrid
 
-
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
            col_order=None, row_order=None, hue_order=None, dropna=True,
@@ -62,8 +61,8 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
                units=None, x_order=None, hue_order=None, col_order=None,
-               row_order=None, kind="auto", dodge=0, join=True, size=5,
-               aspect=1, palette=None, legend=True, legend_out=True,
+               row_order=None, kind="auto", dodge=0, join=True, hline=None,
+               size=5, aspect=1, palette=None, legend=True, legend_out=True,
                dropna=True, sharex=True, sharey=True):
     """Plot a dependent variable with uncertainty sorted by discrete factors.
 
@@ -151,7 +150,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-                  x_order=x_order, hue_order=hue_order)
+                  x_order=x_order, hue_order=hue_order, hline=hline)
 
     if hue is not None and hue in [row, col]:
         hue = None
@@ -160,7 +159,13 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     if kind == "bar":
         facets.map_dataframe(barplot, x, y, hue, **kwargs)
-    else:
+    elif kind == "box":
+        def _boxplot(x, y, hue, data=None, **kwargs):
+            p = _DiscretePlotter(x, y, hue, data, kind="box", **kwargs)
+            ax = plt.gca()
+            p.plot(ax)
+        facets.map_dataframe(_boxplot, x, y, hue, **kwargs)
+    elif kind == "point":
         kwargs.update(dict(dodge=dodge, join=join))
         facets.map_dataframe(pointplot, x, y, hue, **kwargs)
 
@@ -269,7 +274,7 @@ class _DiscretePlotter(object):
             n_hues = len(self.hue_order)
 
             # Bar offset is set by hardcoded bar width
-            if self.kind == "bar":
+            if self.kind in ["bar", "box"]:
                 width = self.bar_widths / n_hues
                 offset = np.linspace(0, self.bar_widths - width, n_hues)
                 self.bar_widths = width
@@ -296,7 +301,7 @@ class _DiscretePlotter(object):
             else:
                 kind = "point"
             self.kind = kind
-        elif kind in ["bar", "point"]:
+        elif kind in ["bar", "point", "box"]:
             self.kind = kind
         else:
             raise ValueError("%s is not a valid kind of plot" % kind)
@@ -333,6 +338,24 @@ class _DiscretePlotter(object):
                     ci.append(moss.ci(boots, self.ci))
 
             yield pos, height, ci
+
+    @property
+    def binned_data(self):
+
+        # First iterate through the hues, as plots are drawn for all
+        # positions of a given hue at the same time
+        for i, hue in enumerate(self.hue_order):
+
+            # Build intermediate lists of the values for each drawing
+            pos = []
+            data = []
+            for j, x in enumerate(self.x_order):
+
+                pos.append(self.positions[j] + self.offset[i])
+                current_data = (self.x == x) & (self.hue == hue)
+                data.append(self.y[current_data])
+
+            yield pos, data
 
     def plot(self, ax):
         """Plot based on the stored value for kind of plot."""
@@ -376,6 +399,23 @@ class _DiscretePlotter(object):
             # The error bars
             for x, (low, high) in zip(pos, ci):
                 ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
+
+        # Set the x limits
+        offset = .5
+        xlim = self.positions.min() - offset, self.positions.max() + offset
+        ax.set_xlim(xlim)
+
+    def boxplot(self, ax):
+        """Draw the plot with a bar representation."""
+        from .distributions import boxplot
+        for i, (pos, data) in enumerate(self.binned_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            label = self.hue_order[i]
+
+            # The main plot
+            boxplot(data, widths=self.bar_widths, color=color,
+                    positions=pos, label=label, ax=ax)
 
         # Set the x limits
         offset = .5
