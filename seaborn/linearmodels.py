@@ -18,6 +18,573 @@ from .utils import color_palette
 from .axisgrid import FacetGrid
 
 
+class _LinearPlotter(object):
+
+    def establish_variables(self, data, **kws):
+        """Extract variables from data or use directly."""
+        self.data = data
+
+        # Validate the inputs
+        any_strings = any([isinstance(v, string_types) for v in kws.values()])
+        if any_strings and data is None:
+            raise ValueError("Must pass `data` if using named variables.")
+
+        # Set the variables
+        for var, val in kws.items():
+            if isinstance(val, string_types):
+                setattr(self, var, data[val])
+            else:
+                setattr(self, var, val)
+
+    def dropna(self, *vars):
+        """Remove observations with missing data."""
+        vals = [getattr(self, var) for var in vars]
+        vals = [v for v in vals if v is not None]
+        not_na = np.all(np.column_stack([pd.notnull(v) for v in vals]), axis=1)
+        for var in vars:
+            val = getattr(self, var)
+            if val is not None:
+                setattr(self, var, val[not_na])
+
+
+class _DiscretePlotter(_LinearPlotter):
+
+    def __init__(self, x, y=None, hue=None, data=None, units=None,
+                 x_order=None, hue_order=None, color=None, palette=None,
+                 kind="auto", dodge=0, join=True, hline=None,
+                 estimator=np.mean, ci=95, n_boot=1000, dropna=True):
+
+        # This implies we have a single bar/point for each level of `x`
+        # but that the different levels should be mapped with a palette
+        self.x_palette = hue is None and palette is not None
+
+        # Set class attributes based on inputs
+        self.estimator = len if y is None else estimator
+        self.ci = None if y is None else ci
+        self.join = join
+        self.n_boot = n_boot
+        self.hline = hline
+
+        # Other attributs that are hardcoded for now
+        self.bar_widths = .8
+        self.err_color = "#444444"
+        self.lw = mpl.rcParams["lines.linewidth"] * 1.8
+
+        # Once we've set the above values, if `y` is None we want the actual
+        # y values to be the x values so we can count them
+        self.y_count = y is None
+        if y is None:
+            y = x
+
+        # Ascertain which values will be associated with what values
+        self.establish_variables(data, x=x, y=y, hue=hue, units=units)
+
+        # Figure out the order of the variables on the x axis
+        x_sorted = np.sort(pd.unique(self.x))
+        self.x_order = x_sorted if x_order is None else x_order
+        if self.hue is not None:
+            hue_sorted = np.sort(pd.unique(self.hue))
+            self.hue_order = hue_sorted if hue_order is None else hue_order
+        else:
+            self.hue_order = [None]
+
+        # Drop null observations
+        if dropna:
+            self.dropna("x", "y", "hue", "units")
+
+        # Settle whe kind of plot this is going to be
+        self.establish_plot_kind(kind)
+
+        # Determine the color palette
+        self.establish_palette(color, palette)
+
+        # Figure out where the data should be drawn
+        self.establish_positions(dodge)
+
+    def establish_palette(self, color, palette):
+        """Set a list of colors for each plot element."""
+        n_hues = len(self.x_order) if self.x_palette else len(self.hue_order)
+        hue_names = self.x_order if self.x_palette else self.hue_order
+        if self.hue is None and not self.x_palette:
+            if color is None:
+                color = color_palette()[0]
+            palette = [color for _ in self.x_order]
+        elif palette is None:
+            palette = color_palette(n_colors=n_hues)
+        elif isinstance(palette, dict):
+            palette = [palette[k] for k in hue_names]
+            palette = color_palette(palette, n_hues)
+        else:
+            palette = color_palette(palette, n_hues)
+        self.palette = palette
+
+        if self.kind == "point":
+            self.err_palette = palette
+        else:
+            # TODO make this smarter
+            self.err_palette = [self.err_color] * len(palette)
+
+    def establish_positions(self, dodge):
+        """Make list of center values for each x and offset for each hue."""
+        self.positions = np.arange(len(self.x_order))
+
+        # If there's no hue variable kind is irrelevant
+        if self.hue is None:
+            n_hues = 1
+            width = self.bar_widths
+            offset = np.zeros(n_hues)
+        else:
+            n_hues = len(self.hue_order)
+
+            # Bar offset is set by hardcoded bar width
+            if self.kind in ["bar", "box"]:
+                width = self.bar_widths / n_hues
+                offset = np.linspace(0, self.bar_widths - width, n_hues)
+                if self.kind == "box":
+                    width *= .95
+                self.bar_widths = width
+
+            # Point offset is set by `dodge` parameter
+            elif self.kind == "point":
+                offset = np.linspace(0, dodge, n_hues)
+            offset -= offset.mean()
+
+        self.offset = offset
+
+    def establish_plot_kind(self, kind):
+        """Use specified kind of apply heuristics to decide automatically."""
+        if kind == "auto":
+            y = self.y
+
+            # Walk through some heuristics to automatically assign a kind
+            if self.y_count:
+                kind = "bar"
+            elif y.max() <= 1:
+                kind = "point"
+            elif (y.mean() / y.std()) < 2.5:
+                kind = "bar"
+            else:
+                kind = "point"
+            self.kind = kind
+        elif kind in ["bar", "point", "box"]:
+            self.kind = kind
+        else:
+            raise ValueError("%s is not a valid kind of plot" % kind)
+
+    @property
+    def estimate_data(self):
+
+        # First iterate through the hues, as plots are drawn for all
+        # positions of a given hue at the same time
+        for i, hue in enumerate(self.hue_order):
+
+            # Build intermediate lists of the values for each drawing
+            pos = []
+            height = []
+            ci = []
+            for j, x in enumerate(self.x_order):
+
+                pos.append(self.positions[j] + self.offset[i])
+
+                # Focus on the data for this specific bar/point
+                current_data = (self.x == x) & (self.hue == hue)
+                y_data = self.y[current_data]
+                if self.units is None:
+                    unit_data = None
+                else:
+                    unit_data = self.units[current_data]
+
+                # This is where the main computation happens
+                height.append(self.estimator(y_data))
+                if self.ci is not None:
+                    boots = moss.bootstrap(y_data, func=self.estimator,
+                                           n_boot=self.n_boot,
+                                           units=unit_data)
+                    ci.append(moss.ci(boots, self.ci))
+
+            yield pos, height, ci
+
+    @property
+    def binned_data(self):
+
+        # First iterate through the hues, as plots are drawn for all
+        # positions of a given hue at the same time
+        for i, hue in enumerate(self.hue_order):
+
+            # Build intermediate lists of the values for each drawing
+            pos = []
+            data = []
+            for j, x in enumerate(self.x_order):
+
+                pos.append(self.positions[j] + self.offset[i])
+                current_data = (self.x == x) & (self.hue == hue)
+                data.append(self.y[current_data])
+
+            yield pos, data
+
+    def plot(self, ax):
+        """Plot based on the stored value for kind of plot."""
+        plotter = getattr(self, self.kind + "plot")
+        plotter(ax)
+
+        # Set the plot attributes (these are shared across plot kinds
+        if self.hue is not None:
+            leg = ax.legend(loc="best", scatterpoints=1)
+            if hasattr(self.hue, "name"):
+                leg.set_title(self.hue.name,
+                              prop={"size": mpl.rcParams["axes.labelsize"]})
+        ax.xaxis.grid(False)
+        ax.set_xticks(self.positions)
+        ax.set_xticklabels(self.x_order)
+        if hasattr(self.x, "name"):
+            ax.set_xlabel(self.x.name)
+        if self.y_count:
+            ax.set_ylabel("count")
+        else:
+            if hasattr(self.y, "name"):
+                ax.set_ylabel(self.y.name)
+
+        if self.hline is not None:
+            ymin, ymax = ax.get_ylim()
+            if self.hline > ymin and self.hline < ymax:
+                ax.axhline(self.hline, c="#666666")
+
+    def barplot(self, ax):
+        """Draw the plot with a bar representation."""
+        for i, (pos, height, ci) in enumerate(self.estimate_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            ecolor = self.err_palette[i]
+            label = self.hue_order[i]
+
+            # The main plot
+            ax.bar(pos, height, self.bar_widths, color=color,
+                   label=label, align="center")
+
+            # The error bars
+            for x, (low, high) in zip(pos, ci):
+                ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+
+        # Set the x limits
+        offset = .5
+        xlim = self.positions.min() - offset, self.positions.max() + offset
+        ax.set_xlim(xlim)
+
+    def boxplot(self, ax):
+        """Draw the plot with a bar representation."""
+        from .distributions import boxplot
+        for i, (pos, data) in enumerate(self.binned_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            label = self.hue_order[i]
+
+            # The main plot
+            boxplot(data, widths=self.bar_widths, color=color,
+                    positions=pos, label=label, ax=ax)
+
+        # Set the x limits
+        offset = .5
+        xlim = self.positions.min() - offset, self.positions.max() + offset
+        ax.set_xlim(xlim)
+
+    def pointplot(self, ax):
+        """Draw the plot with a point representation."""
+        for i, (pos, height, ci) in enumerate(self.estimate_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            err_palette = self.err_palette
+            label = self.hue_order[i]
+
+            # The error bars
+            for j, (x, (low, high)) in enumerate(zip(pos, ci)):
+                ecolor = err_palette[j] if self.x_palette else err_palette[i]
+                ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+
+            # The main plot
+            ax.scatter(pos, height, s=75, color=color, label=label)
+
+            # The join line
+            if self.join:
+                ax.plot(pos, height, color=color, linewidth=self.lw)
+
+        # Set the x limits
+        xlim = (self.positions.min() + self.offset.min() - .3,
+                self.positions.max() + self.offset.max() + .3)
+        ax.set_xlim(xlim)
+
+
+class _RegressionPlotter(_LinearPlotter):
+
+    def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
+                 x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
+                 units=None, order=1, logistic=False, lowess=False,
+                 robust=False, x_partial=None, y_partial=None,
+                 truncate=False, dropna=True, x_jitter=None, y_jitter=None,
+                 color=None, label=None):
+
+        # Set member attributes
+        self.x_estimator = x_estimator
+        self.ci = ci
+        self.x_ci = ci if x_ci == "ci" else x_ci
+        self.n_boot = n_boot
+        self.scatter = scatter
+        self.fit_reg = fit_reg
+        self.order = order
+        self.logistic = logistic
+        self.lowess = lowess
+        self.robust = robust
+        self.truncate = truncate
+        self.x_jitter = x_jitter
+        self.y_jitter = y_jitter
+        self.color = color
+        self.label = label
+
+        # Validate the regression options:
+        if sum((order > 1, logistic, robust, lowess)) > 1:
+            raise ValueError("Mutually exclusive regression options.")
+
+        # Extract the data vals from the arguments or passed dataframe
+        self.establish_variables(data, x=x, y=y, units=units,
+                                 x_partial=x_partial, y_partial=y_partial)
+
+        # Drop null observations
+        if dropna:
+            self.dropna("x", "y", "units", "x_partial", "y_partial")
+
+        # Regress nuisance variables out of the data
+        if self.x_partial is not None:
+            self.x = self.regress_out(self.x, self.x_partial)
+        if self.y_partial is not None:
+            self.y = self.regress_out(self.y, self.y_partial)
+
+        # Possibly bin the predictor variable, which implies a point estimate
+        if x_bins is not None:
+            self.x_estimator = np.mean if x_estimator is None else x_estimator
+            x_discrete, x_bins = self.bin_predictor(x_bins)
+            self.x_discrete = x_discrete
+        else:
+            self.x_discrete = self.x
+
+        # Save the range of the x variable for the grid later
+        self.x_range = self.x.min(), self.x.max()
+
+    @property
+    def scatter_data(self):
+        """Data where each observation is a point."""
+        x_j = self.x_jitter
+        if x_j is None:
+            x = self.x
+        else:
+            x = self.x + np.random.uniform(-x_j, x_j, len(self.x))
+
+        y_j = self.y_jitter
+        if y_j is None:
+            y = self.y
+        else:
+            y = self.y + np.random.uniform(-y_j, y_j, len(self.y))
+
+        return x, y
+
+    @property
+    def estimate_data(self):
+        """Data with a point estimate and CI for each discrete x value."""
+        x, y = self.x_discrete, self.y
+        vals = sorted(np.unique(x))
+        points, cis = [], []
+
+        for val in vals:
+
+            # Get the point estimate of the y variable
+            _y = y[x == val]
+            est = self.x_estimator(_y)
+            points.append(est)
+
+            # Compute the confidence interval for this estimate
+            if self.x_ci is None:
+                cis.append(None)
+            else:
+                units = None
+                if self.units is not None:
+                    units = self.units[x == val]
+                boots = moss.bootstrap(_y, func=self.x_estimator,
+                                       n_boot=self.n_boot, units=units)
+                _ci = moss.ci(boots, self.x_ci)
+                cis.append(_ci)
+
+        return vals, points, cis
+
+    def fit_regression(self, ax):
+        """Fit the regression model."""
+        # Create the grid for the regression
+        if self.truncate:
+            x_min, x_max = self.x_range
+        else:
+            x_min, x_max = ax.get_xlim()
+        grid = np.linspace(x_min, x_max, 100)
+        ci = self.ci
+
+        # Fit the regression
+        if self.order > 1:
+            yhat, yhat_boots = self.fit_poly(grid, self.order)
+        elif self.logistic:
+            from statsmodels.api import GLM
+            from statsmodels.families import Binomial
+            yhat, yhat_boots = self.fit_statsmodels(grid, GLM,
+                                                    family=Binomial())
+        elif self.lowess:
+            ci = None
+            grid, yhat = self.fit_lowess()
+        elif self.robust:
+            from statsmodels.api import RLM
+            yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
+        else:
+            yhat, yhat_boots = self.fit_fast(grid)
+
+        # Compute the confidence interval at each grid point
+        if ci is None:
+            err_bands = None
+        else:
+            err_bands = moss.ci(yhat_boots, ci, axis=0)
+
+        return grid, yhat, err_bands
+
+    def fit_fast(self, grid):
+        """Low-level regression and prediction using linear algebra."""
+        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+        grid = np.c_[np.ones(len(grid)), grid]
+        reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
+        yhat = grid.dot(reg_func(X, y))
+        if self.ci is None:
+            return yhat, None
+
+        beta_boots = moss.bootstrap(X, y, func=reg_func,
+                                    n_boot=self.n_boot, units=self.units).T
+        yhat_boots = grid.dot(beta_boots).T
+        return yhat, yhat_boots
+
+    def fit_poly(self, grid, order):
+        """Regression using numpy polyfit for higher-order trends."""
+        x, y = self.x, self.y
+        reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
+        yhat = reg_func(x, y)
+        if self.ci is None:
+            return yhat, None
+
+        yhat_boots = moss.bootstrap(x, y, func=reg_func,
+                                    n_boot=self.n_boot, units=self.units)
+        return yhat, yhat_boots
+
+    def fit_statsmodels(self, grid, model, **kwargs):
+        """More general regression function using statsmodels objects."""
+        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+        grid = np.c_[np.ones(len(grid)), grid]
+        reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
+        yhat = reg_func(X, y)
+        if self.ci is None:
+            return yhat, None
+
+        yhat_boots = moss.bootstrap(X, y, func=reg_func,
+                                    n_boot=self.n_boot, units=self.units)
+        return yhat, yhat_boots
+
+    def fit_lowess(self):
+        """Fit a locally-weighted regression, which returns its own grid."""
+        from statsmodels.api import nonparametric
+        grid, yhat = nonparametric.lowess(self.y, self.x).T
+        return grid, yhat
+
+    def bin_predictor(self, bins):
+        """Discretize a predictor by assigning value to closest bin."""
+        x = self.x
+        if np.isscalar(bins):
+            percentiles = np.linspace(0, 100, bins + 2)[1:-1]
+            bins = np.c_[moss.percentiles(x, percentiles)]
+        else:
+            bins = np.c_[np.ravel(bins)]
+
+        dist = distance.cdist(np.c_[x], bins)
+        x_binned = bins[np.argmin(dist, axis=1)].ravel()
+
+        return x_binned, bins.ravel()
+
+    def regress_out(self, a, b):
+        """Regress b from a keeping a's original mean."""
+        a_mean = a.mean()
+        a = a - a_mean
+        b = b - b.mean()
+        b = np.c_[b]
+        a_prime = a - b.dot(np.linalg.pinv(b).dot(a))
+        return (a_prime + a_mean).reshape(a.shape)
+
+    def plot(self, ax, scatter_kws, line_kws):
+        """Draw the full plot."""
+        # Insert the plot label into the correct set of keyword arguments
+        if self.fit_reg:
+            line_kws["label"] = self.label
+        else:
+            scatter_kws["label"] = self.label
+
+        # Use the current color cycle state as a default
+        if self.color is None:
+            lines, = plt.plot(self.x.mean(), self.y.mean())
+            color = lines.get_color()
+            lines.remove()
+        else:
+            color = self.color
+
+        # Let color in keyword arguments override overall plot color
+        scatter_kws.setdefault("color", color)
+        line_kws.setdefault("color", color)
+
+        # Draw the constituent plots
+        if self.scatter:
+            self.scatterplot(ax, scatter_kws)
+        if self.fit_reg:
+            self.lineplot(ax, line_kws)
+
+        # Label the axes
+        if hasattr(self.x, "name"):
+            ax.set_xlabel(self.x.name)
+        if hasattr(self.y, "name"):
+            ax.set_ylabel(self.y.name)
+
+    def scatterplot(self, ax, kws):
+        """Draw the data."""
+        if self.x_estimator is None:
+            kws.setdefault("alpha", .8)
+            x, y = self.scatter_data
+            ax.scatter(x, y, **kws)
+        else:
+             # TODO abstraction
+            ci_kws = {"color": kws["color"]}
+            ci_kws["linewidth"] = mpl.rcParams["lines.linewidth"] * 1.75
+            kws.setdefault("s", 50)
+
+            xs, ys, cis = self.estimate_data
+            if [ci for ci in cis if ci is not None]:
+                for x, ci in zip(xs, cis):
+                    ax.plot([x, x], ci, **ci_kws)
+            ax.scatter(xs, ys, **kws)
+
+    def lineplot(self, ax, kws):
+        """Draw the model."""
+        xlim = ax.get_xlim()
+
+        # Fit the regression model
+        grid, yhat, err_bands = self.fit_regression(ax)
+
+        # Get set default aesthetics
+        fill_color = kws["color"]
+        lw = kws.pop("lw", mpl.rcParams["lines.linewidth"] * 1.5)
+        kws.setdefault("linewidth", lw)
+
+        # Draw the regression line and confidence interval
+        ax.plot(grid, yhat, **kws)
+        if err_bands is not None:
+            ax.fill_between(grid, *err_bands, color=fill_color, alpha=.15)
+        ax.set_xlim(*xlim)
+
+
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
            col_order=None, row_order=None, hue_order=None, dropna=True,
@@ -31,7 +598,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 
     # Reduce the dataframe to only needed columns
     # Otherwise when dropna is True we could lose data because it is missing
-    # in a column that isn't relevant ot this plot
+    # in a column that isn't relevant to this plot
     units = kwargs.get("units", None)
     x_partial = kwargs.get("x_partial", None)
     y_partial = kwargs.get("y_partial", None)
@@ -176,288 +743,13 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     return facets
 
 
-class _DiscretePlotter(object):
-
-    def __init__(self, x, y=None, hue=None, data=None, units=None,
-                 x_order=None, hue_order=None, color=None, palette=None,
-                 kind="auto", dodge=0, join=True, hline=0,
-                 estimator=np.mean, ci=95, n_boot=1000):
-
-        # This implies we have a single bar/point for each level of `x`
-        # but that the different levels should be mapped with a palette
-        self.x_palette = hue is None and palette is not None
-
-        # Set class attributes based on inputs
-        self.estimator = len if y is None else estimator
-        self.ci = None if y is None else ci
-        self.join = join
-        self.n_boot = n_boot
-        self.hline = hline
-
-        # Other attributs that are hardcoded for now
-        self.bar_widths = .8
-        self.err_color = "#444444"
-
-        # Once we've set the above values, if `y` is None we want the actual
-        # y values to be the x values so we can count them
-        self.y_count = y is None
-        if y is None:
-            y = x
-
-        # Ascertain which values will be associated with what values
-        self.establish_variables(x, y, hue, units, data, x_order, hue_order)
-
-        # Settle whe kind of plot this is going to be
-        self.establish_plot_kind(kind)
-
-        # Determine the color palette
-        self.establish_palette(color, palette)
-
-        # Figure out where the data should be drawn
-        self.establish_positions(dodge)
-
-    def establish_variables(self, x, y, hue, units, data,  x_order, hue_order):
-        """Extract variables from data or use directly."""
-        self.data = data
-
-        # Determine the value for each variable, which could be passed
-        # as an array-like or a key into the `data` DataFrame
-        for var in ["x", "y", "hue", "units"]:
-            val = locals()[var]
-            if isinstance(val, string_types):
-                setattr(self, var, data[val])
-            else:
-                setattr(self, var, val)
-
-        # Determine the order that levels of `x` and `hue` should appear
-        x_sorted = np.sort(pd.unique(self.x))
-        self.x_order = x_sorted if x_order is None else x_order
-
-        if self.hue is not None:
-            hue_sorted = np.sort(pd.unique(self.hue))
-            self.hue_order = hue_sorted if hue_order is None else hue_order
-        else:
-            self.hue_order = [None]
-
-    def establish_palette(self, color, palette):
-        """Set a list of colors for each plot element."""
-        n_hues = len(self.x_order) if self.x_palette else len(self.hue_order)
-        hue_names = self.x_order if self.x_palette else self.hue_order
-        if self.hue is None and not self.x_palette:
-            if color is None:
-                color = color_palette()[0]
-            palette = [color for _ in self.x_order]
-        elif palette is None:
-            palette = color_palette(n_colors=n_hues)
-        elif isinstance(palette, dict):
-            palette = [palette[k] for k in hue_names]
-            palette = color_palette(palette, n_hues)
-        else:
-            palette = color_palette(palette, n_hues)
-        self.palette = palette
-
-        if self.kind == "point":
-            self.err_palette = palette
-        else:
-            # TODO make this smarter
-            self.err_palette = [self.err_color] * len(palette)
-
-    def establish_positions(self, dodge):
-        """Make list of center values for each x and offset for each hue."""
-        self.positions = np.arange(len(self.x_order))
-
-        # If there's no hue variable kind is irrelevant
-        if self.hue is None:
-            n_hues = 1
-            width = .8
-            offset = np.zeros(n_hues)
-        else:
-            n_hues = len(self.hue_order)
-
-            # Bar offset is set by hardcoded bar width
-            if self.kind in ["bar", "box"]:
-                width = self.bar_widths / n_hues
-                offset = np.linspace(0, self.bar_widths - width, n_hues)
-                self.bar_widths = width
-
-            # Point offset is set by `dodge` parameter
-            elif self.kind == "point":
-                offset = np.linspace(0, dodge, n_hues)
-            offset -= offset.mean()
-
-        self.offset = offset
-
-    def establish_plot_kind(self, kind):
-        """Use specified kind of apply heuristics to decide automatically."""
-        if kind == "auto":
-            y = self.y
-
-            # Walk through some heuristics to automatically assign a kind
-            if self.y_count:
-                kind = "bar"
-            elif y.max() <= 1:
-                kind = "point"
-            elif (y.mean() / y.std()) < 2.5:
-                kind = "bar"
-            else:
-                kind = "point"
-            self.kind = kind
-        elif kind in ["bar", "point", "box"]:
-            self.kind = kind
-        else:
-            raise ValueError("%s is not a valid kind of plot" % kind)
-
-    @property
-    def plot_data(self):
-
-        # First iterate through the hues, as plots are drawn for all
-        # positions of a given hue at the same time
-        for i, hue in enumerate(self.hue_order):
-
-            # Build intermediate lists of the values for each drawing
-            pos = []
-            height = []
-            ci = []
-            for j, x in enumerate(self.x_order):
-
-                pos.append(self.positions[j] + self.offset[i])
-
-                # Focus on the data for this specific bar/point
-                current_data = (self.x == x) & (self.hue == hue)
-                y_data = self.y[current_data]
-                if self.units is None:
-                    unit_data = None
-                else:
-                    unit_data = self.units[current_data]
-
-                # This is where the main computation happens
-                height.append(self.estimator(y_data))
-                if self.ci is not None:
-                    boots = moss.bootstrap(y_data, func=self.estimator,
-                                           n_boot=self.n_boot,
-                                           units=unit_data)
-                    ci.append(moss.ci(boots, self.ci))
-
-            yield pos, height, ci
-
-    @property
-    def binned_data(self):
-
-        # First iterate through the hues, as plots are drawn for all
-        # positions of a given hue at the same time
-        for i, hue in enumerate(self.hue_order):
-
-            # Build intermediate lists of the values for each drawing
-            pos = []
-            data = []
-            for j, x in enumerate(self.x_order):
-
-                pos.append(self.positions[j] + self.offset[i])
-                current_data = (self.x == x) & (self.hue == hue)
-                data.append(self.y[current_data])
-
-            yield pos, data
-
-    def plot(self, ax):
-        """Plot based on the stored value for kind of plot."""
-        plotter = getattr(self, self.kind + "plot")
-        plotter(ax)
-
-        # Set the plot attributes (these are shared across plot kinds
-        if self.hue is not None:
-            leg = ax.legend(loc="best", scatterpoints=1)
-            if hasattr(self.hue, "name"):
-                leg.set_title(self.hue.name,
-                              prop={"size": mpl.rcParams["axes.labelsize"]})
-        ax.xaxis.grid(False)
-        ax.set_xticks(self.positions)
-        ax.set_xticklabels(self.x_order)
-        if hasattr(self.x, "name"):
-            ax.set_xlabel(self.x.name)
-        if self.y_count:
-            ax.set_ylabel("count")
-        else:
-            if hasattr(self.y, "name"):
-                ax.set_ylabel(self.y.name)
-
-        if self.hline is not None:
-            ymin, ymax = ax.get_ylim()
-            if self.hline > ymin and self.hline < ymax:
-                ax.axhline(self.hline, c="#666666")
-
-    def barplot(self, ax):
-        """Draw the plot with a bar representation."""
-        for i, (pos, height, ci) in enumerate(self.plot_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            ecolor = self.err_palette[i]
-            label = self.hue_order[i]
-
-            # The main plot
-            ax.bar(pos, height, self.bar_widths, color=color,
-                   label=label, align="center")
-
-            # The error bars
-            for x, (low, high) in zip(pos, ci):
-                ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
-
-        # Set the x limits
-        offset = .5
-        xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
-
-    def boxplot(self, ax):
-        """Draw the plot with a bar representation."""
-        from .distributions import boxplot
-        for i, (pos, data) in enumerate(self.binned_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            label = self.hue_order[i]
-
-            # The main plot
-            boxplot(data, widths=self.bar_widths, color=color,
-                    positions=pos, label=label, ax=ax)
-
-        # Set the x limits
-        offset = .5
-        xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
-
-    def pointplot(self, ax):
-        """Draw the plot with a point representation."""
-        for i, (pos, height, ci) in enumerate(self.plot_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            err_palette = self.err_palette
-            label = self.hue_order[i]
-
-            # The error bars
-            for j, (x, (low, high)) in enumerate(zip(pos, ci)):
-                ecolor = err_palette[j] if self.x_palette else err_palette[i]
-                ax.plot([x, x], [low, high], linewidth=2.5, color=ecolor)
-
-            # The main plot
-            ax.scatter(pos, height, s=75, color=color, label=label)
-
-            # The join line
-            if self.join:
-                ax.plot(pos, height, color=color, linewidth=2.5)
-
-        # Set the x limits
-        xlim = (self.positions.min() + self.offset.min() - .3,
-                self.positions.max() + self.offset.max() + .3)
-        ax.set_xlim(xlim)
-
-
-# TODO dropna
-
-def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
+def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
             ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-            color=None, palette=None, label=None, ax=None):
+            dropna=True, color=None, palette=None, label=None, ax=None):
 
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "bar", 0, False, hline,
-                               estimator, ci, n_boot)
+                               estimator, ci, n_boot, dropna)
 
     if ax is None:
         ax = plt.gca()
@@ -465,106 +757,19 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=0,
     return ax
 
 
-def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=0,
+def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-              dodge=0, color=None, palette=None, join=True, label=None,
-              ax=None):
+              dodge=0, dropna=True, color=None, palette=None, join=True,
+              label=None, ax=None):
 
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "point", dodge, join, hline,
-                               estimator, ci, n_boot)
+                               estimator, ci, n_boot, dropna)
 
     if ax is None:
         ax = plt.gca()
     plotter.plot(ax)
     return ax
-
-
-def _regress_fast(grid, x, y, units, ci, n_boot):
-    """Low-level regression and prediction using linear algebra."""
-    X = np.c_[np.ones(len(x)), x]
-    grid = np.c_[np.ones(len(grid)), grid]
-    reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
-    y_hat = grid.dot(reg_func(X, y))
-    if ci is None:
-        return y_hat, None
-
-    beta_boots = moss.bootstrap(X, y, func=reg_func,
-                                n_boot=n_boot, units=units).T
-    y_hat_boots = grid.dot(beta_boots).T
-    return y_hat, y_hat_boots
-
-
-def _regress_poly(grid, x, y, units, order, ci, n_boot):
-    """Regression using numpy polyfit for higher-order trends."""
-    reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
-    y_hat = reg_func(x, y)
-    if ci is None:
-        return y_hat, None
-
-    y_hat_boots = moss.bootstrap(x, y, func=reg_func,
-                                 n_boot=n_boot, units=units)
-    return y_hat, y_hat_boots
-
-
-def _regress_statsmodels(grid, x, y, units, model, ci, n_boot, **kwargs):
-    """More general regression function using statsmodels objects."""
-    X = np.c_[np.ones(len(x)), x]
-    grid = np.c_[np.ones(len(grid)), grid]
-    reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
-    y_hat = reg_func(X, y)
-    if ci is None:
-        return y_hat, None
-
-    y_hat_boots = moss.bootstrap(X, y, func=reg_func,
-                                 n_boot=n_boot, units=units)
-    return y_hat, y_hat_boots
-
-
-def _bin_predictor(x, bins):
-    """Discretize a continuous predictor by assigning value to closest bin."""
-    if np.isscalar(bins):
-        bins = np.c_[np.linspace(x.min(), x.max(), bins + 2)[1:-1]]
-    else:
-        bins = np.c_[np.ravel(bins)]
-
-    dist = distance.cdist(np.c_[x], bins)
-    x_binned = bins[np.argmin(dist, axis=1)].ravel()
-
-    return x_binned, bins.ravel()
-
-
-def _point_est(x, y, estimator, ci, units, n_boot):
-    """Find point estimate and bootstrapped ci for discrete x values."""
-    vals = sorted(np.unique(x))
-    points, cis = [], []
-    for val in vals:
-
-        _y = y[x == val]
-        est = estimator(_y)
-        points.append(est)
-
-        if ci is None:
-            cis.append(None)
-        else:
-            _units = units
-            if units is not None:
-                _units = units[x == val]
-            _ci = moss.ci(moss.bootstrap(_y, func=estimator, n_boot=n_boot,
-                                         units=_units), ci)
-            cis.append(_ci)
-
-    return vals, points, cis
-
-
-def _regress_out(a, b):
-    """Regress b from a keeping a's original mean."""
-    a_mean = a.mean()
-    a = a - a_mean
-    b = b - b.mean()
-    b = np.c_[b]
-    a_prime = a - b.dot(np.linalg.pinv(b).dot(a))
-    return (a_prime + a_mean).reshape(a.shape)
 
 
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
@@ -576,7 +781,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             color=None, scatter_kws=None, line_kws=None,
             ax=None):
     """Draw a scatter plot between x and y with a regression line.
-
 
     Parameters
     ----------
@@ -609,6 +813,11 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         as translucent bands around the regression line.
     n_boot : int, optional
         Number of bootstrap resamples used to compute the confidence intervals.
+    units : vector or strig
+        Data or column name in `data` with ids for sampling units, so that the
+        bootstrap is performed by resampling units and then observations within
+        units for more accurate confidence intervals when data have repeated
+        measures.
     order : int, optional
         Order of the polynomial to fit. Use order > 1 to explore higher-order
         trends in the relationship.
@@ -633,10 +842,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         Add uniform random noise from within this range (in data coordinates)
         to each datapoint in the x and/or y direction. This can be helpful when
         plotting discrete values.
-    {x, y}_label : None, string, or boolean, optional
-        If None, try to infer variable names from the data objects and use them
-        to annotate the plot. Otherwise, use the names provided here. Set to
-        False to avoid altering the axis labels.
     label : string, optional
         Label to use for the regression line, or for the scatterplot if not
         fitting a regression.
@@ -661,169 +866,18 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     TODO
 
     """
+    plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
+                                 scatter, fit_reg, ci, n_boot, units,
+                                 order, logistic, lowess, robust,
+                                 x_partial, y_partial, truncate, dropna,
+                                 x_jitter, y_jitter, color, label)
+
     if ax is None:
         ax = plt.gca()
 
-    # Get the variables
-    if data is not None:
-        x = data[x]
-        y = data[y]
-        if units is not None:
-            units = data[units].values
-
-    # Drop NA values
-    if dropna:
-        not_na = pd.notnull(x) & pd.notnull(y)
-        x = x[not_na]
-        y = y[not_na]
-
-    # Try to find variable names
-    x_name, y_name = None, None
-    if hasattr(x, "name"):
-        x_name = x.name
-    if hasattr(y, "name"):
-        y_name = y.name
-
-    # Apply names to the plot
-    if xlabel is None and x_name is not None:
-        ax.set_xlabel(x_name)
-    elif xlabel:
-        ax.set_xlabel(x_name)
-    if ylabel is None and y_name is not None:
-        ax.set_ylabel(y_name)
-    elif ylabel:
-        ax.set_ylabel(y_name)
-
-    # Coerce the input data to arrays
-    x = np.asarray(x, dtype=np.float)
-    y = np.asarray(y, dtype=np.float)
-
-    # This is a heuristic but unlikely to be wrong
-    if x_partial is not None:
-        if data is not None and len(x_partial) != len(x):
-            x_partial = data[x_partial]
-    if y_partial is not None:
-        if data is not None and len(y_partial) != len(y):
-            y_partial = data[y_partial]
-
-    # Set mutable default arguments
-    if scatter_kws is None:
-        scatter_kws = {}
-    if line_kws is None:
-        line_kws = {}
-
-    # Label the proper plot element
-    if fit_reg:
-        line_kws["label"] = label
-    else:
-        scatter_kws["label"] = label
-
-    # Grab the current color in the cycle if one isn't provided
-    if color is None:
-        lines, = plt.plot(x.mean(), y.mean())
-        color = lines.get_color()
-        lines.remove()
-
-    # Possibly regress confounding variables out of the dependent variable
-    if x_partial is not None:
-        x = _regress_out(x, x_partial)
-    if y_partial is not None:
-        y = _regress_out(y, y_partial)
-
-    # Possibly bin the predictor variable, which implies a point estimate
-    if x_bins is not None:
-        x_estimator = np.mean if x_estimator is None else x_estimator
-        x_discrete, x_bins = _bin_predictor(x, x_bins)
-
-    # Add in some jitter
-    if x_jitter is None:
-        x_scatter = x
-    else:
-        x_scatter = x + np.random.uniform(-x_jitter, x_jitter, x.size)
-    if y_jitter is not None:
-        y = + np.random.uniform(-y_jitter, y_jitter, y.size)
-
-    # Get some defaults
-    scatter_color = scatter_kws.pop("c", color)
-    scatter_color = scatter_kws.pop("color", scatter_color)
-    lw = scatter_kws.pop("lw", mpl.rcParams["lines.linewidth"] * 1.75)
-    lw = scatter_kws.pop("linewidth", lw)
-
-    # Draw the datapoints either as a scatter or point estimate with CIs
-    if scatter:
-        if x_estimator is None:
-            alpha = scatter_kws.pop("alpha", .8)
-            ax.scatter(x_scatter, y,
-                       color=scatter_color, alpha=alpha, **scatter_kws)
-        else:
-            if x_bins is None:
-                x_discrete = x
-            point_data = _point_est(x_discrete, y,
-                                    x_estimator, x_ci, units, n_boot)
-            for x_val, height, ci_bounds in zip(*point_data):
-                size = scatter_kws.pop("s", 50)
-                size = scatter_kws.pop("size", size)
-                ax.scatter(x_val, height, size, color=scatter_color,
-                           **scatter_kws)
-                ax.plot([x_val, x_val], ci_bounds, color=scatter_color,
-                        lw=lw, **scatter_kws)
-
-    # Just bail out here if we don't want a regression
-    if not fit_reg:
-        return ax
-
-    # Get the plot limits and set up a grid for the regression
-    if truncate:
-        x_min, x_max = x.min(), x.max()
-    else:
-        x_min, x_max = ax.get_xlim()
-    grid = np.linspace(x_min, x_max, 100)
-
-    # Validate the regression parameters
-    if sum((order > 1, logistic, robust, lowess)) > 1:
-        raise ValueError("Mutually exclusive regression options were used.")
-
-    # Fit the regression and bootstrap the prediction.
-    # This gets delegated to one of several functions depending on the options.
-    if order > 1:
-        y_hat, y_hat_boots = _regress_poly(grid, x, y, units,
-                                           order, ci, n_boot)
-
-    elif logistic:
-        binomial = sm.families.Binomial()
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units,
-                                                  sm.GLM, ci, n_boot,
-                                                  family=binomial)
-    elif lowess:
-        ci = None
-        grid, y_hat = sm.nonparametric.lowess(y, x).T
-    elif robust:
-        y_hat, y_hat_boots = _regress_statsmodels(grid, x, y, units, sm.RLM,
-                                                  ci, n_boot)
-    else:
-        y_hat, y_hat_boots = _regress_fast(grid, x, y, units, ci, n_boot)
-
-    # Compute the confidence interval for the regression estimate
-    if ci is not None:
-        err_bands = moss.ci(y_hat_boots, ci, axis=0)
-
-    # Draw the regression and standard error bands
-    lw = line_kws.pop("linewidth", mpl.rcParams["lines.linewidth"] * 1.5)
-    lw = line_kws.pop("lw", lw)
-    _color = line_kws.pop("c", color)
-    _color = line_kws.pop("color", _color)
-    ax.plot(grid, y_hat, lw=lw, color=_color, **line_kws)
-    if ci is not None:
-        ax.fill_between(grid, *err_bands, color=_color, alpha=.15)
-
-    # Reset the x limits in case they got stretched from fill bleedover
-    ax.set_xlim(x_min, x_max)
-
-    # Reset the y limits if this is a logistic plot to incude 0 and 1
-    if logistic:
-        ymin, ymax = ax.get_ylim()
-        ax.set_ylim(min(ymin, 0), max(ymax, 1))
-
+    scatter_kws = {} if scatter_kws is None else scatter_kws
+    line_kws = {} if line_kws is None else line_kws
+    plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
 
