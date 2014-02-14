@@ -6,6 +6,7 @@ import moss
 
 import nose.tools as nt
 import numpy.testing as npt
+import pandas.util.testing as pdt
 
 from .. import linearmodels as lm
 from ..utils import color_palette
@@ -13,129 +14,259 @@ from ..utils import color_palette
 rs = np.random.RandomState(0)
 
 
-class TestRegPlot(object):
-    """Test internal functions that perform computation for regplot()."""
-    x = rs.randn(50)
-    x_discrete = np.repeat([0, 1], 25)
-    y = 2 + 1.5 * 2 + rs.randn(50)
+class TestLinearPlotter(object):
+
+    rs = np.random.RandomState(77)
+    df = pd.DataFrame(dict(x=rs.normal(size=60),
+                           d=rs.randint(-2, 3, 60),
+                           y=rs.gamma(4, size=60),
+                           s=np.tile(list("abcdefghij"), 6)))
+    df["z"] = df.y + rs.randn(60)
+    df["y_na"] = df.y.copy()
+    df.y_na.ix[[10, 20, 30]] = np.nan
+
+    def test_establish_variables_from_frame(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(self.df, x="x", y="y")
+        pdt.assert_series_equal(p.x, self.df.x)
+        pdt.assert_series_equal(p.y, self.df.y)
+        pdt.assert_frame_equal(p.data, self.df)
+
+    def test_establish_variables_from_series(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(None, x=self.df.x, y=self.df.y)
+        pdt.assert_series_equal(p.x, self.df.x)
+        pdt.assert_series_equal(p.y, self.df.y)
+        nt.assert_is(p.data, None)
+
+    def test_establish_variables_from_array(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(None,
+                              x=self.df.x.values,
+                              y=self.df.y.values)
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y)
+        nt.assert_is(p.data, None)
+
+    def test_establish_variables_from_mix(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(self.df, x="x", y=self.df.y)
+        pdt.assert_series_equal(p.x, self.df.x)
+        pdt.assert_series_equal(p.y, self.df.y)
+        pdt.assert_frame_equal(p.data, self.df)
+
+    def test_establish_variables_from_bad(self):
+
+        p = lm._LinearPlotter()
+        with nt.assert_raises(ValueError):
+            p.establish_variables(None, x="x", y=self.df.y)
+
+    def test_dropna(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(self.df, x="x", y_na="y_na")
+        pdt.assert_series_equal(p.x, self.df.x)
+        pdt.assert_series_equal(p.y_na, self.df.y_na)
+
+        p.dropna("x", "y_na")
+        mask = self.df.y_na.notnull()
+        pdt.assert_series_equal(p.x, self.df.x[mask])
+        pdt.assert_series_equal(p.y_na, self.df.y_na[mask])
+
+
+class TestRegressionPlotter(object):
+
     grid = np.linspace(-3, 3, 30)
-    n_boot = 20
-    ci = 95
+    n_boot = 100
     bins_numeric = 3
     bins_given = [-1, 0, 1]
-    units = None
 
-    def test_regress_fast(self):
-        """Validate fast regression fit and bootstrap."""
+    df = pd.DataFrame(dict(x=rs.normal(size=60),
+                           d=rs.randint(-2, 3, 60),
+                           y=rs.gamma(4, size=60),
+                           s=np.tile(list("abcdefghij"), 6)))
+    df["z"] = df.y + rs.randn(60)
+    df["y_na"] = df.y.copy()
+    df.y_na.ix[[10, 20, 30]] = np.nan
+
+    def test_variables_from_frame(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, units="s")
+
+        pdt.assert_series_equal(p.x, self.df.x)
+        pdt.assert_series_equal(p.y, self.df.y)
+        pdt.assert_series_equal(p.units, self.df.s)
+        pdt.assert_frame_equal(p.data, self.df)
+
+    def test_variables_from_series(self):
+
+        p = lm._RegressionPlotter(self.df.x, self.df.y, units=self.df.s)
+
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y)
+        npt.assert_array_equal(p.units, self.df.s)
+        nt.assert_is(p.data, None)
+
+    def test_variables_from_mix(self):
+
+        p = lm._RegressionPlotter("x", self.df.y + 1, data=self.df)
+
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y + 1)
+        pdt.assert_frame_equal(p.data, self.df)
+
+    def test_dropna(self):
+
+        p = lm._RegressionPlotter("x", "y_na", data=self.df)
+        nt.assert_equal(len(p.x), pd.notnull(self.df.y_na).sum())
+
+        p = lm._RegressionPlotter("x", "y_na", data=self.df, dropna=False)
+        nt.assert_equal(len(p.x), len(self.df.y_na))
+
+    def test_ci(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, ci=95)
+        nt.assert_equal(p.ci, 95)
+        nt.assert_equal(p.x_ci, 95)
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci=68)
+        nt.assert_equal(p.ci, 95)
+        nt.assert_equal(p.x_ci, 68)
+
+    def test_fast_regression(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
 
         # Fit with the "fast" function, which just does linear algebra
-        fast = lm._regress_fast(self.grid, self.x, self.y, self.units,
-                                self.ci, self.n_boot)
-        yhat_fast, _ = fast
+        yhat_fast, _ = p.fit_fast(self.grid)
 
         # Fit using the statsmodels function with an OLS model
-        smod = lm._regress_statsmodels(self.grid, self.x, self.y, self.units,
-                                       sm.OLS, self.ci, self.n_boot)
-        yhat_smod, _ = smod
+        yhat_smod, _ = p.fit_statsmodels(self.grid, sm.OLS)
 
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_fast, yhat_smod)
 
     def test_regress_poly(self):
-        """Validate polyfit-based regression fit and bootstrap."""
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
 
         # Fit an first-order polynomial
-        poly = lm._regress_poly(self.grid, self.x, self.y, self.units, 1,
-                                self.ci, self.n_boot)
-        yhat_poly, _ = poly
+        yhat_poly, _ = p.fit_poly(self.grid, 1)
 
         # Fit using the statsmodels function with an OLS model
-        smod = lm._regress_statsmodels(self.grid, self.x, self.y, self.units,
-                                       sm.OLS, self.ci, self.n_boot)
-        yhat_smod, _ = smod
+        yhat_smod, _ = p.fit_statsmodels(self.grid, sm.OLS)
 
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_poly, yhat_smod)
 
     def test_regress_n_boot(self):
-        """Test correct bootstrap size for internal regression functions."""
-        args = self.grid, self.x, self.y, self.units
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
 
         # Fast (linear algebra) version
-        fast = lm._regress_fast(*args, ci=self.ci, n_boot=self.n_boot)
-        _, boots_fast = fast
+        _, boots_fast = p.fit_fast(self.grid)
         npt.assert_equal(boots_fast.shape, (self.n_boot, self.grid.size))
 
         # Slower (np.polyfit) version
-        poly = lm._regress_poly(*args, order=1, ci=self.ci, n_boot=self.n_boot)
-        _, boots_poly = poly
+        _, boots_poly = p.fit_poly(self.grid, 1)
         npt.assert_equal(boots_poly.shape, (self.n_boot, self.grid.size))
 
         # Slowest (statsmodels) version
-        smod = lm._regress_statsmodels(*args, model=sm.OLS,
-                                       ci=self.ci, n_boot=self.n_boot)
-        _, boots_smod = smod
+        _, boots_smod = p.fit_statsmodels(self.grid, sm.OLS)
         npt.assert_equal(boots_smod.shape, (self.n_boot, self.grid.size))
 
-    def test_regress_noboot(self):
-        """Test that regression functions return None if not bootstrapping."""
-        args = self.grid, self.x, self.y, self.units
+    def test_regress_without_bootstrap(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df,
+                                  n_boot=self.n_boot, ci=None)
 
         # Fast (linear algebra) version
-        fast = lm._regress_fast(*args, ci=None, n_boot=self.n_boot)
-        _, boots_fast = fast
+        _, boots_fast = p.fit_fast(self.grid)
         nt.assert_is(boots_fast, None)
 
         # Slower (np.polyfit) version
-        poly = lm._regress_poly(*args, order=1, ci=None, n_boot=self.n_boot)
-        _, boots_poly = poly
+        _, boots_poly = p.fit_poly(self.grid, 1)
         nt.assert_is(boots_poly, None)
 
         # Slowest (statsmodels) version
-        smod = lm._regress_statsmodels(*args, model=sm.OLS,
-                                       ci=None, n_boot=self.n_boot)
-        _, boots_smod = smod
+        _, boots_smod = p.fit_statsmodels(self.grid, sm.OLS)
         nt.assert_is(boots_smod, None)
 
     def test_numeric_bins(self):
-        """Test discretizing x into `n` bins."""
-        x_binned, bins = lm._bin_predictor(self.x, self.bins_numeric)
+
+        p = lm._RegressionPlotter(self.df.x, self.df.y)
+        x_binned, bins = p.bin_predictor(self.bins_numeric)
         npt.assert_equal(len(bins), self.bins_numeric)
         npt.assert_array_equal(np.unique(x_binned), bins)
 
     def test_provided_bins(self):
-        """Test discretizing x into provided bins."""
-        x_binned, bins = lm._bin_predictor(self.x, self.bins_given)
+
+        p = lm._RegressionPlotter(self.df.x, self.df.y)
+        x_binned, bins = p.bin_predictor(self.bins_given)
         npt.assert_array_equal(np.unique(x_binned), self.bins_given)
 
-    def test_binning(self):
-        """Test that the binning actually works."""
-        x_binned, bins = lm._bin_predictor(self.x, self.bins_given)
-        nt.assert_greater(self.x[x_binned == 0].min(),
-                          self.x[x_binned == -1].max())
-        nt.assert_greater(self.x[x_binned == 1].min(),
-                          self.x[x_binned == 0].max())
+    def test_bin_results(self):
 
-    def test_point_est(self):
-        """Test statistic estimation for discrete input data."""
-        x_vals, points, cis = lm._point_est(self.x_discrete, self.y, np.mean,
-                                            self.ci, self.units, self.n_boot)
+        p = lm._RegressionPlotter(self.df.x, self.df.y)
+        x_binned, bins = p.bin_predictor(self.bins_given)
+        nt.assert_greater(self.df.x[x_binned == 0].min(),
+                          self.df.x[x_binned == -1].max())
+        nt.assert_greater(self.df.x[x_binned == 1].min(),
+                          self.df.x[x_binned == 0].max())
 
-        npt.assert_array_equal(x_vals, sorted(np.unique(self.x_discrete)))
-        nt.assert_equal(len(points), np.unique(self.x_discrete).size)
-        nt.assert_equal(np.shape(cis), (np.unique(self.x_discrete).size, 2))
+    def test_scatter_data(self):
 
-    def test_point_ci(self):
-        """Test the confidence interval in the point estimate function."""
-        _, _, big_cis = lm._point_est(self.x_discrete, self.y,
-                                      np.mean, 95, self.units, self.n_boot)
-        _, _, wee_cis = lm._point_est(self.x_discrete, self.y,
-                                      np.mean, 15, self.units, self.n_boot)
-        npt.assert_array_less(np.diff(wee_cis), np.diff(big_cis))
+        p = lm._RegressionPlotter(self.df.x, self.df.y)
+        x, y = p.scatter_data
+        npt.assert_array_equal(x, self.df.x)
+        npt.assert_array_equal(y, self.df.y)
 
-        _, _, no_cis = lm._point_est(self.x_discrete, self.y,
-                                     np.mean, None, self.units, self.n_boot)
-        npt.assert_array_equal(no_cis, [None] * len(no_cis))
+        p = lm._RegressionPlotter(self.df.d, self.df.y)
+        x, y = p.scatter_data
+        npt.assert_array_equal(x, self.df.d)
+        npt.assert_array_equal(y, self.df.y)
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y, x_jitter=.1)
+        x, y = p.scatter_data
+        nt.assert_true((x != self.df.d).any())
+        npt.assert_array_less(np.abs(self.df.d - x), np.repeat(.1, len(x)))
+        npt.assert_array_equal(y, self.df.y)
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y, y_jitter=.05)
+        x, y = p.scatter_data
+        npt.assert_array_equal(x, self.df.d)
+        npt.assert_array_less(np.abs(self.df.y - y), np.repeat(.1, len(y)))
+
+    def test_estimate_data(self):
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y, x_estimator=np.mean)
+
+        x, y, ci = p.estimate_data
+
+        npt.assert_array_equal(x, np.sort(np.unique(self.df.d)))
+        npt.assert_array_equal(y, self.df.groupby("d").y.mean())
+        npt.assert_array_less(np.array(ci)[:, 0], y)
+        npt.assert_array_less(y, np.array(ci)[:, 1])
+
+    def test_estimate_cis(self):
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y,
+                                  x_estimator=np.mean, ci=95)
+        _, _, ci_big = p.estimate_data
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y,
+                                  x_estimator=np.mean, ci=50)
+        _, _, ci_wee = p.estimate_data
+        npt.assert_array_less(np.diff(ci_wee), np.diff(ci_big))
+
+        p = lm._RegressionPlotter(self.df.d, self.df.y,
+                                  x_estimator=np.mean, ci=None)
+        _, _, ci_nil = p.estimate_data
+        npt.assert_array_equal(ci_nil, [None] * len(ci_nil))
 
 
 class TestDiscretePlotter(object):
@@ -147,6 +278,8 @@ class TestDiscretePlotter(object):
                            u=np.tile(np.arange(6), 15)))
     bw_err = rs.randn(6)[df.u.values]
     df.y += bw_err
+    df["y_na"] = df.y.copy()
+    df.y_na.ix[[10, 20, 30]] = np.nan
 
     def test_variables_from_frame(self):
 
@@ -156,7 +289,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(p.y, self.df.y)
         npt.assert_array_equal(p.hue, self.df.g)
         npt.assert_array_equal(p.units, self.df.u)
-        npt.assert_array_equal(p.data, self.df)
+        pdt.assert_frame_equal(p.data, self.df)
 
     def test_variables_from_series(self):
 
@@ -175,7 +308,7 @@ class TestDiscretePlotter(object):
 
         npt.assert_array_equal(p.x, self.df.x)
         npt.assert_array_equal(p.y, self.df.y + 1)
-        npt.assert_array_equal(p.data, self.df)
+        pdt.assert_frame_equal(p.data, self.df)
 
     def test_variables_var_order(self):
 
@@ -196,8 +329,16 @@ class TestDiscretePlotter(object):
 
         p = lm._DiscretePlotter("x", hue="g", data=self.df)
         nt.assert_true(p.y_count)
-        nt.assert_is(p.x, p.y)
+        npt.assert_array_equal(p.x, p.y)
         nt.assert_is(p.estimator, len)
+
+    def test_dropna(self):
+
+        p = lm._DiscretePlotter("x", "y_na", data=self.df)
+        nt.assert_equal(len(p.x), pd.notnull(self.df.y_na).sum())
+
+        p = lm._DiscretePlotter("x", "y_na", data=self.df, dropna=False)
+        nt.assert_equal(len(p.x), len(self.df.y_na))
 
     def test_palette(self):
 
@@ -237,6 +378,9 @@ class TestDiscretePlotter(object):
                                 data=self.df, kind="auto")
         nt.assert_equal(p.kind, "point")
 
+        with nt.assert_raises(ValueError):
+            p = lm._DiscretePlotter("x", "y", data=self.df, kind="dino")
+
     def test_positions(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="bar")
@@ -256,11 +400,11 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(p.positions, [0, 1, 2])
         npt.assert_array_equal(p.offset, [-.2, .2])
 
-    def test_plot_data(self):
+    def test_estimate_data(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df)
-        nt.assert_equal(len(list(p.plot_data)), 1)
-        pos, height, ci = next(p.plot_data)
+        nt.assert_equal(len(list(p.estimate_data)), 1)
+        pos, height, ci = next(p.estimate_data)
 
         npt.assert_array_equal(pos, [0, 1, 2])
 
@@ -272,8 +416,8 @@ class TestDiscretePlotter(object):
         npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
 
         p = lm._DiscretePlotter("x", "y", "g", data=self.df)
-        nt.assert_equal(len(list(p.plot_data)), 2)
-        data_gen = p.plot_data
+        nt.assert_equal(len(list(p.estimate_data)), 2)
+        data_gen = p.estimate_data
 
         first_hue = self.df[self.df.g == "x"]
         pos, height, ci = next(data_gen)
@@ -300,11 +444,11 @@ class TestDiscretePlotter(object):
     def test_plot_cis(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, ci=95)
-        _, _, ci_big = next(p.plot_data)
+        _, _, ci_big = next(p.estimate_data)
         ci_big = np.diff(ci_big, axis=1)
 
         p = lm._DiscretePlotter("x", "y", data=self.df, ci=68)
-        _, _, ci_wee = next(p.plot_data)
+        _, _, ci_wee = next(p.estimate_data)
         ci_wee = np.diff(ci_wee, axis=1)
 
         npt.assert_array_less(ci_wee, ci_big)
@@ -312,11 +456,11 @@ class TestDiscretePlotter(object):
     def test_plot_units(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, units="u")
-        _, _, ci_big = next(p.plot_data)
+        _, _, ci_big = next(p.estimate_data)
         ci_big = np.diff(ci_big, axis=1)
 
         p = lm._DiscretePlotter("x", "y", data=self.df)
-        _, _, ci_wee = next(p.plot_data)
+        _, _, ci_wee = next(p.estimate_data)
         ci_wee = np.diff(ci_wee, axis=1)
 
         npt.assert_array_less(ci_wee, ci_big)
@@ -360,7 +504,7 @@ class TestDiscretePlots(object):
 
         plt.close("all")
 
-    def test_barplot_data(self):
+    def test_bar_data(self):
 
         f, ax = plt.subplots()
         lm.barplot("x", "y", data=self.df, hline=None, ax=ax)
