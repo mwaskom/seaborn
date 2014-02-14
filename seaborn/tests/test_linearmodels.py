@@ -80,6 +80,8 @@ class TestLinearPlotter(object):
 
 class TestRegressionPlotter(object):
 
+    rs = np.random.RandomState(49)
+
     grid = np.linspace(-3, 3, 30)
     n_boot = 100
     bins_numeric = 3
@@ -91,6 +93,9 @@ class TestRegressionPlotter(object):
                            s=np.tile(list("abcdefghij"), 6)))
     df["z"] = df.y + rs.randn(60)
     df["y_na"] = df.y.copy()
+
+    p = 1 / (1 + np.exp(-(df.x * 2 + rs.randn(60))))
+    df["c"] = [rs.binomial(1, p_i) for p_i in p]
     df.y_na.ix[[10, 20, 30]] = np.nan
 
     def test_variables_from_frame(self):
@@ -268,6 +273,34 @@ class TestRegressionPlotter(object):
         _, _, ci_nil = p.estimate_data
         npt.assert_array_equal(ci_nil, [None] * len(ci_nil))
 
+    def test_logistic_regression(self):
+
+        p = lm._RegressionPlotter("x", "c", data=self.df,
+                                  logistic=True, n_boot=self.n_boot)
+        _, yhat, _ = p.fit_regression(x_range=(-3, 3))
+        npt.assert_array_less(yhat, 1)
+        npt.assert_array_less(0, yhat)
+
+    def test_robust_regression(self):
+
+        p_ols = lm._RegressionPlotter("x", "y", data=self.df,
+                                      n_boot=self.n_boot)
+        _, ols_yhat, _ = p_ols.fit_regression(x_range=(-3, 3))
+
+        p_robust = lm._RegressionPlotter("x", "y", data=self.df,
+                                         robust=True, n_boot=self.n_boot)
+        _, robust_yhat, _ = p_robust.fit_regression(x_range=(-3, 3))
+
+        nt.assert_equal(len(ols_yhat), len(robust_yhat))
+
+    def test_lowess_regression(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True)
+        grid, yhat, err_bands = p.fit_regression(x_range=(-3, 3))
+
+        nt.assert_equal(len(grid), len(yhat))
+        nt.assert_is(err_bands, None)
+
 
 class TestDiscretePlotter(object):
 
@@ -371,6 +404,9 @@ class TestDiscretePlotter(object):
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="point")
         nt.assert_equal(p.kind, "point")
 
+        p = lm._DiscretePlotter("x", "y", data=self.df, kind="box")
+        nt.assert_equal(p.kind, "box")
+
         p = lm._DiscretePlotter("x", data=self.df, kind="auto")
         nt.assert_equal(p.kind, "bar")
 
@@ -388,6 +424,10 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(p.offset, [0])
 
         p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="bar")
+        npt.assert_array_equal(p.positions, [0, 1, 2])
+        npt.assert_array_equal(p.offset, [-.2, .2])
+
+        p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="box")
         npt.assert_array_equal(p.positions, [0, 1, 2])
         npt.assert_array_equal(p.offset, [-.2, .2])
 
