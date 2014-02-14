@@ -293,7 +293,7 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
-    def test_drop_na(self):
+    def test_dropna(self):
 
         df = self.df.copy()
         df["n"] = np.repeat(list("abc"), 20)
