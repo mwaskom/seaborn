@@ -19,7 +19,12 @@ from .axisgrid import FacetGrid
 
 
 class _LinearPlotter(object):
+    """Base class for plotting relational data in tidy format.
 
+    To get anything useful done you'll have to inherit from this, but setup
+    code that can be abstracted out should be put here.
+
+    """
     def establish_variables(self, data, **kws):
         """Extract variables from data or use directly."""
         self.data = data
@@ -46,9 +51,22 @@ class _LinearPlotter(object):
             if val is not None:
                 setattr(self, var, val[not_na])
 
+    def plot(self, ax):
+        raise NotImplementedError
+
 
 class _DiscretePlotter(_LinearPlotter):
+    """Plotter for data with discrete independent variable(s).
 
+    This will be used by the `barplot` and `pointplot` functions, and
+    thus indirectly by the `factorplot` function. It can produce plots
+    where some statistic for a dependent measure is estimated within
+    subsets of the data, which can be hierarchically structured at up to two
+    levels (`x` and `hue`). The plots can be drawn with a few different
+    visual representations of the same underlying data (`bar`, and `point`,
+    with `box` doing something similar but skipping the estimation).
+
+    """
     def __init__(self, x, y=None, hue=None, data=None, units=None,
                  x_order=None, hue_order=None, color=None, palette=None,
                  kind="auto", dodge=0, join=True, hline=None,
@@ -65,7 +83,7 @@ class _DiscretePlotter(_LinearPlotter):
         self.n_boot = n_boot
         self.hline = hline
 
-        # Other attributs that are hardcoded for now
+        # Other attributes that are hardcoded for now
         self.bar_widths = .8
         self.err_color = "#444444"
         self.lw = mpl.rcParams["lines.linewidth"] * 1.8
@@ -173,7 +191,7 @@ class _DiscretePlotter(_LinearPlotter):
 
     @property
     def estimate_data(self):
-
+        """Generator to yield x, y, and ci data for each hue subset."""
         # First iterate through the hues, as plots are drawn for all
         # positions of a given hue at the same time
         for i, hue in enumerate(self.hue_order):
@@ -206,7 +224,7 @@ class _DiscretePlotter(_LinearPlotter):
 
     @property
     def binned_data(self):
-
+        """Generator to yield entire subsets of data for each bin."""
         # First iterate through the hues, as plots are drawn for all
         # positions of a given hue at the same time
         for i, hue in enumerate(self.hue_order):
@@ -314,7 +332,16 @@ class _DiscretePlotter(_LinearPlotter):
 
 
 class _RegressionPlotter(_LinearPlotter):
+    """Plotter for numeric independent variables with regression model.
 
+    This does the computations and drawing for the `regplot` function, and
+    is thus also used indirectly by `lmplot`. It is generally similar to
+    the `_DiscretePlotter`, but it's intended for use when the independent
+    variable is numeric (continuous or discrete), and its primary advantage
+    is that a regression model can be fit to the data and visualized, allowing
+    extrapolations beyond the observed datapoints.
+
+    """
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
                  units=None, order=1, logistic=False, lowess=False,
@@ -413,13 +440,16 @@ class _RegressionPlotter(_LinearPlotter):
 
         return vals, points, cis
 
-    def fit_regression(self, ax):
+    def fit_regression(self, ax=None, x_range=None):
         """Fit the regression model."""
         # Create the grid for the regression
         if self.truncate:
             x_min, x_max = self.x_range
         else:
-            x_min, x_max = ax.get_xlim()
+            if ax is None:
+                x_min, x_max = x_range
+            else:
+                x_min, x_max = ax.get_xlim()
         grid = np.linspace(x_min, x_max, 100)
         ci = self.ci
 
@@ -427,10 +457,9 @@ class _RegressionPlotter(_LinearPlotter):
         if self.order > 1:
             yhat, yhat_boots = self.fit_poly(grid, self.order)
         elif self.logistic:
-            from statsmodels.api import GLM
-            from statsmodels.families import Binomial
+            from statsmodels.api import GLM, families
             yhat, yhat_boots = self.fit_statsmodels(grid, GLM,
-                                                    family=Binomial())
+                                                    family=families.Binomial())
         elif self.lowess:
             ci = None
             grid, yhat = self.fit_lowess()
@@ -813,7 +842,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         as translucent bands around the regression line.
     n_boot : int, optional
         Number of bootstrap resamples used to compute the confidence intervals.
-    units : vector or strig
+    units : vector or string
         Data or column name in `data` with ids for sampling units, so that the
         bootstrap is performed by resampling units and then observations within
         units for more accurate confidence intervals when data have repeated
