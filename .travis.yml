@@ -6,6 +6,7 @@ python:
 
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
+  - conda update conda --yes
   - source activate testenv
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else pip install pillow; fi
   - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
