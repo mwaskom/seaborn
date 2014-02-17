@@ -255,7 +255,7 @@ class FacetGrid(object):
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
-                kwargs["label"] = self.hue_names[hue_k]
+                kwargs["label"] = str(self.hue_names[hue_k])
 
             # Get the actual data we are going to plot with
             plot_data = data_ijk[list(args)]
