@@ -774,7 +774,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         facets.fig.tight_layout()
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
-        facets.set_legend(title=hue)
+        facets.set_legend(title=hue, label_order=hue_order)
 
     return facets
 

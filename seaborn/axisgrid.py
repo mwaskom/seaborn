@@ -518,18 +518,19 @@ class FacetGrid(object):
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
 
-    def set_legend(self, legend_data=None, title=None):
+    def set_legend(self, legend_data=None, title=None, label_order=None):
         """Draw a legend, possibly resizing the figure."""
         # Find the data for the legend
         legend_data = self._legend_data if legend_data is None else legend_data
-        labels = sorted(self._legend_data.keys())
-        handles = [legend_data[l] for l in labels]
+        if label_order is None:
+            label_order = self.hue_names
+        handles = [legend_data[l] for l in label_order]
         title = self._hue_var if title is None else title
         title_size = mpl.rcParams["axes.labelsize"] * .85
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, labels, "center right",
+            figlegend = plt.figlegend(handles, label_order, "center right",
                                       scatterpoints=1)
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
@@ -557,7 +558,7 @@ class FacetGrid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes[0, 0].legend(handles, labels, loc="best")
+            leg = self.axes[0, 0].legend(handles, label_order, loc="best")
             leg.set_title(title, prop={"size": title_size})
 
     def _clean_axis(self, ax):
