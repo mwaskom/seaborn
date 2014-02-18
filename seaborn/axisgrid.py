@@ -522,8 +522,11 @@ class FacetGrid(object):
         # Find the data for the legend
         legend_data = self._legend_data if legend_data is None else legend_data
         if label_order is None:
-            label_order = self.hue_names
-        handles = [legend_data[l] for l in label_order]
+            if self.hue_names is None:
+                label_order = sorted(legend_data.keys())
+            else:
+                label_order = self.hue_names
+        handles = [legend_data[l] for l in label_order if l in legend_data]
         title = self._hue_var if title is None else title
         title_size = mpl.rcParams["axes.labelsize"] * .85
 
