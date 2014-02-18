@@ -770,7 +770,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     # Draw legends and labels
     if y is None:
-        facets.set_axis_label(x, "count")
+        facets.set_axis_labels(x, "count")
         facets.fig.tight_layout()
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
