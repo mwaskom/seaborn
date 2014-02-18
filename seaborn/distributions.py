@@ -482,21 +482,27 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             bins = _freedman_diaconis_bins(a)
         hist_kws.setdefault("alpha", 0.4)
         orientation = "horizontal" if vertical else "vertical"
-        hist_color = hist_kws.get("color", color)
+        hist_color = hist_kws.pop("color", color)
         ax.hist(a, bins, normed=True, orientation=orientation,
                 color=hist_color, **hist_kws)
+        if hist_color != color:
+            hist_kws["color"] = hist_color
 
     if kde:
-        kde_color = kde_kws.get("color", color)
+        kde_color = kde_kws.pop("color", color)
         kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        if kde_color != color:
+            kde_kws["color"] = kde_color
 
     if rug:
-        rug_color = rug_kws.get("color", color)
+        rug_color = rug_kws.pop("color", color)
         axis = "y" if vertical else "x"
         rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        if rug_color != color:
+            rug_kws["color"] = rug_color
 
     if fit is not None:
-        fit_color = fit_kws.get("color", "#282828")
+        fit_color = fit_kws.pop("color", "#282828")
         gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
@@ -508,6 +514,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if vertical:
             x, y = y, x
         ax.plot(x, y, color=fit_color, **fit_kws)
+        if fit_color != "#282828":
+            fit_kws["color"] = fit_color
 
     if label_ax:
         if vertical:
