@@ -296,13 +296,14 @@ class TestFacetGrid(object):
     def test_dropna(self):
 
         df = self.df.copy()
-        df["n"] = np.repeat(list("abc"), 20)
-        df.loc[[10, 20, 30], "n"] = np.nan
-        g = ag.FacetGrid(df, dropna=False, row="n")
+        hasna = pd.Series(np.tile(np.arange(6), 10))
+        hasna[hasna == 5] = np.nan
+        df["hasna"] = hasna
+        g = ag.FacetGrid(df, dropna=False, row="hasna")
         nt.assert_equal(g._not_na.sum(), 60)
 
-        g = ag.FacetGrid(df, dropna=True, row="n")
-        nt.assert_equal(g._not_na.sum(), 57)
+        g = ag.FacetGrid(df, dropna=True, row="hasna")
+        nt.assert_equal(g._not_na.sum(), 50)
 
         plt.close("all")
 
