@@ -755,14 +755,13 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     c_max = max(y.max(), yhat.max())
     delta = max(c_max - y_bar, y_bar - c_min)
     c_min, cmax = y_bar - delta, y_bar + delta
-    vmin = contour_kws.pop("vmin", c_min)
-    vmax = contour_kws.pop("vmax", c_max)
+    contour_kws.setdefault("vmin", c_min)
+    contour_kws.setdefault("vmax", c_max)
 
     # Draw the contour plot
     func_name = "contourf" if filled else "contour"
     contour = getattr(ax, func_name)
-    c = contour(xx1, xx2, yhat, levels, cmap=cmap,
-                vmin=vmin, vmax=vmax, **contour_kws)
+    c = contour(xx1, xx2, yhat, levels, cmap=cmap, **contour_kws)
 
     # Draw the scatter again so it's visible
     ax.plot(x1, x2, "o", **scatter_kws)
