@@ -90,9 +90,12 @@ class TestRegressionPlotter(object):
     df = pd.DataFrame(dict(x=rs.normal(size=60),
                            d=rs.randint(-2, 3, 60),
                            y=rs.gamma(4, size=60),
-                           s=np.tile(list("abcdefghij"), 6)))
+                           s=np.tile(list(range(6)), 10)))
     df["z"] = df.y + rs.randn(60)
     df["y_na"] = df.y.copy()
+
+    bw_err = rs.randn(6)[df.s.values]
+    df.y += bw_err
 
     p = 1 / (1 + np.exp(-(df.x * 2 + rs.randn(60))))
     df["c"] = [rs.binomial(1, p_i) for p_i in p]
@@ -273,6 +276,32 @@ class TestRegressionPlotter(object):
         _, _, ci_nil = p.estimate_data
         npt.assert_array_equal(ci_nil, [None] * len(ci_nil))
 
+    def test_estimate_units(self):
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, units="s", x_bins=3)
+        _, _, ci_big = p.estimate_data
+        ci_big = np.diff(ci_big, axis=1)
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, x_bins=3)
+        _, _, ci_wee = p.estimate_data
+        ci_wee = np.diff(ci_wee, axis=1)
+
+        npt.assert_array_less(ci_wee, ci_big)
+
+    def test_partial(self):
+
+        x = self.rs.randn(100)
+        y = x + self.rs.randn(100)
+        z = x + self.rs.randn(100)
+
+        p = lm._RegressionPlotter(y, z, y_partial=x)
+        _, r = np.corrcoef(p.x, p.y)[0]
+        npt.assert_almost_equal(r, 0, 2)
+
+        p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
+        _, r = np.corrcoef(p.x, p.y)[0]
+        npt.assert_almost_equal(r, 0, 2)
+
     def test_logistic_regression(self):
 
         p = lm._RegressionPlotter("x", "c", data=self.df,
@@ -300,6 +329,33 @@ class TestRegressionPlotter(object):
 
         nt.assert_equal(len(grid), len(yhat))
         nt.assert_is(err_bands, None)
+
+    def test_regression_options(self):
+
+        with nt.assert_raises(ValueError):
+            lm._RegressionPlotter("x", "y", data=self.df,
+                                  lowess=True, order=2)
+
+        with nt.assert_raises(ValueError):
+            lm._RegressionPlotter("x", "y", data=self.df,
+                                  lowess=True, logistic=True)
+
+    def test_regression_limits(self):
+
+        f, ax = plt.subplots()
+        ax.scatter(self.df.x, self.df.y)
+        p = lm._RegressionPlotter("x", "y", data=self.df)
+        grid, _, _ = p.fit_regression(ax)
+        xlim = ax.get_xlim()
+        nt.assert_equal(grid.min(), xlim[0])
+        nt.assert_equal(grid.max(), xlim[1])
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, truncate=True)
+        grid, _, _ = p.fit_regression()
+        nt.assert_equal(grid.min(), self.df.x.min())
+        nt.assert_equal(grid.max(), self.df.x.max())
+
+        plt.close("all")
 
 
 class TestDiscretePlotter(object):
@@ -514,13 +570,17 @@ class TestDiscretePlotter(object):
         nt.assert_equal(ax.get_ylabel(), "y")
         nt.assert_equal(ax.legend_.get_title().get_text(), "g")
 
+        plt.close("all")
 
 class TestDiscretePlots(object):
 
     rs = np.random.RandomState(341)
     df = pd.DataFrame(dict(x=np.repeat(list("abc"), 30),
-                           y=rs.randn(90),
+                           v=rs.randn(90),
+                           y=rs.randn(90) + 5,
+                           z=rs.uniform(90),
                            g=np.tile(list("xy"), 45),
+                           h=np.repeat(list("abc"), 30),
                            u=np.tile(np.arange(6), 15)))
     bw_err = rs.randn(6)[df.u.values]
     df.y += bw_err
@@ -547,18 +607,225 @@ class TestDiscretePlots(object):
     def test_bar_data(self):
 
         f, ax = plt.subplots()
-        lm.barplot("x", "y", data=self.df, hline=None, ax=ax)
+        lm.barplot("x", "y", data=self.df, ax=ax)
 
         nt.assert_equal(len(ax.patches), 3)
         nt.assert_equal(len(ax.lines), 3)
 
         f, ax = plt.subplots()
-        lm.barplot("x", "y", data=self.df, palette="husl",
-                   hline=None, ax=ax)
+        lm.barplot("x", "y", data=self.df, palette="husl", ax=ax)
 
         nt.assert_equal(len(ax.patches), 3)
         nt.assert_equal(len(ax.lines), 3)
         bar_colors = np.array([el.get_facecolor() for el in ax.patches])
         npt.assert_array_equal(color_palette("husl", 3), bar_colors[:, :3])
+
+        plt.close("all")
+
+    def test_pointplot(self):
+
+        f, ax = plt.subplots()
+        lm.pointplot("x", "y", data=self.df, join=False, ax=ax)
+
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 3)
+
+        f, ax = plt.subplots()
+        lm.pointplot("x", "y", "g", data=self.df, palette="husl", ax=ax)
+
+        nt.assert_equal(len(ax.collections), 2)
+        nt.assert_equal(len(ax.lines), 8)
+        point_colors = [c.get_facecolor()[:, :3] for c in ax.collections]
+        expected_palette = color_palette("husl", 2)
+        npt.assert_array_equal(np.squeeze(point_colors), expected_palette)
+
+        plt.close("all")
+
+    def test_point_data(self):
+
+        f, ax = plt.subplots()
+        lm.pointplot("x", "y", data=self.df, join=False, ax=ax)
+
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, np.arange(3))
+        npt.assert_array_equal(y, self.df.groupby("x").y.mean())
+
+        f, ax = plt.subplots()
+        lm.pointplot("x", "y", "g", data=self.df, join=False, ax=ax)
+
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, np.arange(3))
+        expected_y = self.df[self.df.g == "x"].groupby("x").y.mean()
+        npt.assert_array_equal(y, expected_y)
+
+        plt.close("all")
+
+    def test_factorplot_bar(self):
+
+        g = lm.factorplot("x", "y", data=self.df, kind="bar")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
+
+        g = lm.factorplot("x", "y", "g", data=self.df, kind="bar")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.patches), 6)
+        nt.assert_equal(len(ax.lines), 6)
+
+        plt.close("all")
+
+    def test_factorplot_point(self):
+
+        g = lm.factorplot("x", "y", data=self.df, kind="point")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 4)
+
+        g = lm.factorplot("x", "y", "g", data=self.df, kind="point")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.collections), 2)
+        nt.assert_equal(len(ax.lines), 8)
+
+        plt.close("all")
+
+    def test_factorplot_box(self):
+
+        g = lm.factorplot("x", "y", data=self.df, kind="box")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.artists), 3)
+
+        g = lm.factorplot("x", "y", "g", data=self.df, kind="box")
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.artists), 6)
+
+        plt.close("all")
+
+    def test_factorplot_auto(self):
+
+        g = lm.factorplot("x", "y", data=self.df)
+        nt.assert_equal(len(g.axes[0, 0].collections), 1)
+
+        g = lm.factorplot("x", data=self.df)
+        nt.assert_equal(len(g.axes[0, 0].patches), 3)
+
+        g = lm.factorplot("x", "v", data=self.df)
+        nt.assert_equal(len(g.axes[0, 0].patches), 3)
+
+        g = lm.factorplot("x", "z", data=self.df)
+        nt.assert_equal(len(g.axes[0, 0].collections), 1)
+
+        plt.close("all")
+
+    def test_factorplot_facets(self):
+
+        g = lm.factorplot("x", "y", data=self.df, row="g", col="h")
+        nt.assert_equal(g.axes.shape, (2, 3))
+
+        g = lm.factorplot("x", "y", data=self.df, col="u", col_wrap=3)
+        nt.assert_equal(g.axes.shape, (2, 3))
+
+        g = lm.factorplot("x", "y", "u", data=self.df, col="u")
+        nt.assert_equal(g.axes.shape, (1, 6))
+        nt.assert_is(g._legend, None)
+
+        plt.close("all")
+
+    def test_factorplot_hline(self):
+
+        g = lm.factorplot("x", "v", data=self.df, kind="bar", hline=0)
+        ax = g.axes[0, 0]
+        hline = ax.lines[-1]
+        npt.assert_array_equal(hline.get_data(), [(0, 1), (0, 0)])
+
+        plt.close("all")
+
+
+class TestRegressionPlots(object):
+
+    rs = np.random.RandomState(56)
+    df = pd.DataFrame(dict(x=rs.randn(90),
+                           y=rs.randn(90) + 5,
+                           z=rs.randint(0, 1, 90),
+                           g=np.repeat(list("abc"), 30),
+                           h=np.tile(list("xy"), 45),
+                           u=np.tile(np.arange(6), 15)))
+    bw_err = rs.randn(6)[df.u.values]
+    df.y += bw_err
+
+    def test_regplot_basic(self):
+
+        f, ax = plt.subplots()
+        lm.regplot("x", "y", self.df)
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 2)
+
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, self.df.x)
+        npt.assert_array_equal(y, self.df.y)
+
+        plt.close("all")
+
+    def test_regplot_selective(self):
+
+        f, ax = plt.subplots()
+        ax = lm.regplot("x", "y", self.df, scatter=False, ax=ax)
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 1)
+        ax.clear()
+
+        f, ax = plt.subplots()
+        ax = lm.regplot("x", "y", self.df, fit_reg=False)
+        nt.assert_equal(len(ax.lines), 0)
+        nt.assert_equal(len(ax.collections), 1)
+        ax.clear()
+
+        f, ax = plt.subplots()
+        ax = lm.regplot("x", "y", self.df, ci=None)
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 1)
+        ax.clear()
+
+        plt.close("all")
+
+    def test_regplot_binned(self):
+
+        f, ax = plt.subplots()
+        ax = lm.regplot("x", "y", self.df, x_bins=5)
+        nt.assert_equal(len(ax.lines), 6)
+        nt.assert_equal(len(ax.collections), 2)
+
+        plt.close("all")
+
+    def test_lmplot_basic(self):
+
+        g = lm.lmplot("x", "y", self.df)
+        ax = g.axes[0, 0]
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 2)
+
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, self.df.x)
+        npt.assert_array_equal(y, self.df.y)
+
+        plt.close("all")
+
+    def test_lmplot_hue(self):
+
+        g = lm.lmplot("x", "y", data=self.df, hue="h")
+        ax = g.axes[0, 0]
+
+        nt.assert_equal(len(ax.lines), 2)
+        nt.assert_equal(len(ax.collections), 4)
+
+    def test_lmplot_facets(self):
+
+        g = lm.lmplot("x", "y", data=self.df, row="g", col="h")
+        nt.assert_equal(g.axes.shape, (3, 2))
+
+        g = lm.lmplot("x", "y", data=self.df, col="u", col_wrap=3)
+        nt.assert_equal(g.axes.shape, (2, 3))
+
+        g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
+        nt.assert_equal(g.axes.shape, (1, 6))
 
         plt.close("all")

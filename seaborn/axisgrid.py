@@ -1,3 +1,4 @@
+from __future__ import division
 from itertools import product
 import numpy as np
 import pandas as pd
