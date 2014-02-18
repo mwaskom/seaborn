@@ -572,6 +572,7 @@ class TestDiscretePlotter(object):
 
         plt.close("all")
 
+
 class TestDiscretePlots(object):
 
     rs = np.random.RandomState(341)
