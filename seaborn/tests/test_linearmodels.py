@@ -294,13 +294,16 @@ class TestRegressionPlotter(object):
         y = x + self.rs.randn(100)
         z = x + self.rs.randn(100)
 
+        p = lm._RegressionPlotter(y, z)
+        _, r_orig = np.corrcoef(p.x, p.y)[0]
+
         p = lm._RegressionPlotter(y, z, y_partial=x)
-        _, r = np.corrcoef(p.x, p.y)[0]
-        npt.assert_almost_equal(r, 0, 2)
+        _, r_semipartial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_semipartial, r_orig)
 
         p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
-        _, r = np.corrcoef(p.x, p.y)[0]
-        npt.assert_almost_equal(r, 0, 2)
+        _, r_partial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_partial, r_orig)
 
     def test_logistic_regression(self):
 
