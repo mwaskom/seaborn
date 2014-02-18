@@ -96,7 +96,7 @@ class FacetGrid(object):
             colors = utils.color_palette(n_colors=1)
         else:
             if hue_order is None:
-                hue_names = np.sort(data[hue].unique())
+                hue_names = np.unique(np.sort(data[hue]))
             else:
                 hue_names = hue_order
             if dropna:
@@ -123,7 +123,7 @@ class FacetGrid(object):
         if row is None:
             row_names = []
         elif row_order is None:
-            row_names = sorted(data[row].unique())
+            row_names = np.unique(np.sort(data[row]))
         else:
             row_names = row_order
         if dropna:
@@ -132,7 +132,7 @@ class FacetGrid(object):
         if col is None:
             col_names = []
         elif col_order is None:
-            col_names = sorted(data[col].unique())
+            col_names = np.unique(np.sort(data[col]))
         else:
             col_names = col_order
         if dropna:
@@ -523,7 +523,7 @@ class FacetGrid(object):
         legend_data = self._legend_data if legend_data is None else legend_data
         if label_order is None:
             if self.hue_names is None:
-                label_order = sorted(legend_data.keys())
+                label_order = np.sort(list(legend_data.keys()))
             else:
                 label_order = self.hue_names
         handles = [legend_data[l] for l in label_order if l in legend_data]
