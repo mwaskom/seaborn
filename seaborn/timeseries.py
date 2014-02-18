@@ -238,11 +238,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                 color = orig_color
 
         # Plot the central trace
-        marker = kwargs.pop("marker", "" if interpolate else "o")
-        linestyle = kwargs.pop("linestyle", "-" if interpolate else "")
-        label = kwargs.pop("label", cond if legend else "_nolegend_")
-        ax.plot(x, central_data, color=color, label=label,
-                marker=marker, linestyle=linestyle,  **kwargs)
+        kwargs.setdefault("marker", "" if interpolate else "o")
+        ls = kwargs.pop("ls", "-" if interpolate else "")
+        kwargs.setdefault("linestyle", ls)
+        kwargs.setdefault("label", cond if legend else "_nolegend_")
+        ax.plot(x, central_data, color=color, **kwargs)
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
@@ -281,12 +281,10 @@ def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
     """Plot 250 traces from bootstrap."""
-    if "alpha" not in err_kws:
-        err_kws["alpha"] = 0.25
+    err_kws.setdefault("alpha", 0.25)
+    err_kws.setdefault("linewidth", 0.25)
     if "lw" in err_kws:
         err_kws["linewidth"] = err_kws.pop("lw")
-    if "linewidth" not in err_kws:
-        err_kws["linewidth"] = 0.25
     ax.plot(x, boot_data.T, color=color, label="_nolegend_", **err_kws)
 
 
