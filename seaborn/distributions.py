@@ -313,11 +313,12 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     # Initialize the kwarg dict for the inner plot
     if inner_kws is None:
         inner_kws = {}
-    in_alpha = inner_kws.pop("alpha", .6 if inner == "points" else 1)
-    in_alpha *= 1 if alpha is None else alpha
-    in_color = inner_kws.pop("color", gray)
-    in_marker = inner_kws.pop("marker", ".")
-    in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
+    inner_kws["alpha"] *= 1 if alpha is None else alpha
+    inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("marker", ".")
+    lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("linewidth", lw)
 
     # Find where the violins are going
     if positions is None:
@@ -349,29 +350,25 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
-                ax.plot(q_x, [quant, quant], color=in_color,
-                        linestyle=":", linewidth=in_lw, **inner_kws)
+                ax.plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
             med = np.median(a)
             m_x = kde.evaluate(med) * scl
             m_x = [x - m_x, x + m_x]
-            ax.plot(m_x, [med, med], color=in_color,
-                    linestyle="--", linewidth=in_lw, **inner_kws)
+            ax.plot(m_x, [med, med], linestyle="--", **inner_kws)
         elif inner == "stick":
             x_vals = kde.evaluate(a) * scl
             x_vals = [x - x_vals, x + x_vals]
-            ax.plot(x_vals, [a, a], color=in_color,
-                    linewidth=in_lw, alpha=in_alpha, **inner_kws)
+            ax.plot(x_vals, [a, a], **inner_kws)
         elif inner == "points":
             x_vals = [x for _ in a]
-            ax.plot(x_vals, a, in_marker, color=in_color,
-                    alpha=in_alpha, mew=0, **inner_kws)
+            ax.plot(x_vals, a, mew=0, **inner_kws)
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, c=gray, lw=lw)
 
     # Draw the repeated measure bridges
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
-                color=in_color, alpha=2. / 3)
+                color=inner_kws["color"], alpha=2. / 3)
 
     # Add in semantic labels
     ax.set_xticks(positions)
@@ -483,24 +480,23 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     if hist:
         if bins is None:
             bins = _freedman_diaconis_bins(a)
-        hist_alpha = hist_kws.pop("alpha", 0.4)
+        hist_kws.setdefault("alpha", 0.4)
         orientation = "horizontal" if vertical else "vertical"
-        hist_color = hist_kws.pop("color", color)
-        ax.hist(a, bins, normed=True, color=hist_color, alpha=hist_alpha,
-                orientation=orientation, **hist_kws)
+        hist_kws.setdefault("color", color)
+        ax.hist(a, bins, normed=True, orientation=orientation, **hist_kws)
 
     if kde:
-        kde_color = kde_kws.pop("color", color)
-        kdeplot(a, vertical=vertical, color=kde_color, ax=ax, **kde_kws)
+        kde_kws.setdefault("color", color)
+        kdeplot(a, vertical=vertical, ax=ax, **kde_kws)
 
     if rug:
-        rug_color = rug_kws.pop("color", color)
+        rug_kws.setdefault("color", color)
         axis = "y" if vertical else "x"
-        rugplot(a, axis=axis, color=rug_color, ax=ax, **rug_kws)
+        rugplot(a, axis=axis, ax=ax, **rug_kws)
 
     if fit is not None:
-        fit_color = fit_kws.pop("color", "#282828")
-        gridsize = fit_kws.pop("gridsize", 500)
+        fit_kws.setdefault("color", "#282828")
+        gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
         bw = sm.nonparametric.bandwidths.bw_scott(a)
@@ -510,7 +506,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         y = pdf(x)
         if vertical:
             x, y = y, x
-        ax.plot(x, y, color=fit_color, **fit_kws)
+        ax.plot(x, y, **fit_kws)
 
     if label_ax:
         if vertical:
@@ -573,7 +569,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 
     # Draw the KDE plot and, optionally, shade
     ax.plot(x, y, color=color, label=label, **kwargs)
-    alpha = kwargs.pop("alpha", 0.25)
+    alpha = kwargs.get("alpha", 0.25)
     if shade:
         ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
 
@@ -627,14 +623,16 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
-    cmap = kwargs.pop("cmap", "BuGn" if filled else "BuGn_d")
+    cmap = kwargs.get("cmap", "BuGn" if filled else "BuGn_d")
     if isinstance(cmap, str):
         if cmap.endswith("_d"):
             pal = ["#333333"]
             pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
             cmap = blend_palette(pal, as_cmap=True)
+    kwargs["cmap"] = cmap
     contour_func = ax.contourf if filled else ax.contour
-    contour_func(xx, yy, z, n_levels, cmap=cmap, **kwargs)
+    contour_func(xx, yy, z, n_levels, **kwargs)
+    kwargs["n_levels"] = n_levels
 
     # Label the axes
     if hasattr(x, "name") and axlabel:
