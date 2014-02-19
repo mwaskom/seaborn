@@ -316,7 +316,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
     inner_kws["alpha"] *= 1 if alpha is None else alpha
     inner_kws.setdefault("color", gray)
-    inner_kws.setdefault("marker", ".")
+    inner_kws.setdefault("marker", "." if inner == "points" else "")
     lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
     inner_kws.setdefault("linewidth", lw)
 
@@ -358,10 +358,10 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         elif inner == "stick":
             x_vals = kde.evaluate(a) * scl
             x_vals = [x - x_vals, x + x_vals]
-            ax.plot(x_vals, [a, a], **inner_kws)
+            ax.plot(x_vals, [a, a], linestyle="-", **inner_kws)
         elif inner == "points":
             x_vals = [x for _ in a]
-            ax.plot(x_vals, a, mew=0, **inner_kws)
+            ax.plot(x_vals, a, mew=0, linestyle="", **inner_kws)
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, c=gray, lw=lw)
 
