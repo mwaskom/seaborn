@@ -241,8 +241,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         kwargs.setdefault("marker", "" if interpolate else "o")
         ls = kwargs.pop("ls", "-" if interpolate else "")
         kwargs.setdefault("linestyle", ls)
-        kwargs.setdefault("label", cond if legend else "_nolegend_")
-        ax.plot(x, central_data, color=color, **kwargs)
+        label = cond if legend else "_nolegend_"
+        ax.plot(x, central_data, color=color, label=label, **kwargs)
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
