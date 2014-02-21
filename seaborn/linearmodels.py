@@ -656,7 +656,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
 
 def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
                  colorbar=True, levels=30, logistic=False,
-                 contour_kws=None, scatter_kws=None, ax=None):
+                 contour_kws=None, scatter_kws=None, ax=None, **kwargs):
     """Visualize a continuous two-way interaction with a contour plot.
 
     Parameters
