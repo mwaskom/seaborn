@@ -1,6 +1,7 @@
 import numpy as np
 
 from seaborn.utils import despine
+import warnings
 
 
 def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
@@ -40,28 +41,28 @@ def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
 def clusterplot(df,
             title=None,
             title_fontsize=12,
-            colorbar_label='values',
-            col_side_colors=None,
-            row_side_colors=None,
             color_scale='linear',
-            cmap=None,
             linkage_method='average',
+            metric='euclidean',
             figsize=None,
-            label_rows=True,
-            label_cols=True,
-            vmin=None,
-            vmax=None,
-            xlabel_fontsize=12,
-            ylabel_fontsize=10,
-            cluster_cols=True,
-            cluster_rows=True,
-            linewidth=0,
-            edgecolor='white',
+            pcolormesh_kws=dict(linewidth=0,
+                                edgecolor='white',
+                                cmap=None,
+                                vmin=None,
+                                vmax=None),
+            row_kws=dict(cluster=True,
+                         side_colors=None,
+                         label=True,
+                         fontsize=12),
+            col_kws=dict(cluster=True,
+                         side_colors=None,
+                         label=True,
+                         fontsize=12),
             plot_df=None,
-            colorbar_ticklabels_fontsize=10,
-            colorbar_loc="upper left",
-            use_fastcluster=False,
-            metric='euclidean'):
+            colorbar_kws=dict(ticklabels_fontsize=10,
+                              loc='upper left',
+                              label='values'),
+            use_fastcluster=False):
     """Plot a clustered heatmap of matrix data
     @author Olga Botvinnik olga.botvinnik@gmail.com
 
@@ -227,8 +228,9 @@ def clusterplot(df,
         my_norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
     else:
         my_norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+    pcolormesh_kws['norm'] = my_norm if 'norm' not in pcolormesh_kws
 
-    if cmap is None:
+    if pcolormesh_kws['cmap'] is None:
         cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
         cmap.set_bad('white')
 
@@ -337,7 +339,8 @@ def clusterplot(df,
         figsize = (width, height)
     #print figsize
 
-
+    edgecolor = pcolormesh_kws['edgecolor']
+    linewidth = pcolormesh_kws['linewidth']
 
     fig = plt.figure(figsize=figsize)
     heatmap_gridspec = \
@@ -372,7 +375,8 @@ def clusterplot(df,
             row=False)
         column_colorbar_ax_pcolormesh = column_colorbar_ax.pcolormesh(
             col_side_matrix, cmap=col_cmap,
-            edgecolor=edgecolor, linewidth=linewidth)
+            edgecolor=edgecolor,
+            linewidth=linewidth)
         column_colorbar_ax.set_xlim(0, col_side_matrix.shape[1])
         column_colorbar_ax.set_yticks([])
         column_colorbar_ax.set_xticks([])
@@ -402,7 +406,8 @@ def clusterplot(df,
             ind=row_dendrogram['leaves'],
             row=True)
         row_colorbar_ax.pcolormesh(row_side_matrix, cmap=row_cmap,
-                                   edgecolors=edgecolor, linewidth=linewidth)
+                                   edgecolors=edgecolor,
+                                   linewidth=linewidth)
         row_colorbar_ax.set_ylim(0, row_side_matrix.shape[0])
         row_colorbar_ax.set_xticks([])
         row_colorbar_ax.set_yticks([])
@@ -412,9 +417,7 @@ def clusterplot(df,
     heatmap_ax_pcolormesh = \
         heatmap_ax.pcolormesh(plot_df.ix[row_dendrogram['leaves'],
                                          col_dendrogram['leaves']].values,
-                              norm=my_norm, cmap=cmap,
-                              edgecolor=edgecolor,
-                              lw=linewidth)
+                              **pcolormesh_kws)
 
     heatmap_ax.set_ylim(0, df.shape[0])
     heatmap_ax.set_xlim(0, df.shape[1])
