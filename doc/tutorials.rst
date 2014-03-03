@@ -16,4 +16,5 @@ any additional questions.
    quantitative_linear_models
    plotting_distributions
    timeseries_plots
+   axis_grids
 
