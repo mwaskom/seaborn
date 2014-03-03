@@ -28,5 +28,6 @@ Documentation contents
    installing
    tutorials
    axisgrid
+   axis_grids
    api
 
