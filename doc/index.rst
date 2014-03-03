@@ -27,7 +27,5 @@ Documentation contents
    whatsnew
    installing
    tutorials
-   axisgrid
-   axis_grids
    api
 
