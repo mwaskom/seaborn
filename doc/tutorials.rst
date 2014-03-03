@@ -13,7 +13,7 @@ any additional questions.
    :maxdepth: 2
 
    aesthetics
-   linear_models
+   quantitative_linear_models
    plotting_distributions
    timeseries_plots
 
