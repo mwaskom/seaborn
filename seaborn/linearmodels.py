@@ -660,7 +660,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                units=None, x_order=None, hue_order=None, col_order=None,
                row_order=None, kind="auto", dodge=0, join=True, hline=None,
                size=5, aspect=1, palette=None, legend=True, legend_out=True,
-               dropna=True, sharex=True, sharey=True):
+               dropna=True, sharex=True, sharey=True, margin_titles=False):
     """Plot a dependent variable with uncertainty sorted by discrete factors.
 
     Parameters
@@ -715,6 +715,9 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     share{x, y} : booleans, optional
         Lock the limits of the vertical and/or horizontal axes across the
         facets.
+    margin_titles : bool, optional
+        If True and there is a `row` variable, draw the titles on the right
+        margin of the grid (experimental).
 
     Returns
     -------
@@ -733,7 +736,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     facets = FacetGrid(data, row, col, facet_hue, palette=facet_palette,
                        row_order=row_order, col_order=col_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
-                       legend=legend, legend_out=legend_out)
+                       legend=legend, legend_out=legend_out,
+                       margin_titles=margin_titles)
 
     if kind == "auto":
         if y is None:
