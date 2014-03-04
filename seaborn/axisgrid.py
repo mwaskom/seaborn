@@ -9,6 +9,7 @@ from . import utils
 
 
 class FacetGrid(object):
+    """Subplot grid for applying plotting functions to subsets of data."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
@@ -55,7 +56,13 @@ class FacetGrid(object):
 
         Returns
         -------
-        FacetGrid
+        self: FacetGrid
+            Returns self for plotting onto the grid.
+
+        See Also
+        --------
+        lmplot : Combines regplot and a FacetGrid
+        factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
 
         """
         # Compute the grid shape
