@@ -13,8 +13,9 @@ any additional questions.
    :maxdepth: 2
 
    aesthetics
-   quantitative_linear_models
    plotting_distributions
+   quantitative_linear_models
+   categorical_linear_models
    timeseries_plots
    axis_grids
 
