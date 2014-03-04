@@ -616,8 +616,56 @@ class _RegressionPlotter(_LinearPlotter):
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
-           col_order=None, row_order=None, hue_order=None, dropna=True,
+           hue_order=None, col_order=None, row_order=None, dropna=True,
            legend=True, legend_out=True, **kwargs):
+    """Plot a linear regression model and data onto a FacetGrid.
+
+    Parameters
+    ----------
+    x, y : strings
+        Column names in ``data``.
+    data : DataFrame
+        Long-form (tidy) dataframe with variables in columns and observations
+        in rows.
+    hue, col, row : strings, optional
+        Variable names to facet on the hue, col, or row dimensions (see
+        :class:`FacetGrid` docs for more information).
+    palette : seaborn palette or dict, optional
+        Color palette if using a `hue` facet. Should be something that
+        seaborn.color_palette can read, or a dictionary mapping values of the
+        hue variable to matplotlib colors.
+    col_wrap : int, optional
+        Wrap the column variable at this width. Incompatible with `row`.
+    size : scalar, optional
+        Height (in inches) of each facet.
+    aspect : scalar, optional
+        Aspect * size gives the width (in inches) of each facet.
+    share{x, y}: booleans, optional
+        Lock the limits of the vertical and horizontal axes across the
+        facets.
+    {hue, col, row}_order: sequence of strings
+        Order to plot the values in the faceting variables in, otherwise
+        sorts the unique values.
+    dropna : boolean, optional
+        Drop missing values from the data before plotting.
+    legend : boolean, optional
+        Draw a legend for the data when using a `hue` variable.
+    legend_out: boolean, optional
+        Draw the legend outside the grid of plots.
+    kwargs : key, value pairs
+        Other keyword arguments are pasted to :func:`regplot`
+
+    Returns
+    -------
+    facets : FacetGrid
+        Returns the :class:`FacetGrid` instance with the plot on it
+        for further tweaking.
+
+    See Also
+    --------
+    regplot : Axes-level function for plotting linear regressions.
+
+    """
 
     # Backwards-compatibility warning layer
     if "color" in kwargs:
@@ -640,6 +688,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
                        row_order=row_order, col_order=col_order,
                        hue_order=hue_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
+                       sharex=sharex, sharey=sharey,
                        legend=legend, legend_out=legend_out)
 
     # Hack to set the x limits properly, which needs to happen here
@@ -661,7 +710,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                row_order=None, kind="auto", dodge=0, join=True, hline=None,
                size=5, aspect=1, palette=None, legend=True, legend_out=True,
                dropna=True, sharex=True, sharey=True, margin_titles=False):
-    """Plot a dependent variable with uncertainty sorted by discrete factors.
+    """Plot a variable estimate and error sorted by categorical factors.
 
     Parameters
     ----------
@@ -687,6 +736,9 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         Size of confidene interval to draw around the aggregated value.
     n_boot : int, optional
         Number of bootstrap resamples used to compute confidence interval.
+    units : vector, optional
+        Vector with ids for sampling units; bootstrap will be performed over
+        these units and then within them.
     kind : {"auto", "point", "bar"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
@@ -722,7 +774,15 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     Returns
     -------
     facet : FacetGrid
-        FacetGrid with the plot on it.
+        Returns the :class:`FacetGrid` instance with the plot on it
+        for further tweaking.
+
+
+    See Also
+    --------
+    pointplot : Axes-level function for drawing a point plot
+    barplot : Axes-level function for drawing a bar plot
+    boxplot : Axes-level function for drawing a box plot
 
     """
     cols = [a for a in [x, y, hue, col, row, units] if a is not None]
@@ -786,7 +846,47 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
             ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
             dropna=True, color=None, palette=None, label=None, ax=None):
+    """Estimate data in categorical bins with a bar representation.
 
+    Parameters
+    ----------
+    x : Vector or string
+        Data or variable name in `data` for splitting the plot on the x axis.
+    y : Vector or string, optional
+        Data or variable name in `data` for the dependent variable. If omitted,
+        the counts within each bin are plotted (without confidence intervals).
+    data : DataFrame, optional
+        Long-form (tidy) dataframe with variables in columns and observations
+        in rows.
+    estimator : vector -> scalar function, optional
+        Function to aggregate `y` values at each level of the factors.
+    ci : int in {0, 100}, optional
+        Size of confidene interval to draw around the aggregated value.
+    n_boot : int, optional
+        Number of bootstrap resamples used to compute confidence interval.
+    units : vector, optional
+        Vector with ids for sampling units; bootstrap will be performed over
+        these units and then within them.
+    palette : seaborn color palette, optional
+        Palette to map `hue` variable with (or `x` variable when `hue` is
+        None).
+    dropna : boolean, optional
+        Remove observations that are NA within any variables used to make
+        the plot.
+
+    Returns
+    -------
+    facet : FacetGrid
+        Returns the :class:`FacetGrid` instance with the plot on it
+        for further tweaking.
+
+
+    See Also
+    --------
+    factorplot : Combine barplot and FacetGrid
+    pointplot : Axes-level function for drawing a point plot
+
+    """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "bar", 0, False, hline,
                                estimator, ci, n_boot, dropna)
@@ -801,7 +901,52 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
               dodge=0, dropna=True, color=None, palette=None, join=True,
               label=None, ax=None):
+    """Estimate data in categorical bins with a point representation.
 
+    Parameters
+    ----------
+    x : Vector or string
+        Data or variable name in `data` for splitting the plot on the x axis.
+    y : Vector or string, optional
+        Data or variable name in `data` for the dependent variable. If omitted,
+        the counts within each bin are plotted (without confidence intervals).
+    data : DataFrame, optional
+        Long-form (tidy) dataframe with variables in columns and observations
+        in rows.
+    estimator : vector -> scalar function, optional
+        Function to aggregate `y` values at each level of the factors.
+    ci : int in {0, 100}, optional
+        Size of confidene interval to draw around the aggregated value.
+    n_boot : int, optional
+        Number of bootstrap resamples used to compute confidence interval.
+    units : vector, optional
+        Vector with ids for sampling units; bootstrap will be performed over
+        these units and then within them.
+    dodge : positive scalar, optional
+        Horizontal offset applies to different `hue` levels. Only relevant
+        when kind is "point".
+    join : boolean, optional
+        Whether points from the same level of `hue` should be joined. Only
+        relevant when kind is "point".
+    palette : seaborn color palette, optional
+        Palette to map `hue` variable with (or `x` variable when `hue` is
+        None).
+    dropna : boolean, optional
+        Remove observations that are NA within any variables used to make
+        the plot.
+
+    Returns
+    -------
+    ax : Axes
+        Returns the matplotlib Axes with the plot on it for further tweaking.
+
+
+    See Also
+    --------
+    factorplot : Combine pointplot and FacetGrid
+    barplot : Axes-level function for drawing a bar plot
+
+    """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "point", dodge, join, hline,
                                estimator, ci, n_boot, dropna)
@@ -903,7 +1048,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
 
     See Also
     --------
-    TODO
+    lmplot : Combine regplot and a FacetGrid
 
     """
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
