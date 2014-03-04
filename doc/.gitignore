@@ -4,6 +4,7 @@ generated/
 _static/examples/*.png
 aesthetics.rst
 quantitative_linear_models.rst
+categorical_linear_models.rst
 plotting_distributions.rst
 timeseries_plots.rst
 axis_grids.rst
