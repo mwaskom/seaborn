@@ -400,7 +400,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              color=None, vertical=False, axlabel=None, label=None, ax=None):
     """Flexibly plot a distribution of observations.
 
-    Parameter
+    Parameters
+    ----------
+
     a : (squeezable to) 1d array
         Observed data.
     bins : argument for matplotlib hist(), or None, optional
