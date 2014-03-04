@@ -5,14 +5,6 @@
 API reference
 =============
 
-Axis grids
-----------
-
-.. autosummary::
-    :toctree: generated/
-
-    FacetGrid
-
 Linear model plots
 ------------------
 
@@ -55,6 +47,14 @@ Miscellaneous plots
     :toctree: generated/
 
     palplot
+
+Axis grids
+----------
+
+.. autosummary::
+   :toctree: generated/
+
+    FacetGrid
 
 Style frontend
 --------------
