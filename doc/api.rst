@@ -20,10 +20,13 @@ Linear model plots
     :toctree: generated/
 
     lmplot
+    factorplot
     regplot
+    interactplot
+    pointplot
+    barplot
     coefplot
     corrplot
-    interactplot
 
 Distribution plots
 ------------------
