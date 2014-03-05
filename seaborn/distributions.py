@@ -210,7 +210,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
     # Draw the joined repeated measures
     if join_rm:
-        x, y = np.arange(1, len(np.transpose(vals)) + 1), np.transpose(vals)
+        x, y = np.arange(1, len(vals) + 1), vals
         if not vertical:
             x, y = y, x
         ax.plot(x, y, color=gray, alpha=2. / 3)
