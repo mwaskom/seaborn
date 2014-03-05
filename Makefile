@@ -13,7 +13,7 @@ coverage:
 lint:
 
 	pyflakes -x W seaborn
-	pep8 seaborn
+	pep8 --exclude external seaborn
 
 hexstrip:
 
