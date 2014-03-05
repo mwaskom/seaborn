@@ -6,10 +6,9 @@ python:
 
 install:
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
-  - conda update conda --yes
   - source activate testenv
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else pip install pillow; fi
-  - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
+  - conda install --yes ipython-notebook numpy scipy nose matplotlib pandas statsmodels scikit-learn
   - pip install --no-deps git+git://github.com/mwaskom/moss.git#egg=moss
   - pip install pep8
   - pip install https://github.com/dcramer/pyflakes/tarball/master  
@@ -22,6 +21,7 @@ before_install:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-2.2.2-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-2.2.2-Linux-x86_64.sh -O miniconda.sh; fi
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
+  - conda update conda --yes
   - export PATH=/home/travis/anaconda/bin:$PATH
 
 before_script:
