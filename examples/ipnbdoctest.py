@@ -101,7 +101,7 @@ def image_diff(test, ref, key="image", prompt_num=None):
             import numpy as np
             diff = np.abs(test - ref).mean() * 100
             # TODO hardcode tol, make configurable later
-            if diff < 1:
+            if diff < 5:
                 return True, ""
             message += ": %.3g%% difference" % diff
         else:
