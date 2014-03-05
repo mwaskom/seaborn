@@ -89,6 +89,7 @@ Utility functions
     :toctree: generated/
 
     despine
+    offset_spines
     desaturate
     saturate
     set_hls_values
