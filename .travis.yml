@@ -29,10 +29,6 @@ before_install:
 
 before_script:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then make lint; fi
-  - cd doc
-  - make notebooks html
-  - cd ..
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then cd doc; make notebooks html; cd ..; fi
 
 script: make test
-
-after_script:
