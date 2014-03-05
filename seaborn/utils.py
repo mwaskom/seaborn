@@ -442,7 +442,7 @@ def despine(fig=None, ax=None, top=True, right=True,
             ax_i.set_yticks(newticks)
 
 
-def offset_spines(offset, fig=None, ax=None):
+def offset_spines(offset=10, fig=None, ax=None):
     """Simple function to offset spines away from axes.
 
     Use this immediately after creating figure and axes objects.
@@ -451,7 +451,7 @@ def offset_spines(offset, fig=None, ax=None):
 
     Parameters
     ----------
-    offset : int
+    offset : int, optional
         Absolute distance, in points, spines should be moved away
         from the axes (negative values move spines inward).
     fig : matplotlib figure, optional
