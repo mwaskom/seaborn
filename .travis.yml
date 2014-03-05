@@ -5,7 +5,7 @@ python:
   - 3.3
 
 install:
-  - conda update conda
+  - conda update conda --yes
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - conda update conda --yes
   - source activate testenv
