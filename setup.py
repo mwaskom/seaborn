@@ -31,7 +31,7 @@ if __name__ == "__main__":
         url=URL,
         version=VERSION,
         download_url=DOWNLOAD_URL,
-        packages=['seaborn', 'seaborn.tests'],
+        packages=['seaborn', 'seaborn.external', 'seaborn.tests'],
         classifiers=[
                      'Intended Audience :: Science/Research',
                      'Programming Language :: Python :: 2.7',
