@@ -381,7 +381,7 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False):
+            left=False, bottom=False, trim=False):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -390,7 +390,11 @@ def despine(fig=None, ax=None, top=True, right=True,
         specific axes object to despine
     top, right, left, bottom : boolean, optional
         if True, remove that spine
+    trim : bool (default = False), optional
 
+    Returns
+    -------
+    None
     """
     # Get references to the axes we want
     if fig is None and ax is None:
@@ -414,6 +418,63 @@ def despine(fig=None, ax=None, top=True, right=True,
             ax_i.yaxis.tick_right()
         if right:
             ax_i.yaxis.tick_left()
+
+        if trim:
+            # clip off the parts of the spines that extend past major ticks
+            xticks = ax_i.get_xticks()
+            firsttick = np.compress(xticks >= ax_i.get_xlim()[0], xticks)[0]
+            lasttick = np.compress(xticks <= ax_i.get_xlim()[-1], xticks)[-1]
+            ax_i.spines['bottom'].set_bounds(firsttick, lasttick)
+            ax_i.spines['top'].set_bounds(firsttick, lasttick)
+            newticks = xticks.compress(xticks <= lasttick)
+            newticks = newticks.compress(newticks >= firsttick)
+            ax_i.set_xticks(newticks)
+
+            yticks = ax_i.get_yticks()
+            firsttick = np.compress(yticks >= ax_i.get_ylim()[0], yticks)[0]
+            lasttick = np.compress(yticks <= ax_i.get_ylim()[-1], yticks)[-1]
+            ax_i.spines['left'].set_bounds(firsttick, lasttick)
+            ax_i.spines['right'].set_bounds(firsttick, lasttick)
+            newticks = yticks.compress(yticks <= lasttick)
+            newticks = newticks.compress(newticks >= firsttick)
+            ax_i.set_yticks(newticks)
+
+
+def offset_spines(offset, fig=None, ax=None):
+    """Simple function to offset spines away from axes
+
+    Parameters
+    ----------
+    offset : int
+        absolute distance, in points, spines should be moved away
+        from the axes (negative values move spines inward).
+    fig : matplotlib figure, optional
+        figure to despine all axes of, default uses current figure
+    ax : matplotlib axes, optional
+        specific axes object to despine
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Use this immediately after creating figure and axes objects.
+        Offsetting spines after plotting or manipulating the axes
+        objects may result in loss of labels, ticks, and formatting.
+
+    """
+    # Get references to the axes we want
+    if fig is None and ax is None:
+        axes = plt.gcf().axes
+    elif fig is not None:
+        axes = fig.axes
+    elif ax is not None:
+        axes = [ax]
+
+    for ax_i in axes:
+        for spine in ax_i.spines.values():
+            spine.set_position(('outward', offset))
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
