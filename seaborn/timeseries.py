@@ -5,8 +5,9 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from six import string_types
 import moss
+
+from .external.six import string_types
 
 from seaborn.utils import color_palette
 
