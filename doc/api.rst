@@ -12,10 +12,13 @@ Linear model plots
     :toctree: generated/
 
     lmplot
+    factorplot
     regplot
+    interactplot
+    pointplot
+    barplot
     coefplot
     corrplot
-    interactplot
 
 Distribution plots
 ------------------
@@ -44,6 +47,14 @@ Miscellaneous plots
     :toctree: generated/
 
     palplot
+
+Axis grids
+----------
+
+.. autosummary::
+   :toctree: generated/
+
+    FacetGrid
 
 Style frontend
 --------------

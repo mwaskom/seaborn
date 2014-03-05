@@ -120,7 +120,7 @@ def _box_colors(vals, color):
 
 def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            ax=None, **kwargs):
+            label=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
@@ -195,6 +195,15 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
         fly.set_marker("d")
         fly.set_markeredgecolor(gray)
         fly.set_markersize(fliersize)
+
+    # This is a hack to get labels to work
+    # It's unclear whether this is actually broken in matplotlib or just not
+    # implemented, either way it's annoying.
+    if label is not None:
+        pos = kwargs.get("positions", [1])[0]
+        med = np.median(vals[0])
+        color = colors[0]
+        ax.add_patch(plt.Rectangle([pos, med], 0, 0, color=color, label=label))
 
     # Is this a vertical plot?
     vertical = kwargs.get("vert", True)
@@ -304,11 +313,12 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     # Initialize the kwarg dict for the inner plot
     if inner_kws is None:
         inner_kws = {}
-    in_alpha = inner_kws.pop("alpha", .6 if inner == "points" else 1)
-    in_alpha *= 1 if alpha is None else alpha
-    in_color = inner_kws.pop("color", gray)
-    in_marker = inner_kws.pop("marker", ".")
-    in_lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
+    inner_kws["alpha"] *= 1 if alpha is None else alpha
+    inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("marker", "." if inner == "points" else "")
+    lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("linewidth", lw)
 
     # Find where the violins are going
     if positions is None:
@@ -340,29 +350,25 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             for quant in moss.percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
-                ax.plot(q_x, [quant, quant], color=in_color,
-                        linestyle=":", linewidth=in_lw, **inner_kws)
+                ax.plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
             med = np.median(a)
             m_x = kde.evaluate(med) * scl
             m_x = [x - m_x, x + m_x]
-            ax.plot(m_x, [med, med], color=in_color,
-                    linestyle="--", linewidth=in_lw, **inner_kws)
+            ax.plot(m_x, [med, med], linestyle="--", **inner_kws)
         elif inner == "stick":
             x_vals = kde.evaluate(a) * scl
             x_vals = [x - x_vals, x + x_vals]
-            ax.plot(x_vals, [a, a], color=in_color,
-                    linewidth=in_lw, alpha=in_alpha, **inner_kws)
+            ax.plot(x_vals, [a, a], linestyle="-", **inner_kws)
         elif inner == "points":
             x_vals = [x for _ in a]
-            ax.plot(x_vals, a, in_marker, color=in_color,
-                    alpha=in_alpha, mew=0, **inner_kws)
+            ax.plot(x_vals, a, mew=0, linestyle="", **inner_kws)
         for side in [-1, 1]:
             ax.plot((side * dens) + x, y, c=gray, lw=lw)
 
     # Draw the repeated measure bridges
     if join_rm:
         ax.plot(range(1, len(vals) + 1), vals,
-                color=in_color, alpha=2. / 3)
+                color=inner_kws["color"], alpha=2. / 3)
 
     # Add in semantic labels
     ax.set_xticks(positions)
@@ -391,33 +397,37 @@ def _freedman_diaconis_bins(a):
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, axlabel=None, ax=None):
+             color=None, vertical=False, axlabel=None, label=None, ax=None):
     """Flexibly plot a distribution of observations.
 
-    Parameter
+    Parameters
+    ----------
+
     a : (squeezable to) 1d array
         Observed data.
-    bins : argument for matplotlib hist(), or None
+    bins : argument for matplotlib hist(), or None, optional
         Specification of hist bins, or None to use Freedman-Diaconis rule.
-    hist : bool, default True
+    hist : bool, optional
         Whether to plot a (normed) histogram.
-    kde : bool, default True
+    kde : bool, optional
         Whether to plot a gaussian kernel density estimate.
-    rug : bool, default False
+    rug : bool, optional
         Whether to draw a rugplot on the support axis.
-    fit : random variable object
+    fit : random variable object, optional
         An object with `fit` method, returning a tuple that can be passed to a
         `pdf` method a positional arguments following an grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries
+    {hist, kde, rug, fit}_kws : dictionaries, optional
         Keyword arguments for underlying plotting functions.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
-    vertical : bool, default False
+    vertical : bool, optional
         If True, oberved values are on y-axis.
-    axlabel : string, False, or None
+    axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
         from a.namel if False, do not set a label.
+    label : string, optional
+        Legend label for the relevent component of the plot
     ax : matplotlib axis, optional
         if provided, plot on this axis
 
@@ -458,27 +468,44 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         color = line.get_color()
         line.remove()
 
+    # Plug the label into the right kwarg dictionary
+    if label is not None:
+        if hist:
+            hist_kws["label"] = label
+        elif kde:
+            kde_kws["label"] = label
+        elif rug:
+            rug_kws["label"] = label
+        elif fit:
+            fit_kws["label"] = label
+
     if hist:
         if bins is None:
             bins = _freedman_diaconis_bins(a)
-        hist_alpha = hist_kws.pop("alpha", 0.4)
+        hist_kws.setdefault("alpha", 0.4)
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
-        ax.hist(a, bins, normed=True, color=hist_color, alpha=hist_alpha,
-                orientation=orientation, **hist_kws)
+        ax.hist(a, bins, normed=True, orientation=orientation,
+                color=hist_color, **hist_kws)
+        if hist_color != color:
+            hist_kws["color"] = hist_color
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(a, vertical=vertical, color=kde_color, ax=ax, **kde_kws)
+        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        if kde_color != color:
+            kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
         axis = "y" if vertical else "x"
-        rugplot(a, axis=axis, color=rug_color, ax=ax, **rug_kws)
+        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        if rug_color != color:
+            rug_kws["color"] = rug_color
 
     if fit is not None:
         fit_color = fit_kws.pop("color", "#282828")
-        gridsize = fit_kws.pop("gridsize", 500)
+        gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
         bw = sm.nonparametric.bandwidths.bw_scott(a)
@@ -489,6 +516,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if vertical:
             x, y = y, x
         ax.plot(x, y, color=fit_color, **fit_kws)
+        if fit_color != "#282828":
+            fit_kws["color"] = fit_color
 
     if label_ax:
         if vertical:
@@ -551,7 +580,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 
     # Draw the KDE plot and, optionally, shade
     ax.plot(x, y, color=color, label=label, **kwargs)
-    alpha = kwargs.pop("alpha", 0.25)
+    alpha = kwargs.get("alpha", 0.25)
     if shade:
         ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
 
@@ -605,14 +634,16 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
-    cmap = kwargs.pop("cmap", "BuGn" if filled else "BuGn_d")
+    cmap = kwargs.get("cmap", "BuGn" if filled else "BuGn_d")
     if isinstance(cmap, str):
         if cmap.endswith("_d"):
             pal = ["#333333"]
             pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
             cmap = blend_palette(pal, as_cmap=True)
+    kwargs["cmap"] = cmap
     contour_func = ax.contourf if filled else ax.contour
-    contour_func(xx, yy, z, n_levels, cmap=cmap, **kwargs)
+    contour_func(xx, yy, z, n_levels, **kwargs)
+    kwargs["n_levels"] = n_levels
 
     # Label the axes
     if hasattr(x, "name") and axlabel:
@@ -753,6 +784,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     """
     if ax is None:
         ax = plt.gca()
+    a = np.asarray(a)
     other_axis = dict(x="y", y="x")[axis]
     min, max = getattr(ax, "get_%slim" % other_axis)()
     if height is None:
