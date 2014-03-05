@@ -7,9 +7,10 @@ import pandas as pd
 import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from six.moves import range
 import warnings
 import moss
+
+from .external.six.moves import range
 
 from seaborn.utils import (color_palette, husl_palette, blend_palette,
                            desaturate, _kde_support)
