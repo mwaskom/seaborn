@@ -2,14 +2,15 @@
 from __future__ import division
 import colorsys
 from itertools import cycle
-import husl
 import numpy as np
 from scipy import stats
 import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
-from six import string_types
-from six.moves import range
+
+from .external import husl
+from .external.six import string_types
+from .external.six.moves import range
 
 
 def color_palette(name=None, n_colors=6, desat=None):

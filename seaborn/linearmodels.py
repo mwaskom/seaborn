@@ -11,8 +11,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
 
-from six import string_types
-from six.moves import range
+from .external.six import string_types
+from .external.six.moves import range
 
 from .utils import color_palette
 from .axisgrid import FacetGrid
