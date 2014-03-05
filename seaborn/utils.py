@@ -385,16 +385,19 @@ def despine(fig=None, ax=None, top=True, right=True,
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
-        figure to despine all axes of, default uses current figure
+        Figure to despine all axes of, default uses current figure.
     ax : matplotlib axes, optional
-        specific axes object to despine
+        Specific axes object to despine.
     top, right, left, bottom : boolean, optional
-        if True, remove that spine
-    trim : bool (default = False), optional
+        If True, remove that spine.
+    trim : bool, optional
+        If true, limit spines to the smallest and largest major tick
+        on each non-despined axis.
 
     Returns
     -------
     None
+
     """
     # Get references to the axes we want
     if fig is None and ax is None:
@@ -441,27 +444,25 @@ def despine(fig=None, ax=None, top=True, right=True,
 
 
 def offset_spines(offset, fig=None, ax=None):
-    """Simple function to offset spines away from axes
+    """Simple function to offset spines away from axes.
+
+    Use this immediately after creating figure and axes objects.
+    Offsetting spines after plotting or manipulating the axes
+    objects may result in loss of labels, ticks, and formatting.
 
     Parameters
     ----------
     offset : int
-        absolute distance, in points, spines should be moved away
+        Absolute distance, in points, spines should be moved away
         from the axes (negative values move spines inward).
     fig : matplotlib figure, optional
-        figure to despine all axes of, default uses current figure
+        Figure to despine all axes of, default uses current figure.
     ax : matplotlib axes, optional
-        specific axes object to despine
+        Specific axes object to despine
 
     Returns
     -------
     None
-
-    Notes
-    -----
-    Use this immediately after creating figure and axes objects.
-        Offsetting spines after plotting or manipulating the axes
-        objects may result in loss of labels, ticks, and formatting.
 
     """
     # Get references to the axes we want
