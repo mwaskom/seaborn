@@ -2,5 +2,4 @@ numpy
 scipy
 matplotlib
 pandas
-husl
 moss>0.1
