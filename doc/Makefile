@@ -44,9 +44,20 @@ clean:
 notebooks:
 
 	ipython nbconvert --to rst ../examples/aesthetics.ipynb
-	ipython nbconvert --to rst ../examples/linear_models.ipynb
 	ipython nbconvert --to rst ../examples/plotting_distributions.ipynb
 	ipython nbconvert --to rst ../examples/timeseries_plots.ipynb
+
+	runipy --o quantitative_linear_models.ipynb --matplotlib --quiet
+	ipython nbconvert --to rst quantitative_linear_models.ipynb
+	tools/nbstripout quantitative_linear_models.ipynb
+
+	runipy --o categorical_linear_models.ipynb --matplotlib --quiet
+	ipython nbconvert --to rst categorical_linear_models.ipynb
+	tools/nbstripout categorical_linear_models.ipynb
+
+	runipy --o axis_grids.ipynb --matplotlib --quiet
+	ipython nbconvert --to rst axis_grids.ipynb
+	tools/nbstripout axis_grids.ipynb
 	
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
