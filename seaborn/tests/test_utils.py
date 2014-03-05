@@ -1,7 +1,9 @@
 """Tests for plotting utilities."""
 import numpy as np
+import matplotlib.pyplot as plt
 from numpy.testing import assert_array_equal
 import nose
+import nose.tools as nt
 from nose.tools import assert_equal, raises
 
 from .. import utils
@@ -81,3 +83,78 @@ def test_saturate():
     """Test performance of saturation function."""
     out = utils.saturate((.75, .25, .25))
     assert_equal(out, (1, 0, 0))
+
+
+class TestSpineUtils(object):
+
+    sides = ["left", "right", "bottom", "top"]
+    outer_sides = ["top", "right"]
+    inner_sides = ["left", "bottom"]
+
+    def test_despine(self):
+        f, ax = plt.subplots()
+        for side in self.sides:
+            nt.assert_true(ax.spines[side].get_visible())
+
+        utils.despine()
+        for side in self.outer_sides:
+            nt.assert_true(~ax.spines[side].get_visible())
+        for side in self.inner_sides:
+            nt.assert_true(ax.spines[side].get_visible())
+
+        utils.despine(**dict(zip(self.sides, [True] * 4)))
+        for side in self.sides:
+            nt.assert_true(~ax.spines[side].get_visible())
+
+        plt.close("all")
+
+    def test_despine_specific_axes(self):
+        f, (ax1, ax2) = plt.subplots(2, 1)
+
+        utils.despine(ax=ax2)
+
+        for side in self.sides:
+            nt.assert_true(ax1.spines[side].get_visible())
+
+        for side in self.outer_sides:
+            nt.assert_true(~ax2.spines[side].get_visible())
+        for side in self.inner_sides:
+            nt.assert_true(ax2.spines[side].get_visible())
+
+        plt.close("all")
+
+    def test_despine_trim_spines(self):
+        f, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 2, 3])
+        ax.set_xlim(.75, 3.25)
+
+        utils.despine(trim=True)
+        for side in self.inner_sides:
+            bounds = ax.spines[side].get_bounds()
+            nt.assert_equal(bounds, (1, 3))
+
+        plt.close("all")
+
+    def test_offset_spines(self):
+        f, ax = plt.subplots()
+
+        for side in self.sides:
+            nt.assert_equal(ax.spines[side].get_position(), ("outward", 0))
+
+        utils.offset_spines(10)
+
+        for side in self.sides:
+            nt.assert_equal(ax.spines[side].get_position(), ("outward", 10))
+
+        plt.close("all")
+
+    def test_offset_spines_specific_axes(self):
+        f, (ax1, ax2) = plt.subplots(2, 1)
+
+        utils.offset_spines(10, ax=ax2)
+
+        for side in self.sides:
+            nt.assert_equal(ax1.spines[side].get_position(), ("outward", 0))
+            nt.assert_equal(ax2.spines[side].get_position(), ("outward", 10))
+
+        plt.close("all")

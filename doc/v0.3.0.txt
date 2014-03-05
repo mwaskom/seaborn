@@ -31,3 +31,8 @@ Plotting functions
 - The regression uncertainty in :func:`lmplot` and :func:`regplot` is now estimated with fewer bootstrap iterations, so plotting should be faster.
 
 - The univariate :func:`kdeplot` can now be drawn as a *cumulative* density plot.
+
+Style
+~~~~~
+
+- There is a new function, :func:`offset_spines`, and a corresponding option in :func:`despine` called ``trim``. Together, these can be used to make plots where the axis spines are offset from the main part of the figure and limited within the range of the ticks. This is recommended for use with the ``ticks`` style.
