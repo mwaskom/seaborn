@@ -5,12 +5,15 @@ python:
   - 3.3
 
 install:
+  - conda update conda --yes
   - conda create -n testenv --yes pip python=$TRAVIS_PYTHON_VERSION
   - conda update conda --yes
   - source activate testenv
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then conda install --yes imaging; else pip install pillow; fi
-  - conda install --yes ipython==1.1.0 pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
+  - conda install --yes ipython-notebook pyzmq numpy scipy nose matplotlib pandas statsmodels scikit-learn
   - pip install --no-deps git+git://github.com/mwaskom/moss.git#egg=moss
+  - pip install sphinx numpydoc sphinx_bootstrap_theme runipy
+  - sudo apt-get install pandoc
   - pip install pep8
   - pip install https://github.com/dcramer/pyflakes/tarball/master  
   - pip install .
@@ -26,5 +29,6 @@ before_install:
 
 before_script:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then make lint; fi
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then cd doc; make notebooks html; cd ..; fi
 
 script: make test
