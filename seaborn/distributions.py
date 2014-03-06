@@ -235,13 +235,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     return ax
 
 
-def violin(*args, **kwargs):
-    """Deprecated old name for violinplot. Please update your code."""
-    warnings.warn("violin() is deprecated; please use violinplot()",
-                  UserWarning)
-    return violinplot(*args, **kwargs)
-
-
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, kernel="gau", bw="scott", widths=.8,
                alpha=None, join_rm=False, gridsize=100, cut=3, inner_kws=None,
