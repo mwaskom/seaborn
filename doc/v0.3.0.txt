@@ -37,6 +37,8 @@ Plotting functions
 
 - The univariate :func:`kdeplot` can now be drawn as a *cumulative* density plot.
 
+- Changed :func:`interactplot` to use a robust calculation of the data range when finding default limits for the contour colormap to work better when there are outliers in the data.
+
 Style
 ~~~~~
 
