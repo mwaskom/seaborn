@@ -31,7 +31,7 @@ if __name__ == "__main__":
         url=URL,
         version=VERSION,
         download_url=DOWNLOAD_URL,
-        packages=['seaborn', 'seaborn.tests'],
+        packages=['seaborn', 'seaborn.external', 'seaborn.tests'],
         classifiers=[
                      'Intended Audience :: Science/Research',
                      'Programming Language :: Python :: 2.7',
@@ -42,6 +42,5 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["husl", "moss>0.1", "patsy",
-                          "pandas", "statsmodels", "six"],
+        install_requires=["pandas"],
           )

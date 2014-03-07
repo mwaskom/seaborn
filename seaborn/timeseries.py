@@ -5,10 +5,13 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from six import string_types
-import moss
 
-from seaborn.utils import color_palette
+from .external.six import string_types
+
+
+from . import utils
+from . import algorithms as algo
+from .utils import color_palette
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
@@ -197,9 +200,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        boot_data = moss.bootstrap(df_c.values, n_boot=n_boot,
+        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
                                    axis=0, func=estimator)
-        cis = [moss.ci(boot_data, v, axis=0) for v in ci]
+        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
 
         # Get the color for this condition
