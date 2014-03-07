@@ -17,6 +17,11 @@ def reset_defaults():
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
+def reset_orig():
+    """Restore all RC params to original settings (respects custom rc)."""
+    mpl.rcParams.update(mpl.rcParamsOrig)
+
+
 def set_axes_style(style, context, font="Arial", gridweight=None):
     """Set the axis style.
 
