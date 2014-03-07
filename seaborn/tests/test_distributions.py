@@ -13,6 +13,7 @@ try:
 except ImportError:
     _no_statsmodels = True
 
+
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
     n_total = 60
