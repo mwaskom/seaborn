@@ -26,6 +26,8 @@ Other changes
 Using the package
 ^^^^^^^^^^^^^^^^^
 
+- If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do `import seaborn.apionly as sns` or `from seaborn.apionly import regplot`, etc. This is using the (also new) `seaborn.reset_origin()` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
+
 - The dependency load of the package has been reduced. It can now be installed and used with only `numpy`, `scipy`, `matplotlib`, and `pandas`. Although `statsmodels` (and `patsy`) are still recommended so that all features can be used, they are not required.
 
 Plotting functions
