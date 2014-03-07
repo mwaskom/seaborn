@@ -1,12 +1,17 @@
-import os
-
 import numpy as np
 import pandas as pd
 import nose.tools as nt
 import numpy.testing as npt
+from numpy.testing.decorators import skipif
 
 from .. import distributions as dist
 
+try:
+    import statsmodels
+    assert statsmodels
+    _no_statsmodels = False
+except ImportError:
+    _no_statsmodels = True
 
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
@@ -185,6 +190,7 @@ class TestKDE(object):
             dist._scipy_univariate_kde(self.x, bw, self.gridsize,
                                        self.cut, self.clip)
 
+    @skipif(_no_statsmodels)
     def test_statsmodels_univariate_kde(self):
         """Test the univariate KDE estimation with statsmodels."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
@@ -206,6 +212,7 @@ class TestKDE(object):
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
 
+    @skipif(_no_statsmodels)
     def test_statsmodels_bivariate_kde(self):
         """Test the bivariate KDE estimation with statsmodels."""
         clip = [self.clip, self.clip]
@@ -216,6 +223,7 @@ class TestKDE(object):
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
 
+    @skipif(_no_statsmodels)
     def test_statsmodels_kde_cumulative(self):
         """Test computation of cumulative KDE."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
