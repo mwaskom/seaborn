@@ -7,7 +7,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
-import moss
 
 try:
     import statsmodels.api as sm
@@ -18,7 +17,7 @@ except ImportError:
 from .external.six.moves import range
 
 from seaborn.utils import (color_palette, husl_palette, blend_palette,
-                           desaturate, _kde_support)
+                           desaturate, percentiles, iqr, _kde_support)
 
 
 def _box_reshape(vals, groupby, names, order):
@@ -353,7 +352,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         # Draw the violin
         ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
         if inner == "box":
-            for quant in moss.percentiles(a, [25, 75]):
+            for quant in percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
                 ax.plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
@@ -397,7 +396,7 @@ def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
-    h = 2 * moss.iqr(a) / (len(a) ** (1 / 3))
+    h = 2 * iqr(a) / (len(a) ** (1 / 3))
     return np.ceil((a.max() - a.min()) / h)
 
 
