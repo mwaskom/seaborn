@@ -38,6 +38,8 @@ Dependencies
 
 - Python 2.7 or 3.3
 
+### Mandatory
+
 - [numpy](http://www.numpy.org/)
 
 - [scipy](http://www.scipy.org/)
@@ -46,15 +48,11 @@ Dependencies
 
 - [pandas](http://pandas.pydata.org/)
 
+### Recommended
+
 - [statsmodels](http://statsmodels.sourceforge.net/)
 
 - [patsy](http://patsy.readthedocs.org/en/latest/)
-
-- [husl](https://github.com/boronine/pyhusl)
-
-- [moss](http://github.com/mwaskom/moss)
-
-Installing with `pip` will automatically install aside from `numpy`, `scipy`, and `matplotlib`.
 
 
 Installation
@@ -74,10 +72,9 @@ Testing
 
 [![Build Status](https://travis-ci.org/mwaskom/seaborn.png?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 
-To test seaborn, run `make test` in the source directory. This will execute the
-example notebooks and compare the outputs of each cell to the data in the
-stored versions. There is also a (small) set of unit tests for the utility
-functions that can be tested separately with `nosetests`. 
+To test seaborn, run `make test` in the source directory. This will run the
+unit-test suite (using `nose`). It will also execute the example notebooks and
+compare the outputs of each cell to the data in the stored versions. 
 
 
 Development
