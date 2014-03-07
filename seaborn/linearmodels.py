@@ -1093,7 +1093,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
 
     """
     if not _has_statsmodels:
-        raise ImportError("The `interactplot` function requires statsmodels")
+        raise ImportError("The `coefplot` function requires statsmodels")
 
     alpha = 1 - ci / 100
     if groupby is None:
