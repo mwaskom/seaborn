@@ -81,3 +81,10 @@ def test_saturate():
     """Test performance of saturation function."""
     out = utils.saturate((.75, .25, .25))
     assert_equal(out, (1, 0, 0))
+
+
+def test_iqr():
+    """Test the IQR function."""
+    a = np.arange(5)
+    iqr = utils.iqr(a)
+    assert_equal(iqr, 2)
