@@ -14,14 +14,12 @@ Python, so installation should be reasonably straightforward.
 Dependencies 
 ~~~~~~~~~~~~
 
-Because seaborn is a high-level package, it has a relatively large number of
-required dependencies. For the most part these tools are part of the general
-scientific Python ecosystem, and almost all can be easily installed with a
-distribution such as `Anaconda <https://store.continuum.io/cshop/anaconda/>`_.
-Installing seaborn with ``pip`` will automatically include all missing
-dependencies other than ``numpy``, ``scipy``, and ``matplotlib``.
+We recommend using seaborn with the `Anaconda distribution <https://store.continuum.io/cshop/anaconda/>`_.
 
 -  Python 2.7 or 3.3
+
+Mandatory dependencies
+^^^^^^^^^^^^^^^^^^^^^^
 
 -  `numpy <http://www.numpy.org/>`__
 
@@ -31,26 +29,23 @@ dependencies other than ``numpy``, ``scipy``, and ``matplotlib``.
 
 -  `pandas <http://pandas.pydata.org/>`__
 
+Recommended dependencies
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  `statsmodels <http://statsmodels.sourceforge.net/>`__
 
--  `scikit-learn <http://scikit-learn.org>`__
-
 -  `patsy <http://patsy.readthedocs.org/en/latest/>`__
-
--  `husl <https://github.com/boronine/pyhusl>`__
-
--  `moss <http://github.com/mwaskom/moss>`__
 
 
 Testing
 ~~~~~~~
 
 To test seaborn, run ``make test`` in the root directory of the source
-distribution. This runs the unit test suite of the plotting utilities (which
-can also be exercised separately by running ``nosetests``). It also runs the
-code in the tutorial notebooks, comparing the output to what is stored in the
-notebook files and reporting any discrepancies. Testing requires the Python
-Image Library, which is not a dependency of the main package.
+distribution. This runs the unit test suite (which can also be exercised
+separately by running ``nosetests``). It also runs the code in the tutorial
+notebooks, comparing the output to what is stored in the notebook files and
+reporting any discrepancies. Testing requires the Python Image Library, which
+is not a dependency of the main package.
 
 Bugs
 ~~~~
