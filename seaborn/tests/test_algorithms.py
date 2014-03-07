@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats
-from ..external.six.moves import range
+from six.moves import range
 
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
@@ -75,8 +75,10 @@ def test_smooth_bootstrap():
     """Test smooth bootstrap."""
     x = rs.randn(15)
     n_boot = 100
+    out_normal = algo.bootstrap(x, n_boot=n_boot, func=np.median)
     out_smooth = algo.bootstrap(x, n_boot=n_boot,
                                 smooth=True, func=np.median)
+    assert(np.median(out_normal) in x)
     assert(not np.median(out_smooth) in x)
 
 
