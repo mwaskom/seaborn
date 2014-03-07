@@ -1,6 +1,6 @@
 numpy
 scipy
 matplotlib
-statsmodels
 pandas
-moss>0.1
+statsmodels
+patsy
