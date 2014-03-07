@@ -751,8 +751,8 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
 
     # Default color limits put the midpoint at mean(y)
     y_bar = y.mean()
-    c_min = min(y.min(), yhat.min())
-    c_max = max(y.max(), yhat.max())
+    c_min = min(np.percentile(y, 2), yhat.min())
+    c_max = max(np.percentile(y, 98), yhat.max())
     delta = max(c_max - y_bar, y_bar - c_min)
     c_min, cmax = y_bar - delta, y_bar + delta
     contour_kws.setdefault("vmin", c_min)
