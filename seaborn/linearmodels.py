@@ -5,11 +5,16 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
-import statsmodels.api as sm
-import statsmodels.formula.api as sf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import moss
+
+try:
+    import statsmodels.api as sm
+    import statsmodels.formula.api as sf
+    _has_statsmodels = True
+except ImportError:
+    _has_statsmodels = False
 
 from .external.six import string_types
 from .external.six.moves import range
@@ -1086,6 +1091,9 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         palette for the horizonal plots
 
     """
+    if not _has_statsmodels:
+        raise ImportError("The `interactplot` function requires statsmodels")
+
     alpha = 1 - ci / 100
     if groupby is None:
         coefs = sf.ols(formula, data).fit().params
@@ -1176,6 +1184,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
         Axis with the contour plot.
 
     """
+    if not _has_statsmodels:
+        raise ImportError("The `interactplot` function requires statsmodels")
+
     # Handle the form of the data
     if data is not None:
         x1 = data[x1]
