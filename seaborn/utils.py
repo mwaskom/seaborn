@@ -4,7 +4,7 @@ import colorsys
 from itertools import cycle
 import numpy as np
 from scipy import stats
-import pandas as pd
+import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
@@ -484,3 +484,67 @@ def _kde_support(data, bw, gridsize, cut, clip):
     support_min = max(data.min() - bw * cut, clip[0])
     support_max = min(data.max() + bw * cut, clip[1])
     return np.linspace(support_min, support_max, gridsize)
+
+
+def percentiles(a, pcts, axis=None):
+    """Like scoreatpercentile but can take and return array of percentiles.
+
+    Parameters
+    ----------
+    a : array
+        data
+    pcts : sequence of percentile values
+        percentile or percentiles to find score at
+    axis : int or None
+        if not None, computes scores over this axis
+
+    Returns
+    -------
+    scores: array
+        array of scores at requested percentiles
+        first dimension is length of object passed to ``pcts``
+
+    """
+    scores = []
+    try:
+        n = len(pcts)
+    except TypeError:
+        pcts = [pcts]
+        n = 0
+    for i, p in enumerate(pcts):
+        if axis is None:
+            score = stats.scoreatpercentile(a.ravel(), p)
+        else:
+            score = np.apply_along_axis(stats.scoreatpercentile, axis, a, p)
+        scores.append(score)
+    scores = np.asarray(scores)
+    if not n:
+        scores = scores.squeeze()
+    return scores
+
+
+def ci(a, which=95, axis=None):
+    """Return a percentile range from an array of values."""
+    p = 50 - which / 2, 50 + which / 2
+    return percentiles(a, p, axis)
+
+
+def sig_stars(p):
+    """Return a R-style significance string corresponding to p values."""
+    if p < 0.001:
+        return "***"
+    elif p < 0.01:
+        return "**"
+    elif p < 0.05:
+        return "*"
+    elif p < 0.1:
+        return "."
+    return ""
+
+
+def iqr(a):
+    """Calculate the IQR for an array of numbers."""
+    a = np.asarray(a)
+    q1 = stats.scoreatpercentile(a, 25)
+    q3 = stats.scoreatpercentile(a, 75)
+    return q3 - q1
