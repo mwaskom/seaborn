@@ -4,15 +4,20 @@ import colorsys
 import numpy as np
 from scipy import stats
 import pandas as pd
-import statsmodels.api as sm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from six.moves import range
 import warnings
-import moss
+
+try:
+    import statsmodels.api as sm
+    _has_statsmodels = True
+except ImportError:
+    _has_statsmodels = False
+
+from .external.six.moves import range
 
 from seaborn.utils import (color_palette, husl_palette, blend_palette,
-                           desaturate, _kde_support)
+                           desaturate, percentiles, iqr, _kde_support)
 
 
 def _box_reshape(vals, groupby, names, order):
@@ -236,8 +241,8 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
 
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, order=None, kernel="gau", bw="scott", widths=.8,
-               alpha=None, join_rm=False, gridsize=100, cut=3, inner_kws=None,
+               names=None, order=None, bw="scott", widths=.8, alpha=None,
+               join_rm=False, gridsize=100, cut=3, inner_kws=None,
                ax=None, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
@@ -266,8 +271,6 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         If vals is a Pandas object with name information, you can control the
         order of the plot by providing the violin names in your preferred
         order.
-    kernel : {'gau' | 'cos' | 'biw' | 'epa' | 'tri' | 'triw' }
-        Code for shape of kernel to fit with.
     bw : {'scott' | 'silverman' | scalar}
         Name of reference method to determine kernel size, or size as a
         scalar.
@@ -330,17 +333,19 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Fit the KDE
         x = positions[i]
-        kde = sm.nonparametric.KDEUnivariate(a)
-        fft = kernel == "gau"
-        kde.fit(bw=bw, kernel=kernel, gridsize=gridsize, cut=cut, fft=fft)
-        y, dens = kde.support, kde.density
+        kde = stats.gaussian_kde(a, bw)
+        if isinstance(bw, str):
+            bw = "scotts" if bw == "scott" else bw
+            bw = getattr(kde, "%s_factor" % bw)()
+        y = _kde_support(a, bw, gridsize, cut, (-np.inf, np.inf))
+        dens = kde.evaluate(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
         # Draw the violin
         ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
         if inner == "box":
-            for quant in moss.percentiles(a, [25, 75]):
+            for quant in percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
                 ax.plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
@@ -384,7 +389,7 @@ def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
-    h = 2 * moss.iqr(a) / (len(a) ** (1 / 3))
+    h = 2 * iqr(a) / (len(a) ** (1 / 3))
     return np.ceil((a.max() - a.min()) / h)
 
 
@@ -501,7 +506,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
-        bw = sm.nonparametric.bandwidths.bw_scott(a)
+        bw = stats.gaussian_kde(a).scotts_factor()
         x = _kde_support(a, bw, gridsize, cut, clip)
         params = fit.fit(a)
         pdf = lambda x: fit.pdf(x, *params)
@@ -530,12 +535,12 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         clip = (-np.inf, np.inf)
 
     # Calculate the KDE
-    try:
+    if _has_statsmodels:
         # Prefer using statsmodels for kernel flexibility
         x, y = _statsmodels_univariate_kde(data, kernel, bw,
                                            gridsize, cut, clip,
                                            cumulative=cumulative)
-    except ImportError:
+    else:
         # Fall back to scipy if missing statsmodels
         if kernel != "gau":
             kernel = "gau"
@@ -587,9 +592,8 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
                                 cumulative=False):
     """Compute a univariate kernel density estimate using statsmodels."""
-    from statsmodels import nonparametric
     fft = kernel == "gau"
-    kde = nonparametric.kde.KDEUnivariate(data)
+    kde = sm.nonparametric.KDEUnivariate(data)
     kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
     if cumulative:
         grid, y = kde.support, kde.cdf
@@ -620,9 +624,9 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
         clip = [clip, clip]
 
     # Calculate the KDE
-    try:
+    if _has_statsmodels:
         xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
-    except ImportError:
+    else:
         xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip)
 
     # Plot the contours
@@ -649,15 +653,14 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
-    from statsmodels import nonparametric
     if isinstance(bw, str):
-        bw_func = getattr(nonparametric.bandwidths, "bw_" + bw)
+        bw_func = getattr(sm.nonparametric.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
         bw = [x_bw, y_bw]
     elif np.isscalar(bw):
         bw = [bw, bw]
-    kde = nonparametric.kernel_density.KDEMultivariate([x, y], "cc", bw)
+    kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
     xx, yy = np.meshgrid(x_support, y_support)

@@ -5,15 +5,21 @@ import warnings
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
-import statsmodels.api as sm
-import statsmodels.formula.api as sf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import moss
 
-from six import string_types
-from six.moves import range
+try:
+    import statsmodels.api as sm
+    import statsmodels.formula.api as sf
+    _has_statsmodels = True
+except ImportError:
+    _has_statsmodels = False
 
+from .external.six import string_types
+from .external.six.moves import range
+
+from . import utils
+from . import algorithms as algo
 from .utils import color_palette
 from .axisgrid import FacetGrid
 
@@ -215,10 +221,10 @@ class _DiscretePlotter(_LinearPlotter):
                 # This is where the main computation happens
                 height.append(self.estimator(y_data))
                 if self.ci is not None:
-                    boots = moss.bootstrap(y_data, func=self.estimator,
+                    boots = algo.bootstrap(y_data, func=self.estimator,
                                            n_boot=self.n_boot,
                                            units=unit_data)
-                    ci.append(moss.ci(boots, self.ci))
+                    ci.append(utils.ci(boots, self.ci))
 
             yield pos, height, ci
 
@@ -433,9 +439,9 @@ class _RegressionPlotter(_LinearPlotter):
                 units = None
                 if self.units is not None:
                     units = self.units[x == val]
-                boots = moss.bootstrap(_y, func=self.x_estimator,
+                boots = algo.bootstrap(_y, func=self.x_estimator,
                                        n_boot=self.n_boot, units=units)
-                _ci = moss.ci(boots, self.x_ci)
+                _ci = utils.ci(boots, self.x_ci)
                 cis.append(_ci)
 
         return vals, points, cis
@@ -473,7 +479,7 @@ class _RegressionPlotter(_LinearPlotter):
         if ci is None:
             err_bands = None
         else:
-            err_bands = moss.ci(yhat_boots, ci, axis=0)
+            err_bands = utils.ci(yhat_boots, ci, axis=0)
 
         return grid, yhat, err_bands
 
@@ -486,7 +492,7 @@ class _RegressionPlotter(_LinearPlotter):
         if self.ci is None:
             return yhat, None
 
-        beta_boots = moss.bootstrap(X, y, func=reg_func,
+        beta_boots = algo.bootstrap(X, y, func=reg_func,
                                     n_boot=self.n_boot, units=self.units).T
         yhat_boots = grid.dot(beta_boots).T
         return yhat, yhat_boots
@@ -499,7 +505,7 @@ class _RegressionPlotter(_LinearPlotter):
         if self.ci is None:
             return yhat, None
 
-        yhat_boots = moss.bootstrap(x, y, func=reg_func,
+        yhat_boots = algo.bootstrap(x, y, func=reg_func,
                                     n_boot=self.n_boot, units=self.units)
         return yhat, yhat_boots
 
@@ -512,7 +518,7 @@ class _RegressionPlotter(_LinearPlotter):
         if self.ci is None:
             return yhat, None
 
-        yhat_boots = moss.bootstrap(X, y, func=reg_func,
+        yhat_boots = algo.bootstrap(X, y, func=reg_func,
                                     n_boot=self.n_boot, units=self.units)
         return yhat, yhat_boots
 
@@ -527,7 +533,7 @@ class _RegressionPlotter(_LinearPlotter):
         x = self.x
         if np.isscalar(bins):
             percentiles = np.linspace(0, 100, bins + 2)[1:-1]
-            bins = np.c_[moss.percentiles(x, percentiles)]
+            bins = np.c_[utils.percentiles(x, percentiles)]
         else:
             bins = np.c_[np.ravel(bins)]
 
@@ -1086,6 +1092,9 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         palette for the horizonal plots
 
     """
+    if not _has_statsmodels:
+        raise ImportError("The `interactplot` function requires statsmodels")
+
     alpha = 1 - ci / 100
     if groupby is None:
         coefs = sf.ols(formula, data).fit().params
@@ -1176,6 +1185,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
         Axis with the contour plot.
 
     """
+    if not _has_statsmodels:
+        raise ImportError("The `interactplot` function requires statsmodels")
+
     # Handle the form of the data
     if data is not None:
         x1 = data[x1]
@@ -1320,7 +1332,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
 
     # Get p values with a permutation test
     if annot and sig_stars:
-        p_mat = moss.randomize_corrmat(data.values.T, sig_tail, sig_corr)
+        p_mat = algo.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
 
@@ -1390,7 +1402,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
     if annot:
         for i, j in zip(*np.triu_indices(nvars, 1)):
             val = mat[i, j]
-            stars = moss.sig_stars(p_mat[i, j])
+            stars = utils.sig_stars(p_mat[i, j])
             ax.text(j, i, "\n%.2g\n%s" % (val, stars),
                     fontdict=dict(ha="center", va="center"))
     else:

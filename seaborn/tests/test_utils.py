@@ -85,6 +85,13 @@ def test_saturate():
     assert_equal(out, (1, 0, 0))
 
 
+def test_iqr():
+    """Test the IQR function."""
+    a = np.arange(5)
+    iqr = utils.iqr(a)
+    assert_equal(iqr, 2)
+
+
 class TestSpineUtils(object):
 
     sides = ["left", "right", "bottom", "top"]

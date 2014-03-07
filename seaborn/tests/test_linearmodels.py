@@ -1,14 +1,21 @@
 import numpy as np
-import statsmodels.api as sm
 import matplotlib.pyplot as plt
 import pandas as pd
-import moss
 
 import nose.tools as nt
 import numpy.testing as npt
 import pandas.util.testing as pdt
+from numpy.testing.decorators import skipif
+
+try:
+    import statsmodels.api as sm
+    _no_statsmodels = False
+except ImportError:
+    _no_statsmodels = True
 
 from .. import linearmodels as lm
+from .. import algorithms as algo
+from .. import utils
 from ..utils import color_palette
 
 rs = np.random.RandomState(0)
@@ -145,6 +152,7 @@ class TestRegressionPlotter(object):
         nt.assert_equal(p.ci, 95)
         nt.assert_equal(p.x_ci, 68)
 
+    @skipif(_no_statsmodels)
     def test_fast_regression(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -158,6 +166,7 @@ class TestRegressionPlotter(object):
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_fast, yhat_smod)
 
+    @skipif(_no_statsmodels)
     def test_regress_poly(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -171,6 +180,7 @@ class TestRegressionPlotter(object):
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_poly, yhat_smod)
 
+    @skipif(_no_statsmodels)
     def test_regress_n_boot(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -187,6 +197,7 @@ class TestRegressionPlotter(object):
         _, boots_smod = p.fit_statsmodels(self.grid, sm.OLS)
         npt.assert_equal(boots_smod.shape, (self.n_boot, self.grid.size))
 
+    @skipif(_no_statsmodels)
     def test_regress_without_bootstrap(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df,
@@ -305,6 +316,7 @@ class TestRegressionPlotter(object):
         _, r_partial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_partial, r_orig)
 
+    @skipif(_no_statsmodels)
     def test_logistic_regression(self):
 
         p = lm._RegressionPlotter("x", "c", data=self.df,
@@ -313,6 +325,7 @@ class TestRegressionPlotter(object):
         npt.assert_array_less(yhat, 1)
         npt.assert_array_less(0, yhat)
 
+    @skipif(_no_statsmodels)
     def test_robust_regression(self):
 
         p_ols = lm._RegressionPlotter("x", "y", data=self.df,
@@ -325,6 +338,7 @@ class TestRegressionPlotter(object):
 
         nt.assert_equal(len(ols_yhat), len(robust_yhat))
 
+    @skipif(_no_statsmodels)
     def test_lowess_regression(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True)
@@ -510,7 +524,7 @@ class TestDiscretePlotter(object):
         height_want = self.df.groupby("x").y.mean()
         npt.assert_array_equal(height, height_want)
 
-        get_cis = lambda x: moss.ci(moss.bootstrap(x, random_seed=0), 95)
+        get_cis = lambda x: utils.ci(algo.bootstrap(x, random_seed=0), 95)
         ci_want = np.array(self.df.groupby("x").y.apply(get_cis).tolist())
         npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
 

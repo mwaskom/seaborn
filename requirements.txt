@@ -3,5 +3,4 @@ scipy
 matplotlib
 statsmodels
 pandas
-husl
 moss>0.1
