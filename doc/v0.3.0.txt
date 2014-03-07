@@ -23,6 +23,11 @@ API changes
 Other changes
 ~~~~~~~~~~~~~
 
+Using the package
+^^^^^^^^^^^^^^^^^
+
+- The dependency load of the package has been reduced. It can now be installed and used with only `numpy`, `scipy`, `matplotlib`, and `pandas`. Although `statsmodels` (and `patsy`) are still recommended so that all features can be used, they are not required.
+
 Plotting functions
 ^^^^^^^^^^^^^^^^^^
 
