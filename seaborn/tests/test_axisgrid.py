@@ -315,9 +315,9 @@ class TestFacetGrid(object):
         plt.close("all")
 
 
-class TestMarginGrid(object):
+class TestJointGrid(object):
 
-    rs = np.random.RandomState(sum(map(ord, "MarginGrid")))
+    rs = np.random.RandomState(sum(map(ord, "JointGrid")))
     x = rs.randn(100)
     y = rs.randn(100)
     x_na = x.copy()
@@ -327,28 +327,28 @@ class TestMarginGrid(object):
 
     def test_margin_grid_from_arrays(self):
 
-        g = ag.MarginGrid(self.x, self.y)
+        g = ag.JointGrid(self.x, self.y)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
         plt.close("all")
 
     def test_margin_grid_from_series(self):
 
-        g = ag.MarginGrid(self.data.x, self.data.y)
+        g = ag.JointGrid(self.data.x, self.data.y)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
         plt.close("all")
 
     def test_margin_grid_from_dataframe(self):
 
-        g = ag.MarginGrid("x", "y", self.data)
+        g = ag.JointGrid("x", "y", self.data)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
         plt.close("all")
 
     def test_margin_grid_axis_labels(self):
 
-        g = ag.MarginGrid("x", "y", self.data)
+        g = ag.JointGrid("x", "y", self.data)
 
         xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
         nt.assert_equal(xlabel, "x")
@@ -362,17 +362,17 @@ class TestMarginGrid(object):
 
     def test_dropna(self):
 
-        g = ag.MarginGrid("x_na", "y", self.data, dropna=False)
+        g = ag.JointGrid("x_na", "y", self.data, dropna=False)
         nt.assert_equal(len(g.x), len(self.x_na))
 
-        g = ag.MarginGrid("x_na", "y", self.data, dropna=True)
+        g = ag.JointGrid("x_na", "y", self.data, dropna=True)
         nt.assert_equal(len(g.x), pd.notnull(self.x_na).sum())
         plt.close("all")
 
     def test_axlims(self):
 
         lim = (-3, 3)
-        g = ag.MarginGrid("x", "y", self.data, xlim=lim, ylim=lim)
+        g = ag.JointGrid("x", "y", self.data, xlim=lim, ylim=lim)
 
         nt.assert_equal(g.ax_joint.get_xlim(), lim)
         nt.assert_equal(g.ax_joint.get_ylim(), lim)
@@ -382,14 +382,14 @@ class TestMarginGrid(object):
 
     def test_marginal_ticks(self):
 
-        g = ag.MarginGrid("x", "y", self.data)
+        g = ag.JointGrid("x", "y", self.data)
         nt.assert_true(~len(g.ax_marg_x.get_xticks()))
         nt.assert_true(~len(g.ax_marg_y.get_yticks()))
         plt.close("all")
 
     def test_bivariate_plot(self):
 
-        g = ag.MarginGrid("x", "y", self.data)
+        g = ag.JointGrid("x", "y", self.data)
         g.plot_joint(plt.plot)
 
         x, y = g.ax_joint.lines[0].get_xydata().T
@@ -399,7 +399,7 @@ class TestMarginGrid(object):
 
     def test_univariate_plot(self):
 
-        g = ag.MarginGrid("x", "x", self.data)
+        g = ag.JointGrid("x", "x", self.data)
         g.plot_marginals(kdeplot)
 
         _, y1 = g.ax_marg_x.lines[0].get_xydata().T
@@ -409,7 +409,7 @@ class TestMarginGrid(object):
 
     def test_plot(self):
 
-        g = ag.MarginGrid("x", "x", self.data)
+        g = ag.JointGrid("x", "x", self.data)
         g.plot(plt.plot, kdeplot)
 
         x, y = g.ax_joint.lines[0].get_xydata().T
@@ -424,7 +424,7 @@ class TestMarginGrid(object):
 
     def test_annotate(self):
 
-        g = ag.MarginGrid("x", "y", self.data)
+        g = ag.JointGrid("x", "y", self.data)
         rp = stats.pearsonr(self.x, self.y)
 
         g.annotate(stats.pearsonr)
