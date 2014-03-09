@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
@@ -240,3 +243,98 @@ class TestKDE(object):
         """Check error if args indicate bivariate KDE and cumulative."""
         with npt.assert_raises(TypeError):
             dist.kdeplot(self.x, data2=self.y, cumulative=True)
+
+
+class TestJointPlot(object):
+
+    rs = np.random.RandomState(sum(map(ord, "jointplot")))
+    x = rs.randn(100)
+    y = rs.randn(100)
+    data = pd.DataFrame(dict(x=x, y=y))
+
+    def test_scatter(self):
+
+        g = dist.jointplot("x", "y", self.data)
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+
+        x, y = g.ax_joint.collections[0].get_offsets().T
+        npt.assert_array_equal(self.x, x)
+        npt.assert_array_equal(self.y, y)
+
+        x_bins = dist._freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = dist._freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+        plt.close("all")
+
+    def test_reg(self):
+
+        g = dist.jointplot("x", "y", self.data, kind="reg")
+        nt.assert_equal(len(g.ax_joint.collections), 2)
+
+        x, y = g.ax_joint.collections[0].get_offsets().T
+        npt.assert_array_equal(self.x, x)
+        npt.assert_array_equal(self.y, y)
+
+        x_bins = dist._freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = dist._freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+        nt.assert_equal(len(g.ax_joint.lines), 1)
+        nt.assert_equal(len(g.ax_marg_x.lines), 1)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+        plt.close("all")
+
+    def test_hex(self):
+
+        g = dist.jointplot("x", "y", self.data, kind="hex")
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+
+        x_bins = dist._freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = dist._freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+        plt.close("all")
+
+    def test_kde(self):
+
+        g = dist.jointplot("x", "y", self.data, kind="kde")
+
+        nt.assert_true(len(g.ax_joint.collections) > 0)
+        nt.assert_equal(len(g.ax_marg_x.collections), 1)
+        nt.assert_equal(len(g.ax_marg_y.collections), 1)
+
+        nt.assert_equal(len(g.ax_marg_x.lines), 1)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+        plt.close("all")
+
+    def test_color(self):
+
+        g = dist.jointplot("x", "y", self.data, color="purple")
+
+        purple = mpl.colors.colorConverter.to_rgb("purple")
+        scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
+        nt.assert_equal(tuple(scatter_color), purple)
+
+        hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
+        nt.assert_equal(hist_color, purple)
+
+        plt.close("all")
+
+    def test_annotation(self):
+
+        g = dist.jointplot("x", "y", self.data)
+        nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
+
+        g = dist.jointplot("x", "y", self.data, stat_func=None)
+        nt.assert_is(g.ax_joint.legend_, None)
+
+        plt.close("all")
