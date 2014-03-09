@@ -1054,7 +1054,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
 
     See Also
     --------
-    lmplot : Combine regplot and a FacetGrid
+    lmplot : Combine regplot and a FacetGrid.
+    jointplot (with kind="reg"): Draw a regplot with univariate marginal
+                                 distrbutions.
 
     """
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
