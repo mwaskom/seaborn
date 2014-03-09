@@ -586,8 +586,8 @@ class FacetGrid(object):
 
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
-    def __init__(self, x, y, data=None, size=6, ratio=5, dropna=True,
-                 xlim=None, ylim=None):
+    def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
+                 dropna=True, xlim=None, ylim=None):
         """Set up the grid of subplots.
 
         Parameters
@@ -600,10 +600,17 @@ class JointGrid(object):
             Size of the figure (it will be square).
         ratio : numeric
             Ratio of joint axes size to marginal axes height.
+        space : numeric, optional
+            Space between the joint and marginal axes
         dropna : bool, optional
             If True, remove observations that are missing from `x` and `y`.
         {x, y}lim : two-tuples, optional
             Axis limits to set before plotting.
+
+        See Also
+        --------
+        jointplot : Inteface for drawing bivariate plots with several different
+                    default plot kinds.
 
         """
         # Set up the subplot grid
@@ -662,6 +669,7 @@ class JointGrid(object):
         utils.despine(ax=ax_marg_x, left=True)
         utils.despine(ax=ax_marg_y, bottom=True)
         f.tight_layout()
+        f.subplots_adjust(hspace=space, wspace=space)
 
     def plot(self, joint_func, marginal_func, annot_func=None):
         """Shortcut to draw the full plot.
