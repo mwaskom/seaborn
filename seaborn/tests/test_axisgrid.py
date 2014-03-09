@@ -451,6 +451,17 @@ class TestJointGrid(object):
 
         plt.close("all")
 
+    def test_space(self):
+
+        g = ag.JointGrid("x", "y", self.data, space=0)
+
+        joint_bounds = g.ax_joint.bbox.bounds
+        marg_x_bounds = g.ax_marg_x.bbox.bounds
+        marg_y_bounds = g.ax_marg_y.bbox.bounds
+
+        nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
+        nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
+
     @classmethod
     def teardown_class(cls):
         """Ensure that all figures are closed on exit."""
