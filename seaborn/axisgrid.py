@@ -584,7 +584,7 @@ class FacetGrid(object):
         self._legend_data.update(data)
 
 
-class MarginGrid(object):
+class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
     def __init__(self, x, y, data=None, size=6, ratio=5, dropna=True,
                  xlim=None, ylim=None):
@@ -663,7 +663,7 @@ class MarginGrid(object):
         utils.despine(ax=ax_marg_y, bottom=True)
         f.tight_layout()
 
-    def plot(self, joint_func, marginal_func):
+    def plot(self, joint_func, marginal_func, annot_func=None):
         """Shortcut to draw the full plot.
 
         Use `plot_joint` and `plot_marginals` directly for more control.
@@ -675,12 +675,14 @@ class MarginGrid(object):
 
         Returns
         -------
-        self : MarginGrid instance
+        self : JointGrid instance
             Returns `self`.
 
         """
         self.plot_marginals(marginal_func)
         self.plot_joint(joint_func)
+        if annot_func is not None:
+            self.annotate(annot_func)
         return self
 
     def plot_joint(self, func, **kwargs):
@@ -696,7 +698,7 @@ class MarginGrid(object):
 
         Returns
         -------
-        self : MarginGrid instance
+        self : JointGrid instance
             Returns `self`.
 
         """
@@ -718,7 +720,7 @@ class MarginGrid(object):
 
         Returns
         -------
-        self : MarginGrid instance
+        self : JointGrid instance
             Returns `self`.
 
         """
@@ -753,7 +755,7 @@ class MarginGrid(object):
 
         Returns
         -------
-        self : MarginGrid instance.
+        self : JointGrid instance.
             Returns `self`.
 
         """
@@ -803,7 +805,7 @@ class MarginGrid(object):
 
         Returns
         -------
-        self : MarginGrid instance
+        self : JointGrid instance
             returns `self`
 
         """
