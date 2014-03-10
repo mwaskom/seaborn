@@ -26,6 +26,7 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
+    jointplot
     boxplot
     violinplot
     distplot
@@ -55,6 +56,7 @@ Axis grids
    :toctree: generated/
 
     FacetGrid
+    JointGrid
 
 Style frontend
 --------------
