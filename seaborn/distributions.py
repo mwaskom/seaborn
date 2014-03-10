@@ -581,7 +581,10 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     ax.plot(x, y, color=color, label=label, **kwargs)
     alpha = kwargs.get("alpha", 0.25)
     if shade:
-        ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
+        if vertical:
+            ax.fill_betweenx(y, 1e-12, x, color=color, alpha=alpha)
+        else:
+            ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
 
     # Draw the legend here
     if legend:
