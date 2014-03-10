@@ -4,6 +4,7 @@ import colorsys
 from itertools import cycle
 import numpy as np
 from scipy import stats
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
@@ -548,3 +549,10 @@ def iqr(a):
     q1 = stats.scoreatpercentile(a, 25)
     q3 = stats.scoreatpercentile(a, 75)
     return q3 - q1
+
+
+def load_dataset(name):
+    """Load a dataset from the online repository (requires internet)."""
+    path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
+    full_path = path.format(name)
+    return pd.read_csv(full_path)
