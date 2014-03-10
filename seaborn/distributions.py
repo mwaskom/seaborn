@@ -16,8 +16,9 @@ except ImportError:
 
 from .external.six.moves import range
 
-from seaborn.utils import (color_palette, husl_palette, blend_palette,
-                           desaturate, percentiles, iqr, _kde_support)
+from .utils import (color_palette, husl_palette, blend_palette, set_hls_values,
+                    desaturate, percentiles, iqr, _kde_support)
+from .axisgrid import JointGrid
 
 
 def _box_reshape(vals, groupby, names, order):
@@ -580,7 +581,10 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     ax.plot(x, y, color=color, label=label, **kwargs)
     alpha = kwargs.get("alpha", 0.25)
     if shade:
-        ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
+        if vertical:
+            ax.fill_betweenx(y, 1e-12, x, color=color, alpha=alpha)
+        else:
+            ax.fill_between(x, 1e-12, y, color=color, alpha=alpha)
 
     # Draw the legend here
     if legend:
@@ -781,6 +785,9 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     if ax is None:
         ax = plt.gca()
     a = np.asarray(a)
+    vertical = kwargs.pop("vertical", None)
+    if vertical is not None:
+        axis = "y" if vertical else "x"
     other_axis = dict(x="y", y="x")[axis]
     min, max = getattr(ax, "get_%slim" % other_axis)()
     if height is None:
@@ -791,3 +798,100 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     else:
         ax.plot([min, min + height], [a, a], **kwargs)
     return ax
+
+
+def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
+              color=None, size=6, ratio=5, space=.2,
+              dropna=True, xlim=None, ylim=None,
+              joint_kws=None, marginal_kws=None, annot_kws=None):
+    """Draw a plot of two variables with bivariate and univariate graphs.
+
+    Parameters
+    ----------
+    x, y : strings or vectors
+        Data or names of variables in `data`.
+    data : DataFrame, optional
+        DataFrame when `x` and `y` are variable names.
+    kind : { "scatter" | "reg" | "kde" | "hex" }, optional
+        Kind of plot to draw.
+    stat_func : callable or None
+        Function used to calculate a statistic about the relationship and
+        annotate the plot. Should map `x` and `y` either to a single value
+        or to a (value, p) tuple. Set to ``None`` if you don't want to
+        annotate the plot.
+    color : matplotlib color, optional
+        Color used for the plot elements.
+    size : numeric, optional
+        Size of the figure (it will be square).
+    ratio : numeric, optional
+        Ratio of joint axes size to marginal axes height.
+    space : numeric, optional
+        Space between the joint and marginal axes
+    dropna : bool, optional
+        If True, remove observations that are missing from `x` and `y`.
+    {x, y}lim : two-tuples, optional
+        Axis limits to set before plotting.
+    {joint, marginal, annot}_kws : dicts
+        Additional keyword arguments for the plot components.
+
+    Returns
+    -------
+    grid : JointGrid
+        JointGrid object with the plot on it.
+
+    See Also
+    --------
+    JointGrid : The Grid class used for drawing this plot. Use it directly if
+                you need more flexibility.
+
+    """
+    # Set up empty default kwarg dicts
+    if joint_kws is None:
+        joint_kws = {}
+    if marginal_kws is None:
+        marginal_kws = {}
+    if annot_kws is None:
+        annot_kws = {}
+
+    # Make a colormap based off the plot color
+    if color is None:
+        color = color_palette()[0]
+    color_rgb = mpl.colors.colorConverter.to_rgb(color)
+    colors = [set_hls_values(color_rgb, l=l) for l in np.linspace(1, 0, 12)]
+    cmap = blend_palette(colors, as_cmap=True)
+
+    # Initialize the JointGrid object
+    grid = JointGrid(x, y, data, dropna=dropna,
+                     size=size, ratio=ratio, space=space,
+                     xlim=xlim, ylim=ylim)
+
+    # Plot the data using the grid
+    if kind == "scatter":
+
+        grid.plot_joint(plt.scatter, color=color, **joint_kws)
+        grid.plot_marginals(distplot, kde=False, color=color, **marginal_kws)
+
+    elif kind.startswith("hex"):
+
+        x_bins = _freedman_diaconis_bins(grid.x)
+        y_bins = _freedman_diaconis_bins(grid.y)
+        gridsize = int(np.mean([x_bins, y_bins]))
+
+        grid.plot_joint(plt.hexbin, gridsize=gridsize, cmap=cmap, **joint_kws)
+        grid.plot_marginals(distplot, kde=False, color=color, **marginal_kws)
+
+    elif kind.startswith("kde"):
+
+        grid.plot_joint(kdeplot, shade=True, cmap=cmap, **joint_kws)
+        grid.plot_marginals(kdeplot, shade=True, color=color, **marginal_kws)
+
+    elif kind.startswith("reg"):
+
+        from .linearmodels import regplot
+        grid.plot_marginals(distplot, color=color, **marginal_kws)
+        grid.plot_joint(regplot, color=color, **joint_kws)
+
+    if stat_func is not None:
+        grid.annotate(stat_func, **annot_kws)
+
+    return grid

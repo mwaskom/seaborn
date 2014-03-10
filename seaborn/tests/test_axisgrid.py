@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 import matplotlib.pyplot as plt
 
 import nose.tools as nt
@@ -7,6 +8,7 @@ import numpy.testing as npt
 
 from .. import axisgrid as ag
 from ..utils import color_palette
+from ..distributions import kdeplot
 
 rs = np.random.RandomState(0)
 
@@ -306,6 +308,159 @@ class TestFacetGrid(object):
         nt.assert_equal(g._not_na.sum(), 50)
 
         plt.close("all")
+
+    @classmethod
+    def teardown_class(cls):
+        """Ensure that all figures are closed on exit."""
+        plt.close("all")
+
+
+class TestJointGrid(object):
+
+    rs = np.random.RandomState(sum(map(ord, "JointGrid")))
+    x = rs.randn(100)
+    y = rs.randn(100)
+    x_na = x.copy()
+    x_na[10] = np.nan
+    x_na[20] = np.nan
+    data = pd.DataFrame(dict(x=x, y=y, x_na=x_na))
+
+    def test_margin_grid_from_arrays(self):
+
+        g = ag.JointGrid(self.x, self.y)
+        npt.assert_array_equal(g.x, self.x)
+        npt.assert_array_equal(g.y, self.y)
+        plt.close("all")
+
+    def test_margin_grid_from_series(self):
+
+        g = ag.JointGrid(self.data.x, self.data.y)
+        npt.assert_array_equal(g.x, self.x)
+        npt.assert_array_equal(g.y, self.y)
+        plt.close("all")
+
+    def test_margin_grid_from_dataframe(self):
+
+        g = ag.JointGrid("x", "y", self.data)
+        npt.assert_array_equal(g.x, self.x)
+        npt.assert_array_equal(g.y, self.y)
+        plt.close("all")
+
+    def test_margin_grid_axis_labels(self):
+
+        g = ag.JointGrid("x", "y", self.data)
+
+        xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
+        nt.assert_equal(xlabel, "x")
+        nt.assert_equal(ylabel, "y")
+
+        g.set_axis_labels("x variable", "y variable")
+        xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
+        nt.assert_equal(xlabel, "x variable")
+        nt.assert_equal(ylabel, "y variable")
+        plt.close("all")
+
+    def test_dropna(self):
+
+        g = ag.JointGrid("x_na", "y", self.data, dropna=False)
+        nt.assert_equal(len(g.x), len(self.x_na))
+
+        g = ag.JointGrid("x_na", "y", self.data, dropna=True)
+        nt.assert_equal(len(g.x), pd.notnull(self.x_na).sum())
+        plt.close("all")
+
+    def test_axlims(self):
+
+        lim = (-3, 3)
+        g = ag.JointGrid("x", "y", self.data, xlim=lim, ylim=lim)
+
+        nt.assert_equal(g.ax_joint.get_xlim(), lim)
+        nt.assert_equal(g.ax_joint.get_ylim(), lim)
+
+        nt.assert_equal(g.ax_marg_x.get_xlim(), lim)
+        nt.assert_equal(g.ax_marg_y.get_ylim(), lim)
+
+    def test_marginal_ticks(self):
+
+        g = ag.JointGrid("x", "y", self.data)
+        nt.assert_true(~len(g.ax_marg_x.get_xticks()))
+        nt.assert_true(~len(g.ax_marg_y.get_yticks()))
+        plt.close("all")
+
+    def test_bivariate_plot(self):
+
+        g = ag.JointGrid("x", "y", self.data)
+        g.plot_joint(plt.plot)
+
+        x, y = g.ax_joint.lines[0].get_xydata().T
+        npt.assert_array_equal(x, self.x)
+        npt.assert_array_equal(y, self.y)
+        plt.close("all")
+
+    def test_univariate_plot(self):
+
+        g = ag.JointGrid("x", "x", self.data)
+        g.plot_marginals(kdeplot)
+
+        _, y1 = g.ax_marg_x.lines[0].get_xydata().T
+        y2, _ = g.ax_marg_y.lines[0].get_xydata().T
+        npt.assert_array_equal(y1, y2)
+        plt.close("all")
+
+    def test_plot(self):
+
+        g = ag.JointGrid("x", "x", self.data)
+        g.plot(plt.plot, kdeplot)
+
+        x, y = g.ax_joint.lines[0].get_xydata().T
+        npt.assert_array_equal(x, self.x)
+        npt.assert_array_equal(y, self.x)
+
+        _, y1 = g.ax_marg_x.lines[0].get_xydata().T
+        y2, _ = g.ax_marg_y.lines[0].get_xydata().T
+        npt.assert_array_equal(y1, y2)
+
+        plt.close("all")
+
+    def test_annotate(self):
+
+        g = ag.JointGrid("x", "y", self.data)
+        rp = stats.pearsonr(self.x, self.y)
+
+        g.annotate(stats.pearsonr)
+        annotation = g.ax_joint.legend_.texts[0].get_text()
+        nt.assert_equal(annotation, "pearsonr = %.2g; p = %.2g" % rp)
+
+        g.annotate(stats.pearsonr, stat="correlation")
+        annotation = g.ax_joint.legend_.texts[0].get_text()
+        nt.assert_equal(annotation, "correlation = %.2g; p = %.2g" % rp)
+
+        def rsquared(x, y):
+            return stats.pearsonr(x, y)[0] ** 2
+
+        r2 = rsquared(self.x, self.y)
+        g.annotate(rsquared)
+        annotation = g.ax_joint.legend_.texts[0].get_text()
+        nt.assert_equal(annotation, "rsquared = %.2g" % r2)
+
+        template = "{stat} = {val:.3g} (p = {p:.3g})"
+        g.annotate(stats.pearsonr, template=template)
+        annotation = g.ax_joint.legend_.texts[0].get_text()
+        nt.assert_equal(annotation, template.format(stat="pearsonr",
+                                                    val=rp[0], p=rp[1]))
+
+        plt.close("all")
+
+    def test_space(self):
+
+        g = ag.JointGrid("x", "y", self.data, space=0)
+
+        joint_bounds = g.ax_joint.bbox.bounds
+        marg_x_bounds = g.ax_marg_x.bbox.bounds
+        marg_y_bounds = g.ax_marg_y.bbox.bounds
+
+        nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
+        nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
 
     @classmethod
     def teardown_class(cls):

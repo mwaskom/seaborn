@@ -12,12 +12,14 @@ New plotting functions
 
 - Version 0.3 introduces the :func:`factorplot` function, which is similar in spirit to :func:`lmplot` but intended for use when the main independent variable is categorical instead of quantitative. :func:`factorplot` can draw a plot in either a point or bar representation using the corresponding Axes-level functions :func:`pointplot` and :func:`barplot` (which are also new). Additionally, the :func:`factorplot` function can be used to draw box plots on a faceted grid. For examples of how to use these functions, you can refer to the :ref:`tutorial <linear_categorical>`.
 
+- Another new function is :func:`jointplot`, which is built using the new :class:`JointGrid` object. :func:`jointplot` generalizes the behavior of :func:`regplot` in previous versions of seaborn (:func:`regplot` has changed somewhat in 0.3; see below for details) by drawing a bivariate plot of the relationship between two variables with their marginal distributions drawn on the side of the plot. With :func:`jointplot`, you can draw a scatterplot or :ref:`regression plot <jointplot_reg>` as before, but you can now also draw bivariate kernel densities or hexbin plots with appropriate univariate graphs for the marginal distributions. Additionally, it's easy to use :class:`JointGrid` directly to build up more complex plots when the default methods offered by :func:`jointplot` are not suitable for your visualization problem. The :ref:`tutorial <joint_grid>` for :class:`JointGrid` has more examples of how this object can be useful.
+
 API changes
 ~~~~~~~~~~~
 
-- The most noticeable change will be that :func:`regplot` no longer produces a multi-component plot with distributions in marginal axes. Instead. :func:`regplot` is now an "Axes-level" function that can be plotted into any existing figure on a specific set of axes. :func:`regplot` and :func:`lmplot` have also been unified (the latter uses the former behind the scenes), so all options for how to fit and represent the regression model can be used for both functions.
+- The most noticeable change will be that :func:`regplot` no longer produces a multi-component plot with distributions in marginal axes. Instead. :func:`regplot` is now an "Axes-level" function that can be plotted into any existing figure on a specific set of axes. :func:`regplot` and :func:`lmplot` have also been unified (the latter uses the former behind the scenes), so all options for how to fit and represent the regression model can be used for both functions. To :ref:`get the old behavior <jointplot_reg>` of :func:`regplot`, use :func:`jointplot` with ``kind="reg"``.
 
-- As noted above, :func:`lmplot` has been rewritten to exploit the :class:`FacetGrid` machinery. This involves a few changes. The ``color`` keyword argument has been replaced with ``hue``, for better consistency across the package (as ``hue`` will always take a variable *name*, while ``color`` will take a color name or (in some cases) a palette. The :func:`lmplot` function now returns the :class:`FacetGrid` used to draw the plot instance.
+- As noted above, :func:`lmplot` has been rewritten to exploit the :class:`FacetGrid` machinery. This involves a few changes. The ``color`` keyword argument has been replaced with ``hue``, for better consistency across the package. The ``hue`` parameter will always take a variable *name*, while ``color`` will take a color name or (in some cases) a palette. The :func:`lmplot` function now returns the :class:`FacetGrid` used to draw the plot instance.
 
 
 Other changes
@@ -26,9 +28,9 @@ Other changes
 Using the package
 ^^^^^^^^^^^^^^^^^
 
-- If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do `import seaborn.apionly as sns` or `from seaborn.apionly import regplot`, etc. This is using the (also new) `seaborn.reset_origin()` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
+- If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do ``import seaborn.apionly as sns`` or ``from seaborn.apionly import lmplot``, etc. This is using the (also new) :func:`reset_origin` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
 
-- The dependency load of the package has been reduced. It can now be installed and used with only `numpy`, `scipy`, `matplotlib`, and `pandas`. Although `statsmodels` (and `patsy`) are still recommended so that all features can be used, they are not required.
+- The dependency load of the package has been reduced. It can now be installed and used with only ``numpy``, ``scipy``, ``matplotlib`, and ``pandas``. Although ``statsmodels`` is still recommended for full functionality, it is not required.
 
 Plotting functions
 ^^^^^^^^^^^^^^^^^^
