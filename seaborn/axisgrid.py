@@ -714,6 +714,8 @@ class JointGrid(object):
         plt.sca(self.ax_joint)
         func(self.x, self.y, **kwargs)
 
+        return self
+
     def plot_marginals(self, func, **kwargs):
         """Draw univariate plots for `x` and `y` separately.
 
