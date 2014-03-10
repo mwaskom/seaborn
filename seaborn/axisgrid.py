@@ -632,8 +632,14 @@ class JointGrid(object):
         plt.setp(ax_marg_y.get_yticklabels(), visible=False)
 
         # Turn off the ticks on the density axis for the marginal plots
-        ax_marg_x.set_yticks([])
-        ax_marg_y.set_xticks([])
+        plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
+        plt.setp(ax_marg_x.yaxis.get_minorticklines(), visible=False)
+        plt.setp(ax_marg_y.xaxis.get_majorticklines(), visible=False)
+        plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
+        plt.setp(ax_marg_x.get_yticklabels(), visible=False)
+        plt.setp(ax_marg_y.get_xticklabels(), visible=False)
+        ax_marg_x.yaxis.grid(False)
+        ax_marg_y.xaxis.grid(False)
 
         # Possibly extract the variables from a DataFrame
         if data is not None:
