@@ -119,6 +119,7 @@ html_theme_options = {
     'bootswatch_theme': "flatly",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
+    'navbar_links': [("Tutorial", "tutorials")],
 
     }
 
