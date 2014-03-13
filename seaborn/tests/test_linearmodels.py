@@ -807,7 +807,6 @@ class TestRegressionPlots(object):
 
     def test_regplot_binned(self):
 
-        f, ax = plt.subplots()
         ax = lm.regplot("x", "y", self.df, x_bins=5)
         nt.assert_equal(len(ax.lines), 6)
         nt.assert_equal(len(ax.collections), 2)
@@ -834,6 +833,7 @@ class TestRegressionPlots(object):
 
         nt.assert_equal(len(ax.lines), 2)
         nt.assert_equal(len(ax.collections), 4)
+        plt.close("all")
 
     def test_lmplot_facets(self):
 
@@ -845,5 +845,28 @@ class TestRegressionPlots(object):
 
         g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
+
+        plt.close("all")
+
+    def test_residplot(self):
+
+        x, y = self.df.x, self.df.y
+        ax = lm.residplot(x, y)
+
+        resid = y - np.polyval(np.polyfit(x, y, 1), x)
+        x_plot, y_plot = ax.collections[0].get_offsets().T
+
+        npt.assert_array_equal(x, x_plot)
+        npt.assert_array_almost_equal(resid, y_plot)
+        plt.close("all")
+
+    @skipif(_no_statsmodels)
+    def test_residplot_lowess(self):
+
+        ax = lm.residplot("x", "y", self.df, lowess=True)
+        nt.assert_equal(len(ax.lines), 2)
+
+        x, y = ax.lines[1].get_xydata().T
+        npt.assert_array_equal(x, np.sort(self.df.x))
 
         plt.close("all")
