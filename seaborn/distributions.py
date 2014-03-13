@@ -812,7 +812,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         Data or names of variables in `data`.
     data : DataFrame, optional
         DataFrame when `x` and `y` are variable names.
-    kind : { "scatter" | "reg" | "kde" | "hex" }, optional
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
         Kind of plot to draw.
     stat_func : callable or None
         Function used to calculate a statistic about the relationship and
@@ -890,6 +890,16 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         from .linearmodels import regplot
         grid.plot_marginals(distplot, color=color, **marginal_kws)
         grid.plot_joint(regplot, color=color, **joint_kws)
+
+    elif kind.startswith("resid"):
+
+        from .linearmodels import residplot
+        grid.plot_joint(residplot, color=color, **joint_kws)
+        x, y = grid.ax_joint.collections[0].get_offsets().T
+        distplot(x, color=color, kde=False, ax=grid.ax_marg_x)
+        distplot(y, color=color, kde=False, vertical=True,
+                 fit=stats.norm, ax=grid.ax_marg_y)
+        stat_func = None
 
     if stat_func is not None:
         grid.annotate(stat_func, **annot_kws)
