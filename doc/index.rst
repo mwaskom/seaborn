@@ -14,18 +14,39 @@ the `github repository <https://github.com/mwaskom/seaborn>`_. You can also get
 in touch on `twitter <https://twitter.com/michaelwaskom>`_.
 
 .. raw:: html
-   :file: carousel_simple.html
 
-
-Documentation contents
-----------------------
+   <div class="container-fluid">
+   <div class="row">
+   <div class="col-md-6">
+   <h2>Documentation</h2>
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    introduction
    whatsnew
    installing
-   tutorials
    api
+
+.. raw:: html
+
+   </div>
+   <div class="col-md-6">
+   <h2>Tutorial</h2>
+
+.. toctree::
+   :maxdepth: 1
+
+   aesthetics
+   plotting_distributions
+   quantitative_linear_models
+   categorical_linear_models
+   timeseries_plots
+   axis_grids
+
+.. raw:: html
+
+   </div>
+   </div>
+   </div>
 
