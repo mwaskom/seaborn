@@ -290,6 +290,16 @@ class TestJointPlot(object):
 
         plt.close("all")
 
+    def test_resid(self):
+
+        g = dist.jointplot("x", "y", self.data, kind="resid")
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+        nt.assert_equal(len(g.ax_joint.lines), 1)
+        nt.assert_equal(len(g.ax_marg_x.lines), 0)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+        plt.close("all")
+
     def test_hex(self):
 
         g = dist.jointplot("x", "y", self.data, kind="hex")
