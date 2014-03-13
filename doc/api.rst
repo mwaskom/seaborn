@@ -15,6 +15,7 @@ Linear model plots
     factorplot
     regplot
     interactplot
+    residplot
     pointplot
     barplot
     coefplot
