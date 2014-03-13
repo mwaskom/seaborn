@@ -14,6 +14,8 @@ New plotting functions
 
 - Another new function is :func:`jointplot`, which is built using the new :class:`JointGrid` object. :func:`jointplot` generalizes the behavior of :func:`regplot` in previous versions of seaborn (:func:`regplot` has changed somewhat in 0.3; see below for details) by drawing a bivariate plot of the relationship between two variables with their marginal distributions drawn on the side of the plot. With :func:`jointplot`, you can draw a scatterplot or :ref:`regression plot <jointplot_reg>` as before, but you can now also draw bivariate kernel densities or hexbin plots with appropriate univariate graphs for the marginal distributions. Additionally, it's easy to use :class:`JointGrid` directly to build up more complex plots when the default methods offered by :func:`jointplot` are not suitable for your visualization problem. The :ref:`tutorial <joint_grid>` for :class:`JointGrid` has more examples of how this object can be useful.
 
+- The :func:`residplot` function complements :func:`regplot` and can be quickly used to diagnose problems with a linear model by calculating and plotting the residuals of a simple regression. There is also a ``"resid"`` kind for :func:`jointplot`.
+
 API changes
 ~~~~~~~~~~~
 
