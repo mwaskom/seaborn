@@ -446,17 +446,18 @@ class _RegressionPlotter(_LinearPlotter):
 
         return vals, points, cis
 
-    def fit_regression(self, ax=None, x_range=None):
+    def fit_regression(self, ax=None, x_range=None, grid=None):
         """Fit the regression model."""
         # Create the grid for the regression
-        if self.truncate:
-            x_min, x_max = self.x_range
-        else:
-            if ax is None:
-                x_min, x_max = x_range
+        if grid is None:
+            if self.truncate:
+                x_min, x_max = self.x_range
             else:
-                x_min, x_max = ax.get_xlim()
-        grid = np.linspace(x_min, x_max, 100)
+                if ax is None:
+                    x_min, x_max = x_range
+                else:
+                    x_min, x_max = ax.get_xlim()
+            grid = np.linspace(x_min, x_max, 100)
         ci = self.ci
 
         # Fit the regression
@@ -978,7 +979,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     x : vector or string
         Data or column name in `data` for the predictor variable.
     y : vector or string
-        Data or column name in `data` for response predictor variable.
+        Data or column name in `data` for the response variable.
     data : DataFrame, optional
         DataFrame to use if `x` and `y` are column names.
     x_estimator : function that aggregates a vector into one value, optional
@@ -1049,12 +1050,13 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
 
     Returns
     -------
-    ax: matplotlib axis
-        Axis with the regression plot.
+    ax: matplotlib axes
+        Axes with the regression plot.
 
     See Also
     --------
     lmplot : Combine regplot and a FacetGrid.
+    residplot : Calculate and plot the residuals of a linear model.
     jointplot (with kind="reg"): Draw a regplot with univariate marginal
                                  distrbutions.
 
@@ -1071,6 +1073,90 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     scatter_kws = {} if scatter_kws is None else scatter_kws
     line_kws = {} if line_kws is None else line_kws
     plotter.plot(ax, scatter_kws, line_kws)
+    return ax
+
+
+def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
+              order=1, robust=False, dropna=True, label=None, color=None,
+              scatter_kws=None, ax=None):
+    """Plot the residuals of a linear regression.
+
+    This function will regress y on x (possibly as a robust or polynomial
+    regression) and then draw a scatterplot of the residuals. You can
+    optionally fit a lowess smoother to the residual plot, which can
+    help in determining if there is structure to the residuals.
+
+    Parameters
+    ----------
+    x : vector or string
+        Data or column name in `data` for the predictor variable.
+    y : vector or string
+        Data or column name in `data` for the response variable.
+    data : DataFrame, optional
+        DataFrame to use if `x` and `y` are column names.
+    lowess : boolean, optional
+        Fit a lowess smoother to the residual scatterplot.
+    {x, y}_partial : matrix or string(s) , optional
+        Matrix with same first dimension as `x`, or column name(s) in `data`.
+        These variables are treated as confounding and are removed from
+        the `x` or `y` variables before plotting.
+    order : int, optional
+        Order of the polynomial to fit when calculating the residuals.
+    robust : boolean, optional
+        Fit a robust linear regression when calculating the residuals.
+    dropna : boolean, optional
+        If True, ignore observations with missing data when fitting and
+        plotting.
+    label : string, optional
+        Label that will be used in any plot legends.
+    color : matplotlib color, optional
+        Color to use for all elements of the plot.
+    scatter_kws : dictionaries, optional
+        Additional keyword arguments passed to scatter() for drawing.
+    ax : matplotlib axis, optional
+        Plot into this axis, otherwise grab the current axis or make a new
+        one if not existing.
+
+    Returns
+    -------
+    ax : Axes object
+
+    Returns
+    -------
+    ax: matplotlib axes
+        Axes with the regression plot.
+
+    See Also
+    --------
+    regplot : Plot a simple linear regression model.
+    jointplot (with kind="resid"): Draw a residplot with univariate
+                                   marginal distrbutions.
+
+    """
+    plotter = _RegressionPlotter(x, y, data, ci=None,
+                                 order=order, robust=robust,
+                                 x_partial=x_partial, y_partial=y_partial,
+                                 dropna=dropna, color=color, label=label)
+
+    if ax is None:
+        ax = plt.gca()
+
+    # Calculate the residual from a linear regression
+    _, yhat, _ = plotter.fit_regression(grid=plotter.x)
+    plotter.y = plotter.y - yhat
+
+    # Set the regression option on the plotter
+    if lowess:
+        plotter.lowess = True
+    else:
+        plotter.fit_reg = False
+
+    # Plot a horizontal line at 0
+    ax.axhline(0, ls=":", c=".2")
+
+    # Draw the scatterplot
+    scatter_kws = {} if scatter_kws is None else scatter_kws
+    plotter.plot(ax, scatter_kws, {})
     return ax
 
 
