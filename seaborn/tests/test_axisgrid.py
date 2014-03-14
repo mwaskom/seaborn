@@ -9,6 +9,7 @@ import numpy.testing as npt
 from .. import axisgrid as ag
 from ..utils import color_palette
 from ..distributions import kdeplot
+from ..linearmodels import pointplot
 
 rs = np.random.RandomState(0)
 
@@ -249,6 +250,13 @@ class TestFacetGrid(object):
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
+
+        x, y = np.arange(10), np.arange(10)
+        df = pd.DataFrame(np.c_[x, y], columns=["x", "y"])
+        g = ag.FacetGrid(df).map(pointplot, "x", "y")
+        g.set_xticklabels(step=2)
+        got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
+        npt.assert_array_equal(x[::2], got_x)
 
     def test_subplot_kws(self):
 
