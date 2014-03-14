@@ -3,7 +3,7 @@ export SHELL := /bin/bash
 test:
 
 	nosetests
-	make -C examples test
+	python ipnbdoctest.py examples/*.ipynb
 
 
 coverage:
