@@ -34,6 +34,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.coverage',
               'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
+              'plot_generator',
               'numpydoc',
               'ipython_directive',
               'ipython_console_highlighting',
@@ -119,7 +120,8 @@ html_theme_options = {
     'bootswatch_theme': "flatly",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
-    'navbar_links': [("Tutorial", "tutorials")],
+    'navbar_links': [("Tutorial", "tutorials"),
+                     ("Gallery", "examples/index")],
 
     }
 
