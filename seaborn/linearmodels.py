@@ -1119,10 +1119,6 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
 
     Returns
     -------
-    ax : Axes object
-
-    Returns
-    -------
     ax: matplotlib axes
         Axes with the regression plot.
 
