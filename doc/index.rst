@@ -27,6 +27,7 @@ in touch on `twitter <https://twitter.com/michaelwaskom>`_.
    whatsnew
    installing
    api
+   examples/index
 
 .. raw:: html
 
@@ -49,4 +50,9 @@ in touch on `twitter <https://twitter.com/michaelwaskom>`_.
    </div>
    </div>
    </div>
+
+.. toctree::
+    :hidden:
+
+    tutorials
 
