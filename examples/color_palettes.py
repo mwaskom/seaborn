@@ -6,12 +6,12 @@ Color palette choices
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="white", context="talk")
+sns.set(style="nogrid", context="poster")
 rs = np.random.RandomState(7)
 
 x = np.array(list("ABCDEFGHI"))
 
-f, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 6), sharex=True)
+f, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
 
 y1 = np.arange(1, 10)
 sns.barplot(x, y1, ci=None, palette="BuGn_d", hline=.1, ax=ax1)
