@@ -2,7 +2,6 @@
 Faceted logistic regression
 ===========================
 
-_thumb: .58, .5
 """
 import seaborn as sns
 sns.set(style="darkgrid")
