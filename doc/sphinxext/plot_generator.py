@@ -1,5 +1,6 @@
-import sys
 import os
+import re
+import sys
 import glob
 import token
 import tokenize
@@ -34,6 +35,7 @@ INDEX_TEMPLATE = """
 
     <style type="text/css">
     .figure {{
+        position: relative;
         float: left;
         margin: 10px;
         width: 180px;
@@ -41,21 +43,54 @@ INDEX_TEMPLATE = """
     }}
 
     .figure img {{
+        position: absolute;
         display: inline;
+        left: 0;
         width: 170px;
         height: 170px;
-        opacity:0.4;
-        filter:alpha(opacity=40); /* For IE8 and earlier */
-    }}
-
-    .figure img:hover
-    {{
         opacity:1.0;
         filter:alpha(opacity=100); /* For IE8 and earlier */
     }}
 
-    .figure .caption {{
+    .figure:hover img {{
+        -webkit-filter: blur(3px);
+        -moz-filter: blur(3px);
+        -o-filter: blur(3px);
+        -ms-filter: blur(3px);
+        filter: blur(3px);
+        opacity:1.0;
+        filter:alpha(opacity=100); /* For IE8 and earlier */
+    }}
+
+    .figure span {{
+        position: absolute;
+        display: inline;
+        left: 0;
+        width: 170px;
+        height: 170px;
+        background: #000;
+        color: #fff;
+        visibility: hidden;
+        opacity: 0;
+        z-index: 100;
+    }}
+
+    .figure p {{
+        position: absolute;
+        top: 45%;
+        width: 170px;
+        font-size: 110%;
+    }}
+
+    .figure:hover span {{
+        visibility: visible;
+        opacity: .4;
+    }}
+
+    .caption {{
+        position: absolue;
         width: 180px;
+        top: 170px;
         text-align: center !important;
     }}
     </style>
@@ -195,6 +230,8 @@ class ExampleGenerator(object):
         self.target_dir = target_dir
         self.extract_docstring()
         self.exec_file()
+        with open(filename, "r") as fid:
+            self.filetext = fid.read()
 
     @property
     def dirname(self):
@@ -228,7 +265,7 @@ class ExampleGenerator(object):
     @property
     def thumbfilename(self):
         pngfile =  self.modulename + '_thumb.png'
-        return "_images/" + pngfile
+        return pngfile
 
     @property
     def sphinxtag(self):
@@ -237,6 +274,16 @@ class ExampleGenerator(object):
     @property
     def pagetitle(self):
         return self.docstring.strip().split('\n')[0].strip()
+
+    @property
+    def plotfunc(self):
+        match = re.search(r"sns\.(.+plot)\(", self.filetext)
+        if match:
+            return match.group(1)
+        match = re.search(r"sns\.(.+Grid)\(", self.filetext)
+        if match:
+            return match.group(1)
+        return ""
 
     def extract_docstring(self):
         """ Extract a module-level docstring
@@ -281,20 +328,29 @@ class ExampleGenerator(object):
         fig.canvas.draw()
         pngfile = os.path.join(self.target_dir,
                                self.pngfilename)
+        thumbfile = os.path.join("example_thumbs",
+                                 self.thumbfilename)
         self.html = "<img src=../%s>" % self.pngfilename
         fig.savefig(pngfile, dpi=75)
-        create_thumbnail(pngfile, "examples/" + self.thumbfilename)
+        create_thumbnail(pngfile, thumbfile)
 
     def toctree_entry(self):
         return "   ./%s\n\n" % os.path.splitext(self.htmlfilename)[0]
 
     def contents_entry(self):
-        return (".. figure:: ./{0}\n"
-                "    :target: ./{1}\n"
-                "    :align: center\n\n"
-                "    :ref:`{2}`\n\n".format(self.thumbfilename,
-                                            self.htmlfilename,
-                                            self.sphinxtag))
+        return (".. raw:: html\n\n"
+                "    <div class='figure align-center'>\n"
+                "    <a href=./{0}>\n"
+                "    <img src=../_static/{1}>\n"
+                "    <span class='figure-label'>\n"
+                "    <p>{2}</p>\n"
+                "    </span>\n"
+                "    </a>\n"
+                "    </div>\n\n"
+                "\n\n"
+                "".format(self.htmlfilename,
+                          self.thumbfilename,
+                          self.plotfunc))
 
 
 def main(app):
