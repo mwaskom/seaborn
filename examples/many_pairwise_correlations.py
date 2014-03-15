@@ -2,7 +2,6 @@
 Plotting a large correlation matrix
 ===================================
 
-_thumb: .3, .6
 """
 import numpy as np
 import seaborn as sns
