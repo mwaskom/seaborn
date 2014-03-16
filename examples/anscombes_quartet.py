@@ -2,6 +2,7 @@
 Anscombe's quartet
 ==================
 
+_thumb: .4, .4
 """
 import seaborn as sns
 sns.set(style="ticks")
