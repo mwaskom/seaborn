@@ -1,3 +1,10 @@
+"""
+Sphinx plugin to run example scripts and create a gallery page.
+
+Lightly modified from the mpld3 project.
+
+"""
+from __future__ import division
 import os
 import re
 import sys
@@ -12,7 +19,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from matplotlib import image
-from matplotlib.figure import Figure
 
 
 RST_TEMPLATE = """
@@ -176,42 +182,24 @@ anchor_elements.append("svg:image")
 
 def create_thumbnail(infile, thumbfile,
                      width=300, height=300,
-                     cx=0.5, cy=0.6, border=4):
-    # this doesn't really matter, it will cancel in the end, but we
-    # need it for the mpl API
-    dpi = 100
-
+                     cx=0.5, cy=0.5, border=4):
     baseout, extout = os.path.splitext(thumbfile)
+
     im = image.imread(infile)
     rows, cols = im.shape[:2]
-    x0 = int(cx * cols - 0.7 * width)
-    y0 = int(cy * rows - 0.7 * height)
-    thumb = im[y0: y0 + height,
-               x0: x0 + width]
+    x0 = int(cx * cols - .5 * width)
+    y0 = int(cy * rows - .5 * height)
+    xslice = slice(x0, x0 + width)
+    yslice = slice(y0, y0 + height)
+    thumb = im[yslice, xslice]
     thumb[:border, :, :3] = thumb[-border:, :, :3] = 0
     thumb[:, :border, :3] = thumb[:, -border:, :3] = 0
 
-    extension = extout.lower()
-
-    if extension == '.png':
-        from matplotlib.backends.backend_agg \
-            import FigureCanvasAgg as FigureCanvas
-    elif extension == '.pdf':
-        from matplotlib.backends.backend_pdf \
-            import FigureCanvasPDF as FigureCanvas
-    elif extension == '.svg':
-        from matplotlib.backends.backend_svg \
-            import FigureCanvasSVG as FigureCanvas
-    else:
-        raise ValueError("Can only handle extensions 'png', 'svg' or 'pdf'")
-
-    fig = Figure(figsize=(float(width) / dpi, float(height) / dpi),
-                 dpi=dpi)
-    canvas = FigureCanvas(fig)
+    dpi = 100
+    fig = plt.figure(figsize=(width / dpi, height / dpi), dpi=dpi)
 
     ax = fig.add_axes([0, 0, 1, 1], aspect='auto',
                       frameon=False, xticks=[], yticks=[])
-
     ax.imshow(thumb, aspect='auto', resample=True,
               interpolation='bilinear')
     fig.savefig(thumbfile, dpi=dpi)
@@ -228,6 +216,7 @@ class ExampleGenerator(object):
     def __init__(self, filename, target_dir):
         self.filename = filename
         self.target_dir = target_dir
+        self.thumbloc = .5, .5
         self.extract_docstring()
         self.exec_file()
         with open(filename, "r") as fid:
@@ -259,12 +248,12 @@ class ExampleGenerator(object):
 
     @property
     def pngfilename(self):
-        pngfile =  self.modulename + '.png'
+        pngfile = self.modulename + '.png'
         return "_images/" + pngfile
 
     @property
     def thumbfilename(self):
-        pngfile =  self.modulename + '_thumb.png'
+        pngfile = self.modulename + '_thumb.png'
         return pngfile
 
     @property
@@ -312,6 +301,17 @@ class ExampleGenerator(object):
                     first_par = paragraphs[0]
             break
 
+        thumbloc = None
+        for i, line in enumerate(docstring.split("\n")):
+            m = re.match(r"^_thumb: (\.\d+),\s*(\.\d+)", line)
+            if m:
+                thumbloc = float(m.group(1)), float(m.group(2))
+                break
+        if thumbloc is not None:
+            self.thumbloc = thumbloc
+            docstring = "\n".join([l for l in docstring.split("\n")
+                                   if not l.startswith("_thumb")])
+
         self.docstring = docstring
         self.short_desc = first_par
         self.end_line = erow + 1 + start_row
@@ -332,7 +332,9 @@ class ExampleGenerator(object):
                                  self.thumbfilename)
         self.html = "<img src=../%s>" % self.pngfilename
         fig.savefig(pngfile, dpi=75)
-        create_thumbnail(pngfile, thumbfile)
+
+        cx, cy = self.thumbloc
+        create_thumbnail(pngfile, thumbfile, cx=cx, cy=cy)
 
     def toctree_entry(self):
         return "   ./%s\n\n" % os.path.splitext(self.htmlfilename)[0]
@@ -396,7 +398,7 @@ def main(app):
     # write index file
     index_file = os.path.join(target_dir, 'index.rst')
     with open(index_file, 'w') as index:
-        index.write(INDEX_TEMPLATE.format(sphinx_tag="example-gallery",
+        index.write(INDEX_TEMPLATE.format(sphinx_tag="example_gallery",
                                           toctree=toctree,
                                           contents=contents))
 
