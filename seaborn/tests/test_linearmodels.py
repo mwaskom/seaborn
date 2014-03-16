@@ -848,6 +848,15 @@ class TestRegressionPlots(object):
 
         plt.close("all")
 
+    def test_lmplot_scatter_kws(self):
+
+        g = lm.lmplot("x", "y", hue="h", data=self.df, ci=None)
+        red_scatter, blue_scatter = g.axes[0, 0].collections
+
+        red, blue = utils.color_palette("husl", 2)
+        npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
+        npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
+
     def test_residplot(self):
 
         x, y = self.df.x, self.df.y
