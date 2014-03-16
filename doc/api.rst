@@ -70,6 +70,7 @@ Style frontend
     set_color_palette
     palette_context
     reset_defaults
+    reset_origin
 
 Color palettes
 --------------
