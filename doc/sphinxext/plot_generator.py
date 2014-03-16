@@ -7,7 +7,6 @@ Lightly modified from the mpld3 project.
 from __future__ import division
 import os
 import re
-import sys
 import glob
 import token
 import tokenize
@@ -358,6 +357,7 @@ class ExampleGenerator(object):
 def main(app):
     static_dir = os.path.join(app.builder.srcdir, '_static')
     target_dir = os.path.join(app.builder.srcdir, 'examples')
+    thumb_dir = os.path.join(app.builder.srcdir, "example_thumbs")
     source_dir = os.path.abspath(os.path.join(app.builder.srcdir,
                                               '..', 'examples'))
     if not os.path.exists(static_dir):
@@ -365,6 +365,12 @@ def main(app):
 
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
+
+    if not os.path.exists(thumb_dir):
+        os.makedirs(thumb_dir)
+
+    if not os.path.exists(source_dir):
+        os.makedirs(source_dir)
 
     banner_data = []
 

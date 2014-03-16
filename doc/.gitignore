@@ -1,7 +1,9 @@
 *_files/
 _build/
 generated/
-_static/examples/*.png
+_static/
+examples/
+example_thumbs/
 aesthetics.rst
 quantitative_linear_models.rst
 categorical_linear_models.rst
