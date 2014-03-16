@@ -2,6 +2,7 @@
 Joint kernel density estimate
 =============================
 
+_thumb: .6, .4
 """
 import numpy as np
 import pandas as pd
