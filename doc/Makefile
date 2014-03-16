@@ -40,6 +40,8 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
+	-rm examples/*
+	-rm example_thumbs/*
 
 notebooks:
 
