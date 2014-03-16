@@ -357,6 +357,7 @@ class ExampleGenerator(object):
 def main(app):
     static_dir = os.path.join(app.builder.srcdir, '_static')
     target_dir = os.path.join(app.builder.srcdir, 'examples')
+    image_dir = os.path.join(app.builder.srcdir, 'examples/_images')
     thumb_dir = os.path.join(app.builder.srcdir, "example_thumbs")
     source_dir = os.path.abspath(os.path.join(app.builder.srcdir,
                                               '..', 'examples'))
@@ -365,6 +366,9 @@ def main(app):
 
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
+
+    if not os.path.exists(image_dir):
+        os.makedirs(image_dir)
 
     if not os.path.exists(thumb_dir):
         os.makedirs(thumb_dir)
