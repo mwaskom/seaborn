@@ -1,5 +1,6 @@
 """Plotting functions for linear models (broadly construed)."""
 from __future__ import division
+import copy
 import itertools
 import warnings
 import numpy as np
@@ -1070,8 +1071,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     if ax is None:
         ax = plt.gca()
 
-    scatter_kws = {} if scatter_kws is None else scatter_kws
-    line_kws = {} if line_kws is None else line_kws
+    scatter_kws = {} if scatter_kws is None else copy.copy(scatter_kws)
+    line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
