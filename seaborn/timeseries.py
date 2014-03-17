@@ -36,15 +36,15 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Either the name of the field corresponding to time in the data
         DataFrame or x values for a plot when data is an array. If a Series,
         the name will be used to label the x axis.
-    value : string
-        Either the name of the field corresponding to the data values in
-        the data DataFrame (i.e. the y coordinate) or a string that forms
-        the y axis label when data is an array.
     unit : string
         Field in the data DataFrame identifying the sampling unit (e.g.
         subject, neuron, etc.). The error representation will collapse over
         units at each time/condition observation. This has no role when data
         is an array.
+    value : string
+        Either the name of the field corresponding to the data values in
+        the data DataFrame (i.e. the y coordinate) or a string that forms
+        the y axis label when data is an array.
     condition : string or Series-like
         Either the name of the field identifying the condition an observation
         falls under in the data DataFrame, or a sequence of names with a length
