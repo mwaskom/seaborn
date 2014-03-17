@@ -76,8 +76,9 @@ class _DiscretePlotter(_LinearPlotter):
     """
     def __init__(self, x, y=None, hue=None, data=None, units=None,
                  x_order=None, hue_order=None, color=None, palette=None,
-                 kind="auto", dodge=0, join=True, hline=None,
-                 estimator=np.mean, ci=95, n_boot=1000, dropna=True):
+                 kind="auto", markers=None, linestyles=None, dodge=0,
+                 join=True, hline=None, estimator=np.mean, ci=95,
+                 n_boot=1000, dropna=True):
 
         # This implies we have a single bar/point for each level of `x`
         # but that the different levels should be mapped with a palette
@@ -112,6 +113,22 @@ class _DiscretePlotter(_LinearPlotter):
             self.hue_order = hue_sorted if hue_order is None else hue_order
         else:
             self.hue_order = [None]
+
+        # Handle the other hue-mapped attributes
+        if markers is None:
+            self.markers = ["o"] * len(self.hue_order)
+        else:
+            if len(markers) != len(self.hue_order):
+                raise ValueError("Length of marker list must equal "
+                                 "number of hue levels")
+            self.markers = markers
+        if linestyles is None:
+            self.linestyles = ["-"] * len(self.hue_order)
+        else:
+            if len(linestyles) != len(self.hue_order):
+                raise ValueError("Length of linestyle list must equal "
+                                 "number of hue levels")
+            self.linestyles = linestyles
 
         # Drop null observations
         if dropna:
@@ -319,6 +336,8 @@ class _DiscretePlotter(_LinearPlotter):
             color = self.palette if self.x_palette else self.palette[i]
             err_palette = self.err_palette
             label = self.hue_order[i]
+            marker = self.markers[i]
+            linestyle = self.linestyles[i]
 
             # The error bars
             for j, (x, (low, high)) in enumerate(zip(pos, ci)):
@@ -326,11 +345,13 @@ class _DiscretePlotter(_LinearPlotter):
                 ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
 
             # The main plot
-            ax.scatter(pos, height, s=75, color=color, label=label)
+            ax.scatter(pos, height, s=75, color=color, label=label,
+                       marker=marker)
 
             # The join line
             if self.join:
-                ax.plot(pos, height, color=color, linewidth=self.lw)
+                ax.plot(pos, height, color=color,
+                        linewidth=self.lw, linestyle=linestyle)
 
         # Set the x limits
         xlim = (self.positions.min() + self.offset.min() - .3,
@@ -715,9 +736,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
 def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
                units=None, x_order=None, hue_order=None, col_order=None,
-               row_order=None, kind="auto", dodge=0, join=True, hline=None,
-               size=5, aspect=1, palette=None, legend=True, legend_out=True,
-               dropna=True, sharex=True, sharey=True, margin_titles=False):
+               row_order=None, kind="auto", markers=None, linestyles=None,
+               dodge=0, join=True, hline=None, size=5, aspect=1, palette=None,
+               legend=True, legend_out=True, dropna=True, sharex=True,
+               sharey=True, margin_titles=False):
     """Plot a variable estimate and error sorted by categorical factors.
 
     Parameters
@@ -750,6 +772,12 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     kind : {"auto", "point", "bar"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
+    markers : list of strings, optional
+        Marker codes to map the `hue` variable with. Only relevant when kind
+        is "point".
+    linestyles : list of strings, optional
+        Linestyle codes to map the `hue` variable with. Only relevant when
+        kind is "point".
     dodge : positive scalar, optional
         Horizontal offset applies to different `hue` levels. Only relevant
         when kind is "point".
@@ -837,7 +865,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
             p.plot(ax)
         facets.map_dataframe(_boxplot, x, y, hue, **kwargs)
     elif kind == "point":
-        kwargs.update(dict(dodge=dodge, join=join))
+        kwargs.update(dict(dodge=dodge, join=join,
+                           markers=markers, linestyles=linestyles))
         facets.map_dataframe(pointplot, x, y, hue, **kwargs)
 
     # Draw legends and labels
@@ -896,8 +925,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
 
     """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
-                               color, palette, "bar", 0, False, hline,
-                               estimator, ci, n_boot, dropna)
+                               color, palette, "bar", None, None, 0, False,
+                               hline, estimator, ci, n_boot, dropna)
 
     if ax is None:
         ax = plt.gca()
@@ -907,8 +936,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
 
 def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-              dodge=0, dropna=True, color=None, palette=None, join=True,
-              label=None, ax=None):
+              markers=None, linestyles=None, dodge=0, dropna=True, color=None,
+              palette=None, join=True, label=None, ax=None):
     """Estimate data in categorical bins with a point representation.
 
     Parameters
@@ -930,6 +959,10 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
     units : vector, optional
         Vector with ids for sampling units; bootstrap will be performed over
         these units and then within them.
+    markers : list of strings, optional
+        Marker codes to map the `hue` variable with.
+    linestyles : list of strings, optional
+        Linestyle codes to map the `hue` variable with.
     dodge : positive scalar, optional
         Horizontal offset applies to different `hue` levels. Only relevant
         when kind is "point".
@@ -956,8 +989,9 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
 
     """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
-                               color, palette, "point", dodge, join, hline,
-                               estimator, ci, n_boot, dropna)
+                               color, palette, "point", markers, linestyles,
+                               dodge, join, hline, estimator, ci, n_boot,
+                               dropna)
 
     if ax is None:
         ax = plt.gca()
