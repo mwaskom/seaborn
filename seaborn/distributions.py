@@ -223,9 +223,9 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
     # Label the axes and ticks
     if vertical:
-        ax.set_xticklabels(names)
+        ax.set_xticklabels(list(names))
     else:
-        ax.set_yticklabels(names)
+        ax.set_yticklabels(list(names))
         xlabel, ylabel = ylabel, xlabel
     if xlabel is not None:
         ax.set_xlabel(xlabel)
@@ -374,7 +374,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     if names is not None:
         if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
-        ax.set_xticklabels(names)
+        ax.set_xticklabels(list(names))
     ax.set_xlim(positions[0] - .5, positions[-1] + .5)
 
     if xlabel is not None:
