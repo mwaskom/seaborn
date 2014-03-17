@@ -469,6 +469,34 @@ class TestDiscretePlotter(object):
                                 palette=pal, hue_order=list("yx"))
         nt.assert_equal(p.palette, color_palette(["green", "pink"], 2))
 
+    def test_markers(self):
+
+        p = lm._DiscretePlotter("x", "y", hue="g", data=self.df)
+        nt.assert_equal(p.markers, ["o", "o"])
+
+        markers = ["o", "s"]
+        p = lm._DiscretePlotter("x", "y", hue="g", data=self.df,
+                                markers=markers)
+        nt.assert_equal(p.markers, markers)
+
+        with nt.assert_raises(ValueError):
+            p = lm._DiscretePlotter("x", "y", hue="g", data=self.df,
+                                    markers=["o", "s", "d"])
+
+    def test_linestyles(self):
+
+        p = lm._DiscretePlotter("x", "y", hue="g", data=self.df)
+        nt.assert_equal(p.linestyles, ["-", "-"])
+
+        linestyles = ["-", "--"]
+        p = lm._DiscretePlotter("x", "y", hue="g", data=self.df,
+                                linestyles=linestyles)
+        nt.assert_equal(p.linestyles, linestyles)
+
+        with nt.assert_raises(ValueError):
+            p = lm._DiscretePlotter("x", "y", hue="g", data=self.df,
+                                    linestyles=["-", "--", ":"])
+
     def test_plot_kind(self):
 
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="bar")
