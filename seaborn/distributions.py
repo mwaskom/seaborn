@@ -734,14 +734,18 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if ax is None:
         ax = plt.gca()
 
+    data = data.astype(np.float64, copy=False)
+    if data2 is not None:
+        data2 = data2.astype(np.float64, copy=False)
+
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
         bivariate = True
-        x, y = data.astype(np.float64).T
+        x, y = data.T
     elif isinstance(data, pd.DataFrame) and np.ndim(data) > 1:
         bivariate = True
-        x = data.iloc[:, 0].values.astype(np.float64)
-        y = data.iloc[:, 1].values.astype(np.float64)
+        x = data.iloc[:, 0].values
+        y = data.iloc[:, 1].values
     elif data2 is not None:
         bivariate = True
         x = data
