@@ -21,7 +21,7 @@ from .external.six.moves import range
 
 from . import utils
 from . import algorithms as algo
-from .utils import color_palette
+from .palettes import color_palette
 from .axisgrid import FacetGrid
 
 
