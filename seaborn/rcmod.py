@@ -5,6 +5,8 @@ import matplotlib as mpl
 
 from . import palettes
 
+from . import palettes
+
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial",
         gridweight=None):
     """Set new RC params in one step."""
@@ -193,8 +195,8 @@ def set_color_palette(name, n_colors=6, desat=None):
         desaturation factor for each color
 
     """
-    colors = utils.color_palette(name, n_colors, desat)
-    mpl.rcParams["axes.color_cycle"] = colors
+    colors = palettes.color_palette(name, n_colors, desat)
+    mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
 
 

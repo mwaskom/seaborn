@@ -7,7 +7,7 @@ import nose.tools as nt
 import numpy.testing as npt
 
 from .. import axisgrid as ag
-from ..utils import color_palette
+from ..palettes import color_palette
 from ..distributions import kdeplot
 from ..linearmodels import pointplot
 
