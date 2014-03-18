@@ -1,3 +1,5 @@
+import colorsys
+
 import numpy as np
 import matplotlib as mpl
 
@@ -5,7 +7,6 @@ import nose.tools as nt
 import numpy.testing as npt
 
 from .. import palettes, utils, rcmod
-from ..xkcd_rgb import xkcd_rgb
 
 
 class TestColorPalettes(object):
@@ -13,29 +14,9 @@ class TestColorPalettes(object):
     def test_current_palette(self):
 
         pal = palettes.color_palette(["red", "blue", "green"], 3)
-        rcmod.set_palette(pal, 3)
+        rcmod.set_color_palette(pal, 3)
         nt.assert_equal(pal, mpl.rcParams["axes.color_cycle"])
         rcmod.set()
-
-    def test_palette_context(self):
-
-        default_pal = palettes.color_palette()
-        context_pal = palettes.color_palette("muted")
-
-        with palettes.color_palette(context_pal):
-            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
-
-        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
-
-    def test_big_palette_context(self):
-
-        default_pal = palettes.color_palette()
-        context_pal = palettes.color_palette("husl", 10)
-
-        with palettes.color_palette(context_pal, 10):
-            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
-
-        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
 
     def test_seaborn_palettes(self):
 
@@ -111,13 +92,11 @@ class TestColorPalettes(object):
 
         pal_dark = palettes.hls_palette(5, l=.2)
         pal_bright = palettes.hls_palette(5, l=.8)
-        npt.assert_array_less(list(map(sum, pal_dark)),
-                              list(map(sum, pal_bright)))
+        npt.assert_array_less(map(sum, pal_dark), map(sum, pal_bright))
 
         pal_flat = palettes.hls_palette(5, s=.1)
         pal_bold = palettes.hls_palette(5, s=.9)
-        npt.assert_array_less(list(map(np.std, pal_flat)),
-                              list(map(np.std, pal_bold)))
+        npt.assert_array_less(map(np.std, pal_flat), map(np.std, pal_bold))
 
     def test_husl_values(self):
 
@@ -128,13 +107,11 @@ class TestColorPalettes(object):
 
         pal_dark = palettes.husl_palette(5, l=.2)
         pal_bright = palettes.husl_palette(5, l=.8)
-        npt.assert_array_less(list(map(sum, pal_dark)),
-                              list(map(sum, pal_bright)))
+        npt.assert_array_less(map(sum, pal_dark), map(sum, pal_bright))
 
         pal_flat = palettes.husl_palette(5, s=.1)
         pal_bold = palettes.husl_palette(5, s=.9)
-        npt.assert_array_less(list(map(np.std, pal_flat)),
-                              list(map(np.std, pal_bold)))
+        npt.assert_array_less(map(np.std, pal_flat), map(np.std, pal_bold))
 
     def test_cbrewer_qual(self):
 
@@ -166,47 +143,3 @@ class TestColorPalettes(object):
         colors = ["red", "yellow", "white"]
         pal_cmap = palettes.blend_palette(colors, as_cmap=True)
         nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
-
-    def test_cubehelix_against_matplotlib(self):
-
-        x = np.linspace(0, 1, 8)
-        mpl_pal = mpl.cm.cubehelix(x)[:, :3].tolist()
-
-        sns_pal = palettes.cubehelix_palette(8, start=0.5, rot=-1.5, hue=1,
-                                             dark=0, light=1, reverse=True)
-
-        nt.assert_list_equal(sns_pal, mpl_pal)
-
-    def test_cubehelix_n_colors(self):
-
-        for n in [3, 5, 8]:
-            pal = palettes.cubehelix_palette(n)
-            nt.assert_equal(len(pal), n)
-
-    def test_cubehelix_reverse(self):
-
-        pal_forward = palettes.cubehelix_palette()
-        pal_reverse = palettes.cubehelix_palette(reverse=True)
-        nt.assert_list_equal(pal_forward, pal_reverse[::-1])
-
-    def test_cubehelix_cmap(self):
-
-        cmap = palettes.cubehelix_palette(as_cmap=True)
-        nt.assert_is_instance(cmap, mpl.colors.ListedColormap)
-        pal = palettes.cubehelix_palette()
-        x = np.linspace(0, 1, 6)
-        npt.assert_array_equal(cmap(x)[:, :3], pal)
-
-        cmap_rev = palettes.cubehelix_palette(as_cmap=True, reverse=True)
-        x = np.linspace(0, 1, 6)
-        pal_forward = cmap(x).tolist()
-        pal_reverse = cmap_rev(x[::-1]).tolist()
-        nt.assert_list_equal(pal_forward, pal_reverse)
-
-    def test_xkcd_palette(self):
-
-        names = xkcd_rgb.keys()[10:15]
-        colors = palettes.xkcd_palette(names)
-        for name, color in zip(names, colors):
-            as_hex = mpl.colors.rgb2hex(color)
-            nt.assert_equal(as_hex, xkcd_rgb[name])

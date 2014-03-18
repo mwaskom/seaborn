@@ -10,26 +10,10 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from .utils import desaturate
-from .xkcd_rgb import xkcd_rgb
-
-
-class _ColorPalette(list):
-    """Set the color palette in a with statement, otherwise be a list."""
-    def __enter__(self):
-        """Open the context."""
-        from .rcmod import set_palette
-        self._orig_palette = color_palette()
-        set_palette(self, len(self))
-        return self
-
-    def __exit__(self, *args):
-        """Close the context."""
-        from .rcmod import set_palette
-        set_palette(self._orig_palette, len(self._orig_palette))
 
 
 def color_palette(name=None, n_colors=6, desat=None):
-    """Return a list of colors defining a color palette.
+    """Return matplotlib color codes for a given palette.
 
     Availible seaborn palette names:
         deep, muted, bright, pastel, dark, colorblind
@@ -37,47 +21,21 @@ def color_palette(name=None, n_colors=6, desat=None):
     Other options:
         hls, husl, any matplotlib palette
 
-    Matplotlib paletes can be specified as reversed palettes by appending
-    "_r" to the name or as dark palettes by appending "_d" to the name.
-
-    This function can also be used in a ``with`` statement to temporarily
-    set the color cycle for a plot or set of plots.
-
     Parameters
     ----------
-    name: None, string, or sequence
-        Name of palette or None to return current palette. If a
-        sequence, input colors are used but possibly cycled and
-        desaturated.
+    name: None, string, or list-ish
+        name of palette or None to return current color list. if
+        list-ish (i.e. arrays work too), input colors are used but
+        possibly desaturated
     n_colors : int
-        Number of colors in the palette. If larger than the number of
-        colors in the palette, they will cycle.
+        number of colors in the palette
     desat : float
-        Value to desaturate each color by.
+        desaturation factor for each color
 
     Returns
     -------
-    palette : list of RGB tuples.
-        Color palette.
-
-    Examples
-    --------
-    >>> p = color_palette("muted")
-
-    >>> p = color_palette("Blues_d", 10)
-
-    >>> p = color_palette("Set1", desat=.7)
-
-    >>> import matplotlib.pyplot as plt
-    >>> with color_palette("husl", 8):
-    ...     f, ax = plt.subplots()
-    ...     ax.plot(x, y)                  # doctest: +SKIP
-
-    See Also
-    --------
-    set_palette : set the default color cycle for all plots.
-    axes_style : define parameters to set the style of plots
-    plotting_context : define parameters to scale plot elements
+    palette : list of colors
+        color palette
 
     """
     seaborn_palettes = dict(
@@ -122,7 +80,6 @@ def color_palette(name=None, n_colors=6, desat=None):
     # Always return in r, g, b tuple format
     try:
         palette = map(mpl.colors.colorConverter.to_rgb, palette)
-        palette = _ColorPalette(palette)
     except ValueError:
         raise ValueError("Could not generate a palette for %s" % str(name))
 
@@ -228,7 +185,7 @@ def mpl_palette(name, n_colors=6):
         bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
-    palette = list(map(tuple, cmap(bins)[:, :3]))
+    palette = map(tuple, cmap(bins)[:, :3])
 
     return palette
 
@@ -279,78 +236,3 @@ def blend_palette(colors, n_colors=6, as_cmap=False):
     if not as_cmap:
         pal = pal(np.linspace(0, 1, n_colors))
     return pal
-
-
-def xkcd_palette(colors):
-    """Make a palette with color names from the xkcd color survey.
-
-    This is just a simple wrapper around the seaborn.xkcd_rbg dictionary.
-
-    See xkcd for the full list of colors: http://xkcd.com/color/rgb/
-
-    """
-    palette = [xkcd_rgb[name] for name in colors]
-    return color_palette(palette, len(palette))
-
-
-def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
-                      light=.85, dark=.15, reverse=False, as_cmap=False):
-    """Make a sequential palette from the cubehelix system.
-
-    This produces a colormap with linearly-decreasing (or increasing)
-    brightness. That means that information will be preserved if printed to
-    black and white or viewed by someone who is colorblind.  "cubehelix" is
-    also availible as a matplotlib-based palette, but this function gives the
-    user more control over the look of the palette and has a different set of
-    defaults.
-
-    Parameters
-    ----------
-    n_colors : int
-        Number of colors in the palette.
-    start : float, 0 <= start <= 3
-        The hue at the start of the helix.
-    rot : float
-        Rotations around the hue wheel over the range of the palette.
-    gamma : float 0 <= gamma
-        Gamma factor to emphasize darker (gamma < 1) or lighter (gamma > 1)
-        colors.
-    hue : float, 0 <= hue <= 1
-        Saturation of the colors.
-    dark : float 0 <= dark <= 1
-        Intensity of the darkest color in the palette.
-    light : float 0 <= light <= 1
-        Intensity of the lightest color in the palette.
-    reverse : bool
-        If True, the palette will go from dark to light.
-    as_cmap : bool
-        If True, return a matplotlib colormap instead of a list of colors.
-
-    Returns
-    -------
-    palette : list or colormap
-
-    References
-    ----------
-    Green, D. A. (2011). "A colour scheme for the display of astronomical
-    intensity images". Bulletin of the Astromical Society of India, Vol. 39,
-    p. 289-295.
-
-    """
-    cdict = mpl._cm.cubehelix(gamma, start, rot, hue)
-    cmap = mpl.colors.LinearSegmentedColormap("cubehelix", cdict)
-
-    x = np.linspace(light, dark, n_colors)
-    pal = cmap(x)[:, :3].tolist()
-    if reverse:
-        pal = pal[::-1]
-
-    if as_cmap:
-        x_256 = np.linspace(light, dark, 256)
-        if reverse:
-            x_256 = x_256[::-1]
-        pal_256 = cmap(x_256)
-        cmap = mpl.colors.ListedColormap(pal_256)
-        return cmap
-    else:
-        return pal
