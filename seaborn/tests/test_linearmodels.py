@@ -16,7 +16,7 @@ except ImportError:
 from .. import linearmodels as lm
 from .. import algorithms as algo
 from .. import utils
-from ..utils import color_palette
+from ..palettes import color_palette
 
 rs = np.random.RandomState(0)
 
@@ -881,7 +881,7 @@ class TestRegressionPlots(object):
         g = lm.lmplot("x", "y", hue="h", data=self.df, ci=None)
         red_scatter, blue_scatter = g.axes[0, 0].collections
 
-        red, blue = utils.color_palette("husl", 2)
+        red, blue = color_palette("husl", 2)
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
 
