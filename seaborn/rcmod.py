@@ -1,5 +1,5 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
-import contextlib
+import warnings
 from numpy import isreal
 import matplotlib as mpl
 
@@ -213,10 +213,8 @@ def set_color_palette(name, n_colors=6, desat=None):
     mpl.rcParams["patch.facecolor"] = colors[0]
 
 
-@contextlib.contextmanager
 def palette_context(palette, n_colors=6, desat=None):
     """Context manager for temporarily setting the color palette."""
-    orig_palette = mpl.rcParams["axes.color_cycle"]
-    set_color_palette(palette, n_colors, desat)
-    yield
-    set_color_palette(orig_palette, len(orig_palette))
+    warnings.warn("palette_context is deprecated, use color_palette directly.",
+                  UserWarning)
+    return palettes.color_palette(palette, n_colors, desat)
