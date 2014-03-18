@@ -1,5 +1,6 @@
 from .rcmod import *
 from .utils import *
+from .palettes import *
 from .linearmodels import *
 from .distributions import *
 from .timeseries import *
