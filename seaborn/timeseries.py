@@ -11,7 +11,7 @@ from .external.six import string_types
 
 from . import utils
 from . import algorithms as algo
-from .utils import color_palette
+from .palettes import color_palette
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
