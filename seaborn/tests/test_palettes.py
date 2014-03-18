@@ -1,5 +1,3 @@
-import colorsys
-
 import numpy as np
 import matplotlib as mpl
 
@@ -17,6 +15,16 @@ class TestColorPalettes(object):
         rcmod.set_color_palette(pal, 3)
         nt.assert_equal(pal, mpl.rcParams["axes.color_cycle"])
         rcmod.set()
+
+    def test_palette_context(self):
+
+        default_pal = palettes.color_palette()
+        context_pal = palettes.color_palette("muted")
+
+        with palettes.color_palette(context_pal):
+            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
+
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
 
     def test_seaborn_palettes(self):
 
