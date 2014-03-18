@@ -5,6 +5,8 @@ import matplotlib as mpl
 
 from . import palettes
 
+from . import palettes
+
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial",
         gridweight=None):
     """Set new RC params in one step."""

@@ -6,6 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
+from .palettes import color_palette
 
 
 class FacetGrid(object):
@@ -100,7 +101,7 @@ class FacetGrid(object):
             hue_masks = [np.repeat(True, len(data))]
             # Use the first color of the current palette
             # I'm not sure if I like this vs. e.g. dark gray
-            colors = utils.color_palette(n_colors=1)
+            colors = color_palette(n_colors=1)
         else:
             if hue_order is None:
                 hue_names = np.unique(np.sort(data[hue]))
@@ -113,7 +114,7 @@ class FacetGrid(object):
                 # Allow for palette to map from hue variable names
                 palette = [palette[h] for h in hue_names]
             hue_masks = [data[hue] == val for val in hue_names]
-            colors = utils.color_palette(palette, len(hue_masks))
+            colors = color_palette(palette, len(hue_masks))
 
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True

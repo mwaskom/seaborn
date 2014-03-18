@@ -16,8 +16,8 @@ except ImportError:
 
 from .external.six.moves import range
 
-from .utils import (color_palette, husl_palette, blend_palette, set_hls_values,
-                    desaturate, percentiles, iqr, _kde_support)
+from .utils import set_hls_values, desaturate, percentiles, iqr, _kde_support
+from .palettes import color_palette, husl_palette, blend_palette
 from .axisgrid import JointGrid
 
 
