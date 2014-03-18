@@ -12,6 +12,21 @@ from .external.six.moves import range
 from .utils import desaturate
 
 
+class _ColorPalette(list):
+    """Set the color palette in a with statement, otherwise be a list."""
+    def __enter__(self):
+        """Open the context."""
+        from .rcmod import set_color_palette
+        self._orig_palette = color_palette()
+        set_color_palette(self)
+        return self
+
+    def __exit__(self, *args):
+        """Close the context."""
+        from .rcmod import set_color_palette
+        set_color_palette(self._orig_palette)
+
+
 def color_palette(name=None, n_colors=6, desat=None):
     """Return matplotlib color codes for a given palette.
 
@@ -79,7 +94,7 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     # Always return in r, g, b tuple format
     try:
-        palette = map(mpl.colors.colorConverter.to_rgb, palette)
+        palette = _ColorPalette(map(mpl.colors.colorConverter.to_rgb, palette))
     except ValueError:
         raise ValueError("Could not generate a palette for %s" % str(name))
 
