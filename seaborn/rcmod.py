@@ -6,6 +6,54 @@ import matplotlib as mpl
 from . import palettes
 
 
+style_keys = (
+    "axes.facecolor",
+    "axes.edgecolor",
+    "axes.grid",
+    "axes.axisbelow",
+    "axes.linewidth",
+
+    "grid.color",
+    "grid.linestyle",
+
+    "xtick.direction",
+    "ytick.direction",
+    "xtick.major.size",
+    "ytick.major.size",
+    "xtick.minor.size",
+    "ytick.minor.size",
+
+    "legend.frameon",
+    "legend.numpoints",
+    "legend.scatterpoints",
+
+    "lines.solid_capstyle",
+
+    "image.cmap",
+    )
+
+context_keys = (
+    "axes.labelsize",
+    "axes.titlesize",
+    "xtick.labelsize",
+    "ytick.labelsize",
+    "legend.fontsize",
+
+    "grid.linewidth",
+    "lines.linewidth",
+    "patch.linewidth",
+    "lines.markeredgewidth",
+
+    "xtick.major.width",
+    "ytick.major.width",
+    "xtick.minor.width",
+    "ytick.minor.width",
+
+    "xtick.major.pad",
+    "ytick.major.pad"
+    )
+
+
 def set(context="notebook", style="darkgrid", palette="deep", font="Arial",
         gridweight=None):
     """Set new RC params in one step."""
@@ -23,19 +71,131 @@ def reset_orig():
     mpl.rcParams.update(mpl.rcParamsOrig)
 
 
-def set_axes_style(style, context, font="Arial", gridweight=None):
+class _AxesStyle(dict):
+
+    def __enter__(self):
+        """Open the context."""
+        rc = mpl.rcParams
+        self._orig_style = {k: rc[k] for k in style_keys}
+        set_style(self)
+        return self
+
+    def __exit__(self, *args):
+        """Close the context."""
+        set_style(self._orig_style)
+
+
+def axes_style(style=None, rc=None):
+
+    if style is None:
+        style_dict = {k: mpl.rcParams[k] for k in style_keys}
+
+    elif isinstance(style, dict):
+        style_dict = style
+
+    else:
+
+        # Backwards compatibility
+        if style == "nogrid":
+            style = "white"
+            warnings.warn("The 'nogrid' style is now named 'white'. "
+                          "Please update your code", UserWarning)
+
+        styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
+        if style not in styles:
+            raise ValueError("style must be one of %s" % ", ".join(styles))
+
+        # Common parameters
+        style_dict = {
+            "legend.frameon": False,
+            "legend.numpoints": 1,
+            "legend.scatterpoints": 1,
+            "xtick.direction": "out",
+            "ytick.direction": "out",
+            "axes.axisbelow": True,
+            "image.cmap": "Greys",
+            "grid.linestyle": "-",
+            "lines.solid_capstyle": "round",
+            }
+
+        # Set grid on or off
+        if "grid" in style:
+            style_dict.update({
+                "axes.grid": True,
+                })
+        else:
+            style_dict.update({
+                "axes.grid": False,
+                })
+
+        # Set the color of the background, spines, and grids
+        if style.startswith("dark"):
+            style_dict.update({
+                "axes.facecolor": "#EAEAF2",
+                "axes.edgecolor": "white",
+                "axes.linewidth": 0,
+                "grid.color": "white",
+                })
+
+        elif style == "whitegrid":
+            style_dict.update({
+                "axes.facecolor": "white",
+                "axes.edgecolor": ".7",
+                "axes.linewidth": 0,
+                "grid.color": ".8",
+                })
+
+        elif style in ["white", "ticks"]:
+            style_dict.update({
+                "axes.facecolor": "white",
+                "axes.edgecolor": ".2",
+                "axes.linewidth": 1.25,
+                "grid.color": ".8",
+                })
+
+        # Show or hide the axes ticks
+        if style == "ticks":
+            style_dict.update({
+                "axes.facecolor": "white",
+                "axes.edgecolor": ".2",
+                "grid.color": ".8",
+                "xtick.major.size": 6,
+                "ytick.major.size": 6,
+                "xtick.minor.size": 3,
+                "ytick.minor.size": 3,
+                })
+        else:
+            style_dict.update({
+                "xtick.major.size": 0,
+                "ytick.major.size": 0,
+                "xtick.minor.size": 0,
+                "ytick.minor.size": 0,
+                })
+
+    # Override these settings with the provided rc dictionary
+    if rc is not None:
+        rc = {k: v for k, v in rc.items() if k in style_keys}
+        style_dict.update(rc)
+
+    # Wrap in an _AxesStyle object so this can be used in a with statement
+    style_object = _AxesStyle(style_dict)
+
+    return style_object
+
+
+def set_style(style, rc=None):
+
+    style_object = axes_style(style, rc)
+    mpl.rcParams.update(style_object)
+
+
+def set_axes_style(style, context, font, gridweight):
     """Set the axis style.
 
     Parameters
     ----------
     style : darkgrid | whitegrid | nogrid | ticks
         Style of axis background.
-    context: notebook | talk | paper | poster
-        Intended context for resulting figures.
-    font : matplotlib font spec
-        Font to use for text in the figures.
-    gridweight : extra heavy | heavy | medium | light
-        Width of the grid lines. None
 
     """
 
