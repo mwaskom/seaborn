@@ -12,7 +12,7 @@ class TestColorPalettes(object):
     def test_current_palette(self):
 
         pal = palettes.color_palette(["red", "blue", "green"], 3)
-        rcmod.set_color_palette(pal, 3)
+        rcmod.set_palette(pal, 3)
         nt.assert_equal(pal, mpl.rcParams["axes.color_cycle"])
         rcmod.set()
 
