@@ -16,19 +16,19 @@ class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
     def __enter__(self):
         """Open the context."""
-        from .rcmod import set_color_palette
+        from .rcmod import set_palette
         self._orig_palette = color_palette()
-        set_color_palette(self)
+        set_palette(self)
         return self
 
     def __exit__(self, *args):
         """Close the context."""
-        from .rcmod import set_color_palette
-        set_color_palette(self._orig_palette)
+        from .rcmod import set_palette
+        set_palette(self._orig_palette)
 
 
 def color_palette(name=None, n_colors=6, desat=None):
-    """Return matplotlib color codes for a given palette.
+    """Return a list of colors definind a color palette.
 
     Availible seaborn palette names:
         deep, muted, bright, pastel, dark, colorblind
@@ -36,21 +36,46 @@ def color_palette(name=None, n_colors=6, desat=None):
     Other options:
         hls, husl, any matplotlib palette
 
+    Matplotlib paletes can be specified as reversed palettes by appending
+    "_r" to the name or as dark palettes by appending "_d" to the name.
+
+    This function can also be used in a ``with`` statement to temporarily
+    set the color cycle for a plot or set of plots.
+
     Parameters
     ----------
-    name: None, string, or list-ish
-        name of palette or None to return current color list. if
-        list-ish (i.e. arrays work too), input colors are used but
-        possibly desaturated
+    name: None, string, or sequence
+        Name of palette or None to return current palette. If a
+        sequence, input colors are used but possibly cycled and
+        desaturated.
     n_colors : int
-        number of colors in the palette
+        Number of colors in the palette. If larger than the number of
+        colors in the palette, they will cycle.
     desat : float
-        desaturation factor for each color
+        Value to desaturate each color by.
 
     Returns
     -------
-    palette : list of colors
-        color palette
+    palette : list of RGB tuples.
+        Color palette.
+
+    Examples
+    --------
+    >>> color_palette("muted")
+    >>> color_palette("Blues_d", 10)
+    >>> color_palette("Set1", desat=.7)
+
+    >>> with color_palette("husl", 8):
+    >>>     f, ax = plt.subplots()
+    >>>     ax.plot(x, y)
+
+    See Also
+    --------
+    set_palette : set the default color cycle for all plots.
+    plotting_context, set_context : return or set parameters corresponding
+                                    to the scale of the figure.
+    axes_style, set_style : return or set parameters corresponding to the
+                            aesthetic elements of the figure.
 
     """
     seaborn_palettes = dict(
