@@ -119,7 +119,8 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     # Always return in r, g, b tuple format
     try:
-        palette = _ColorPalette(map(mpl.colors.colorConverter.to_rgb, palette))
+        palette = map(mpl.colors.colorConverter.to_rgb, palette)
+        palette = _ColorPalette(palette)
     except ValueError:
         raise ValueError("Could not generate a palette for %s" % str(name))
 
@@ -225,7 +226,7 @@ def mpl_palette(name, n_colors=6):
         bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
-    palette = map(tuple, cmap(bins)[:, :3])
+    palette = list(map(tuple, cmap(bins)[:, :3]))
 
     return palette
 
