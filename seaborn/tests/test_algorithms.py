@@ -248,8 +248,8 @@ Baseline,One year
         )
 
     def test_refval(self):
-         nose.tools.assert_almost_equal(self.refval, self.known_refval,
-                                        places=3)
+        nose.tools.assert_almost_equal(self.refval, self.known_refval,
+                                       places=3)
 
     def test_ci_bca(self):
         ci = algo.ci(self.bootstrap, how='bca', refval=self.refval)
