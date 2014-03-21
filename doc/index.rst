@@ -102,6 +102,7 @@ in touch on `twitter <https://twitter.com/michaelwaskom>`_.
    :maxdepth: 1
 
    aesthetics
+   color_palettes
    plotting_distributions
    quantitative_linear_models
    categorical_linear_models

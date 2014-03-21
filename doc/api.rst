@@ -66,11 +66,12 @@ Style frontend
     :toctree: generated/
 
     set
-    set_axes_style
-    set_color_palette
-    palette_context
+    axes_style
+    set_style
+    plotting_context
+    set_context
     reset_defaults
-    reset_origin
+    reset_orig
 
 Color palettes
 --------------
@@ -78,6 +79,7 @@ Color palettes
 .. autosummary::
     :toctree: generated/
 
+    set_palette
     color_palette
     hls_palette
     husl_palette
@@ -99,5 +101,3 @@ Utility functions
     set_hls_values
     ci_to_errsize
     axlabel
-    pmf_hist
-
