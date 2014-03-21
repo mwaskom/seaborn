@@ -17,6 +17,8 @@ _style_keys = (
     "grid.color",
     "grid.linestyle",
 
+    "text.color",
+
     "xtick.color",
     "ytick.color",
     "xtick.direction",
@@ -181,11 +183,12 @@ def axes_style(style=None, rc=None):
             raise ValueError("style must be one of %s" % ", ".join(styles))
 
         # Define colors here
-        dark_gray = ".2"
+        dark_gray = ".15"
         light_gray = ".8"
 
         # Common parameters
         style_dict = {
+            "text.color": dark_gray,
             "legend.frameon": False,
             "legend.numpoints": 1,
             "legend.scatterpoints": 1,
