@@ -16,6 +16,8 @@ _style_keys = (
     "grid.color",
     "grid.linestyle",
 
+    "xtick.color",
+    "ytick.color",
     "xtick.direction",
     "ytick.direction",
     "xtick.major.size",
@@ -145,18 +147,18 @@ def axes_style(style=None, rc=None):
     Examples
     --------
     >>> axes_style("whitegrid")
+
     >>> set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
+
     >>> with axes_style("white"):
     ...     f, ax = plt.subplots()
     ...     ax.plot(x, y)
 
     See Also
     --------
-    axes_style : return a dict of parameters or use in a ``with`` statement
-                 to temporarily set the style.
-    plotting_context, set_context : return or set parameters corresponding
-                                    to the scale of the figure.
-    color_palette, set_palette: return or set color palettes for plots.
+    set_style : set the matplotlib parameters for a seaborn theme
+    plotting_context : return a parameter dict to to scale plot elements
+    color_palette : define the color palette for a plot
 
     """
     if style is None:
@@ -184,6 +186,8 @@ def axes_style(style=None, rc=None):
             "legend.scatterpoints": 1,
             "xtick.direction": "out",
             "ytick.direction": "out",
+            "xtick.color": ".2",
+            "ytick.color": ".2",
             "axes.axisbelow": True,
             "image.cmap": "Greys",
             "font.family": "Arial",
@@ -271,15 +275,15 @@ def set_style(style=None, rc=None):
     Examples
     --------
     >>> set_style("whitegrid")
+
     >>> set_style("ticks", {"xtick.major.size": 8, "ytick.major.size": 8})
 
     See Also
     --------
     axes_style : return a dict of parameters or use in a ``with`` statement
                  to temporarily set the style.
-    plotting_context, set_context : return or set parameters corresponding
-                                    to the scale of the figure.
-    color_palette, set_palette: return or set color palettes for plots.
+    set_context : set parameters to scale plot elements
+    set_palette : set the default color palette for figures
 
     """
     style_object = axes_style(style, rc)
@@ -287,7 +291,7 @@ def set_style(style=None, rc=None):
 
 
 def plotting_context(context=None, rc=None):
-    """Set the plotting context parameters.
+    """Return a parameter dict to scale elements of the figure.
 
     This affects things like the size of the labels, lines, and other
     elements of the plot, but not the overall style. The base context
@@ -310,6 +314,7 @@ def plotting_context(context=None, rc=None):
     Examples
     --------
     >>> plotting_context("poster")
+
     >>> plotting_context("talk", {"lines.linewidth": 2})
 
     >>> with plotting_context("paper"):
@@ -318,12 +323,9 @@ def plotting_context(context=None, rc=None):
 
     See Also
     --------
-    set_context : return a dictionary of rc parameters, or use in
-                       a ``with`` statement to temporarily set the context.
-    axes_style, set_style : return or set parameters corresponding to the
-                            aesthetic elements of the figure.
-    color_palette, set_palette: return or set color palettes for plots.
-
+    set_context : set the matplotlib parameters to scale plot elements
+    axes_style : return a dict of parameters defining a figure style
+    color_palette : define the color palette for a plot
 
     """
     if context is None:
@@ -399,15 +401,15 @@ def set_context(context=None, rc=None):
     Examples
     --------
     >>> set_context("paper")
+
     >>> set_context("talk", {"lines.linewidth": 2})
 
     See Also
     --------
     plotting_context : return a dictionary of rc parameters, or use in
                        a ``with`` statement to temporarily set the context.
-    axes_style, set_style : return or set parameters corresponding to the
-                            aesthetic elements of the figure.
-    color_palette, set_palette: return or set color palettes for plots.
+    set_style : set the default parameters for figure style
+    set_palette : set the default color palette for figures
 
     """
     context_object = plotting_context(context, rc)
@@ -430,16 +432,15 @@ def set_palette(name, n_colors=6, desat=None):
     Examples
     --------
     >>> set_palette("Reds")
+
     >>> set_palette("Set1", 8, .75)
 
     See Also
     --------
     color_palette : build a color palette or set the color cycle temporarily
                     in a ``with`` statement.
-    plotting_context, set_context : return or set parameters corresponding
-                                    to the scale of the figure.
-    axes_style, set_style : return or set parameters corresponding to the
-                            aesthetic elements of the figure.
+    set_context : set parameters to scale plot elements
+    set_style : set the default parameters for figure style
 
     """
     colors = palettes.color_palette(name, n_colors, desat)
@@ -452,6 +453,7 @@ def set_color_palette(palette, n_colors=6, desat=None):
     warnings.warn("set_color_palette is deprecated, use set_palette instead.",
                   UserWarning)
     return set_palette(palette, n_colors, desat)
+
 
 def palette_context(palette, n_colors=6, desat=None):
     """Backwards compatibility for color_palette."""
