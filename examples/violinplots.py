@@ -18,4 +18,4 @@ d += np.log(np.arange(1, p + 1)) * -5 + 10
 f, ax = plt.subplots()
 sns.offset_spines()
 sns.violinplot(d)
-sns.despine(left=True, trim=True)
+sns.despine(trim=True)
