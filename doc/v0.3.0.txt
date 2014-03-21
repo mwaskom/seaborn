@@ -23,6 +23,10 @@ API changes
 
 - As noted above, :func:`lmplot` has been rewritten to exploit the :class:`FacetGrid` machinery. This involves a few changes. The ``color`` keyword argument has been replaced with ``hue``, for better consistency across the package. The ``hue`` parameter will always take a variable *name*, while ``color`` will take a color name or (in some cases) a palette. The :func:`lmplot` function now returns the :class:`FacetGrid` used to draw the plot instance.
 
+- The functions that interact with matplotlib rc parameters have been updated and standardized. There are now three pairs of functions, :func:`axes_style` and :func:`set_style`, :func:`plotting_context` and :func:`set_context`, and :func:`color_palette` and :func:`set_palette`. In each case, the pairs take the exact same arguments. The first function defines and returns the parameters, and the second sets the matplotlib defaults. Additionally, the first function in each pair can be used in a ``with`` statement to temporarily change the defaults. Both the style and context functions also now accept a dictionary of matplotlib rc parameters to override the seaborn defaults, and :func:`set` now also takes a dictionary to update any of the matplotlib defaults. See the :ref:`tutorial <aesthetics_tutorial>` for more information.
+
+- The ``nogrid`` style has been deprecated and changed to ``white`` for more uniformity (i.e. there are now ``darkgrid``, ``dark``, ``whitegrid``, and ``white`` styles).
+
 
 Other changes
 ~~~~~~~~~~~~~
@@ -30,7 +34,7 @@ Other changes
 Using the package
 ^^^^^^^^^^^^^^^^^
 
-- If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do ``import seaborn.apionly as sns`` or ``from seaborn.apionly import lmplot``, etc. This is using the (also new) :func:`reset_origin` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
+- If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do ``import seaborn.apionly as sns`` or ``from seaborn.apionly import lmplot``, etc. This is using the (also new) :func:`reset_orig` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
 
 - The dependency load of the package has been reduced. It can now be installed and used with only ``numpy``, ``scipy``, ``matplotlib`, and ``pandas``. Although ``statsmodels`` is still recommended for full functionality, it is not required.
 
@@ -46,6 +50,10 @@ Plotting functions
 - Changed :func:`interactplot` to use a robust calculation of the data range when finding default limits for the contour colormap to work better when there are outliers in the data.
 
 Style
-~~~~~
+^^^^^
+
+- There is a new style, ``dark``, which shares most features with ``darkgrid`` but does not draw a grid by default.
 
 - There is a new function, :func:`offset_spines`, and a corresponding option in :func:`despine` called ``trim``. Together, these can be used to make plots where the axis spines are offset from the main part of the figure and limited within the range of the ticks. This is recommended for use with the ``ticks`` style.
+
+- Other aspects of the seaborn styles have been tweaked for more attractive plots.
