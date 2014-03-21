@@ -7,7 +7,7 @@ _thumb: .65, .35
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="nogrid")
+sns.set(style="white")
 
 rs = np.random.RandomState(9)
 mean = [0, 0]
