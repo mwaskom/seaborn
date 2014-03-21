@@ -179,6 +179,10 @@ def axes_style(style=None, rc=None):
         if style not in styles:
             raise ValueError("style must be one of %s" % ", ".join(styles))
 
+        # Define colors here
+        dark_gray = ".2"
+        light_gray = ".8"
+
         # Common parameters
         style_dict = {
             "legend.frameon": False,
@@ -186,8 +190,8 @@ def axes_style(style=None, rc=None):
             "legend.scatterpoints": 1,
             "xtick.direction": "out",
             "ytick.direction": "out",
-            "xtick.color": ".2",
-            "ytick.color": ".2",
+            "xtick.color": dark_gray,
+            "ytick.color": dark_gray,
             "axes.axisbelow": True,
             "image.cmap": "Greys",
             "font.family": "Arial",
@@ -217,17 +221,17 @@ def axes_style(style=None, rc=None):
         elif style == "whitegrid":
             style_dict.update({
                 "axes.facecolor": "white",
-                "axes.edgecolor": ".7",
+                "axes.edgecolor": light_gray,
                 "axes.linewidth": 1,
-                "grid.color": ".8",
+                "grid.color": light_gray,
                 })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
                 "axes.facecolor": "white",
-                "axes.edgecolor": ".2",
+                "axes.edgecolor": dark_gray,
                 "axes.linewidth": 1.25,
-                "grid.color": ".8",
+                "grid.color": light_gray,
                 })
 
         # Show or hide the axes ticks
