@@ -7,7 +7,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="nogrid", palette="muted")
+sns.set(style="white", palette="muted")
 f, axes = plt.subplots(2, 2, figsize=(7, 7), sharex=True)
 sns.despine(left=True)
 

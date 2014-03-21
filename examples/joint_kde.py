@@ -7,7 +7,7 @@ _thumb: .6, .4
 import numpy as np
 import pandas as pd
 import seaborn as sns
-sns.set(style="nogrid")
+sns.set(style="white")
 
 rs = np.random.RandomState(5)
 mean = [0, 0]
