@@ -91,7 +91,7 @@ def percentiles(a, pcts, axis=None):
 
     Returns
     -------
-    scores: array
+    scores : array
         array of scores at requested percentiles
         first dimension is length of object passed to ``pcts``
 
@@ -118,11 +118,14 @@ def acceleration(data):
     '''
     Compute the acceleration statistic
 
-    Input:
+    Parameters
+    ----------
         data : 1-D numpy array
 
-    Returns:
+    Returns
+    -------
         acc (float) : the acceleration statistic
+
     '''
     # intermediate values
     SSD = np.sum((data.mean() - data)**3)
@@ -172,8 +175,8 @@ def ci(a, which=95, axis=None, how='percentile', refval=None):
         Intervals." Statistical Sciences, Vol 11, No.3, pp189-228.
     As of March 2014, available at:
     http://staff.ustc.edu.cn/~zwp/teach/Stat-Comp/Efron_Bootstrap_CIs.pdf
-    """
 
+    """
     p = np.array([50 - which / 2, 50 + which / 2])
     if how.lower() == 'percentile':
         CI = percentiles(a, p, axis)
