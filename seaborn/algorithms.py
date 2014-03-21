@@ -77,6 +77,140 @@ def bootstrap(*args, **kwargs):
     return np.array(boot_dist)
 
 
+def percentiles(a, pcts, axis=None):
+    """Like scoreatpercentile but can take and return array of percentiles.
+
+    Parameters
+    ----------
+    a : array
+        data
+    pcts : sequence of percentile values
+        percentile or percentiles to find score at
+    axis : int or None
+        if not None, computes scores over this axis
+
+    Returns
+    -------
+    scores: array
+        array of scores at requested percentiles
+        first dimension is length of object passed to ``pcts``
+
+    """
+    scores = []
+    try:
+        n = len(pcts)
+    except TypeError:
+        pcts = [pcts]
+        n = 0
+    for i, p in enumerate(pcts):
+        if axis is None:
+            score = stats.scoreatpercentile(a.ravel(), p)
+        else:
+            score = np.apply_along_axis(stats.scoreatpercentile, axis, a, p)
+        scores.append(score)
+    scores = np.asarray(scores)
+    if not n:
+        scores = scores.squeeze()
+    return scores
+
+
+def acceleration(data):
+    '''
+    Compute the acceleration statistic
+
+    Input:
+        data : 1-D numpy array
+
+    Returns:
+        acc (float) : the acceleration statistic
+    '''
+    # intermediate values
+    SSD = np.sum((data.mean() - data)**3)
+    SCD = np.sum((data.mean() - data)**2)
+
+    # dodge the ZeroDivision error
+    if SCD == 0:
+        SCD = 1e-12
+
+    # comput and return the acceleration
+    return SSD / (6 * SCD**1.5)
+
+
+def ci(a, which=95, axis=None, how='percentile', refval=None):
+    """Return a confidence interval from an array of (bootstrapped)
+    values.
+
+    Parameters
+    ----------
+    a : array-like
+        A sequence of bootstrapped statistic for which the confidence
+        interval will be computed.
+
+    which : optional float (default = 95)
+        The level of confidence of the intervals.
+
+    axis : optional int or None (default)
+        If not None, computes scores over this axis when using the
+        percentile method.
+
+    how : optional string ("percentile" or "bca")
+        Selects the method for computing the confidence interval.
+        BCa = "bias-corrected and accelerated". See References section.
+
+    refval : optional float or None (default)
+        Baseline result for the BCa method. Typically this the result of
+        the statistical function fed into `bootstrap` applied to the
+        original data.
+
+    Returns
+    -------
+    CI : sequence of lower and upper confidence bounds.
+
+    References
+    ----------
+    DiCiccio, T.J. and Efron. B. (1996). "Bootstrap Confidence
+        Intervals." Statistical Sciences, Vol 11, No.3, pp189-228.
+    As of March 2014, available at:
+    http://staff.ustc.edu.cn/~zwp/teach/Stat-Comp/Efron_Bootstrap_CIs.pdf
+    """
+
+    p = np.array([50 - which / 2, 50 + which / 2])
+    if how.lower() == 'percentile':
+        CI = percentiles(a, p, axis)
+
+    elif how.lower() == 'bca':
+        if refval is None:
+            refval = np.mean(a)
+
+        n_below = np.sum(a < refval)
+        if n_below == 0:
+            n_below = 0.00001
+
+        # z-stats on the % of `n_below` and the confidence limits
+        z0 = stats.distributions.norm.ppf(float(n_below)/len(a))
+        z = stats.distributions.norm.ppf(p / 100.0)
+
+        # compute the acceleration
+        a_hat = acceleration(a)
+
+        # refine the confidence limits (alphas)
+        zTotal = (z0 + (z0 + z)) / (1 - a_hat*(z0+z))
+        alpha = stats.distributions.norm.cdf(zTotal) * 100.0
+
+        # confidence intervals from the new alphas
+        CI = percentiles(a, alpha)
+
+        # fall back to the standard percentile method if the CIs
+        # don't make any sense (i.e., don't surround refval)
+        if refval < CI[0] or CI[1] < refval or n_below == len(a):
+            CI = ci(a, which=which, axis=axis, how='percentile')
+
+    else:
+        raise ValueError("`how` must be either 'BCa' or 'percentile'")
+
+    return CI
+
+
 def _structured_bootstrap(args, n_boot, units, func, func_kwargs, rs):
     """Resample units instead of datapoints."""
     unique_units = np.unique(units)

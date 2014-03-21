@@ -1,6 +1,9 @@
 import numpy as np
 from scipy import stats
 from ..external.six.moves import range
+import pandas
+from ..six import StringIO
+
 
 import numpy.testing as npt
 from numpy.testing import assert_array_equal
@@ -202,3 +205,68 @@ def test_randomize_corrmat_tail_error():
     """Test that we are strict about tail paramete."""
     a = rs.randn(3, 30)
     algo.randomize_corrmat(a, "hello")
+
+
+class testCIs(object):
+    def setup(self):
+        datastring = StringIO("""\
+Baseline,One year
+2.12,2.47
+4.35,4.61
+3.39,5.26
+2.51,3.02
+4.04,6.36
+5.10,5.93
+3.77,3.93
+3.35,4.09
+4.10,4.88
+3.35,3.81
+4.15,4.74
+3.56,3.29
+3.39,5.55
+1.88,2.82
+2.56,4.23
+2.96,3.23
+2.49,2.56
+3.03,4.31
+2.66,4.37
+3.00,2.40
+""")
+
+        self.data = pandas.read_csv(datastring)
+        self.fxn = lambda x, y: stats.pearsonr(x, y)[0]
+        self.refval = self.fxn(self.data['Baseline'], self.data['One year'])
+
+        self.known_refval = 0.723
+        self.known_ci_bca = np.array([0.48, 0.85])
+        self.known_ci_bca_norefval = np.array([0.45, 0.85])
+        self.known_ci_pct = np.array([0.50, 0.86])
+        self.badrefval = 0.90
+        self.bootstrap = algo.bootstrap(self.data['Baseline'], self.data['One year'],
+                                   n_iter=10000, func=self.fxn)
+
+    def test_refval(self):
+         nose.tools.assert_almost_equal(self.refval, self.known_refval, places=3)
+
+    def test_ci_bca(self):
+        ci = algo.ci(self.bootstrap, how='bca', refval=self.refval)
+        npt.assert_array_almost_equal(ci, self.known_ci_bca, decimal=2)
+
+    @npt.decorators.skipif(True, "test is unreliable")
+    def test_ci_bca_norefval(self):
+        ci = algo.ci(self.bootstrap, how='bca')
+        npt.assert_array_almost_equal(ci, self.known_ci_bca_norefval, decimal=2)
+
+    def test_ci_pct(self):
+        ci = algo.ci(self.bootstrap)
+        npt.assert_array_almost_equal(ci, self.known_ci_pct, decimal=2)
+
+    def test_pct_fallback(self):
+        bca = algo.ci(self.bootstrap, how='bca', refval=self.badrefval)
+        pct = algo.ci(self.bootstrap)
+
+        npt.assert_array_almost_equal(bca, pct, decimal=4)
+
+    @raises(ValueError)
+    def test_junk_how(self):
+        algo.ci(self.bootstrap, how='junk')
