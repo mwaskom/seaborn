@@ -28,7 +28,7 @@ class _ColorPalette(list):
 
 
 def color_palette(name=None, n_colors=6, desat=None):
-    """Return a list of colors definind a color palette.
+    """Return a list of colors defining a color palette.
 
     Availible seaborn palette names:
         deep, muted, bright, pastel, dark, colorblind
@@ -62,7 +62,9 @@ def color_palette(name=None, n_colors=6, desat=None):
     Examples
     --------
     >>> color_palette("muted")
+
     >>> color_palette("Blues_d", 10)
+
     >>> color_palette("Set1", desat=.7)
 
     >>> with color_palette("husl", 8):
@@ -72,10 +74,8 @@ def color_palette(name=None, n_colors=6, desat=None):
     See Also
     --------
     set_palette : set the default color cycle for all plots.
-    plotting_context, set_context : return or set parameters corresponding
-                                    to the scale of the figure.
-    axes_style, set_style : return or set parameters corresponding to the
-                            aesthetic elements of the figure.
+    axes_style : define parameters to set the style of plots
+    plotting_context : define parameters to scale plot elements
 
     """
     seaborn_palettes = dict(
