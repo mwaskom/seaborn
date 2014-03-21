@@ -242,11 +242,14 @@ Baseline,One year
         self.known_ci_bca_norefval = np.array([0.45, 0.85])
         self.known_ci_pct = np.array([0.50, 0.86])
         self.badrefval = 0.90
-        self.bootstrap = algo.bootstrap(self.data['Baseline'], self.data['One year'],
-                                   n_iter=10000, func=self.fxn)
+        self.bootstrap = algo.bootstrap(
+            self.data['Baseline'], self.data['One year'],
+            n_iter=10000, func=self.fxn
+        )
 
     def test_refval(self):
-         nose.tools.assert_almost_equal(self.refval, self.known_refval, places=3)
+         nose.tools.assert_almost_equal(self.refval, self.known_refval,
+                                        places=3)
 
     def test_ci_bca(self):
         ci = algo.ci(self.bootstrap, how='bca', refval=self.refval)
@@ -255,7 +258,8 @@ Baseline,One year
     @npt.decorators.skipif(True, "test is unreliable")
     def test_ci_bca_norefval(self):
         ci = algo.ci(self.bootstrap, how='bca')
-        npt.assert_array_almost_equal(ci, self.known_ci_bca_norefval, decimal=2)
+        npt.assert_array_almost_equal(ci, self.known_ci_bca_norefval,
+                                      decimal=2)
 
     def test_ci_pct(self):
         ci = algo.ci(self.bootstrap)
