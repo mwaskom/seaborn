@@ -100,11 +100,13 @@ class TestColorPalettes(object):
 
         pal_dark = palettes.hls_palette(5, l=.2)
         pal_bright = palettes.hls_palette(5, l=.8)
-        npt.assert_array_less(map(sum, pal_dark), map(sum, pal_bright))
+        npt.assert_array_less(list(map(sum, pal_dark)),
+                              list(map(sum, pal_bright)))
 
         pal_flat = palettes.hls_palette(5, s=.1)
         pal_bold = palettes.hls_palette(5, s=.9)
-        npt.assert_array_less(map(np.std, pal_flat), map(np.std, pal_bold))
+        npt.assert_array_less(list(map(np.std, pal_flat)),
+                              list(map(np.std, pal_bold)))
 
     def test_husl_values(self):
 
@@ -115,11 +117,13 @@ class TestColorPalettes(object):
 
         pal_dark = palettes.husl_palette(5, l=.2)
         pal_bright = palettes.husl_palette(5, l=.8)
-        npt.assert_array_less(map(sum, pal_dark), map(sum, pal_bright))
+        npt.assert_array_less(list(map(sum, pal_dark)),
+                              list(map(sum, pal_bright)))
 
         pal_flat = palettes.husl_palette(5, s=.1)
         pal_bold = palettes.husl_palette(5, s=.9)
-        npt.assert_array_less(map(np.std, pal_flat), map(np.std, pal_bold))
+        npt.assert_array_less(list(map(np.std, pal_flat)),
+                              list(map(np.std, pal_bold)))
 
     def test_cbrewer_qual(self):
 
