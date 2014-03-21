@@ -40,27 +40,21 @@ help:
 
 clean:
 	-rm -rf $(BUILDDIR)/*
-	-rm examples/*
-	-rm example_thumbs/*
+	-rm -rf examples/*
+	-rm -rf example_thumbs/*
+	-rm -rf *_files/
 
 notebooks:
 
-	ipython nbconvert --to rst ../examples/aesthetics.ipynb
 	ipython nbconvert --to rst ../examples/plotting_distributions.ipynb
 	ipython nbconvert --to rst ../examples/timeseries_plots.ipynb
 
-	runipy --o quantitative_linear_models.ipynb --matplotlib --quiet
-	ipython nbconvert --to rst quantitative_linear_models.ipynb
-	tools/nbstripout quantitative_linear_models.ipynb
+	tools/nb_to_doc.py aesthetics
+	tools/nb_to_doc.py color_palettes 
+	tools/nb_to_doc.py quantitative_linear_models
+	tools/nb_to_doc.py categorical_linear_models
+	tools/nb_to_doc.py axis_grids
 
-	runipy --o categorical_linear_models.ipynb --matplotlib --quiet
-	ipython nbconvert --to rst categorical_linear_models.ipynb
-	tools/nbstripout categorical_linear_models.ipynb
-
-	runipy --o axis_grids.ipynb --matplotlib --quiet
-	ipython nbconvert --to rst axis_grids.ipynb
-	tools/nbstripout axis_grids.ipynb
-	
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
