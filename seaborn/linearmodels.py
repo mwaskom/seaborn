@@ -1408,7 +1408,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     Parameters
     ----------
     data : Dataframe or nobs x nvars array
-        Rectangular nput data with variabes in the columns.
+        Rectangular input data with variabes in the columns.
     names : sequence of strings
         Names to associate with variables if `data` is not a DataFrame.
     annot : bool
