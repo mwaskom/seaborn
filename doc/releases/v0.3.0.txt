@@ -2,8 +2,7 @@
 v0.3.0 (March 2014)
 -------------------
 
-This is a major release from 0.2 with a number of API changes, enhancements,
-and bug fixes.
+This is a major release from 0.2 with a number of enhancements to the plotting capabilities and styles. Highlights include :class:`FacetGrid`, :func:`factorplot`, :func:`jointplot`, and an overhaul to :ref:`style management <aesthetics_tutorial>`. There is also lots of new documentation, including an :ref:`example gallery <example_gallery>` and reorganized :ref:`tutorial <tutorials>`.
 
 New plotting functions
 ~~~~~~~~~~~~~~~~~~~~~~
