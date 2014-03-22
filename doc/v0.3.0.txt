@@ -1,6 +1,6 @@
 
-v0.3.0 (??)
------------
+v0.3.0 (March 2014)
+-------------------
 
 This is a major release from 0.2 with a number of API changes, enhancements,
 and bug fixes.
@@ -36,7 +36,7 @@ Using the package
 
 - If you want to use plotting functions provided by the package without setting the matplotlib style to a seaborn theme, you can now do ``import seaborn.apionly as sns`` or ``from seaborn.apionly import lmplot``, etc. This is using the (also new) :func:`reset_orig` function, which returns the rc parameters to what they are at matplotlib import time — i.e. they will respect any custom `matplotlibrc` settings on top of the matplotlib defaults.
 
-- The dependency load of the package has been reduced. It can now be installed and used with only ``numpy``, ``scipy``, ``matplotlib`, and ``pandas``. Although ``statsmodels`` is still recommended for full functionality, it is not required.
+- The dependency load of the package has been reduced. It can now be installed and used with only ``numpy``, ``scipy``, ``matplotlib``, and ``pandas``. Although ``statsmodels`` is still recommended for full functionality, it is not required.
 
 Plotting functions
 ^^^^^^^^^^^^^^^^^^
