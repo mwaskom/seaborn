@@ -42,18 +42,12 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
-	-rm -rf *_files/
+	-rm -rf tutorial/*_files/
+	-rm -rf tutorial/*.rst
 
 notebooks:
 
-	ipython nbconvert --to rst ../examples/plotting_distributions.ipynb
-	ipython nbconvert --to rst ../examples/timeseries_plots.ipynb
-
-	tools/nb_to_doc.py aesthetics
-	tools/nb_to_doc.py color_palettes 
-	tools/nb_to_doc.py quantitative_linear_models
-	tools/nb_to_doc.py categorical_linear_models
-	tools/nb_to_doc.py axis_grids
+	make -C tutorial notebooks
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
