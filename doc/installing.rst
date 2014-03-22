@@ -16,7 +16,7 @@ Dependencies
 
 We recommend using seaborn with the `Anaconda distribution <https://store.continuum.io/cshop/anaconda/>`_.
 
--  Python 2.7 or 3.3
+-  Python 2.7 or 3.3+
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -42,7 +42,7 @@ Testing
 
 To test seaborn, run ``make test`` in the root directory of the source
 distribution. This runs the unit test suite (which can also be exercised
-separately by running ``nosetests``). It also runs the code in the tutorial
+separately by running ``nosetests``). It also runs the code in the example 
 notebooks, comparing the output to what is stored in the notebook files and
 reporting any discrepancies. Testing requires the Python Image Library, which
 is not a dependency of the main package.
