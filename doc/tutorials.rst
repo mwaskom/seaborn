@@ -13,6 +13,7 @@ any additional questions.
    :maxdepth: 2
 
    aesthetics
+   color_palettes
    plotting_distributions
    quantitative_linear_models
    categorical_linear_models
