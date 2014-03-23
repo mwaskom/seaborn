@@ -63,13 +63,11 @@ Seaborn: statistical data visualization
     <br>
     
 
-Seaborn is a Python visualization library based on matplotlib. Its primary
-goal is to provide a concise, high-level interface for drawing statistical
-graphics that are both informative and attractive.
+Seaborn is a Python visualization library based on matplotlib. Its provides a high-level interface for drawing attractive statistical graphics.
 
 For a brief introduction to the ideas behind the package, you can read the :ref:`introductory notes <introduction>`.
 
-Much more detail about the kind of problems seaborn is useful for can be found in the in-depth :ref:`tutorials <tutorials>`. Or, you can browse the public :ref:`API reference <api_ref>` to see what kind of tools are available.
+Much more detail can be found in the seaborn :ref:`tutorial <tutorial>`. You can also browse the public :ref:`example gallery <example_gallery>` or :ref:`API reference <api_ref>` to see the kind of tools that are available.
 
 To check out the code, report a bug, or contribute a new feature, please visit
 the `github repository <https://github.com/mwaskom/seaborn>`_. You can also get
@@ -89,8 +87,8 @@ in touch on `twitter <https://twitter.com/michaelwaskom>`_.
    introduction
    whatsnew
    installing
-   api
    examples/index
+   api
 
 .. raw:: html
 
@@ -101,22 +99,16 @@ in touch on `twitter <https://twitter.com/michaelwaskom>`_.
 .. toctree::
    :maxdepth: 1
 
-   aesthetics
-   color_palettes
-   plotting_distributions
-   quantitative_linear_models
-   categorical_linear_models
-   timeseries_plots
-   axis_grids
+   tutorial/aesthetics
+   tutorial/color_palettes
+   tutorial/plotting_distributions
+   tutorial/quantitative_linear_models
+   tutorial/categorical_linear_models
+   tutorial/timeseries_plots
+   tutorial/axis_grids
 
 .. raw:: html
 
    </div>
    </div>
    </div>
-
-.. toctree::
-    :hidden:
-
-    tutorials
-
