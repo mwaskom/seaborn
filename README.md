@@ -22,10 +22,6 @@ Seaborn: statistical data visualization
 <img src="http://stanford.edu/~mwaskom/software/seaborn/_static/violinplots_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/faceted_histogram.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/faceted_histogram_thumb.png" height="135" width="135">
-</a>
-
 </div>
 
 Seaborn is a Python visualization library based on matplotlib. Its provides a high-level interface for drawing attractive statistical graphics.
