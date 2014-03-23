@@ -1,12 +1,34 @@
 Seaborn: statistical data visualization
 =======================================
 
-Seaborn is a library of high-level functions that facilitate making informative
-and attractive plots of statistical data using matplotlib. It also provides
-concise control over the aesthetics of the plots, improving on matplotlib's
-default look.
+<div class="row">
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/anscombes_quartet.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/anscombes_quartet_thumb.png" height="135" width="135">
+</a>
 
-![](examples/example_plot.png "Example Seaborn Plots")
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/timeseries_from_dataframe.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/timeseries_from_dataframe_thumb.png" height="135" width="135">
+</a>
+
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/distplot_options.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/distplot_options_thumb.png" height="135" width="135">
+</a>    
+
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/regression_marginals.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/regression_marginals_thumb.png" height="135" width="135">
+</a>
+
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/violinplots.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/violinplots_thumb.png" height="135" width="135">
+</a>
+
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/faceted_histogram.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/faceted_histogram_thumb.png" height="135" width="135">
+</a>
+
+</div>
+
+Seaborn is a Python visualization library based on matplotlib. Its provides a high-level interface for drawing attractive statistical graphics.
 
 
 Documentation
@@ -17,16 +39,11 @@ Online documentation is available [here](http://stanford.edu/~mwaskom/software/s
 Examples
 --------
 
-There are a few tutorial notebooks that offer some thoughts on visualizing
-statistical data in a general sense and show how to do it using the tools that
-are provided in seaborn. They also serve as the primary test suite for the package.
-The notebooks are meant to be fairly, but not completely comprehensive;
-hopefully the docstrings for the specific functions will answer any additional
-questions.
+The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package. You can also check out the example notebooks:
 
 - [Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
 
-- [Plotting complex linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
+- [Graphical representations of linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
 
 - [Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
 
@@ -36,7 +53,7 @@ questions.
 Dependencies
 ------------
 
-- Python 2.7 or 3.3
+- Python 2.7 or 3.3+
 
 ### Mandatory
 
