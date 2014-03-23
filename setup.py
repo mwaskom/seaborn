@@ -1,25 +1,20 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012 Michael Waskom <mwaskom@stanford.edu>
+# Copyright (C) 2012-2014 Michael Waskom <mwaskom@stanford.edu>
 
-descr = """Seaborn: improved statistical visualization using Matplotlib"""
-
-import os
-
-
+DESCRIPTION = "Seaborn: statistical data visualization"
 DISTNAME = 'seaborn'
-DESCRIPTION = descr
 MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
-DOWNLOAD_URL = ('https://github.com/mwaskom/seaborn/zipball/master'
-                '#egg=seaborn=dev')
-VERSION = '0.3.dev'
+DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
+VERSION = '0.3'
 
 from setuptools import setup
 
 if __name__ == "__main__":
+    import os
     if os.path.exists('MANIFEST'):
         os.remove('MANIFEST')
 
