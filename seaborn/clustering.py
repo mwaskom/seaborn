@@ -4,6 +4,79 @@ from seaborn.utils import despine
 import warnings
 
 
+def _get_width_ratios(shape, side_colors,
+                     colorbar_loc, dimension, side_colors_ratio=0.05):
+
+    """
+    Figures out the ratio of each subfigure within the larger figure.
+    The dendrograms currently are 2*half_dendrogram, which is a proportion of
+    the dataframe shape. Right now, this only supports the colormap in
+    the upper left. The full figure map looks like:
+
+    0.1  0.1  0.05    1.0
+    0.1  cb              column
+    0.1                  dendrogram
+    0.05                 col colors
+    | r   d     r
+    | o   e     o
+    | w   n     w
+    |     d
+    1.0|     r     c     heatmap
+    |     o     o
+    |     g     l
+    |     r     o
+    |     a     r
+    |     m     s
+
+    The colorbar is half_dendrogram of the whitespace in the corner between
+    the row and column dendrogram. Otherwise, it's too big and its
+    corners touch the heatmap, which I didn't like.
+
+    For example, if there are side_colors, need to provide an extra value
+    in the ratio tuples, with the width side_colors_ratio. But if there
+    aren't any side colors, then the tuple is of size 3 (half_dendrogram,
+    half_dendrogram, 1.0), and if there are then the tuple is of size 4 (
+    half_dendrogram, half_dendrogram, 0.05, 1.0)
+
+    TODO: Add option for lower right corner.
+
+    side_colors: list of colors, or empty list
+    colorbar_loc: string
+    Where the colorbar will be. Valid locations: 'upper left', 'right',
+    'bottom'
+    dimension: string
+    Which dimension are we trying to find the axes locations for.
+    Valid strings: 'height', 'width'
+    side_colors_ratio: float
+    How much space the side colors labeling the rows or columns
+    should take up. Default 0.05
+
+    Returns
+    -------
+    ratios: list of ratios
+    Ratios of axes on the figure at this dimension
+    """
+    i = 0 if dimension == 'height' else 1
+    half_dendrogram = shape[i] * 0.1 / shape[i]
+    if colorbar_loc not in ('upper left', 'right', 'bottom'):
+        raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
+                             "'upper left', 'right', 'bottom')".format(
+            colorbar_loc))
+    if dimension not in ('height', 'width'):
+        raise AssertionError("{} is not a valid 'dimension' (valid: "
+                             "'height', 'width')".format(
+            dimension))
+
+    ratios = [half_dendrogram, half_dendrogram]
+    if side_colors:
+        ratios += [side_colors_ratio]
+
+    if (colorbar_loc == 'right' and dimension == 'width') or (
+                colorbar_loc == 'bottom' and dimension == 'height'):
+        return ratios + [1, 0.05]
+    else:
+        return ratios + [1]
+
 def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
     """
     For 'heatmap()'
@@ -36,34 +109,48 @@ def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
     cmap = mpl.colors.ListedColormap(colors)
     return matrix, cmap
 
+def _get_linkage_function(shape, use_fastcluster):
+    import scipy.cluster.hierarchy as sch
+    if (shape[0] > 1000 or shape[1] > 1000) or use_fastcluster:
+        try:
+            import fastcluster
+
+            linkage_function = fastcluster.linkage
+        except ImportError:
+            raise warnings.warn('Module "fastcluster" not found. The '
+                                'dataframe '
+                                'provided has '
+                                'shape {}, and one '
+                                'of the dimensions has greater than 1000 '
+                                'variables. Calculating linkage on such a '
+                                'matrix will take a long time with vanilla '
+                                '"scipy.cluster.hierarchy.linkage", and we '
+                                'suggest fastcluster for such large datasets' \
+                                    .format(shape), RuntimeWarning)
+    else:
+        linkage_function = sch.linkage
+    return linkage_function
+
+
 
 
 def clusterplot(df,
+                pivot_kws=None,
             title=None,
             title_fontsize=12,
             color_scale='linear',
             linkage_method='average',
             metric='euclidean',
             figsize=None,
-            pcolormesh_kws=dict(linewidth=0,
-                                edgecolor='white',
-                                cmap=None,
-                                vmin=None,
-                                vmax=None),
-            row_kws=dict(cluster=True,
-                         side_colors=None,
-                         label=True,
-                         fontsize=12),
-            col_kws=dict(cluster=True,
-                         side_colors=None,
-                         label=True,
-                         fontsize=12),
+            pcolormesh_kws=None,
+            row_kws=None,
+            col_kws=None,
             plot_df=None,
             colorbar_kws=dict(ticklabels_fontsize=10,
                               loc='upper left',
                               label='values'),
             use_fastcluster=False):
-    """Plot a clustered heatmap of matrix data
+    """Plot a clustered heatmap of a pandas DataFrame
     @author Olga Botvinnik olga.botvinnik@gmail.com
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -115,7 +202,7 @@ def clusterplot(df,
         Label the columns with the column labels of the dataframe. Optionally
         provide another list of strings of the same length as the number of
         column. Can also be False. Default True.
-    vmin: int or float
+    pcolormesh_kws['vmin']: int or float
         Minimum value to plot on the heatmap. Default the smallest value in
         the dataframe.
     vmax: int or float
@@ -153,7 +240,10 @@ def clusterplot(df,
         Distance metric to use for the data. Default is "euclidean." See
         scipy.spatial.distance.pdist documentation for more options
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+    pcolormesh_kws: dict, arguments to pcolormesh (like imshow and pcolor but faster)
+        For example, dict(linewidth=0, edgecolor='white', cmap=None, pcolormesh_kws['vmin']=None,
 
+        vmax=None)
     Returns
     -------
     fig: matplotlib Figure
@@ -177,26 +267,6 @@ def clusterplot(df,
     import matplotlib as mpl
     from collections import Iterable
 
-    #if cluster
-
-    if (df.shape[0] > 1000 or df.shape[1] > 1000) or use_fastcluster:
-        try:
-            import fastcluster
-            linkage_function = fastcluster.linkage
-        except ImportError:
-            raise warnings.warn('Module "fastcluster" not found. The '
-                                'dataframe '
-                                'provided has '
-                                'shape {}, and one '
-                                'of the dimensions has greater than 1000 '
-                                'variables. Calculating linkage on such a '
-                                'matrix will take a long time with vanilla '
-                                '"scipy.cluster.hierarchy.linkage", and we '
-                                'suggest fastcluster for such large datasets'\
-            .format(df.shape), RuntimeWarning)
-    else:
-        linkage_function = sch.linkage
-
     almost_black = '#262626'
     sch.set_link_color_palette([almost_black])
     if plot_df is None:
@@ -208,6 +278,17 @@ def clusterplot(df,
         raise ValueError('plot_df must have the exact same columns as df')
         # make norm
 
+
+    linkage_function = _get_linkage_function(df.shape, use_fastcluster)
+
+    if row_kws is None:
+        row_kws = dict(cluster=True,
+             side_colors=None,
+             label=True,
+             fontsize=12)
+    if pcolormesh_kws is None:
+        pcolormesh_kws = {}
+
     # Check if the matrix has values both above and below zero, or only above
     # or only below zero. If both above and below, then the data is
     # "divergent" and we will use a colormap with 0 centered at white,
@@ -216,23 +297,24 @@ def clusterplot(df,
     divergent = df.max().max() > 0 and df.min().min() < 0
 
     if color_scale == 'log':
-        if vmin is None:
-            vmin = max(np.floor(df.dropna(how='all').min().dropna().min()), 1e-10)
-        if vmax is None:
-            vmax = np.ceil(df.dropna(how='all').max().dropna().max())
-        my_norm = mpl.colors.LogNorm(vmin, vmax)
-    elif divergent:
+       if pcolormesh_kws['vmin'] is None:
+           pcolormesh_kws['vmin'] = max(np.floor(df.dropna(how='all').min().dropna().min()), 1e-10)
+       if pcolormesh_kws['vmax'] is None:
+           vmax = np.ceil(df.dropna(how='all').max().dropna().max())
+       pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
+                                                   vmax)
+
+    if divergent and not (set(['vmin', 'vmax']) & set(pcolormesh_kws.keys())):
         abs_max = abs(df.max().max())
         abs_min = abs(df.min().min())
         vmaxx = max(abs_max, abs_min)
-        my_norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
-    else:
-        my_norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-    pcolormesh_kws['norm'] = my_norm if 'norm' not in pcolormesh_kws
+        pcolormesh_kws['vmin'] = -vmaxx
+        pcolormesh_kws['vmax'] = vmaxx
 
-    if pcolormesh_kws['cmap'] is None:
+    if 'cmap' not in pcolormesh_kws:
         cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
         cmap.set_bad('white')
+        pcolormesh_kws['cmap'] = cmap
 
     # TODO: Add optimal leaf ordering for clusters
     # TODO: if color_scale is 'log', should distance also be on np.log(df)?
@@ -251,96 +333,25 @@ def clusterplot(df,
 
     # heatmap with row names
 
-    def get_width_ratios(shape, side_colors,
-                         colorbar_loc, dimension, side_colors_ratio=0.05):
-        """
-        Figures out the ratio of each subfigure within the larger figure.
-        The dendrograms currently are 2*half_dendrogram, which is a proportion of
-        the dataframe shape. Right now, this only supports the colormap in
-        the upper left. The full figure map looks like:
-
-            0.1  0.1  0.05    1.0
-        0.1  cb              column
-        0.1                  dendrogram
-        0.05                 col colors
-           | r   d     r
-           | o   e     o
-           | w   n     w
-           |     d
-        1.0|     r     c     heatmap
-           |     o     o
-           |     g     l
-           |     r     o
-           |     a     r
-           |     m     s
-
-        The colorbar is half_dendrogram of the whitespace in the corner between
-        the row and column dendrogram. Otherwise, it's too big and its
-        corners touch the heatmap, which I didn't like.
-
-        For example, if there are side_colors, need to provide an extra value
-        in the ratio tuples, with the width side_colors_ratio. But if there
-        aren't any side colors, then the tuple is of size 3 (half_dendrogram,
-        half_dendrogram, 1.0), and if there are then the tuple is of size 4 (
-        half_dendrogram, half_dendrogram, 0.05, 1.0)
-
-        TODO: Add option for lower right corner.
-
-        side_colors: list of colors, or empty list
-        colorbar_loc: string
-            Where the colorbar will be. Valid locations: 'upper left', 'right',
-            'bottom'
-        dimension: string
-            Which dimension are we trying to find the axes locations for.
-            Valid strings: 'height', 'width'
-        side_colors_ratio: float
-            How much space the side colors labeling the rows or columns
-            should take up. Default 0.05
-
-        Returns
-        -------
-        ratios: list of ratios
-            Ratios of axes on the figure at this dimension
-        """
-        i = 0 if dimension == 'height' else 1
-        half_dendrogram = shape[i] * 0.1/shape[i]
-        if colorbar_loc not in ('upper left', 'right', 'bottom'):
-            raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
-                                 "'upper left', 'right', 'bottom')".format(
-                colorbar_loc))
-        if dimension not in ('height', 'width'):
-            raise AssertionError("{} is not a valid 'dimension' (valid: "
-                                 "'height', 'width')".format(
-                dimension))
-
-        ratios = [half_dendrogram, half_dendrogram]
-        if side_colors:
-            ratios += [side_colors_ratio]
-
-        if (colorbar_loc == 'right' and dimension == 'width') or (
-                    colorbar_loc == 'bottom' and dimension == 'height'):
-            return ratios + [1, 0.05]
-        else:
-            return ratios + [1]
 
 
-    width_ratios = get_width_ratios(df.shape,
-                                    row_side_colors,
-                                    colorbar_loc, dimension='width')
-    height_ratios = get_width_ratios(df.shape,
-                                     col_side_colors,
-                                     colorbar_loc, dimension='height')
-    nrows = 3 if col_side_colors is None else 4
-    ncols = 3 if row_side_colors is None else 4
+
+    width_ratios = _get_width_ratios(df.shape,
+                                    row_kws['side_colors'],
+                                    colorbar_kws['loc'], dimension='width')
+    height_ratios = _get_width_ratios(df.shape,
+                                     col_kws['side_colors'],
+                                     colorbar_kws['loc'], dimension='height')
+    nrows = 3 if col_kws['side_colors'] is None else 4
+    ncols = 3 if row_kws['side_colors'] is None else 4
 
     width = df.shape[1] * 0.25
     height = min(df.shape[0] * .75, 40)
     if figsize is None:
         figsize = (width, height)
-    #print figsize
 
-    edgecolor = pcolormesh_kws['edgecolor']
-    linewidth = pcolormesh_kws['linewidth']
+    edgecolor = pcolormesh_kws.setdefault('edgecolor', 'none')
+    linewidth = pcolormesh_kws.setdefault('linewidth', 0)
 
     fig = plt.figure(figsize=figsize)
     heatmap_gridspec = \
@@ -351,7 +362,7 @@ def clusterplot(df,
 
     ### col dendrogram ###
     col_dendrogram_ax = fig.add_subplot(heatmap_gridspec[1, ncols - 1])
-    if cluster_cols:
+    if col_kws['cluster']:
         col_dendrogram = sch.dendrogram(col_linkage,
                                         color_threshold=np.inf,
                                         color_list=[almost_black])
@@ -367,10 +378,10 @@ def clusterplot(df,
 
     # TODO: Allow for array of color labels
     ### col colorbar ###
-    if col_side_colors is not None:
+    if col_kws['side_colors'] is not None:
         column_colorbar_ax = fig.add_subplot(heatmap_gridspec[2, ncols - 1])
         col_side_matrix, col_cmap = _color_list_to_matrix_and_cmap(
-            col_side_colors,
+            col_kws['side_colors'],
             ind=col_dendrogram['leaves'],
             row=False)
         column_colorbar_ax_pcolormesh = column_colorbar_ax.pcolormesh(
@@ -383,7 +394,7 @@ def clusterplot(df,
 
     ### row dendrogram ##
     row_dendrogram_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 1])
-    if cluster_rows:
+    if row_kws['cluster']:
         row_dendrogram = \
             sch.dendrogram(row_linkage,
                            color_threshold=np.inf,
@@ -399,10 +410,10 @@ def clusterplot(df,
 
 
     ### row colorbar ###
-    if row_side_colors is not None:
+    if row_kws['side_colors'] is not None:
         row_colorbar_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 2])
         row_side_matrix, row_cmap = _color_list_to_matrix_and_cmap(
-            row_side_colors,
+            row_kws['side_colors'],
             ind=row_dendrogram['leaves'],
             row=True)
         row_colorbar_ax.pcolormesh(row_side_matrix, cmap=row_cmap,
@@ -423,14 +434,18 @@ def clusterplot(df,
     heatmap_ax.set_xlim(0, df.shape[1])
 
     ## row labels ##
+    label_rows = row_kws.setdefault('label', True)
     if isinstance(label_rows, Iterable):
-        if len(label_rows) == df.shape[0]:
-            yticklabels = label_rows
+        if len(row_kws['label']) == df.shape[0]:
+            yticklabels = row_kws['label']
             label_rows = True
         else:
-            raise AssertionError("Length of 'label_rows' must be the same as "
-                                 "df.shape[0] (len(label_rows)={}, df.shape["
-                                 "0]={})".format(len(label_rows), df.shape[0]))
+            raise AssertionError("Length of 'row_kws['label_rows']' must be "
+                                 "the "
+                                 "' \
+                                                            'same as "
+                                 "df.shape[0] (len(row_kws['label_rows'])={}, df.shape["
+                                 "0]={})".format(len(row_kws['label']), df.shape[0]))
     elif label_rows:
         yticklabels = df.index
     else:
@@ -441,22 +456,23 @@ def clusterplot(df,
         despine(ax=heatmap_ax, bottom=True, left=True)
         heatmap_ax.set_yticks(np.arange(df.shape[0]) + 0.5)
         heatmap_ax.yaxis.set_ticks_position('right')
-        heatmap_ax.set_yticklabels(yticklabels, fontsize=ylabel_fontsize)
+        heatmap_ax.set_yticklabels(yticklabels)
 
     # Add title if there is one:
     if title is not None:
         col_dendrogram_ax.set_title(title, fontsize=title_fontsize)
 
     ## col labels ##
-    if isinstance(label_cols, Iterable):
-        if len(label_cols) == df.shape[1]:
-            xticklabels = label_cols
+    label_cols = col_kws.setdefault('label', True)
+    if isinstance(col_kws['label'], Iterable):
+        if len(col_kws['label']) == df.shape[1]:
+            xticklabels = col_kws['label']
             label_cols = True
         else:
             raise AssertionError("Length of 'label_cols' must be the same as "
                                  "df.shape[1] (len(label_cols)={}, df.shape["
-                                 "1]={})".format(len(label_cols), df.shape[1]))
-    elif label_cols:
+                                 "1]={})".format(len(col_kws['label']), df.shape[1]))
+    elif col_kws['label']:
         xticklabels = df.columns
     else:
         heatmap_ax.set_xticklabels([])
@@ -464,8 +480,7 @@ def clusterplot(df,
     if label_cols:
         xticklabels = [xticklabels[i] for i in col_dendrogram['leaves']]
         heatmap_ax.set_xticks(np.arange(df.shape[1]) + 0.5)
-        xticklabels = heatmap_ax.set_xticklabels(xticklabels,
-                                                 fontsize=xlabel_fontsize)
+        xticklabels = heatmap_ax.set_xticklabels(xticklabels)
         # rotate labels 90 degrees
         for label in xticklabels:
             label.set_rotation(90)
@@ -482,7 +497,7 @@ def clusterplot(df,
     # note that we could pass the norm explicitly with norm=my_norm
     cb = fig.colorbar(heatmap_ax_pcolormesh,
                       cax=scale_colorbar_ax)
-    cb.set_label(colorbar_label)
+    cb.set_label(colorbar_kws['label'])
 
     # move ticks to left side of colorbar to avoid problems with tight_layout
     cb.ax.yaxis.set_ticks_position('left')
@@ -495,7 +510,7 @@ def clusterplot(df,
     # make colorbar labels smaller
     yticklabels = cb.ax.yaxis.get_ticklabels()
     for t in yticklabels:
-        t.set_fontsize(colorbar_ticklabels_fontsize)
+        t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
 
     fig.tight_layout()
     #despine(fig, top=True, bottom=True, left=True, right=True)
