@@ -8,7 +8,8 @@ from collections import Iterable
 import pdb
 
 def _get_width_ratios(shape, side_colors,
-                     colorbar_loc, dimension, side_colors_ratio=0.05):
+                     # colorbar_loc,
+                     dimension, side_colors_ratio=0.05):
 
     """
     Figures out the ratio of each subfigure within the larger figure.
@@ -61,10 +62,10 @@ def _get_width_ratios(shape, side_colors,
     """
     i = 0 if dimension == 'height' else 1
     half_dendrogram = shape[i] * 0.1 / shape[i]
-    if colorbar_loc not in ('upper left', 'right'):
-        raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
-                             "'upper left', 'right', 'bottom')".format(
-            colorbar_loc))
+    # if colorbar_loc not in ('upper left', 'right'):
+    #     raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
+    #                          "'upper left', 'right', 'bottom')".format(
+    #         colorbar_loc))
     if dimension not in ('height', 'width'):
         raise AssertionError("{} is not a valid 'dimension' (valid: "
                              "'height', 'width')".format(
@@ -74,8 +75,7 @@ def _get_width_ratios(shape, side_colors,
     if side_colors:
         ratios += [side_colors_ratio]
 
-    if (colorbar_loc == 'right' and dimension == 'width') or\
-            (dimension == 'height'):
+    if (dimension == 'height'):
         return ratios + [1, 0.05]
     else:
         return ratios + [1]
@@ -260,11 +260,21 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
     """Label either the rows or columns of a heatmap
     Parameters
     ----------
-
-
-    Returns
-    -------
-
+    dimension : str
+        either "row" or "column", which dimension we are labeling
+    kws : dict
+        Keyword arguments for the dimension, either row_kws or col_kws from
+        clusterplot()
+    heatmap_ax : matplotlib.axes.Axes
+        Axes object where the heatmap is plotted
+    dendrogram_ax : matplotlib.axes.Axes
+        Axes object where this dimensions's dendrogram is plotted
+    dendrogram : dict
+        Dendrogram dictionary with key 'leaves' containing the reordered
+        columns or rows after clustering
+    df : pandas.DataFrame
+        Dataframe that we're plotting. Need access to the rownames (df.index)
+        and columns for the default labeling.
     """
 
     if dimension not in ['row', 'col']:
@@ -277,7 +287,11 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
                          '"heatmap" or "dendrogram", not "{}"'.format(kws[
             "label_loc"]))
     ax = heatmap_ax if kws['label_loc'] == 'heatmap' else dendrogram_ax
+
+    # Need to scale the ticklabels by 10 if we're labeling the dendrogram_ax
     scale = 1 if kws['label_loc'] == 'heatmap' else 10
+
+    # Remove all ticks from the other axes
     other_ax = dendrogram_ax if kws['label_loc'] == 'heatmap' else heatmap_ax
     other_ax_axis = other_ax.yaxis if dimension == 'row' else other_ax.xaxis
     other_ax_axis.set_ticks([])
@@ -300,19 +314,20 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
     else:
         ax_axis.set_ticklabels([])
 
+
     if kws['label']:
         ticklabels_ordered = [ticklabels[i] for i in dendrogram['leaves']]
         # pdb.set_trace()
         # despine(ax=ax, bottom=True, left=True)
         ticks = (np.arange(df.shape[axis]) + 0.5)*scale
         ax_axis.set_ticks(ticks)
-        ticklabels = ax_axis.set_ticklabels(ticklabels_ordered, zorder=100)
+        ticklabels = ax_axis.set_ticklabels(ticklabels_ordered,)
+        ax.tick_params(labelsize=kws['fontsize'])
         if dimension == 'row':
             ax_axis.set_ticks_position('right')
         else:
             for label in ticklabels:
                 label.set_rotation(90)
-    return heatmap_ax, dendrogram_ax
 
 def clusterplot(df,
                 pivot_kws=None,
@@ -475,12 +490,11 @@ def clusterplot(df,
              linkage_matrix=None)
     if colorbar_kws is None:
         colorbar_kws = dict(ticklabels_fontsize=10,
-             loc='upper left',
              label='values')
     if pcolormesh_kws is None:
         pcolormesh_kws = {}
-    vmin = pcolormesh_kws.setdefault('vmin', None)
-    vmax = pcolormesh_kws.setdefault('vmax', None)
+    pcolormesh_kws.setdefault('vmin', None)
+    pcolormesh_kws.setdefault('vmax', None)
 
     # Check if the matrix has values both above and below zero, or only above
     # or only below zero. If both above and below, then the data is
@@ -498,7 +512,7 @@ def clusterplot(df,
            pcolormesh_kws['vmax'] = np.ceil(df.dropna(how='all').max().dropna()
                                          .max())
        pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
-                                                   vmax)
+                                                   pcolormesh_kws['vmax'])
 
     # print "pcolormesh_kws['vmin']", pcolormesh_kws['vmin']
 
@@ -521,6 +535,8 @@ def clusterplot(df,
         kws.setdefault('cluster', True)
         kws.setdefault('label_loc', 'dendrogram')
         kws.setdefault('label', True)
+        kws.setdefault('fontsize', None)
+        kws.setdefault('side_colors', None)
 
 
     # TODO: Add optimal leaf ordering for clusters
@@ -551,10 +567,12 @@ def clusterplot(df,
     # heatmap with row names
     width_ratios = _get_width_ratios(df.shape,
                                     row_kws['side_colors'],
-                                    colorbar_kws['loc'], dimension='width')
+                                    # colorbar_kws['loc'],
+                                    dimension='width')
     height_ratios = _get_width_ratios(df.shape,
                                      col_kws['side_colors'],
-                                     colorbar_kws['loc'], dimension='height')
+                                     # colorbar_kws['loc'],
+                                     dimension='height')
     nrows = 3 if col_kws['side_colors'] is None else 4
     ncols = 3 if row_kws['side_colors'] is None else 4
 
@@ -618,8 +636,8 @@ def clusterplot(df,
 
     ### scale colorbar ###
     scale_colorbar_ax = fig.add_subplot(
-        heatmap_gridspec[0:(nrows - 1),
-        0]) # colorbar for scale in upper left corner
+        heatmap_gridspec[0:(nrows - 1), 0]) # colorbar for scale in upper
+        # left corner
 
     cb = fig.colorbar(heatmap_ax_pcolormesh,
                       cax=scale_colorbar_ax)
