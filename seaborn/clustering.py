@@ -4,6 +4,7 @@ from seaborn.utils import despine
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from collections import Iterable
 import pdb
 
 def _get_width_ratios(shape, side_colors,
@@ -210,7 +211,7 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, orientation='top',
         dendrogram = {'leaves': list(range(linkage.shape[0]))}
 
     # Can this hackery be avoided?
-    despine(ax=ax, bottom=True, left=True)
+    # despine(ax=ax, bottom=True, left=True)
     ax.set_axis_bgcolor('white')
     ax.grid(False)
     ax.set_yticks([])
@@ -218,17 +219,27 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, orientation='top',
     return ax, dendrogram
 
 def _plot_sidecolors(fig, kws, gridspec, dendrogram, edgecolor, linewidth):
-    """
+    """Plots color labels between the dendrogram and the heatmap
     Parameters
     ----------
-
+    fig : matplotlib.figure.Figure
+        Matplotlib figure instance to plot onto
+    kws : dict
+        Keyword arguments for column or row plotting passed to clusterplot
+    gridspec : matplotlib.gridspec.gridspec
+        Indexed gridspec object for where to put the dendrogram plot
+    dendrogram : dict
+        Dendrogram with key-value 'leaves' as a list of indices in the
+        clustered order
+    edgecolor : matplotlib color
+        Color of the lines outlining each box of the heatmap
+    linewidth : float
+        Width of the lines outlining each box of the heatmap
 
     Returns
     -------
-
-
-    Raises
-    ------
+    ax : matplotlib.axes.Axes
+        Axes object, if plotted
     """
     if kws['side_colors'] is not None:
         ax = fig.add_subplot(gridspec)
@@ -243,6 +254,63 @@ def _plot_sidecolors(fig, kws, gridspec, dendrogram, edgecolor, linewidth):
         ax.set_xticks([])
         return ax
 
+def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
+                     df):
+    """Label either the rows or columns of a heatmap
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+
+    """
+
+    if dimension not in ['row', 'col']:
+        raise ValueError('Argument "dimension" must be one of "row" or '
+                         '"col", not "{}"'.format(dimension))
+    axis = 0 if dimension == 'row' else 1
+
+    if kws['label_loc'] not in ['heatmap', 'dendrogram']:
+        raise ValueError('Parameter {}_kws["label_loc"] must be one of '
+                         '"heatmap" or "dendrogram", not "{}"'.format(kws[
+            "label_loc"]))
+    ax = heatmap_ax if kws['label_loc'] == 'heatmap' else dendrogram_ax
+    other_ax = dendrogram_ax if kws['label_loc'] == 'heatmap' else heatmap_ax
+    other_ax_axis = other_ax.yaxis if dimension == 'row' else other_ax.xaxis
+    other_ax_axis.set_ticks([])
+
+    ax_axis = ax.yaxis if dimension == 'row' else ax.xaxis
+
+    if isinstance(kws['label'], Iterable):
+        if len(kws['label']) == df.shape[axis]:
+            ticklabels = kws['label']
+            kws['label'] = True
+        else:
+            raise AssertionError("Length of '{0}_kws['label']' must be "
+                                 "the same as "
+                                 "df.shape[{1}] (len({0}_kws['label'])={2}, "
+                                 "df.shape[{1}]={3})".format(dimension, axis,
+                                                             len(kws['label']),
+                                                             df.shape[axis]))
+    elif kws['label']:
+        ticklabels = df.index if dimension == 'row' else df.columns
+    else:
+        ax_axis.set_ticklabels([])
+
+    if kws['label']:
+        ticklabels_ordered = [ticklabels[i] for i in dendrogram['leaves']]
+        pdb.set_trace()
+        # despine(ax=ax, bottom=True, left=True)
+        ax_axis.set_ticks(np.arange(df.shape[axis]) + 0.5)
+        ticklabels = ax_axis.set_ticklabels(ticklabels_ordered)
+        if dimension == 'row':
+            ax_axis.set_ticks_position('right')
+        else:
+            for label in ticklabels:
+                label.set_rotation(90)
+    return heatmap_ax, dendrogram_ax
+
 def clusterplot(df,
                 pivot_kws=None,
             title=None,
@@ -254,8 +322,8 @@ def clusterplot(df,
             pcolormesh_kws=None,
             row_kws=None,
             col_kws=None,
-            plot_df=None,
             colorbar_kws=None,
+            plot_df=None,
             use_fastcluster=False):
     """Plot a clustered heatmap of a pandas DataFrame
     @author Olga Botvinnik olga.botvinnik@gmail.com
@@ -374,7 +442,7 @@ def clusterplot(df,
     import scipy.spatial.distance as distance
     import scipy.cluster.hierarchy as sch
     import matplotlib as mpl
-    from collections import Iterable
+
 
     if pivot_kws is not None:
         df = df.pivot(pivot_kws)
@@ -448,6 +516,8 @@ def clusterplot(df,
     for kws in [row_kws, col_kws]:
         kws.setdefault('linkage_matrix', None)
         kws.setdefault('cluster', True)
+        kws.setdefault('label_loc', 'dendrogram')
+        kws.setdefault('label', True)
 
 
     # TODO: Add optimal leaf ordering for clusters
@@ -517,7 +587,7 @@ def clusterplot(df,
                                       orientation='right')
 
 
-    ### row colorbar ###
+    ### row colorbar ###if dimension == 'row' else ax.xaxis
     _plot_sidecolors(fig, col_kws, heatmap_gridspec[nrows-1, 2],
                      col_dendrogram, edgecolor, linewidth)
 
@@ -538,11 +608,11 @@ def clusterplot(df,
             yticklabels = row_kws['label']
             label_rows = True
         else:
-            raise AssertionError("Length of 'row_kws['label_rows']' must be "
+            raise AssertionError("Length of 'row_kws['label']' must be "
                                  "the "
                                  "' \
                                                             'same as "
-                                 "df.shape[0] (len(row_kws['label_rows'])={}, df.shape["
+                                 "df.shape[0] (len(row_kws['label'])={}, df.shape["
                                  "0]={})".format(len(row_kws['label']), df.shape[0]))
     elif label_rows:
         yticklabels = df.index
@@ -551,7 +621,7 @@ def clusterplot(df,
 
     if label_rows:
         yticklabels = [yticklabels[i] for i in row_dendrogram['leaves']]
-        despine(ax=heatmap_ax, bottom=True, left=True)
+        # despine(ax=heatmap_ax, bottom=True, left=True)
         heatmap_ax.set_yticks(np.arange(df.shape[0]) + 0.5)
         heatmap_ax.yaxis.set_ticks_position('right')
         heatmap_ax.set_yticklabels(yticklabels)
@@ -561,7 +631,11 @@ def clusterplot(df,
         col_dendrogram_ax.set_title(title, fontsize=title_fontsize)
 
     ## col labels ##
-    label_cols = col_kws.setdefault('label', True)
+    # heatmap_ax, col_dendrogram_ax = _label_dimension('col', col_kws,
+    #                                                 heatmap_ax,
+    #                                                 col_dendrogram_ax,
+    #                                                 col_dendrogram, df)
+    # label_cols = col_kws.setdefault('label', True)
     if isinstance(col_kws['label'], Iterable):
         if len(col_kws['label']) == df.shape[1]:
             xticklabels = col_kws['label']
@@ -575,7 +649,7 @@ def clusterplot(df,
     else:
         heatmap_ax.set_xticklabels([])
 
-    if label_cols:
+    if col_kws['label']:
         xticklabels = [xticklabels[i] for i in col_dendrogram['leaves']]
         heatmap_ax.set_xticks(np.arange(df.shape[1]) + 0.5)
         xticklabels = heatmap_ax.set_xticklabels(xticklabels)
@@ -626,6 +700,6 @@ def clusterplot(df,
     # for t in yticklabels:
     #     t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
 
-    fig.tight_layout()
-    #despine(fig, top=True, bottom=True, left=True, right=True)
+    # fig.tight_layout()
+    despine(fig, top=True, bottom=True, left=True, right=True)
     return fig, row_dendrogram, col_dendrogram
