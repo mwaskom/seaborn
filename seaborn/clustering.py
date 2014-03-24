@@ -2,7 +2,7 @@ import numpy as np
 
 from seaborn.utils import despine
 import warnings
-
+import pdb
 
 def _get_width_ratios(shape, side_colors,
                      colorbar_loc, dimension, side_colors_ratio=0.05):
@@ -58,7 +58,7 @@ def _get_width_ratios(shape, side_colors,
     """
     i = 0 if dimension == 'height' else 1
     half_dendrogram = shape[i] * 0.1 / shape[i]
-    if colorbar_loc not in ('upper left', 'right', 'bottom'):
+    if colorbar_loc not in ('upper left', 'right'):
         raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
                              "'upper left', 'right', 'bottom')".format(
             colorbar_loc))
@@ -71,8 +71,8 @@ def _get_width_ratios(shape, side_colors,
     if side_colors:
         ratios += [side_colors_ratio]
 
-    if (colorbar_loc == 'right' and dimension == 'width') or (
-                colorbar_loc == 'bottom' and dimension == 'height'):
+    if (colorbar_loc == 'right' and dimension == 'width') or\
+            (dimension == 'height'):
         return ratios + [1, 0.05]
     else:
         return ratios + [1]
@@ -146,9 +146,7 @@ def clusterplot(df,
             row_kws=None,
             col_kws=None,
             plot_df=None,
-            colorbar_kws=dict(ticklabels_fontsize=10,
-                              loc='upper left',
-                              label='values'),
+            colorbar_kws=None,
             use_fastcluster=False):
     """Plot a clustered heatmap of a pandas DataFrame
     @author Olga Botvinnik olga.botvinnik@gmail.com
@@ -164,6 +162,9 @@ def clusterplot(df,
         still want to plot a dataframe with NAs, provide a non-NA dataframe
         to df (with NAs replaced by 0 or something by your choice) and your
         NA-full dataframe to plot_df
+    pivot_kws : dict
+        If the data is in "tidy" format, reshape the data with these pivot
+        keyword arguments
     title: string, optional
         Title of the figure. Default None
     title_fontsize: int, optional
@@ -267,6 +268,9 @@ def clusterplot(df,
     import matplotlib as mpl
     from collections import Iterable
 
+    if pivot_kws is not None:
+        df = df.pivot(pivot_kws)
+
     almost_black = '#262626'
     sch.set_link_color_palette([almost_black])
     if plot_df is None:
@@ -285,57 +289,76 @@ def clusterplot(df,
         row_kws = dict(cluster=True,
              side_colors=None,
              label=True,
-             fontsize=12)
+             fontsize=12,
+             linkage_matrix=None)
+    if col_kws is None:
+        col_kws = dict(cluster=True,
+             side_colors=None,
+             label=True,
+             fontsize=12,
+             linkage_matrix=None)
+    if colorbar_kws is None:
+        colorbar_kws = dict(ticklabels_fontsize=10,
+             loc='upper left',
+             label='values')
     if pcolormesh_kws is None:
         pcolormesh_kws = {}
+    vmin = pcolormesh_kws.setdefault('vmin', None)
+    vmax = pcolormesh_kws.setdefault('vmax', None)
 
     # Check if the matrix has values both above and below zero, or only above
     # or only below zero. If both above and below, then the data is
     # "divergent" and we will use a colormap with 0 centered at white,
     # negative values blue, and positive values red. Otherwise, we will use
     # the YlGnBu colormap.
-    divergent = df.max().max() > 0 and df.min().min() < 0
+    divergent = (df.max().max() > 0 and df.min().min() < 0) and not \
+        color_scale == 'log'
 
     if color_scale == 'log':
        if pcolormesh_kws['vmin'] is None:
-           pcolormesh_kws['vmin'] = max(np.floor(df.dropna(how='all').min().dropna().min()), 1e-10)
+           pcolormesh_kws['vmin'] = max(df.dropna(how='all').min().dropna().min(), 1e-10)
        if pcolormesh_kws['vmax'] is None:
-           vmax = np.ceil(df.dropna(how='all').max().dropna().max())
+           pcolormesh_kws['vmax'] = np.ceil(df.dropna(how='all').max().dropna()
+                                         .max())
        pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
                                                    vmax)
 
-    if divergent and not (set(['vmin', 'vmax']) & set(pcolormesh_kws.keys())):
-        abs_max = abs(df.max().max())
-        abs_min = abs(df.min().min())
-        vmaxx = max(abs_max, abs_min)
-        pcolormesh_kws['vmin'] = -vmaxx
-        pcolormesh_kws['vmax'] = vmaxx
+    print "pcolormesh_kws['vmin']", pcolormesh_kws['vmin']
 
     if 'cmap' not in pcolormesh_kws:
         cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
         cmap.set_bad('white')
         pcolormesh_kws['cmap'] = cmap
 
+    if divergent:
+        abs_max = abs(df.max().max())
+        abs_min = abs(df.min().min())
+        vmaxx = max(abs_max, abs_min)
+        pcolormesh_kws['vmin'] = -vmaxx
+        pcolormesh_kws['vmax'] = vmaxx
+        norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
+
+
+
     # TODO: Add optimal leaf ordering for clusters
     # TODO: if color_scale is 'log', should distance also be on np.log(df)?
     # calculate pairwise distances for rows
-    if color_scale == 'log':
-        df = np.log10(df)
+    # if color_scale == 'log':
+    #     df = np.log10(df)
+
+
     row_pairwise_dists = distance.squareform(distance.pdist(df,
                                                             metric=metric))
     row_linkage = linkage_function(row_pairwise_dists, method=linkage_method)
 
     # calculate pairwise distances for columns
-    col_pairwise_dists = distance.squareform(distance.pdist(df.T,
-                                                            metric=metric))
-    # cluster
-    col_linkage = linkage_function(col_pairwise_dists, method=linkage_method)
+    if col_kws['linkage_matrix'] is None:
+        col_pairwise_dists = distance.squareform(distance.pdist(df.T,
+                                                                metric=metric))
+        # cluster
+        col_linkage = linkage_function(col_pairwise_dists, method=linkage_method)
 
     # heatmap with row names
-
-
-
-
     width_ratios = _get_width_ratios(df.shape,
                                     row_kws['side_colors'],
                                     colorbar_kws['loc'], dimension='width')
@@ -494,23 +517,39 @@ def clusterplot(df,
         heatmap_gridspec[0:(nrows - 1),
         0]) # colorbar for scale in upper left corner
 
-    # note that we could pass the norm explicitly with norm=my_norm
     cb = fig.colorbar(heatmap_ax_pcolormesh,
                       cax=scale_colorbar_ax)
     cb.set_label(colorbar_kws['label'])
 
+    if color_scale == 'log':
+        #TODO: get at most 3 ticklabels showing on the colorbar for log-scaled
+        pass
+        # tick_locator = mpl.ticker.LogLocator(numticks=3)
+        # pdb.set_trace()
+        # tick_locator.tick_values(pcolormesh_kws['vmin'],
+        #                          pcolormesh_kws['vmax'])
+    else:
+        tick_locator = mpl.ticker.MaxNLocator(nbins=2,
+                                              symmetric=divergent,
+                                              prune=None, trim=False)
+        cb.ax.set_yticklabels(tick_locator.bin_boundaries(pcolormesh_kws[
+                                                                 'vmin'],
+                                    pcolormesh_kws['vmax']))
+        cb.ax.yaxis.set_major_locator(tick_locator)
+
     # move ticks to left side of colorbar to avoid problems with tight_layout
     cb.ax.yaxis.set_ticks_position('left')
     cb.outline.set_linewidth(0)
+    # pdb.set_trace()
 
     ## Make colorbar narrower
     #xmin, xmax, ymin, ymax = cb.ax.axis()
     #cb.ax.set_xlim(xmin, xmax/0.2)
 
     # make colorbar labels smaller
-    yticklabels = cb.ax.yaxis.get_ticklabels()
-    for t in yticklabels:
-        t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
+    # yticklabels = cb.ax.yaxis.get_ticklabels()
+    # for t in yticklabels:
+    #     t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
 
     fig.tight_layout()
     #despine(fig, top=True, bottom=True, left=True, right=True)
