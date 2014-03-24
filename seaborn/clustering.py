@@ -211,7 +211,7 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, orientation='top',
         dendrogram = {'leaves': list(range(linkage.shape[0]))}
 
     # Can this hackery be avoided?
-    # despine(ax=ax, bottom=True, left=True)
+    despine(ax=ax, bottom=True, left=True)
     ax.set_axis_bgcolor('white')
     ax.grid(False)
     ax.set_yticks([])
@@ -252,6 +252,7 @@ def _plot_sidecolors(fig, kws, gridspec, dendrogram, edgecolor, linewidth):
         ax.set_xlim(0, side_matrix.shape[1])
         ax.set_yticks([])
         ax.set_xticks([])
+        despine(ax=ax, left=True, bottom=True)
         return ax
 
 def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
@@ -276,6 +277,7 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
                          '"heatmap" or "dendrogram", not "{}"'.format(kws[
             "label_loc"]))
     ax = heatmap_ax if kws['label_loc'] == 'heatmap' else dendrogram_ax
+    scale = 1 if kws['label_loc'] == 'heatmap' else 10
     other_ax = dendrogram_ax if kws['label_loc'] == 'heatmap' else heatmap_ax
     other_ax_axis = other_ax.yaxis if dimension == 'row' else other_ax.xaxis
     other_ax_axis.set_ticks([])
@@ -300,10 +302,11 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
 
     if kws['label']:
         ticklabels_ordered = [ticklabels[i] for i in dendrogram['leaves']]
-        pdb.set_trace()
+        # pdb.set_trace()
         # despine(ax=ax, bottom=True, left=True)
-        ax_axis.set_ticks(np.arange(df.shape[axis]) + 0.5)
-        ticklabels = ax_axis.set_ticklabels(ticklabels_ordered)
+        ticks = (np.arange(df.shape[axis]) + 0.5)*scale
+        ax_axis.set_ticks(ticks)
+        ticklabels = ax_axis.set_ticklabels(ticklabels_ordered, zorder=100)
         if dimension == 'row':
             ax_axis.set_ticks_position('right')
         else:
@@ -561,12 +564,12 @@ def clusterplot(df,
         height = min(df.shape[0] * .75, 40)
         figsize = (width, height)
 
-    edgecolor = pcolormesh_kws.setdefault('edgecolor', 'none')
+    edgecolor = pcolormesh_kws.setdefault('edgecolor', 'white')
     linewidth = pcolormesh_kws.setdefault('linewidth', 0)
 
     fig = plt.figure(figsize=figsize)
     heatmap_gridspec = \
-        gridspec.GridSpec(nrows, ncols, wspace=0.0, hspace=0.0,
+        gridspec.GridSpec(nrows, ncols, #wspace=.1, hspace=.1,
                           width_ratios=width_ratios,
                           height_ratios=height_ratios)
 
@@ -597,74 +600,21 @@ def clusterplot(df,
         heatmap_ax.pcolormesh(plot_df.ix[row_dendrogram['leaves'],
                                          col_dendrogram['leaves']].values,
                               **pcolormesh_kws)
-
+    despine(ax=heatmap_ax, left=True, bottom=True)
     heatmap_ax.set_ylim(0, df.shape[0])
     heatmap_ax.set_xlim(0, df.shape[1])
 
     ## row labels ##
-    # _label_dimension('row', row_kws, heatmap_ax, row_dendrogram_ax,
-    #                  row_dendrogram, df)
-    # label_rows = row_kws.setdefault('label', True)
-
-    pdb.set_trace()
-    if isinstance(row_kws['label'], Iterable):
-        if len(row_kws['label']) == df.shape[0]:
-            yticklabels = row_kws['label']
-            row_kws['label'] = True
-        else:
-            raise AssertionError("Length of 'row_kws['label']' must be "
-                                 "the "
-                                 "' \
-                                                            'same as "
-                                 "df.shape[0] (len(row_kws['label'])={}, df.shape["
-                                 "0]={})".format(len(row_kws['label']), df.shape[0]))
-    elif row_kws['label']:
-        yticklabels = df.index
-    else:
-        heatmap_ax.set_yticklabels([])
-
-    if row_kws['label']:
-        yticklabels = [yticklabels[i] for i in row_dendrogram['leaves']]
-        # despine(ax=heatmap_ax, bottom=True, left=True)
-        heatmap_ax.set_yticks(np.arange(df.shape[0]) + 0.5)
-
-        heatmap_ax.set_yticklabels(yticklabels)
-        heatmap_ax.yaxis.set_ticks_position('right')
+    _label_dimension('row', row_kws, heatmap_ax, row_dendrogram_ax,
+                     row_dendrogram, df)
 
     # Add title if there is one:
     if title is not None:
         col_dendrogram_ax.set_title(title, fontsize=title_fontsize)
 
     ## col labels ##
-    # heatmap_ax, col_dendrogram_ax = _label_dimension('col', col_kws,
-    #                                                 heatmap_ax,
-    #                                                 col_dendrogram_ax,
-    #                                                 col_dendrogram, df)
-    # label_cols = col_kws.setdefault('label', True)
-    if isinstance(col_kws['label'], Iterable):
-        if len(col_kws['label']) == df.shape[1]:
-            xticklabels = col_kws['label']
-            col_kws['label'] = True
-        else:
-            raise AssertionError("Length of 'label_cols' must be the same as "
-                                 "df.shape[1] (len(label_cols)={}, df.shape["
-                                 "1]={})".format(len(col_kws['label']), df.shape[1]))
-    elif col_kws['label']:
-        xticklabels = df.columns
-    else:
-        heatmap_ax.set_xticklabels([])
-
-    if col_kws['label']:
-        xticklabels = [xticklabels[i] for i in col_dendrogram['leaves']]
-        heatmap_ax.set_xticks(np.arange(df.shape[1]) + 0.5)
-        xticklabels = heatmap_ax.set_xticklabels(xticklabels)
-        # rotate labels 90 degrees
-        for label in xticklabels:
-            label.set_rotation(90)
-
-    # # remove the tick lines
-    # for l in heatmap_ax.get_xticklines() + heatmap_ax.get_yticklines():
-    #     l.set_markersize(0)
+    _label_dimension('col', col_kws, heatmap_ax, col_dendrogram_ax,
+                     col_dendrogram, df)
 
     ### scale colorbar ###
     scale_colorbar_ax = fig.add_subplot(
@@ -706,5 +656,6 @@ def clusterplot(df,
     #     t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
 
     # fig.tight_layout()
+    heatmap_gridspec.tight_layout(fig)
     # despine(fig, top=True, bottom=True, left=True, right=True)
     return fig, row_dendrogram, col_dendrogram
