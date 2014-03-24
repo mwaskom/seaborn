@@ -2,6 +2,8 @@ import numpy as np
 
 from seaborn.utils import despine
 import warnings
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import pdb
 
 def _get_width_ratios(shape, side_colors,
@@ -104,15 +106,15 @@ def _color_list_to_matrix_and_cmap(colors, ind, row=True):
 
     """
     import matplotlib as mpl
-
+    colors_original = colors
     colors = set(colors)
     col_to_value = dict((col, i) for i, col in enumerate(colors))
-    matrix = np.array([col_to_value[col] for col in colors])[ind]
+    matrix = np.array([col_to_value[col] for col in colors_original])[ind]
     # Is this row-side or column side?
     if row:
-        new_shape = (len(colors), 1)
+        new_shape = (len(colors_original), 1)
     else:
-        new_shape = (1, len(colors))
+        new_shape = (1, len(colors_original))
     matrix = matrix.reshape(new_shape)
 
     cmap = mpl.colors.ListedColormap(colors)
@@ -160,7 +162,8 @@ def _get_linkage_function(shape, use_fastcluster):
     return linkage_function
 
 
-def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
+def _plot_dendrogram(fig, kws, gridspec, linkage, orientation='top',
+                     dendrogram_kws=None):
     """Plots a dendrogram on the given figure
 
     Both the computation and plotting must be in this same function because
@@ -169,25 +172,42 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
 
     Parameters
     ----------
-
+    fig : matplotlib.figure.Figure
+        Matplotlib figure instance to plot onto
+    kws : dict
+        Keyword arguments for column or row plotting passed to clusterplot
+    gridspec : matplotlib.gridspec.gridspec
+        Indexed gridspec object for where to put the dendrogram plot
+    linkage : numpy.array
+        Linkage matrix, usually created by scipy.cluster.hierarchy.linkage
+    orientation : str
+        Specify the orientation of the dendrogram
+    dendrogram_kws : dict
+        Any additional keyword arguments for scipy.cluster.hierarchy.dendrogram
 
     Returns
     -------
-
-
-    Raises
-    ------
+    ax : matplotlib.axes.Axes
+        Axes upon which the dendrogram was plotted
+    dendrogram : dict
+        Dendrogram dictionary as returned by scipy.cluster.hierarchy
+        .dendrogram. The important key-value pairing is "leaves" which tells
+        the ordering of the matrix
     """
     import scipy.cluster.hierarchy as sch
+    if dendrogram_kws is None:
+        dendrogram_kws = {}
+
     almost_black = '#262626'
     ax = fig.add_subplot(gridspec)
     if kws['cluster']:
         dendrogram = sch.dendrogram(linkage,
                                         color_threshold=np.inf,
                                         color_list=[almost_black],
-                                        orientation=orientation)
+                                        orientation=orientation,
+                                        **dendrogram_kws)
     else:
-        dendrogram = {'leaves': list(range(shape))}
+        dendrogram = {'leaves': list(range(linkage.shape[0]))}
 
     # Can this hackery be avoided?
     despine(ax=ax, bottom=True, left=True)
@@ -195,9 +215,9 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
     ax.grid(False)
     ax.set_yticks([])
     ax.set_xticks([])
-    return dendrogram
+    return ax, dendrogram
 
-def _plot_sidecolors():
+def _plot_sidecolors(fig, kws, gridspec, dendrogram, edgecolor, linewidth):
     """
     Parameters
     ----------
@@ -210,7 +230,18 @@ def _plot_sidecolors():
     Raises
     ------
     """
-    pass
+    if kws['side_colors'] is not None:
+        ax = fig.add_subplot(gridspec)
+        side_matrix, cmap = _color_list_to_matrix_and_cmap(
+            kws['side_colors'],
+            ind=dendrogram['leaves'],
+            row=False)
+        ax.pcolormesh(side_matrix, cmap=cmap, edgecolor=edgecolor,
+                      linewidth=linewidth)
+        ax.set_xlim(0, side_matrix.shape[1])
+        ax.set_yticks([])
+        ax.set_xticks([])
+        return ax
 
 def clusterplot(df,
                 pivot_kws=None,
@@ -339,8 +370,7 @@ def clusterplot(df,
     #@return: fig, row_dendrogram, col_dendrogram
     #@rtype: matplotlib.figure.Figure, dict, dict
     #@raise TypeError:
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
+
     import scipy.spatial.distance as distance
     import scipy.cluster.hierarchy as sch
     import matplotlib as mpl
@@ -391,14 +421,15 @@ def clusterplot(df,
 
     if color_scale == 'log':
        if pcolormesh_kws['vmin'] is None:
-           pcolormesh_kws['vmin'] = max(df.dropna(how='all').min().dropna().min(), 1e-10)
+           pcolormesh_kws['vmin'] = max(df.replace(0, np.nan).dropna(how='all')
+                                                   .min().dropna().min(), 1e-10)
        if pcolormesh_kws['vmax'] is None:
            pcolormesh_kws['vmax'] = np.ceil(df.dropna(how='all').max().dropna()
                                          .max())
        pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
                                                    vmax)
 
-    print "pcolormesh_kws['vmin']", pcolormesh_kws['vmin']
+    # print "pcolormesh_kws['vmin']", pcolormesh_kws['vmin']
 
     if 'cmap' not in pcolormesh_kws:
         cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
@@ -412,7 +443,11 @@ def clusterplot(df,
         pcolormesh_kws['vmin'] = -vmaxx
         pcolormesh_kws['vmax'] = vmaxx
         norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
+        pcolormesh_kws['norm'] = norm
 
+    for kws in [row_kws, col_kws]:
+        kws.setdefault('linkage_matrix', None)
+        kws.setdefault('cluster', True)
 
 
     # TODO: Add optimal leaf ordering for clusters
@@ -420,7 +455,6 @@ def clusterplot(df,
     # calculate pairwise distances for rows
     # if color_scale == 'log':
     #     df = np.log10(df)
-
     if row_kws['linkage_matrix'] is None:
         linkage_function = _get_linkage_function(df.shape, use_fastcluster)
         row_pairwise_dists = distance.squareform(distance.pdist(df,
@@ -467,57 +501,25 @@ def clusterplot(df,
                           height_ratios=height_ratios)
 
     ### col dendrogram ###
-    col_dendrogram_ax = fig.add_subplot(heatmap_gridspec[1, ncols - 1])
-    if col_kws['cluster']:
-        col_dendrogram = sch.dendrogram(col_linkage,
-                                        color_threshold=np.inf,
-                                        color_list=[almost_black])
-    else:
-        col_dendrogram = {'leaves': list(range(df.shape[1]))}
-
-    # Can this hackery be avoided?
-    despine(ax=col_dendrogram_ax, bottom=True, left=True)
-    col_dendrogram_ax.set_axis_bgcolor('white')
-    col_dendrogram_ax.grid(False)
-    col_dendrogram_ax.set_yticks([])
-    col_dendrogram_ax.set_xticks([])
+    col_dendrogram_ax, col_dendrogram = _plot_dendrogram(fig, col_kws,
+                                      heatmap_gridspec[1, ncols-1],
+                                      col_linkage)
 
     # TODO: Allow for array of color labels
     ### col colorbar ###
-    if col_kws['side_colors'] is not None:
-        column_colorbar_ax = fig.add_subplot(heatmap_gridspec[2, ncols - 1])
-        col_side_matrix, col_cmap = _color_list_to_matrix_and_cmap(
-            col_kws['side_colors'],
-            ind=col_dendrogram['leaves'],
-            row=False)
-        column_colorbar_ax_pcolormesh = column_colorbar_ax.pcolormesh(
-            col_side_matrix, cmap=col_cmap,
-            edgecolor=edgecolor,
-            linewidth=linewidth)
-        column_colorbar_ax.set_xlim(0, col_side_matrix.shape[1])
-        column_colorbar_ax.set_yticks([])
-        column_colorbar_ax.set_xticks([])
+    _plot_sidecolors(fig, col_kws, heatmap_gridspec[2, ncols-1],
+                     col_dendrogram, edgecolor, linewidth)
 
     ### row dendrogram ##
-    row_dendrogram = _plot_dendrogram(fig, row_kws,
+    row_dendrogram_ax, row_dendrogram = _plot_dendrogram(fig, row_kws,
                                       heatmap_gridspec[nrows-1, 1],
-                                      row_linkage, df.shape,
+                                      row_linkage,
                                       orientation='right')
 
 
     ### row colorbar ###
-    if row_kws['side_colors'] is not None:
-        row_colorbar_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 2])
-        row_side_matrix, row_cmap = _color_list_to_matrix_and_cmap(
-            row_kws['side_colors'],
-            ind=row_dendrogram['leaves'],
-            row=True)
-        row_colorbar_ax.pcolormesh(row_side_matrix, cmap=row_cmap,
-                                   edgecolors=edgecolor,
-                                   linewidth=linewidth)
-        row_colorbar_ax.set_ylim(0, row_side_matrix.shape[0])
-        row_colorbar_ax.set_xticks([])
-        row_colorbar_ax.set_yticks([])
+    _plot_sidecolors(fig, col_kws, heatmap_gridspec[nrows-1, 2],
+                     col_dendrogram, edgecolor, linewidth)
 
     ### heatmap ####
     heatmap_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, ncols - 1])
