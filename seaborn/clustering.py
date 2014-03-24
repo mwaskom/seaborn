@@ -77,39 +77,67 @@ def _get_width_ratios(shape, side_colors,
     else:
         return ratios + [1]
 
-def _color_list_to_matrix_and_cmap(color_list, ind, row=True):
-    """
+def _color_list_to_matrix_and_cmap(colors, ind, row=True):
+    """Turns a list of colors into a numpy matrix and matplotlib colormap
     For 'heatmap()'
     This only works for 1-column color lists..
     TODO: Support multiple color labels on an element in the heatmap
 
+    These arguments can now be plotted using matplotlib.pcolormesh(matrix,
+    cmap) and the provided colors will be plotted.
+
     Parameters
     ----------
-    color_list: list of matplotlib colors
+    colors : list of matplotlib colors
         Colors to label the rows or columns of a dataframe.
-    ind: list of ints
-        Ordering of the rows or columns, to reorder the original color_list
-    row: bool
+    ind : list of ints
+        Ordering of the rows or columns, to reorder the original colors
+    row : bool
         Is this to label the rows or columns? Default True.
+
+    Returns
+    -------
+    matrix : numpy.array
+        A numpy array of integer values, where each corresponds to a color
+        from the originally provided list of colors
+    cmap : matplotlib.colors.ListedColormap
+
     """
     import matplotlib as mpl
 
-    colors = set(color_list)
+    colors = set(colors)
     col_to_value = dict((col, i) for i, col in enumerate(colors))
-
-    #     ind = column_dendrogram_distances['leaves']
-    matrix = np.array([col_to_value[col] for col in color_list])[ind]
+    matrix = np.array([col_to_value[col] for col in colors])[ind]
     # Is this row-side or column side?
     if row:
-        new_shape = (len(color_list), 1)
+        new_shape = (len(colors), 1)
     else:
-        new_shape = (1, len(color_list))
+        new_shape = (1, len(colors))
     matrix = matrix.reshape(new_shape)
 
     cmap = mpl.colors.ListedColormap(colors)
     return matrix, cmap
 
 def _get_linkage_function(shape, use_fastcluster):
+    """
+    Parameters
+    ----------
+    shape : tuple
+        (nrow, ncol) tuple of the shape of the dataframe
+    use_fastcluster : bool
+        Whether to use fastcluster (3rd party module) for clustering,
+        which is faster than the default scipy.cluster.hierarchy.linkage module
+
+    Returns
+    -------
+    linkage_function : function
+        Linkage function to use for clustering
+
+    .. warning:: If either the number of columns or rows exceeds 1000,
+    this wil try to import fastcluster, and raise a warning if it does not
+    exist. Vanilla scipy.cluster.hierarchy.linkage will take a long time on
+    these matrices.
+    """
     import scipy.cluster.hierarchy as sch
     if (shape[0] > 1000 or shape[1] > 1000) or use_fastcluster:
         try:
@@ -132,7 +160,51 @@ def _get_linkage_function(shape, use_fastcluster):
     return linkage_function
 
 
+def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
+    """
+    Parameters
+    ----------
 
+
+    Returns
+    -------
+
+
+    Raises
+    ------
+    """
+    import scipy.cluster.hierarchy as sch
+    almost_black = '#262626'
+    ax = fig.add_subplot(gridspec)
+    if kws['cluster']:
+        dendrogram = sch.dendrogram(linkage,
+                                        color_threshold=np.inf,
+                                        color_list=[almost_black])
+    else:
+        dendrogram = {'leaves': list(range(shape))}
+
+    # Can this hackery be avoided?
+    despine(ax=ax, bottom=True, left=True)
+    ax.set_axis_bgcolor('white')
+    ax.grid(False)
+    ax.set_yticks([])
+    ax.set_xticks([])
+    return dendrogram
+
+def _plot_sidecolors():
+    """
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+
+
+    Raises
+    ------
+    """
+    pass
 
 def clusterplot(df,
                 pivot_kws=None,
@@ -282,9 +354,6 @@ def clusterplot(df,
         raise ValueError('plot_df must have the exact same columns as df')
         # make norm
 
-
-    linkage_function = _get_linkage_function(df.shape, use_fastcluster)
-
     if row_kws is None:
         row_kws = dict(cluster=True,
              side_colors=None,
@@ -346,17 +415,25 @@ def clusterplot(df,
     # if color_scale == 'log':
     #     df = np.log10(df)
 
-
-    row_pairwise_dists = distance.squareform(distance.pdist(df,
-                                                            metric=metric))
-    row_linkage = linkage_function(row_pairwise_dists, method=linkage_method)
+    if row_kws['linkage_matrix'] is None:
+        linkage_function = _get_linkage_function(df.shape, use_fastcluster)
+        row_pairwise_dists = distance.squareform(distance.pdist(df,
+                                                                metric=metric))
+        row_linkage = linkage_function(row_pairwise_dists,
+                                       method=linkage_method)
+    else:
+        row_linkage = row_kws['linkage_matrix']
 
     # calculate pairwise distances for columns
     if col_kws['linkage_matrix'] is None:
+        linkage_function = _get_linkage_function(df.shape, use_fastcluster)
         col_pairwise_dists = distance.squareform(distance.pdist(df.T,
                                                                 metric=metric))
         # cluster
-        col_linkage = linkage_function(col_pairwise_dists, method=linkage_method)
+        col_linkage = linkage_function(col_pairwise_dists,
+                                       method=linkage_method)
+    else:
+        col_linkage = col_kws['linkage_matrix']
 
     # heatmap with row names
     width_ratios = _get_width_ratios(df.shape,
@@ -368,9 +445,10 @@ def clusterplot(df,
     nrows = 3 if col_kws['side_colors'] is None else 4
     ncols = 3 if row_kws['side_colors'] is None else 4
 
-    width = df.shape[1] * 0.25
-    height = min(df.shape[0] * .75, 40)
+
     if figsize is None:
+        width = df.shape[1] * 0.25
+        height = min(df.shape[0] * .75, 40)
         figsize = (width, height)
 
     edgecolor = pcolormesh_kws.setdefault('edgecolor', 'none')
@@ -381,7 +459,6 @@ def clusterplot(df,
         gridspec.GridSpec(nrows, ncols, wspace=0.0, hspace=0.0,
                           width_ratios=width_ratios,
                           height_ratios=height_ratios)
-    #     print heatmap_gridspec
 
     ### col dendrogram ###
     col_dendrogram_ax = fig.add_subplot(heatmap_gridspec[1, ncols - 1])
