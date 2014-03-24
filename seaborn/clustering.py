@@ -161,7 +161,12 @@ def _get_linkage_function(shape, use_fastcluster):
 
 
 def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
-    """
+    """Plots a dendrogram on the given figure
+
+    Both the computation and plotting must be in this same function because
+    scipy.cluster.hierarchy.dendrogram does ax = plt.gca() and cannot be
+    specified its own ax object.
+
     Parameters
     ----------
 
@@ -179,7 +184,8 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, shape, orientation='top'):
     if kws['cluster']:
         dendrogram = sch.dendrogram(linkage,
                                         color_threshold=np.inf,
-                                        color_list=[almost_black])
+                                        color_list=[almost_black],
+                                        orientation=orientation)
     else:
         dendrogram = {'leaves': list(range(shape))}
 
@@ -493,20 +499,10 @@ def clusterplot(df,
         column_colorbar_ax.set_xticks([])
 
     ### row dendrogram ##
-    row_dendrogram_ax = fig.add_subplot(heatmap_gridspec[nrows - 1, 1])
-    if row_kws['cluster']:
-        row_dendrogram = \
-            sch.dendrogram(row_linkage,
-                           color_threshold=np.inf,
-                           orientation='right',
-                           color_list=[almost_black])
-    else:
-        row_dendrogram ={'leaves': list(range(df.shape[0]))}
-    despine(ax=row_dendrogram_ax, bottom=True, left=True)
-    row_dendrogram_ax.set_axis_bgcolor('white')
-    row_dendrogram_ax.grid(False)
-    row_dendrogram_ax.set_yticks([])
-    row_dendrogram_ax.set_xticks([])
+    row_dendrogram = _plot_dendrogram(fig, row_kws,
+                                      heatmap_gridspec[nrows-1, 1],
+                                      row_linkage, df.shape,
+                                      orientation='right')
 
 
     ### row colorbar ###
