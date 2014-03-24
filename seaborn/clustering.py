@@ -314,7 +314,6 @@ def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
     else:
         ax_axis.set_ticklabels([])
 
-
     if kws['label']:
         ticklabels_ordered = [ticklabels[i] for i in dendrogram['leaves']]
         # pdb.set_trace()
@@ -347,8 +346,8 @@ def clusterplot(df,
     @author Olga Botvinnik olga.botvinnik@gmail.com
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
-    Many thanks to Christopher DeBoever and Mike Lovci for providing heatmap
-    guidance.
+    Many thanks to Christopher DeBoever and Mike Lovci for providing
+    heatmap/gridspec/colorbar positioning guidance.
 
     Parameters
     ----------
@@ -364,82 +363,52 @@ def clusterplot(df,
         Title of the figure. Default None
     title_fontsize: int, optional
         Size of the plot title. Default 12
-    colorbar_label: string, optional
-        Label the colorbar, e.g. "density" or "gene expression". Default
-        "values"
-    col_side_colors: list of matplotlib colors, optional
-        Label the columns with the group they are in with a color. Useful for
-        evaluating whether samples within a group are clustered together.
-    row_side_colors: list of matplotlib colors, optional
-        Label the rows (index of a dataframe) with the group they are in with a
-        color. Useful for evaluating whether samples within a group are
-        clustered together.
     color_scale: string, 'log' or 'linear'
         How to scale the colors plotted in the heatmap. Default "linear"
-    cmap: matplotlib colormap
-        How to color the data values. Default is YlGnBu ('yellow-green-blue')
-        for positive- or negative-only data, and RdBu_r ('red-blue-reversed'
-        so blue is "cold," negative numbers and red is "hot," positive
-        numbers) for divergent data, i.e. if your data has both positive and
-        negative values.
     linkage_method: string
         Which linkage method to use for calculating clusters.
         See scipy.cluster.hierarchy.linkage documentation for more information:
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
         Default "average"
-    figsize: tuple of two ints
-        Size of the figure to create. Default is a function of the dataframe
-        size.
-    label_rows: bool or list of strings, optional
-        Label the rows with the index labels of the dataframe. Optionally
-        provide another list of strings of the same length as the number of
-        rows. Can also be False. Default True.
-    label_cols: bool or list of strings, optional
-        Label the columns with the column labels of the dataframe. Optionally
-        provide another list of strings of the same length as the number of
-        column. Can also be False. Default True.
-    pcolormesh_kws['vmin']: int or float
-        Minimum value to plot on the heatmap. Default the smallest value in
-        the dataframe.
-    vmax: int or float
-        Maximum value to plot on the heatmap. Default the largest value in
-        the dataframe.
-    xlabel_fontsize: int
-        Size of the x tick labels on the heatmap. Default 12
-    ylabel_fontsize: int
-        Size of the y tick labels on the heatmap. Default 10
-    cluster_cols: bool or dendrogram in the dict format returned by
-    scipy.cluster.hierarchy.dendrogram
-        Whether or not to cluster the columns of the data. Default True. Can
-        provide your own dendrogram if you have separately performed
-        clustering.
-    cluster_rows: bool or dendrogram in the dict format returned by
-    scipy.cluster.hierarchy.dendrogram
-        Whether or not to cluster the columns of the data. Default True. Can
-        provide your own dendrogram if you have separately performed
-        clustering.
-    linewidth: int
-        Width of lines to draw on top of the heatmap to separate the cells
-        from one another. Default 0 (no lines)
-    edgecolor: matplotlib color
-        Color of the lines to draw on top of the heatmap to separate cells
-        from one another. Default "white"
-    plot_df: Dataframe
-        The dataframe to plot. May have NAs, unlike the "df" argument.
-    colorbar_ticklabels_fontsize: int
-        Size of the tick labels on the colorbar
-    use_fastcluster: bool
-        Whether or not to use the "fastcluster" module in Python,
-        which calculates linkage several times faster than scipy.cluster.hierachy
-        Default False except for datasets with more than 1000 rows or columns.
     metric: string
         Distance metric to use for the data. Default is "euclidean." See
         scipy.spatial.distance.pdist documentation for more options
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
-    pcolormesh_kws: dict, arguments to pcolormesh (like imshow and pcolor but faster)
-        For example, dict(linewidth=0, edgecolor='white', cmap=None, pcolormesh_kws['vmin']=None,
+    figsize: tuple of two ints
+        Size of the figure to create. Default is a function of the dataframe
+        size.
+    pcolormesh_kws : dict
+        Keyword arguments to pass to the heatmap pcolormesh plotter. E.g.
+        vmin, vmax, cmap, norm. If these are none, they are auto-detected
+        from your data. If the data is divergent, i.e. has values both
+        above and below zero, then the colormap is blue-red with blue
+        as negative values and red as positive. If the data is not
+        divergent, then the colormap is YlGnBu.
+        Default:
+        dict(vmin=None, vmax=None, edgecolor='white', linewidth=0, cmap=None,
+        norm=None)
+    {row,col}_kws : dict
+        Keyword arguments for rows and columns. Specify the tick label
+        location as either on the dendrogram or heatmap via
+        label_loc='heatmap'. Can turn of labeling altogether with
+        label=False. Can specify you own linkage matrix via linkage_matrix.
+        Can also specify side colors labels via side_colors=colors, which are
+        useful for evaluating whether samples within a group are clustered
+        together.
+        Default:
+        dict(linkage_matrix=None, cluster=True, label_loc='dendrogram',
+        label=True, fontsize=None, side_colors=None)
+    colorbar_kws : dict
+        Keyword arguments for the colorbar. The ticklabel fontsize is
+        extracted from this dict, then removed.
+        dict(fontsize=None, label='values')
+    plot_df: Dataframe
+        The dataframe to plot. May have NAs, unlike the "df" argument.
+    use_fastcluster: bool
+        Whether or not to use the "fastcluster" module in Python,
+        which calculates linkage several times faster than scipy.cluster.hierachy
+        Default False except for datasets with more than 1000 rows or columns.
 
-        vmax=None)
     Returns
     -------
     fig: matplotlib Figure
@@ -453,9 +422,6 @@ def clusterplot(df,
         along the data, here the x-axis coords), 'dcoords' (coordinates of the
         cluster nodes along the dendrogram height, here the y-axis coords)
     """
-    #@return: fig, row_dendrogram, col_dendrogram
-    #@rtype: matplotlib.figure.Figure, dict, dict
-    #@raise TypeError:
 
     import scipy.spatial.distance as distance
     import scipy.cluster.hierarchy as sch
@@ -476,25 +442,28 @@ def clusterplot(df,
         raise ValueError('plot_df must have the exact same columns as df')
         # make norm
 
-    if row_kws is None:
-        row_kws = dict(cluster=True,
-             side_colors=None,
-             label=True,
-             fontsize=12,
-             linkage_matrix=None)
-    if col_kws is None:
-        col_kws = dict(cluster=True,
-             side_colors=None,
-             label=True,
-             fontsize=12,
-             linkage_matrix=None)
-    if colorbar_kws is None:
-        colorbar_kws = dict(ticklabels_fontsize=10,
-             label='values')
-    if pcolormesh_kws is None:
-        pcolormesh_kws = {}
+    # Interpret keyword arguments
+    row_kws = {} if row_kws is None else row_kws
+    col_kws = {} if col_kws is None else col_kws
+
+    for kws in [row_kws, col_kws]:
+        kws.setdefault('linkage_matrix', None)
+        kws.setdefault('cluster', True)
+        kws.setdefault('label_loc', 'dendrogram')
+        kws.setdefault('label', True)
+        kws.setdefault('fontsize', None)
+        kws.setdefault('side_colors', None)
+
+    colorbar_kws = {} if colorbar_kws is None else colorbar_kws
+    colorbar_kws.setdefault('fontsize', None)
+    colorbar_kws.setdefault('label', 'values')
+
+    # Pcolormesh keyword arguments take more work
+    pcolormesh_kws = {} if pcolormesh_kws is None else pcolormesh_kws
     pcolormesh_kws.setdefault('vmin', None)
     pcolormesh_kws.setdefault('vmax', None)
+    edgecolor = pcolormesh_kws.setdefault('edgecolor', 'white')
+    linewidth = pcolormesh_kws.setdefault('linewidth', 0)
 
     # Check if the matrix has values both above and below zero, or only above
     # or only below zero. If both above and below, then the data is
@@ -503,7 +472,6 @@ def clusterplot(df,
     # the YlGnBu colormap.
     divergent = (df.max().max() > 0 and df.min().min() < 0) and not \
         color_scale == 'log'
-
     if color_scale == 'log':
        if pcolormesh_kws['vmin'] is None:
            pcolormesh_kws['vmin'] = max(df.replace(0, np.nan).dropna(how='all')
@@ -513,8 +481,6 @@ def clusterplot(df,
                                          .max())
        pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
                                                    pcolormesh_kws['vmax'])
-
-    # print "pcolormesh_kws['vmin']", pcolormesh_kws['vmin']
 
     if 'cmap' not in pcolormesh_kws:
         cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
@@ -530,23 +496,17 @@ def clusterplot(df,
         norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
         pcolormesh_kws['norm'] = norm
 
-    for kws in [row_kws, col_kws]:
-        kws.setdefault('linkage_matrix', None)
-        kws.setdefault('cluster', True)
-        kws.setdefault('label_loc', 'dendrogram')
-        kws.setdefault('label', True)
-        kws.setdefault('fontsize', None)
-        kws.setdefault('side_colors', None)
 
 
     # TODO: Add optimal leaf ordering for clusters
-    # TODO: if color_scale is 'log', should distance also be on np.log(df)?
-    # calculate pairwise distances for rows
-    # if color_scale == 'log':
-    #     df = np.log10(df)
+    if color_scale == 'log':
+        values = np.log10(df.values)
+    else:
+        values = df.values
+
     if row_kws['linkage_matrix'] is None:
         linkage_function = _get_linkage_function(df.shape, use_fastcluster)
-        row_pairwise_dists = distance.squareform(distance.pdist(df,
+        row_pairwise_dists = distance.squareform(distance.pdist(values,
                                                                 metric=metric))
         row_linkage = linkage_function(row_pairwise_dists,
                                        method=linkage_method)
@@ -556,7 +516,7 @@ def clusterplot(df,
     # calculate pairwise distances for columns
     if col_kws['linkage_matrix'] is None:
         linkage_function = _get_linkage_function(df.shape, use_fastcluster)
-        col_pairwise_dists = distance.squareform(distance.pdist(df.T,
+        col_pairwise_dists = distance.squareform(distance.pdist(values.T,
                                                                 metric=metric))
         # cluster
         col_linkage = linkage_function(col_pairwise_dists,
@@ -581,9 +541,6 @@ def clusterplot(df,
         width = df.shape[1] * 0.25
         height = min(df.shape[0] * .75, 40)
         figsize = (width, height)
-
-    edgecolor = pcolormesh_kws.setdefault('edgecolor', 'white')
-    linewidth = pcolormesh_kws.setdefault('linewidth', 0)
 
     fig = plt.figure(figsize=figsize)
     heatmap_gridspec = \
@@ -638,14 +595,15 @@ def clusterplot(df,
     scale_colorbar_ax = fig.add_subplot(
         heatmap_gridspec[0:(nrows - 1), 0]) # colorbar for scale in upper
         # left corner
-
+    colorbar_ticklabel_fontsize = colorbar_kws.pop('fontsize')
     cb = fig.colorbar(heatmap_ax_pcolormesh,
-                      cax=scale_colorbar_ax)
-    cb.set_label(colorbar_kws['label'])
+                      cax=scale_colorbar_ax, **colorbar_kws)
+    # cb.set_label(colorbar_kws['label'])
 
     if color_scale == 'log':
         #TODO: get at most 3 ticklabels showing on the colorbar for log-scaled
         pass
+        # This next stuff does not work...
         # tick_locator = mpl.ticker.LogLocator(numticks=3)
         # pdb.set_trace()
         # tick_locator.tick_values(pcolormesh_kws['vmin'],
@@ -661,19 +619,9 @@ def clusterplot(df,
 
     # move ticks to left side of colorbar to avoid problems with tight_layout
     cb.ax.yaxis.set_ticks_position('left')
+    if colorbar_ticklabel_fontsize is not None:
+        cb.ax.tick_params(labelsize=colorbar_ticklabel_fontsize)
     cb.outline.set_linewidth(0)
-    # pdb.set_trace()
 
-    ## Make colorbar narrower
-    #xmin, xmax, ymin, ymax = cb.ax.axis()
-    #cb.ax.set_xlim(xmin, xmax/0.2)
-
-    # make colorbar labels smaller
-    # yticklabels = cb.ax.yaxis.get_ticklabels()
-    # for t in yticklabels:
-    #     t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
-
-    # fig.tight_layout()
     heatmap_gridspec.tight_layout(fig)
-    # despine(fig, top=True, bottom=True, left=True, right=True)
     return fig, row_dendrogram, col_dendrogram
