@@ -602,11 +602,15 @@ def clusterplot(df,
     heatmap_ax.set_xlim(0, df.shape[1])
 
     ## row labels ##
-    label_rows = row_kws.setdefault('label', True)
-    if isinstance(label_rows, Iterable):
+    # _label_dimension('row', row_kws, heatmap_ax, row_dendrogram_ax,
+    #                  row_dendrogram, df)
+    # label_rows = row_kws.setdefault('label', True)
+
+    pdb.set_trace()
+    if isinstance(row_kws['label'], Iterable):
         if len(row_kws['label']) == df.shape[0]:
             yticklabels = row_kws['label']
-            label_rows = True
+            row_kws['label'] = True
         else:
             raise AssertionError("Length of 'row_kws['label']' must be "
                                  "the "
@@ -614,17 +618,18 @@ def clusterplot(df,
                                                             'same as "
                                  "df.shape[0] (len(row_kws['label'])={}, df.shape["
                                  "0]={})".format(len(row_kws['label']), df.shape[0]))
-    elif label_rows:
+    elif row_kws['label']:
         yticklabels = df.index
     else:
         heatmap_ax.set_yticklabels([])
 
-    if label_rows:
+    if row_kws['label']:
         yticklabels = [yticklabels[i] for i in row_dendrogram['leaves']]
         # despine(ax=heatmap_ax, bottom=True, left=True)
         heatmap_ax.set_yticks(np.arange(df.shape[0]) + 0.5)
-        heatmap_ax.yaxis.set_ticks_position('right')
+
         heatmap_ax.set_yticklabels(yticklabels)
+        heatmap_ax.yaxis.set_ticks_position('right')
 
     # Add title if there is one:
     if title is not None:
@@ -639,7 +644,7 @@ def clusterplot(df,
     if isinstance(col_kws['label'], Iterable):
         if len(col_kws['label']) == df.shape[1]:
             xticklabels = col_kws['label']
-            label_cols = True
+            col_kws['label'] = True
         else:
             raise AssertionError("Length of 'label_cols' must be the same as "
                                  "df.shape[1] (len(label_cols)={}, df.shape["
@@ -657,9 +662,9 @@ def clusterplot(df,
         for label in xticklabels:
             label.set_rotation(90)
 
-    # remove the tick lines
-    for l in heatmap_ax.get_xticklines() + heatmap_ax.get_yticklines():
-        l.set_markersize(0)
+    # # remove the tick lines
+    # for l in heatmap_ax.get_xticklines() + heatmap_ax.get_yticklines():
+    #     l.set_markersize(0)
 
     ### scale colorbar ###
     scale_colorbar_ax = fig.add_subplot(
@@ -701,5 +706,5 @@ def clusterplot(df,
     #     t.set_fontsize(colorbar_kws['ticklabels_fontsize'])
 
     # fig.tight_layout()
-    despine(fig, top=True, bottom=True, left=True, right=True)
+    # despine(fig, top=True, bottom=True, left=True, right=True)
     return fig, row_dendrogram, col_dendrogram
