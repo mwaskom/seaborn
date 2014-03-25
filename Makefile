@@ -2,7 +2,7 @@ export SHELL := /bin/bash
 
 test:
 
-	nosetests
+	nosetests --with-doctest
 	python ipnbdoctest.py examples/*.ipynb
 
 
