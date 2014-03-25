@@ -2,7 +2,7 @@
 from __future__ import division
 import numpy as np
 from scipy import stats
-from six.moves import range
+from .external.six.moves import range
 
 
 def bootstrap(*args, **kwargs):
