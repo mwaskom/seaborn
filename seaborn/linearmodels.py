@@ -1402,7 +1402,7 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
 
 def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
              sig_corr=True, cmap=None, cmap_range=None, cbar=True,
-             diag_names=True, ax=None, method=None, **kwargs):
+             diag_names=True, method=None, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
     Parameters
@@ -1426,10 +1426,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         full range (-1, 1), or specify (min, max) values for the colormap.
     cbar : bool
         If true, plot the colorbar legend.
-    ax : matplotlib axis
-        Axis to draw plot in.
     method: pearson | kendall | spearman
         Correlation method to compute pairwise correlations.
+    ax : matplotlib axis
+        Axis to draw plot in.
     kwargs : other keyword arguments
         Passed to ax.matshow()
 
