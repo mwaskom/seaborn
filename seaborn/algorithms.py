@@ -1,5 +1,7 @@
 """Algorithms to support fitting routines in seaborn plotting functions."""
 from __future__ import division
+import warnings
+
 import numpy as np
 from scipy import stats
 from .external.six.moves import range
@@ -187,17 +189,18 @@ def ci(a, which=95, axis=None, how='percentile', refval=None):
 
         n_below = np.sum(a < refval)
         if n_below == 0:
+            warnings.warn("Reference value too high", UserWarning)
             n_below = 0.00001
 
         # z-stats on the % of `n_below` and the confidence limits
-        z0 = stats.distributions.norm.ppf(float(n_below)/len(a))
+        z0 = stats.distributions.norm.ppf((1.0*n_below)/len(a))
         z = stats.distributions.norm.ppf(p / 100.0)
 
         # compute the acceleration
         a_hat = acceleration(a)
 
         # refine the confidence limits (alphas)
-        zTotal = (z0 + (z0 + z)) / (1 - a_hat*(z0+z))
+        zTotal = (z0 + (z0 + z) / (1 - a_hat*(z0+z)))
         alpha = stats.distributions.norm.cdf(zTotal) * 100.0
 
         # confidence intervals from the new alphas
