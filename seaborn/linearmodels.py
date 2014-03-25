@@ -1402,7 +1402,7 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
 
 def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
              sig_corr=True, cmap=None, cmap_range=None, cbar=True,
-             diag_names=True, ax=None, **kwargs):
+             diag_names=True, method=None, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
     Parameters
@@ -1426,6 +1426,8 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         full range (-1, 1), or specify (min, max) values for the colormap.
     cbar : bool
         If true, plot the colorbar legend.
+    method: pearson | kendall | spearman
+        Correlation method to compute pairwise correlations.
     ax : matplotlib axis
         Axis to draw plot in.
     kwargs : other keyword arguments
@@ -1443,7 +1445,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         data = pd.DataFrame(data, columns=names, dtype=np.float)
 
     # Calculate the correlation matrix of the dataframe
-    corrmat = data.corr()
+    if method is None:
+        corrmat = data.corr()
+    else:
+        corrmat = data.corr(method=method)
 
     # Pandas will drop non-numeric columns; let's keep track of that operation
     names = corrmat.columns
