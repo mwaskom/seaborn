@@ -474,20 +474,12 @@ def clusterplot(df,
         color_scale == 'log'
     if color_scale == 'log':
        if pcolormesh_kws['vmin'] is None:
-           pcolormesh_kws['vmin'] = max(df.replace(0, np.nan).dropna(how='all')
-                                                   .min().dropna().min(), 1e-10)
+           pcolormesh_kws['vmin'] = df.replace(0, np.nan).dropna(how='all').min().dropna().min()
        if pcolormesh_kws['vmax'] is None:
-           pcolormesh_kws['vmax'] = np.ceil(df.dropna(how='all').max().dropna()
-                                         .max())
+           pcolormesh_kws['vmax'] = df.dropna(how='all').max().dropna().max()
        pcolormesh_kws['norm'] = mpl.colors.LogNorm(pcolormesh_kws['vmin'],
                                                    pcolormesh_kws['vmax'])
-
-    if 'cmap' not in pcolormesh_kws:
-        cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
-        cmap.set_bad('white')
-        pcolormesh_kws['cmap'] = cmap
-
-    if divergent:
+    elif divergent:
         abs_max = abs(df.max().max())
         abs_min = abs(df.min().min())
         vmaxx = max(abs_max, abs_min)
@@ -495,6 +487,14 @@ def clusterplot(df,
         pcolormesh_kws['vmax'] = vmaxx
         norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
         pcolormesh_kws['norm'] = norm
+    else:
+        pcolormesh_kws.setdefault('vmin', df.min().min())
+        pcolormesh_kws.setdefault('vmax', df.max().max())
+
+    if 'cmap' not in pcolormesh_kws:
+        cmap = mpl.cm.RdBu_r if divergent else mpl.cm.YlGnBu
+        cmap.set_bad('white')
+        pcolormesh_kws['cmap'] = cmap
 
 
 
@@ -598,8 +598,9 @@ def clusterplot(df,
     colorbar_ticklabel_fontsize = colorbar_kws.pop('fontsize')
     cb = fig.colorbar(heatmap_ax_pcolormesh,
                       cax=scale_colorbar_ax, **colorbar_kws)
-    # cb.set_label(colorbar_kws['label'])
 
+    ## Setting the number of colorbar ticks to at most 3 (nbins+1) currently
+    ## only works for divergent and linear colormaps.
     if color_scale == 'log':
         #TODO: get at most 3 ticklabels showing on the colorbar for log-scaled
         pass
@@ -608,7 +609,7 @@ def clusterplot(df,
         # pdb.set_trace()
         # tick_locator.tick_values(pcolormesh_kws['vmin'],
         #                          pcolormesh_kws['vmax'])
-    else:
+    elif divergent:
         tick_locator = mpl.ticker.MaxNLocator(nbins=2,
                                               symmetric=divergent,
                                               prune=None, trim=False)
