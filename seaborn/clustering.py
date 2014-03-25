@@ -9,6 +9,10 @@ import pdb
 from . import utils
 
 class _HeatmapPlotter(object):
+    """
+
+    """
+
 
 
 def _get_width_ratios(shape, side_colors,
@@ -211,7 +215,7 @@ def _plot_dendrogram(fig, kws, gridspec, linkage, orientation='top',
         dendrogram = {'leaves': list(range(linkage.shape[0]))}
 
     # Can this hackery be avoided?
-    despine(ax=ax, bottom=True, left=True)
+    utils.despine(ax=ax, bottom=True, left=True)
     ax.set_axis_bgcolor('white')
     ax.grid(False)
     ax.set_yticks([])
@@ -252,7 +256,7 @@ def _plot_sidecolors(fig, kws, gridspec, dendrogram, edgecolor, linewidth):
         ax.set_xlim(0, side_matrix.shape[1])
         ax.set_yticks([])
         ax.set_xticks([])
-        despine(ax=ax, left=True, bottom=True)
+        utils.despine(ax=ax, left=True, bottom=True)
         return ax
 
 def _label_dimension(dimension, kws, heatmap_ax, dendrogram_ax, dendrogram,
@@ -575,7 +579,7 @@ def clusterplot(df,
         heatmap_ax.pcolormesh(plot_df.ix[row_dendrogram['leaves'],
                                          col_dendrogram['leaves']].values,
                               **pcolormesh_kws)
-    despine(ax=heatmap_ax, left=True, bottom=True)
+    utils.despine(ax=heatmap_ax, left=True, bottom=True)
     heatmap_ax.set_ylim(0, df.shape[0])
     heatmap_ax.set_xlim(0, df.shape[1])
 
