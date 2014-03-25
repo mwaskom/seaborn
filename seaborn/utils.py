@@ -160,6 +160,9 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         Specific axes object to despine.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
+    offset : int, optional (default = 0)
+        Absolute distance, in points, spines should be moved away
+        from the axes (negative values move spines inward).
     trim : bool, optional
         If true, limit spines to the smallest and largest major tick
         on each non-despined axis.
