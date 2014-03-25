@@ -1,11 +1,15 @@
 import numpy as np
 
-from seaborn.utils import despine
 import warnings
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from collections import Iterable
 import pdb
+
+from . import utils
+
+class _HeatmapPlotter(object):
+
 
 def _get_width_ratios(shape, side_colors,
                      # colorbar_loc,
@@ -62,10 +66,6 @@ def _get_width_ratios(shape, side_colors,
     """
     i = 0 if dimension == 'height' else 1
     half_dendrogram = shape[i] * 0.1 / shape[i]
-    # if colorbar_loc not in ('upper left', 'right'):
-    #     raise AssertionError("{} is not a valid 'colorbar_loc' (valid: "
-    #                          "'upper left', 'right', 'bottom')".format(
-    #         colorbar_loc))
     if dimension not in ('height', 'width'):
         raise AssertionError("{} is not a valid 'dimension' (valid: "
                              "'height', 'width')".format(
