@@ -53,6 +53,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         self.establish_variables(data, pivot_kws=pivot_kws)
         self.interpret_kws()
+        self.calculate_linkage()
 
     def calculate_linkage(self):
         """Calculate linkage matrices
@@ -689,9 +690,7 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
 
 
     if data_na_ok is None:
-        data2d = plotter.data2d
-    else:
-        data2d = data_na_ok
+        data_na_ok = plotter.data2d
 
     if (data_na_ok.index != plotter.data2d.index).any():
         raise ValueError(
@@ -700,7 +699,7 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         raise ValueError(
             'data_na_ok must have the exact same columns as the 2d data')
 
-    plotter.plot(fig, data2d, title, title_fontsize)
+    plotter.plot(fig, data_na_ok, title, title_fontsize)
 
     return fig, plotter.row_dendrogram, plotter.col_dendrogram
 
