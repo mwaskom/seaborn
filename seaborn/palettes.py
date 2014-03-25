@@ -61,15 +61,16 @@ def color_palette(name=None, n_colors=6, desat=None):
 
     Examples
     --------
-    >>> color_palette("muted")
+    >>> p = color_palette("muted")
 
-    >>> color_palette("Blues_d", 10)
+    >>> p = color_palette("Blues_d", 10)
 
-    >>> color_palette("Set1", desat=.7)
+    >>> p = color_palette("Set1", desat=.7)
 
+    >>> import matplotlib.pyplot as plt
     >>> with color_palette("husl", 8):
-    >>>     f, ax = plt.subplots()
-    >>>     ax.plot(x, y)
+    ...     f, ax = plt.subplots()
+    ...     ax.plot(x, y)                  # doctest: +SKIP
 
     See Also
     --------
