@@ -67,7 +67,7 @@ Seaborn is a Python visualization library based on matplotlib. It provides a hig
 
 For a brief introduction to the ideas behind the package, you can read the :ref:`introductory notes <introduction>`.
 
-Much more detail can be found in the seaborn :ref:`tutorial <tutorial>`. You can also browse the public :ref:`example gallery <example_gallery>` or :ref:`API reference <api_ref>` to see the kind of tools that are available.
+Much more detail can be found in the seaborn :ref:`tutorial <tutorial>`. You can also browse the :ref:`example gallery <example_gallery>` or :ref:`API reference <api_ref>` to see the kind of tools that are available.
 
 To check out the code, report a bug, or contribute a new feature, please visit
 the `github repository <https://github.com/mwaskom/seaborn>`_. You can also get
