@@ -26,6 +26,16 @@ class TestColorPalettes(object):
 
         nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
 
+    def test_big_palette_context(self):
+
+        default_pal = palettes.color_palette()
+        context_pal = palettes.color_palette("husl", 10)
+
+        with palettes.color_palette(context_pal, 10):
+            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
+
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
+
     def test_seaborn_palettes(self):
 
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
