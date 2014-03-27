@@ -613,7 +613,7 @@ class _RegressionPlotter(_LinearPlotter):
             x, y = self.scatter_data
             ax.scatter(x, y, **kws)
         else:
-             # TODO abstraction
+            # TODO abstraction
             ci_kws = {"color": kws["color"]}
             ci_kws["linewidth"] = mpl.rcParams["lines.linewidth"] * 1.75
             kws.setdefault("s", 50)
@@ -1333,7 +1333,7 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
         scatter_kws = {}
     if not ("color" in scatter_kws or "c" in scatter_kws):
         scatter_kws["color"] = "#222222"
-    if not "alpha" in scatter_kws:
+    if "alpha" not in scatter_kws:
         scatter_kws["alpha"] = 0.75
 
     # Intialize the contour keyword dictionary
