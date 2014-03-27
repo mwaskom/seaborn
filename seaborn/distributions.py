@@ -568,7 +568,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         label = data.name
 
     # Decide if we're going to add a legend
-    legend = not label is None and legend
+    legend = label is not None and legend
     label = "_nolegend_" if label is None else label
 
     # Use the active color cycle to find the plot color
