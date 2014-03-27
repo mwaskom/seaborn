@@ -12,6 +12,7 @@ _style_keys = (
     "axes.grid",
     "axes.axisbelow",
     "axes.linewidth",
+    "axes.labelcolor",
 
     "grid.color",
     "grid.linestyle",
@@ -189,6 +190,7 @@ def axes_style(style=None, rc=None):
         # Common parameters
         style_dict = {
             "text.color": dark_gray,
+            "axes.labelcolor": dark_gray,
             "legend.frameon": False,
             "legend.numpoints": 1,
             "legend.scatterpoints": 1,
