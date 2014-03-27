@@ -18,13 +18,13 @@ class _ColorPalette(list):
         """Open the context."""
         from .rcmod import set_palette
         self._orig_palette = color_palette()
-        set_palette(self)
+        set_palette(self, len(self))
         return self
 
     def __exit__(self, *args):
         """Close the context."""
         from .rcmod import set_palette
-        set_palette(self._orig_palette)
+        set_palette(self._orig_palette, len(self._orig_palette))
 
 
 def color_palette(name=None, n_colors=6, desat=None):
