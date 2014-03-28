@@ -336,9 +336,11 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         x = positions[i]
         kde = stats.gaussian_kde(a, bw)
         if isinstance(bw, str):
-            bw = "scotts" if bw == "scott" else bw
-            bw = getattr(kde, "%s_factor" % bw)()
-        y = _kde_support(a, bw, gridsize, cut, (-np.inf, np.inf))
+            bw_name = "scotts" if bw == "scott" else bw
+            _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
+        else:
+            _bw = bw
+        y = _kde_support(a, _bw, gridsize, cut, (-np.inf, np.inf))
         dens = kde.evaluate(y)
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
@@ -507,7 +509,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
-        bw = stats.gaussian_kde(a).scotts_factor()
+        bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
         x = _kde_support(a, bw, gridsize, cut, clip)
         params = fit.fit(a)
         pdf = lambda x: fit.pdf(x, *params)
@@ -676,11 +678,13 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using scipy."""
     data = np.c_[x, y]
     kde = stats.gaussian_kde(data.T)
+    data_std = data.std(axis=0, ddof=1)
     if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
-        bw = getattr(kde, "%s_factor" % bw)()
-    x_support = _kde_support(data[:, 0], bw, gridsize, cut, clip[0])
-    y_support = _kde_support(data[:, 1], bw, gridsize, cut, clip[1])
+        bw_x = getattr(kde, "%s_factor" % bw)() * data_std[0]
+        bw_y = getattr(kde, "%s_factor" % bw)() * data_std[1]
+    x_support = _kde_support(data[:, 0], bw_x, gridsize, cut, clip[0])
+    y_support = _kde_support(data[:, 1], bw_y, gridsize, cut, clip[1])
     xx, yy = np.meshgrid(x_support, y_support)
     z = kde([xx.ravel(), yy.ravel()]).reshape(xx.shape)
     return xx, yy, z
