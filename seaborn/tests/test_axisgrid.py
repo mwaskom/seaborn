@@ -103,6 +103,60 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
+    def test_legend_data(self):
+
+        g1 = ag.FacetGrid(self.df, hue="a")
+        g1.map(plt.plot, "x", "y")
+        palette = color_palette("husl", 3)
+
+        nt.assert_equal(g1._legend.get_title().get_text(), "a")
+
+        a_levels = sorted(self.df.a.unique())
+
+        lines = g1._legend.get_lines()
+        nt.assert_equal(len(lines), len(a_levels))
+
+        for line, hue in zip(lines, palette):
+            nt.assert_equal(line.get_color(), hue)
+
+        labels = g1._legend.get_texts()
+        nt.assert_equal(len(labels), len(a_levels))
+
+        for label, level in zip(labels, a_levels):
+            nt.assert_equal(label.get_text(), level)
+
+        plt.close("all")
+
+    def test_get_boolean_legend_data(self):
+
+        self.df["b_bool"] = self.df.b == "m"
+        g1 = ag.FacetGrid(self.df, hue="b_bool")
+        g1.map(plt.plot, "x", "y")
+        palette = color_palette("husl", 2)
+
+        nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
+
+        b_levels = sorted(map(str, self.df.b_bool.unique()))
+
+        lines = g1._legend.get_lines()
+        nt.assert_equal(len(lines), len(b_levels))
+
+        for line, hue in zip(lines, palette):
+            nt.assert_equal(line.get_color(), hue)
+
+        labels = g1._legend.get_texts()
+        nt.assert_equal(len(labels), len(b_levels))
+
+        for label, level in zip(labels, b_levels):
+            nt.assert_equal(label.get_text(), level)
+
+        plt.close("all")
+
+    def test_legend_options(self):
+
+        g1 = ag.FacetGrid(self.df, hue="b")
+        g1.map(plt.plot, "x", "y")
+
     def test_data_generator(self):
 
         g = ag.FacetGrid(self.df, row="a")
