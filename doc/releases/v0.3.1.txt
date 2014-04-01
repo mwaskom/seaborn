@@ -1,0 +1,14 @@
+
+v0.3.1 (??)
+-----------
+
+This is a minor release from 0.3 with fixes for several bugs.
+
+Bug Fixes
+~~~~~~~~~
+
+- Fixed an issue where the support for kernel density estimates was sometimes computed incorrectly.
+
+- Fixed a problem where ``hue`` variable levels that were not strings were missing in FacetGrid legends.
+
+- When passing a color palette list in a ``with`` statement, the entire palette is now used instead of the first six colors.
