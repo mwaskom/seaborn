@@ -140,7 +140,7 @@ class TestSpineUtils(object):
         f, ax = plt.subplots()
 
         for side in self.sides:
-            nt.assert_equal(ax.spines[side].get_position(), 
+            nt.assert_equal(ax.spines[side].get_position(),
                             self.original_position)
 
         utils.despine(ax=ax, offset=self.offset)
@@ -161,7 +161,7 @@ class TestSpineUtils(object):
         utils.despine(offset=self.offset, ax=ax2)
 
         for side in self.sides:
-            nt.assert_equal(ax1.spines[side].get_position(), 
+            nt.assert_equal(ax1.spines[side].get_position(),
                             self.original_position)
             if ax2.spines[side].get_visible():
                 nt.assert_equal(ax2.spines[side].get_position(),
@@ -208,7 +208,7 @@ class TestSpineUtils(object):
             for side in self.sides:
                 nt.assert_equal(ax.spines[side].get_position(),
                                 self.offset_position)
-        
+
         plt.close("all")
 
     def test_offset_spines_specific_axes(self):
@@ -219,7 +219,7 @@ class TestSpineUtils(object):
             utils.offset_spines(offset=self.offset, ax=ax2)
 
             for side in self.sides:
-                nt.assert_equal(ax1.spines[side].get_position(), 
+                nt.assert_equal(ax1.spines[side].get_position(),
                                 self.original_position)
                 nt.assert_equal(ax2.spines[side].get_position(),
                                 self.offset_position)
