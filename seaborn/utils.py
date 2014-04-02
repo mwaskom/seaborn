@@ -1,6 +1,8 @@
 """Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
+import warnings
+
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -151,7 +153,7 @@ def axlabel(xlabel, ylabel, **kwargs):
 
 
 def despine(fig=None, ax=None, top=True, right=True, left=False,
-            bottom=False, offset=0, trim=False):
+            bottom=False, offset=None, trim=False):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -160,7 +162,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         Specific axes object to despine.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
-    offset : int, optional (default = 0)
+    offset : int or None  (default), optional
         Absolute distance, in points, spines should be moved away
         from the axes (negative values move spines inward).
     trim : bool, optional
@@ -183,8 +185,10 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
     for ax_i in axes:
         for side in ["top", "right", "left", "bottom"]:
             # Toggle the spine objects
-            ax_i.spines[side].set_visible(not locals()[side])
-            _set_spine_position(ax_i.spines[side], ('outward', offset))
+            is_visible = not locals()[side]
+            ax_i.spines[side].set_visible(is_visible)
+            if offset is not None and is_visible:
+            	_set_spine_position(ax_i.spines[side], ('outward', offset))
 
         # Set the ticks appropriately
         if bottom:
@@ -239,6 +243,9 @@ def offset_spines(offset=10, fig=None, ax=None):
     None
 
     """
+    warn_msg = "`offset_spines` is deprecated and will be removed in v0.5"
+    warnings.warn(warn_msg, UserWarning)
+
     # Get references to the axes we want
     if fig is None and ax is None:
         axes = plt.gcf().axes
