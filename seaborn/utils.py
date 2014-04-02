@@ -188,7 +188,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
             is_visible = not locals()[side]
             ax_i.spines[side].set_visible(is_visible)
             if offset is not None and is_visible:
-            	_set_spine_position(ax_i.spines[side], ('outward', offset))
+                _set_spine_position(ax_i.spines[side], ('outward', offset))
 
         # Set the ticks appropriately
         if bottom:
