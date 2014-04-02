@@ -1,4 +1,6 @@
 """Tests for plotting utilities."""
+import warnings
+
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.testing import assert_array_equal
@@ -98,6 +100,10 @@ class TestSpineUtils(object):
     outer_sides = ["top", "right"]
     inner_sides = ["left", "bottom"]
 
+    offset = 10
+    original_position = ("outward", 0)
+    offset_position = ("outward", offset)
+
     def test_despine(self):
         f, ax = plt.subplots()
         for side in self.sides:
@@ -130,6 +136,41 @@ class TestSpineUtils(object):
 
         plt.close("all")
 
+    def test_despine_with_offset(self):
+        f, ax = plt.subplots()
+
+        for side in self.sides:
+            nt.assert_equal(ax.spines[side].get_position(), 
+                            self.original_position)
+
+        utils.despine(ax=ax, offset=self.offset)
+
+        for side in self.sides:
+            is_visible = ax.spines[side].get_visible()
+            new_position = ax.spines[side].get_position()
+            if is_visible:
+                nt.assert_equal(new_position, self.offset_position)
+            else:
+                nt.assert_equal(new_position, self.original_position)
+
+        plt.close("all")
+
+    def test_despine_with_offset_specific_axes(self):
+        f, (ax1, ax2) = plt.subplots(2, 1)
+
+        utils.despine(offset=self.offset, ax=ax2)
+
+        for side in self.sides:
+            nt.assert_equal(ax1.spines[side].get_position(), 
+                            self.original_position)
+            if ax2.spines[side].get_visible():
+                nt.assert_equal(ax2.spines[side].get_position(),
+                                self.offset_position)
+            else:
+                nt.assert_equal(ax2.spines[side].get_position(),
+                                self.original_position)
+        plt.close("all")
+
     def test_despine_trim_spines(self):
         f, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
@@ -142,26 +183,44 @@ class TestSpineUtils(object):
 
         plt.close("all")
 
+    def test_offset_spines_warns(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=UserWarning)
+
+            f, ax = plt.subplots()
+            utils.offset_spines(offset=self.offset)
+            nt.assert_true('deprecated' in str(w[0].message))
+            nt.assert_true(issubclass(w[0].category, UserWarning))
+
+        plt.close('all')
+
     def test_offset_spines(self):
-        f, ax = plt.subplots()
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=UserWarning)
+            f, ax = plt.subplots()
 
-        for side in self.sides:
-            nt.assert_equal(ax.spines[side].get_position(), ("outward", 0))
+            for side in self.sides:
+                nt.assert_equal(ax.spines[side].get_position(),
+                                self.original_position)
 
-        utils.offset_spines(10)
+            utils.offset_spines(offset=self.offset)
 
-        for side in self.sides:
-            nt.assert_equal(ax.spines[side].get_position(), ("outward", 10))
-
+            for side in self.sides:
+                nt.assert_equal(ax.spines[side].get_position(),
+                                self.offset_position)
+        
         plt.close("all")
 
     def test_offset_spines_specific_axes(self):
-        f, (ax1, ax2) = plt.subplots(2, 1)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", category=UserWarning)
+            f, (ax1, ax2) = plt.subplots(2, 1)
 
-        utils.offset_spines(10, ax=ax2)
+            utils.offset_spines(offset=self.offset, ax=ax2)
 
-        for side in self.sides:
-            nt.assert_equal(ax1.spines[side].get_position(), ("outward", 0))
-            nt.assert_equal(ax2.spines[side].get_position(), ("outward", 10))
-
+            for side in self.sides:
+                nt.assert_equal(ax1.spines[side].get_position(), 
+                                self.original_position)
+                nt.assert_equal(ax2.spines[side].get_position(),
+                                self.offset_position)
         plt.close("all")
