@@ -337,21 +337,24 @@ class _DiscretePlotter(_LinearPlotter):
             err_palette = self.err_palette
             label = self.hue_order[i]
             marker = self.markers[i]
+            markersize = np.pi * np.square(self.lw) * 2
             linestyle = self.linestyles[i]
+            z = i + 1
 
             # The error bars
             for j, (x, (low, high)) in enumerate(zip(pos, ci)):
                 ecolor = err_palette[j] if self.x_palette else err_palette[i]
-                ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+                ax.plot([x, x], [low, high], linewidth=self.lw,
+                        color=ecolor, zorder=z)
 
             # The main plot
-            ax.scatter(pos, height, s=75, color=color, label=label,
-                       marker=marker)
+            ax.scatter(pos, height, s=markersize, color=color, label=label,
+                       marker=marker, zorder=z)
 
             # The join line
             if self.join:
                 ax.plot(pos, height, color=color,
-                        linewidth=self.lw, linestyle=linestyle)
+                        linewidth=self.lw, linestyle=linestyle, zorder=z)
 
         # Set the x limits
         xlim = (self.positions.min() + self.offset.min() - .3,
