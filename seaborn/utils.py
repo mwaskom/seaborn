@@ -323,4 +323,7 @@ def load_dataset(name):
     """Load a dataset from the online repository (requires internet)."""
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
-    return pd.read_csv(full_path)
+    df = pd.read_csv(full_path)
+    if df.iloc[-1].isnull().all():
+        df = df.iloc[:-1]
+    return df
