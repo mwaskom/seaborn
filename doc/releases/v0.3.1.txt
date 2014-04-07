@@ -4,6 +4,13 @@ v0.3.1 (??)
 
 This is a minor release from 0.3 with fixes for several bugs.
 
+Plotting functions
+~~~~~~~~~~~~~~~~~~
+
+- The size of the points in pointplot and factorplot is now scaled with the linewidth for better aesthetics across different plotting contexts.
+
+- The pointplot glyphs for different levels of the hue variable are drawn at different z-orders so that they appear uniform.
+
 Bug Fixes
 ~~~~~~~~~
 
