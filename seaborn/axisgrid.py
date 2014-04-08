@@ -404,7 +404,13 @@ class FacetGrid(object):
         return self
 
     def set_axis_labels(self, x_var=None, y_var=None):
-        """Set axis labels on the left column and bottom row of the grid."""
+        """Set axis labels on the left column and bottom row of the grid.
+
+        If either argument is a string or not iterable, set each axis label to
+        the given value. Otherwise, set axis labels sequentially to the given
+        values.
+
+        """
         if x_var is not None:
             self._x_var = x_var
             self.set_xlabels(x_var)
@@ -413,19 +419,35 @@ class FacetGrid(object):
             self.set_ylabels(y_var)
         return self
 
-    def set_xlabels(self, label=None, **kwargs):
-        """Label the x axis on the bottom row of the grid."""
-        if label is None:
+    def set_xlabels(self, labels=None, **kwargs):
+        """Label the x axis on the bottom row of the grid.
+
+        If `labels` is a string or not iterable, set each x axis label to the
+        given value. Otherwise, set x axis labels sequentially to the given
+        values.
+
+        """
+        if labels is None:
             label = self._x_var
-        for ax in self.axes[-1, :]:
+        if isinstance(labels, basestring) or not np.iterable(labels):
+            labels = self.axes.shape[1] * [labels]
+        for ax, label in zip(self.axes[-1, :], labels):
             ax.set_xlabel(label, **kwargs)
         return self
 
-    def set_ylabels(self, label=None, **kwargs):
-        """Label the y axis on the left column of the grid."""
-        if label is None:
+    def set_ylabels(self, labels=None, **kwargs):
+        """Label the y axis on the left column of the grid.
+
+        If `labels` is a string or not iterable, set each y axis label to the
+        given value. Otherwise, set y axis labels sequentially to the given
+        values.
+
+        """
+        if labels is None:
             label = self._y_var
-        for ax in self.axes[:, 0]:
+        if isinstance(labels, basestring) or not np.iterable(labels):
+            labels = self.axes.shape[0] * [labels]
+        for ax, label in zip(self.axes[:, 0], labels):
             ax.set_ylabel(label, **kwargs)
         return self
 
