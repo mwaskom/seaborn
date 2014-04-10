@@ -22,7 +22,7 @@ class _MatrixPlotter(object):
         self.data = data
 
         # Either the data is already in 2d matrix format, or need to do a pivot
-        if kws['pivot_kws'] is not None:
+        if 'pivot_kws' in kws and kws['pivot_kws'] is not None:
             self.data2d = self.data.pivot(**kws['pivot_kws'])
         else:
             self.data2d = self.data
@@ -127,11 +127,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         # Pcolormesh keyword arguments take more work
         self.pcolormesh_kws = {} if pcolormesh_kws is None else pcolormesh_kws
-        self.pcolormesh_kws.setdefault('vmin', None)
-        self.pcolormesh_kws.setdefault('vmax', None)
         self.pcolormesh_kws.setdefault('edgecolor', 'white')
         self.pcolormesh_kws.setdefault('linewidth', 0)
 
+        self.vmin = None if 'vmin' not in self.pcolormesh_kws else \
+            self.pcolormesh_kws['vmin']
+        self.vmax = None if 'vmax' not in self.pcolormesh_kws else \
+            self.pcolormesh_kws['vmax']
         self.norm = None if 'norm' not in self.pcolormesh_kws else \
             self.pcolormesh_kws['norm']
         self.cmap = None if 'cmap' not in self.pcolormesh_kws else \
@@ -161,9 +163,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             abs_max = abs(self.data2d.max().max())
             abs_min = abs(self.data2d.min().min())
             vmaxx = max(abs_max, abs_min)
-            self.pcolormesh_kws['vmin'] = -vmaxx
-            self.pcolormesh_kws['vmax'] = vmaxx
-            self.norm = mpl.colors.Normalize(vmin=-vmaxx, vmax=vmaxx)
+            self.vmin = -vmaxx
+            self.vmax= vmaxx
+            self.norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         else:
             self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
             self.pcolormesh_kws.setdefault('vmax', self.data2d.max().max())
@@ -407,6 +409,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             the ordering of the matrix
         """
         import scipy.cluster.hierarchy as sch
+
         sch.set_link_color_palette(['k'])
 
         # almost_black = '#262626'
@@ -523,7 +526,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                                                      .data2d.shape[
                                                                          axis]))
         elif kws['label']:
-            ticklabels = self.data2d.index if dimension == 'row' else self\
+            ticklabels = self.data2d.index if dimension == 'row' else self \
                 .data2d.columns
         else:
             ax_axis.set_ticklabels([])
@@ -556,6 +559,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                                    'leaves']].values,
                           cmap=self.cmap,
                           norm=self.norm,
+                          vmin=self.vmin, vmax=self.vmax,
                           **self.pcolormesh_kws)
         utils.despine(ax=ax, left=True, bottom=True)
         ax.set_ylim(0, self.data2d.shape[0])
