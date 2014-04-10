@@ -45,15 +45,83 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.color_scale = color_scale
         self.linkage_method = linkage_method
         self.metric = metric
-        self.pcolormesh_kws = pcolormesh_kws
-        self.row_kws = row_kws
-        self.col_kws = col_kws
-        self.colorbar_kws = colorbar_kws
+        # self.pcolormesh_kws = pcolormesh_kws
+        # self.row_kws = row_kws
+        # self.col_kws = col_kws
+        # self.colorbar_kws = colorbar_kws
         self.use_fastcluster = use_fastcluster
 
         self.establish_variables(data, pivot_kws=pivot_kws)
-        self.interpret_kws()
+        self.interpret_kws(row_kws, col_kws, pcolormesh_kws, colorbar_kws)
         self.calculate_linkage()
+
+    def interpret_kws(self, row_kws, col_kws, pcolormesh_kws, colorbar_kws):
+        """Set defaults for keyword arguments
+        """
+        # Interpret keyword arguments
+        self.row_kws = {} if row_kws is None else row_kws
+        self.col_kws = {} if col_kws is None else col_kws
+
+        for kws in [self.row_kws, self.col_kws]:
+            kws.setdefault('linkage_matrix', None)
+            kws.setdefault('cluster', True)
+            kws.setdefault('label_loc', 'dendrogram')
+            kws.setdefault('label', True)
+            kws.setdefault('fontsize', None)
+            kws.setdefault('side_colors', None)
+
+        self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
+        self.colorbar_kws.setdefault('fontsize', None)
+        self.colorbar_kws.setdefault('label', 'values')
+
+        # Pcolormesh keyword arguments take more work
+        self.pcolormesh_kws = {} if pcolormesh_kws is None else pcolormesh_kws
+        self.pcolormesh_kws.setdefault('vmin', None)
+        self.pcolormesh_kws.setdefault('vmax', None)
+        self.pcolormesh_kws.setdefault('edgecolor', 'white')
+        self.pcolormesh_kws.setdefault('linewidth', 0)
+
+        self.norm = None if 'norm' not in pcolormesh_kws else pcolormesh_kws[
+            'norm']
+        self.cmap = None if 'cmap' not in pcolormesh_kws else pcolormesh_kws[
+            'cmap']
+        self.edgecolor = self.pcolormesh_kws['edgecolor']
+        self.linewidth = self.pcolormesh_kws['linewidth']
+
+        # Check if the matrix has values both above and below zero, or only above
+        # or only below zero. If both above and below, then the data is
+        # "divergent" and we will use a colormap with 0 centered at white,
+        # negative values blue, and positive values red. Otherwise, we will use
+        # the YlGnBu colormap.
+        self.divergent = (self.data2d.max().max() > 0 and
+                     self.data2d.min().min() < 0) and \
+                    not self.color_scale == 'log'
+        if self.color_scale == 'log':
+            if self.pcolormesh_kws['vmin'] is None:
+                self.pcolormesh_kws['vmin'] = self.data2d.replace(0, np.nan)\
+                    .dropna(how='all').min().dropna().min()
+            if self.pcolormesh_kws['vmax'] is None:
+                self.pcolormesh_kws['vmax'] = self.data2d.dropna(how='all')\
+                    .max().dropna().max()
+            if self.norm is None:
+                self.norm = mpl.colors.LogNorm(
+                    self.pcolormesh_kws['vmin'], self.pcolormesh_kws['vmax'])
+        elif self.divergent:
+            abs_max = abs(self.data2d.max().max())
+            abs_min = abs(self.data2d.min().min())
+            vmaxx = max(abs_max, abs_min)
+            self.pcolormesh_kws['vmin'] = -vmaxx
+            self.pcolormesh_kws['vmax'] = vmaxx
+            self.pcolormesh_kws['norm'] = mpl.colors.Normalize(vmin=-vmaxx,
+                                                               vmax=vmaxx)
+        else:
+            self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
+            self.pcolormesh_kws.setdefault('vmax', self.data2d.max().max())
+
+        if self.cmap is None:
+            self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
+            self.cmap.set_bad('white')
+
 
     def calculate_linkage(self):
         """Calculate linkage matrices
@@ -89,68 +157,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                            method=self.linkage_method)
         else:
             self.col_linkage = self.col_kws['linkage_matrix']
-
-    def interpret_kws(self):
-        """Set defaults for keyword arguments
-        """
-        # Interpret keyword arguments
-        self.row_kws = {} if self.row_kws is None else self.row_kws
-        self.col_kws = {} if self.col_kws is None else self.col_kws
-
-        for kws in [self.row_kws, self.col_kws]:
-            kws.setdefault('linkage_matrix', None)
-            kws.setdefault('cluster', True)
-            kws.setdefault('label_loc', 'dendrogram')
-            kws.setdefault('label', True)
-            kws.setdefault('fontsize', None)
-            kws.setdefault('side_colors', None)
-
-        self.colorbar_kws = {} if self.colorbar_kws is None \
-            else self.colorbar_kws
-        self.colorbar_kws.setdefault('fontsize', None)
-        self.colorbar_kws.setdefault('label', 'values')
-
-        # Pcolormesh keyword arguments take more work
-        self.pcolormesh_kws = {} if self.pcolormesh_kws is None \
-            else self.pcolormesh_kws
-        self.pcolormesh_kws.setdefault('vmin', None)
-        self.pcolormesh_kws.setdefault('vmax', None)
-        self.pcolormesh_kws.setdefault('edgecolor', 'white')
-        self.pcolormesh_kws.setdefault('linewidth', 0)
-
-        # Check if the matrix has values both above and below zero, or only above
-        # or only below zero. If both above and below, then the data is
-        # "divergent" and we will use a colormap with 0 centered at white,
-        # negative values blue, and positive values red. Otherwise, we will use
-        # the YlGnBu colormap.
-        self.divergent = (self.data2d.max().max() > 0 and
-                     self.data2d.min().min() < 0) and \
-                    not self.color_scale == 'log'
-        if self.color_scale == 'log':
-            if self.pcolormesh_kws['vmin'] is None:
-                self.pcolormesh_kws['vmin'] = self.data2d.replace(0, np.nan)\
-                    .dropna(how='all').min().dropna().min()
-            if self.pcolormesh_kws['vmax'] is None:
-                self.pcolormesh_kws['vmax'] = self.data2d.dropna(how='all')\
-                    .max().dropna().max()
-            self.pcolormesh_kws['norm'] = mpl.colors.LogNorm(
-                self.pcolormesh_kws['vmin'],  self.pcolormesh_kws['vmax'])
-        elif self.divergent:
-            abs_max = abs(self.data2d.max().max())
-            abs_min = abs(self.data2d.min().min())
-            vmaxx = max(abs_max, abs_min)
-            self.pcolormesh_kws['vmin'] = -vmaxx
-            self.pcolormesh_kws['vmax'] = vmaxx
-            self.pcolormesh_kws['norm'] = mpl.colors.Normalize(vmin=-vmaxx,
-                                                               vmax=vmaxx)
-        else:
-            self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
-            self.pcolormesh_kws.setdefault('vmax', self.data2d.max().max())
-
-        if 'cmap' not in self.pcolormesh_kws:
-            cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
-            cmap.set_bad('white')
-            self.pcolormesh_kws['cmap'] = cmap
 
     def get_width_ratios(self, shape, side_colors,
                                   dimension, side_colors_ratio=0.05):
@@ -354,7 +360,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         else:
             dendrogram = {'leaves': list(range(linkage.shape[0]))}
 
-        # Can this hackery be avoided?
         utils.despine(ax=ax, bottom=True, left=True)
         ax.set_axis_bgcolor('white')
         ax.grid(False)
@@ -532,6 +537,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             heatmap_ax.pcolormesh(data2d.ix[
                                       self.row_dendrogram['leaves'],
                                       self.col_dendrogram['leaves']].values,
+                                  cmap=self.cmap,
+                                  norm=self.norm,
                                   **self.pcolormesh_kws)
         utils.despine(ax=heatmap_ax, left=True, bottom=True)
         heatmap_ax.set_ylim(0, data2d.shape[0])
