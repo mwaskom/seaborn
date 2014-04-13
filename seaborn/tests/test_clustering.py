@@ -87,19 +87,17 @@ class TestClusteredHeatmapPlotter(object):
         p = cl._ClusteredHeatmapPlotter(np.log(self.data2d), color_scale='log')
         p.interpret_kws(row_kws=None, col_kws=None, pcolormesh_kws=None,
                         dendrogram_kws=None, colorbar_kws=None)
-        nt.assert_equal(p.norm, mpl.colors.LogNorm)
+        nt.assert_is_instance(p.norm, mpl.colors.LogNorm)
         nt.assert_equal(p.cmap, mpl.cm.YlGnBu)
 
     def test_calculate_linkage_linear(self):
         import scipy.cluster.hierarchy as sch
-
         scipy.random.seed(2013)
         row_linkage = sch.linkage(self.data2d.values, metric='euclidean',
                               method='average')
         col_linkage = sch.linkage(self.data2d.values.T, metric='euclidean',
                                   method='average')
         p = cl._ClusteredHeatmapPlotter(self.data2d)
-
         scipy.random.seed(2013)
         p.calculate_linkage()
         npt.assert_array_equal(p.row_linkage, row_linkage)
