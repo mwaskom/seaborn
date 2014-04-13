@@ -150,15 +150,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                           self.data2d.min().min() < 0) and \
                          not self.color_scale == 'log'
         if self.color_scale == 'log':
-            if self.pcolormesh_kws['vmin'] is None:
-                self.pcolormesh_kws['vmin'] = self.data2d.replace(0, np.nan) \
-                    .dropna(how='all').min().dropna().min()
-            if self.pcolormesh_kws['vmax'] is None:
-                self.pcolormesh_kws['vmax'] = self.data2d.dropna(how='all') \
-                    .max().dropna().max()
+            if self.vmin is None:
+                self.vmin = self.data2d.replace(0, np.nan).dropna(how='all').min().dropna().min()
+            if self.vmax is None:
+                self.vmax = self.data2d.dropna(how='all').max().dropna().max()
             if self.norm is None:
-                self.norm = mpl.colors.LogNorm(
-                    self.pcolormesh_kws['vmin'], self.pcolormesh_kws['vmax'])
+                self.norm = mpl.colors.LogNorm(self.vmin, self.vmax)
         elif self.divergent:
             abs_max = abs(self.data2d.max().max())
             abs_min = abs(self.data2d.min().min())
