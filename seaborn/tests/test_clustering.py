@@ -132,8 +132,62 @@ class TestClusteredHeatmapPlotter(object):
                                               dimension='height')
         npt.assert_array_equal(width_ratios, height_ratios)
 
-    def test_color_list_to_matrix_and_cmap(self):
-        pass
+    def test_get_fig_width_ratios_side_colors(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        width_ratios = p.get_fig_width_ratios(side_colors=['asdf'],
+                                        dimension='width')
+        height_ratios = p.get_fig_width_ratios(side_colors=['asdf'],
+                                              dimension='height')
+        npt.assert_array_equal(width_ratios, height_ratios)
+
+    def test_color_list_to_matrix_and_cmap_row(self):
+        import matplotlib as mpl
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = 10
+        ind = np.arange(n)
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        color_list = [colors[i] for i in color_inds]
+        ind = np.random.shuffle(ind)
+
+        colors_original = color_list
+        colors = set(colors_original)
+        col_to_value = dict((col, i) for i, col in enumerate(colors))
+        matrix = np.array([col_to_value[col] for col in colors_original])[ind]
+        new_shape = (len(colors_original), 1)
+        matrix = matrix.reshape(new_shape)
+        cmap = mpl.colors.ListedColormap(colors)
+
+        chp = cl._ClusteredHeatmapPlotter
+        matrix2, cmap2 = chp.color_list_to_matrix_and_cmap(color_list, ind,
+                                                           row=True)
+        npt.assert_array_equal(matrix, matrix2)
+        npt.assert_array_equal(cmap.colors, cmap2.colors)
+
+    def test_color_list_to_matrix_and_cmap_col(self):
+        import matplotlib as mpl
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = 10
+        ind = np.arange(n)
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        color_list = [colors[i] for i in color_inds]
+        ind = np.random.shuffle(ind)
+
+        colors_original = color_list
+        colors = set(colors_original)
+        col_to_value = dict((col, i) for i, col in enumerate(colors))
+        matrix = np.array([col_to_value[col] for col in colors_original])[ind]
+        new_shape = new_shape = (1, len(colors_original))
+        matrix = matrix.reshape(new_shape)
+        cmap = mpl.colors.ListedColormap(colors)
+
+        chp = cl._ClusteredHeatmapPlotter
+        matrix2, cmap2 = chp.color_list_to_matrix_and_cmap(color_list, ind,
+                                                           row=False)
+        npt.assert_array_equal(matrix, matrix2)
+        npt.assert_array_equal(cmap.colors, cmap2.colors)
+
 
     def test_get_linkage_function(self):
         pass
