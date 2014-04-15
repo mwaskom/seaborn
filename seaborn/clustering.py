@@ -286,11 +286,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         # Add the ratio for the heatmap itself
         return ratios + [1]
 
-    def color_list_to_matrix_and_cmap(self, colors, ind, row=True):
+    @staticmethod
+    def color_list_to_matrix_and_cmap(colors, ind, row=True):
         """Turns a list of colors into a numpy matrix and matplotlib colormap
         For 'heatmap()'
         This only works for 1-column color lists..
-        TODO: Support multiple color labels on an element in the heatmap
 
         These arguments can now be plotted using matplotlib.pcolormesh(matrix,
         cmap) and the provided colors will be plotted.
@@ -301,6 +301,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             Colors to label the rows or columns of a dataframe.
         ind : list of ints
             Ordering of the rows or columns, to reorder the original colors
+            by the clustered dendrogram order
         row : bool
             Is this to label the rows or columns? Default True.
 
@@ -312,17 +313,20 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         cmap : matplotlib.colors.ListedColormap
 
         """
+        # TODO: Support multiple color labels on an element in the heatmap
         import matplotlib as mpl
 
         colors_original = colors
         colors = set(colors)
         col_to_value = dict((col, i) for i, col in enumerate(colors))
-        matrix = np.array([col_to_value[col] for col in colors_original])[
-            ind]
+        matrix = np.array([col_to_value[col] for col in colors_original])[ind]
+
         # Is this row-side or column side?
         if row:
+            # shape of matrix: nrows x 1
             new_shape = (len(colors_original), 1)
         else:
+            # shape of matrix: 1 x ncols
             new_shape = (1, len(colors_original))
         matrix = matrix.reshape(new_shape)
 
