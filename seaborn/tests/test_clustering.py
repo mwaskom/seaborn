@@ -91,33 +91,46 @@ class TestClusteredHeatmapPlotter(object):
         nt.assert_equal(p.cmap, mpl.cm.YlGnBu)
 
     def test_calculate_linkage_linear(self):
+        import scipy.spatial.distance as distance
         import scipy.cluster.hierarchy as sch
-        scipy.random.seed(2013)
-        row_linkage = sch.linkage(self.data2d.values, metric='euclidean',
-                              method='average')
-        col_linkage = sch.linkage(self.data2d.values.T, metric='euclidean',
-                                  method='average')
-        p = cl._ClusteredHeatmapPlotter(self.data2d)
-        scipy.random.seed(2013)
+        row_pairwise_dists = distance.squareform(
+            distance.pdist(self.data2d.values, metric='euclidean'))
+        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+
+        col_pairwise_dists = distance.squareform(
+            distance.pdist(self.data2d.values.T, metric='euclidean'))
+        col_linkage = sch.linkage(col_pairwise_dists, method='average')
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d, use_fastcluster=False)
         p.calculate_linkage()
-        npt.assert_array_equal(p.row_linkage, row_linkage)
-        npt.assert_array_equal(p.col_linkage, col_linkage)
+        npt.assert_array_almost_equal(p.row_linkage, row_linkage)
+        npt.assert_array_almost_equal(p.col_linkage, col_linkage)
 
     def test_calculate_linkage_log(self):
+        import scipy.spatial.distance as distance
         import scipy.cluster.hierarchy as sch
+
         values = np.log10(self.data2d.values)
-        row_linkage = sch.linkage(values, metric='euclidean',
-                              method='average')
-        col_linkage = sch.linkage(values.T, metric='euclidean',
-                                  method='average')
+        row_pairwise_dists = distance.squareform(
+            distance.pdist(values, metric='euclidean'))
+        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+
+        col_pairwise_dists = distance.squareform(
+            distance.pdist(values.T, metric='euclidean'))
+        col_linkage = sch.linkage(col_pairwise_dists, method='average')
+
         p = cl._ClusteredHeatmapPlotter(self.data2d, color_scale='log')
         p.calculate_linkage()
         npt.assert_array_equal(p.row_linkage, row_linkage)
         npt.assert_array_equal(p.col_linkage, col_linkage)
 
-    def test_get_width_ratios(self):
-
-        pass
+    def test_get_fig_width_ratios_side_colors_none(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        width_ratios = p.get_fig_width_ratios(side_colors=None,
+                                        dimension='width')
+        height_ratios = p.get_fig_width_ratios(side_colors=None,
+                                              dimension='height')
+        npt.assert_array_equal(width_ratios, height_ratios)
 
     def test_color_list_to_matrix_and_cmap(self):
         pass
