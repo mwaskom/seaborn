@@ -69,11 +69,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             fig = plt.figure(figsize=figsize)
 
         self.fig = fig
-        width_ratios = self.get_width_ratios(self.row_kws['side_colors'],
+        width_ratios = self.get_fig_width_ratios(self.row_kws['side_colors'],
                                              # colorbar_kws['loc'],
                                              dimension='width')
 
-        height_ratios = self.get_width_ratios(self.col_kws['side_colors'],
+        height_ratios = self.get_fig_width_ratios(self.col_kws['side_colors'],
                                               dimension='height')
         nrows = 3 if self.col_kws['side_colors'] is None else 4
         ncols = 3 if self.row_kws['side_colors'] is None else 4
@@ -220,7 +220,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         else:
             self.col_linkage = self.col_kws['linkage_matrix']
 
-    def get_width_ratios(self, side_colors,
+    def get_fig_width_ratios(self, side_colors,
                          dimension, side_colors_ratio=0.05):
 
         """
@@ -276,17 +276,15 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         half_dendrogram = self.data2d.shape[i] * 0.1 / self.data2d.shape[i]
         if dimension not in ('height', 'width'):
             raise AssertionError("{} is not a valid 'dimension' (valid: "
-                                 "'height', 'width')".format(
-                dimension))
+                                 "'height', 'width')".format(dimension))
 
         ratios = [half_dendrogram, half_dendrogram]
         if side_colors:
+            # Add room for the colors
             ratios += [side_colors_ratio]
 
-        if (dimension == 'height'):
-            return ratios + [1, 0.05]
-        else:
-            return ratios + [1]
+        # Add the ratio for the heatmap itself
+        return ratios + [1]
 
     def color_list_to_matrix_and_cmap(self, colors, ind, row=True):
         """Turns a list of colors into a numpy matrix and matplotlib colormap
@@ -354,7 +352,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if (shape[0] > 1000 or shape[1] > 1000) or use_fastcluster:
             try:
                 import fastcluster
-
                 linkage_function = fastcluster.linkage
             except ImportError:
                 raise warnings.warn('Module "fastcluster" not found. The '
@@ -592,8 +589,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                                   symmetric=self.divergent,
                                                   prune=None, trim=False)
             cb.ax.set_yticklabels(
-                tick_locator.bin_boundaries(self.pcolormesh_kws['vmin'],
-                                            self.pcolormesh_kws['vmax']))
+                tick_locator.bin_boundaries(self.vmin,
+                                            self.vmax))
             cb.ax.yaxis.set_major_locator(tick_locator)
 
         # move ticks to left side of colorbar to avoid problems with tight_layout
