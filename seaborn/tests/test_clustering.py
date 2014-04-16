@@ -178,7 +178,7 @@ class TestClusteredHeatmapPlotter(object):
         colors = set(colors_original)
         col_to_value = dict((col, i) for i, col in enumerate(colors))
         matrix = np.array([col_to_value[col] for col in colors_original])[ind]
-        new_shape = new_shape = (1, len(colors_original))
+        new_shape = (1, len(colors_original))
         matrix = matrix.reshape(new_shape)
         cmap = mpl.colors.ListedColormap(colors)
 
