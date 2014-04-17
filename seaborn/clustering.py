@@ -27,7 +27,7 @@ class _MatrixPlotter(object):
         else:
             self.data2d = self.data
 
-    def plot(self, ax):
+    def plot(self, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -42,7 +42,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                  dendrogram_kws=None,
                  row_kws=None, col_kws=None,
                  colorbar_kws=None,
-                 use_fastcluster=False, fig=None, figsize=None,
+                 use_fastcluster=False,
                  data_na_ok=None):
         self.data = data
         self.pivot_kws = pivot_kws
@@ -55,7 +55,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.validate_data_na_ok(data_na_ok)
         self.interpret_kws(row_kws, col_kws, pcolormesh_kws,
                            dendrogram_kws, colorbar_kws)
-        self.establish_axes(fig, figsize)
         self.calculate_linkage()
 
     def establish_axes(self, fig, figsize):
@@ -643,9 +642,10 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.label_dimension('col', self.col_kws, self.heatmap_ax,
                              self.col_dendrogram_ax, self.col_dendrogram)
 
-    def plot(self, title, title_fontsize):
+    def plot(self, fig, figsize, title, title_fontsize):
         """Plot the heatmap!
         """
+        self.establish_axes(fig, figsize)
         self.row_dendrogram = self.plot_row_side()
         self.col_dendrogram = self.plot_col_side()
         self.plot_heatmap()
@@ -749,12 +749,11 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                                        row_kws=row_kws,
                                        col_kws=col_kws,
                                        colorbar_kws=colorbar_kws,
-                                       fig=fig,
-                                       figsize=figsize,
+
                                        use_fastcluster=use_fastcluster,
                                        data_na_ok=data_na_ok)
 
-    plotter.plot(title, title_fontsize)
+    plotter.plot(fig, figsize, title, title_fontsize)
 
     return plotter.row_dendrogram, plotter.col_dendrogram
 
