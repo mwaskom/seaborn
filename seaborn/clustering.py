@@ -56,6 +56,10 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.interpret_kws(row_kws, col_kws, pcolormesh_kws,
                            dendrogram_kws, colorbar_kws)
         self.calculate_linkage()
+        self.row_dendrogram = self.calculate_dendrogram(self.row_kws,
+                                                        self.row_linkage)
+        self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
+                                                        self.col_linkage)
 
     def establish_axes(self, fig, figsize):
         # TODO: do plt.gcf() if there is a current figure else make a new one
@@ -122,7 +126,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         self.dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws
         self.dendrogram_kws.setdefault('color_threshold', np.inf)
-        self.dendrogram_kws.setdefault('color_list', ['#262626'])
+        self.dendrogram_kws.setdefault('color_list', ['k'])
         # even if the user specified no_plot as False, override because we
         if 'no_plot' in self.dendrogram_kws and \
                 not self.dendrogram_kws['no_plot']:
@@ -380,7 +384,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             linkage_function = sch.linkage
         return linkage_function
 
-    def calculate_dendrogram(self, kws, linkage, orientation):
+    def calculate_dendrogram(self, kws, linkage):
         """Calculates a dendrogram based on the linkage matrix
 
         Parameters
@@ -390,7 +394,21 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         linkage : numpy.array
             Linkage matrix, usually created by scipy.cluster.hierarchy.linkage
         orientation : str
-            Specify the orientation of the dendrogram
+            (docstring stolen from scipy.cluster.hierarchy.linkage)
+            The direction to plot the dendrogram, which can be any
+            of the following strings:
+
+            'top' plots the root at the top, and plot descendent
+              links going downwards. (default).
+
+            'bottom'- plots the root at the bottom, and plot descendent
+              links going upwards.
+
+            'left'- plots the root at the left, and plot descendent
+              links going right.
+
+            'right'- plots the root at the right, and plot descendent
+              links going left.
 
         Returns
         -------
@@ -400,19 +418,15 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             the ordering of the matrix
         """
         import scipy.cluster.hierarchy as sch
-
         sch.set_link_color_palette(['k'])
 
-        # almost_black = '#262626'
         if kws['cluster']:
-            dendrogram = sch.dendrogram(linkage,
-                                        orientation=orientation,
-                                        **self.dendrogram_kws)
+            dendrogram = sch.dendrogram(linkage, **self.dendrogram_kws)
         else:
             dendrogram = {'leaves': list(range(linkage.shape[0]))}
         return dendrogram
 
-    def plot_dendrogram(self, ax):
+    def plot_dendrogram(self, ax, dendrogram, row=True):
         """Plots a dendrogram on the figure at the gridspec location using
         the linkage matrix
 
@@ -425,6 +439,18 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         ax : matplotlib.axes.Axes
             Axes object upon which the dendrogram is plotted
         """
+        if row:
+            X = dendrogram['dcoord']
+            Y = dendrogram['icoord']
+        else:
+            X = dendrogram['icoord']
+            Y = dendrogram['dcoord']
+
+        for x, y in zip(X, Y):
+            ax.plot(x, y, color='k', linewidth=0.5)
+
+        if row:
+            ax.invert_xaxis()
 
         utils.despine(ax=ax, bottom=True, left=True)
         ax.set_axis_bgcolor('white')
@@ -613,25 +639,17 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """Plot the dendrogram and potentially sidecolors for the column
         dimension
         """
-        dendrogram = self.plot_dendrogram(self.col_dendrogram_ax, self.col_kws,
-                                          self.col_linkage)
-        ### col colorbar ###
-        self.plot_sidecolors(self.col_side_colors_ax,
-                             self.col_kws,
-                             dendrogram)
-        return dendrogram
+        self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram)
+        self.plot_sidecolors(self.col_side_colors_ax, self.col_kws,
+                             self.col_dendrogram)
 
     def plot_row_side(self):
         """Plot the dendrogram and potentially sidecolors for the row dimension
         """
-        dendrogram = self.calculate_dendrogram(self.row_kws, self.row_linkage,
-                                               orientation='right')
-        self.plot_dendrogram(self.row_dendrogram_ax, dendrogram)
-
-        self.plot_sidecolors(self.row_side_colors_ax,
-                             self.row_kws,
-                             dendrogram)
-        return dendrogram
+        self.plot_dendrogram(self.row_dendrogram_ax, self.row_dendrogram,
+                             row=True)
+        self.plot_sidecolors(self.row_side_colors_ax, self.row_kws,
+                             self.row_dendrogram)
 
     def label(self):
         """Label the rows and columns either at the dendrogram or heatmap
@@ -646,8 +664,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """Plot the heatmap!
         """
         self.establish_axes(fig, figsize)
-        self.row_dendrogram = self.plot_row_side()
-        self.col_dendrogram = self.plot_col_side()
+        self.plot_row_side()
+        self.plot_col_side()
         self.plot_heatmap()
         self.set_title(title, title_fontsize)
         self.label()
