@@ -64,6 +64,10 @@ class TestClusteredHeatmapPlotter(object):
     default_pcolormesh_kws = {'linewidth': 0, 'edgecolor': 'white'}
     default_colorbar_kws = {'fontsize': None, 'label': 'values'}
 
+    default_dendrogram_kws = {'color_threshold': np.inf,
+                              'color_list': 'k',
+                              'no_plot': True}
+
     def test_interpret_kws_from_none_divergent(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
         p.interpret_kws(row_kws=None, col_kws=None, pcolormesh_kws=None,
@@ -218,10 +222,33 @@ class TestClusteredHeatmapPlotter(object):
             shape=self.data2d)
         npt.assert_equal(linkage_function, fastcluster.linkage)
 
-    def test_plot_dendrogram(self):
+    def test_calculate_dendrogram(self):
+        import scipy.spatial.distance as distance
+        import scipy.cluster.hierarchy as sch
+        row_pairwise_dists = distance.squareform(
+            distance.pdist(self.data2d.values, metric='euclidean'))
+        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+        dendrogram = sch.dendrogram(row_linkage, **self.default_dendrogram_kws)
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        dendrogram2 = p.calculate_dendrogram(p.row_kws, row_linkage)
+        npt.assert_equal(dendrogram, dendrogram2)
+
+    def test_plot_dendrogram_row(self):
         f, ax = plt.subplots()
         p = cl._ClusteredHeatmapPlotter(self.data2d)
+        dendrogram = p.calculate_dendrogram(p.row_kws, p.row_linkage)
+        p.plot_dendrogram(ax, dendrogram)
+        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[0]-1)
+        plt.close("all")
 
+    def test_plot_dendrogram_col(self):
+        f, ax = plt.subplots()
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        dendrogram = p.calculate_dendrogram(p.col_kws, p.col_linkage)
+        p.plot_dendrogram(ax, dendrogram, row=False)
+        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[1]-1)
+        plt.close("all")
 
     def test_plot_sidecolors(self):
         pass
