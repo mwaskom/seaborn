@@ -142,11 +142,25 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_array_equal(width_ratios, height_ratios)
 
     def test_get_fig_width_ratios_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d)
-        width_ratios = p.get_fig_width_ratios(side_colors=['asdf'],
-                                        dimension='width')
-        height_ratios = p.get_fig_width_ratios(side_colors=['asdf'],
-                                              dimension='height')
+
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = self.data2d.shape[0]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        row_colors = [colors[i] for i in color_inds]
+
+        n = self.data2d.shape[1]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        col_colors = [colors[i] for i in color_inds]
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        row_kws={'side_colors': row_colors},
+                                        col_kws={'side_colors': col_colors})
+
+        width_ratios = p.get_fig_width_ratios(side_colors=p.col_kws[
+            'side_colors'], dimension='width')
+        height_ratios = p.get_fig_width_ratios(side_colors=p.row_kws[
+            'side_colors'], dimension='height')
         npt.assert_array_equal(width_ratios, height_ratios)
 
     def test_color_list_to_matrix_and_cmap_row(self):
@@ -275,7 +289,7 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_equal(len(ax.collections), 1)
 
     def test_establish_axes(self):
-        pass
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
 
     def test_label_dimension(self):
         pass
