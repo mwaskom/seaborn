@@ -12,6 +12,11 @@ from numpy.testing.decorators import skipif
 from .. import clustering as cl
 from ..palettes import color_palette
 
+try:
+    import fastcluster
+    _no_fastcluster = False
+except ImportError:
+    _no_fastcluster = True
 
 class TestMatrixPlotter(object):
     shape = (10, 20)
@@ -189,11 +194,34 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_array_equal(cmap.colors, cmap2.colors)
 
 
-    def test_get_linkage_function(self):
-        pass
+    def test_get_linkage_function_scipy(self):
+        import scipy.cluster.hierarchy as sch
+        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
+            shape=self.data2d)
+        npt.assert_equal(linkage_function, sch.linkage)
+
+    def test_get_linkage_function_large_data(self):
+        try:
+            import fastcluster
+            linkage = fastcluster.linkage
+        except ImportError:
+            import scipy.cluster.hierarchy as sch
+            linkage = sch.linkage
+        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
+            shape=(100, 100))
+        npt.assert_equal(linkage_function, linkage)
+
+    @skipif(_no_fastcluster)
+    def test_get_linkage_function_fastcluster(self):
+        import fastcluster
+        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
+            shape=self.data2d)
+        npt.assert_equal(linkage_function, fastcluster.linkage)
 
     def test_plot_dendrogram(self):
-        pass
+        f, ax = plt.subplots()
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+
 
     def test_plot_sidecolors(self):
         pass
