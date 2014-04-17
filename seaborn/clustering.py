@@ -14,7 +14,7 @@ from . import utils
 class _MatrixPlotter(object):
     """Plotter for 2D matrix data
 
-    This will be used by the `clusteredheatplot`
+    This will be used by the `clusteredheatmap`
     """
 
     def establish_variables(self, data, **kws):
@@ -124,6 +124,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws
         self.dendrogram_kws.setdefault('color_threshold', np.inf)
         self.dendrogram_kws.setdefault('color_list', ['#262626'])
+        # even if the user specified no_plot as False, override because we
+        if 'no_plot' in self.dendrogram_kws and \
+                not self.dendrogram_kws['no_plot']:
+            warnings.warn('Cannot specify "no_plot" as False in '
+                          'dendrogram_kws')
+        self.dendrogram_kws['no_plot'] = True
 
         # Pcolormesh keyword arguments take more work
         self.pcolormesh_kws = {} if pcolormesh_kws is None else pcolormesh_kws
@@ -333,7 +339,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         cmap = mpl.colors.ListedColormap(colors)
         return matrix, cmap
 
-    def get_linkage_function(self, shape, use_fastcluster):
+    @staticmethod
+    def get_linkage_function(shape, use_fastcluster):
         """
         Parameters
         ----------
@@ -348,12 +355,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         linkage_function : function
             Linkage function to use for clustering
 
-        .. warning:: If either the number of columns or rows exceeds 1000,
-        this wil try to import fastcluster, and raise a warning if it does not
-        exist. Vanilla scipy.cluster.hierarchy.linkage will take a long time on
-        these matrices.
+        .. warning:: If the product of the number of rows and cols exceeds
+        10000, this wil try to import fastcluster, and raise a warning if it
+        does not exist. Vanilla scipy.cluster.hierarchy.linkage will take a
+        long time on these matrices.
         """
-        if (shape[0] > 1000 or shape[1] > 1000) or use_fastcluster:
+        if np.product(shape) >= 10000 or use_fastcluster:
             try:
                 import fastcluster
                 linkage_function = fastcluster.linkage
@@ -374,33 +381,20 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             linkage_function = sch.linkage
         return linkage_function
 
-    def plot_dendrogram(self, ax, kws, linkage, orientation='top'):
-        """Plots a dendrogram on the figure at the gridspec location using
-        the linkage matrix
-
-        Both the computation and plotting must be in this same function because
-        scipy.cluster.hierarchy.dendrogram does ax = plt.gca() and cannot be
-        specified its own ax object.
+    def calculate_dendrogram(self, kws, linkage, orientation):
+        """Calculates a dendrogram based on the linkage matrix
 
         Parameters
         ----------
-        fig : matplotlib.figure.Figure
-            Matplotlib figure instance to plot onto
         kws : dict
             Keyword arguments for column or row plotting passed to clusterplot
-        gridspec : matplotlib.gridspec.gridspec
-            Indexed gridspec object for where to put the dendrogram plot
         linkage : numpy.array
             Linkage matrix, usually created by scipy.cluster.hierarchy.linkage
         orientation : str
             Specify the orientation of the dendrogram
-        dendrogram_kws : dict
-            Any additional keyword arguments for scipy.cluster.hierarchy.dendrogram
 
         Returns
         -------
-        ax : matplotlib.axes.Axes
-            Axes upon which the dendrogram was plotted
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
             .dendrogram. The important key-value pairing is "leaves" which tells
@@ -411,20 +405,33 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         sch.set_link_color_palette(['k'])
 
         # almost_black = '#262626'
-        plt.sca(ax)
         if kws['cluster']:
             dendrogram = sch.dendrogram(linkage,
                                         orientation=orientation,
                                         **self.dendrogram_kws)
         else:
             dendrogram = {'leaves': list(range(linkage.shape[0]))}
+        return dendrogram
+
+    def plot_dendrogram(self, ax):
+        """Plots a dendrogram on the figure at the gridspec location using
+        the linkage matrix
+
+        Both the computation and plotting must be in this same function because
+        scipy.cluster.hierarchy.dendrogram does ax = plt.gca() and cannot be
+        specified its own ax object.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+            Axes object upon which the dendrogram is plotted
+        """
 
         utils.despine(ax=ax, bottom=True, left=True)
         ax.set_axis_bgcolor('white')
         ax.grid(False)
         ax.set_yticks([])
         ax.set_xticks([])
-        return dendrogram
 
     def plot_sidecolors(self, ax, kws, dendrogram):
         """Plots color labels between the dendrogram and the heatmap
@@ -618,9 +625,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
     def plot_row_side(self):
         """Plot the dendrogram and potentially sidecolors for the row dimension
         """
-        dendrogram = self.plot_dendrogram(self.row_dendrogram_ax, self.row_kws,
-                                          self.row_linkage,
-                                          orientation='right')
+        dendrogram = self.calculate_dendrogram(self.row_kws, self.row_linkage,
+                                               orientation='right')
+        self.plot_dendrogram(self.row_dendrogram_ax, dendrogram)
 
         self.plot_sidecolors(self.row_side_colors_ax,
                              self.row_kws,
@@ -637,6 +644,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                              self.col_dendrogram_ax, self.col_dendrogram)
 
     def plot(self, title, title_fontsize):
+        """Plot the heatmap!
+        """
         self.row_dendrogram = self.plot_row_side()
         self.col_dendrogram = self.plot_col_side()
         self.plot_heatmap()
