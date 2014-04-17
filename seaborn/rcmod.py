@@ -36,6 +36,7 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
+    "font.sans-serif",
     )
 
 _context_keys = (
@@ -85,7 +86,15 @@ def set(context="notebook", style="darkgrid", palette="deep",
 
     """
     set_context(context)
-    set_style(style, rc={"font.family": font})
+
+    rc = {"font.family": font}
+    if font == "Arial":
+        font = [font, "Liberation Sans"]
+        rc.update({
+            "font.family": "sans-serif",
+            "font.sans-serif": font + mpl.rcParams["font.sans-serif"]})
+
+    set_style(style, rc)
     set_palette(palette)
     if rc is not None:
         mpl.rcParams.update(rc)
