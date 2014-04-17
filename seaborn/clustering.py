@@ -112,13 +112,19 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.row_kws = {} if row_kws is None else row_kws
         self.col_kws = {} if col_kws is None else col_kws
 
-        for kws in [self.row_kws, self.col_kws]:
+        if 'side_colors' in self.row_kws:
+            assert len(self.row_kws['side_colors']) == self.data2d.shape[0]
+        if 'side_colors' in self.col_kws:
+            assert len(self.col_kws['side_colors']) == self.data2d.shape[1]
+
+        for kws in (self.row_kws, self.col_kws):
             kws.setdefault('linkage_matrix', None)
             kws.setdefault('cluster', True)
             kws.setdefault('label_loc', 'dendrogram')
             kws.setdefault('label', True)
             kws.setdefault('fontsize', None)
             kws.setdefault('side_colors', None)
+
 
         self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.colorbar_kws.setdefault('fontsize', None)
