@@ -201,8 +201,8 @@ class TestClusteredHeatmapPlotter(object):
     def test_get_linkage_function_scipy(self):
         import scipy.cluster.hierarchy as sch
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=self.data2d)
-        npt.assert_equal(linkage_function, sch.linkage)
+            shape=self.data2d, use_fastcluster=False)
+        nt.assert_is_instance(linkage_function, type(sch.linkage))
 
     def test_get_linkage_function_large_data(self):
         try:
@@ -212,15 +212,15 @@ class TestClusteredHeatmapPlotter(object):
             import scipy.cluster.hierarchy as sch
             linkage = sch.linkage
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=(100, 100))
-        npt.assert_equal(linkage_function, linkage)
+            shape=(100, 100), use_fastcluster=False)
+        nt.assert_is_instance(linkage_function, type(linkage))
 
     @skipif(_no_fastcluster)
     def test_get_linkage_function_fastcluster(self):
         import fastcluster
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=self.data2d)
-        npt.assert_equal(linkage_function, fastcluster.linkage)
+            shape=self.data2d, use_fastcluster=False)
+        nt.assert_is_instance(linkage_function, type(fastcluster.linkage))
 
     def test_calculate_dendrogram(self):
         import scipy.spatial.distance as distance
@@ -250,7 +250,31 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_equal(len(ax.get_lines()), self.data2d.shape[1]-1)
         plt.close("all")
 
-    def test_plot_sidecolors(self):
+    def test_plot_sidecolors_none(self):
+        f, ax = plt.subplots()
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        col_kws={'side_colors': None})
+        dendrogram = p.calculate_dendrogram(p.col_kws, p.col_linkage)
+        p.plot_sidecolors(ax, p.col_kws, dendrogram, row=False)
+        npt.assert_equal(len(ax.collections), 0)
+        plt.close('all')
+
+    def test_plot_sidecolors_col(self):
+        f, ax = plt.subplots()
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = self.data2d.shape[1]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        color_list = [colors[i] for i in color_inds]
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        col_kws={'side_colors': color_list})
+        dendrogram = p.calculate_dendrogram(p.col_kws, p.col_linkage)
+        p.plot_sidecolors(ax, p.col_kws, dendrogram, row=False)
+        npt.assert_equal(len(ax.collections), 1)
+
+    def test_establish_axes(self):
         pass
 
     def test_label_dimension(self):
