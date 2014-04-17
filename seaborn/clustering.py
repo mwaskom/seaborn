@@ -458,7 +458,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         ax.set_yticks([])
         ax.set_xticks([])
 
-    def plot_sidecolors(self, ax, kws, dendrogram):
+    def plot_sidecolors(self, ax, kws, dendrogram, row=True):
         """Plots color labels between the dendrogram and the heatmap
         Parameters
         ----------
@@ -487,14 +487,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             side_matrix, cmap = self.color_list_to_matrix_and_cmap(
                 kws['side_colors'],
                 ind=dendrogram['leaves'],
-                row=False)
+                row=row)
             ax.pcolormesh(side_matrix, cmap=cmap, edgecolor=self.edgecolor,
                           linewidth=self.linewidth)
             ax.set_xlim(0, side_matrix.shape[1])
             ax.set_yticks([])
             ax.set_xticks([])
             utils.despine(ax=ax, left=True, bottom=True)
-            return ax
 
     def label_dimension(self, dimension, kws, heatmap_ax, dendrogram_ax,
                         dendrogram):
@@ -641,7 +640,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """
         self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram)
         self.plot_sidecolors(self.col_side_colors_ax, self.col_kws,
-                             self.col_dendrogram)
+                             self.col_dendrogram, row=False)
 
     def plot_row_side(self):
         """Plot the dendrogram and potentially sidecolors for the row dimension
@@ -649,7 +648,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.plot_dendrogram(self.row_dendrogram_ax, self.row_dendrogram,
                              row=True)
         self.plot_sidecolors(self.row_side_colors_ax, self.row_kws,
-                             self.row_dendrogram)
+                             self.row_dendrogram, row=True)
 
     def label(self):
         """Label the rows and columns either at the dendrogram or heatmap
