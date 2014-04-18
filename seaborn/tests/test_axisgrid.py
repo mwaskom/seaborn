@@ -71,9 +71,61 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes.shape, (1, 10))
         nt.assert_is(g.facet_axis(0, 8), g.axes[0, 8])
 
-        g_wrap = ag.FacetGrid(self.df, col="d", col_wrap=5)
-        nt.assert_equal(g_wrap.axes.shape, (2, 5))
-        nt.assert_is(g_wrap.facet_axis(0, 8), g_wrap.axes[1, 3])
+        g_wrap = ag.FacetGrid(self.df, col="d", col_wrap=4)
+        nt.assert_equal(g_wrap.axes.shape, (10,))
+        nt.assert_is(g_wrap.facet_axis(0, 8), g_wrap.axes[8])
+        nt.assert_equal(g_wrap._ncol, 4)
+        nt.assert_equal(g_wrap._nrow, 3)
+
+        plt.close("all")
+
+    def test_normal_axes(self):
+
+        null = np.empty(0, object).flat
+
+        g = ag.FacetGrid(self.df)
+        npt.assert_array_equal(g._bottom_axes, g.axes.flat)
+        npt.assert_array_equal(g._not_bottom_axes, null)
+        npt.assert_array_equal(g._left_axes, g.axes.flat)
+        npt.assert_array_equal(g._not_left_axes, null)
+        npt.assert_array_equal(g._inner_axes, null)
+
+        g = ag.FacetGrid(self.df, col="c")
+        npt.assert_array_equal(g._bottom_axes, g.axes.flat)
+        npt.assert_array_equal(g._not_bottom_axes, null)
+        npt.assert_array_equal(g._left_axes, g.axes[:, 0].flat)
+        npt.assert_array_equal(g._not_left_axes, g.axes[:, 1:].flat)
+        npt.assert_array_equal(g._inner_axes, null)
+
+        g = ag.FacetGrid(self.df, row="c")
+        npt.assert_array_equal(g._bottom_axes, g.axes[-1, :].flat)
+        npt.assert_array_equal(g._not_bottom_axes, g.axes[:-1, :].flat)
+        npt.assert_array_equal(g._left_axes, g.axes.flat)
+        npt.assert_array_equal(g._not_left_axes, null)
+        npt.assert_array_equal(g._inner_axes, null)
+
+        g = ag.FacetGrid(self.df, col="a", row="c")
+        npt.assert_array_equal(g._bottom_axes, g.axes[-1, :].flat)
+        npt.assert_array_equal(g._not_bottom_axes, g.axes[:-1, :].flat)
+        npt.assert_array_equal(g._left_axes, g.axes[:, 0].flat)
+        npt.assert_array_equal(g._not_left_axes, g.axes[:, 1:].flat)
+        npt.assert_array_equal(g._inner_axes, g.axes[:-1, 1:].flat)
+
+        plt.close("all")
+
+    def test_wrapped_axes(self):
+
+        null = np.empty(0, object).flat
+
+        g = ag.FacetGrid(self.df, col="a", col_wrap=2)
+        npt.assert_array_equal(g._bottom_axes,
+                               g.axes[np.array([1, 2])].flat)
+        npt.assert_array_equal(g._not_bottom_axes, g.axes[:1].flat)
+        npt.assert_array_equal(g._left_axes, g.axes[np.array([0, 2])].flat)
+        npt.assert_array_equal(g._not_left_axes, g.axes[np.array([1])].flat)
+        npt.assert_array_equal(g._inner_axes, null)
+
+        plt.close("all")
 
     def test_figure_size(self):
 
