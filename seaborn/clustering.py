@@ -61,7 +61,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
                                                         self.col_linkage)
 
-    def establish_axes(self, fig, figsize):
+    def establish_axes(self, fig=None, figsize=None):
         # TODO: do plt.gcf() if there is a current figure else make a new one
         # with the correct dimensions
         if fig is None:
@@ -185,6 +185,10 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if self.cmap is None:
             self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
             self.cmap.set_bad('white')
+        # Make sure there's no trailing `cmap` or `vmin` or `vmax` values
+        self.pcolormesh_kws.pop('cmap')
+        self.pcolormesh_kws.pop('vmin')
+        self.pcolormesh_kws.pop('vmax')
 
     def validate_data_na_ok(self, data_na_ok):
         if data_na_ok is None:
@@ -464,7 +468,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         ax.set_yticks([])
         ax.set_xticks([])
 
-    def plot_sidecolors(self, ax, kws, dendrogram, row=True):
+    def plot_side_colors(self, ax, kws, dendrogram, row=True):
         """Plots color labels between the dendrogram and the heatmap
         Parameters
         ----------
@@ -645,7 +649,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         dimension
         """
         self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram)
-        self.plot_sidecolors(self.col_side_colors_ax, self.col_kws,
+        self.plot_side_colors(self.col_side_colors_ax, self.col_kws,
                              self.col_dendrogram, row=False)
 
     def plot_row_side(self):
@@ -653,7 +657,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """
         self.plot_dendrogram(self.row_dendrogram_ax, self.row_dendrogram,
                              row=True)
-        self.plot_sidecolors(self.row_side_colors_ax, self.row_kws,
+        self.plot_side_colors(self.row_side_colors_ax, self.row_kws,
                              self.row_dendrogram, row=True)
 
     def label(self):
