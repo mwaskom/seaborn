@@ -836,6 +836,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                        row_order=row_order, col_order=col_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
                        legend=legend, legend_out=legend_out,
+                       sharex=sharex, sharey=sharey,
                        margin_titles=margin_titles)
 
     if kind == "auto":
