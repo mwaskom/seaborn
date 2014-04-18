@@ -14,6 +14,8 @@ Plotting functions
 Bug Fixes
 ~~~~~~~~~
 
+- Fixed a bug in FacetGrid (and thus affecting lmplot and factorplot) that appeared when ``col_wrap`` was used with a number of facets that did not evenly divide into the column width.
+
 - Fixed an issue where the support for kernel density estimates was sometimes computed incorrectly.
 
 - Fixed a problem where ``hue`` variable levels that were not strings were missing in FacetGrid legends.

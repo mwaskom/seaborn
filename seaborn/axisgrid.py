@@ -67,12 +67,16 @@ class FacetGrid(object):
 
         """
         # Compute the grid shape
-        nrow = 1 if row is None else len(data[row].unique())
         ncol = 1 if col is None else len(data[col].unique())
+        nrow = 1 if row is None else len(data[row].unique())
+        self._n_facets = ncol * nrow
 
+        self._col_wrap = col_wrap
         if col_wrap is not None:
             ncol = col_wrap
             nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
+        self._ncol = ncol
+        self._nrow = nrow
 
         # Calculate the base figure size
         # This can get stretched later by a legend
@@ -90,9 +94,38 @@ class FacetGrid(object):
             subplot_kw["ylim"] = ylim
 
         # Initialize the subplot grid
-        fig, axes = plt.subplots(nrow, ncol, figsize=figsize, squeeze=False,
-                                 sharex=sharex, sharey=sharey,
-                                 subplot_kw=subplot_kw)
+        if col_wrap is None:
+            fig, axes = plt.subplots(nrow, ncol, figsize=figsize,
+                                     squeeze=False,
+                                     sharex=sharex, sharey=sharey,
+                                     subplot_kw=subplot_kw)
+            self.axes = axes
+
+        else:
+            # If wrapping the col variable we need to make the grid ourselves
+            n_axes = len(data[col].unique())
+            fig = plt.figure(figsize=figsize)
+            axes = np.empty(n_axes, object)
+            axes[0] = fig.add_subplot(nrow, ncol, 1, **subplot_kw)
+            if sharex:
+                subplot_kw["sharex"] = axes[0]
+            if sharey:
+                subplot_kw["sharey"] = axes[0]
+            for i in range(1, n_axes):
+                axes[i] = fig.add_subplot(nrow, ncol, i + 1, **subplot_kw)
+            self.axes = axes
+
+            # Now we turn off labels on the inner axes
+            if sharex:
+                for ax in self._not_bottom_axes:
+                    for label in ax.get_xticklabels():
+                        label.set_visible(False)
+                    ax.xaxis.offsetText.set_visible(False)
+            if sharey:
+                for ax in self._not_left_axes:
+                    for label in ax.get_yticklabels():
+                        label.set_visible(False)
+                    ax.yaxis.offsetText.set_visible(False)
 
         # Determine the hue facet layer information
         hue_var = hue
@@ -416,7 +449,7 @@ class FacetGrid(object):
         """Label the x axis on the bottom row of the grid."""
         if label is None:
             label = self._x_var
-        for ax in self.axes[-1, :]:
+        for ax in self._bottom_axes:
             ax.set_xlabel(label, **kwargs)
         return self
 
@@ -424,7 +457,7 @@ class FacetGrid(object):
         """Label the y axis on the left column of the grid."""
         if label is None:
             label = self._y_var
-        for ax in self.axes[:, 0]:
+        for ax in self._left_axes:
             ax.set_ylabel(label, **kwargs)
         return self
 
@@ -587,6 +620,76 @@ class FacetGrid(object):
         handles, labels = ax.get_legend_handles_labels()
         data = {l: h for h, l in zip(handles, labels)}
         self._legend_data.update(data)
+
+    @property
+    def _inner_axes(self):
+        """Return a flat array of the inner axes."""
+        if self._col_wrap is None:
+            return self.axes[:-1, 1:].flat
+        else:
+            axes = []
+            n_empty = self._nrow * self._ncol - self._n_facets
+            for i, ax in enumerate(self.axes):
+                append = (i % self._ncol and
+                          i < (self._ncol * (self._nrow - 1)) and
+                          i < (self._ncol * (self._nrow - 1) - n_empty))
+                if append:
+                    axes.append(ax)
+            return np.array(axes, object).flat
+
+    @property
+    def _left_axes(self):
+        """Return a flat array of the left column of axes."""
+        if self._col_wrap is None:
+            return self.axes[:, 0].flat
+        else:
+            axes = []
+            for i, ax in enumerate(self.axes):
+                if not i % self._ncol:
+                    axes.append(ax)
+            return np.array(axes, object).flat
+
+    @property
+    def _not_left_axes(self):
+        """Return a flat array of axes that aren't on the left column."""
+        if self._col_wrap is None:
+            return self.axes[:, 1:].flat
+        else:
+            axes = []
+            for i, ax in enumerate(self.axes):
+                if i % self._ncol:
+                    axes.append(ax)
+            return np.array(axes, object).flat
+
+    @property
+    def _bottom_axes(self):
+        """Return a flat array of the bottom row of axes."""
+        if self._col_wrap is None:
+            return self.axes[-1, :].flat
+        else:
+            axes = []
+            n_empty = self._nrow * self._ncol - self._n_facets
+            for i, ax in enumerate(self.axes):
+                append = (i >= (self._ncol * (self._nrow - 1)) or
+                          i >= (self._ncol * (self._nrow - 1) - n_empty))
+                if append:
+                    axes.append(ax)
+            return np.array(axes, object).flat
+
+    @property
+    def _not_bottom_axes(self):
+        """Return a flat array of axes that aren't on the bottom row."""
+        if self._col_wrap is None:
+            return self.axes[:-1, :].flat
+        else:
+            axes = []
+            n_empty = self._nrow * self._ncol - self._n_facets
+            for i, ax in enumerate(self.axes):
+                append = (i < (self._ncol * (self._nrow - 1)) and
+                          i < (self._ncol * (self._nrow - 1) - n_empty))
+                if append:
+                    axes.append(ax)
+            return np.array(axes, object).flat
 
 
 class JointGrid(object):

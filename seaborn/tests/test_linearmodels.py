@@ -767,8 +767,8 @@ class TestDiscretePlots(object):
         g = lm.factorplot("x", "y", data=self.df, row="g", col="h")
         nt.assert_equal(g.axes.shape, (2, 3))
 
-        g = lm.factorplot("x", "y", data=self.df, col="u", col_wrap=3)
-        nt.assert_equal(g.axes.shape, (2, 3))
+        g = lm.factorplot("x", "y", data=self.df, col="u", col_wrap=4)
+        nt.assert_equal(g.axes.shape, (6,))
 
         g = lm.factorplot("x", "y", "u", data=self.df, col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
@@ -868,8 +868,8 @@ class TestRegressionPlots(object):
         g = lm.lmplot("x", "y", data=self.df, row="g", col="h")
         nt.assert_equal(g.axes.shape, (3, 2))
 
-        g = lm.lmplot("x", "y", data=self.df, col="u", col_wrap=3)
-        nt.assert_equal(g.axes.shape, (2, 3))
+        g = lm.lmplot("x", "y", data=self.df, col="u", col_wrap=4)
+        nt.assert_equal(g.axes.shape, (6,))
 
         g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
