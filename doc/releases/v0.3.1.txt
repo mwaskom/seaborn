@@ -7,17 +7,17 @@ This is a minor release from 0.3 with fixes for several bugs.
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
 
-- The size of the points in pointplot and factorplot is now scaled with the linewidth for better aesthetics across different plotting contexts.
+- The size of the points in :func:`pointplot` and :func:`factorplot` are now scaled with the linewidth for better aesthetics across different plotting contexts.
 
-- The pointplot glyphs for different levels of the hue variable are drawn at different z-orders so that they appear uniform.
+- The :func:`pointplot` glyphs for different levels of the hue variable are drawn at different z-orders so that they appear uniform.
 
 Bug Fixes
 ~~~~~~~~~
 
-- Fixed a bug in FacetGrid (and thus affecting lmplot and factorplot) that appeared when ``col_wrap`` was used with a number of facets that did not evenly divide into the column width.
+- Fixed a bug in :class:`FacetGrid` (and thus affecting lmplot and factorplot) that appeared when ``col_wrap`` was used with a number of facets that did not evenly divide into the column width.
 
 - Fixed an issue where the support for kernel density estimates was sometimes computed incorrectly.
 
-- Fixed a problem where ``hue`` variable levels that were not strings were missing in FacetGrid legends.
+- Fixed a problem where ``hue`` variable levels that were not strings were missing in :class:`FacetGrid` legends.
 
 - When passing a color palette list in a ``with`` statement, the entire palette is now used instead of the first six colors.
