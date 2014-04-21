@@ -8,4 +8,4 @@ from .miscplot import *
 from .axisgrid import *
 set()
 
-__version__ = "0.3"
+__version__ = "0.3.1"
