@@ -364,6 +364,20 @@ class TestFacetGrid(object):
         got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
         npt.assert_array_equal(x[::2], got_x)
 
+    def test_set_axis_labels(self):
+
+        g = ag.FacetGrid(self.df, row="a", col="b")
+        g.map(plt.plot, "x", "y")
+        xlab = 'xx'
+        ylab = 'yy'
+
+        g.set_axis_labels(xlab, ylab)
+
+        got_x = [ax.get_xlabel() for ax in g.axes[-1, :]]
+        got_y = [ax.get_ylabel() for ax in g.axes[:, 0]]
+        npt.assert_array_equal(got_x, xlab)
+        npt.assert_array_equal(got_y, ylab)
+
     def test_subplot_kws(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b", xlim=(0, 4), ylim=(-2, 3))
