@@ -35,8 +35,8 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
-
     "pdf.fonttype",
+    "font.sans-serif",
     )
 
 _context_keys = (
@@ -65,7 +65,7 @@ _context_keys = (
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
-        font="Arial", font_scale=1, rc=None):
+        font="sans-serif", font_scale=1, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -197,7 +197,9 @@ def axes_style(style=None, rc=None):
             "ytick.color": dark_gray,
             "axes.axisbelow": True,
             "image.cmap": "Greys",
-            "font.family": "Arial",
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Arial", "Liberation Sans",
+                                "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
             "pdf.fonttype": 42,
