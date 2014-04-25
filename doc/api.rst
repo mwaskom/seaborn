@@ -86,6 +86,7 @@ Color palettes
     mpl_palette
     dark_palette
     blend_palette
+    cubehelix_palette
 
 
 Utility functions
