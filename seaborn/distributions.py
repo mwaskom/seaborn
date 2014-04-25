@@ -398,7 +398,8 @@ def _freedman_diaconis_bins(a):
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, axlabel=None, label=None, ax=None):
+             color=None, vertical=False, norm_hist=False, axlabel=None,
+             label=None, ax=None):
     """Flexibly plot a distribution of observations.
 
     Parameters
@@ -424,6 +425,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Color to plot everything but the fitted curve in.
     vertical : bool, optional
         If True, oberved values are on y-axis.
+    norm_hist : bool, otional
+        If True, the histogram height shows a density rather than a count.
+        This is implied if a KDE or fitted density is plotted.
     axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
         from a.namel if False, do not set a label.
@@ -449,6 +453,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     # Make a a 1-d array
     a = np.asarray(a).squeeze()
+
+    # Decide if the hist is normed
+    norm_hist = norm_hist or kde or (fit is not None)
 
     # Handle dictionary defaults
     if hist_kws is None:
@@ -484,9 +491,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if bins is None:
             bins = _freedman_diaconis_bins(a)
         hist_kws.setdefault("alpha", 0.4)
+        hist_kws.setdefault("normed", norm_hist)
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
-        ax.hist(a, bins, normed=True, orientation=orientation,
+        ax.hist(a, bins, orientation=orientation,
                 color=hist_color, **hist_kws)
         if hist_color != color:
             hist_kws["color"] = hist_color
