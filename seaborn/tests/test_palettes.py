@@ -165,3 +165,39 @@ class TestColorPalettes(object):
         colors = ["red", "yellow", "white"]
         pal_cmap = palettes.blend_palette(colors, as_cmap=True)
         nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+    def test_cubehelix_against_matplotlib(self):
+
+        x = np.linspace(0, 1, 8)
+        mpl_pal = mpl.cm.cubehelix(x)[:, :3].tolist()
+
+        sns_pal = palettes.cubehelix_palette(8, start=0.5, rot=-1.5, hue=1,
+                                             dark=0, light=1, reverse=True)
+
+        nt.assert_list_equal(sns_pal, mpl_pal)
+
+    def test_cubehelix_n_colors(self):
+
+        for n in [3, 5, 8]:
+            pal = palettes.cubehelix_palette(n)
+            nt.assert_equal(len(pal), n)
+
+    def test_cubehelix_reverse(self):
+
+        pal_forward = palettes.cubehelix_palette()
+        pal_reverse = palettes.cubehelix_palette(reverse=True)
+        nt.assert_list_equal(pal_forward, pal_reverse[::-1])
+
+    def test_cubehelix_cmap(self):
+
+        cmap = palettes.cubehelix_palette(as_cmap=True)
+        nt.assert_is_instance(cmap, mpl.colors.ListedColormap)
+        pal = palettes.cubehelix_palette()
+        x = np.linspace(0, 1, 6)
+        npt.assert_array_equal(cmap(x)[:, :3], pal)
+
+        cmap_rev = palettes.cubehelix_palette(as_cmap=True, reverse=True)
+        x = np.linspace(0, 1, 6)
+        pal_forward = cmap(x).tolist()
+        pal_reverse = cmap_rev(x[::-1]).tolist()
+        nt.assert_list_equal(pal_forward, pal_reverse)
