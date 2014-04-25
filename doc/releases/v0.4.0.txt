@@ -7,16 +7,3 @@ Plotting functions
 
 - Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
 
-- Added the ``logx`` option to :func:`regplot` for fitting the regression in log space.
-
-Style and color palettes
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-- Added a default value for ``pdf.fonttype`` so
-that text in PDFs is editable in Adobe Illustrator. 
-
-- Added the ``font_scale`` option to :func:`plotting_context`, :func:`set_context`, and :func:`set`. ``font_scale`` can independently increase or decrease the size of the font elements in the plot.
-
-- Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used.
-
-- The :func:`despine` function gets a new keyword argument ``offset``, which replaces the deprecated :func:`offset_spines` function. You no longer need to offset the spines before plotting data.
