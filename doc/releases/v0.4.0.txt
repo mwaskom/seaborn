@@ -1,0 +1,9 @@
+
+v0.4.0 (??)
+-----------
+
+Plotting functions
+~~~~~~~~~~~~~~~~~~
+
+- Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
+
