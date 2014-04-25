@@ -7,3 +7,8 @@ Plotting functions
 
 - Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
 
+Style and color palettes
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used.
+
