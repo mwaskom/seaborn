@@ -113,11 +113,22 @@ class TestPlottingContext(RCParamTester):
         with nt.assert_raises(ValueError):
             rcmod.plotting_context("i_am_not_a_context")
 
+    def test_font_scale(self):
+
+        notebook_ref = rcmod.plotting_context("notebook")
+        notebook_big = rcmod.plotting_context("notebook", 2)
+
+        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
+                     "xtick.labelsize", "ytick.labelsize"]
+
+        for k in font_keys:
+            nt.assert_equal(notebook_ref[k] * 2, notebook_big[k])
+
     def test_rc_override(self):
 
         key, val = "grid.linewidth", 5
         rc = {key: val, "foo": "bar"}
-        out = rcmod.plotting_context("talk", rc)
+        out = rcmod.plotting_context("talk", rc=rc)
         nt.assert_equal(out[key], val)
         nt.assert_not_in("foo", out)
 
