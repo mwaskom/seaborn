@@ -697,6 +697,17 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     --------
     regplot : Axes-level function for plotting linear regressions.
 
+    Examples
+    --------
+
+    >>> grouper = np.array(50 * ['a'] + 50 * ['b'])
+    >>> x = np.hstack([2 + np.random.randn(50), 4 + np.random.randn(50)])
+    >>> y = x + np.random.randn(100)
+    >>> df = pd.DataFrame([x, y], index=['x', 'y']).T
+    >>> df['group'] = grouper
+    >>> sns.lmplot('x', 'y', df, color='group')
+
+    XXX Runtime error
     """
 
     # Backwards-compatibility warning layer
@@ -991,6 +1002,18 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
     factorplot : Combine pointplot and FacetGrid
     barplot : Axes-level function for drawing a bar plot
 
+    Examples
+    --------
+    >>> df = pd.DataFrame({"x": np.random.poisson(size=80),
+                           "y": np.random.exponential(size=80)}).cumsum()
+
+    With a DataFrame
+
+    >>> sns.regplot("x", "y", data=df)
+
+    From two Series
+
+    >>> sns.regplot(df['x'], df['y'])
     """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "point", markers, linestyles,

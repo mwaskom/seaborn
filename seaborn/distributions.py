@@ -166,6 +166,22 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     ax : matplotlib axis
         Axis where boxplot is plotted.
 
+    Examples
+    --------
+    From a DataFrame or list of vectors:
+
+    >>> np.random.seed(42)
+    >>> df = pd.DataFrame([np.random.uniform(size=50), np.random.randn(50),
+    ...                  np.random.exponential(size=50)]).T
+    >>> sns.boxplot(df)
+
+    Grouping by a series
+
+    >>> grouper = pd.Series(np.random.choice(['a', 'b'], size=50))
+    >>> vals = pd.Series(np.random.randn(50))  # XXX must be Series
+    >>> sns.boxplot(vals, groupby=grouper)
+
+    XXX shoudl be able to pass a df for vals and groupby a column name, drop that col from the plot groups
     """
     if ax is None:
         ax = plt.gca()
@@ -297,6 +313,20 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     ax : matplotlib axis
         Axis with violin plot.
 
+    Examples
+    --------
+    From a Series with groupby
+
+    >>> np.random.seed(42)
+    >>> grouper = pd.Series(np.random.choice(['a', 'b'], size=50))
+    >>> s = pd.Series(np.random.pareto(2, size=50))
+    >>> sns.violinplot(s, groupby=grouper)
+
+    From a DataFrame
+
+    >>> df = pd.DataFrame([np.random.pareto(shape, size=50)
+                           for shape in [2, 2.5, 2.75, 3]]).T
+    >>> sns.violinplot(df, names=["2", "2.5", "2.75", "3"])
     """
     if ax is None:
         ax = plt.gca()
@@ -440,6 +470,11 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     -------
     ax : matplotlib axis
 
+    Examples
+    --------
+    >>> np.random.seed(9221999)
+    >>> data = np.random.randn(200)
+    >>> sns.distplot(data)
     """
     if ax is None:
         ax = plt.gca()
@@ -742,6 +777,17 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     ax : matplotlib axis
         Axis with plot.
 
+    Examples
+    --------
+    If `data` is 1d
+
+    >>> data = np.random.randn(30)
+    >>> sns.kdeplot(data)
+
+    If `data` is 2d
+
+    >>> data = np.hstack([data, np.random.exponential(size=30)]).reshape(30, 2)
+    >>> sns.kdeplot(data)
     """
     if ax is None:
         ax = plt.gca()
@@ -797,6 +843,10 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
     ax : matplotlib axis
         Axis with rugplot.
 
+    Examples
+    --------
+    >>> data = np.random.randn(30)
+    >>> sns.rugplot(data)  XXX all different colors
     """
     if ax is None:
         ax = plt.gca()
