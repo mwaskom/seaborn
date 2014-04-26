@@ -64,7 +64,7 @@ _context_keys = (
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
-        font="Arial", rc=None):
+        font="Arial", font_scale=1, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -80,11 +80,14 @@ def set(context="notebook", style="darkgrid", palette="deep",
         Color palette, see :func:`color_palette`
     font : string
         Font family, see matplotlib font manager.
+    font_scale : float, optional
+        Separate scaling factor to independently scale the size of the
+        font elements.
     rc : dict or None
         Dictionary of rc parameter mappings to override the above.
 
     """
-    set_context(context)
+    set_context(context, font_scale)
     set_style(style, rc={"font.family": font})
     set_palette(palette)
     if rc is not None:
@@ -300,7 +303,7 @@ def set_style(style=None, rc=None):
     mpl.rcParams.update(style_object)
 
 
-def plotting_context(context=None, rc=None):
+def plotting_context(context=None, font_scale=1, rc=None):
     """Return a parameter dict to scale elements of the figure.
 
     This affects things like the size of the labels, lines, and other
@@ -316,6 +319,9 @@ def plotting_context(context=None, rc=None):
     ----------
     context : dict, None, or one of {paper, notebook, talk, poster}
         A dictionary of parameters or the name of a preconfigured set.
+    font_scale : float, optional
+        Separate scaling factor to independently scale the size of the
+        font elements.
     rc : dict, optional
         Parameter mappings to override the values in the preset seaborn
         context dictionaries. This only updates parameters that are
@@ -325,7 +331,9 @@ def plotting_context(context=None, rc=None):
     --------
     >>> c = plotting_context("poster")
 
-    >>> c = plotting_context("talk", {"lines.linewidth": 2})
+    >>> c = plotting_context("notebook", font_scale=1.5)
+
+    >>> c = plotting_context("talk", rc={"lines.linewidth": 2})
 
     >>> import matplotlib.pyplot as plt
     >>> with plotting_context("paper"):
@@ -380,6 +388,12 @@ def plotting_context(context=None, rc=None):
         scaling = dict(paper=.8, notebook=1, talk=1.3, poster=1.6)[context]
         context_dict = {k: v * scaling for k, v in base_context.items()}
 
+        # Now independently scale the fonts
+        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
+                     "xtick.labelsize", "ytick.labelsize"]
+        font_dict = {k: context_dict[k] * font_scale for k in font_keys}
+        context_dict.update(font_dict)
+
     # Override these settings with the provided rc dictionary
     if rc is not None:
         rc = {k: v for k, v in rc.items() if k in _context_keys}
@@ -391,7 +405,7 @@ def plotting_context(context=None, rc=None):
     return context_object
 
 
-def set_context(context=None, rc=None):
+def set_context(context=None, font_scale=1, rc=None):
     """Set the plotting context parameters.
 
     This affects things like the size of the labels, lines, and other
@@ -404,6 +418,9 @@ def set_context(context=None, rc=None):
     ----------
     context : dict, None, or one of {paper, notebook, talk, poster}
         A dictionary of parameters or the name of a preconfigured set.
+    font_scale : float, optional
+        Separate scaling factor to independently scale the size of the
+        font elements.
     rc : dict, optional
         Parameter mappings to override the values in the preset seaborn
         context dictionaries. This only updates parameters that are
@@ -413,7 +430,9 @@ def set_context(context=None, rc=None):
     --------
     >>> set_context("paper")
 
-    >>> set_context("talk", {"lines.linewidth": 2})
+    >>> set_context("talk", font_scale=1.4)
+
+    >>> set_context("talk", rc={"lines.linewidth": 2})
 
     See Also
     --------
@@ -423,7 +442,7 @@ def set_context(context=None, rc=None):
     set_palette : set the default color palette for figures
 
     """
-    context_object = plotting_context(context, rc)
+    context_object = plotting_context(context, font_scale, rc)
     mpl.rcParams.update(context_object)
 
 
