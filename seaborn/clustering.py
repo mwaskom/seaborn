@@ -186,9 +186,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
             self.cmap.set_bad('white')
         # Make sure there's no trailing `cmap` or `vmin` or `vmax` values
-        self.pcolormesh_kws.pop('cmap')
-        self.pcolormesh_kws.pop('vmin')
-        self.pcolormesh_kws.pop('vmax')
+        if 'cmap' in self.pcolormesh_kws:
+            self.pcolormesh_kws.pop('cmap')
+        if 'vmin' in self.pcolormesh_kws:
+            self.pcolormesh_kws.pop('vmin')
+        if 'vmax' in self.pcolormesh_kws:
+            self.pcolormesh_kws.pop('vmax')
 
     def validate_data_na_ok(self, data_na_ok):
         if data_na_ok is None:
@@ -511,7 +514,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         Parameters
         ----------
         dimension : str
-            either "row" or "column", which dimension we are labeling
+            either "row" or "col", which dimension we are labeling
         kws : dict
             Keyword arguments for the dimension, either row_kws or col_kws from
             clusterplot()
@@ -593,9 +596,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """
         ax = self.heatmap_ax
         self.heatmap_ax_pcolormesh = \
-            ax.pcolormesh(self.data2d_na_ok.ix[self.row_dendrogram['leaves'],
-                                               self.col_dendrogram[
-                                                   'leaves']].values,
+            ax.pcolormesh(self.data2d_na_ok.ix[
+                              self.row_dendrogram['leaves'],
+                              self.col_dendrogram['leaves']].values,
                           cmap=self.cmap,
                           norm=self.norm,
                           vmin=self.vmin, vmax=self.vmax,
@@ -648,7 +651,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """Plot the dendrogram and potentially sidecolors for the column
         dimension
         """
-        self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram)
+        self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram,
+                             row=False)
         self.plot_side_colors(self.col_side_colors_ax, self.col_kws,
                              self.col_dendrogram, row=False)
 
