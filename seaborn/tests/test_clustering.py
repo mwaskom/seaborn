@@ -319,14 +319,55 @@ class TestClusteredHeatmapPlotter(object):
 
         p = cl._ClusteredHeatmapPlotter(self.data2d,
                                         col_kws={'side_colors': color_list})
-
         p.establish_axes()
 
         nt.assert_equal(len(p.fig.axes), 5)
+        nt.assert_equal(p.gs.get_geometry(), (4, 3))
         plt.close('all')
 
+    def test_establish_axes_row_side_colors(self):
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = self.data2d.shape[0]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        color_list = [colors[i] for i in color_inds]
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        row_kws={'side_colors': color_list})
+        p.establish_axes()
+
+        nt.assert_equal(len(p.fig.axes), 5)
+        nt.assert_equal(p.gs.get_geometry(), (3, 4))
+        plt.close('all')
+
+    def test_establish_axes_both_side_colors(self):
+        colors = color_palette(name='Set2', n_colors=3)
+        np.random.seed(10)
+        n = self.data2d.shape[1]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        col_color_list = [colors[i] for i in color_inds]
+
+        n = self.data2d.shape[0]
+        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
+        row_color_list = [colors[i] for i in color_inds]
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        row_kws={'side_colors':
+                                                     row_color_list},
+                                        col_kws={'side_colors':
+                                                     col_color_list})
+        p.establish_axes()
+
+        nt.assert_equal(len(p.fig.axes), 6)
+        nt.assert_equal(p.gs.get_geometry(), (4, 4))
+        plt.close('all')
+
+    def test_plot_heatmap(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+
     def test_label_dimension(self):
-        pass
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+
 
     def test_plot_heatmap(self):
         pass
