@@ -12,3 +12,4 @@ Style and color palettes
 
 - Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used.
 
+- The :func:`despine` function gets a new keyword argument ``offset``, which replaces the deprecated :func:`offset_spines` function. You no longer need to offset the spines before plotting data.
