@@ -458,6 +458,33 @@ def set_palette(name, n_colors=6, desat=None):
     mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
 
+def set_fontsize(fontsize):
+    """Change the fontsize for the plot.
+
+    Parameters
+    __________
+    fontsize : paper | notebook | talk | poster | any real number
+
+    Examples
+    --------
+
+    >>> set_fontsize("paper")
+
+    >>> set_fontsize(1.5)
+    """
+
+    base_fontsize = {
+        "axes.labelsize": 11,
+        "axes.titlesize": 12,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    }
+
+    scaledict = dict(paper=.8, notebook=1, talk=1.3, poster=1.6)
+    scale = scaledict.get(fontsize, fontsize)
+    rc = {k: v * scale for k, v in base_fontsize.items()}
+    mpl.rcParams.update(rc)
 
 def set_color_palette(palette, n_colors=6, desat=None):
     """Backwards compatibility for set_palette."""
