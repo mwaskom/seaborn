@@ -24,7 +24,34 @@ LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.3'
 
-from setuptools import setup
+try:
+    from setuptools import setup
+    _has_setuptools = True
+except ImportError:
+    from disutils import setup
+
+
+def check_dependencies():
+
+    # Just make sure dependencies exist, I haven't rigorously
+    # tested what the minimal versions that will work are
+    # (help on that would be awesome)
+    try:
+        import numpy
+    except ImportError:
+        raise ImportError("seaborn requires numpy")
+    try:
+        import scipy
+    except ImportError:
+        raise ImportError("seaborn requires scipy")
+    try:
+        import matplotlib
+    except ImportError:
+        raise ImportError("seaborn requires matplotlib")
+    try:
+        import pandas
+    except ImportError:
+        raise ImportError("seaborn requires pandas")
 
 def check_dependencies():
 
@@ -82,5 +109,4 @@ if __name__ == "__main__":
                      'Operating System :: POSIX',
                      'Operating System :: Unix',
                      'Operating System :: MacOS'],
-        install_requires=["pandas"],
           )
