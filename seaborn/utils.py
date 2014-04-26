@@ -1,6 +1,8 @@
 """Small plotting-related utility functions."""
 from __future__ import division
 import colorsys
+import warnings
+
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -150,8 +152,8 @@ def axlabel(xlabel, ylabel, **kwargs):
     ax.set_ylabel(ylabel, **kwargs)
 
 
-def despine(fig=None, ax=None, top=True, right=True,
-            left=False, bottom=False, trim=False):
+def despine(fig=None, ax=None, top=True, right=True, left=False,
+            bottom=False, offset=None, trim=False):
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
@@ -160,6 +162,9 @@ def despine(fig=None, ax=None, top=True, right=True,
         Specific axes object to despine.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
+    offset : int or None  (default), optional
+        Absolute distance, in points, spines should be moved away
+        from the axes (negative values move spines inward).
     trim : bool, optional
         If true, limit spines to the smallest and largest major tick
         on each non-despined axis.
@@ -180,7 +185,10 @@ def despine(fig=None, ax=None, top=True, right=True,
     for ax_i in axes:
         for side in ["top", "right", "left", "bottom"]:
             # Toggle the spine objects
-            ax_i.spines[side].set_visible(not locals()[side])
+            is_visible = not locals()[side]
+            ax_i.spines[side].set_visible(is_visible)
+            if offset is not None and is_visible:
+                _set_spine_position(ax_i.spines[side], ('outward', offset))
 
         # Set the ticks appropriately
         if bottom:
@@ -235,6 +243,9 @@ def offset_spines(offset=10, fig=None, ax=None):
     None
 
     """
+    warn_msg = "`offset_spines` is deprecated and will be removed in v0.5"
+    warnings.warn(warn_msg, UserWarning)
+
     # Get references to the axes we want
     if fig is None and ax is None:
         axes = plt.gcf().axes
@@ -245,7 +256,25 @@ def offset_spines(offset=10, fig=None, ax=None):
 
     for ax_i in axes:
         for spine in ax_i.spines.values():
-            spine.set_position(('outward', offset))
+            _set_spine_position(spine, ('outward', offset))
+
+
+def _set_spine_position(spine, position):
+    """
+    Set the spine's position without resetting an associated axis.
+
+    As of matplotlib v. 1.0.0, if a spine has an associated axis, then
+    spine.set_position() calls axis.cla(), which resets locators, formatters,
+    etc.  We temporarily replace that call with axis.reset_ticks(), which is
+    sufficient for our purposes.
+    """
+    axis = spine.axis
+    if axis is not None:
+        cla = axis.cla
+        axis.cla = axis.reset_ticks
+    spine.set_position(position)
+    if axis is not None:
+        axis.cla = cla
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
