@@ -746,9 +746,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if ax is None:
         ax = plt.gca()
 
-    data = data.astype(np.float64, copy=False)
+    data = data.astype(np.float64)
     if data2 is not None:
-        data2 = data2.astype(np.float64, copy=False)
+        data2 = data2.astype(np.float64)
 
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:

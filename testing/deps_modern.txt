@@ -6,4 +6,3 @@ matplotlib
 pandas
 statsmodels
 patsy
-openpyxl=1.8.5
