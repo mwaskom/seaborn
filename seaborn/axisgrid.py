@@ -581,7 +581,12 @@ class FacetGrid(object):
             figlegend = plt.figlegend(handles, label_order, "center right",
                                       scatterpoints=1)
             self._legend = figlegend
-            figlegend.set_title(title, prop={"size": title_size})
+            figlegend.set_title(title)
+
+            # Set the title size a roundabout way to maintain
+            # compatability with matplotlib 1.1
+            prop = mpl.font_manager.FontProperties(size=title_size)
+            figlegend._legend_title_box._text.set_font_properties(prop)
 
             # Draw the plot to set the bounding boxes correctly
             plt.draw()
@@ -607,7 +612,12 @@ class FacetGrid(object):
         else:
             # Draw a legend in the first axis
             leg = self.axes[0, 0].legend(handles, label_order, loc="best")
-            leg.set_title(title, prop={"size": title_size})
+            leg.set_title(title)
+
+            # Set the title size a roundabout way to maintain
+            # compatability with matplotlib 1.1
+            prop = mpl.font_manager.FontProperties(size=title_size)
+            leg._legend_title_box._text.set_font_properties(prop)
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
