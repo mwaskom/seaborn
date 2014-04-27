@@ -273,8 +273,14 @@ class _DiscretePlotter(_LinearPlotter):
         if self.hue is not None:
             leg = ax.legend(loc="best", scatterpoints=1)
             if hasattr(self.hue, "name"):
-                leg.set_title(self.hue.name,
-                              prop={"size": mpl.rcParams["axes.labelsize"]})
+                leg.set_title(self.hue.name),
+
+                # Set the title size a roundabout way to maintain
+                # compatability with matplotlib 1.1
+                titlesize = mpl.rcParams["axes.labelsize"]
+                prop = mpl.font_manager.FontProperties(size=titlesize)
+                leg._legend_title_box._text.set_font_properties(prop)
+
         ax.xaxis.grid(False)
         ax.set_xticks(self.positions)
         ax.set_xticklabels(self.x_order)
