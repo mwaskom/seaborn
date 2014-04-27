@@ -24,7 +24,7 @@ class TestBoxReshaping(object):
     x = rs.randn(n_total / 3, 3)
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(rs.choice(list("abc"), n_total), name="small")
+    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
     df = pd.DataFrame(dict(y=y, g=g))
 
     def test_1d_values(self):
