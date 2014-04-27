@@ -20,7 +20,7 @@ class TestFacetGrid(object):
                            y=rs.gamma(4, size=60),
                            a=np.repeat(list("abc"), 20),
                            b=np.tile(list("mn"), 30),
-                           c=rs.choice(list("tuv"), 60),
+                           c=np.tile(list("tuv"), 20),
                            d=np.tile(list("abcdefghij"), 6)))
 
     def test_self_data(self):
@@ -426,7 +426,7 @@ class TestFacetGrid(object):
     def test_dropna(self):
 
         df = self.df.copy()
-        hasna = pd.Series(np.tile(np.arange(6), 10))
+        hasna = pd.Series(np.tile(np.arange(6), 10), dtype=np.float)
         hasna[hasna == 5] = np.nan
         df["hasna"] = hasna
         g = ag.FacetGrid(df, dropna=False, row="hasna")
