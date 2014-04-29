@@ -718,6 +718,139 @@ class FacetGrid(object):
             return np.array(axes, object).flat
 
 
+class PairGrid(object):
+
+    def __init__(self, data, vars=None, x_vars=None, y_vars=None, hue=None,
+                 palette="husl", diag_sharey=True, size=3, aspect=1,
+                 despine=True, dropna=True):
+
+        if vars is not None:
+            x_vars = vars
+            y_vars = vars
+        elif (x_vars is not None) or (y_vars is not None):
+            if (x_vars is None) or (y_vars is None):
+                raise ValueError("Must specify `x_vars` and `y_vars`")
+        else:
+            numeric_cols = self._find_numeric_cols(data)
+            x_vars = numeric_cols
+            y_vars = numeric_cols
+
+        self.x_vars = x_vars
+        self.y_vars = y_vars
+        self.square_grid = x_vars == y_vars
+
+        width = len(x_vars) * (aspect * size)
+        height = len(y_vars) * ((1 / aspect) * size)
+
+        fig, axes = plt.subplots(len(y_vars), len(x_vars),
+                                 figsize=(width, height),
+                                 sharex="col", sharey="row",
+                                 squeeze=False)
+
+        self.fig = fig
+        self.axes = axes
+
+        self.data = data
+
+        for ax, label in zip(axes[-1, :], x_vars):
+            ax.set_xlabel(label)
+        for ax, label in zip(axes[:, 0], y_vars):
+            ax.set_ylabel(label)
+
+        self.hue_var = hue
+        if hue is None:
+            self.palette = color_palette(n_colors=1)
+        else:
+            self.palette = color_palette(palette, len(data[hue].unique()))
+
+        fig.tight_layout()
+
+        if self.square_grid:
+            diag_axes = []
+            for i, (var, ax) in enumerate(zip(x_vars, np.diag(axes))):
+                if i and diag_sharey:
+                    diag_ax = ax._make_twin_axes(sharex=ax,
+                                                 sharey=diag_axes[0],
+                                                 frameon=False)
+                else:
+                    diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
+                diag_ax.set_axis_off()
+                diag_axes.append(diag_ax)
+            self.diag_axes = np.array(diag_axes, np.object)
+        else:
+            self.diag_axes = None
+
+    def map(self, func, **kwargs):
+
+        for i, y_var in enumerate(self.y_vars):
+            for j, x_var in enumerate(self.x_vars):
+
+                ax = self.axes[i, j]
+                plt.sca(ax)
+
+                func(self.data[x_var], self.data[y_var], **kwargs)
+
+    def map_diag(self, func, **kwargs):
+
+        for i, var in enumerate(self.x_vars):
+
+            left_ax = self.axes[i, i]
+            l, = left_ax.plot(self.data[var], self.data[var], ls="")
+            l.remove()
+
+            ax = self.diag_axes[i]
+            plt.sca(ax)
+            func(self.data[var], **kwargs)
+
+            ax.legend_ = None
+
+    def map_lower(self, func, **kwargs):
+
+        for i, j in zip(*np.tril_indices_from(self.axes, -1)):
+
+            ax = self.axes[i, j]
+            plt.sca(ax)
+
+            x_var = self.x_vars[j]
+            y_var = self.y_vars[i]
+
+            func(self.data[x_var], self.data[y_var], **kwargs)
+
+            ax.legend_ = None
+
+    def map_upper(self, func, **kwargs):
+
+        for i, j in zip(*np.triu_indices_from(self.axes, 1)):
+
+            ax = self.axes[i, j]
+            plt.sca(ax)
+
+            x_var = self.x_vars[j]
+            y_var = self.y_vars[i]
+
+            func(self.data[x_var], self.data[y_var], **kwargs)
+
+            ax.legend_ = None
+
+    def map_offdiag(self, func, **kwargs):
+
+        self.map_lower(func, **kwargs)
+        self.map_upper(func, **kwargs)
+
+    def _find_numeric_cols(self, data):
+
+        # This can't be the best way to do this, but  I do not
+        # know what the best way might be, so this seems ok
+        numeric_cols = []
+        for col in data:
+            try:
+                data[col].astype(np.float)
+                numeric_cols.append(col)
+            except ValueError:
+                pass
+        return numeric_cols
+
+
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
     def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
