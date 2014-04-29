@@ -757,6 +757,9 @@ class PairGrid(object):
         for ax, label in zip(axes[:, 0], y_vars):
             ax.set_ylabel(label)
 
+        self.diag_sharey = diag_sharey
+        self.diag_axes = None
+
         if hue is None:
             self.hue_vals = pd.Series(["_nolegend_"] * len(data))
             self.palette = color_palette(n_colors=1)
@@ -764,22 +767,9 @@ class PairGrid(object):
             self.hue_vals = data[hue]
             self.palette = color_palette(palette, len(data[hue].unique()))
 
+        if despine:
+            utils.despine(fig=fig)
         fig.tight_layout()
-
-        if self.square_grid:
-            diag_axes = []
-            for i, (var, ax) in enumerate(zip(x_vars, np.diag(axes))):
-                if i and diag_sharey:
-                    diag_ax = ax._make_twin_axes(sharex=ax,
-                                                 sharey=diag_axes[0],
-                                                 frameon=False)
-                else:
-                    diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
-                diag_ax.set_axis_off()
-                diag_axes.append(diag_ax)
-            self.diag_axes = np.array(diag_axes, np.object)
-        else:
-            self.diag_axes = None
 
     def map(self, func, **kwargs):
 
@@ -795,6 +785,22 @@ class PairGrid(object):
 
     def map_diag(self, func, **kwargs):
 
+        if self.square_grid and self.diag_axes is None:
+            diag_axes = []
+            for i, (var, ax) in enumerate(zip(self.x_vars,
+                                              np.diag(self.axes))):
+                if i and self.diag_sharey:
+                    diag_ax = ax._make_twin_axes(sharex=ax,
+                                                 sharey=diag_axes[0],
+                                                 frameon=False)
+                else:
+                    diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
+                diag_ax.set_axis_off()
+                diag_axes.append(diag_ax)
+            self.diag_axes = np.array(diag_axes, np.object)
+        else:
+            self.diag_axes = None
+
         for i, var in enumerate(self.x_vars):
 
             left_ax = self.axes[i, i]
@@ -802,14 +808,14 @@ class PairGrid(object):
             l.remove()
 
             ax = self.diag_axes[i]
-
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
             # Special-case plt.hist
             if func is plt.hist:
                 plt.sca(ax)
                 vals = [v.values for g, v in hue_grouped]
-                func(vals, color=self.palette, histtype="barstacked")
+                func(vals, color=self.palette, histtype="barstacked",
+                     **kwargs)
             else:
                 for k, (label_k, data_k) in enumerate(hue_grouped):
                     plt.sca(ax)
