@@ -757,10 +757,11 @@ class PairGrid(object):
         for ax, label in zip(axes[:, 0], y_vars):
             ax.set_ylabel(label)
 
-        self.hue_var = hue
         if hue is None:
+            self.hue_vals = pd.Series(["_nolegend_"] * len(data))
             self.palette = color_palette(n_colors=1)
         else:
+            self.hue_vals = data[hue]
             self.palette = color_palette(palette, len(data[hue].unique()))
 
         fig.tight_layout()
@@ -784,11 +785,13 @@ class PairGrid(object):
 
         for i, y_var in enumerate(self.y_vars):
             for j, x_var in enumerate(self.x_vars):
+                hue_grouped = self.data.groupby(self.hue_vals)
+                for k, (label_k, data_k) in enumerate(hue_grouped):
+                    ax = self.axes[i, j]
+                    plt.sca(ax)
 
-                ax = self.axes[i, j]
-                plt.sca(ax)
-
-                func(self.data[x_var], self.data[y_var], **kwargs)
+                    func(data_k[x_var], data_k[y_var],
+                         label=label_k, color=self.palette[k], **kwargs)
 
     def map_diag(self, func, **kwargs):
 
@@ -799,22 +802,36 @@ class PairGrid(object):
             l.remove()
 
             ax = self.diag_axes[i]
-            plt.sca(ax)
-            func(self.data[var], **kwargs)
+
+            hue_grouped = self.data[var].groupby(self.hue_vals)
+
+            # Special-case plt.hist
+            if func is plt.hist:
+                plt.sca(ax)
+                vals = [v.values for g, v in hue_grouped]
+                func(vals, color=self.palette, histtype="barstacked")
+            else:
+                for k, (label_k, data_k) in enumerate(hue_grouped):
+                    plt.sca(ax)
+                    func(data_k[var], label=label_k,
+                         color=self.palette[k], **kwargs)
 
             ax.legend_ = None
 
     def map_lower(self, func, **kwargs):
 
         for i, j in zip(*np.tril_indices_from(self.axes, -1)):
+            hue_grouped = self.data.groupby(self.hue_vals)
+            for k, (label_k, data_k) in enumerate(hue_grouped):
 
-            ax = self.axes[i, j]
-            plt.sca(ax)
+                ax = self.axes[i, j]
+                plt.sca(ax)
 
-            x_var = self.x_vars[j]
-            y_var = self.y_vars[i]
+                x_var = self.x_vars[j]
+                y_var = self.y_vars[i]
 
-            func(self.data[x_var], self.data[y_var], **kwargs)
+                func(data_k[x_var], data_k[y_var], label=label_k,
+                     color=self.palette[k], **kwargs)
 
             ax.legend_ = None
 
@@ -822,13 +839,17 @@ class PairGrid(object):
 
         for i, j in zip(*np.triu_indices_from(self.axes, 1)):
 
-            ax = self.axes[i, j]
-            plt.sca(ax)
+            hue_grouped = self.data.groupby(self.hue_vals)
+            for k, (label_k, data_k) in enumerate(hue_grouped):
 
-            x_var = self.x_vars[j]
-            y_var = self.y_vars[i]
+                ax = self.axes[i, j]
+                plt.sca(ax)
 
-            func(self.data[x_var], self.data[y_var], **kwargs)
+                x_var = self.x_vars[j]
+                y_var = self.y_vars[i]
+
+                func(data_k[x_var], data_k[y_var], label=label_k,
+                     color=self.palette[k], **kwargs)
 
             ax.legend_ = None
 
