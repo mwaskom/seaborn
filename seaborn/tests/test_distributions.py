@@ -352,12 +352,10 @@ class TestJointPlot(object):
     def test_hex_customise(self):
 
         # test that default gridsize can be overridden
-        g = dist.jointplot("x", "y", self.data, kind="hex", joint_kws=dict(gridsize=5))
+        g = dist.jointplot("x", "y", self.data, kind="hex",
+                           joint_kws=dict(gridsize=5))
         nt.assert_equal(len(g.ax_joint.collections), 1)
         a = g.ax_joint.collections[0].get_array()
         nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
 
         plt.close("all")
-
-
-
