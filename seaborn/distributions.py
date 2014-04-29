@@ -884,8 +884,12 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     # Plot the data using the grid
     if kind == "scatter":
 
-        grid.plot_joint(plt.scatter, color=color, **joint_kws)
-        grid.plot_marginals(distplot, kde=False, color=color, **marginal_kws)
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(plt.scatter, **joint_kws)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
 
     elif kind.startswith("hex"):
 
@@ -893,28 +897,47 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         y_bins = _freedman_diaconis_bins(grid.y)
         gridsize = int(np.mean([x_bins, y_bins]))
 
-        grid.plot_joint(plt.hexbin, gridsize=gridsize, cmap=cmap, **joint_kws)
-        grid.plot_marginals(distplot, kde=False, color=color, **marginal_kws)
+        joint_kws.setdefault("gridsize", gridsize)
+        joint_kws.setdefault("cmap", cmap)
+        grid.plot_joint(plt.hexbin, **joint_kws)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
 
     elif kind.startswith("kde"):
 
-        grid.plot_joint(kdeplot, shade=True, cmap=cmap, **joint_kws)
-        grid.plot_marginals(kdeplot, shade=True, color=color, **marginal_kws)
+        joint_kws.setdefault("shade", True)
+        joint_kws.setdefault("cmap", cmap)
+        grid.plot_joint(kdeplot, **joint_kws)
+
+        marginal_kws.setdefault("shade", True)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(kdeplot, **marginal_kws)
 
     elif kind.startswith("reg"):
 
         from .linearmodels import regplot
-        grid.plot_marginals(distplot, color=color, **marginal_kws)
-        grid.plot_joint(regplot, color=color, **joint_kws)
+
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(regplot, **joint_kws)
 
     elif kind.startswith("resid"):
 
         from .linearmodels import residplot
-        grid.plot_joint(residplot, color=color, **joint_kws)
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(residplot, **joint_kws)
+
         x, y = grid.ax_joint.collections[0].get_offsets().T
-        distplot(x, color=color, kde=False, ax=grid.ax_marg_x)
-        distplot(y, color=color, kde=False, vertical=True,
-                 fit=stats.norm, ax=grid.ax_marg_y)
+        marginal_kws.setdefault("color", color)
+        marginal_kws.setdefault("kde", False)
+        distplot(x, ax=grid.ax_marg_x, **marginal_kws)
+        distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
+                 **marginal_kws)
         stat_func = None
 
     if stat_func is not None:
