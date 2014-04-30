@@ -4,6 +4,7 @@ env:
   - PYTHON=2.7 DEPS=modern
   - PYTHON=2.7 DEPS=minimal
   - PYTHON=3.3 DEPS=modern
+  - PYTHON=3.4 DEPS=modern
 
 install:
   - conda update conda --yes
