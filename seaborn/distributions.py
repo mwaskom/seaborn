@@ -259,7 +259,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     groupby : grouping object
         If `vals` is a Series, this is used to group into boxes by calling
         pd.groupby(vals, groupby).
-    inner : box | sticks | points
+    inner : {'box' | 'stick' | 'points'}
         Plot quartiles or individual sample values inside violin.
     color : mpl color, sequence of colors, or seaborn palette name
         Inner violin colors
