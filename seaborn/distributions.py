@@ -132,7 +132,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     Parameters
     ----------
     vals : DataFrame, Series, 2D array, list of vectors, or vector.
-        Data for plot. DataFrames and 2D arrays are assuemd to be "wide" with
+        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
         each column mapping to a box. Lists of data are assumed to have one
         element per box.  Can also provide one long Series in conjunction with
         a grouping element as the `groupy` parameter to reshape the data into
@@ -251,7 +251,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     Parameters
     ----------
     vals : DataFrame, Series, 2D array, or list of vectors.
-        Data for plot. DataFrames and 2D arrays are assuemd to be "wide" with
+        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
         each column mapping to a box. Lists of data are assumed to have one
         element per box.  Can also provide one long Series in conjunction with
         a grouping element as the `groupy` parameter to reshape the data into
@@ -259,7 +259,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     groupby : grouping object
         If `vals` is a Series, this is used to group into boxes by calling
         pd.groupby(vals, groupby).
-    inner : box | sticks | points
+    inner : {'box' | 'stick' | 'points'}
         Plot quartiles or individual sample values inside violin.
     color : mpl color, sequence of colors, or seaborn palette name
         Inner violin colors
