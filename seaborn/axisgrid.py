@@ -574,7 +574,10 @@ class FacetGrid(object):
                 label_order = list(map(str, self.hue_names))
         handles = [legend_data[l] for l in label_order if l in legend_data]
         title = self._hue_var if title is None else title
-        title_size = mpl.rcParams["axes.labelsize"] * .85
+        try:
+            title_size = mpl.rcParams["axes.labelsize"] * .85
+        except TypeError:  # labelsize is something like "large"
+            title_size = mpl.rcParams["axes.labelsize"]
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
