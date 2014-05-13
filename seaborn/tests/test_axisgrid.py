@@ -322,6 +322,10 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[0, 0].get_title(), "b = m")
         nt.assert_equal(g.axes[0, 1].get_title(), "b = n")
 
+        # test with dropna=False
+        g = ag.FacetGrid(self.df, col="b", hue="b", dropna=False)
+        g.map(plt.plot, 'x', 'y')
+
         plt.close("all")
 
     def test_set_titles_margin_titles(self):
