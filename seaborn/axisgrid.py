@@ -521,7 +521,7 @@ class FacetGrid(object):
                 template = " | ".join([row_template, col_template])
 
         if self._margin_titles:
-            if self.row_names:
+            if self.row_names is not None:
                 # Draw the row titles on the right edge of the grid
                 for i, row_name in enumerate(self.row_names):
                     ax = self.axes[i, -1]
@@ -533,7 +533,7 @@ class FacetGrid(object):
                     y = bbox.ymax - (bbox.height / 2)
                     self.fig.text(x, y, title, rotation=270,
                                   ha="left", va="center", **kwargs)
-            if self.col_names:
+            if self.col_names is not None:
                 # Draw the column titles  as normal titles
                 for j, col_name in enumerate(self.col_names):
                     args.update(dict(col_name=col_name))
@@ -549,12 +549,12 @@ class FacetGrid(object):
                     args.update(dict(row_name=row_name, col_name=col_name))
                     title = template.format(**args)
                     self.axes[i, j].set_title(title, **kwargs)
-        elif self.row_names:
+        elif self.row_names is not None and len(self.row_names):
             for i, row_name in enumerate(self.row_names):
                 args.update(dict(row_name=row_name))
                 title = template.format(**args)
                 self.axes[i, 0].set_title(title, **kwargs)
-        elif self.col_names:
+        elif self.col_names is not None and len(self.col_names):
             for i, col_name in enumerate(self.col_names):
                 args.update(dict(col_name=col_name))
                 title = template.format(**args)
