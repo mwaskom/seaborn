@@ -207,6 +207,7 @@ def axes_style(style=None, rc=None):
             "font.family": "Arial",
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
+            "pdf.fonttype": 42,
             }
 
         # Set grid on or off
