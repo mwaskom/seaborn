@@ -38,6 +38,8 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
+
+    "pdf.fonttype",
     )
 
 _context_keys = (
