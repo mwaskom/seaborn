@@ -37,6 +37,8 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
+
+    "pdf.fonttype",
     )
 
 _context_keys = (
@@ -207,6 +209,7 @@ def axes_style(style=None, rc=None):
             "font.family": "Arial",
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
+            "pdf.fonttype": 42,
             }
 
         # Set grid on or off
