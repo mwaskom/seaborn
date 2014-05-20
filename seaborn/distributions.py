@@ -301,6 +301,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Axis with violin plot.
 
     """
+
     if ax is None:
         ax = plt.gca()
 
@@ -351,14 +352,19 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         # Draw the violin. If vert (default), we will use ``ax.plot`` in the
         # standard way; otherwise, we invert x,y.
         # For this, define a simple wrapper ``ax_plot``
+        color = colors[i]
         if vert:
-            ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
+            ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=color)
+
             def ax_plot(x, y, *args, **kwargs):
                 ax.plot(x, y, *args, **kwargs)
+
         else:
-            ax.fill_between(y, x - dens, x + dens, alpha=alpha, color=colors[i])
+            ax.fill_between(y, x - dens, x + dens, alpha=alpha, color=color)
+
             def ax_plot(x, y, *args, **kwargs):
                 ax.plot(y, x, *args, **kwargs)
+
         if inner == "box":
             for quant in percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
