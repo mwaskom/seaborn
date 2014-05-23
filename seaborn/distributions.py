@@ -244,7 +244,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, bw="scott", widths=.8, alpha=None,
                join_rm=False, gridsize=100, cut=3, inner_kws=None,
-               ax=None, **kwargs):
+               ax=None, vert=True, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
@@ -290,6 +290,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Keyword arugments for inner plot.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise grab current axis.
+    vert : boolean, optional
+        If true (default), draw vertical plots; otherwise, draw horizontal
+        ones.
     kwargs : additional parameters to fill_betweenx
 
     Returns
@@ -298,6 +301,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Axis with violin plot.
 
     """
+
     if ax is None:
         ax = plt.gca()
 
@@ -345,26 +349,40 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
-        # Draw the violin
-        ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=colors[i])
+        # Draw the violin. If vert (default), we will use ``ax.plot`` in the
+        # standard way; otherwise, we invert x,y.
+        # For this, define a simple wrapper ``ax_plot``
+        color = colors[i]
+        if vert:
+            ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=color)
+
+            def ax_plot(x, y, *args, **kwargs):
+                ax.plot(x, y, *args, **kwargs)
+
+        else:
+            ax.fill_between(y, x - dens, x + dens, alpha=alpha, color=color)
+
+            def ax_plot(x, y, *args, **kwargs):
+                ax.plot(y, x, *args, **kwargs)
+
         if inner == "box":
             for quant in percentiles(a, [25, 75]):
                 q_x = kde.evaluate(quant) * scl
                 q_x = [x - q_x, x + q_x]
-                ax.plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
+                ax_plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
             med = np.median(a)
             m_x = kde.evaluate(med) * scl
             m_x = [x - m_x, x + m_x]
-            ax.plot(m_x, [med, med], linestyle="--", **inner_kws)
+            ax_plot(m_x, [med, med], linestyle="--", **inner_kws)
         elif inner == "stick":
             x_vals = kde.evaluate(a) * scl
             x_vals = [x - x_vals, x + x_vals]
-            ax.plot(x_vals, [a, a], linestyle="-", **inner_kws)
+            ax_plot(x_vals, [a, a], linestyle="-", **inner_kws)
         elif inner == "points":
             x_vals = [x for _ in a]
-            ax.plot(x_vals, a, mew=0, linestyle="", **inner_kws)
+            ax_plot(x_vals, a, mew=0, linestyle="", **inner_kws)
         for side in [-1, 1]:
-            ax.plot((side * dens) + x, y, c=gray, lw=lw)
+            ax_plot((side * dens) + x, y, c=gray, lw=lw)
 
     # Draw the repeated measure bridges
     if join_rm:
@@ -372,17 +390,31 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                 color=inner_kws["color"], alpha=2. / 3)
 
     # Add in semantic labels
-    ax.set_xticks(positions)
     if names is not None:
         if len(vals) != len(names):
             raise ValueError("Length of names list must match nuber of bins")
-        ax.set_xticklabels(list(names))
-    ax.set_xlim(positions[0] - .5, positions[-1] + .5)
+        names = list(names)
 
-    if xlabel is not None:
-        ax.set_xlabel(xlabel)
-    if ylabel is not None:
-        ax.set_ylabel(ylabel)
+    if vert:
+        # Add in semantic labels
+        ax.set_xticks(positions)
+        ax.set_xlim(positions[0] - .5, positions[-1] + .5)
+        ax.set_xticklabels(names)
+
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+    else:
+        # Add in semantic labels
+        ax.set_yticks(positions)
+        ax.set_yticklabels(names)
+        ax.set_ylim(positions[0] - .5, positions[-1] + .5)
+
+        if ylabel is not None:
+            ax.set_ylabel(xlabel)
+        if xlabel is not None:
+            ax.set_xlabel(ylabel)
 
     ax.xaxis.grid(False)
     return ax
