@@ -456,6 +456,73 @@ class TestFacetGrid(object):
         plt.close("all")
 
 
+class TestPairGrid(object):
+
+    rs = np.random.RandomState(sum(map(ord, "PairGrid")))
+    df = pd.DataFrame(dict(x=rs.normal(size=80),
+                           y=rs.randint(0, 4, size=(80)),
+                           z=rs.gamma(3, size=80),
+                           a=np.repeat(list("abcd"), 20)))
+
+    def test_self_data(self):
+
+        g = ag.PairGrid(self.df)
+        nt.assert_is(g.data, self.df)
+        plt.close("all")
+
+    def test_self_fig(self):
+
+        g = ag.PairGrid(self.df)
+        nt.assert_is_instance(g.fig, plt.Figure)
+        plt.close("all")
+
+    def test_self_axes(self):
+
+        g = ag.PairGrid(self.df)
+        for ax in g.axes.flat:
+            nt.assert_is_instance(ax, plt.Axes)
+
+        plt.close("all")
+
+    def test_default_axes(self):
+
+        g = ag.PairGrid(self.df)
+        nt.assert_equal(g.axes.shape, (3, 3))
+        nt.assert_equal(g.x_vars, ["x", "y", "z"])
+        nt.assert_equal(g.y_vars, ["x", "y", "z"])
+        nt.assert_true(g.square_grid)
+
+        plt.close("all")
+
+    def test_specific_square_axes(self):
+
+        vars = ["z", "x"]
+        g = ag.PairGrid(self.df, vars=vars)
+        nt.assert_equal(g.axes.shape, (len(vars), len(vars)))
+        nt.assert_equal(g.x_vars, vars)
+        nt.assert_equal(g.y_vars, vars)
+        nt.assert_true(g.square_grid)
+
+        plt.close("all")
+
+    def test_specific_nonsquare_axes(self):
+
+        x_vars = ["x", "y"]
+        y_vars = ["z", "y", "x"]
+        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
+        nt.assert_equal(g.x_vars, x_vars)
+        nt.assert_equal(g.y_vars, y_vars)
+        nt.assert_true(not g.square_grid)
+
+        plt.close("all")
+
+    @classmethod
+    def teardown_class(cls):
+        """Ensure that all figures are closed on exit."""
+        plt.close("all")
+
+
 class TestJointGrid(object):
 
     rs = np.random.RandomState(sum(map(ord, "JointGrid")))

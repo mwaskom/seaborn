@@ -819,7 +819,7 @@ class PairGrid(object):
             else:
                 for k, (label_k, data_k) in enumerate(hue_grouped):
                     plt.sca(ax)
-                    func(data_k[var], label=label_k,
+                    func(data_k, label=label_k,
                          color=self.palette[k], **kwargs)
 
             ax.legend_ = None
