@@ -1505,7 +1505,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
 
 def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
                cbar=True, annot=True, diag_names=True, ax=None, **kwargs):
-    """Plot a symettric matrix with colormap and statistic values."""
+    """Plot a symmetric matrix with colormap and statistic values."""
     if ax is None:
         ax = plt.gca()
 
