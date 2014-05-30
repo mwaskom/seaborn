@@ -179,7 +179,7 @@ class _DiscretePlotter(_LinearPlotter):
             n_hues = len(self.hue_order)
 
             # Bar offset is set by hardcoded bar width
-            if self.kind in ["bar", "box"]:
+            if self.kind in ["bar", "box", 'hbox']:
                 width = self.bar_widths / n_hues
                 offset = np.linspace(0, self.bar_widths - width, n_hues)
                 if self.kind == "box":
@@ -190,7 +190,6 @@ class _DiscretePlotter(_LinearPlotter):
             elif self.kind == "point":
                 offset = np.linspace(0, dodge, n_hues)
             offset -= offset.mean()
-
         self.offset = offset
 
     def establish_plot_kind(self, kind):
@@ -208,7 +207,7 @@ class _DiscretePlotter(_LinearPlotter):
             else:
                 kind = "point"
             self.kind = kind
-        elif kind in ["bar", "point", "box"]:
+        elif kind in ["bar", "point", "box", "hbox"]:
             self.kind = kind
         else:
             raise ValueError("%s is not a valid kind of plot" % kind)
@@ -281,16 +280,28 @@ class _DiscretePlotter(_LinearPlotter):
                 prop = mpl.font_manager.FontProperties(size=titlesize)
                 leg._legend_title_box._text.set_font_properties(prop)
 
-        ax.xaxis.grid(False)
-        ax.set_xticks(self.positions)
-        ax.set_xticklabels(self.x_order)
-        if hasattr(self.x, "name"):
-            ax.set_xlabel(self.x.name)
-        if self.y_count:
-            ax.set_ylabel("count")
+        if self.kind == 'hbox':
+            ax.yaxis.grid(False)
+            ax.set_yticks(self.positions)
+            ax.set_yticklabels(self.x_order)
+            if hasattr(self.x, "name"):
+                ax.set_ylabel(self.x.name)
+            if self.y_count:
+                ax.set_xlabel("count")
+            else:
+                if hasattr(self.y, "name"):
+                    ax.set_xlabel(self.y.name)        
         else:
-            if hasattr(self.y, "name"):
-                ax.set_ylabel(self.y.name)
+            ax.xaxis.grid(False)
+            ax.set_xticks(self.positions)
+            ax.set_xticklabels(self.x_order)
+            if hasattr(self.x, "name"):
+                ax.set_xlabel(self.x.name)
+            if self.y_count:
+                ax.set_ylabel("count")
+            else:
+                if hasattr(self.y, "name"):
+                    ax.set_ylabel(self.y.name)
 
         if self.hline is not None:
             ymin, ymax = ax.get_ylim()
@@ -334,6 +345,24 @@ class _DiscretePlotter(_LinearPlotter):
         offset = .5
         xlim = self.positions.min() - offset, self.positions.max() + offset
         ax.set_xlim(xlim)
+
+
+    def hboxplot(self, ax):
+        """Draw the plot with a bar representation."""
+        from .distributions import boxplot
+        for i, (pos, data) in enumerate(self.binned_data):
+
+            color = self.palette if self.x_palette else self.palette[i]
+            label = self.hue_order[i]
+
+            # The main plot
+            boxplot(data, widths=self.bar_widths, color=color,
+                    positions=pos, label=label, ax=ax, vert=False)
+
+        # Set the y limits
+        offset = .5
+        ylim = self.positions.min() - offset, self.positions.max() + offset
+        ax.set_ylim(ylim)
 
     def pointplot(self, ax):
         """Draw the plot with a point representation."""
@@ -874,6 +903,13 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
             ax = plt.gca()
             p.plot(ax)
         facets.map_dataframe(_boxplot, x, y, hue, **kwargs)
+    elif kind == "hbox":
+        def _hboxplot(x, y, hue, data=None, **kwargs):
+            p = _DiscretePlotter(x, y, hue, data, kind="hbox", **kwargs)
+            ax = plt.gca()
+            p.plot(ax)
+        facets.map_dataframe(_hboxplot, x, y, hue, **kwargs)
+        facets.set_axis_labels(y, x)
     elif kind == "point":
         kwargs.update(dict(dodge=dodge, join=join,
                            markers=markers, linestyles=linestyles))
