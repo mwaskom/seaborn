@@ -326,15 +326,17 @@ class _DiscretePlotter(_LinearPlotter):
                        label=label, align="center")
             else:
                 ax.barh(pos, height, self.bar_widths, color=color,
-                       label=label, align="center")
+                        label=label, align="center")
 
             # The error bars
             if not self.flip_axes:
                 for x, (low, high) in zip(pos, ci):
-                    ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+                    ax.plot([x, x], [low, high], linewidth=self.lw,
+                            color=ecolor)
             else:
                 for x, (low, high) in zip(pos, ci):
-                    ax.plot([low, high], [x, x], linewidth=self.lw, color=ecolor)
+                    ax.plot([low, high], [x, x], linewidth=self.lw,
+                            color=ecolor)
 
         # Set the x limits
         offset = .5
@@ -855,7 +857,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         If True and there is a `row` variable, draw the titles on the right
         margin of the grid (experimental).
     flip_axes : bool, optional
-        If True x-axis and y-axis are flipped. eg useful for boxplot (experimental).
+        If True x-axis and y-axis are flipped.
+        eg useful for boxplot (experimental).
 
     Returns
     -------
@@ -898,7 +901,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-                  x_order=x_order, hue_order=hue_order, hline=hline, flip_axes=flip_axes)
+                  x_order=x_order, hue_order=hue_order, hline=hline,
+                  flip_axes=flip_axes)
 
     # Delegate the hue variable to the plotter not the FacetGrid
     if hue is not None and hue in [row, col]:
@@ -983,7 +987,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
     """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "bar", None, None, 0, False,
-                               hline, estimator, ci, n_boot, dropna, flip_axes=flip_axes)
+                               hline, estimator, ci, n_boot, dropna,
+                               flip_axes=flip_axes)
 
     if ax is None:
         ax = plt.gca()

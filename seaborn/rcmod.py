@@ -101,9 +101,11 @@ def reset_defaults():
     """Restore all RC params to default settings."""
     mpl.rcdefaults()
 
+
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
     mpl.rcParams.update(mpl.rcParamsOrig)
+
 
 class _AxesStyle(dict):
     """Light wrapper on a dict to set style temporarily."""
