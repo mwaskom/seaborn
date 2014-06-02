@@ -191,6 +191,7 @@ class _DiscretePlotter(_LinearPlotter):
             elif self.kind == "point":
                 offset = np.linspace(0, dodge, n_hues)
             offset -= offset.mean()
+
         self.offset = offset
 
     def establish_plot_kind(self, kind):
@@ -361,7 +362,6 @@ class _DiscretePlotter(_LinearPlotter):
             ax.set_ylim(xlim)
         else:
             ax.set_xlim(xlim)
-
 
     def pointplot(self, ax):
         """Draw the plot with a point representation."""
@@ -871,7 +871,6 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     boxplot : Axes-level function for drawing a box plot
 
     """
-
     cols = [a for a in [x, y, hue, col, row, units] if a is not None]
     cols = pd.unique(cols).tolist()
     data = data[cols]
@@ -1035,7 +1034,7 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
         the plot.
     flip_axes : bool, optional
         If True x-axis and y-axis are flipped. (experimental).
-        
+
     Returns
     -------
     ax : Axes
