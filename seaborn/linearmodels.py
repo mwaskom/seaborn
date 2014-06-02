@@ -78,7 +78,7 @@ class _DiscretePlotter(_LinearPlotter):
                  x_order=None, hue_order=None, color=None, palette=None,
                  kind="auto", markers=None, linestyles=None, dodge=0,
                  join=True, hline=None, estimator=np.mean, ci=95,
-                 n_boot=1000, dropna=True):
+                 n_boot=1000, dropna=True, flip_axes=False):
 
         # This implies we have a single bar/point for each level of `x`
         # but that the different levels should be mapped with a palette
@@ -90,6 +90,7 @@ class _DiscretePlotter(_LinearPlotter):
         self.join = join
         self.n_boot = n_boot
         self.hline = hline
+        self.flip_axes = flip_axes
 
         # Other attributes that are hardcoded for now
         self.bar_widths = .8
@@ -190,7 +191,6 @@ class _DiscretePlotter(_LinearPlotter):
             elif self.kind == "point":
                 offset = np.linspace(0, dodge, n_hues)
             offset -= offset.mean()
-
         self.offset = offset
 
     def establish_plot_kind(self, kind):
@@ -239,11 +239,13 @@ class _DiscretePlotter(_LinearPlotter):
                 # This is where the main computation happens
                 height.append(self.estimator(y_data))
                 if self.ci is not None:
-                    boots = algo.bootstrap(y_data, func=self.estimator,
-                                           n_boot=self.n_boot,
-                                           units=unit_data)
-                    ci.append(utils.ci(boots, self.ci))
-
+                    if len(y_data) > 0:
+                        boots = algo.bootstrap(y_data, func=self.estimator,
+                                               n_boot=self.n_boot,
+                                               units=unit_data)
+                        ci.append(utils.ci(boots, self.ci))
+                    else:
+                        ci.append([None, None])
             yield pos, height, ci
 
     @property
@@ -281,16 +283,28 @@ class _DiscretePlotter(_LinearPlotter):
                 prop = mpl.font_manager.FontProperties(size=titlesize)
                 leg._legend_title_box._text.set_font_properties(prop)
 
-        ax.xaxis.grid(False)
-        ax.set_xticks(self.positions)
-        ax.set_xticklabels(self.x_order)
-        if hasattr(self.x, "name"):
-            ax.set_xlabel(self.x.name)
-        if self.y_count:
-            ax.set_ylabel("count")
+        if self.flip_axes:
+            ax.yaxis.grid(False)
+            ax.set_yticks(self.positions)
+            ax.set_yticklabels(self.x_order)
+            if hasattr(self.x, "name"):
+                ax.set_ylabel(self.x.name)
+            if self.y_count:
+                ax.set_xlabel("count")
+            else:
+                if hasattr(self.y, "name"):
+                    ax.set_xlabel(self.y.name)
         else:
-            if hasattr(self.y, "name"):
-                ax.set_ylabel(self.y.name)
+            ax.xaxis.grid(False)
+            ax.set_xticks(self.positions)
+            ax.set_xticklabels(self.x_order)
+            if hasattr(self.x, "name"):
+                ax.set_xlabel(self.x.name)
+            if self.y_count:
+                ax.set_ylabel("count")
+            else:
+                if hasattr(self.y, "name"):
+                    ax.set_ylabel(self.y.name)
 
         if self.hline is not None:
             ymin, ymax = ax.get_ylim()
@@ -306,17 +320,28 @@ class _DiscretePlotter(_LinearPlotter):
             label = self.hue_order[i]
 
             # The main plot
-            ax.bar(pos, height, self.bar_widths, color=color,
-                   label=label, align="center")
+            if not self.flip_axes:
+                ax.bar(pos, height, self.bar_widths, color=color,
+                       label=label, align="center")
+            else:
+                ax.barh(pos, height, self.bar_widths, color=color,
+                       label=label, align="center")
 
             # The error bars
-            for x, (low, high) in zip(pos, ci):
-                ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+            if not self.flip_axes:
+                for x, (low, high) in zip(pos, ci):
+                    ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
+            else:
+                for x, (low, high) in zip(pos, ci):
+                    ax.plot([low, high], [x, x], linewidth=self.lw, color=ecolor)
 
         # Set the x limits
         offset = .5
         xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
+        if self.flip_axes:
+            ax.set_ylim(xlim)
+        else:
+            ax.set_xlim(xlim)
 
     def boxplot(self, ax):
         """Draw the plot with a bar representation."""
@@ -326,14 +351,17 @@ class _DiscretePlotter(_LinearPlotter):
             color = self.palette if self.x_palette else self.palette[i]
             label = self.hue_order[i]
 
-            # The main plot
             boxplot(data, widths=self.bar_widths, color=color,
-                    positions=pos, label=label, ax=ax)
+                    positions=pos, label=label, ax=ax, vert=not self.flip_axes)
 
         # Set the x limits
         offset = .5
         xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
+        if self.flip_axes:
+            ax.set_ylim(xlim)
+        else:
+            ax.set_xlim(xlim)
+
 
     def pointplot(self, ax):
         """Draw the plot with a point representation."""
@@ -350,8 +378,15 @@ class _DiscretePlotter(_LinearPlotter):
             # The error bars
             for j, (x, (low, high)) in enumerate(zip(pos, ci)):
                 ecolor = err_palette[j] if self.x_palette else err_palette[i]
-                ax.plot([x, x], [low, high], linewidth=self.lw,
-                        color=ecolor, zorder=z)
+                if not self.flip_axes:
+                    ax.plot([x, x], [low, high], linewidth=self.lw,
+                            color=ecolor, zorder=z)
+                else:
+                    ax.plot([low, high], [x, x], linewidth=self.lw,
+                            color=ecolor, zorder=z) 
+
+            if self.flip_axes:
+                pos, height = height, pos
 
             # The main plot
             ax.scatter(pos, height, s=markersize, color=color, label=label,
@@ -365,7 +400,11 @@ class _DiscretePlotter(_LinearPlotter):
         # Set the x limits
         xlim = (self.positions.min() + self.offset.min() - .3,
                 self.positions.max() + self.offset.max() + .3)
-        ax.set_xlim(xlim)
+
+        if self.flip_axes:
+            ax.set_ylim(xlim)
+        else:
+            ax.set_xlim(xlim)
 
 
 class _RegressionPlotter(_LinearPlotter):
@@ -748,7 +787,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                row_order=None, kind="auto", markers=None, linestyles=None,
                dodge=0, join=True, hline=None, size=5, aspect=1, palette=None,
                legend=True, legend_out=True, dropna=True, sharex=True,
-               sharey=True, margin_titles=False):
+               sharey=True, margin_titles=False, flip_axes=False):
     """Plot a variable estimate and error sorted by categorical factors.
 
     Parameters
@@ -815,6 +854,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     margin_titles : bool, optional
         If True and there is a `row` variable, draw the titles on the right
         margin of the grid (experimental).
+    flip_axes : bool, optional
+        If True x-axis and y-axis are flipped. eg useful for boxplot (experimental).
 
     Returns
     -------
@@ -830,6 +871,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     boxplot : Axes-level function for drawing a box plot
 
     """
+
     cols = [a for a in [x, y, hue, col, row, units] if a is not None]
     cols = pd.unique(cols).tolist()
     data = data[cols]
@@ -857,7 +899,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-                  x_order=x_order, hue_order=hue_order, hline=hline)
+                  x_order=x_order, hue_order=hue_order, hline=hline, flip_axes=flip_axes)
 
     # Delegate the hue variable to the plotter not the FacetGrid
     if hue is not None and hue in [row, col]:
@@ -879,6 +921,9 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
                            markers=markers, linestyles=linestyles))
         facets.map_dataframe(pointplot, x, y, hue, **kwargs)
 
+    if flip_axes:
+        facets.set_axis_labels(y, x)
+
     # Draw legends and labels
     if y is None:
         facets.set_axis_labels(x, "count")
@@ -892,7 +937,8 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
 
 def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
             ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-            dropna=True, color=None, palette=None, label=None, ax=None):
+            dropna=True, color=None, palette=None, label=None, ax=None,
+            flip_axes=False):
     """Estimate data in categorical bins with a bar representation.
 
     Parameters
@@ -920,6 +966,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
     dropna : boolean, optional
         Remove observations that are NA within any variables used to make
         the plot.
+    flip_axes : bool, optional
+        If True x-axis and y-axis are flipped. (experimental).
 
     Returns
     -------
@@ -936,7 +984,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
     """
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "bar", None, None, 0, False,
-                               hline, estimator, ci, n_boot, dropna)
+                               hline, estimator, ci, n_boot, dropna, flip_axes=flip_axes)
 
     if ax is None:
         ax = plt.gca()
@@ -947,7 +995,7 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
 def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
               ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
               markers=None, linestyles=None, dodge=0, dropna=True, color=None,
-              palette=None, join=True, label=None, ax=None):
+              palette=None, join=True, label=None, ax=None, flip_axes=False):
     """Estimate data in categorical bins with a point representation.
 
     Parameters
@@ -985,7 +1033,9 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
     dropna : boolean, optional
         Remove observations that are NA within any variables used to make
         the plot.
-
+    flip_axes : bool, optional
+        If True x-axis and y-axis are flipped. (experimental).
+        
     Returns
     -------
     ax : Axes
@@ -1001,7 +1051,7 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
     plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
                                color, palette, "point", markers, linestyles,
                                dodge, join, hline, estimator, ci, n_boot,
-                               dropna)
+                               dropna, flip_axes=flip_axes)
 
     if ax is None:
         ax = plt.gca()
