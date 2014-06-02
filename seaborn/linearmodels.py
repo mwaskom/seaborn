@@ -385,7 +385,7 @@ class _DiscretePlotter(_LinearPlotter):
                             color=ecolor, zorder=z)
                 else:
                     ax.plot([low, high], [x, x], linewidth=self.lw,
-                            color=ecolor, zorder=z) 
+                            color=ecolor, zorder=z)
 
             if self.flip_axes:
                 pos, height = height, pos
