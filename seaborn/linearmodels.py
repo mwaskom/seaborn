@@ -179,18 +179,22 @@ class _DiscretePlotter(_LinearPlotter):
         else:
             n_hues = len(self.hue_order)
 
-            # Bar offset is set by hardcoded bar width
-            if self.kind in ["bar", "box"]:
-                width = self.bar_widths / n_hues
-                offset = np.linspace(0, self.bar_widths - width, n_hues)
-                if self.kind == "box":
-                    width *= .95
-                self.bar_widths = width
+            if self.hue.name in [self.x.name, self.y.name]:
+                width = self.bar_widths
+                offset = np.zeros(n_hues)
+            else:
+                # Bar offset is set by hardcoded bar width
+                if self.kind in ["bar", "box"]:
+                    width = self.bar_widths / n_hues
+                    offset = np.linspace(0, self.bar_widths - width, n_hues)
+                    if self.kind == "box":
+                        width *= .95
+                    self.bar_widths = width
 
-            # Point offset is set by `dodge` parameter
-            elif self.kind == "point":
-                offset = np.linspace(0, dodge, n_hues)
-            offset -= offset.mean()
+                # Point offset is set by `dodge` parameter
+                elif self.kind == "point":
+                    offset = np.linspace(0, dodge, n_hues)
+                offset -= offset.mean()
 
         self.offset = offset
 
@@ -898,6 +902,24 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
             kind = "bar"
         else:
             kind = "point"
+
+    # manage empty cat on some plots of the facet_grid:
+    if sharex and x_order is None:
+        if dropna:
+            x_order = data[np.unique([c for c in [x, y, hue]
+                                      if not c is None])].dropna()[x].unique()
+        else:
+            x_order = data[x].unique()
+        x_order.sort()
+
+    # manage empty cat and hue color choice
+    if hue is not None and hue_order is None:
+        if dropna:
+            hue_order = data[np.unique([c for c in [x, y, hue]
+                                        if not c is None])].dropna()[hue].unique()
+        else:
+            hue_order = data[hue].unique()
+        hue_order.sort()
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
