@@ -99,12 +99,12 @@ def set(context="notebook", style="darkgrid", palette="deep",
 
 def reset_defaults():
     """Restore all RC params to default settings."""
-    mpl.rcParams = mpl.rcParamsDefault.copy()
+    mpl.rcdefaults()
 
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
-    mpl.rcParams = mpl.rcParamsOrig.copy()
+    mpl.rcParams.update(mpl.rcParamsOrig)
 
 
 class _AxesStyle(dict):
