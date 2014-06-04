@@ -20,7 +20,10 @@ class RCParamTester(object):
     def assert_rc_params(self, params):
 
         for k, v in params.items():
-            if isinstance(v, np.ndarray):
+            if k == "svg.embed_char_paths":
+                # This param causes test issues and is deprecated anyway
+                continue
+            elif isinstance(v, np.ndarray):
                 npt.assert_array_equal(mpl.rcParams[k], v)
             else:
                 nt.assert_equal((k, mpl.rcParams[k]), (k, v))
