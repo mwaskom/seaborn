@@ -833,6 +833,29 @@ class TestRegressionPlots(object):
 
         plt.close("all")
 
+    def test_regplot_scatter_kws_alpha(self):
+
+        f, ax = plt.subplots()
+        color = np.array([[0.3, 0.8, 0.5, 0.5]])
+        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        nt.assert_is(ax.collections[0]._alpha, None)
+        nt.assert_equal(ax.collections[0]._facecolors[0,3], 0.5)
+
+        f, ax = plt.subplots()
+        color = np.array([[0.3, 0.8, 0.5]])
+        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        nt.assert_equal(ax.collections[0]._alpha, 0.8)
+
+        f, ax = plt.subplots()
+        color = np.array([[0.3, 0.8, 0.5]])
+        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color, 'alpha': 0.4})
+        nt.assert_equal(ax.collections[0]._alpha, 0.4)
+
+        f, ax = plt.subplots()
+        color = 'r'
+        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        nt.assert_equal(ax.collections[0]._alpha, 0.8)
+
     def test_regplot_binned(self):
 
         ax = lm.regplot("x", "y", self.df, x_bins=5)
