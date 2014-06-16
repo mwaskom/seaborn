@@ -26,12 +26,14 @@ from .axisgrid import FacetGrid
 
 
 class _LinearPlotter(object):
+
     """Base class for plotting relational data in tidy format.
 
     To get anything useful done you'll have to inherit from this, but setup
     code that can be abstracted out should be put here.
 
     """
+
     def establish_variables(self, data, **kws):
         """Extract variables from data or use directly."""
         self.data = data
@@ -63,6 +65,7 @@ class _LinearPlotter(object):
 
 
 class _DiscretePlotter(_LinearPlotter):
+
     """Plotter for data with discrete independent variable(s).
 
     This will be used by the `barplot` and `pointplot` functions, and
@@ -74,6 +77,7 @@ class _DiscretePlotter(_LinearPlotter):
     with `box` doing something similar but skipping the estimation).
 
     """
+
     def __init__(self, x, y=None, hue=None, data=None, units=None,
                  x_order=None, hue_order=None, color=None, palette=None,
                  kind="auto", markers=None, linestyles=None, dodge=0,
@@ -369,6 +373,7 @@ class _DiscretePlotter(_LinearPlotter):
 
 
 class _RegressionPlotter(_LinearPlotter):
+
     """Plotter for numeric independent variables with regression model.
 
     This does the computations and drawing for the `regplot` function, and
@@ -379,6 +384,7 @@ class _RegressionPlotter(_LinearPlotter):
     extrapolations beyond the observed datapoints.
 
     """
+
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
                  units=None, order=1, logistic=False, lowess=False,
@@ -618,7 +624,8 @@ class _RegressionPlotter(_LinearPlotter):
     def scatterplot(self, ax, kws):
         """Draw the data."""
         if self.x_estimator is None:
-            kws.setdefault("alpha", .8)
+            if not hasattr(kws['color'], 'shape') or kws['color'].shape[1] < 4:
+                kws.setdefault("alpha", .8)
             x, y = self.scatter_data
             ax.scatter(x, y, **kws)
         else:
