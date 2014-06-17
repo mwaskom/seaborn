@@ -839,7 +839,7 @@ class TestRegressionPlots(object):
         color = np.array([[0.3, 0.8, 0.5, 0.5]])
         ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
         nt.assert_is(ax.collections[0]._alpha, None)
-        nt.assert_equal(ax.collections[0]._facecolors[0,3], 0.5)
+        nt.assert_equal(ax.collections[0]._facecolors[0, 3], 0.5)
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
@@ -848,7 +848,8 @@ class TestRegressionPlots(object):
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
-        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color, 'alpha': 0.4})
+        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color,
+                                                        'alpha': 0.4})
         nt.assert_equal(ax.collections[0]._alpha, 0.4)
 
         f, ax = plt.subplots()
