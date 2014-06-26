@@ -5,6 +5,7 @@ import nose.tools as nt
 import numpy.testing as npt
 
 from .. import palettes, utils, rcmod
+from ..xkcd_rgb import xkcd_rgb
 
 
 class TestColorPalettes(object):
@@ -201,3 +202,11 @@ class TestColorPalettes(object):
         pal_forward = cmap(x).tolist()
         pal_reverse = cmap_rev(x[::-1]).tolist()
         nt.assert_list_equal(pal_forward, pal_reverse)
+
+    def test_xkcd_palette(self):
+
+        names = xkcd_rgb.keys()[10:15]
+        colors = palettes.xkcd_palette(names)
+        for name, color in zip(names, colors):
+            as_hex = mpl.colors.rgb2hex(color)
+            nt.assert_equal(as_hex, xkcd_rgb[name])
