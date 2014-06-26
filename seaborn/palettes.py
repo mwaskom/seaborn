@@ -10,6 +10,7 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from .utils import desaturate
+from .xkcd_rgb import xkcd_rgb
 
 
 class _ColorPalette(list):
@@ -278,6 +279,18 @@ def blend_palette(colors, n_colors=6, as_cmap=False):
     if not as_cmap:
         pal = pal(np.linspace(0, 1, n_colors))
     return pal
+
+
+def xkcd_palette(colors):
+    """Make a palette with color names from the xkcd color survey.
+
+    This is just a simple wrapper around the seaborn.xkcd_rbg dictionary.
+
+    See xkcd for the full list of colors: http://xkcd.com/color/rgb/
+
+    """
+    palette = [xkcd_rgb[name] for name in colors]
+    return color_palette(palette, len(palette))
 
 
 def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
