@@ -180,6 +180,20 @@ class TestRegressionPlotter(object):
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_poly, yhat_smod)
 
+    def test_regress_logx(self):
+
+        x = np.arange(1, 10)
+        y = np.arange(1, 10)
+        grid = np.linspace(1, 10, 100)
+        p = lm._RegressionPlotter(x, y, n_boot=self.n_boot)
+
+        yhat_lin, _ = p.fit_fast(grid)
+        yhat_log, _ = p.fit_logx(grid)
+
+        nt.assert_greater(yhat_lin[0], yhat_log[0])
+        nt.assert_greater(yhat_log[20], yhat_lin[20])
+        nt.assert_greater(yhat_lin[90], yhat_log[90])
+
     @skipif(_no_statsmodels)
     def test_regress_n_boot(self):
 
