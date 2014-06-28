@@ -382,7 +382,7 @@ class _RegressionPlotter(_LinearPlotter):
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
                  units=None, order=1, logistic=False, lowess=False,
-                 robust=False, x_partial=None, y_partial=None,
+                 robust=False, logx=False, x_partial=None, y_partial=None,
                  truncate=False, dropna=True, x_jitter=None, y_jitter=None,
                  color=None, label=None):
 
@@ -397,6 +397,7 @@ class _RegressionPlotter(_LinearPlotter):
         self.logistic = logistic
         self.lowess = lowess
         self.robust = robust
+        self.logx = logx
         self.truncate = truncate
         self.x_jitter = x_jitter
         self.y_jitter = y_jitter
@@ -404,7 +405,7 @@ class _RegressionPlotter(_LinearPlotter):
         self.label = label
 
         # Validate the regression options:
-        if sum((order > 1, logistic, robust, lowess)) > 1:
+        if sum((order > 1, logistic, robust, lowess, logx)) > 1:
             raise ValueError("Mutually exclusive regression options.")
 
         # Extract the data vals from the arguments or passed dataframe
@@ -504,6 +505,8 @@ class _RegressionPlotter(_LinearPlotter):
         elif self.robust:
             from statsmodels.api import RLM
             yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
+        elif self.logx:
+            yhat, yhat_boots = self.fit_logx(grid)
         else:
             yhat, yhat_boots = self.fit_fast(grid)
 
@@ -559,6 +562,24 @@ class _RegressionPlotter(_LinearPlotter):
         from statsmodels.api import nonparametric
         grid, yhat = nonparametric.lowess(self.y, self.x).T
         return grid, yhat
+
+    def fit_logx(self, grid):
+        """Fit the model in log-space."""
+        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+        grid = np.c_[np.ones(len(grid)), np.log(grid)]
+
+        def reg_func(_x, _y):
+            _x = np.c_[_x[:, 0], np.log(_x[:, 1])]
+            return np.linalg.pinv(_x).dot(_y)
+
+        yhat = grid.dot(reg_func(X, y))
+        if self.ci is None:
+            return yhat, None
+
+        beta_boots = algo.bootstrap(X, y, func=reg_func,
+                                    n_boot=self.n_boot, units=self.units).T
+        yhat_boots = grid.dot(beta_boots).T
+        return yhat, yhat_boots
 
     def bin_predictor(self, bins):
         """Discretize a predictor by assigning value to closest bin."""
@@ -1013,7 +1034,7 @@ def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
-            x_partial=None, y_partial=None,
+            logx=False, x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
@@ -1067,6 +1088,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     robust : boolean, optional
         Fit a robust linear regression, which may be useful when the data
         appear to have outliers.
+    logx : boolean, optional
+        Fit the regression in log(x) space.
     {x, y}_partial : matrix or string(s) , optional
         Matrix with same first dimension as `x`, or column name(s) in `data`.
         These variables are treated as confounding and are removed from
@@ -1109,7 +1132,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     """
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units,
-                                 order, logistic, lowess, robust,
+                                 order, logistic, lowess, robust, logx,
                                  x_partial, y_partial, truncate, dropna,
                                  x_jitter, y_jitter, color, label)
 
