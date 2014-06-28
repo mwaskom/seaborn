@@ -7,6 +7,8 @@ Plotting functions
 
 - Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
 
+- Added the ``logx`` option to :func:`regplot` for fitting the regression in log space.
+
 Style and color palettes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
