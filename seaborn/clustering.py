@@ -497,7 +497,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         """
         # TODO: Allow for array of color labels
         # TODO: allow for groupby and then auto-selecting of colors
-        if kws['side_colors'] is not None:
+        if ax is not None and kws['side_colors'] is not None:
             side_matrix, cmap = self.color_list_to_matrix_and_cmap(
                 kws['side_colors'],
                 ind=dendrogram['leaves'],
@@ -678,7 +678,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.label_dimension('col', self.col_kws, self.heatmap_ax,
                              self.col_dendrogram_ax, self.col_dendrogram)
 
-    def plot(self, fig, figsize, title, title_fontsize=12):
+    def plot(self, fig=None, figsize=None, title=None, title_fontsize=12):
         """Plot the heatmap!
 
         Parameters
