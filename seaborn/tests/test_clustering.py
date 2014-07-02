@@ -65,7 +65,7 @@ class TestClusteredHeatmapPlotter(object):
     default_colorbar_kws = {'fontsize': None, 'label': 'values'}
 
     default_dendrogram_kws = {'color_threshold': np.inf,
-                              'color_list': 'k',
+                              'color_list': ['k'],
                               'no_plot': True}
 
     # Side colors for plotting
@@ -248,6 +248,8 @@ class TestClusteredHeatmapPlotter(object):
     def test_calculate_dendrogram(self):
         import scipy.spatial.distance as distance
         import scipy.cluster.hierarchy as sch
+        sch.set_link_color_palette(['k'])
+
         row_pairwise_dists = distance.squareform(
             distance.pdist(self.data2d.values, metric='euclidean'))
         row_linkage = sch.linkage(row_pairwise_dists, method='average')
@@ -393,7 +395,6 @@ class TestClusteredHeatmapPlotter(object):
         nt.assert_equal(len(p.row_dendrogram_ax.get_yticklabels()), 0)
         plt.close('all')
 
-
     def test_label_dimension_both(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d, col_kws=dict(label=True),
                                         row_kws=dict(label=True))
@@ -441,7 +442,7 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_equal(xticklabels, col_reordered)
         plt.close('all')
 
-    def test_label_dimension_both(self):
+    def test_label_dimension_row(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d, col_kws=dict(label=True),
                                         row_kws=dict(label=True))
         p.establish_axes()
@@ -459,7 +460,6 @@ class TestClusteredHeatmapPlotter(object):
                           p.row_dendrogram_ax.get_ymajorticklabels())
         row_reordered = self.data2d.index[p.row_dendrogram['leaves']].values
 
-        npt.assert_equal(xticklabels, col_reordered)
         npt.assert_equal(yticklabels, row_reordered)
         plt.close('all')
 
@@ -494,7 +494,7 @@ class TestClusteredHeatmapPlotter(object):
         nt.assert_equal(len(p.col_side_colors_ax.collections), 1)
         # Make sure xlim was set correctly
         nt.assert_equal(p.col_side_colors_ax.get_xlim(),
-                        map(float, (0, p.data2d.shape[1])))
+                        tuple(map(float, (0, p.data2d.shape[1]))))
         plt.close('all')
 
     def test_plot_row_side(self):
@@ -521,7 +521,7 @@ class TestClusteredHeatmapPlotter(object):
 
         # Make sure ylim was set correctly
         nt.assert_equal(p.row_side_colors_ax.get_ylim(),
-                        map(float, (0, p.data2d.shape[0])))
+                        tuple(map(float, (0, p.data2d.shape[0]))))
         plt.close('all')
 
     def test_plot(self):
