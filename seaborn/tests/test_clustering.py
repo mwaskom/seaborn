@@ -68,6 +68,16 @@ class TestClusteredHeatmapPlotter(object):
                               'color_list': 'k',
                               'no_plot': True}
 
+    # Side colors for plotting
+    colors = color_palette(name='Set2', n_colors=3)
+    color_inds = np.random.choice(np.arange(len(colors)),
+                                  size=data2d.shape[1]).tolist()
+    col_colors = [colors[i] for i in color_inds]
+
+    color_inds = np.random.choice(np.arange(len(colors)),
+                                  size=data2d.shape[0]).tolist()
+    row_colors = [colors[i] for i in color_inds]
+
     def test_interpret_kws_from_none_divergent(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
         p.interpret_kws(row_kws=None, col_kws=None, pcolormesh_kws=None,
@@ -98,6 +108,14 @@ class TestClusteredHeatmapPlotter(object):
                         dendrogram_kws=None, colorbar_kws=None)
         nt.assert_is_instance(p.norm, mpl.colors.LogNorm)
         nt.assert_equal(p.cmap, mpl.cm.YlGnBu)
+
+    def test_interpret_kws_pcolormesh_cmap(self):
+        cmap = mpl.cm.PRGn
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        p.interpret_kws(row_kws=None, col_kws=None,
+                        pcolormesh_kws={'cmap': cmap},
+                        dendrogram_kws=None, colorbar_kws=None)
+        nt.assert_equal(p.cmap, cmap)
 
     def test_calculate_linkage_linear(self):
         import scipy.spatial.distance as distance
@@ -142,20 +160,11 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_array_equal(width_ratios, height_ratios)
 
     def test_get_fig_width_ratios_side_colors(self):
-
-        colors = color_palette(name='Set2', n_colors=3)
-        np.random.seed(10)
-        n = self.data2d.shape[0]
-        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
-        row_colors = [colors[i] for i in color_inds]
-
-        n = self.data2d.shape[1]
-        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
-        col_colors = [colors[i] for i in color_inds]
-
         p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors': row_colors},
-                                        col_kws={'side_colors': col_colors})
+                                        row_kws={'side_colors':
+                                                     self.row_colors},
+                                        col_kws={'side_colors':
+                                                     self.col_colors})
 
         width_ratios = p.get_fig_width_ratios(side_colors=p.col_kws[
             'side_colors'], dimension='width')
@@ -326,14 +335,9 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_establish_axes_row_side_colors(self):
-        colors = color_palette(name='Set2', n_colors=3)
-        np.random.seed(10)
-        n = self.data2d.shape[0]
-        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
-        color_list = [colors[i] for i in color_inds]
-
         p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors': color_list})
+                                        row_kws={'side_colors':
+                                                     self.row_colors})
         p.establish_axes()
 
         nt.assert_equal(len(p.fig.axes), 5)
@@ -341,21 +345,11 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_establish_axes_both_side_colors(self):
-        colors = color_palette(name='Set2', n_colors=3)
-        np.random.seed(10)
-        n = self.data2d.shape[1]
-        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
-        col_color_list = [colors[i] for i in color_inds]
-
-        n = self.data2d.shape[0]
-        color_inds = np.random.choice(np.arange(len(colors)), size=n).tolist()
-        row_color_list = [colors[i] for i in color_inds]
-
         p = cl._ClusteredHeatmapPlotter(self.data2d,
                                         row_kws={'side_colors':
-                                                     row_color_list},
+                                                     self.row_colors},
                                         col_kws={'side_colors':
-                                                     col_color_list})
+                                                     self.col_colors})
         p.establish_axes()
 
         nt.assert_equal(len(p.fig.axes), 6)
@@ -424,21 +418,136 @@ class TestClusteredHeatmapPlotter(object):
 
         npt.assert_equal(xticklabels, col_reordered)
         npt.assert_equal(yticklabels, row_reordered)
-        # plt.close('all')
+        plt.close('all')
+
+    def test_label_dimension_col(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d, row_kws=dict(label=False))
+        p.establish_axes()
+        p.plot_row_side()
+        p.plot_col_side()
+        p.plot_heatmap()
+        p.label()
+
+        # Make sure there aren't labels where there aren't supposed to be
+        nt.assert_equal(len(p.col_dendrogram_ax.get_yticklabels()), 0)
+        nt.assert_equal(len(p.row_dendrogram_ax.get_xticklabels()), 0)
+        nt.assert_equal(len(p.row_dendrogram_ax.get_yticklabels()), 0)
+
+        # Make sure the correct labels are where they're supposed to be
+        xticklabels = map(lambda x: x._text,
+                          p.col_dendrogram_ax.get_xticklabels())
+        col_reordered = self.data2d.columns[p.col_dendrogram['leaves']].values
+
+        npt.assert_equal(xticklabels, col_reordered)
+        plt.close('all')
+
+    def test_label_dimension_both(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d, col_kws=dict(label=True),
+                                        row_kws=dict(label=True))
+        p.establish_axes()
+        p.plot_row_side()
+        p.plot_col_side()
+        p.plot_heatmap()
+        p.label()
+
+        # Make sure there aren't labels where there aren't supposed to be
+        nt.assert_equal(len(p.col_dendrogram_ax.get_yticklabels()), 0)
+        nt.assert_equal(len(p.row_dendrogram_ax.get_xticklabels()), 0)
+
+        # Make sure the correct labels are where they're supposed to be
+        yticklabels = map(lambda x: x._text,
+                          p.row_dendrogram_ax.get_ymajorticklabels())
+        row_reordered = self.data2d.index[p.row_dendrogram['leaves']].values
+
+        npt.assert_equal(xticklabels, col_reordered)
+        npt.assert_equal(yticklabels, row_reordered)
+        plt.close('all')
 
     def test_colorbar(self):
-        pass
+        p = cl._ClusteredHeatmapPlotter(self.data2d, col_kws=dict(label=True),
+                                        row_kws=dict(label=True))
+        p.establish_axes()
+        p.plot_heatmap()
+        p.colorbar()
+
+        nt.assert_equal(len(p.colorbar_ax.collections), 1)
+        plt.close('all')
 
     def test_plot_col_side(self):
-        pass
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        p.establish_axes()
+        p.plot_col_side()
+
+        nt.assert_equal(len(p.col_dendrogram_ax.lines),
+                        len(p.col_dendrogram['icoord']))
+        nt.assert_equal(len(p.col_dendrogram_ax.lines),
+                        len(p.col_dendrogram['dcoord']))
+        plt.close('all')
+
+    def test_plot_col_side_colors(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        col_kws={'side_colors':
+                                                     self.col_colors})
+        p.establish_axes()
+        p.plot_col_side()
+
+        nt.assert_equal(len(p.col_side_colors_ax.collections), 1)
+        # Make sure xlim was set correctly
+        nt.assert_equal(p.col_side_colors_ax.get_xlim(),
+                        map(float, (0, p.data2d.shape[1])))
+        plt.close('all')
 
     def test_plot_row_side(self):
-        pass
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        row_kws={'side_colors':
+                                                     self.row_colors})
+        p.establish_axes()
+        p.plot_row_side()
 
-    def test_label(self):
-        pass
+        nt.assert_equal(len(p.row_dendrogram_ax.lines),
+                        len(p.row_dendrogram['icoord']))
+        nt.assert_equal(len(p.row_dendrogram_ax.lines),
+                        len(p.row_dendrogram['dcoord']))
+        plt.close('all')
+
+    def test_plot_row_side_colors(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d,
+                                        row_kws={'side_colors':
+                                                     self.row_colors})
+        p.establish_axes()
+        p.plot_row_side()
+
+        nt.assert_equal(len(p.row_side_colors_ax.collections), 1)
+
+        # Make sure ylim was set correctly
+        nt.assert_equal(p.row_side_colors_ax.get_ylim(),
+                        map(float, (0, p.data2d.shape[0])))
+        plt.close('all')
 
     def test_plot(self):
-        pass
+        # Should this test ALL the commands that are in
+        # ClusteredHeatmapPlotter.plot? If so, how? Seems overkill to do all
+        # the tests for each individual part again.
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        p.plot()
 
+        fig, figsize, title, title_fontsize = None, None, None, None
+        p2 = cl._ClusteredHeatmapPlotter(self.data2d)
+        p2.establish_axes(fig, figsize)
+        p2.plot_row_side()
+        p2.plot_col_side()
+        p2.plot_heatmap()
+        p2.set_title(title, title_fontsize)
+        p2.label()
+        p2.colorbar()
 
+        # gs = gridspec
+        p2.gs.tight_layout(p2.fig)
+
+        # Check that tight_layout was applied correctly
+        nt.assert_equal(p.gs.bottom, p2.gs.bottom)
+        nt.assert_equal(p.gs.hspace, p2.gs.hspace)
+        nt.assert_equal(p.gs.left, p2.gs.left)
+        nt.assert_equal(p.gs.right, p2.gs.right)
+        nt.assert_equal(p.gs.top, p2.gs.top)
+        nt.assert_equal(p.gs.wspace, p2.gs.wspace)
