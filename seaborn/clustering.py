@@ -112,9 +112,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.row_kws = {} if row_kws is None else row_kws
         self.col_kws = {} if col_kws is None else col_kws
 
-        if 'side_colors' in self.row_kws:
+        if 'side_colors' in self.row_kws and self.row_kws['side_colors'] \
+                is not None:
             assert len(self.row_kws['side_colors']) == self.data2d.shape[0]
-        if 'side_colors' in self.col_kws:
+        if 'side_colors' in self.col_kws and self.col_kws['side_colors'] \
+                is not None:
             assert len(self.col_kws['side_colors']) == self.data2d.shape[1]
 
         for kws in (self.row_kws, self.col_kws):
