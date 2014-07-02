@@ -134,6 +134,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.dendrogram_kws.setdefault('color_threshold', np.inf)
         self.dendrogram_kws.setdefault('color_list', ['k'])
         # even if the user specified no_plot as False, override because we
+        # have to control the plotting
         if 'no_plot' in self.dendrogram_kws and \
                 not self.dendrogram_kws['no_plot']:
             warnings.warn('Cannot specify "no_plot" as False in '
@@ -545,8 +546,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         scale = 1 if kws['label_loc'] == 'heatmap' else 10
 
         # Remove all ticks from the other axes
-        other_ax = dendrogram_ax if kws[
-                                        'label_loc'] == 'heatmap' else heatmap_ax
+        other_ax = dendrogram_ax if kws['label_loc'] == 'heatmap' else heatmap_ax
         other_ax_axis = other_ax.yaxis if dimension == 'row' else other_ax.xaxis
         other_ax_axis.set_ticks([])
 
@@ -574,18 +574,23 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             ax_axis.set_ticklabels([])
 
         if kws['label']:
+
+            # Need to set the position first, then the labels because of some
+            # odd matplotlib bug
+            if dimension == 'row':
+                # pass
+                ax_axis.set_ticks_position('right')
+
             ticklabels_ordered = [ticklabels[i] for i in
                                   dendrogram['leaves']]
             # pdb.set_trace()
             # despine(ax=ax, bottom=True, left=True)
             ticks = (np.arange(self.data2d.shape[axis]) + 0.5) * scale
             ax_axis.set_ticks(ticks)
-            ticklabels = ax_axis.set_ticklabels(ticklabels_ordered, )
+            ax_axis.set_ticklabels(ticklabels_ordered)
             ax.tick_params(labelsize=kws['fontsize'])
-            if dimension == 'row':
-                ax_axis.set_ticks_position('right')
-            else:
-                for label in ticklabels:
+            if dimension == 'col':
+                for label in ax_axis.get_ticklabels():
                     label.set_rotation(90)
 
     def plot_heatmap(self):
@@ -607,7 +612,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         ax.set_ylim(0, self.data2d.shape[0])
         ax.set_xlim(0, self.data2d.shape[1])
 
-    def set_title(self, title, title_fontsize):
+    def set_title(self, title, title_fontsize=12):
         """Add title if there is one
         """
         if title is not None:
@@ -673,8 +678,28 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.label_dimension('col', self.col_kws, self.heatmap_ax,
                              self.col_dendrogram_ax, self.col_dendrogram)
 
-    def plot(self, fig, figsize, title, title_fontsize):
+    def plot(self, fig, figsize, title, title_fontsize=12):
         """Plot the heatmap!
+
+        Parameters
+        ----------
+        fig : None or matplotlib.figure.Figure instance
+            if None, create a new figure, or plot this onto the provided figure
+        figsize : None or tuple of ints
+            if None, auto-pick the figure size based on the size of the
+            dataframe
+        title : str
+            Title of the plot. Default is no title
+        title_fontsize : float
+            Fontsize of the title. Default is 12pt
+
+        Returns
+        -------
+
+
+        Raises
+        ------
+
         """
         self.establish_axes(fig, figsize)
         self.plot_row_side()
@@ -780,7 +805,6 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                                        row_kws=row_kws,
                                        col_kws=col_kws,
                                        colorbar_kws=colorbar_kws,
-
                                        use_fastcluster=use_fastcluster,
                                        data_na_ok=data_na_ok)
 
