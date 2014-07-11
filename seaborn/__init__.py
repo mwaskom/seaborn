@@ -6,6 +6,7 @@ from .distributions import *
 from .timeseries import *
 from .miscplot import *
 from .axisgrid import *
+from .clustering import *
 set()
 
 __version__ = "0.4.dev"
