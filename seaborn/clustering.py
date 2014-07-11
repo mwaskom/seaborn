@@ -637,14 +637,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                               prune=None, trim=False)
         if 'horizontal'.startswith(self.colorbar_kws['orientation']):
             cb.ax.set_xticklabels(tick_locator.bin_boundaries(self.vmin,
-                                            self.vmax))
+                                                              self.vmax))
             cb.ax.xaxis.set_major_locator(tick_locator)
         else:
             cb.ax.set_yticklabels(tick_locator.bin_boundaries(self.vmin,
                                                               self.vmax))
             cb.ax.yaxis.set_major_locator(tick_locator)
             cb.ax.yaxis.set_ticks_position('right')
-
 
         # move ticks to left side of colorbar to avoid problems with
         # tight_layout
@@ -773,8 +772,8 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         Keyword arguments for rows and columns. Can turn of labeling altogether
         with {'label': False}. Can specify you own linkage matrix via
         linkage_matrix. Can also specify side colors labels via
-        {'side_color's: colors}, which are useful for evaluating whether samples
-        within a group are clustered together.
+        {'side_color's: colors}, which are useful for evaluating whether
+        samples within a group are clustered together.
         Default:
         dict(linkage_matrix=None, cluster=True, label=True, fontsize=None,
         side_colors=None)
