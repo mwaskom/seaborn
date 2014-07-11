@@ -6,4 +6,5 @@ dist/
 seaborn.egg-info/
 .coverage
 cover/
+
 .idea
