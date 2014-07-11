@@ -64,8 +64,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         # with the correct dimensions
         if fig is None:
             if figsize is None:
-                width = self.data2d.shape[1] * 0.25
-                height = min(self.data2d.shape[0] * .75, 40)
+                width = min(self.data2d.shape[1] * 0.5, 40)
+                height = min(self.data2d.shape[0] * .5, 40)
+                # width, height = 10, 10
                 figsize = (width, height)
             fig = plt.figure(figsize=figsize)
 
@@ -75,31 +76,31 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                              dimension='width')
 
         height_ratios = self.get_fig_width_ratios(self.col_kws['side_colors'],
-                                              dimension='height')
-        nrows = 3 if self.col_kws['side_colors'] is None else 4
+                                                  dimension='height')
+        nrows = 2 if self.col_kws['side_colors'] is None else 3
         ncols = 3 if self.row_kws['side_colors'] is None else 4
 
-        self.gs = gridspec.GridSpec(nrows, ncols,  #wspace=.1, hspace=.1,
+        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.0, hspace=0.0,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
-        self.row_dendrogram_ax = self.fig.add_subplot(self.gs[nrows - 1, 1])
-        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[1, ncols - 1])
+        self.row_dendrogram_ax = self.fig.add_subplot(self.gs[nrows-1, 0])
+        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0, ncols-2])
 
         self.row_side_colors_ax = None
         self.col_side_colors_ax = None
 
         if self.col_kws['side_colors'] is not None:
             self.col_side_colors_ax = self.fig.add_subplot(
-                self.gs[2, ncols - 1])
+                self.gs[nrows-2, ncols-2])
         if self.row_kws['side_colors'] is not None:
             self.row_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows - 1, 2])
+                self.gs[nrows-1, ncols-3])
 
-        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows - 1, ncols - 1])
+        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-2])
 
-        # colorbar for scale in upper left corner
-        self.colorbar_ax = self.fig.add_subplot(self.gs[0:(nrows - 1), 0])
+        # colorbar for scale to right of heatmap
+        self.colorbar_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
 
 
     def interpret_kws(self, row_kws, col_kws, pcolormesh_kws,
@@ -125,10 +126,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             kws.setdefault('fontsize', None)
             kws.setdefault('side_colors', None)
 
-
-        self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
-        self.colorbar_kws.setdefault('fontsize', None)
-        self.colorbar_kws.setdefault('label', 'values')
 
         self.dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws
         self.dendrogram_kws.setdefault('color_threshold', np.inf)
@@ -183,6 +180,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
             self.pcolormesh_kws.setdefault('vmax', self.data2d.max().max())
 
+        self.mean = np.mean(self.data2d.values.flat)
+        self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
+        self.colorbar_kws.setdefault('fontsize', 14)
+        self.colorbar_kws.setdefault('label', 'values')
+        self.colorbar_kws.setdefault('use_gridspec', True)
+        # self.colorbar_kws.setdefault('ticks', [self.vmin, self.mean,
+        #                                        self.vmax])
         if self.cmap is None:
             self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
             self.cmap.set_bad('white')
@@ -296,18 +300,23 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             Ratios of axes on the figure at this dimension
         """
         i = 0 if dimension == 'height' else 1
-        half_dendrogram = self.data2d.shape[i] * 0.1 / self.data2d.shape[i]
         if dimension not in ('height', 'width'):
             raise AssertionError("{} is not a valid 'dimension' (valid: "
                                  "'height', 'width')".format(dimension))
+        dendrogram = 2 * self.data2d.shape[i] * 0.1 / self.data2d.shape[i]
 
-        ratios = [half_dendrogram, half_dendrogram]
-        if side_colors:
+        ratios = [dendrogram]
+        if side_colors is not None:
             # Add room for the colors
             ratios += [side_colors_ratio]
 
         # Add the ratio for the heatmap itself
-        return ratios + [1]
+        ratios += [1]
+
+        # If this is the width, add the colorbar
+        if dimension == 'width':
+            ratios += [0.05]
+        return ratios
 
     @staticmethod
     def color_list_to_matrix_and_cmap(colors, ind, row=True):
@@ -646,8 +655,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                             self.vmax))
             cb.ax.yaxis.set_major_locator(tick_locator)
 
-        # move ticks to left side of colorbar to avoid problems with tight_layout
-        cb.ax.yaxis.set_ticks_position('left')
+        # move ticks to left side of colorbar to avoid problems with
+        # tight_layout
+        cb.ax.yaxis.set_ticks_position('right')
         if colorbar_ticklabel_fontsize is not None:
             cb.ax.tick_params(labelsize=colorbar_ticklabel_fontsize)
         cb.outline.set_linewidth(0)
@@ -710,7 +720,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.colorbar()
 
         # gs = gridspec
-        self.gs.tight_layout(self.fig)
+        self.gs.tight_layout(self.fig, pad=0, h_pad=0, w_pad=0)
+        # self.fig.tight_layout()
 
 
 def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
