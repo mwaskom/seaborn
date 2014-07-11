@@ -6,6 +6,7 @@ from .distributions import *
 from .timeseries import *
 from .miscplot import *
 from .axisgrid import *
+from .xkcd_rgb import xkcd_rgb
 from .clustering import *
 set()
 
