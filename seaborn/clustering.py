@@ -77,27 +77,27 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         height_ratios = self.get_fig_width_ratios(self.col_kws['side_colors'],
                                                   dimension='height')
-        nrows = 2 if self.col_kws['side_colors'] is None else 3
-        ncols = 3 if self.row_kws['side_colors'] is None else 4
+        nrows = 3 if self.col_kws['side_colors'] is None else 4
+        ncols = 2 if self.row_kws['side_colors'] is None else 3
 
         self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.01, hspace=0.01,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
         self.row_dendrogram_ax = self.fig.add_subplot(self.gs[nrows-1, 0])
-        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0, ncols-2])
+        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0:2, ncols-1])
 
         self.row_side_colors_ax = None
         self.col_side_colors_ax = None
 
         if self.col_kws['side_colors'] is not None:
             self.col_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows-2, ncols-2])
+                self.gs[nrows-2, ncols-1])
         if self.row_kws['side_colors'] is not None:
             self.row_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows-1, ncols-3])
+                self.gs[nrows-1, ncols-2])
 
-        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-2])
+        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
 
         # colorbar for scale to right of heatmap
         self.colorbar_ax = self.fig.add_subplot(self.gs[0, 0])
@@ -122,7 +122,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             kws.setdefault('cluster', True)
             # kws.setdefault('label_loc', 'heatmap')
             kws.setdefault('label', True)
-            kws.setdefault('fontsize', None)
+            kws.setdefault('fontsize', 18)
             kws.setdefault('side_colors', None)
 
 
@@ -179,14 +179,16 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             self.vmax = vmaxx
             self.norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         else:
-            self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
-            self.pcolormesh_kws.setdefault('vmax', self.data2d.max().max())
+            self.vmin = self.data2d.min().min()
+            self.vmax = self.data2d.max().max()
+            self.pcolormesh_kws.setdefault('vmin', self.vmin)
+            self.pcolormesh_kws.setdefault('vmax', self.vmax)
 
         self.mean = np.mean(self.data2d.values.flat)
         self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.colorbar_kws.setdefault('fontsize', 14)
         self.colorbar_kws.setdefault('label', 'values')
-        self.colorbar_kws.setdefault('use_gridspec', True)
+        # self.colorbar_kws.setdefault('use_gridspec', True)
         self.colorbar_kws.setdefault('orientation', 'horizontal')
         # self.colorbar_kws.setdefault('shrink', 0.5)
         # self.colorbar_kws.setdefault('fraction', 0.1)
@@ -309,7 +311,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                  "'height', 'width')".format(dimension))
         dendrogram = 2 * self.data2d.shape[i] * 0.1 / self.data2d.shape[i]
 
-        ratios = [dendrogram]
+        if dimension == 'width':
+            ratios = [dendrogram]
+        else:
+            ratios = [0.5*dendrogram, 0.5*dendrogram]
+
         if side_colors is not None:
             # Add room for the colors
             ratios += [side_colors_ratio]
@@ -317,9 +323,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         # Add the ratio for the heatmap itself
         ratios += [1]
 
-        # If this is the width, add the colorbar
-        if dimension == 'width':
-            ratios += [0.05]
+        # # If this is the width, add the colorbar
+        # if dimension == 'width':
+        #     ratios += [0.05]
         return ratios
 
     @staticmethod
@@ -634,26 +640,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         cb = self.fig.colorbar(self.heatmap_ax_pcolormesh,
                                cax=ax, **self.colorbar_kws)
 
-        # Setting the number of colorbar ticks to at most 3 (nbins+1) currently
-        # only works for divergent and linear colormaps.
-        if self.color_scale == 'log':
-            # TODO: get at most 3 ticklabels showing on the colorbar for
-            # log-scaled
-            pass
-            # This next stuff does not work...
-            # tick_locator = mpl.ticker.LogLocator(numticks=3)
-            # pdb.set_trace()
-            # tick_locator.tick_values(pcolormesh_kws['vmin'],
-            #                          pcolormesh_kws['vmax'])
-        elif self.divergent:
-            # TODO: get at most 3 ticklabels working for non-divergent data
-            tick_locator = mpl.ticker.MaxNLocator(nbins=2,
-                                                  symmetric=self.divergent,
-                                                  prune=None, trim=False)
-            cb.ax.set_xticklabels(
-                tick_locator.bin_boundaries(self.vmin,
-                                            self.vmax))
-            cb.ax.xaxis.set_major_locator(tick_locator)
+        tick_locator = mpl.ticker.MaxNLocator(nbins=2,
+                                              symmetric=self.divergent,
+                                              prune=None, trim=False)
+        cb.ax.set_xticklabels(
+            tick_locator.bin_boundaries(self.vmin,
+                                        self.vmax))
+        cb.ax.xaxis.set_major_locator(tick_locator)
 
         # move ticks to left side of colorbar to avoid problems with
         # tight_layout
@@ -771,16 +764,14 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         dict(vmin=None, vmax=None, edgecolor='white', linewidth=0, cmap=None,
         norm=None)
     {row,col}_kws : dict
-        Keyword arguments for rows and columns. Specify the tick label
-        location as either on the dendrogram or heatmap via
-        label_loc='heatmap'. Can turn of labeling altogether with
-        label=False. Can specify you own linkage matrix via linkage_matrix.
-        Can also specify side colors labels via side_colors=colors, which are
-        useful for evaluating whether samples within a group are clustered
-        together.
+        Keyword arguments for rows and columns. Can turn of labeling altogether
+        with label=False. Can specify you own linkage matrix via
+        linkage_matrix. Can also specify side colors labels via
+        side_colors=colors, which are useful for evaluating whether samples
+        within a group are clustered together.
         Default:
-        dict(linkage_matrix=None, cluster=True, label_loc='dendrogram',
-        label=True, fontsize=None, side_colors=None)
+        dict(linkage_matrix=None, cluster=True, label=True, fontsize=None,
+        side_colors=None)
     colorbar_kws : dict
         Keyword arguments for the colorbar. The ticklabel fontsize is
         extracted from this dict, then removed.
