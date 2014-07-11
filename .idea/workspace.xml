@@ -1,0 +1,1195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="7c778811-8895-415a-a3a7-c51bd35d60ce" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/seaborn/clustering.py" afterPath="$PROJECT_DIR$/seaborn/clustering.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/seaborn/tests/test_clustering.py" afterPath="$PROJECT_DIR$/seaborn/tests/test_clustering.py" />
+    </list>
+    <ignored path="seaborn.iws" />
+    <ignored path=".idea/workspace.xml" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
+  <component name="CreatePatchCommitExecutor">
+    <option name="PATCH_PATH" value="" />
+  </component>
+  <component name="DaemonCodeAnalyzer">
+    <disable_hints />
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
+  <component name="FavoritesManager">
+    <favorites_list name="seaborn" />
+  </component>
+  <component name="FileEditorManager">
+    <splitter split-orientation="horizontal" split-proportion="0.5">
+      <split-first>
+        <leaf>
+          <file leaf-file-name="timeseries.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="30" column="19" selection-start="1039" selection-end="1039" vertical-scroll-proportion="0.0" vertical-offset="420" max-vertical-offset="4956">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="miscplot.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="728">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="rcmod.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="264" column="0" selection-start="7370" selection-end="7370" vertical-scroll-proportion="0.0" vertical-offset="3696" max-vertical-offset="6650">
+                  <folding>
+                    <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+                    <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+                    <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+                    <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="installing.rst" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/doc/installing.rst">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="35" column="0" selection-start="1082" selection-end="1082" vertical-scroll-proportion="0.0" vertical-offset="490" max-vertical-offset="882">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name=".gitignore" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/.gitignore">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="8" column="0" selection-start="80" selection-end="80" vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="196">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_distributions.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_distributions.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="4984">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_linearmodels.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_linearmodels.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="771" column="0" selection-start="26249" selection-end="26249" vertical-scroll-proportion="0.0" vertical-offset="10794" max-vertical-offset="12810">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="clustering.py" pinned="false" current="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/seaborn/clustering.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="789" column="8" selection-start="32629" selection-end="32629" vertical-scroll-proportion="0.3739003" vertical-offset="10679" max-vertical-offset="11410">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="Makefile" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/Makefile">
+              <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
+                <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="20" column="0" selection-start="294" selection-end="294" vertical-scroll-proportion="-10.37037" vertical-offset="0" max-vertical-offset="364">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_axisgrid.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_axisgrid.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="161" column="36" selection-start="4739" selection-end="4739" vertical-scroll-proportion="0.0" vertical-offset="2254" max-vertical-offset="7700">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-first>
+      <split-second>
+        <leaf>
+          <file leaf-file-name="axisgrid.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="642" column="16" selection-start="24416" selection-end="24416" vertical-scroll-proportion="0.0" vertical-offset="8988" max-vertical-offset="11788">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name=".travis.yml" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/.travis.yml">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="13" column="0" selection-start="410" selection-end="593" vertical-scroll-proportion="0.0" vertical-offset="182" max-vertical-offset="546">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="README.md" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/README.md">
+              <provider editor-type-id="MarkdownPreviewEditor">
+                <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="1190" max-vertical-offset="1610">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="CONTRIBUTING.md" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/CONTRIBUTING.md">
+              <provider editor-type-id="MarkdownPreviewEditor">
+                <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="54" column="0" selection-start="3843" selection-end="4078" vertical-scroll-proportion="-21.333334" vertical-offset="180" max-vertical-offset="868">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="requirements.txt" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/requirements.txt">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="168">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="setup.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/setup.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="658">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="linearmodels.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="640" column="0" selection-start="23466" selection-end="23466" vertical-scroll-proportion="0.0" vertical-offset="8960" max-vertical-offset="22022">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="__init__.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/__init__.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="84">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_clustering.py" pinned="false" current="true" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_clustering.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="516" column="49" selection-start="20462" selection-end="20462" vertical-scroll-proportion="0.09677419" vertical-offset="6990" max-vertical-offset="7672">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_algorithms.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_algorithms.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="4" column="0" selection-start="83" selection-end="110" vertical-scroll-proportion="0.0" vertical-offset="56" max-vertical-offset="2940">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-second>
+    </splitter>
+  </component>
+  <component name="FindManager">
+    <FindUsagesManager>
+      <setting name="OPEN_NEW_TAB" value="false" />
+    </FindUsagesManager>
+  </component>
+  <component name="Git.Push.Settings">
+    <option name="myUpdateMethod" value="REBASE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="decomposition" />
+      </map>
+    </option>
+  </component>
+  <component name="GitLogSettings">
+    <option name="myDateState">
+      <MyDateState />
+    </option>
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="changedFiles">
+      <list>
+        <option value="$PROJECT_DIR$/seaborn/distributions.py" />
+        <option value="$PROJECT_DIR$/seaborn/rcmod.py" />
+        <option value="$PROJECT_DIR$/doc/installing.rst" />
+        <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/seaborn/linearmodels.py" />
+        <option value="$PROJECT_DIR$/seaborn/decomposition.py" />
+        <option value="$PROJECT_DIR$/seaborn/tests/test_decomposition.py" />
+        <option value="$PROJECT_DIR$/seaborn/tests/test_algorithms.py" />
+        <option value="$PROJECT_DIR$/seaborn/axisgrid.py" />
+        <option value="$PROJECT_DIR$/seaborn/clustering.py" />
+        <option value="$PROJECT_DIR$/seaborn/tests/test_clustering.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="y" value="22" />
+    <option name="width" value="1440" />
+    <option name="height" value="874" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State>
+            <id />
+          </State>
+          <State>
+            <id>Python</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>PyArgumentListInspection</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+    <OptionsSetting value="true" id="Add" />
+    <OptionsSetting value="true" id="Remove" />
+    <OptionsSetting value="true" id="Checkout" />
+    <OptionsSetting value="false" id="Update" />
+    <OptionsSetting value="true" id="Status" />
+    <OptionsSetting value="true" id="Edit" />
+    <ConfirmationsSetting value="2" id="Add" />
+    <ConfirmationsSetting value="0" id="Remove" />
+  </component>
+  <component name="ProjectReloadState">
+    <option name="STATE" value="0" />
+  </component>
+  <component name="ProjectView">
+    <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
+      <flattenPackages />
+      <showMembers />
+      <showModules />
+      <showLibraryContents />
+      <hideEmptyPackages />
+      <abbreviatePackageNames />
+      <autoscrollToSource />
+      <autoscrollFromSource />
+      <sortByType />
+    </navigator>
+    <panes>
+      <pane id="Scope" />
+      <pane id="ProjectPane">
+        <subPane>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="seaborn" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="seaborn" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="seaborn" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="options.splitter.main.proportions" value="0.3" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="options.lastSelected" value="appearance" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../mpld3" />
+    <property name="FullScreen" value="false" />
+    <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="options.searchVisible" value="true" />
+    <property name="SearchEverywhereHistory" value="" />
+  </component>
+  <component name="PyConsoleOptionsProvider">
+    <option name="myPythonConsoleState">
+      <console-settings />
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="DjangoTestsConfigurationType" factoryName="Django tests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="TARGET" value="" />
+      <option name="SETTINGS_FILE" value="" />
+      <option name="CUSTOM_SETTINGS" value="false" />
+      <option name="USE_OPTIONS" value="false" />
+      <option name="OPTIONS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="py.test">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="testToRun" value="" />
+      <option name="keywords" value="" />
+      <option name="params" value="" />
+      <option name="USE_PARAM" value="false" />
+      <option name="USE_KEYWORD" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Nosetests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <method />
+    </configuration>
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug" singleton="true">
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Unittests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <option name="PUREUNITTEST" value="true" />
+      <option name="PARAMS" value="" />
+      <option name="USE_PARAM" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Doctests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <configuration default="true" type="tests" factoryName="Attests">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="seaborn" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="CLASS_NAME" value="" />
+      <option name="METHOD_NAME" value="" />
+      <option name="FOLDER_NAME" value="" />
+      <option name="TEST_TYPE" value="TEST_SCRIPT" />
+      <option name="PATTERN" value="" />
+      <option name="USE_PATTERN" value="false" />
+      <method />
+    </configuration>
+    <list size="0" />
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false" />
+  <component name="SvnConfiguration" maxAnnotateRevisions="500" myUseAcceleration="nothing" myAutoUpdateAfterCommit="false" cleanupOnStartRun="false" SSL_PROTOCOLS="sslv3">
+    <option name="USER" value="" />
+    <option name="PASSWORD" value="" />
+    <option name="mySSHConnectionTimeout" value="30000" />
+    <option name="mySSHReadTimeout" value="30000" />
+    <option name="LAST_MERGED_REVISION" />
+    <option name="MERGE_DRY_RUN" value="false" />
+    <option name="MERGE_DIFF_USE_ANCESTRY" value="true" />
+    <option name="UPDATE_LOCK_ON_DEMAND" value="false" />
+    <option name="IGNORE_SPACES_IN_MERGE" value="false" />
+    <option name="CHECK_NESTED_FOR_QUICK_MERGE" value="false" />
+    <option name="IGNORE_SPACES_IN_ANNOTATE" value="true" />
+    <option name="SHOW_MERGE_SOURCES_IN_ANNOTATE" value="true" />
+    <option name="FORCE_UPDATE" value="false" />
+    <option name="IGNORE_EXTERNALS" value="false" />
+    <myIsUseDefaultProxy>false</myIsUseDefaultProxy>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7c778811-8895-415a-a3a7-c51bd35d60ce" name="Default" comment="" />
+      <created>1387216650809</created>
+      <updated>1387216650809</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Added bw_method to violin() and linewidth now sets the line of the line outside the fill_betweenx">
+      <created>1387218664182</created>
+      <updated>1387218664182</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Fixed logic of 'lw' or 'linewidth' in 'kwargs'">
+      <created>1387219530379</created>
+      <updated>1387219530379</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Added xlim and ylim to regplot">
+      <created>1389211372691</created>
+      <updated>1389211372691</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Merge branch 'v0.2' of github.com:mwaskom/seaborn into regplot&#10;&#10;Conflicts:&#10;&#9;seaborn/distributions.py&#10;">
+      <created>1389293515433</created>
+      <updated>1389293515433</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Added clustering.py and clustered heatmap">
+      <created>1389295490667</created>
+      <updated>1389295490667</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Updated docstrings to seaborn style">
+      <created>1389298595752</created>
+      <updated>1389298595752</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Added return types and despine">
+      <created>1389299427694</created>
+      <updated>1389299427694</updated>
+    </task>
+    <task id="LOCAL-00008" summary="moving around despine arguments">
+      <created>1389299906538</created>
+      <updated>1389299906538</updated>
+    </task>
+    <task id="LOCAL-00009" summary="renamed to clusterplot">
+      <created>1389301320160</created>
+      <updated>1389301320160</updated>
+    </task>
+    <task id="LOCAL-00010" summary="renamed to clusterplot">
+      <created>1389301442884</created>
+      <updated>1389301442884</updated>
+    </task>
+    <task id="LOCAL-00011" summary="kde: added cast of data to float if int. kde.fit raises an exception otherwise">
+      <created>1389642232589</created>
+      <updated>1389642232589</updated>
+    </task>
+    <task id="LOCAL-00012" summary="working clusterplot kws">
+      <created>1395684380547</created>
+      <updated>1395684380547</updated>
+    </task>
+    <task id="LOCAL-00013" summary="added sane colorbar labels (for linear scaled data only)">
+      <created>1395688137080</created>
+      <updated>1395688137080</updated>
+    </task>
+    <task id="LOCAL-00014" summary="making plotting dendrogram a separate function">
+      <created>1395689469070</created>
+      <updated>1395689469070</updated>
+    </task>
+    <task id="LOCAL-00015" summary="cleaned up row dendrogram getting">
+      <created>1395689645893</created>
+      <updated>1395689645893</updated>
+    </task>
+    <task id="LOCAL-00016" summary="Cleaned up side color plotting">
+      <created>1395695284396</created>
+      <updated>1395695284396</updated>
+    </task>
+    <task id="LOCAL-00017" summary="removed all despine comands until the end&#10;">
+      <created>1395699131400</created>
+      <updated>1395699131400</updated>
+    </task>
+    <task id="LOCAL-00018" summary="removed despinining at the end cause it was messing up ticklabel positioning">
+      <created>1395699856510</created>
+      <updated>1395699856510</updated>
+    </task>
+    <task id="LOCAL-00019" summary="now using _label_dimension for both xticklabels and yticklabels">
+      <created>1395701094128</created>
+      <updated>1395701094128</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Added _label_dimension documentation">
+      <created>1395703402840</created>
+      <updated>1395703402840</updated>
+    </task>
+    <task id="LOCAL-00021" summary="updated docstrings with elaboration on wtf you can do with kws">
+      <created>1395705256604</created>
+      <updated>1395705256604</updated>
+    </task>
+    <task id="LOCAL-00022" summary="pcolormesh_kws properly setdefault instead of just overriding">
+      <created>1395706875008</created>
+      <updated>1395706875009</updated>
+    </task>
+    <task id="LOCAL-00023" summary="started writing decomposition plot (e.g. PCA)">
+      <created>1395744254515</created>
+      <updated>1395744254515</updated>
+    </task>
+    <task id="LOCAL-00024" summary="removed commented out code of different colorbar locations">
+      <created>1395746730615</created>
+      <updated>1395746730615</updated>
+    </task>
+    <task id="LOCAL-00025" summary="despine --&gt; utils.despine, added docstring for _HeatmapPlotter">
+      <created>1395746825108</created>
+      <updated>1395746825108</updated>
+    </task>
+    <task id="LOCAL-00026" summary="started to move old clusterplot code into more organized _MatrixPlotter and _ClusteredHeatmapPlotter objects">
+      <created>1395749997070</created>
+      <updated>1395749997079</updated>
+    </task>
+    <task id="LOCAL-00027" summary="reorganizing code">
+      <created>1395751374981</created>
+      <updated>1395751374981</updated>
+    </task>
+    <task id="LOCAL-00028" summary="changed logic of data_na_ok">
+      <created>1395751461379</created>
+      <updated>1395751461379</updated>
+    </task>
+    <task id="LOCAL-00029" summary="refactored all private functions in _ClusteredHeatmapPlotter">
+      <created>1395772170691</created>
+      <updated>1395772170691</updated>
+    </task>
+    <task id="LOCAL-00030" summary="moving norm and cmap to attributes of _ClusteredHeatmapPlotter">
+      <created>1397140756919</created>
+      <updated>1397140756919</updated>
+    </task>
+    <task id="LOCAL-00031" summary="mega refactor abstracting out plotting functions">
+      <created>1397160709458</created>
+      <updated>1397160709458</updated>
+    </task>
+    <task id="LOCAL-00032" summary="examples work with refactor.. onto testing!!">
+      <created>1397168798755</created>
+      <updated>1397168798755</updated>
+    </task>
+    <task id="LOCAL-00033" summary="one test fully works! :)">
+      <created>1397171629003</created>
+      <updated>1397171629004</updated>
+    </task>
+    <task id="LOCAL-00034" summary="An instance of mpl.colors.LogNorm should be tested as assert_is_isntance and not assert_equal">
+      <created>1397393937863</created>
+      <updated>1397393937863</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Add linkage tests and remove unnecessary width_ratios for gridspec">
+      <created>1397597753086</created>
+      <updated>1397597753086</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Add getting gridspec ratios and side_colors matrix and cmap tests">
+      <created>1397600033341</created>
+      <updated>1397600033341</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Remove extra &quot;variable =&quot; which was there for no reason">
+      <created>1397677581211</created>
+      <updated>1397677581211</updated>
+    </task>
+    <task id="LOCAL-00038" summary="refactor dendrogram calculation out of plot_dendrogram">
+      <created>1397709905622</created>
+      <updated>1397709905622</updated>
+    </task>
+    <task id="LOCAL-00039" summary="move establish_axes to plot()">
+      <created>1397710019875</created>
+      <updated>1397710019875</updated>
+    </task>
+    <task id="LOCAL-00040" summary="test plot_dendrogram for both row and col">
+      <created>1397712710877</created>
+      <updated>1397712710877</updated>
+    </task>
+    <task id="LOCAL-00041" summary="Added sidecolors tests and fixed erroneous sidecolor making (imagine that, writing tests helps you fix your code!)">
+      <created>1397763586964</created>
+      <updated>1397763586964</updated>
+    </task>
+    <task id="LOCAL-00042" summary="Added asserts to check that  the provided side_colors are the correct length">
+      <created>1397764009266</created>
+      <updated>1397764009266</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Remove cmap/vmin/vmax from pcolormesh_kws, test establish_axes in a bunch of ways">
+      <created>1397859253770</created>
+      <updated>1397859253770</updated>
+    </task>
+    <task id="LOCAL-00044" summary="Finish side_color tests">
+      <created>1398541685130</created>
+      <updated>1398541685130</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Add tests for labeling, plotting the actual heatmap, and setting the title">
+      <created>1404320665365</created>
+      <updated>1404320665365</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Set defaults to plot as None for everything">
+      <created>1404326198154</created>
+      <updated>1404326198154</updated>
+    </task>
+    <task id="LOCAL-00047" summary="finished tests?">
+      <created>1404326214661</created>
+      <updated>1404326214661</updated>
+    </task>
+    <task id="LOCAL-00048" summary="added check in case 'side_colors' is None">
+      <created>1404327149778</created>
+      <updated>1404327149778</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="0" y="22" width="1440" height="874" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2274678" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32991013" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="100" y="122" width="1240" height="674" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32919255" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+    </layout>
+  </component>
+  <component name="Vcs.Log.UiProperties">
+    <option name="RECENTLY_FILTERED_USER_GROUPS">
+      <collection />
+    </option>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="OFFER_MOVE_TO_ANOTHER_CHANGELIST_ON_PARTIAL_COMMIT" value="false" />
+    <option name="myTodoPanelSettings">
+      <TodoPanelSettings />
+    </option>
+    <MESSAGE value="removed commented out code of different colorbar locations" />
+    <MESSAGE value="despine --&gt; utils.despine, added docstring for _HeatmapPlotter" />
+    <MESSAGE value="started to move old clusterplot code into more organized _MatrixPlotter and _ClusteredHeatmapPlotter objects" />
+    <MESSAGE value="reorganizing code" />
+    <MESSAGE value="changed logic of data_na_ok" />
+    <MESSAGE value="refactored all private functions in _ClusteredHeatmapPlotter" />
+    <MESSAGE value="moving norm and cmap to attributes of _ClusteredHeatmapPlotter" />
+    <MESSAGE value="mega refactor abstracting out plotting functions" />
+    <MESSAGE value="examples work with refactor.. onto testing!!" />
+    <MESSAGE value="one test fully works! :)" />
+    <MESSAGE value="An instance of mpl.colors.LogNorm should be tested as assert_is_isntance and not assert_equal" />
+    <MESSAGE value="Add linkage tests and remove unnecessary width_ratios for gridspec" />
+    <MESSAGE value="Add getting gridspec ratios and side_colors matrix and cmap tests" />
+    <MESSAGE value="Remove extra &quot;variable =&quot; which was there for no reason" />
+    <MESSAGE value="refactor dendrogram calculation out of plot_dendrogram" />
+    <MESSAGE value="move establish_axes to plot()" />
+    <MESSAGE value="test plot_dendrogram for both row and col" />
+    <MESSAGE value="Added sidecolors tests and fixed erroneous sidecolor making (imagine that, writing tests helps you fix your code!)" />
+    <MESSAGE value="Added asserts to check that  the provided side_colors are the correct length" />
+    <MESSAGE value="Remove cmap/vmin/vmax from pcolormesh_kws, test establish_axes in a bunch of ways" />
+    <MESSAGE value="Finish side_color tests" />
+    <MESSAGE value="Add tests for labeling, plotting the actual heatmap, and setting the title" />
+    <MESSAGE value="Set defaults to plot as None for everything" />
+    <MESSAGE value="finished tests?" />
+    <MESSAGE value="added check in case 'side_colors' is None" />
+    <option name="LAST_COMMIT_MESSAGE" value="added check in case 'side_colors' is None" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="python-line">
+          <url>file://$PROJECT_DIR$/seaborn/utils.py</url>
+          <line>1</line>
+        </line-breakpoint>
+      </breakpoints>
+      <option name="time" value="6" />
+    </breakpoint-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="1275" max-vertical-offset="1725">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="180">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="1232" column="28" selection-start="47626" selection-end="47629" vertical-scroll-proportion="0.0" vertical-offset="18480" max-vertical-offset="23475">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="406" column="0" selection-start="16420" selection-end="16420" vertical-scroll-proportion="0.0" vertical-offset="6090" max-vertical-offset="12345">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="27" column="19" selection-start="990" selection-end="990" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="5295">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="19" column="18" selection-start="529" selection-end="529" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="6420">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="137" column="31" selection-start="4905" selection-end="4905" vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="393" selection-end="393" vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="0" selection-start="994" selection-end="994" vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="75" column="0" selection-start="2227" selection-end="2341" vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="406" column="0" selection-start="16420" selection-end="16420" vertical-scroll-proportion="0.0" vertical-offset="6090" max-vertical-offset="12345">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="27" column="19" selection-start="990" selection-end="990" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="5295">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="19" column="18" selection-start="529" selection-end="529" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="6420">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="137" column="31" selection-start="4905" selection-end="4905" vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="393" selection-end="393" vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="0" selection-start="994" selection-end="994" vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="75" column="0" selection-start="2227" selection-end="2341" vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="42" selection-start="1681" selection-end="1681" vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="372" column="22" selection-start="11860" selection-end="11860" vertical-scroll-proportion="0.0" vertical-offset="2334" max-vertical-offset="7680" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="393" column="23" selection-start="9895" selection-end="9898" vertical-scroll-proportion="0.0" vertical-offset="5895" max-vertical-offset="6120">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="42" selection-start="1681" selection-end="1681" vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="7" column="14" selection-start="208" selection-end="208" vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="4980">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="7" column="0" selection-start="212" selection-end="212" vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="2595" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="871" column="20" selection-start="30705" selection-end="30714" vertical-scroll-proportion="0.0" vertical-offset="12281" max-vertical-offset="13710" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/palettes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="65" column="0" selection-start="1827" selection-end="1827" vertical-scroll-proportion="-0.29045093" vertical-offset="975" max-vertical-offset="3850" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="19" selection-start="1039" selection-end="1039" vertical-scroll-proportion="0.0" vertical-offset="450" max-vertical-offset="5130">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="264" column="0" selection-start="7370" selection-end="7370" vertical-scroll-proportion="0.0" vertical-offset="3960" max-vertical-offset="7125">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/doc/installing.rst">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="35" column="0" selection-start="1082" selection-end="1082" vertical-scroll-proportion="0.0" vertical-offset="189" max-vertical-offset="945">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="8" column="0" selection-start="80" selection-end="80" vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="196">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="5340">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="771" column="0" selection-start="26249" selection-end="26249" vertical-scroll-proportion="0.0" vertical-offset="10794" max-vertical-offset="12810">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Makefile">
+      <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="20" column="0" selection-start="294" selection-end="294" vertical-scroll-proportion="-10.37037" vertical-offset="0" max-vertical-offset="364">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_axisgrid.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="161" column="36" selection-start="4739" selection-end="4739" vertical-scroll-proportion="0.0" vertical-offset="2254" max-vertical-offset="7700">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="642" column="16" selection-start="24416" selection-end="24416" vertical-scroll-proportion="0.0" vertical-offset="9146" max-vertical-offset="12510">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="410" selection-end="593" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="546">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="941" max-vertical-offset="1610">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/CONTRIBUTING.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="54" column="0" selection-start="3843" selection-end="4078" vertical-scroll-proportion="-21.333334" vertical-offset="180" max-vertical-offset="868">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="180">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="658">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="640" column="0" selection-start="23466" selection-end="23466" vertical-scroll-proportion="0.0" vertical-offset="8960" max-vertical-offset="22022">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="754">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_algorithms.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="4" column="0" selection-start="83" selection-end="110" vertical-scroll-proportion="0.0" vertical-offset="15" max-vertical-offset="3150">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/clustering.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="789" column="8" selection-start="32629" selection-end="32629" vertical-scroll-proportion="0.3739003" vertical-offset="10679" max-vertical-offset="11410">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_clustering.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="516" column="49" selection-start="20462" selection-end="20462" vertical-scroll-proportion="0.09677419" vertical-offset="6990" max-vertical-offset="7672">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>
+
