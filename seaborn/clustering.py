@@ -80,7 +80,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         nrows = 2 if self.col_kws['side_colors'] is None else 3
         ncols = 3 if self.row_kws['side_colors'] is None else 4
 
-        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.1, hspace=0.1,
+        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.01, hspace=0.01,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
@@ -549,24 +549,18 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                              '"col", not "{}"'.format(dimension))
         axis = 0 if dimension == 'row' else 1
 
-        if kws['label_loc'] not in ['heatmap', 'dendrogram']:
-            raise ValueError(
-                'Parameter {}_kws["label_loc"] must be one of '
-                '"heatmap" or "dendrogram", not "{}"'.format(kws["label_loc"]))
+        # if kws['label_loc'] not in ['heatmap', 'dendrogram']:
+        #     raise ValueError(
+        #         'Parameter {}_kws["label_loc"] must be one of '
+        #         '"heatmap" or "dendrogram", not "{}"'.format(kws["label_loc"]))
 
-        ax = heatmap_ax
-
-        # Need to scale the ticklabels by 10 if labeling the dendrogram_ax
-        scale = 1 if kws['label_loc'] == 'heatmap' else 10
 
         # Remove all ticks from the other axes
-        other_ax = dendrogram_ax \
-            if kws['label_loc'] == 'heatmap' else heatmap_ax
-        other_ax_axis = other_ax.yaxis \
-            if dimension == 'row' else other_ax.xaxis
-        other_ax_axis.set_ticks([])
+        dendrogram_ax_axis = dendrogram_ax.yaxis \
+            if dimension == 'row' else dendrogram_ax.xaxis
+        dendrogram_ax_axis.set_ticks([])
 
-        ax_axis = ax.yaxis if dimension == 'row' else ax.xaxis
+        ax_axis = heatmap_ax.yaxis if dimension == 'row' else heatmap_ax.xaxis
 
         if isinstance(kws['label'], Iterable):
             if len(kws['label']) == self.data2d.shape[axis]:
@@ -597,10 +591,10 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                   dendrogram['leaves']]
             # pdb.set_trace()
             # despine(ax=ax, bottom=True, left=True)
-            ticks = (np.arange(self.data2d.shape[axis]) + 0.5) * scale
+            ticks = (np.arange(self.data2d.shape[axis]) + 0.5)
             ax_axis.set_ticks(ticks)
             ax_axis.set_ticklabels(ticklabels_ordered)
-            ax.tick_params(labelsize=kws['fontsize'])
+            heatmap_ax.tick_params(labelsize=kws['fontsize'])
             if dimension == 'col':
                 for label in ax_axis.get_ticklabels():
                     label.set_rotation(90)
