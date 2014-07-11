@@ -64,22 +64,22 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         # with the correct dimensions
         if fig is None:
             if figsize is None:
-                width = self.data2d.shape[1] * 0.25
-                height = min(self.data2d.shape[0] * .75, 40)
+                width = self.data2d.shape[1] * 0.5
+                height = min(self.data2d.shape[0] * .5, 40)
                 figsize = (width, height)
             fig = plt.figure(figsize=figsize)
 
         self.fig = fig
         width_ratios = self.get_fig_width_ratios(self.row_kws['side_colors'],
-                                             # colorbar_kws['loc'],
-                                             dimension='width')
+                                                 # colorbar_kws['loc'],
+                                                 dimension='width')
 
         height_ratios = self.get_fig_width_ratios(self.col_kws['side_colors'],
-                                              dimension='height')
+                                                  dimension='height')
         nrows = 3 if self.col_kws['side_colors'] is None else 4
         ncols = 3 if self.row_kws['side_colors'] is None else 4
 
-        self.gs = gridspec.GridSpec(nrows, ncols,  #wspace=.1, hspace=.1,
+        self.gs = gridspec.GridSpec(nrows, ncols,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
@@ -100,7 +100,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         # colorbar for scale in upper left corner
         self.colorbar_ax = self.fig.add_subplot(self.gs[0:(nrows - 1), 0])
-
 
     def interpret_kws(self, row_kws, col_kws, pcolormesh_kws,
                       dendrogram_kws, colorbar_kws):
@@ -125,9 +124,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             kws.setdefault('fontsize', None)
             kws.setdefault('side_colors', None)
 
-
         self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
-        self.colorbar_kws.setdefault('fontsize', None)
+        self.colorbar_kws.setdefault('fontsize', 14)
         self.colorbar_kws.setdefault('label', 'values')
 
         self.dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws
@@ -157,17 +155,20 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.edgecolor = self.pcolormesh_kws['edgecolor']
         self.linewidth = self.pcolormesh_kws['linewidth']
 
-        # Check if the matrix has values both above and below zero, or only above
-        # or only below zero. If both above and below, then the data is
+        # Check if the matrix has values both above and below zero, or only
+        # above or only below zero. If both above and below, then the data is
         # "divergent" and we will use a colormap with 0 centered at white,
         # negative values blue, and positive values red. Otherwise, we will use
         # the YlGnBu colormap.
-        self.divergent = (self.data2d.max().max() > 0 and
-                          self.data2d.min().min() < 0) and \
-                         not self.color_scale == 'log'
+        vmax = self.data2d.max().max()
+        vmin = self.data2d.min().min()
+        log = self.color_scale == 'log'
+        self.divergent = (vmax > 0 and vmin < 0) and not log
+
         if self.color_scale == 'log':
             if self.vmin is None:
-                self.vmin = self.data2d.replace(0, np.nan).dropna(how='all').min().dropna().min()
+                self.vmin = self.data2d.replace(0, np.nan).dropna(
+                    how='all').min().dropna().min()
             if self.vmax is None:
                 self.vmax = self.data2d.dropna(how='all').max().dropna().max()
             if self.norm is None:
@@ -177,7 +178,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             abs_min = abs(self.data2d.min().min())
             vmaxx = max(abs_max, abs_min)
             self.vmin = -vmaxx
-            self.vmax= vmaxx
+            self.vmax = vmaxx
             self.norm = mpl.colors.Normalize(vmin=self.vmin, vmax=self.vmax)
         else:
             self.pcolormesh_kws.setdefault('vmin', self.data2d.min().min())
@@ -206,7 +207,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if (self.data2d_na_ok.columns != self.data2d.columns).any():
             raise ValueError(
                 'data_na_ok must have the exact same columns as the 2d data')
-
 
     def calculate_linkage(self):
         """Calculate linkage matrices
@@ -244,12 +244,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             self.col_linkage = self.col_kws['linkage_matrix']
 
     def get_fig_width_ratios(self, side_colors,
-                         dimension, side_colors_ratio=0.05):
+                             dimension, side_colors_ratio=0.05):
 
         """
         Figures out the ratio of each subfigure within the larger figure.
-        The dendrograms currently are 2*half_dendrogram, which is a proportion of
-        the dataframe shape. Right now, this only supports the colormap in
+        The dendrograms currently are 2*half_dendrogram, which is a proportion
+        of the dataframe shape. Right now, this only supports the colormap in
         the upper left. The full figure map looks like:
 
         0.1  0.1  0.05    1.0
@@ -365,7 +365,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             (nrow, ncol) tuple of the shape of the dataframe
         use_fastcluster : bool
             Whether to use fastcluster (3rd party module) for clustering,
-            which is faster than the default scipy.cluster.hierarchy.linkage module
+            which is faster than the default scipy.cluster.hierarchy.linkage
+            module
 
         Returns
         -------
@@ -380,18 +381,17 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if np.product(shape) >= 10000 or use_fastcluster:
             try:
                 import fastcluster
+
                 linkage_function = fastcluster.linkage
             except ImportError:
-                raise warnings.warn('Module "fastcluster" not found. The '
-                                    'dataframe '
-                                    'provided has '
-                                    'shape {}, and one '
-                                    'of the dimensions has greater than 1000 '
-                                    'variables. Calculating linkage on such a '
-                                    'matrix will take a long time with vanilla '
-                                    '"scipy.cluster.hierarchy.linkage", and we '
-                                    'suggest fastcluster for such large datasets' \
-                                    .format(shape), RuntimeWarning)
+                raise warnings.warn(
+                    'Module "fastcluster" not found. The dataframe provided '
+                    'has shape {}, and one of the dimensions has greater than '
+                    '1000 variables. Calculating linkage on such a matrix will'
+                    ' take a long time with vanilla '
+                    '"scipy.cluster.hierarchy.linkage", and we suggest '
+                    'fastcluster for such large datasets'.format(shape),
+                    RuntimeWarning)
         else:
             import scipy.cluster.hierarchy as sch
 
@@ -428,10 +428,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         -------
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
-            .dendrogram. The important key-value pairing is "leaves" which tells
-            the ordering of the matrix
+            .dendrogram. The important key-value pairing is "leaves" which
+            tells the ordering of the matrix
         """
         import scipy.cluster.hierarchy as sch
+
         sch.set_link_color_palette(['k'])
 
         if kws['cluster']:
@@ -527,8 +528,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             Dendrogram dictionary with key 'leaves' containing the reordered
             columns or rows after clustering
         data2d : pandas.DataFrame
-            Dataframe that we're plotting. Need access to the rownames (data2d.index)
-            and columns for the default labeling.
+            Dataframe that we're plotting. Need access to the rownames
+            (data2d.index) and columns for the default labeling.
         """
         if dimension not in ['row', 'col']:
             raise ValueError('Argument "dimension" must be one of "row" or '
@@ -536,18 +537,20 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         axis = 0 if dimension == 'row' else 1
 
         if kws['label_loc'] not in ['heatmap', 'dendrogram']:
-            raise ValueError('Parameter {}_kws["label_loc"] must be one of '
-                             '"heatmap" or "dendrogram", not "{}"'.format(
-                kws[
-                    "label_loc"]))
+            raise ValueError(
+                'Parameter {}_kws["label_loc"] must be one of '
+                '"heatmap" or "dendrogram", not "{}"'.format(kws["label_loc"]))
+
         ax = heatmap_ax if kws['label_loc'] == 'heatmap' else dendrogram_ax
 
-        # Need to scale the ticklabels by 10 if we're labeling the dendrogram_ax
+        # Need to scale the ticklabels by 10 if labeling the dendrogram_ax
         scale = 1 if kws['label_loc'] == 'heatmap' else 10
 
         # Remove all ticks from the other axes
-        other_ax = dendrogram_ax if kws['label_loc'] == 'heatmap' else heatmap_ax
-        other_ax_axis = other_ax.yaxis if dimension == 'row' else other_ax.xaxis
+        other_ax = dendrogram_ax \
+            if kws['label_loc'] == 'heatmap' else heatmap_ax
+        other_ax_axis = other_ax.yaxis \
+            if dimension == 'row' else other_ax.xaxis
         other_ax_axis.set_ticks([])
 
         ax_axis = ax.yaxis if dimension == 'row' else ax.xaxis
@@ -557,16 +560,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                 ticklabels = kws['label']
                 kws['label'] = True
             else:
-                raise AssertionError("Length of '{0}_kws['label']' must be "
-                                     "the same as "
-                                     "data2d.shape[{1}] (len({0}_kws['label'])={2}, "
-                                     "data2d.shape[{1}]={3})".format(dimension,
-                                                                     axis,
-                                                                     len(kws[
-                                                                         'label']),
-                                                                     self
-                                                                     .data2d.shape[
-                                                                         axis]))
+                raise AssertionError(
+                    "Length of '{0}_kws['label']' must be the same as "
+                    "data2d.shape[{1}] (len({0}_kws['label'])={2}, "
+                    "data2d.shape[{1}]={3})".format(dimension, axis,
+                                                    len(kws['label']),
+                                                    self.data2d.shape[axis]))
         elif kws['label']:
             ticklabels = self.data2d.index if dimension == 'row' else self \
                 .data2d.columns
@@ -600,14 +599,16 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         dataframes for the linkage calculation and the plotting.
         """
         ax = self.heatmap_ax
-        self.heatmap_ax_pcolormesh = \
-            ax.pcolormesh(self.data2d_na_ok.ix[
-                              self.row_dendrogram['leaves'],
-                              self.col_dendrogram['leaves']].values,
-                          cmap=self.cmap,
-                          norm=self.norm,
-                          vmin=self.vmin, vmax=self.vmax,
-                          **self.pcolormesh_kws)
+        rows_ordered = self.row_dendrogram['leaves']
+        cols_ordered = self.col_dendrogram['leaves']
+        data_ordered = self.data2d_na_ok.ix[rows_ordered, cols_ordered].values
+
+        self.heatmap_ax_pcolormesh = ax.pcolormesh(data_ordered,
+                                                   cmap=self.cmap,
+                                                   norm=self.norm,
+                                                   vmin=self.vmin,
+                                                   vmax=self.vmax,
+                                                   **self.pcolormesh_kws)
         utils.despine(ax=ax, left=True, bottom=True)
         ax.set_ylim(0, self.data2d.shape[0])
         ax.set_xlim(0, self.data2d.shape[1])
@@ -626,10 +627,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         cb = self.fig.colorbar(self.heatmap_ax_pcolormesh,
                                cax=ax, **self.colorbar_kws)
 
-        ## Setting the number of colorbar ticks to at most 3 (nbins+1) currently
-        ## only works for divergent and linear colormaps.
+        # Setting the number of colorbar ticks to at most 3 (nbins+1) currently
+        # only works for divergent and linear colormaps.
         if self.color_scale == 'log':
-            #TODO: get at most 3 ticklabels showing on the colorbar for log-scaled
+            # TODO: get at most 3 ticklabels showing on the colorbar for
+            # log-scaled
             pass
             # This next stuff does not work...
             # tick_locator = mpl.ticker.LogLocator(numticks=3)
@@ -646,7 +648,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                             self.vmax))
             cb.ax.yaxis.set_major_locator(tick_locator)
 
-        # move ticks to left side of colorbar to avoid problems with tight_layout
+        # move ticks to left side of colorbar to avoid problems with
+        # tight_layout
         cb.ax.yaxis.set_ticks_position('left')
         if colorbar_ticklabel_fontsize is not None:
             cb.ax.tick_params(labelsize=colorbar_ticklabel_fontsize)
@@ -659,7 +662,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.plot_dendrogram(self.col_dendrogram_ax, self.col_dendrogram,
                              row=False)
         self.plot_side_colors(self.col_side_colors_ax, self.col_kws,
-                             self.col_dendrogram, row=False)
+                              self.col_dendrogram, row=False)
 
     def plot_row_side(self):
         """Plot the dendrogram and potentially sidecolors for the row dimension
@@ -667,7 +670,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.plot_dendrogram(self.row_dendrogram_ax, self.row_dendrogram,
                              row=True)
         self.plot_side_colors(self.row_side_colors_ax, self.row_kws,
-                             self.row_dendrogram, row=True)
+                              self.row_dendrogram, row=True)
 
     def label(self):
         """Label the rows and columns either at the dendrogram or heatmap
@@ -782,7 +785,8 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         If the "data" argument has NAs, can supply a separate dataframe to plot
     use_fastcluster: bool
         Whether or not to use the "fastcluster" module in Python,
-        which calculates linkage several times faster than scipy.cluster.hierachy
+        which calculates linkage several times faster than
+        scipy.cluster.hierachy
         Default False except for datasets with more than 1000 rows or columns.
 
     Returns
@@ -811,4 +815,3 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
     plotter.plot(fig, figsize, title, title_fontsize)
 
     return plotter.row_dendrogram, plotter.col_dendrogram
-

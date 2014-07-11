@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7c778811-8895-415a-a3a7-c51bd35d60ce" name="Default" comment="" />
+    <list default="true" id="7c778811-8895-415a-a3a7-c51bd35d60ce" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/seaborn/clustering.py" afterPath="$PROJECT_DIR$/seaborn/clustering.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/seaborn/tests/test_clustering.py" afterPath="$PROJECT_DIR$/seaborn/tests/test_clustering.py" />
+    </list>
     <ignored path="seaborn.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -25,11 +28,60 @@
     <splitter split-orientation="horizontal" split-proportion="0.5">
       <split-first>
         <leaf>
-          <file leaf-file-name="axisgrid.py" pinned="false" current="false" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
+          <file leaf-file-name="timeseries.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="1.1158358" vertical-offset="17467" max-vertical-offset="18312">
-                  <caret line="1312" column="0" selection-start-line="1312" selection-start-column="0" selection-end-line="1312" selection-end-column="0" />
+                <state line="30" column="19" selection-start="1039" selection-end="1039" vertical-scroll-proportion="0.0" vertical-offset="420" max-vertical-offset="4956">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="miscplot.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="728">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="rcmod.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="264" column="0" selection-start="7370" selection-end="7370" vertical-scroll-proportion="0.0" vertical-offset="3696" max-vertical-offset="6650">
+                  <folding>
+                    <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+                    <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+                    <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+                    <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="installing.rst" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/doc/installing.rst">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="35" column="0" selection-start="1082" selection-end="1082" vertical-scroll-proportion="0.0" vertical-offset="490" max-vertical-offset="882">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name=".gitignore" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/.gitignore">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="8" column="0" selection-start="80" selection-end="80" vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="196">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_distributions.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_distributions.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="0" column="0" selection-start="0" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="4984">
                   <folding />
                 </state>
               </provider>
@@ -38,60 +90,16 @@
           <file leaf-file-name="test_linearmodels.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/seaborn/tests/test_linearmodels.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="11900" max-vertical-offset="14056">
-                  <caret line="850" column="0" selection-start-line="850" selection-start-column="0" selection-end-line="850" selection-end-column="0" />
+                <state line="771" column="0" selection-start="26249" selection-end="26249" vertical-scroll-proportion="0.0" vertical-offset="10794" max-vertical-offset="12810">
                   <folding />
                 </state>
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="logistic_regression.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/examples/logistic_regression.py">
+          <file leaf-file-name="clustering.py" pinned="false" current="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/seaborn/clustering.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="294">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="interactplot.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/examples/interactplot.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="378">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="__init__.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/seaborn/__init__.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="266">
-                  <caret line="11" column="0" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
-                  <folding>
-                    <marker date="1412787341000" expanded="true" signature="0:5" placeholder="import ..." />
-                  </folding>
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name=".gitignore" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/.gitignore">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="70" max-vertical-offset="210">
-                  <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="six.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/seaborn/external/six.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8932">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                <state line="789" column="8" selection-start="32629" selection-end="32629" vertical-scroll-proportion="0.3739003" vertical-offset="10679" max-vertical-offset="11410">
                   <folding />
                 </state>
               </provider>
@@ -99,22 +107,20 @@
           </file>
           <file leaf-file-name="Makefile" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/Makefile">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="336" max-vertical-offset="420">
-                  <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
               <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
                 <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="20" column="0" selection-start="294" selection-end="294" vertical-scroll-proportion="-10.37037" vertical-offset="0" max-vertical-offset="364">
+                  <folding />
+                </state>
               </provider>
             </entry>
           </file>
           <file leaf-file-name="test_axisgrid.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/seaborn/tests/test_axisgrid.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="3346" max-vertical-offset="15106">
-                  <caret line="239" column="36" selection-start-line="239" selection-start-column="36" selection-end-line="239" selection-end-column="36" />
+                <state line="161" column="36" selection-start="4739" selection-end="4739" vertical-scroll-proportion="0.0" vertical-offset="2254" max-vertical-offset="7700">
                   <folding />
                 </state>
               </provider>
@@ -124,11 +130,52 @@
       </split-first>
       <split-second>
         <leaf>
+          <file leaf-file-name="axisgrid.py" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="642" column="16" selection-start="24416" selection-end="24416" vertical-scroll-proportion="0.0" vertical-offset="8988" max-vertical-offset="11788">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name=".travis.yml" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/.travis.yml">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="13" column="0" selection-start="410" selection-end="593" vertical-scroll-proportion="0.0" vertical-offset="182" max-vertical-offset="546">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="README.md" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/README.md">
+              <provider editor-type-id="MarkdownPreviewEditor">
+                <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="1190" max-vertical-offset="1610">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="CONTRIBUTING.md" pinned="false" current="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/CONTRIBUTING.md">
+              <provider editor-type-id="MarkdownPreviewEditor">
+                <state />
+              </provider>
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="54" column="0" selection-start="3843" selection-end="4078" vertical-scroll-proportion="-21.333334" vertical-offset="180" max-vertical-offset="868">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
           <file leaf-file-name="requirements.txt" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/requirements.txt">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="168">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="168">
                   <folding />
                 </state>
               </provider>
@@ -137,38 +184,7 @@
           <file leaf-file-name="setup.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/setup.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="1190" max-vertical-offset="1344">
-                  <caret line="85" column="0" selection-start-line="85" selection-start-column="0" selection-end-line="85" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="ipnbdoctest.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/ipnbdoctest.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="532" max-vertical-offset="4872">
-                  <caret line="38" column="7" selection-start-line="38" selection-start-column="7" selection-end-line="38" selection-end-column="7" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="miscplot.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="728">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="distributions.py" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="12194" max-vertical-offset="14644">
-                  <caret line="871" column="20" selection-start-line="871" selection-start-column="20" selection-end-line="871" selection-end-column="20" />
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="658">
                   <folding />
                 </state>
               </provider>
@@ -177,41 +193,25 @@
           <file leaf-file-name="linearmodels.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="19001" max-vertical-offset="24584">
-                  <caret line="1528" column="26" selection-start-line="1528" selection-start-column="26" selection-end-line="1528" selection-end-column="26" />
+                <state line="640" column="0" selection-start="23466" selection-end="23466" vertical-scroll-proportion="0.0" vertical-offset="8960" max-vertical-offset="22022">
                   <folding />
                 </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="conf.py" pinned="false" current="true" current-in-tab="true">
-            <entry file="file://$PROJECT_DIR$/doc/conf.py">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="3.6423018" vertical-offset="150" max-vertical-offset="3822">
-                  <caret line="180" column="0" selection-start-line="180" selection-start-column="0" selection-end-line="180" selection-end-column="0" />
-                  <folding />
-                </state>
-              </provider>
-            </entry>
-          </file>
-          <file leaf-file-name="Makefile" pinned="false" current="false" current-in-tab="false">
-            <entry file="file://$PROJECT_DIR$/doc/Makefile">
-              <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="-4.6666665" vertical-offset="0" max-vertical-offset="2450">
-                  <caret line="9" column="7" selection-start-line="9" selection-start-column="7" selection-end-line="9" selection-end-column="7" />
-                  <folding />
-                </state>
-              </provider>
-              <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
-                <state />
               </provider>
             </entry>
           </file>
           <file leaf-file-name="__init__.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/seaborn/tests/__init__.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="84">
-                  <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+                <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="84">
+                  <folding />
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file leaf-file-name="test_clustering.py" pinned="false" current="true" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/seaborn/tests/test_clustering.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state line="516" column="49" selection-start="20462" selection-end="20462" vertical-scroll-proportion="0.09677419" vertical-offset="6990" max-vertical-offset="7672">
                   <folding />
                 </state>
               </provider>
@@ -220,8 +220,7 @@
           <file leaf-file-name="test_algorithms.py" pinned="false" current="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/seaborn/tests/test_algorithms.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0" vertical-offset="56" max-vertical-offset="2940">
-                  <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+                <state line="4" column="0" selection-start="83" selection-end="110" vertical-scroll-proportion="0.0" vertical-offset="56" max-vertical-offset="2940">
                   <folding />
                 </state>
               </provider>
@@ -243,7 +242,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="34601e4" />
+        <entry key="$PROJECT_DIR$" value="decomposition" />
       </map>
     </option>
   </component>
@@ -252,29 +251,20 @@
       <MyDateState />
     </option>
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/seaborn/linearmodels.py" root0="FORCE_HIGHLIGHTING" />
-  </component>
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
         <option value="$PROJECT_DIR$/seaborn/distributions.py" />
         <option value="$PROJECT_DIR$/seaborn/rcmod.py" />
         <option value="$PROJECT_DIR$/doc/installing.rst" />
+        <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/seaborn/linearmodels.py" />
         <option value="$PROJECT_DIR$/seaborn/decomposition.py" />
         <option value="$PROJECT_DIR$/seaborn/tests/test_decomposition.py" />
         <option value="$PROJECT_DIR$/seaborn/tests/test_algorithms.py" />
-        <option value="$PROJECT_DIR$/seaborn/__init__.py" />
-        <option value="$PROJECT_DIR$/.gitignore" />
-        <option value="$PROJECT_DIR$/seaborn/tests/test_clustering.py" />
-        <option value="$PROJECT_DIR$/setup.py" />
-        <option value="$PROJECT_DIR$/examples/clustered_heatmaps.ipynb" />
-        <option value="$PROJECT_DIR$/ipnbdoctest.py" />
         <option value="$PROJECT_DIR$/seaborn/axisgrid.py" />
         <option value="$PROJECT_DIR$/seaborn/clustering.py" />
-        <option value="$PROJECT_DIR$/seaborn/2dplot.py" />
-        <option value="$PROJECT_DIR$/seaborn/matplot.py" />
-        <option value="$PROJECT_DIR$/seaborn/linearmodels.py" />
+        <option value="$PROJECT_DIR$/seaborn/tests/test_clustering.py" />
       </list>
     </option>
   </component>
@@ -316,7 +306,7 @@
     <option name="STATE" value="0" />
   </component>
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
+    <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -347,20 +337,6 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="seaborn" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="seaborn" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="doc" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
-            </PATH_ELEMENT>
-          </PATH>
         </subPane>
       </pane>
     </panes>
@@ -368,13 +344,12 @@
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="options.lastSelected" value="preferences.pluginManager" />
+    <property name="options.lastSelected" value="appearance" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../mpld3" />
     <property name="FullScreen" value="false" />
     <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
-    <property name="SearchEverywhereHistory" value="jointgrid&#10;load_dataset" />
-    <property name="SearchEverywhereHistoryKey" value="navbar&#9;null&#9;null&#10;corrplot&#9;null&#9;null" />
+    <property name="SearchEverywhereHistory" value="" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -466,7 +441,7 @@
       <option name="PARAMETERS" value="" />
       <method />
     </configuration>
-    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug">
+    <configuration default="true" type="JavascriptDebugType" factoryName="JavaScript Debug" singleton="true">
       <method />
     </configuration>
     <configuration default="true" type="tests" factoryName="Unittests">
@@ -535,8 +510,22 @@
     <list size="0" />
   </component>
   <component name="ShelveChangesManager" show_recycled="false" />
-  <component name="SvnConfiguration" myUseAcceleration="nothing">
-    <configuration />
+  <component name="SvnConfiguration" maxAnnotateRevisions="500" myUseAcceleration="nothing" myAutoUpdateAfterCommit="false" cleanupOnStartRun="false" SSL_PROTOCOLS="sslv3">
+    <option name="USER" value="" />
+    <option name="PASSWORD" value="" />
+    <option name="mySSHConnectionTimeout" value="30000" />
+    <option name="mySSHReadTimeout" value="30000" />
+    <option name="LAST_MERGED_REVISION" />
+    <option name="MERGE_DRY_RUN" value="false" />
+    <option name="MERGE_DIFF_USE_ANCESTRY" value="true" />
+    <option name="UPDATE_LOCK_ON_DEMAND" value="false" />
+    <option name="IGNORE_SPACES_IN_MERGE" value="false" />
+    <option name="CHECK_NESTED_FOR_QUICK_MERGE" value="false" />
+    <option name="IGNORE_SPACES_IN_ANNOTATE" value="true" />
+    <option name="SHOW_MERGE_SOURCES_IN_ANNOTATE" value="true" />
+    <option name="FORCE_UPDATE" value="false" />
+    <option name="IGNORE_EXTERNALS" value="false" />
+    <myIsUseDefaultProxy>false</myIsUseDefaultProxy>
   </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -736,124 +725,8 @@
       <created>1404327149778</created>
       <updated>1404327149778</updated>
     </task>
-    <task id="LOCAL-00049" summary="fix range error">
-      <created>1405057439270</created>
-      <updated>1405057439270</updated>
-    </task>
-    <task id="LOCAL-00050" summary="about to try multiple subplotspec approach...">
-      <created>1405057457875</created>
-      <updated>1405057457875</updated>
-    </task>
-    <task id="LOCAL-00051" summary="tight_layout is evil">
-      <created>1405059944325</created>
-      <updated>1405059944325</updated>
-    </task>
-    <task id="LOCAL-00052" summary="remove option to label on the dendrogram. too complicated to keep consistent with tight_layout if the labels are long">
-      <created>1405060271888</created>
-      <updated>1405060271888</updated>
-    </task>
-    <task id="LOCAL-00053" summary="fix colorbar positioning and spacing">
-      <created>1405061546066</created>
-      <updated>1405061546066</updated>
-    </task>
-    <task id="LOCAL-00054" summary="Drafted ipynb of how to use clusteredheatmaps">
-      <created>1405105849225</created>
-      <updated>1405105849225</updated>
-    </task>
-    <task id="LOCAL-00055" summary="fix pep8 errors">
-      <created>1405105974253</created>
-      <updated>1405105974253</updated>
-    </task>
-    <task id="LOCAL-00056" summary="prettify arguments list">
-      <created>1405353944038</created>
-      <updated>1405353944038</updated>
-    </task>
-    <task id="LOCAL-00057" summary="Add note on saving figures and docstring example">
-      <created>1405446798052</created>
-      <updated>1405446798052</updated>
-    </task>
-    <task id="LOCAL-00058" summary="specify this version as &quot;clustering&quot;">
-      <created>1405474539960</created>
-      <updated>1405474539960</updated>
-    </task>
-    <task id="LOCAL-00059" summary="fix bug with fastcluster, spacing issues with side colors">
-      <created>1405615676764</created>
-      <updated>1405615676764</updated>
-    </task>
-    <task id="LOCAL-00060" summary="fix tests">
-      <created>1406049016561</created>
-      <updated>1406049016561</updated>
-    </task>
-    <task id="LOCAL-00061" summary="Set figsize to (10,10)">
-      <created>1406049441974</created>
-      <updated>1406049441974</updated>
-    </task>
-    <task id="LOCAL-00062" summary="colorbar on lower right">
-      <created>1406055875411</created>
-      <updated>1406055875411</updated>
-    </task>
-    <task id="LOCAL-00063" summary="Add savefig to `ClusteredHeatmapPlotter`">
-      <created>1406056350083</created>
-      <updated>1406056350083</updated>
-    </task>
-    <task id="LOCAL-00064" summary="Added z_score and standard_scale as functions, don't do anything yet">
-      <created>1406058555690</created>
-      <updated>1406058555690</updated>
-    </task>
-    <task id="LOCAL-00065" summary="Move colorbar to upper left">
-      <created>1406328552962</created>
-      <updated>1406328552962</updated>
-    </task>
-    <task id="LOCAL-00066" summary="Change default colorbar label to empty string">
-      <created>1406328724568</created>
-      <updated>1406328724568</updated>
-    </task>
-    <task id="LOCAL-00067" summary="Fix colorbar width and height">
-      <created>1406329589641</created>
-      <updated>1406329589641</updated>
-    </task>
-    <task id="LOCAL-00068" summary="don't need collections anymore">
-      <created>1412695618486</created>
-      <updated>1412695618486</updated>
-    </task>
-    <task id="LOCAL-00069" summary="add boolean argument for colorbar">
-      <created>1412697256125</created>
-      <updated>1412697256125</updated>
-    </task>
-    <task id="LOCAL-00070" summary="add colorbar params">
-      <created>1412701569498</created>
-      <updated>1412701569499</updated>
-    </task>
-    <task id="LOCAL-00071" summary="add edgecolor, linewidth, kwargs, and fix pep8 lint">
-      <created>1412702086421</created>
-      <updated>1412702086422</updated>
-    </task>
-    <task id="LOCAL-00072" summary="add kwargs docstring">
-      <created>1412702241765</created>
-      <updated>1412702241766</updated>
-    </task>
-    <option name="localTasksCounter" value="73" />
+    <option name="localTasksCounter" value="49" />
     <servers />
-  </component>
-  <component name="TodoView" selected-index="4">
-    <todo-panel id="selected-file">
-      <are-packages-shown value="false" />
-      <are-modules-shown value="false" />
-      <flatten-packages value="false" />
-      <is-autoscroll-to-source value="false" />
-    </todo-panel>
-    <todo-panel id="all">
-      <are-packages-shown value="false" />
-      <are-modules-shown value="false" />
-      <flatten-packages value="false" />
-      <is-autoscroll-to-source value="false" />
-    </todo-panel>
-    <todo-panel id="default-changelist">
-      <are-packages-shown value="false" />
-      <are-modules-shown value="false" />
-      <flatten-packages value="false" />
-      <is-autoscroll-to-source value="false" />
-    </todo-panel>
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="22" width="1440" height="874" extended-state="6" />
@@ -861,10 +734,10 @@
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32936507" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24956822" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.17525035" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2274678" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32991013" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -873,41 +746,16 @@
       <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="100" y="122" width="1240" height="674" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32919255" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32804233" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
     </layout>
-    <layout-to-restore>
-      <window_info id="Documentation" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="100" y="122" width="1240" height="674" />
-      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32849604" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32991013" sideWeight="0.5" order="9" side_tool="true" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32936507" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.17596567" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-    </layout-to-restore>
   </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
-      <collection />
-    </option>
-    <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
       <collection />
     </option>
   </component>
@@ -919,32 +767,32 @@
     <option name="myTodoPanelSettings">
       <TodoPanelSettings />
     </option>
-    <MESSAGE value="fix range error" />
-    <MESSAGE value="about to try multiple subplotspec approach..." />
-    <MESSAGE value="tight_layout is evil" />
-    <MESSAGE value="remove option to label on the dendrogram. too complicated to keep consistent with tight_layout if the labels are long" />
-    <MESSAGE value="fix colorbar positioining and spacing" />
-    <MESSAGE value="fix colorbar positioning and spacing" />
-    <MESSAGE value="Drafted ipynb of how to use clusteredheatmaps" />
-    <MESSAGE value="fix pep8 errors" />
-    <MESSAGE value="prettify arguments list" />
-    <MESSAGE value="Add note on saving figures and docstring example" />
-    <MESSAGE value="specify this version as &quot;clustering&quot;" />
-    <MESSAGE value="fix bug with fastcluster, spacing issues with side colors" />
-    <MESSAGE value="fix tests" />
-    <MESSAGE value="Set figsize to (10,10)" />
-    <MESSAGE value="colorbar on lower right" />
-    <MESSAGE value="Add savefig to `ClusteredHeatmapPlotter`" />
-    <MESSAGE value="Added z_score and standard_scale as functions, don't do anything yet" />
-    <MESSAGE value="Move colorbar to upper left" />
-    <MESSAGE value="Change default colorbar label to empty string" />
-    <MESSAGE value="Fix colorbar width and height" />
-    <MESSAGE value="don't need collections anymore" />
-    <MESSAGE value="add boolean argument for colorbar" />
-    <MESSAGE value="add colorbar params" />
-    <MESSAGE value="add edgecolor, linewidth, kwargs, and fix pep8 lint" />
-    <MESSAGE value="add kwargs docstring" />
-    <option name="LAST_COMMIT_MESSAGE" value="add kwargs docstring" />
+    <MESSAGE value="removed commented out code of different colorbar locations" />
+    <MESSAGE value="despine --&gt; utils.despine, added docstring for _HeatmapPlotter" />
+    <MESSAGE value="started to move old clusterplot code into more organized _MatrixPlotter and _ClusteredHeatmapPlotter objects" />
+    <MESSAGE value="reorganizing code" />
+    <MESSAGE value="changed logic of data_na_ok" />
+    <MESSAGE value="refactored all private functions in _ClusteredHeatmapPlotter" />
+    <MESSAGE value="moving norm and cmap to attributes of _ClusteredHeatmapPlotter" />
+    <MESSAGE value="mega refactor abstracting out plotting functions" />
+    <MESSAGE value="examples work with refactor.. onto testing!!" />
+    <MESSAGE value="one test fully works! :)" />
+    <MESSAGE value="An instance of mpl.colors.LogNorm should be tested as assert_is_isntance and not assert_equal" />
+    <MESSAGE value="Add linkage tests and remove unnecessary width_ratios for gridspec" />
+    <MESSAGE value="Add getting gridspec ratios and side_colors matrix and cmap tests" />
+    <MESSAGE value="Remove extra &quot;variable =&quot; which was there for no reason" />
+    <MESSAGE value="refactor dendrogram calculation out of plot_dendrogram" />
+    <MESSAGE value="move establish_axes to plot()" />
+    <MESSAGE value="test plot_dendrogram for both row and col" />
+    <MESSAGE value="Added sidecolors tests and fixed erroneous sidecolor making (imagine that, writing tests helps you fix your code!)" />
+    <MESSAGE value="Added asserts to check that  the provided side_colors are the correct length" />
+    <MESSAGE value="Remove cmap/vmin/vmax from pcolormesh_kws, test establish_axes in a bunch of ways" />
+    <MESSAGE value="Finish side_color tests" />
+    <MESSAGE value="Add tests for labeling, plotting the actual heatmap, and setting the title" />
+    <MESSAGE value="Set defaults to plot as None for everything" />
+    <MESSAGE value="finished tests?" />
+    <MESSAGE value="added check in case 'side_colors' is None" />
+    <option name="LAST_COMMIT_MESSAGE" value="added check in case 'side_colors' is None" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -954,418 +802,390 @@
           <line>1</line>
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="11" />
+      <option name="time" value="6" />
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
-          <caret line="137" column="31" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365">
-          <caret line="13" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.travis.yml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
-          <caret line="23" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
-          <caret line="75" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
       <provider editor-type-id="MarkdownPreviewEditor">
         <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="1275" max-vertical-offset="1725">
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
-          <caret line="2" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="180">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="6090" max-vertical-offset="12345">
-          <caret line="406" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="1232" column="28" selection-start="47626" selection-end="47629" vertical-scroll-proportion="0.0" vertical-offset="18480" max-vertical-offset="23475">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="406" column="0" selection-start="16420" selection-end="16420" vertical-scroll-proportion="0.0" vertical-offset="6090" max-vertical-offset="12345">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="5295">
-          <caret line="27" column="19" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="27" column="19" selection-start="990" selection-end="990" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="5295">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="6420">
-          <caret line="19" column="18" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding>
-            <element signature="e#48#79#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
-          <caret line="137" column="31" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365">
-          <caret line="13" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/.travis.yml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
-          <caret line="23" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
-          <caret line="75" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-      <provider editor-type-id="MarkdownPreviewEditor">
-        <state />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
-          <caret line="2" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="19" column="18" selection-start="529" selection-end="529" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="6420">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
-          <caret line="50" column="42" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="2334" max-vertical-offset="7680">
-          <caret line="372" column="22" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="5895" max-vertical-offset="6120">
-          <caret line="393" column="23" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="137" column="31" selection-start="4905" selection-end="4905" vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
           <folding>
-            <element signature="e#48#79#0" expanded="false" />
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
-          <caret line="50" column="42" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="2595">
-          <caret line="7" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="393" selection-end="393" vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="23" column="0" selection-start="994" selection-end="994" vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/palettes.py">
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-0.29045093" vertical-offset="975" max-vertical-offset="3850">
-          <caret line="65" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="75" column="0" selection-start="2227" selection-end="2341" vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="406" column="0" selection-start="16420" selection-end="16420" vertical-scroll-proportion="0.0" vertical-offset="6090" max-vertical-offset="12345">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="450" max-vertical-offset="5130">
-          <caret line="30" column="19" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="27" column="19" selection-start="990" selection-end="990" vertical-scroll-proportion="0.0" vertical-offset="405" max-vertical-offset="5295">
+          <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="3960" max-vertical-offset="7125">
-          <caret line="264" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/doc/installing.rst">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="189" max-vertical-offset="945">
-          <caret line="35" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-13.44" vertical-offset="4046" max-vertical-offset="4690">
-          <caret line="313" column="11" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="19" column="18" selection-start="529" selection-end="529" vertical-scroll-proportion="0.0" vertical-offset="285" max-vertical-offset="6420">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="137" column="31" selection-start="4905" selection-end="4905" vertical-scroll-proportion="0.0" vertical-offset="2055" max-vertical-offset="2625">
           <folding>
-            <element signature="e#48#79#0" expanded="false" />
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_distributions.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="5340">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="1335" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/color_palettes.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="682">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/examples/linear_models.ipynb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1727" max-vertical-offset="3878">
-          <caret line="140" column="20" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-      <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
-        <state />
+        <state line="13" column="0" selection-start="393" selection-end="393" vertical-scroll-proportion="0.0" vertical-offset="195" max-vertical-offset="10365" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/.travis.yml">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="252" max-vertical-offset="854">
-          <caret line="18" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="23" column="0" selection-start="994" selection-end="994" vertical-scroll-proportion="0.0" vertical-offset="345" max-vertical-offset="435">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1190" max-vertical-offset="1526">
-          <caret line="85" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
       <provider editor-type-id="MarkdownPreviewEditor">
         <state />
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_linearmodels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="11900" max-vertical-offset="14056">
-          <caret line="850" column="0" selection-start-line="850" selection-start-column="0" selection-end-line="850" selection-end-column="0" />
+        <state line="75" column="0" selection-start="2227" selection-end="2341" vertical-scroll-proportion="0.0" vertical-offset="1125" max-vertical-offset="1575">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/logistic_regression.py">
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="659">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="2" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="30" max-vertical-offset="195">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/examples/interactplot.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="682">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="266">
-          <caret line="11" column="0" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+        <state line="50" column="42" selection-start="1681" selection-end="1681" vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
           <folding>
-            <marker date="1412787341000" expanded="true" signature="0:5" placeholder="import ..." />
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="372" column="22" selection-start="11860" selection-end="11860" vertical-scroll-proportion="0.0" vertical-offset="2334" max-vertical-offset="7680" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="393" column="23" selection-start="9895" selection-end="9898" vertical-scroll-proportion="0.0" vertical-offset="5895" max-vertical-offset="6120">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="42" selection-start="1681" selection-end="1681" vertical-scroll-proportion="0.0" vertical-offset="750" max-vertical-offset="2295">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="7" column="14" selection-start="208" selection-end="208" vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="4980">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="7" column="0" selection-start="212" selection-end="212" vertical-scroll-proportion="0.0" vertical-offset="105" max-vertical-offset="2595" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="871" column="20" selection-start="30705" selection-end="30714" vertical-scroll-proportion="0.0" vertical-offset="12281" max-vertical-offset="13710" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/palettes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="65" column="0" selection-start="1827" selection-end="1827" vertical-scroll-proportion="-0.29045093" vertical-offset="975" max-vertical-offset="3850" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/timeseries.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="30" column="19" selection-start="1039" selection-end="1039" vertical-scroll-proportion="0.0" vertical-offset="450" max-vertical-offset="5130">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="690">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/rcmod.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="264" column="0" selection-start="7370" selection-end="7370" vertical-scroll-proportion="0.0" vertical-offset="3960" max-vertical-offset="7125">
+          <folding>
+            <marker date="1397581496000" expanded="false" signature="68:151" placeholder="import ..." />
+            <marker date="1397581496000" expanded="true" signature="11665:12814" placeholder="&quot;&quot;&quot;Set the plotting context parameters....&quot;&quot;&quot;" />
+            <marker date="1397581496000" expanded="true" signature="13915:14125" placeholder="..." />
+            <marker date="1397581496000" expanded="true" signature="14181:14405" placeholder="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/doc/installing.rst">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="35" column="0" selection-start="1082" selection-end="1082" vertical-scroll-proportion="0.0" vertical-offset="189" max-vertical-offset="945">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="70" max-vertical-offset="210">
-          <caret line="5" column="0" selection-start-line="5" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+        <state line="8" column="0" selection-start="80" selection-end="80" vertical-scroll-proportion="0.0" vertical-offset="112" max-vertical-offset="196">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/external/six.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_distributions.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="8932">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="0" selection-end="357" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="5340">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_linearmodels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="771" column="0" selection-start="26249" selection-end="26249" vertical-scroll-proportion="0.0" vertical-offset="10794" max-vertical-offset="12810">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Makefile">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="336" max-vertical-offset="420">
-          <caret line="24" column="0" selection-start-line="24" selection-start-column="0" selection-end-line="24" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
       <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
         <state />
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.1158358" vertical-offset="17467" max-vertical-offset="18312">
-          <caret line="1312" column="0" selection-start-line="1312" selection-start-column="0" selection-end-line="1312" selection-end-column="0" />
+        <state line="20" column="0" selection-start="294" selection-end="294" vertical-scroll-proportion="-10.37037" vertical-offset="0" max-vertical-offset="364">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/tests/test_axisgrid.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="3346" max-vertical-offset="15106">
-          <caret line="239" column="36" selection-start-line="239" selection-start-column="36" selection-end-line="239" selection-end-column="36" />
+        <state line="161" column="36" selection-start="4739" selection-end="4739" vertical-scroll-proportion="0.0" vertical-offset="2254" max-vertical-offset="7700">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/axisgrid.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="642" column="16" selection-start="24416" selection-end="24416" vertical-scroll-proportion="0.0" vertical-offset="9146" max-vertical-offset="12510">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.travis.yml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="0" selection-start="410" selection-end="593" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="546">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider editor-type-id="MarkdownPreviewEditor">
+        <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="85" column="0" selection-start="2852" selection-end="2852" vertical-scroll-proportion="0.0" vertical-offset="941" max-vertical-offset="1610">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/CONTRIBUTING.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="203" max-vertical-offset="868">
-          <caret line="54" column="0" selection-start-line="54" selection-start-column="0" selection-end-line="54" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
       <provider editor-type-id="MarkdownPreviewEditor">
         <state />
+      </provider>
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="54" column="0" selection-start="3843" selection-end="4078" vertical-scroll-proportion="-21.333334" vertical-offset="180" max-vertical-offset="868">
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="180">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state line="0" column="0" selection-start="12" selection-end="22" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="180">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/setup.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="1190" max-vertical-offset="1344">
-          <caret line="85" column="0" selection-start-line="85" selection-start-column="0" selection-end-line="85" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ipnbdoctest.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="532" max-vertical-offset="4872">
-          <caret line="38" column="7" selection-start-line="38" selection-start-column="7" selection-end-line="38" selection-end-column="7" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/miscplot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="686">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/distributions.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="10307" max-vertical-offset="14532">
-          <caret line="871" column="20" selection-start-line="871" selection-start-column="20" selection-end-line="871" selection-end-column="20" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="754">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_algorithms.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="56" max-vertical-offset="2940">
-          <caret line="4" column="0" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="658">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/seaborn/linearmodels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0" vertical-offset="19001" max-vertical-offset="24584">
-          <caret line="1528" column="26" selection-start-line="1528" selection-start-column="26" selection-end-line="1528" selection-end-column="26" />
+        <state line="640" column="0" selection-start="23466" selection-end="23466" vertical-scroll-proportion="0.0" vertical-offset="8960" max-vertical-offset="22022">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/doc/Makefile">
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-4.6666665" vertical-offset="0" max-vertical-offset="2450">
-          <caret line="9" column="7" selection-start-line="9" selection-start-column="7" selection-end-line="9" selection-end-column="7" />
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="754">
           <folding />
         </state>
       </provider>
-      <provider editor-type-id="com.intellij.persistence.database.editor.CsvTableFileEditorProvider">
-        <state />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_algorithms.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="4" column="0" selection-start="83" selection-end="110" vertical-scroll-proportion="0.0" vertical-offset="15" max-vertical-offset="3150">
+          <folding />
+        </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/doc/conf.py">
+    <entry file="file://$PROJECT_DIR$/seaborn/clustering.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="3.6423018" vertical-offset="150" max-vertical-offset="3822">
-          <caret line="180" column="0" selection-start-line="180" selection-start-column="0" selection-end-line="180" selection-end-column="0" />
+        <state line="789" column="8" selection-start="32629" selection-end="32629" vertical-scroll-proportion="0.3739003" vertical-offset="10679" max-vertical-offset="11410">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/seaborn/tests/test_clustering.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="516" column="49" selection-start="20462" selection-end="20462" vertical-scroll-proportion="0.09677419" vertical-offset="6990" max-vertical-offset="7672">
           <folding />
         </state>
       </provider>

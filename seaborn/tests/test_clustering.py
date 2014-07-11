@@ -14,9 +14,11 @@ from ..palettes import color_palette
 
 try:
     import fastcluster
+
     _no_fastcluster = False
 except ImportError:
     _no_fastcluster = True
+
 
 class TestMatrixPlotter(object):
     shape = (10, 20)
@@ -33,8 +35,8 @@ class TestMatrixPlotter(object):
     def test_establish_variables_from_frame(self):
         p = cl._MatrixPlotter()
         p.establish_variables(self.df, pivot_kws=dict(index='rownames',
-                                                 columns='colnames',
-                                                 values='value'))
+                                                      columns='colnames',
+                                                      values='value'))
         pdt.assert_frame_equal(p.data2d, self.data2d)
         pdt.assert_frame_equal(p.data, self.df)
 
@@ -120,6 +122,7 @@ class TestClusteredHeatmapPlotter(object):
     def test_calculate_linkage_linear(self):
         import scipy.spatial.distance as distance
         import scipy.cluster.hierarchy as sch
+
         row_pairwise_dists = distance.squareform(
             distance.pdist(self.data2d.values, metric='euclidean'))
         row_linkage = sch.linkage(row_pairwise_dists, method='average')
@@ -160,11 +163,9 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_array_equal(width_ratios, height_ratios)
 
     def test_get_fig_width_ratios_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors':
-                                                     self.row_colors},
-                                        col_kws={'side_colors':
-                                                     self.col_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, row_kws={'side_colors': self.row_colors},
+            col_kws={'side_colors': self.col_colors})
 
         width_ratios = p.get_fig_width_ratios(side_colors=p.col_kws[
             'side_colors'], dimension='width')
@@ -174,6 +175,7 @@ class TestClusteredHeatmapPlotter(object):
 
     def test_color_list_to_matrix_and_cmap_row(self):
         import matplotlib as mpl
+
         colors = color_palette(name='Set2', n_colors=3)
         np.random.seed(10)
         n = 10
@@ -198,6 +200,7 @@ class TestClusteredHeatmapPlotter(object):
 
     def test_color_list_to_matrix_and_cmap_col(self):
         import matplotlib as mpl
+
         colors = color_palette(name='Set2', n_colors=3)
         np.random.seed(10)
         n = 10
@@ -220,9 +223,9 @@ class TestClusteredHeatmapPlotter(object):
         npt.assert_array_equal(matrix, matrix2)
         npt.assert_array_equal(cmap.colors, cmap2.colors)
 
-
     def test_get_linkage_function_scipy(self):
         import scipy.cluster.hierarchy as sch
+
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
             shape=self.data2d, use_fastcluster=False)
         nt.assert_is_instance(linkage_function, type(sch.linkage))
@@ -230,9 +233,11 @@ class TestClusteredHeatmapPlotter(object):
     def test_get_linkage_function_large_data(self):
         try:
             import fastcluster
+
             linkage = fastcluster.linkage
         except ImportError:
             import scipy.cluster.hierarchy as sch
+
             linkage = sch.linkage
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
             shape=(100, 100), use_fastcluster=False)
@@ -241,6 +246,7 @@ class TestClusteredHeatmapPlotter(object):
     @skipif(_no_fastcluster)
     def test_get_linkage_function_fastcluster(self):
         import fastcluster
+
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
             shape=self.data2d, use_fastcluster=False)
         nt.assert_is_instance(linkage_function, type(fastcluster.linkage))
@@ -248,6 +254,7 @@ class TestClusteredHeatmapPlotter(object):
     def test_calculate_dendrogram(self):
         import scipy.spatial.distance as distance
         import scipy.cluster.hierarchy as sch
+
         sch.set_link_color_palette(['k'])
 
         row_pairwise_dists = distance.squareform(
@@ -264,7 +271,7 @@ class TestClusteredHeatmapPlotter(object):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
         dendrogram = p.calculate_dendrogram(p.row_kws, p.row_linkage)
         p.plot_dendrogram(ax, dendrogram)
-        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[0]-1)
+        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[0] - 1)
         plt.close("all")
 
     def test_plot_dendrogram_col(self):
@@ -272,7 +279,7 @@ class TestClusteredHeatmapPlotter(object):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
         dendrogram = p.calculate_dendrogram(p.col_kws, p.col_linkage)
         p.plot_dendrogram(ax, dendrogram, row=False)
-        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[1]-1)
+        npt.assert_equal(len(ax.get_lines()), self.data2d.shape[1] - 1)
         plt.close("all")
 
     def test_plot_side_colors_none(self):
@@ -337,9 +344,8 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_establish_axes_row_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors':
-                                                     self.row_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, row_kws={'side_colors': self.row_colors})
         p.establish_axes()
 
         nt.assert_equal(len(p.fig.axes), 5)
@@ -347,11 +353,9 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_establish_axes_both_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors':
-                                                     self.row_colors},
-                                        col_kws={'side_colors':
-                                                     self.col_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, row_kws={'side_colors': self.row_colors},
+            col_kws={'side_colors': self.col_colors})
         p.establish_axes()
 
         nt.assert_equal(len(p.fig.axes), 6)
@@ -485,9 +489,8 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_plot_col_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        col_kws={'side_colors':
-                                                     self.col_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, col_kws={'side_colors': self.col_colors})
         p.establish_axes()
         p.plot_col_side()
 
@@ -498,9 +501,8 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_plot_row_side(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors':
-                                                     self.row_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, row_kws={'side_colors': self.row_colors})
         p.establish_axes()
         p.plot_row_side()
 
@@ -511,9 +513,8 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_plot_row_side_colors(self):
-        p = cl._ClusteredHeatmapPlotter(self.data2d,
-                                        row_kws={'side_colors':
-                                                     self.row_colors})
+        p = cl._ClusteredHeatmapPlotter(
+            self.data2d, row_kws={'side_colors': self.row_colors})
         p.establish_axes()
         p.plot_row_side()
 
