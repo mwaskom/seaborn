@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
+from six.moves import range
 
 import nose.tools as nt
 import numpy.testing as npt
@@ -72,11 +73,13 @@ class TestClusteredHeatmapPlotter(object):
     # Side colors for plotting
     colors = color_palette(name='Set2', n_colors=3)
     col_color_inds = np.arange(len(colors))
-    col_color_inds = [random.choice(col_color_inds) for _ in data2d.shape[1]]
+    col_color_inds = [random.choice(col_color_inds) for _ in
+                      range(data2d.shape[1])]
     col_colors = [colors[i] for i in col_color_inds]
-    
+
     row_color_inds = np.arange(len(colors))
-    row_color_inds = [random.choice(row_color_inds) for _ in data2d.shape[1]]
+    row_color_inds = [random.choice(row_color_inds) for _ in
+                      range(data2d.shape[0])]
     row_colors = [colors[i] for i in row_color_inds]
 
     def test_interpret_kws_from_none_divergent(self):
