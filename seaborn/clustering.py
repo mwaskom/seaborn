@@ -65,7 +65,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if fig is None:
             if figsize is None:
                 width = min(self.data2d.shape[1] * 0.5, 40)
-                height = min(self.data2d.shape[0] * .5, 40)
+                height = min(self.data2d.shape[0] * 0.5, 40)
                 # width, height = 10, 10
                 figsize = (width, height)
             fig = plt.figure(figsize=figsize)
@@ -124,7 +124,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             kws.setdefault('label', True)
             kws.setdefault('fontsize', 18)
             kws.setdefault('side_colors', None)
-
 
         self.dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws
         self.dendrogram_kws.setdefault('color_threshold', np.inf)
@@ -188,11 +187,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.colorbar_kws.setdefault('fontsize', 14)
         self.colorbar_kws.setdefault('label', 'values')
-        # self.colorbar_kws.setdefault('use_gridspec', True)
         self.colorbar_kws.setdefault('orientation', 'horizontal')
-        # self.colorbar_kws.setdefault('shrink', 0.5)
-        # self.colorbar_kws.setdefault('fraction', 0.1)
-        # self.colorbar_kws.setdefault('pad', .5)
 
         if self.cmap is None:
             self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
@@ -309,7 +304,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if dimension not in ('height', 'width'):
             raise AssertionError("{} is not a valid 'dimension' (valid: "
                                  "'height', 'width')".format(dimension))
-        dendrogram = 2 * self.data2d.shape[i] * 0.1 / self.data2d.shape[i]
+        dendrogram = .25
 
         if dimension == 'width':
             ratios = [dendrogram]
@@ -554,12 +549,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             raise ValueError('Argument "dimension" must be one of "row" or '
                              '"col", not "{}"'.format(dimension))
         axis = 0 if dimension == 'row' else 1
-
-        # if kws['label_loc'] not in ['heatmap', 'dendrogram']:
-        #     raise ValueError(
-        #         'Parameter {}_kws["label_loc"] must be one of '
-        #         '"heatmap" or "dendrogram", not "{}"'.format(kws["label_loc"]))
-
 
         # Remove all ticks from the other axes
         dendrogram_ax_axis = dendrogram_ax.yaxis \
