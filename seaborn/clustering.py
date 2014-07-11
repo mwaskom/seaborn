@@ -80,7 +80,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         nrows = 2 if self.col_kws['side_colors'] is None else 3
         ncols = 3 if self.row_kws['side_colors'] is None else 4
 
-        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.0, hspace=0.0,
+        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.1, hspace=0.1,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
@@ -100,7 +100,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-2])
 
         # colorbar for scale to right of heatmap
-        self.colorbar_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
+        self.colorbar_ax = self.fig.add_subplot(self.gs[0, 0])
 
 
     def interpret_kws(self, row_kws, col_kws, pcolormesh_kws,
@@ -121,7 +121,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         for kws in (self.row_kws, self.col_kws):
             kws.setdefault('linkage_matrix', None)
             kws.setdefault('cluster', True)
-            kws.setdefault('label_loc', 'dendrogram')
+            # kws.setdefault('label_loc', 'heatmap')
             kws.setdefault('label', True)
             kws.setdefault('fontsize', None)
             kws.setdefault('side_colors', None)
@@ -185,8 +185,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.colorbar_kws.setdefault('fontsize', 14)
         self.colorbar_kws.setdefault('label', 'values')
         self.colorbar_kws.setdefault('use_gridspec', True)
-        # self.colorbar_kws.setdefault('ticks', [self.vmin, self.mean,
-        #                                        self.vmax])
+        self.colorbar_kws.setdefault('orientation', 'horizontal')
+        # self.colorbar_kws.setdefault('shrink', 0.5)
+        # self.colorbar_kws.setdefault('fraction', 0.1)
+        # self.colorbar_kws.setdefault('pad', .5)
+
         if self.cmap is None:
             self.cmap = mpl.cm.RdBu_r if self.divergent else mpl.cm.YlGnBu
             self.cmap.set_bad('white')
@@ -545,11 +548,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         axis = 0 if dimension == 'row' else 1
 
         if kws['label_loc'] not in ['heatmap', 'dendrogram']:
-            raise ValueError('Parameter {}_kws["label_loc"] must be one of '
-                             '"heatmap" or "dendrogram", not "{}"'.format(
-                kws[
-                    "label_loc"]))
-        ax = heatmap_ax if kws['label_loc'] == 'heatmap' else dendrogram_ax
+            raise ValueError(
+                'Parameter {}_kws["label_loc"] must be one of '
+                '"heatmap" or "dendrogram", not "{}"'.format(kws["label_loc"]))
+
+        ax = heatmap_ax
 
         # Need to scale the ticklabels by 10 if we're labeling the dendrogram_ax
         scale = 1 if kws['label_loc'] == 'heatmap' else 10
@@ -650,14 +653,14 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             tick_locator = mpl.ticker.MaxNLocator(nbins=2,
                                                   symmetric=self.divergent,
                                                   prune=None, trim=False)
-            cb.ax.set_yticklabels(
+            cb.ax.set_xticklabels(
                 tick_locator.bin_boundaries(self.vmin,
                                             self.vmax))
-            cb.ax.yaxis.set_major_locator(tick_locator)
+            cb.ax.xaxis.set_major_locator(tick_locator)
 
         # move ticks to left side of colorbar to avoid problems with
         # tight_layout
-        cb.ax.yaxis.set_ticks_position('right')
+        # cb.ax.yaxis.set_ticks_position('right')
         if colorbar_ticklabel_fontsize is not None:
             cb.ax.tick_params(labelsize=colorbar_ticklabel_fontsize)
         cb.outline.set_linewidth(0)
@@ -718,10 +721,6 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.set_title(title, title_fontsize)
         self.label()
         self.colorbar()
-
-        # gs = gridspec
-        self.gs.tight_layout(self.fig, pad=0, h_pad=0, w_pad=0)
-        # self.fig.tight_layout()
 
 
 def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
