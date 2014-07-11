@@ -63,7 +63,7 @@ class TestClusteredHeatmapPlotter(object):
                        'label': True,
                        'cluster': True, 'fontsize': 18}
 
-    default_pcolormesh_kws = {'linewidth': 0, 'edgecolor': 'white'}
+    default_pcolormesh_kws = {'linewidth': 0.1, 'edgecolor': 'white'}
     default_colorbar_kws = {'fontsize': 14, 'label': 'values',
                             'orientation': 'horizontal'}
 
@@ -571,3 +571,12 @@ class TestClusteredHeatmapPlotter(object):
         nt.assert_equal(p.gs.right, p2.gs.right)
         nt.assert_equal(p.gs.top, p2.gs.top)
         nt.assert_equal(p.gs.wspace, p2.gs.wspace)
+
+
+labels = ['Games', 'Minutes', 'Points', 'Field goals made',
+          'Field goal attempts', 'Field goal percentage', 'Free throws made',
+          'Free throws attempts', 'Free throws percentage',
+          'Three-pointers made', 'Three-point attempt',
+          'Three-point percentage', 'Offensive rebounds', 'Defensive rebounds',
+          'Total rebounds', 'Assists', 'Steals', 'Blocks', 'Turnover',
+          'Personal foul']
