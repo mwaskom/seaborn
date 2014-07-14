@@ -720,10 +720,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                      color_scale='linear', linkage_method='average',
                      metric='euclidean', figsize=None, pcolormesh_kws=None,
-                     dendrogram_kws=None,
-                     row_kws=None, col_kws=None, colorbar_kws=None,
-                     data_na_ok=None, use_fastcluster=False, fig=None,
-                     labelsize=18):
+                     dendrogram_kws=None, row_kws=None, col_kws=None,
+                     colorbar_kws=None, data_na_ok=None, use_fastcluster=False,
+                     fig=None, labelsize=18):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -745,7 +744,8 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
     title_fontsize: int, optional
         Size of the plot title. Default 12
     color_scale: string, 'log' or 'linear'
-        How to scale the colors plotted in the heatmap. Default "linear"
+        How to scale the colors plotted in the heatmap. Default "linear". If
+        "log", any values 0 or less will become NaNs, as log(0) = -inf.
     linkage_method : string
         Which linkage method to use for calculating clusters.
         See scipy.cluster.hierarchy.linkage documentation for more information:
