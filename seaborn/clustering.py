@@ -800,6 +800,17 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         dict with keys 'leaves', 'icoords' (coordinates of the cluster nodes
         along the data, here the x-axis coords), 'dcoords' (coordinates of the
         cluster nodes along the dendrogram height, here the y-axis coords)
+
+    Notes
+    ----
+    To save the figure, make sure to specify "bbox_inches='tight'" to `fig
+    .savefig` and don't use `fig.tight_layout`, as this will mess up the
+    spacing. For example, here's how you can save the figure:
+
+    >>> import matplotlib.pyplot as plt
+    >>> sns.clusteredheatmap(data);
+    >>> fig = plt.gcf()
+    >>> fig.savefig('clusteredheatmap.png', bbox_inches='tight')
     """
     plotter = _ClusteredHeatmapPlotter(data, pivot_kws=pivot_kws,
                                        color_scale=color_scale,
