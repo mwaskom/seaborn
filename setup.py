@@ -22,14 +22,7 @@ MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.3'
-
-try:
-    from setuptools import setup
-    _has_setuptools = True
-except ImportError:
-    from disutils import setup
-
+VERSION = '0.4.clustering'
 
 def check_dependencies():
 
