@@ -24,6 +24,12 @@ LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.4.clustering'
 
+try:
+    from setuptools import setup
+    _has_setuptools = True
+except ImportError:
+    from disutils import setup
+
 
 def check_dependencies():
 
