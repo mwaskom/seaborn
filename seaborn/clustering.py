@@ -35,7 +35,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
     """
 
     def __init__(self, data, pivot_kws=None,
-                 color_scale='linear', linkage_method='average',
+                 color_scale='linear', linkage_method='median',
                  metric='euclidean', pcolormesh_kws=None,
                  dendrogram_kws=None,
                  row_kws=None, col_kws=None,
@@ -54,7 +54,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.validate_data_na_ok(data_na_ok)
         self.interpret_kws(row_kws, col_kws, pcolormesh_kws,
                            dendrogram_kws, colorbar_kws)
-        self.calculate_linkage()
+        self.get_linkage()
         self.row_dendrogram = self.calculate_dendrogram(self.row_kws,
                                                         self.row_linkage)
         self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
@@ -215,8 +215,22 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             raise ValueError(
                 'data_na_ok must have the exact same columns as the 2d data')
 
+    def calculate_linkage(self, values, row=True):
+        linkage_function = self.get_linkage_function(values.shape)
 
-    def calculate_linkage(self):
+        if not row:
+            values = values.T
+
+        if self.use_fastcluster:
+            return linkage_function(values, method=self.linkage_method,
+                                    metric=self.metric)
+        else:
+            from scipy.spatial import distance
+            pairwise_dists = distance.squareform(
+                distance.pdist(values, metric=self.metric))
+            return linkage_function(pairwise_dists, method=self.linkage_method)
+
+    def get_linkage(self):
         """Calculate linkage matrices
 
         These are then passed to the dendrogram functions to plot pairwise
@@ -228,26 +242,13 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             values = self.data2d.values
 
         if self.row_kws['linkage_matrix'] is None:
-            import scipy.spatial.distance as distance
 
-            linkage_function = self.get_linkage_function(values.shape,
-                                                         self.use_fastcluster)
-            row_pairwise_dists = distance.squareform(
-                distance.pdist(values, metric=self.metric))
-            self.row_linkage = linkage_function(row_pairwise_dists,
-                                                method=self.linkage_method)
+            self.row_linkage = self.calculate_linkage(values, row=True)
         else:
             self.row_linkage = self.row_kws['linkage_matrix']
 
-        # calculate pairwise distances for columns
         if self.col_kws['linkage_matrix'] is None:
-            linkage_function = self.get_linkage_function(values.shape,
-                                                         self.use_fastcluster)
-            col_pairwise_dists = distance.squareform(
-                distance.pdist(values.T, metric=self.metric))
-            # cluster
-            self.col_linkage = linkage_function(col_pairwise_dists,
-                                                method=self.linkage_method)
+            self.col_linkage = self.calculate_linkage(values, row=False)
         else:
             self.col_linkage = self.col_kws['linkage_matrix']
 
@@ -373,8 +374,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         cmap = mpl.colors.ListedColormap(colors)
         return matrix, cmap
 
-    @staticmethod
-    def get_linkage_function(shape, use_fastcluster):
+    def get_linkage_function(self, shape):
         """
         Parameters
         ----------
@@ -394,10 +394,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         does not exist. Vanilla scipy.cluster.hierarchy.linkage will take a
         long time on these matrices.
         """
-        if np.product(shape) >= 10000 or use_fastcluster:
+        if np.product(shape) >= 10000 or self.use_fastcluster:
             try:
                 import fastcluster
-                linkage_function = fastcluster.linkage
+                self.use_fastcluster = True
+                linkage_function = fastcluster.linkage_vector
             except ImportError:
                 raise warnings.warn('Module "fastcluster" not found. The '
                                     'dataframe '
@@ -482,6 +483,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         if row:
             ax.invert_xaxis()
+            ymax = min(map(min, Y)) + max(map(max, Y))
+            ax.set_ylim(0, ymax)
+        else:
+            xmax = min(map(min, X)) + max(map(max, X))
+            ax.set_xlim(0, xmax)
 
         utils.despine(ax=ax, bottom=True, left=True)
         ax.set_axis_bgcolor('white')
@@ -522,6 +528,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             ax.pcolormesh(side_matrix, cmap=cmap, edgecolor=self.edgecolor,
                           linewidth=self.linewidth)
             ax.set_xlim(0, side_matrix.shape[1])
+            ax.set_ylim(0, side_matrix.shape[0])
             ax.set_yticks([])
             ax.set_xticks([])
             utils.despine(ax=ax, left=True, bottom=True)
@@ -718,7 +725,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
 
 def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
-                     color_scale='linear', linkage_method='average',
+                     color_scale='linear', linkage_method='median',
                      metric='euclidean', figsize=None, pcolormesh_kws=None,
                      dendrogram_kws=None, row_kws=None, col_kws=None,
                      colorbar_kws=None, data_na_ok=None, use_fastcluster=False,
