@@ -134,7 +134,7 @@ class TestClusteredHeatmapPlotter(object):
         col_linkage = sch.linkage(col_pairwise_dists, method='average')
 
         p = cl._ClusteredHeatmapPlotter(self.data2d, use_fastcluster=False)
-        p.calculate_linkage()
+        p.get_linkage()
         npt.assert_array_almost_equal(p.row_linkage, row_linkage)
         npt.assert_array_almost_equal(p.col_linkage, col_linkage)
 
@@ -152,7 +152,7 @@ class TestClusteredHeatmapPlotter(object):
         col_linkage = sch.linkage(col_pairwise_dists, method='average')
 
         p = cl._ClusteredHeatmapPlotter(self.data2d, color_scale='log')
-        p.calculate_linkage()
+        p.get_linkage()
         npt.assert_array_equal(p.row_linkage, row_linkage)
         npt.assert_array_equal(p.col_linkage, col_linkage)
 
@@ -260,7 +260,8 @@ class TestClusteredHeatmapPlotter(object):
         import fastcluster
         linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
             shape=self.data2d, use_fastcluster=False)
-        nt.assert_is_instance(linkage_function, type(fastcluster.linkage))
+        nt.assert_is_instance(linkage_function, type(fastcluster
+                                                     .linkage_vector))
 
     def test_calculate_dendrogram(self):
         import scipy.spatial.distance as distance
@@ -572,6 +573,28 @@ class TestClusteredHeatmapPlotter(object):
         nt.assert_equal(p.gs.top, p2.gs.top)
         nt.assert_equal(p.gs.wspace, p2.gs.wspace)
 
+    @skipif(_no_fastcluster)
+    def test_plot_fastcluster(self):
+        p = cl._ClusteredHeatmapPlotter(self.data2d, use_fastcluster=True)
+        p.plot()
+
+        fig, figsize, title, title_fontsize = None, None, None, None
+        p2 = cl._ClusteredHeatmapPlotter(self.data2d)
+        p2.establish_axes(fig, figsize)
+        p2.plot_row_side()
+        p2.plot_col_side()
+        p2.plot_heatmap()
+        p2.set_title(title, title_fontsize)
+        p2.label()
+        p2.colorbar()
+
+        # Check that tight_layout was applied correctly
+        nt.assert_equal(p.gs.bottom, p2.gs.bottom)
+        nt.assert_equal(p.gs.hspace, p2.gs.hspace)
+        nt.assert_equal(p.gs.left, p2.gs.left)
+        nt.assert_equal(p.gs.right, p2.gs.right)
+        nt.assert_equal(p.gs.top, p2.gs.top)
+        nt.assert_equal(p.gs.wspace, p2.gs.wspace)
 
 labels = ['Games', 'Minutes', 'Points', 'Field goals made',
           'Field goal attempts', 'Field goal percentage', 'Free throws made',
