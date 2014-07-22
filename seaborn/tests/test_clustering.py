@@ -331,8 +331,9 @@ class TestClusteredHeatmapPlotter(object):
         plt.close('all')
 
     def test_establish_axes_no_side_colors(self):
-        width = min(self.data2d.shape[1] * 0.5, 40)
-        height = min(self.data2d.shape[0] * 0.5, 40)
+        # width = min(self.data2d.shape[1] * 0.5, 40)
+        # height = min(self.data2d.shape[0] * 0.5, 40)
+        width, height = 10, 10
         figsize = (width, height)
 
         p = cl._ClusteredHeatmapPlotter(self.data2d)
@@ -345,7 +346,7 @@ class TestClusteredHeatmapPlotter(object):
     def test_establish_axes_no_side_colors_figsize(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
 
-        figsize = (10, 10)
+        figsize = (8, 22)
         p.establish_axes(figsize=figsize)
 
         nt.assert_equal(len(p.fig.axes), 4)
