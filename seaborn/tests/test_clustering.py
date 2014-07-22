@@ -85,6 +85,9 @@ class TestClusteredHeatmapPlotter(object):
                       range(data2d.shape[0])]
     row_colors = [colors[i] for i in row_color_inds]
 
+    metric = 'euclidean'
+    method = 'median'
+
     def test_interpret_kws_from_none_divergent(self):
         p = cl._ClusteredHeatmapPlotter(self.data2d)
         p.interpret_kws(row_kws=None, col_kws=None, pcolormesh_kws=None,
@@ -129,12 +132,12 @@ class TestClusteredHeatmapPlotter(object):
         import scipy.cluster.hierarchy as sch
 
         row_pairwise_dists = distance.squareform(
-            distance.pdist(self.data2d.values, metric='euclidean'))
-        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+            distance.pdist(self.data2d.values, metric=self.metric))
+        row_linkage = sch.linkage(row_pairwise_dists, method=self.method)
 
         col_pairwise_dists = distance.squareform(
-            distance.pdist(self.data2d.values.T, metric='euclidean'))
-        col_linkage = sch.linkage(col_pairwise_dists, method='average')
+            distance.pdist(self.data2d.values.T, metric=self.metric))
+        col_linkage = sch.linkage(col_pairwise_dists, method=self.method)
 
         p = cl._ClusteredHeatmapPlotter(self.data2d, use_fastcluster=False)
         p.get_linkage()
@@ -147,12 +150,12 @@ class TestClusteredHeatmapPlotter(object):
 
         values = np.log10(self.data2d.values)
         row_pairwise_dists = distance.squareform(
-            distance.pdist(values, metric='euclidean'))
-        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+            distance.pdist(values, metric=self.metric))
+        row_linkage = sch.linkage(row_pairwise_dists, method=self.method)
 
         col_pairwise_dists = distance.squareform(
-            distance.pdist(values.T, metric='euclidean'))
-        col_linkage = sch.linkage(col_pairwise_dists, method='average')
+            distance.pdist(values.T, metric=self.metric))
+        col_linkage = sch.linkage(col_pairwise_dists, method=self.method)
 
         p = cl._ClusteredHeatmapPlotter(self.data2d, color_scale='log')
         p.get_linkage()
@@ -243,29 +246,31 @@ class TestClusteredHeatmapPlotter(object):
     def test_get_linkage_function_scipy(self):
         import scipy.cluster.hierarchy as sch
 
-        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=self.data2d, use_fastcluster=False)
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+
+        linkage_function = p.get_linkage_function(shape=self.data2d.shape)
         nt.assert_is_instance(linkage_function, type(sch.linkage))
 
     def test_get_linkage_function_large_data(self):
         try:
             import fastcluster
 
-            linkage = fastcluster.linkage
+            linkage = fastcluster.linkage_vector
         except ImportError:
             import scipy.cluster.hierarchy as sch
 
             linkage = sch.linkage
-        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=(100, 100), use_fastcluster=False)
+
+        p = cl._ClusteredHeatmapPlotter(self.data2d)
+        linkage_function = p.get_linkage_function(shape=(100, 100))
         nt.assert_is_instance(linkage_function, type(linkage))
 
     @skipif(_no_fastcluster)
     def test_get_linkage_function_fastcluster(self):
         import fastcluster
 
-        linkage_function = cl._ClusteredHeatmapPlotter.get_linkage_function(
-            shape=self.data2d, use_fastcluster=False)
+        p = cl._ClusteredHeatmapPlotter(self.data2d, use_fastcluster=True)
+        linkage_function = p.get_linkage_function(shape=self.data2d)
         nt.assert_is_instance(linkage_function, type(fastcluster
                                                      .linkage_vector))
 
@@ -276,8 +281,8 @@ class TestClusteredHeatmapPlotter(object):
         sch.set_link_color_palette(['k'])
 
         row_pairwise_dists = distance.squareform(
-            distance.pdist(self.data2d.values, metric='euclidean'))
-        row_linkage = sch.linkage(row_pairwise_dists, method='average')
+            distance.pdist(self.data2d.values, metric=self.metric))
+        row_linkage = sch.linkage(row_pairwise_dists, method=self.method)
         dendrogram = sch.dendrogram(row_linkage, **self.default_dendrogram_kws)
 
         p = cl._ClusteredHeatmapPlotter(self.data2d)
