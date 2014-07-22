@@ -65,9 +65,9 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         # with the correct dimensions
         if fig is None:
             if figsize is None:
-                width = min(self.data2d.shape[1] * 0.5, 40)
-                height = min(self.data2d.shape[0] * 0.5, 40)
-                # width, height = 10, 10
+                # width = min(self.data2d.shape[1] * 0.5, 40)
+                # height = min(self.data2d.shape[0] * 0.5, 40)
+                width, height = 10, 10
                 figsize = (width, height)
             fig = plt.figure(figsize=figsize)
 
