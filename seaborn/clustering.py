@@ -813,10 +813,10 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
     .savefig` and don't use `fig.tight_layout`, as this will mess up the
     spacing. For example, here's how you can save the figure:
 
-    >>> import matplotlib.pyplot as plt
-    >>> sns.clusteredheatmap(data);
-    >>> fig = plt.gcf()
-    >>> fig.savefig('clusteredheatmap.png', bbox_inches='tight')
+    # >>> import matplotlib.pyplot as plt
+    # >>> sns.clusteredheatmap(data);
+    # >>> fig = plt.gcf()
+    # >>> fig.savefig('clusteredheatmap.png', bbox_inches='tight')
     """
     plotter = _ClusteredHeatmapPlotter(data, pivot_kws=pivot_kws,
                                        color_scale=color_scale,
