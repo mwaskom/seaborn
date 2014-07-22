@@ -8,7 +8,6 @@ import warnings
 
 from . import utils
 
-
 class _MatrixPlotter(object):
     """Plotter for 2D matrix data
 
@@ -734,6 +733,11 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.label()
         self.colorbar()
 
+    def savefig(self, *args, **kwargs):
+        if 'bbox_inches' not in kwargs:
+            kwargs['bbox_inches'] = 'tight'
+        self.fig.savefig(*args, **kwargs)
+
 
 def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                      color_scale='linear', linkage_method='median',
@@ -845,5 +849,5 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                                        labelsize=labelsize)
 
     plotter.plot(fig, figsize, title, title_fontsize)
-
-    return plotter.row_dendrogram, plotter.col_dendrogram
+    return plotter
+    # return plotter.row_dendrogram, plotter.col_dendrogram
