@@ -60,7 +60,79 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
                                                         self.col_linkage)
 
-    # def establish_axes(self, fig, figsize=None):
+    def z_score(self, data2d, axis=1):
+        """Standarize the mean and variance of the data axis
+
+        Parameters
+        ----------
+        data2d : pandas.DataFrame
+            Data to normalize
+        axis : int
+            Which axis to normalize across. If 0, normalize across rows, if 1,
+            normalize across columns. Default 1 (across columns)
+
+        Returns
+        -------
+        normalized : pandas.DataFrame
+            Noramlized data with a mean of 0 and variance of 1 across the
+            specified axis.
+        """
+        if axis == 1:
+            z_scored = data2d
+        else:
+            z_scored = data2d.T
+
+        z_scored = (z_scored - z_scored.mean())/z_scored.var()
+
+        if axis == 1:
+            return z_scored
+        else:
+            return z_scored.T
+
+    def standard_scale(self, data2d, axis=1, vmin=0):
+        """Divide the data by the difference between the max and min
+
+        Parameters
+        ----------
+        data2d : pandas.DataFrame
+            Data to normalize
+        axis : int
+            Which axis to normalize across. If 0, normalize across rows, if 1,
+            normalize across columns. Default 1 (across columns)
+        vmin : int
+            If 0, then subtract the minimum of the data before dividing by
+            the range.
+
+        Returns
+        -------
+        standardized : pandas.DataFrame
+            Noramlized data with a mean of 0 and variance of 1 across the
+            specified axis.
+
+        >>> import numpy as np
+        >>> d = np.arange(5, 8, 0.5)
+        >>> standard_scale(d)
+        [ 0.   0.2  0.4  0.6  0.8  1. ]
+        >>> standard_scale(d, vmin=None)
+        [ 2.   2.2  2.4  2.6  2.8  3. ]
+        """
+        # Normalize these values to range from -1 to 1
+        if axis == 1:
+            standardized = data2d
+        else:
+            standardized = data2d.T
+
+        if vmin == 0:
+            subtract = standardized.min()
+
+        standardized = (standardized - subtract) / (
+            standardized.max() - standardized.min())
+
+        if axis == 1:
+            return standardized
+        else:
+            return standardized.T
+
 
     def establish_axes(self, fig=None, figsize=None):
         # TODO: do plt.gcf() if there is a current figure else make a new one
@@ -735,7 +807,8 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
     def savefig(self, *args, **kwargs):
         if 'bbox_inches' not in kwargs:
-            kwargs['bbox_inches'] = 'tight'
+            kwargs['bbox_inches']\
+                = 'tight'
         self.fig.savefig(*args, **kwargs)
 
 
