@@ -8,13 +8,15 @@ import warnings
 
 from . import utils
 
+
 class _MatrixPlotter(object):
     """Plotter for 2D matrix data
 
     This will be used by the `clusteredheatmap`
     """
 
-    def establish_variables(self, data, **kws):
+    def establish_variables(self, data, z_score=None,
+                            standard_scale=None, **kws):
         """Extract variables from data or use directly."""
         self.data = data
 
@@ -24,41 +26,9 @@ class _MatrixPlotter(object):
         else:
             self.data2d = self.data
 
-    def plot(self, *args, **kwargs):
-        raise NotImplementedError
+        # if z_score is not None:
+        #     if z_score
 
-
-class _ClusteredHeatmapPlotter(_MatrixPlotter):
-    """Plotter of 2d matrix data, hierarchically clustered with dendrograms
-
-    """
-
-    def __init__(self, data, pivot_kws=None,
-                 color_scale='linear', linkage_method='median',
-                 metric='euclidean', pcolormesh_kws=None,
-                 dendrogram_kws=None,
-                 row_kws=None, col_kws=None,
-                 colorbar_kws=None,
-                 use_fastcluster=False,
-                 data_na_ok=None, labelsize=18):
-        self.data = data
-        self.pivot_kws = pivot_kws
-        self.color_scale = color_scale
-        self.linkage_method = linkage_method
-        self.metric = metric
-        self.use_fastcluster = use_fastcluster
-
-        self.labelsize = labelsize
-
-        self.establish_variables(data, pivot_kws=pivot_kws)
-        self.validate_data_na_ok(data_na_ok)
-        self.interpret_kws(row_kws, col_kws, pcolormesh_kws,
-                           dendrogram_kws, colorbar_kws)
-        self.get_linkage()
-        self.row_dendrogram = self.calculate_dendrogram(self.row_kws,
-                                                        self.row_linkage)
-        self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
-                                                        self.col_linkage)
 
     def z_score(self, data2d, axis=1):
         """Standarize the mean and variance of the data axis
@@ -82,7 +52,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         else:
             z_scored = data2d.T
 
-        z_scored = (z_scored - z_scored.mean())/z_scored.var()
+        z_scored = (z_scored - z_scored.mean()) / z_scored.var()
 
         if axis == 1:
             return z_scored
@@ -133,6 +103,46 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         else:
             return standardized.T
 
+    def plot(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+class _ClusteredHeatmapPlotter(_MatrixPlotter):
+    """Plotter of 2d matrix data, hierarchically clustered with dendrograms
+
+    """
+
+    def __init__(self, data, pivot_kws=None,
+                 color_scale='linear', linkage_method='median',
+                 metric='euclidean', pcolormesh_kws=None,
+                 dendrogram_kws=None,
+                 row_kws=None, col_kws=None,
+                 colorbar_kws=None,
+                 use_fastcluster=False,
+                 data_na_ok=None, labelsize=18, z_score=None,
+                 standard_scale=None):
+        self.data = data
+        self.pivot_kws = pivot_kws
+        self.color_scale = color_scale
+        self.linkage_method = linkage_method
+        self.metric = metric
+        self.use_fastcluster = use_fastcluster
+
+        self.labelsize = labelsize
+
+        self.establish_variables(data, pivot_kws=pivot_kws, z_score=z_score,
+                                 standard_scale=standard_scale)
+        self.validate_data_na_ok(data_na_ok)
+        self.interpret_kws(row_kws, col_kws, pcolormesh_kws,
+                           dendrogram_kws, colorbar_kws)
+        self.get_linkage()
+        self.row_dendrogram = self.calculate_dendrogram(self.row_kws,
+                                                        self.row_linkage)
+        self.col_dendrogram = self.calculate_dendrogram(self.col_kws,
+                                                        self.col_linkage)
+
+
+
 
     def establish_axes(self, fig=None, figsize=None):
         # TODO: do plt.gcf() if there is a current figure else make a new one
@@ -147,10 +157,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         self.fig = fig
         width_ratios = self.get_fig_width_ratios(self.row_kws['side_colors'],
+                                                 figsize=figsize,
                                                  # colorbar_kws['loc'],
                                                  dimension='width')
 
         height_ratios = self.get_fig_width_ratios(self.col_kws['side_colors'],
+                                                  figsize=figsize,
                                                   dimension='height')
         # nrows = 3 if self.col_kws['side_colors'] is None else 4
         # ncols = 2 if self.row_kws['side_colors'] is None else 3
@@ -163,25 +175,25 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
 
         # self.row_dendrogram_ax = self.fig.add_subplot(self.gs[nrows-1, 0])
         # self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0:2, ncols-1])
-        self.row_dendrogram_ax = self.fig.add_subplot(self.gs[1, 0])
-        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0, 1])
+        self.row_dendrogram_ax = self.fig.add_subplot(self.gs[nrows-1, 0:2])
+        self.col_dendrogram_ax = self.fig.add_subplot(self.gs[0:2, ncols-1])
 
         self.row_side_colors_ax = None
         self.col_side_colors_ax = None
 
         if self.col_kws['side_colors'] is not None:
             self.col_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows-2, ncols-1])
+                self.gs[nrows - 2, ncols - 1])
         if self.row_kws['side_colors'] is not None:
             self.row_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows-1, ncols-2])
+                self.gs[nrows - 1, ncols - 2])
 
-        # self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
-        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-2, ncols-2])
+        self.heatmap_ax = self.fig.add_subplot(self.gs[nrows - 1, ncols - 1])
+        # self.heatmap_ax = self.fig.add_subplot(self.gs[nrows-2, ncols-2])
 
         # colorbar for scale to right of heatmap
-        # self.colorbar_ax = self.fig.add_subplot(self.gs[0, 0])
-        self.colorbar_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
+        self.colorbar_ax = self.fig.add_subplot(self.gs[0, 0])
+        # self.colorbar_ax = self.fig.add_subplot(self.gs[nrows-1, ncols-1])
 
     def interpret_kws(self, row_kws, col_kws, pcolormesh_kws,
                       dendrogram_kws, colorbar_kws):
@@ -268,7 +280,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.mean = np.mean(self.data2d.values.flat)
         self.colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.colorbar_kws.setdefault('fontsize', 14)
-        self.colorbar_kws.setdefault('label', 'values')
+        self.colorbar_kws.setdefault('label', '')
         self.colorbar_kws.setdefault('orientation', 'horizontal')
 
         if self.cmap is None:
@@ -306,6 +318,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
                                     metric=self.metric)
         else:
             from scipy.spatial import distance
+
             pairwise_dists = distance.squareform(
                 distance.pdist(values, metric=self.metric))
             return linkage_function(pairwise_dists, method=self.linkage_method)
@@ -333,82 +346,35 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
             self.col_linkage = self.col_kws['linkage_matrix']
 
     def get_fig_width_ratios(self, side_colors,
-                             dimension, side_colors_ratio=0.05):
-
-        """
-        Figures out the ratio of each subfigure within the larger figure.
-        The dendrograms currently are 2*half_dendrogram, which is a proportion
-        of the dataframe shape. Right now, this only supports the colormap in
-        the upper left. The full figure map looks like:
-
-        0.1  0.1  0.05    1.0
-        0.1  cb              column
-        0.1                  dendrogram
-        0.05                 col colors
-        | r   d     r
-        | o   e     o
-        | w   n     w
-        |     d
-        1.0|     r     c     heatmap
-        |     o     o
-        |     g     l
-        |     r     o
-        |     a     r
-        |     m     s
-
-        The colorbar is half_dendrogram of the whitespace in the corner between
-        the row and column dendrogram. Otherwise, it's too big and its
-        corners touch the heatmap, which I didn't like.
-
-        For example, if there are side_colors, need to provide an extra value
-        in the ratio tuples, with the width side_colors_ratio. But if there
-        aren't any side colors, then the tuple is of size 3 (half_dendrogram,
-        half_dendrogram, 1.0), and if there are then the tuple is of size 4 (
-        half_dendrogram, half_dendrogram, 0.05, 1.0)
-
-        TODO: Add option for lower right corner.
-
-        side_colors: list of colors, or empty list
-        colorbar_loc: string
-        Where the colorbar will be. Valid locations: 'upper left', 'right',
-        'bottom'
-        dimension: string
-        Which dimension are we trying to find the axes locations for.
-        Valid strings: 'height', 'width'
-        side_colors_ratio: float
-        How much space the side colors labeling the rows or columns
-        should take up. Default 0.05
-
-        Returns
-        -------
-        ratios: list of ratios
-            Ratios of axes on the figure at this dimension
+                             dimension, figsize,
+                             side_colors_ratio=0.05):
+        """Get the proportions of the figure taken up by each axes
         """
         i = 0 if dimension == 'height' else 1
         if dimension not in ('height', 'width'):
             raise AssertionError("{} is not a valid 'dimension' (valid: "
                                  "'height', 'width')".format(dimension))
-        dendrogram = .25
-        ratios = [dendrogram]
+        figdim = figsize[i]
+        # Get resizing proportion of this figure for the dendrogram and
+        # colorbar, so only the heatmap gets bigger but the dendrogram stays
+        # the same size.
+        dendrogram = min(2. / figdim, .2)
 
-        # if dimension == 'width':
-        #     ratios = [dendrogram]
-        # else:
-        #     ratios = [0.5*dendrogram, 0.5*dendrogram]
+        # add the colorbar
+        colorbar_width = .8 * dendrogram
+        colorbar_height = .2 * dendrogram
+        if dimension == 'width':
+            ratios = [colorbar_width, colorbar_height]
+        else:
+            ratios = [colorbar_height, colorbar_width]
 
         if side_colors is not None:
             # Add room for the colors
             ratios += [side_colors_ratio]
 
         # Add the ratio for the heatmap itself
-        ratios += [1]
+        ratios += [.8]
 
-
-        # add the colorbar
-        if dimension == 'width':
-            ratios += [0.2]
-        else:
-            ratios += [0.05]
         return ratios
 
     @staticmethod
@@ -482,6 +448,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if np.product(shape) >= 10000 or self.use_fastcluster:
             try:
                 import fastcluster
+
                 self.use_fastcluster = True
                 linkage_function = fastcluster.linkage_vector
             except ImportError:
@@ -539,7 +506,7 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         if kws['cluster']:
             dendrogram = sch.dendrogram(linkage, **self.dendrogram_kws)
         else:
-            dendrogram = {'leaves': list(range(linkage.shape[0]+1))}
+            dendrogram = {'leaves': list(range(linkage.shape[0] + 1))}
         return dendrogram
 
     def plot_dendrogram(self, ax, dendrogram, row=True):
@@ -804,10 +771,12 @@ class _ClusteredHeatmapPlotter(_MatrixPlotter):
         self.set_title(title, title_fontsize)
         self.label()
         self.colorbar()
+        # Can't just do utils.despine() because it messes up the y-ticklabels
+        # utils.despine()
 
     def savefig(self, *args, **kwargs):
         if 'bbox_inches' not in kwargs:
-            kwargs['bbox_inches']\
+            kwargs['bbox_inches'] \
                 = 'tight'
         self.fig.savefig(*args, **kwargs)
 
@@ -817,7 +786,8 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                      metric='euclidean', figsize=None, pcolormesh_kws=None,
                      dendrogram_kws=None, row_kws=None, col_kws=None,
                      colorbar_kws=None, data_na_ok=None, use_fastcluster=False,
-                     fig=None, labelsize=18):
+                     fig=None, labelsize=18, z_score=None,
+                     standard_scale=None):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -885,6 +855,17 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
         Default False except for datasets with more than 1000 rows or columns.
     labelsize : int
         Size of the xticklabels and yticklabels
+    z_score : str or None
+        Either "rows" or "cols". Whether or not to calculate z-scores for the
+        rows or the columns. Z scores are: z = (x - mean)/std, so values
+        in each row (column) will get the mean of the row (column)
+        subtracted, then divided by the standard deviation of the row (
+        column). This ensures that each row (column) has a mean of 0 and a
+        variance of 1.
+    standard_scale : str or None
+        Either "rows" or "cols". Whether or not to "standardize" that
+        dimension, meaning to divide each row (column) by its minimum and
+        maximum.
 
     Returns
     -------
@@ -919,7 +900,9 @@ def clusteredheatmap(data, pivot_kws=None, title=None, title_fontsize=12,
                                        colorbar_kws=colorbar_kws,
                                        use_fastcluster=use_fastcluster,
                                        data_na_ok=data_na_ok,
-                                       labelsize=labelsize)
+                                       labelsize=labelsize,
+                                       z_score=z_score,
+                                       standard_scale=standard_scale)
 
     plotter.plot(fig, figsize, title, title_fontsize)
     return plotter
