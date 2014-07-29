@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
+from scipy import interpolate
 
 try:
     import statsmodels.api as sm
@@ -244,7 +245,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, bw="scott", widths=.8, alpha=None,
                join_rm=False, gridsize=100, cut=3, inner_kws=None,
-               ax=None, vert=True, **kwargs):
+               ax=None, vert=True, kdes=None, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
@@ -293,6 +294,18 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     vert : boolean, optional
         If true (default), draw vertical plots; otherwise, draw horizontal
         ones.
+    kdes: List or dictionnary.
+        Alternative specification of the KDE calculation.
+        If a list, it must have the same number of elements as the number of violin plots.
+        If a dictionnary, it must have the names of the DataFrame columns or the groups.
+        The list can contain:
+            - None: use default calculation for this series
+            - Function: the function takes the set of points on which the KDE must be evaluated and return the 
+              evaluation
+            - A pair of vectors: the KDE has already been evaluated on the wanted set of points. The first element of 
+              the pair is the evaluation positions, the second the estimated probabilities.
+        Note that the list of pair of vectors can also be represented as a 3D array (Nx2xM) and the dictionnary as 
+        a DataFrame.
     kwargs : additional parameters to fill_betweenx
 
     Returns
@@ -307,6 +320,16 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
     # Reshape and find labels for the plot
     vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
+
+    # Normalize the presentation of the kdes
+    if kdes is not None:
+        try:
+            kdes = [ kdes[n] if n in kdes else None for n in names ]
+        except:
+            assert len(kdes) == len(vals)
+            kdes = list(kdes)
+    else:
+        kdes = [None] * len(vals)
 
     # Sort out the plot colors
     colors, gray = _box_colors(vals, color)
@@ -338,14 +361,24 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Fit the KDE
         x = positions[i]
-        kde = stats.gaussian_kde(a, bw)
-        if isinstance(bw, str):
-            bw_name = "scotts" if bw == "scott" else bw
-            _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
-        else:
-            _bw = bw
-        y = _kde_support(a, _bw, gridsize, cut, (-np.inf, np.inf))
-        dens = kde.evaluate(y)
+        kde = kdes[i]
+
+        if kde is None:
+            kde = stats.gaussian_kde(a, bw)
+
+        try:
+            y, dens = kde
+            kde_fct = interpolate.interp1d(y, dens)
+        except TypeError:
+            if isinstance(bw, str):
+                bw_name = "scotts" if bw == "scott" else bw
+                _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
+            else:
+                _bw = bw
+            y = _kde_support(a, _bw, gridsize, cut, (-np.inf, np.inf))
+            kde_fct = kde
+            dens = kde(y)
+
         scl = 1 / (dens.max() / (widths / 2))
         dens *= scl
 
@@ -367,15 +400,15 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         if inner == "box":
             for quant in percentiles(a, [25, 75]):
-                q_x = kde.evaluate(quant) * scl
+                q_x = kde_fct(quant) * scl
                 q_x = [x - q_x, x + q_x]
                 ax_plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
             med = np.median(a)
-            m_x = kde.evaluate(med) * scl
+            m_x = kde_fct(med) * scl
             m_x = [x - m_x, x + m_x]
             ax_plot(m_x, [med, med], linestyle="--", **inner_kws)
         elif inner == "stick":
-            x_vals = kde.evaluate(a) * scl
+            x_vals = kde_fct(a) * scl
             x_vals = [x - x_vals, x + x_vals]
             ax_plot(x_vals, [a, a], linestyle="-", **inner_kws)
         elif inner == "points":
