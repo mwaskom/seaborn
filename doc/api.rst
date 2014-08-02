@@ -87,6 +87,7 @@ Color palettes
     dark_palette
     blend_palette
     cubehelix_palette
+    xkcd_palette
 
 
 Utility functions
