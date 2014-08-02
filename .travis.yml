@@ -24,6 +24,7 @@ install:
   - cp testing/matplotlibrc .
 
 before_install:
+  - sudo apt-get update -yq
   - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
   - sudo apt-get install msttcorefonts -qq
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then
@@ -38,11 +39,11 @@ before_script:
   - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then
     make lint;
     fi
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then
-    cd doc;
-    make notebooks html;
-    cd ..;
-    fi
+  #- if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then
+  #  cd doc;
+  #  make notebooks html;
+  #  cd ..;
+  #  fi
 
 script:
   - nosetests --with-doctest
