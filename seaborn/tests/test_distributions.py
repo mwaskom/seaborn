@@ -359,3 +359,8 @@ class TestJointPlot(object):
         nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
 
         plt.close("all")
+
+    def test_bad_kind(self):
+
+        with nt.assert_raises(ValueError):
+            dist.jointplot("x", "y", self.data, kind="not_a_kind")

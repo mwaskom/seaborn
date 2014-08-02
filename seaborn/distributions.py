@@ -972,8 +972,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
                  **marginal_kws)
         stat_func = None
     else:
-        raise ValueError("kind must be one of the following: ['scatter', \
-	        'reg', 'resid', 'kde', 'hex']")
+        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
+        raise ValueError(msg)
 
     if stat_func is not None:
         grid.annotate(stat_func, **annot_kws)
