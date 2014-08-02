@@ -238,6 +238,13 @@ class _DiscretePlotter(_LinearPlotter):
 
                 # This is where the main computation happens
                 height.append(self.estimator(y_data))
+
+                # Only bootstrap with multple values
+                if current_data.sum() < 2:
+                    ci.append((None, None))
+                    continue
+
+                # Get the confidence intervals
                 if self.ci is not None:
                     boots = algo.bootstrap(y_data, func=self.estimator,
                                            n_boot=self.n_boot,
@@ -311,6 +318,8 @@ class _DiscretePlotter(_LinearPlotter):
 
             # The error bars
             for x, (low, high) in zip(pos, ci):
+                if low is None:
+                    continue
                 ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
 
         # Set the x limits
@@ -349,6 +358,8 @@ class _DiscretePlotter(_LinearPlotter):
 
             # The error bars
             for j, (x, (low, high)) in enumerate(zip(pos, ci)):
+                if low is None:
+                    continue
                 ecolor = err_palette[j] if self.x_palette else err_palette[i]
                 ax.plot([x, x], [low, high], linewidth=self.lw,
                         color=ecolor, zorder=z)
@@ -876,6 +887,11 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
             kind = "bar"
         else:
             kind = "point"
+
+    # Always use an x_order so that the plot is drawn properly when
+    # not all of the x variables are represented in each facet
+    if x_order is None:
+        x_order = np.sort(pd.unique(data[x]))
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
