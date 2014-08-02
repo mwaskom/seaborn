@@ -790,6 +790,24 @@ class TestDiscretePlots(object):
 
         plt.close("all")
 
+    def test_factorplot_missing(self):
+
+        d = pd.DataFrame(dict(a=["a", "a", "b", "c", "c"],
+                              b=["x", "y", "x", "x", "y"],
+                              c=[1, 2, 3, 4, 5]))
+
+        g = lm.factorplot("a", "c", data=d, col="b", kind="point")
+
+        ax = g.axes[0, 0]
+        x1, y1 = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x1, [0, 1, 2])
+        npt.assert_array_equal(y1, [1, 3, 4])
+
+        ax = g.axes[0, 1]
+        x1, y1 = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x1, [0, 2])
+        npt.assert_array_equal(y1, [2, 5])
+
     def test_factorplot_hline(self):
 
         g = lm.factorplot("x", "v", data=self.df, kind="bar", hline=0)
