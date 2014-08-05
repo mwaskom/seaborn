@@ -56,12 +56,6 @@ class TestAxesStyle(RCParamTester):
         nt.assert_equal(out["axes.facecolor"], "blue")
         nt.assert_not_in("foo.notaparam", out)
 
-    def test_back_compat(self):
-
-        nogrid = rcmod.axes_style("nogrid")
-        white = rcmod.axes_style("white")
-        nt.assert_equal(nogrid, white)
-
     def test_set_style(self):
 
         for style in self.styles:
