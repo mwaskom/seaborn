@@ -1,6 +1,5 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 import numpy as np
-import warnings
 import matplotlib as mpl
 
 from . import palettes
@@ -177,13 +176,6 @@ def axes_style(style=None, rc=None):
         style_dict = style
 
     else:
-
-        # Backwards compatibility
-        if style == "nogrid":
-            style = "white"
-            warnings.warn("The 'nogrid' style is now named 'white'. "
-                          "Please update your code", UserWarning)
-
         styles = ["white", "dark", "whitegrid", "darkgrid", "ticks"]
         if style not in styles:
             raise ValueError("style must be one of %s" % ", ".join(styles))
@@ -479,17 +471,3 @@ def set_palette(name, n_colors=6, desat=None):
     colors = palettes.color_palette(name, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
-
-
-def set_color_palette(palette, n_colors=6, desat=None):
-    """Backwards compatibility for set_palette."""
-    warnings.warn("set_color_palette is deprecated, use set_palette instead.",
-                  UserWarning)
-    return set_palette(palette, n_colors, desat)
-
-
-def palette_context(palette, n_colors=6, desat=None):
-    """Backwards compatibility for color_palette."""
-    warnings.warn("palette_context is deprecated, use color_palette directly.",
-                  UserWarning)
-    return palettes.color_palette(palette, n_colors, desat)
