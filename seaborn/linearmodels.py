@@ -2,7 +2,6 @@
 from __future__ import division
 import copy
 import itertools
-import warnings
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
@@ -737,13 +736,6 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
     regplot : Axes-level function for plotting linear regressions.
 
     """
-
-    # Backwards-compatibility warning layer
-    if "color" in kwargs:
-        msg = "`color` is deprecated and will be removed; using `hue` instead."
-        warnings.warn(msg, UserWarning)
-        hue = kwargs.pop("color")
-
     # Reduce the dataframe to only needed columns
     # Otherwise when dropna is True we could lose data because it is missing
     # in a column that isn't relevant to this plot

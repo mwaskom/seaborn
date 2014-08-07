@@ -23,3 +23,10 @@ Style and color palettes
 - The :func:`despine` function gets a new keyword argument ``offset``, which replaces the deprecated :func:`offset_spines` function. You no longer need to offset the spines before plotting data.
 
 - Added a default value for ``pdf.fonttype`` so that text in PDFs is editable in Adobe Illustrator.
+
+Other API Changes
+~~~~~~~~~~~~~~~~~
+
+- Removed the deprecated ``set_color_palette`` and ``palette_context`` functions. These were replaced in version 0.3 by the :func:`set_palette` function and ability to use :func:`color_palette` directly in a ``with`` statement.
+
+- Removed the ability to specify a ``nogrid`` style, which was renamed to ``white`` in 0.3.
