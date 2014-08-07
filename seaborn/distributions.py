@@ -101,7 +101,7 @@ def _box_reshape(vals, groupby, names, order):
     return vals, xlabel, ylabel, names
 
 
-def _box_colors(vals, color):
+def _box_colors(vals, color, sat):
     """Find colors to use for boxplots or violinplots."""
     if color is None:
         colors = husl_palette(len(vals), l=.7)
@@ -114,7 +114,7 @@ def _box_colors(vals, color):
 
     # Desaturate a bit because these are patches
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-    colors = [desaturate(c, .7) for c in colors]
+    colors = [desaturate(c, sat) for c in colors]
 
     # Determine the gray color for the lines
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
@@ -126,7 +126,7 @@ def _box_colors(vals, color):
 
 def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            label=None, ax=None, **kwargs):
+            saturation=.7, label=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
@@ -157,6 +157,10 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
         Markersize for the fliers.
     linewidth : float, optional
         Width for the box outlines and whiskers.
+    saturation : float, 0-1
+        Saturation relative to the fully-saturated color. Large patches tend
+        to look better at lower saturations, so this dims the palette colors
+        a bit by default.
     ax : matplotlib axis, optional
         Existing axis to plot into, otherwise grab current axis.
     kwargs : additional keyword arguments to boxplot
@@ -177,7 +181,7 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
     # Find plot colors
-    colors, gray = _box_colors(vals, color)
+    colors, gray = _box_colors(vals, color, saturation)
 
     # Set the new aesthetics
     for i, box in enumerate(boxes["boxes"]):
@@ -243,8 +247,8 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, bw="scott", widths=.8, alpha=None,
-               join_rm=False, gridsize=100, cut=3, inner_kws=None,
-               ax=None, vert=True, **kwargs):
+               saturation=.7, join_rm=False, gridsize=100, cut=3,
+               inner_kws=None, ax=None, vert=True, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
@@ -279,6 +283,10 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Width of each violin at maximum density.
     alpha : float, optional
         Transparancy of violin fill.
+    saturation : float, 0-1
+        Saturation relative to the fully-saturated color. Large patches tend
+        to look better at lower saturations, so this dims the palette colors
+        a bit by default.
     join_rm : boolean, optional
         If True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot.
@@ -309,7 +317,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
 
     # Sort out the plot colors
-    colors, gray = _box_colors(vals, color)
+    colors, gray = _box_colors(vals, color, saturation)
 
     # Initialize the kwarg dict for the inner plot
     if inner_kws is None:
