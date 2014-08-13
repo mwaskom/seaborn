@@ -209,6 +209,12 @@ class TestFacetGrid(object):
         g1 = ag.FacetGrid(self.df, hue="b")
         g1.map(plt.plot, "x", "y")
 
+    def test_legendout_with_colwrap(self):
+
+        g = ag.FacetGrid(self.df, col="d", hue='b',
+                         col_wrap=4, legend_out=False)
+        g.map(plt.plot, "x", "y", linewidth=3)
+
     def test_data_generator(self):
 
         g = ag.FacetGrid(self.df, row="a")

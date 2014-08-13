@@ -614,7 +614,7 @@ class FacetGrid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes[0, 0].legend(handles, label_order, loc="best")
+            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
             leg.set_title(title)
 
             # Set the title size a roundabout way to maintain
