@@ -953,9 +953,8 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
 
     Returns
     -------
-    facet : FacetGrid
-        Returns the :class:`FacetGrid` instance with the plot on it
-        for further tweaking.
+    ax : Axes
+        Returns the matplotlib Axes with the plot on it for further tweaking.
 
 
     See Also
