@@ -151,7 +151,11 @@ class _DiscretePlotter(_LinearPlotter):
                 color = color_palette()[0]
             palette = [color for _ in self.x_order]
         elif palette is None:
-            palette = color_palette(n_colors=n_hues)
+            current_palette = mpl.rcParams["axes.color_cycle"]
+            if len(current_palette) <= n_hues:
+                palette = color_palette("husl", n_hues)
+            else:
+                palette = color_palette(n_colors=n_hues)
         elif isinstance(palette, dict):
             palette = [palette[k] for k in hue_names]
             palette = color_palette(palette, n_hues)
@@ -684,7 +688,7 @@ class _RegressionPlotter(_LinearPlotter):
         ax.set_xlim(*xlim)
 
 
-def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
+def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
            hue_order=None, col_order=None, row_order=None, dropna=True,
            legend=True, legend_out=True, **kwargs):

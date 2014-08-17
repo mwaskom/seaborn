@@ -13,7 +13,7 @@ class FacetGrid(object):
     """Subplot grid for applying plotting functions to subsets of data."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
-                 sharex=True, sharey=True, size=3, aspect=1, palette="husl",
+                 sharex=True, sharey=True, size=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None,
                  dropna=True, legend=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None):
@@ -143,11 +143,23 @@ class FacetGrid(object):
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
-            if isinstance(palette, dict):
-                # Allow for palette to map from hue variable names
-                palette = [palette[h] for h in hue_names]
             hue_masks = [data[hue] == val for val in hue_names]
-            colors = color_palette(palette, len(hue_masks))
+            n_colors = len(hue_masks)
+
+            # Now we are ready to determine the palette
+            if palette is None:
+                # By default use either the current color palette or HUSL
+                current_palette = mpl.rcParams["axes.color_cycle"]
+                if n_colors > len(current_palette):
+                    colors = color_palette("husl", n_colors)
+                else:
+                    colors = color_palette(n_colors=n_colors)
+            elif isinstance(palette, dict):
+                # Allow for palette to map from hue variable names
+                color_names = [palette[h] for h in hue_names]
+                colors = color_palette(color_names, n_colors)
+            else:
+                colors = color_palette(palette, n_colors)
 
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
