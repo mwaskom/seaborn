@@ -173,7 +173,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                                  unit=units,
                                  cond=conds))
 
-    # Set up the err_style and ci arguments for teh loop below
+    # Set up the err_style and ci arguments for the loop below
     if isinstance(err_style, string_types):
         err_style = [err_style]
     elif err_style is None:
@@ -183,7 +183,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
     # Set up the color palette
     if color is None:
-        colors = color_palette()
+        current_palette = mpl.rcParams["axes.color_cycle"]
+        if len(current_palette) < n_cond:
+            colors = color_palette("husl", n_cond)
+        else:
+            colors = color_palette(n_colors=n_cond)
     elif isinstance(color, dict):
         colors = [color[c] for c in data[condition].unique()]
     else:

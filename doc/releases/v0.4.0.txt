@@ -5,6 +5,8 @@ v0.4.0 (??)
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
 
+- The rules for choosing default color palettes when variables are mapped to different colors have been unified (and thus changed in some cases). Now when no specific palette is requested, the current global color palette will be used, unless the number of variables to be mapped exceeds the number of unique colors in the palette, in which case the ``"husl"`` palette will be used to avoid cycling.
+
 - Added a keyword argument ``hist_norm`` to :func:`distplot`. When a :func:`distplot` is now drawn without a KDE or parametric density, the histogram is drawn as counts instead of a density. This can be overridden by by setting ``hist_norm`` to ``True``.
 
 - Made some changes to :func:``factorplot`` so that it behaves better when not all levels of the ``x`` variable are represented in each facet.

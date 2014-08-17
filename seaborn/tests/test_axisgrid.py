@@ -159,7 +159,7 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, hue="a")
         g1.map(plt.plot, "x", "y")
-        palette = color_palette("husl", 3)
+        palette = color_palette(n_colors=3)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "a")
 
@@ -184,7 +184,7 @@ class TestFacetGrid(object):
         self.df["b_bool"] = self.df.b == "m"
         g1 = ag.FacetGrid(self.df, hue="b_bool")
         g1.map(plt.plot, "x", "y")
-        palette = color_palette("husl", 2)
+        palette = color_palette(n_colors=2)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
 
@@ -416,7 +416,10 @@ class TestFacetGrid(object):
     def test_palette(self):
 
         g = ag.FacetGrid(self.df, hue="c")
-        nt.assert_equal(g._colors, color_palette("husl", 3))
+        nt.assert_equal(g._colors, color_palette(n_colors=3))
+
+        g = ag.FacetGrid(self.df, hue="d")
+        nt.assert_equal(g._colors, color_palette("husl", 10))
 
         g = ag.FacetGrid(self.df, hue="c", palette="Set2")
         nt.assert_equal(g._colors, color_palette("Set2", 3))

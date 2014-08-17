@@ -104,7 +104,12 @@ def _box_reshape(vals, groupby, names, order):
 def _box_colors(vals, color, sat):
     """Find colors to use for boxplots or violinplots."""
     if color is None:
-        colors = husl_palette(len(vals), l=.7)
+        # Default uses either the current palette or husl
+        current_palette = mpl.rcParams["axes.color_cycle"]
+        if len(vals) <= len(current_palette):
+            colors = color_palette(n_colors=len(vals))
+        else:
+            colors = husl_palette(len(vals), l=.7)
     else:
         try:
             color = mpl.colors.colorConverter.to_rgb(color)
