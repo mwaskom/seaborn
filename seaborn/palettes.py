@@ -330,6 +330,10 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     -------
     palette : list or colormap
 
+    See Also
+    --------
+    choose_cubehelix : Launch an interactive widget to select parameters.
+
     References
     ----------
     Green, D. A. (2011). "A colour scheme for the display of astronomical
@@ -354,3 +358,30 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return cmap
     else:
         return pal
+
+
+def choose_cubehelix():
+    """Launch an interactive widget to select cubehelix parameters.
+
+    Requires IPython 2 and must be used in a notebook.
+
+    See Also
+    --------
+    cubehelix_palette: Make a sequential palette from the cubehelix system.
+
+    """
+    from .miscplot import palplot
+    from IPython.html.widgets import (interact,
+                                      FloatSliderWidget, IntSliderWidget)
+
+    @interact
+    def choose_cubehelix(n_colors=IntSliderWidget(min=1, max=15, value=6),
+                         start=FloatSliderWidget(min=0, max=3, value=0),
+                         rot=FloatSliderWidget(min=-1, max=1, value=.4),
+                         gamma=FloatSliderWidget(min=0, max=5, value=1),
+                         hue=FloatSliderWidget(min=0, max=1, value=.8),
+                         dark=FloatSliderWidget(min=0, max=1, value=.15),
+                         light=FloatSliderWidget(min=0, max=1, value=.85),
+                         reverse=False):
+        palplot(cubehelix_palette(n_colors, start, rot, gamma,
+                                  hue, dark, light, reverse))
