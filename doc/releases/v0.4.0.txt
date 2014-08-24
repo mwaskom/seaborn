@@ -16,7 +16,7 @@ Plotting functions
 Style and color palettes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used.
+- Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used. There is also the :func:`choose_cubehelix` which will launch an interactive app to select cubehelix parameters in the notebook.
 
 - Added the :func:`xkcd_palette` and the ``xkcd_rgb`` dictionary so that colors :ref:`can be specified <using_xkcd_palettes>` with names from the `xkcd color survey <http://blog.xkcd.com/2010/05/03/color-survey-results/>`_.
 
