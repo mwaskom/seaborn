@@ -87,6 +87,7 @@ Color palettes
     dark_palette
     blend_palette
     cubehelix_palette
+    choose_cubehelix
     xkcd_palette
 
 
