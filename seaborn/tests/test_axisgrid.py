@@ -517,6 +517,36 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    def test_palette(self):
+
+        df = pd.DataFrame(dict(x=rs.normal(size=60),
+                               y=rs.gamma(4, size=60),
+                               a=np.repeat(list("abc"), 20),
+                               b=np.tile(list("mn"), 30),
+                               c=np.tile(list("tuv"), 20),
+                               d=np.tile(list("abcdefghij"), 6)))
+
+        g = ag.PairGrid(df, hue="c")
+        nt.assert_equal(g.palette, color_palette(n_colors=3))
+
+        g = ag.PairGrid(df, hue="d")
+        nt.assert_equal(g.palette, color_palette("husl", 10))
+
+        g = ag.PairGrid(df, hue="c", palette="Set2")
+        nt.assert_equal(g.palette, color_palette("Set2", 3))
+
+        dict_pal = dict(t="red", u="green", v="blue")
+        list_pal = color_palette(["red", "green", "blue"], 3)
+        g = ag.PairGrid(df, hue="c", palette=dict_pal)
+        nt.assert_equal(g.palette, list_pal)
+
+        list_pal = color_palette(["green", "blue", "red"], 3)
+        g = ag.PairGrid(df, hue="c", hue_order=list("uvt"),
+                         palette=dict_pal)
+        nt.assert_equal(g.palette, list_pal)
+
+        plt.close("all")
+
     @classmethod
     def teardown_class(cls):
         """Ensure that all figures are closed on exit."""

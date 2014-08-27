@@ -721,7 +721,8 @@ class FacetGrid(object):
 class PairGrid(object):
 
     def __init__(self, data, vars=None, x_vars=None, y_vars=None, hue=None,
-                 palette="husl", diag_sharey=True, size=3, aspect=1,
+                 palette=None, hue_order=None,
+                 diag_sharey=True, size=3, aspect=1,
                  despine=True, dropna=True):
 
         if vars is not None:
@@ -764,8 +765,31 @@ class PairGrid(object):
             self.hue_vals = pd.Series(["_nolegend_"] * len(data))
             self.palette = color_palette(n_colors=1)
         else:
+            if hue_order is None:
+                hue_names = np.unique(np.sort(data[hue]))
+            else:
+                hue_names = hue_order
+            if dropna:
+                # Filter NA from the list of unique hue names
+                hue_names = list(filter(pd.notnull, hue_names))
+
             self.hue_vals = data[hue]
-            self.palette = color_palette(palette, len(data[hue].unique()))
+            n_colors = len(hue_names)
+            if palette is None:
+                # By default use either the current color palette or HUSL
+                current_palette = mpl.rcParams["axes.color_cycle"]
+                if n_colors > len(current_palette):
+                    colors = color_palette("husl", n_colors)
+                else:
+                    colors = color_palette(n_colors=n_colors)
+            elif isinstance(palette, dict):
+                # Allow for palette to map from hue variable names
+                color_names = [palette[h] for h in hue_names]
+                colors = color_palette(color_names, n_colors)
+            else:
+                colors = color_palette(palette, n_colors)
+
+            self.palette = color_palette(colors, n_colors)
 
         if despine:
             utils.despine(fig=fig)
