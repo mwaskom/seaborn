@@ -462,7 +462,8 @@ class TestPairGrid(object):
     df = pd.DataFrame(dict(x=rs.normal(size=80),
                            y=rs.randint(0, 4, size=(80)),
                            z=rs.gamma(3, size=80),
-                           a=np.repeat(list("abcd"), 20)))
+                           a=np.repeat(list("abcd"), 20),
+                           b=np.repeat(list("abcdefgh"), 10)))
 
     def test_self_data(self):
 
@@ -519,30 +520,23 @@ class TestPairGrid(object):
 
     def test_palette(self):
 
-        df = pd.DataFrame(dict(x=rs.normal(size=60),
-                               y=rs.gamma(4, size=60),
-                               a=np.repeat(list("abc"), 20),
-                               b=np.tile(list("mn"), 30),
-                               c=np.tile(list("tuv"), 20),
-                               d=np.tile(list("abcdefghij"), 6)))
+        g = ag.PairGrid(self.df, hue="a")
+        nt.assert_equal(g.palette, color_palette(n_colors=4))
 
-        g = ag.PairGrid(df, hue="c")
-        nt.assert_equal(g.palette, color_palette(n_colors=3))
+        g = ag.PairGrid(self.df, hue="b")
+        nt.assert_equal(g.palette, color_palette("husl", 8))
 
-        g = ag.PairGrid(df, hue="d")
-        nt.assert_equal(g.palette, color_palette("husl", 10))
+        g = ag.PairGrid(self.df, hue="a", palette="Set2")
+        nt.assert_equal(g.palette, color_palette("Set2", 4))
 
-        g = ag.PairGrid(df, hue="c", palette="Set2")
-        nt.assert_equal(g.palette, color_palette("Set2", 3))
-
-        dict_pal = dict(t="red", u="green", v="blue")
-        list_pal = color_palette(["red", "green", "blue"], 3)
-        g = ag.PairGrid(df, hue="c", palette=dict_pal)
+        dict_pal = dict(a="red", b="green", c="blue", d="purple")
+        list_pal = color_palette(["red", "green", "blue", "purple"], 4)
+        g = ag.PairGrid(self.df, hue="a", palette=dict_pal)
         nt.assert_equal(g.palette, list_pal)
 
-        list_pal = color_palette(["green", "blue", "red"], 3)
-        g = ag.PairGrid(df, hue="c", hue_order=list("uvt"),
-                         palette=dict_pal)
+        list_pal = color_palette(["purple", "blue", "red", "green"], 4)
+        g = ag.PairGrid(self.df, hue="a", hue_order=list("dcab"),
+                        palette=dict_pal)
         nt.assert_equal(g.palette, list_pal)
 
         plt.close("all")

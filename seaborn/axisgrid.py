@@ -9,7 +9,47 @@ from . import utils
 from .palettes import color_palette
 
 
-class FacetGrid(object):
+class Grid(object):
+
+    def _get_palette(self, data, hue, hue_order, palette, dropna):
+        """Get a list of colors for the hue variable."""
+        if hue is None:
+            palette = color_palette(n_colors=1)
+
+        else:
+            if hue_order is None:
+                hue_names = np.unique(np.sort(data[hue]))
+            else:
+                hue_names = hue_order
+            if dropna:
+                # Filter NA from the list of unique hue names
+                hue_names = list(filter(pd.notnull, hue_names))
+
+            n_colors = len(hue_names)
+
+            # By default use either the current color palette or HUSL
+            if palette is None:
+                current_palette = mpl.rcParams["axes.color_cycle"]
+                if n_colors > len(current_palette):
+                    colors = color_palette("husl", n_colors)
+                else:
+                    colors = color_palette(n_colors=n_colors)
+
+            # Allow for palette to map from hue variable names
+            elif isinstance(palette, dict):
+                color_names = [palette[h] for h in hue_names]
+                colors = color_palette(color_names, n_colors)
+
+            # Otherwise act as if we just got a list of colors
+            else:
+                colors = color_palette(palette, n_colors)
+
+            palette = color_palette(colors, n_colors)
+
+        return palette
+
+
+class FacetGrid(Grid):
     """Subplot grid for applying plotting functions to subsets of data."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
@@ -131,10 +171,6 @@ class FacetGrid(object):
         hue_var = hue
         if hue is None:
             hue_names = None
-            hue_masks = [np.repeat(True, len(data))]
-            # Use the first color of the current palette
-            # I'm not sure if I like this vs. e.g. dark gray
-            colors = color_palette(n_colors=1)
         else:
             if hue_order is None:
                 hue_names = np.unique(np.sort(data[hue]))
@@ -143,23 +179,8 @@ class FacetGrid(object):
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
-            hue_masks = [data[hue] == val for val in hue_names]
-            n_colors = len(hue_masks)
 
-            # Now we are ready to determine the palette
-            if palette is None:
-                # By default use either the current color palette or HUSL
-                current_palette = mpl.rcParams["axes.color_cycle"]
-                if n_colors > len(current_palette):
-                    colors = color_palette("husl", n_colors)
-                else:
-                    colors = color_palette(n_colors=n_colors)
-            elif isinstance(palette, dict):
-                # Allow for palette to map from hue variable names
-                color_names = [palette[h] for h in hue_names]
-                colors = color_palette(color_names, n_colors)
-            else:
-                colors = color_palette(palette, n_colors)
+        colors = self._get_palette(data, hue, hue_order, palette, dropna)
 
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
@@ -718,7 +739,7 @@ class FacetGrid(object):
             return np.array(axes, object).flat
 
 
-class PairGrid(object):
+class PairGrid(Grid):
 
     def __init__(self, data, vars=None, x_vars=None, y_vars=None, hue=None,
                  palette=None, hue_order=None,
@@ -761,35 +782,12 @@ class PairGrid(object):
         self.diag_sharey = diag_sharey
         self.diag_axes = None
 
+        self.palette = self._get_palette(data, hue, hue_order, palette, dropna)
+
         if hue is None:
             self.hue_vals = pd.Series(["_nolegend_"] * len(data))
-            self.palette = color_palette(n_colors=1)
         else:
-            if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
-            else:
-                hue_names = hue_order
-            if dropna:
-                # Filter NA from the list of unique hue names
-                hue_names = list(filter(pd.notnull, hue_names))
-
             self.hue_vals = data[hue]
-            n_colors = len(hue_names)
-            if palette is None:
-                # By default use either the current color palette or HUSL
-                current_palette = mpl.rcParams["axes.color_cycle"]
-                if n_colors > len(current_palette):
-                    colors = color_palette("husl", n_colors)
-                else:
-                    colors = color_palette(n_colors=n_colors)
-            elif isinstance(palette, dict):
-                # Allow for palette to map from hue variable names
-                color_names = [palette[h] for h in hue_names]
-                colors = color_palette(color_names, n_colors)
-            else:
-                colors = color_palette(palette, n_colors)
-
-            self.palette = color_palette(colors, n_colors)
 
         if despine:
             utils.despine(fig=fig)
