@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib as mpl
 from distutils.version import LooseVersion
-
 import nose
+import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
@@ -162,3 +162,46 @@ class TestPlottingContext(RCParamTester):
             context_params = rcmod.plotting_context("paper")
             self.assert_rc_params(context_params)
         self.assert_rc_params(orig_params)
+
+
+class TestFonts(object):
+
+    def test_set_font(self):
+
+        rcmod.set(font="Verdana")
+
+        _, ax = plt.subplots()
+        ax.set_xlabel("foo")
+
+        nt.assert_equal(ax.xaxis.label.get_fontname(),
+                        "Verdana")
+
+        rcmod.set()
+        plt.close("all")
+
+    def test_set_serif_font(self):
+
+        rcmod.set(font="serif")
+
+        _, ax = plt.subplots()
+        ax.set_xlabel("foo")
+
+        nt.assert_in(ax.xaxis.label.get_fontname(),
+                     mpl.rcParams["font.serif"])
+
+        rcmod.set()
+        plt.close("all")
+
+    def test_different_sans_serif(self):
+
+        rcmod.set_style(rc={"font.sans-serif":
+                            ["Verdana"]})
+
+        _, ax = plt.subplots()
+        ax.set_xlabel("foo")
+
+        nt.assert_equal(ax.xaxis.label.get_fontname(),
+                        "Verdana")
+
+        rcmod.set()
+        plt.close("all")
