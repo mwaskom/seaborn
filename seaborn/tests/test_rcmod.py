@@ -170,7 +170,7 @@ class TestFonts(object):
 
         rcmod.set(font="Verdana")
 
-        ax = plt.subplot()
+        _, ax = plt.subplots()
         ax.set_xlabel("foo")
 
         nt.assert_equal(ax.xaxis.label.get_fontname(),
@@ -183,7 +183,7 @@ class TestFonts(object):
 
         rcmod.set(font="serif")
 
-        ax = plt.subplot()
+        _, ax = plt.subplots()
         ax.set_xlabel("foo")
 
         nt.assert_in(ax.xaxis.label.get_fontname(),
@@ -197,7 +197,7 @@ class TestFonts(object):
         rcmod.set_style(rc={"font.sans-serif":
                             ["Verdana"]})
 
-        ax = plt.subplot()
+        _, ax = plt.subplots()
         ax.set_xlabel("foo")
 
         nt.assert_equal(ax.xaxis.label.get_fontname(),
