@@ -1,10 +1,13 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from distutils.version import LooseVersion
 
 import nose.tools as nt
 import numpy.testing as npt
+from numpy.testing.decorators import skipif
 
 from .. import axisgrid as ag
 from .. import rcmod
@@ -13,6 +16,8 @@ from ..distributions import kdeplot
 from ..linearmodels import pointplot, pairplot
 
 rs = np.random.RandomState(0)
+
+old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
 
 
 class TestFacetGrid(object):
@@ -612,6 +617,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_map_diag(self):
 
         g1 = ag.PairGrid(self.df)
@@ -634,6 +640,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
         vars = ["x", "y", "z"]
@@ -691,6 +698,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]
@@ -721,6 +729,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_pairplot_reg(self):
 
         vars = ["x", "y", "z"]
@@ -757,6 +766,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_pairplot_kde(self):
 
         vars = ["x", "y", "z"]
