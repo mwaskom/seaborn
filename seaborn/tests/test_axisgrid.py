@@ -7,6 +7,7 @@ import nose.tools as nt
 import numpy.testing as npt
 
 from .. import axisgrid as ag
+from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
 from ..linearmodels import pointplot
@@ -415,6 +416,8 @@ class TestFacetGrid(object):
 
     def test_palette(self):
 
+        rcmod.set()
+
         g = ag.FacetGrid(self.df, hue="c")
         nt.assert_equal(g._colors, color_palette(n_colors=3))
 
@@ -519,6 +522,8 @@ class TestPairGrid(object):
         plt.close("all")
 
     def test_palette(self):
+
+        rcmod.set()
 
         g = ag.PairGrid(self.df, hue="a")
         nt.assert_equal(g.palette, color_palette(n_colors=4))
