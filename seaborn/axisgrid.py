@@ -84,7 +84,6 @@ class Grid(object):
             prop = mpl.font_manager.FontProperties(size=title_size)
             leg._legend_title_box._text.set_font_properties(prop)
 
-
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
         ax.set_xlabel("")
@@ -744,8 +743,8 @@ class FacetGrid(Grid):
 class PairGrid(Grid):
     """Subplot grid for plotting pairwise relationships in a dataset."""
 
-    def __init__(self, data, vars=None, x_vars=None, y_vars=None,
-                 hue=None, hue_order=None, palette=None,
+    def __init__(self, data, hue=None, hue_order=None, palette=None,
+                 vars=None, x_vars=None, y_vars=None,
                  diag_sharey=True, size=3, aspect=1,
                  despine=True, dropna=True):
         """Initialize the plot figure and PairGrid object.
@@ -755,12 +754,6 @@ class PairGrid(Grid):
         data : DataFrame
             Tidy (long-form) dataframe where each column is a variable and
             each row is an observation.
-        vars : list of variable names, optional
-            Variables within ``data`` to use, otherwise use every column with
-            a numeric datatype.
-        {x, y}_vars : lists of variable names, optional
-            Variables within ``data`` to use separately for the rows and
-            columns of the figure; i.e. to make a non-square plot.
         hue : string (variable name), optional
             Variable in ``data`` to map plot aspects to different colors.
         hue_order : list of strings
@@ -768,6 +761,12 @@ class PairGrid(Grid):
         palette : dict or seaborn color palette
             Set of colors for mapping the ``hue`` variable. If a dict, keys
             should be values  in the ``hue`` variable.
+        vars : list of variable names, optional
+            Variables within ``data`` to use, otherwise use every column with
+            a numeric datatype.
+        {x, y}_vars : lists of variable names, optional
+            Variables within ``data`` to use separately for the rows and
+            columns of the figure; i.e. to make a non-square plot.
         size : scalar, optional
             Height (in inches) of each facet.
         aspect : scalar, optional
@@ -1012,7 +1011,6 @@ class PairGrid(Grid):
             ax.set_xlabel(label)
         for ax, label in zip(self.axes[:, 0], self.y_vars):
             ax.set_ylabel(label)
-
 
     def _find_numeric_cols(self, data):
         """Find which variables in a DataFrame are numeric."""
