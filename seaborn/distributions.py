@@ -349,8 +349,18 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     # Iterate over the variables
     for i, a in enumerate(vals):
 
-        # Fit the KDE
         x = positions[i]
+
+        # If we only have a single value, plot a horizontal line
+        if len(a) == 1:
+            y = a[0]
+            if vert:
+                ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)
+            else:
+                ax.plot([y, y], [x - widths / 2, x + widths / 2], **inner_kws)
+            continue
+
+        # Fit the KDE
         kde = stats.gaussian_kde(a, bw)
         if isinstance(bw, str):
             bw_name = "scotts" if bw == "scott" else bw
