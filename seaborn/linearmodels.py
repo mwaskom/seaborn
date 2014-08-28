@@ -1662,7 +1662,6 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     PairGrid : Subplot grid for more flexible plotting of pairwise
                relationships.
 
-
     """
     if plot_kws is None:
         plot_kws = {}
@@ -1700,6 +1699,6 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
 
     # Add a legend
     if hue is not None:
-        grid.set_legend()
+        grid.add_legend()
 
     return grid

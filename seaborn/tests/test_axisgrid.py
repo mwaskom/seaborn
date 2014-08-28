@@ -10,7 +10,7 @@ from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
-from ..linearmodels import pointplot
+from ..linearmodels import pointplot, pairplot
 
 rs = np.random.RandomState(0)
 
@@ -525,6 +525,147 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    def test_map(self):
+
+        vars = ["x", "y", "z"]
+        g1 = ag.PairGrid(self.df)
+        g1.map(plt.scatter)
+
+        for i, axes_i in enumerate(g1.axes):
+            for j, ax in enumerate(axes_i):
+                x_in = self.df[vars[j]]
+                y_in = self.df[vars[i]]
+                x_out, y_out = ax.collections[0].get_offsets().T
+                npt.assert_array_equal(x_in, x_out)
+                npt.assert_array_equal(y_in, y_out)
+
+        g2 = ag.PairGrid(self.df, "a")
+        g2.map(plt.scatter)
+
+        for i, axes_i in enumerate(g2.axes):
+            for j, ax in enumerate(axes_i):
+                x_in = self.df[vars[j]]
+                y_in = self.df[vars[i]]
+                for k, k_level in enumerate("abcd"):
+                    x_in_k = x_in[self.df.a == k_level]
+                    y_in_k = y_in[self.df.a == k_level]
+                    x_out, y_out = ax.collections[k].get_offsets().T
+                npt.assert_array_equal(x_in_k, x_out)
+                npt.assert_array_equal(y_in_k, y_out)
+
+        plt.close("all")
+
+    def test_map_nonsquare(self):
+
+        x_vars = ["x"]
+        y_vars = ["y", "z"]
+        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        g.map(plt.scatter)
+
+        x_in = self.df.x
+        for i, i_var in enumerate(y_vars):
+            ax = g.axes[i, 0]
+            y_in = self.df[i_var]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        plt.close("all")
+
+    def test_map_lower(self):
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df)
+        g.map_lower(plt.scatter)
+
+        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.triu_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
+
+        plt.close("all")
+
+    def test_map_upper(self):
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df)
+        g.map_upper(plt.scatter)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.tril_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
+
+        plt.close("all")
+
+    def test_map_diag(self):
+
+        g1 = ag.PairGrid(self.df)
+        g1.map_diag(plt.hist)
+
+        for ax in g1.diag_axes:
+            nt.assert_equal(len(ax.patches), 10)
+
+        g2 = ag.PairGrid(self.df)
+        g2.map_diag(plt.hist, bins=15)
+
+        for ax in g2.diag_axes:
+            nt.assert_equal(len(ax.patches), 15)
+
+        g3 = ag.PairGrid(self.df, hue="a")
+        g3.map_diag(plt.hist)
+
+        for ax in g3.diag_axes:
+            nt.assert_equal(len(ax.patches), 40)
+
+        plt.close("all")
+
+    def test_map_diag_and_offdiag(self):
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df)
+        g.map_offdiag(plt.scatter)
+        g.map_diag(plt.hist)
+
+        for ax in g.diag_axes:
+            nt.assert_equal(len(ax.patches), 10)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.diag_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
+
+        plt.close("all")
+
     def test_palette(self):
 
         rcmod.set()
@@ -547,6 +688,102 @@ class TestPairGrid(object):
         g = ag.PairGrid(self.df, hue="a", hue_order=list("dcab"),
                         palette=dict_pal)
         nt.assert_equal(g.palette, list_pal)
+
+        plt.close("all")
+
+    def test_pairplot(self):
+
+        vars = ["x", "y", "z"]
+        g = pairplot(self.df)
+
+        for ax in g.diag_axes:
+            nt.assert_equal(len(ax.patches), 10)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.diag_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
+
+        plt.close("all")
+
+    def test_pairplot_reg(self):
+
+        vars = ["x", "y", "z"]
+        g = pairplot(self.df, kind="reg")
+
+        for ax in g.diag_axes:
+            nt.assert_equal(len(ax.patches), 10)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+            nt.assert_equal(len(ax.lines), 1)
+            nt.assert_equal(len(ax.collections), 2)
+
+        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+            nt.assert_equal(len(ax.lines), 1)
+            nt.assert_equal(len(ax.collections), 2)
+
+        for i, j in zip(*np.diag_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
+
+        plt.close("all")
+
+    def test_pairplot_kde(self):
+
+        vars = ["x", "y", "z"]
+        g = pairplot(self.df, diag_kind="kde")
+
+        for ax in g.diag_axes:
+            nt.assert_equal(len(ax.lines), 1)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
+        for i, j in zip(*np.diag_indices_from(g.axes)):
+            ax = g.axes[i, j]
+            nt.assert_equal(len(ax.collections), 0)
 
         plt.close("all")
 
