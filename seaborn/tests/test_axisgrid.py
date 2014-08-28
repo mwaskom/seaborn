@@ -145,13 +145,13 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5)
         npt.assert_array_equal(g1.fig.get_size_inches(), (6, 4))
-        g1.set_legend()
+        g1.add_legend()
         nt.assert_greater(g1.fig.get_size_inches()[0], 6)
 
         g2 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5,
                           legend_out=False)
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
-        g2.set_legend()
+        g2.add_legend()
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
 
         plt.close("all")
@@ -160,6 +160,7 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, hue="a")
         g1.map(plt.plot, "x", "y")
+        g1.add_legend()
         palette = color_palette(n_colors=3)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "a")
@@ -185,6 +186,7 @@ class TestFacetGrid(object):
         self.df["b_bool"] = self.df.b == "m"
         g1 = ag.FacetGrid(self.df, hue="b_bool")
         g1.map(plt.plot, "x", "y")
+        g1.add_legend()
         palette = color_palette(n_colors=2)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
@@ -209,12 +211,14 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, hue="b")
         g1.map(plt.plot, "x", "y")
+        g1.add_legend()
 
     def test_legendout_with_colwrap(self):
 
         g = ag.FacetGrid(self.df, col="d", hue='b',
                          col_wrap=4, legend_out=False)
         g.map(plt.plot, "x", "y", linewidth=3)
+        g.add_legend()
 
     def test_data_generator(self):
 

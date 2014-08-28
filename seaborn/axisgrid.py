@@ -25,7 +25,7 @@ class Grid(object):
         """Save the figure."""
         self.fig.savefig(*args, **kwargs)
 
-    def set_legend(self, legend_data=None, title=None, label_order=None):
+    def add_legend(self, legend_data=None, title=None, label_order=None):
         """Draw a legend, possibly resizing the figure."""
         # Find the data for the legend
         legend_data = self._legend_data if legend_data is None else legend_data
@@ -521,8 +521,6 @@ class FacetGrid(Grid):
         self.set_axis_labels(*axlabels)
         self.set_titles()
         self.fig.tight_layout()
-        if self._draw_legend:
-            self.set_legend()
 
     def facet_axis(self, row_i, col_j):
         """Make the axis identified by these indices active and return it."""
