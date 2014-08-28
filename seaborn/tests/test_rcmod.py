@@ -194,6 +194,10 @@ class TestFonts(object):
 
     def test_different_sans_serif(self):
 
+        if LooseVersion(mpl.__version__) < LooseVersion("1.4"):
+            raise nose.SkipTest
+
+        rcmod.set()
         rcmod.set_style(rc={"font.sans-serif":
                             ["Verdana"]})
 

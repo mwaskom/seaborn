@@ -9,8 +9,134 @@ from . import utils
 from .palettes import color_palette
 
 
-class FacetGrid(object):
-    """Subplot grid for applying plotting functions to subsets of data."""
+class Grid(object):
+    """Base class for grids of subplots."""
+    _margin_titles = False
+    _legend_out = True
+
+    def set(self, **kwargs):
+        """Set attributes on each subplot Axes."""
+        for ax in self.axes.flat:
+            ax.set(**kwargs)
+
+        return self
+
+    def savefig(self, *args, **kwargs):
+        """Save the figure."""
+        self.fig.savefig(*args, **kwargs)
+
+    def add_legend(self, legend_data=None, title=None, label_order=None):
+        """Draw a legend, possibly resizing the figure."""
+        # Find the data for the legend
+        legend_data = self._legend_data if legend_data is None else legend_data
+        if label_order is None:
+            if self.hue_names is None:
+                label_order = np.sort(list(legend_data.keys()))
+            else:
+                label_order = list(map(str, self.hue_names))
+        handles = [legend_data[l] for l in label_order if l in legend_data]
+        title = self._hue_var if title is None else title
+        try:
+            title_size = mpl.rcParams["axes.labelsize"] * .85
+        except TypeError:  # labelsize is something like "large"
+            title_size = mpl.rcParams["axes.labelsize"]
+
+        if self._legend_out:
+            # Draw a full-figure legend outside the grid
+            figlegend = plt.figlegend(handles, label_order, "center right",
+                                      scatterpoints=1)
+            self._legend = figlegend
+            figlegend.set_title(title)
+
+            # Set the title size a roundabout way to maintain
+            # compatability with matplotlib 1.1
+            prop = mpl.font_manager.FontProperties(size=title_size)
+            figlegend._legend_title_box._text.set_font_properties(prop)
+
+            # Draw the plot to set the bounding boxes correctly
+            plt.draw()
+
+            # Calculate and set the new width of the figure so the legend fits
+            legend_width = figlegend.get_window_extent().width / self.fig.dpi
+            figure_width = self.fig.get_figwidth()
+            self.fig.set_figwidth(figure_width + legend_width)
+
+            # Draw the plot again to get the new transformations
+            plt.draw()
+
+            # Now calculate how much space we need on the right side
+            legend_width = figlegend.get_window_extent().width / self.fig.dpi
+            space_needed = legend_width / (figure_width + legend_width)
+            margin = .04 if self._margin_titles else .01
+            self._space_needed = margin + space_needed
+            right = 1 - self._space_needed
+
+            # Place the subplot axes to give space for the legend
+            self.fig.subplots_adjust(right=right)
+
+        else:
+            # Draw a legend in the first axis
+            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
+            leg.set_title(title)
+
+            # Set the title size a roundabout way to maintain
+            # compatability with matplotlib 1.1
+            prop = mpl.font_manager.FontProperties(size=title_size)
+            leg._legend_title_box._text.set_font_properties(prop)
+
+    def _clean_axis(self, ax):
+        """Turn off axis labels and legend."""
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.legend_ = None
+        return self
+
+    def _update_legend_data(self, ax):
+        """Extract the legend data from an axes object and save it."""
+        handles, labels = ax.get_legend_handles_labels()
+        data = {l: h for h, l in zip(handles, labels)}
+        self._legend_data.update(data)
+
+    def _get_palette(self, data, hue, hue_order, palette, dropna):
+        """Get a list of colors for the hue variable."""
+        if hue is None:
+            palette = color_palette(n_colors=1)
+
+        else:
+            if hue_order is None:
+                hue_names = np.unique(np.sort(data[hue]))
+            else:
+                hue_names = hue_order
+            if dropna:
+                # Filter NA from the list of unique hue names
+                hue_names = list(filter(pd.notnull, hue_names))
+
+            n_colors = len(hue_names)
+
+            # By default use either the current color palette or HUSL
+            if palette is None:
+                current_palette = mpl.rcParams["axes.color_cycle"]
+                if n_colors > len(current_palette):
+                    colors = color_palette("husl", n_colors)
+                else:
+                    colors = color_palette(n_colors=n_colors)
+
+            # Allow for palette to map from hue variable names
+            elif isinstance(palette, dict):
+                color_names = [palette[h] for h in hue_names]
+                colors = color_palette(color_names, n_colors)
+
+            # Otherwise act as if we just got a list of colors
+            else:
+                colors = color_palette(palette, n_colors)
+
+            palette = color_palette(colors, n_colors)
+
+        return palette
+
+
+class FacetGrid(Grid):
+    """Subplot grid for plotting conditional relationships in a dataset."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
@@ -29,7 +155,7 @@ class FacetGrid(object):
         col_wrap : int, optional
             Wrap the column variable at this width. Incompatible with `row`.
         share{x, y}: booleans, optional
-            Lock the limits of the vertical and horizontal axes across the
+            Lock the limits of the vertical andn horizontal axes across the
             facets.
         size : scalar, optional
             Height (in inches) of each facet.
@@ -57,11 +183,12 @@ class FacetGrid(object):
 
         Returns
         -------
-        self: FacetGrid
+        self : FacetGrid
             Returns self for plotting onto the grid.
 
         See Also
         --------
+        PairGrid : Subplot grid for plotting pairwise relationships.
         lmplot : Combines regplot and a FacetGrid
         factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
 
@@ -131,10 +258,6 @@ class FacetGrid(object):
         hue_var = hue
         if hue is None:
             hue_names = None
-            hue_masks = [np.repeat(True, len(data))]
-            # Use the first color of the current palette
-            # I'm not sure if I like this vs. e.g. dark gray
-            colors = color_palette(n_colors=1)
         else:
             if hue_order is None:
                 hue_names = np.unique(np.sort(data[hue]))
@@ -143,23 +266,8 @@ class FacetGrid(object):
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
-            hue_masks = [data[hue] == val for val in hue_names]
-            n_colors = len(hue_masks)
 
-            # Now we are ready to determine the palette
-            if palette is None:
-                # By default use either the current color palette or HUSL
-                current_palette = mpl.rcParams["axes.color_cycle"]
-                if n_colors > len(current_palette):
-                    colors = color_palette("husl", n_colors)
-                else:
-                    colors = color_palette(n_colors=n_colors)
-            elif isinstance(palette, dict):
-                # Allow for palette to map from hue variable names
-                color_names = [palette[h] for h in hue_names]
-                colors = color_palette(color_names, n_colors)
-            else:
-                colors = color_palette(palette, n_colors)
+        colors = self._get_palette(data, hue, hue_order, palette, dropna)
 
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
@@ -413,8 +521,6 @@ class FacetGrid(object):
         self.set_axis_labels(*axlabels)
         self.set_titles()
         self.fig.tight_layout()
-        if self._draw_legend:
-            self.set_legend()
 
     def facet_axis(self, row_i, col_j):
         """Make the axis identified by these indices active and return it."""
@@ -428,20 +534,6 @@ class FacetGrid(object):
         # Get a reference to the axes object we want, and make it active
         plt.sca(ax)
         return ax
-
-    def set(self, **kwargs):
-        """Set axis attributes on each facet.
-
-        This will call set_{key}({value}) for each keyword argument on every
-        facet in the grid.
-
-        """
-        for key, val in kwargs.items():
-            for ax in self.axes.flat:
-                setter = getattr(ax, "set_%s" % key)
-                setter(val)
-
-        return self
 
     def despine(self, **kwargs):
         """Remove axis spines from the facets."""
@@ -575,78 +667,6 @@ class FacetGrid(object):
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
 
-    def set_legend(self, legend_data=None, title=None, label_order=None):
-        """Draw a legend, possibly resizing the figure."""
-        # Find the data for the legend
-        legend_data = self._legend_data if legend_data is None else legend_data
-        if label_order is None:
-            if self.hue_names is None:
-                label_order = np.sort(list(legend_data.keys()))
-            else:
-                label_order = list(map(str, self.hue_names))
-        handles = [legend_data[l] for l in label_order if l in legend_data]
-        title = self._hue_var if title is None else title
-        try:
-            title_size = mpl.rcParams["axes.labelsize"] * .85
-        except TypeError:  # labelsize is something like "large"
-            title_size = mpl.rcParams["axes.labelsize"]
-
-        if self._legend_out:
-            # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, label_order, "center right",
-                                      scatterpoints=1)
-            self._legend = figlegend
-            figlegend.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            figlegend._legend_title_box._text.set_font_properties(prop)
-
-            # Draw the plot to set the bounding boxes correctly
-            plt.draw()
-
-            # Calculate and set the new width of the figure so the legend fits
-            legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            figure_width = self.fig.get_figwidth()
-            self.fig.set_figwidth(figure_width + legend_width)
-
-            # Draw the plot again to get the new transformations
-            plt.draw()
-
-            # Now calculate how much space we need on the right side
-            legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            space_needed = legend_width / (figure_width + legend_width)
-            margin = .04 if self._margin_titles else .01
-            self._space_needed = margin + space_needed
-            right = 1 - self._space_needed
-
-            # Place the subplot axes to give space for the legend
-            self.fig.subplots_adjust(right=right)
-
-        else:
-            # Draw a legend in the first axis
-            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
-            leg.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            leg._legend_title_box._text.set_font_properties(prop)
-
-    def _clean_axis(self, ax):
-        """Turn off axis labels and legend."""
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-        ax.legend_ = None
-        return self
-
-    def _update_legend_data(self, ax):
-        """Extract the legend data from an axes object and save it."""
-        handles, labels = ax.get_legend_handles_labels()
-        data = {l: h for h, l in zip(handles, labels)}
-        self._legend_data.update(data)
-
     @property
     def _inner_axes(self):
         """Return a flat array of the inner axes."""
@@ -716,6 +736,292 @@ class FacetGrid(object):
                 if append:
                     axes.append(ax)
             return np.array(axes, object).flat
+
+
+class PairGrid(Grid):
+    """Subplot grid for plotting pairwise relationships in a dataset."""
+
+    def __init__(self, data, hue=None, hue_order=None, palette=None,
+                 vars=None, x_vars=None, y_vars=None,
+                 diag_sharey=True, size=3, aspect=1,
+                 despine=True, dropna=True):
+        """Initialize the plot figure and PairGrid object.
+
+        Parameters
+        ----------
+        data : DataFrame
+            Tidy (long-form) dataframe where each column is a variable and
+            each row is an observation.
+        hue : string (variable name), optional
+            Variable in ``data`` to map plot aspects to different colors.
+        hue_order : list of strings
+            Order for the levels of the hue variable in the palette
+        palette : dict or seaborn color palette
+            Set of colors for mapping the ``hue`` variable. If a dict, keys
+            should be values  in the ``hue`` variable.
+        vars : list of variable names, optional
+            Variables within ``data`` to use, otherwise use every column with
+            a numeric datatype.
+        {x, y}_vars : lists of variable names, optional
+            Variables within ``data`` to use separately for the rows and
+            columns of the figure; i.e. to make a non-square plot.
+        size : scalar, optional
+            Height (in inches) of each facet.
+        aspect : scalar, optional
+            Aspect * size gives the width (in inches) of each facet.
+        despine : boolean, optional
+            Remove the top and right spines from the plots.
+        dropna : boolean, optional
+            Drop missing values from the data before plotting.
+
+        Returns
+        -------
+        self : PairGrid
+            Returns self for plotting onto the grid.
+
+        See Also
+        --------
+        FacetGrid : Subplot grid for plotting conditional relationships.
+        pairplot : Function for easily drawing common uses of PairGrid.
+
+        """
+
+        # Sort out the variables that define the grid
+        if vars is not None:
+            x_vars = vars
+            y_vars = vars
+        elif (x_vars is not None) or (y_vars is not None):
+            if (x_vars is None) or (y_vars is None):
+                raise ValueError("Must specify `x_vars` and `y_vars`")
+        else:
+            numeric_cols = self._find_numeric_cols(data)
+            x_vars = numeric_cols
+            y_vars = numeric_cols
+
+        self.x_vars = x_vars
+        self.y_vars = y_vars
+        self.square_grid = x_vars == y_vars
+
+        # Create the figure and the array of subplots
+        width = len(x_vars) * (aspect * size)
+        height = len(y_vars) * ((1 / aspect) * size)
+
+        fig, axes = plt.subplots(len(y_vars), len(x_vars),
+                                 figsize=(width, height),
+                                 sharex="col", sharey="row",
+                                 squeeze=False)
+
+        self.fig = fig
+        self.axes = axes
+        self.data = data
+
+        # Save what we are going to do with the diagonal
+        self.diag_sharey = diag_sharey
+        self.diag_axes = None
+
+        # Label the axes
+        self._add_axis_labels()
+
+        # Sort out the hue variable
+        self._hue_var = hue
+        if hue is None:
+            self.hue_names = None
+            self.hue_vals = pd.Series(["_nolegend_"] * len(data))
+        else:
+            if hue_order is None:
+                hue_names = np.unique(np.sort(data[hue]))
+            else:
+                hue_names = hue_order
+            if dropna:
+                # Filter NA from the list of unique hue names
+                hue_names = list(filter(pd.notnull, hue_names))
+            self.hue_names = hue_names
+            self.hue_vals = data[hue]
+
+        self.palette = self._get_palette(data, hue, hue_order, palette, dropna)
+        self._legend_data = {}
+
+        # Make the plot look nice
+        if despine:
+            utils.despine(fig=fig)
+        fig.tight_layout()
+
+    def map(self, func, **kwargs):
+        """Plot with the same function in every subplot.
+
+        Parameters
+        ----------
+        func : callable plotting function
+            Must take x, y arrays as positional arguments and draw onto the
+            "currently active" matplotlib Axes.
+
+        """
+        kw_color = kwargs.pop("color", None)
+        for i, y_var in enumerate(self.y_vars):
+            for j, x_var in enumerate(self.x_vars):
+                hue_grouped = self.data.groupby(self.hue_vals)
+                for k, (label_k, data_k) in enumerate(hue_grouped):
+                    ax = self.axes[i, j]
+                    plt.sca(ax)
+
+                    color = self.palette[k] if kw_color is None else kw_color
+                    func(data_k[x_var], data_k[y_var],
+                         label=label_k, color=color, **kwargs)
+
+                self._clean_axis(ax)
+                self._update_legend_data(ax)
+
+        if kw_color is not None:
+            kwargs["color"] = kw_color
+        self._add_axis_labels()
+
+    def map_diag(self, func, **kwargs):
+        """Plot with a univariate function on each diagonal subplot.
+
+        Parameters
+        ----------
+        func : callable plotting function
+            Must take an x array as a positional arguments and draw onto the
+            "currently active" matplotlib Axes. There is a special case when
+            using a ``hue`` variable and ``plt.hist``; the histogram will be
+            plotted with stacked bars.
+
+        """
+        # Add special diagonal axes for the univariate plot
+        if self.square_grid and self.diag_axes is None:
+            diag_axes = []
+            for i, (var, ax) in enumerate(zip(self.x_vars,
+                                              np.diag(self.axes))):
+                if i and self.diag_sharey:
+                    diag_ax = ax._make_twin_axes(sharex=ax,
+                                                 sharey=diag_axes[0],
+                                                 frameon=False)
+                else:
+                    diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
+                diag_ax.set_axis_off()
+                diag_axes.append(diag_ax)
+            self.diag_axes = np.array(diag_axes, np.object)
+        else:
+            self.diag_axes = None
+
+        # Plot on each of the diagonal axes
+        for i, var in enumerate(self.x_vars):
+            ax = self.diag_axes[i]
+            hue_grouped = self.data[var].groupby(self.hue_vals)
+
+            # Special-case plt.hist with stacked bars
+            if func is plt.hist:
+                plt.sca(ax)
+                vals = [v.values for g, v in hue_grouped]
+                func(vals, color=self.palette, histtype="barstacked",
+                     **kwargs)
+            else:
+                for k, (label_k, data_k) in enumerate(hue_grouped):
+                    plt.sca(ax)
+                    func(data_k, label=label_k,
+                         color=self.palette[k], **kwargs)
+
+            self._clean_axis(ax)
+
+        self._add_axis_labels()
+
+    def map_lower(self, func, **kwargs):
+        """Plot with a bivariate function on the lower diagonal subplots.
+
+        Parameters
+        ----------
+        func : callable plotting function
+            Must take x, y arrays as positional arguments and draw onto the
+            "currently active" matplotlib Axes.
+
+        """
+        kw_color = kwargs.pop("color", None)
+        for i, j in zip(*np.tril_indices_from(self.axes, -1)):
+            hue_grouped = self.data.groupby(self.hue_vals)
+            for k, (label_k, data_k) in enumerate(hue_grouped):
+
+                ax = self.axes[i, j]
+                plt.sca(ax)
+
+                x_var = self.x_vars[j]
+                y_var = self.y_vars[i]
+
+                color = self.palette[k] if kw_color is None else kw_color
+                func(data_k[x_var], data_k[y_var], label=label_k,
+                     color=color, **kwargs)
+
+            self._clean_axis(ax)
+            self._update_legend_data(ax)
+
+        if kw_color is not None:
+            kwargs["color"] = kw_color
+        self._add_axis_labels()
+
+    def map_upper(self, func, **kwargs):
+        """Plot with a bivariate function on the upper diagonal subplots.
+
+        Parameters
+        ----------
+        func : callable plotting function
+            Must take x, y arrays as positional arguments and draw onto the
+            "currently active" matplotlib Axes.
+
+        """
+        kw_color = kwargs.pop("color", None)
+        for i, j in zip(*np.triu_indices_from(self.axes, 1)):
+
+            hue_grouped = self.data.groupby(self.hue_vals)
+            for k, (label_k, data_k) in enumerate(hue_grouped):
+
+                ax = self.axes[i, j]
+                plt.sca(ax)
+
+                x_var = self.x_vars[j]
+                y_var = self.y_vars[i]
+
+                color = self.palette[k] if kw_color is None else kw_color
+                func(data_k[x_var], data_k[y_var], label=label_k,
+                     color=color, **kwargs)
+
+            self._clean_axis(ax)
+            self._update_legend_data(ax)
+
+        if kw_color is not None:
+            kwargs["color"] = kw_color
+
+    def map_offdiag(self, func, **kwargs):
+        """Plot with a bivariate function on the off-diagonal subplots.
+
+        Parameters
+        ----------
+        func : callable plotting function
+            Must take x, y arrays as positional arguments and draw onto the
+            "currently active" matplotlib Axes.
+
+        """
+
+        self.map_lower(func, **kwargs)
+        self.map_upper(func, **kwargs)
+
+    def _add_axis_labels(self):
+        """Add labels to the left and bottom Axes."""
+        for ax, label in zip(self.axes[-1, :], self.x_vars):
+            ax.set_xlabel(label)
+        for ax, label in zip(self.axes[:, 0], self.y_vars):
+            ax.set_ylabel(label)
+
+    def _find_numeric_cols(self, data):
+        """Find which variables in a DataFrame are numeric."""
+        # This can't be the best way to do this, but  I do not
+        # know what the best way might be, so this seems ok
+        numeric_cols = []
+        for col in data:
+            try:
+                data[col].astype(np.float)
+                numeric_cols.append(col)
+            except ValueError:
+                pass
+        return numeric_cols
 
 
 class JointGrid(object):

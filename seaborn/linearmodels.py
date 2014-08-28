@@ -21,7 +21,8 @@ from .external.six.moves import range
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
-from .axisgrid import FacetGrid
+from .axisgrid import FacetGrid, PairGrid
+from .distributions import kdeplot
 
 
 class _LinearPlotter(object):
@@ -768,6 +769,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
 
     # Draw the regression plot on each facet
     facets.map_dataframe(regplot, x, y, **kwargs)
+
+    # Add a legend
+    if hue is not None and legend:
+        facets.add_legend()
     return facets
 
 
@@ -919,7 +924,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         facets.fig.tight_layout()
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
-        facets.set_legend(title=hue, label_order=hue_order)
+        facets.add_legend(title=hue, label_order=hue_order)
 
     return facets
 
@@ -1607,3 +1612,93 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
     ax.grid(True, which="minor", linestyle="-")
 
     return ax
+
+
+def pairplot(data, hue=None, hue_order=None, palette=None,
+             vars=None, x_vars=None, y_vars=None,
+             kind="scatter", diag_kind="hist",
+             size=3, aspect=1, dropna=True,
+             plot_kws=None, diag_kws=None, grid_kws=None):
+    """Plot pairwise relationships in a dataset.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Tidy (long-form) dataframe where each column is a variable and
+        each row is an observation.
+    hue : string (variable name), optional
+        Variable in ``data`` to map plot aspects to different colors.
+    hue_order : list of strings
+        Order for the levels of the hue variable in the palette
+    palette : dict or seaborn color palette
+        Set of colors for mapping the ``hue`` variable. If a dict, keys
+        should be values  in the ``hue`` variable.
+    vars : list of variable names, optional
+        Variables within ``data`` to use, otherwise use every column with
+        a numeric datatype.
+    {x, y}_vars : lists of variable names, optional
+        Variables within ``data`` to use separately for the rows and
+        columns of the figure; i.e. to make a non-square plot.
+    kind : {'scatter', 'reg'}, optional
+        Kind of plot for the non-identity relationships.
+    diag_kind : {'hist', 'kde'}, optional
+        Kind of plot for the diagonal subplots.
+    size : scalar, optional
+        Height (in inches) of each facet.
+    aspect : scalar, optional
+        Aspect * size gives the width (in inches) of each facet.
+    dropna : boolean, optional
+        Drop missing values from the data before plotting.
+    {plot, diag, grid}_kws : dicts, optional
+        Dictionaries of keyword arguments.
+
+    Returns
+    -------
+    grid : PairGrid
+        Returns the underlying ``PairGrid`` instance for further tweaking.
+
+    See Also
+    --------
+    PairGrid : Subplot grid for more flexible plotting of pairwise
+               relationships.
+
+    """
+    if plot_kws is None:
+        plot_kws = {}
+    if diag_kws is None:
+        diag_kws = {}
+    if grid_kws is None:
+        grid_kws = {}
+
+    # Set up the PairGrid
+    diag_sharey = diag_kind == "hist"
+    grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
+                    hue_order=hue_order, palette=palette,
+                    diag_sharey=diag_sharey,
+                    size=size, aspect=aspect, dropna=dropna, **grid_kws)
+
+    # Maybe plot on the diagonal
+    if grid.square_grid:
+        if diag_kind == "hist":
+            grid.map_diag(plt.hist, **diag_kws)
+        elif diag_kind == "kde":
+            diag_kws["legend"] = False
+            grid.map_diag(kdeplot, **diag_kws)
+
+    # Maybe plot on the off-diagonals
+    if grid.square_grid and diag_kind is not None:
+        plotter = grid.map_offdiag
+    else:
+        plotter = grid.map
+
+    if kind == "scatter":
+        plot_kws.setdefault("edgecolor", "white")
+        plotter(plt.scatter, **plot_kws)
+    elif kind == "reg":
+        plotter(regplot, **plot_kws)
+
+    # Add a legend
+    if hue is not None:
+        grid.add_legend()
+
+    return grid
