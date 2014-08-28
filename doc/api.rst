@@ -13,6 +13,7 @@ Linear model plots
 
     lmplot
     factorplot
+    pairplot
     regplot
     interactplot
     residplot
@@ -57,6 +58,7 @@ Axis grids
    :toctree: generated/
 
     FacetGrid
+    PairGrid
     JointGrid
 
 Style frontend
