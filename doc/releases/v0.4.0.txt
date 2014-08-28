@@ -17,6 +17,8 @@ Plotting functions
 
 - Added the ``logx`` option to :func:`regplot` for fitting the regression in log space.
 
+- When :func:`violinplot` encounters a bin with only a single observation, it will now plot a horizontal line at that value instead of erroring out.
+
 Style and color palettes
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -245,6 +245,39 @@ class TestKDE(object):
             dist.kdeplot(self.x, data2=self.y, cumulative=True)
 
 
+class TestViolinPlot(object):
+
+    df = pd.DataFrame(dict(x=np.random.randn(60),
+                           y=list("abcdef") * 10,
+                           z=list("ab") * 29 + ["a", "c"]))
+
+    def test_single_violin(self):
+
+        ax = dist.violinplot(self.df.x)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 5)
+        plt.close("all")
+
+    def test_multi_violins(self):
+
+        ax = dist.violinplot(self.df.x, self.df.y)
+        nt.assert_equal(len(ax.collections), 6)
+        nt.assert_equal(len(ax.lines), 30)
+        plt.close("all")
+
+    def test_multi_violins_single_obs(self):
+
+        ax = dist.violinplot(self.df.x, self.df.z)
+        nt.assert_equal(len(ax.collections), 2)
+        nt.assert_equal(len(ax.lines), 11)
+        plt.close("all")
+
+    @classmethod
+    def teardown_class(cls):
+        """Ensure that all figures are closed on exit."""
+        plt.close("all")
+
+
 class TestJointPlot(object):
 
     rs = np.random.RandomState(sum(map(ord, "jointplot")))
@@ -364,3 +397,8 @@ class TestJointPlot(object):
 
         with nt.assert_raises(ValueError):
             dist.jointplot("x", "y", self.data, kind="not_a_kind")
+
+    @classmethod
+    def teardown_class(cls):
+        """Ensure that all figures are closed on exit."""
+        plt.close("all")
