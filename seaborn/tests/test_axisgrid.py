@@ -530,6 +530,20 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    def test_size(self):
+
+        g1 = ag.PairGrid(self.df, size=3)
+        npt.assert_array_equal(g1.fig.get_size_inches(), (9, 9))
+
+        g2 = ag.PairGrid(self.df, size=4, aspect=.5)
+        npt.assert_array_equal(g2.fig.get_size_inches(), (6, 12))
+
+        g3 = ag.PairGrid(self.df, y_vars = ["z"], x_vars=["x", "y"],
+                         size=2, aspect=2)
+        npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
+
+        plt.close("all")
+
     def test_map(self):
 
         vars = ["x", "y", "z"]

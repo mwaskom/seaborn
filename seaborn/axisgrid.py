@@ -803,11 +803,10 @@ class PairGrid(Grid):
         self.square_grid = x_vars == y_vars
 
         # Create the figure and the array of subplots
-        width = len(x_vars) * (aspect * size)
-        height = len(y_vars) * ((1 / aspect) * size)
+        figsize = len(x_vars) * size * aspect, len(y_vars) * size
 
         fig, axes = plt.subplots(len(y_vars), len(x_vars),
-                                 figsize=(width, height),
+                                 figsize=figsize,
                                  sharex="col", sharey="row",
                                  squeeze=False)
 
