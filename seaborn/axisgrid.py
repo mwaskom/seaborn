@@ -5,6 +5,8 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from six import string_types
+
 from . import utils
 from .palettes import color_palette
 
@@ -788,8 +790,8 @@ class PairGrid(Grid):
 
         # Sort out the variables that define the grid
         if vars is not None:
-            x_vars = vars
-            y_vars = vars
+            x_vars = list(vars)
+            y_vars = list(vars)
         elif (x_vars is not None) or (y_vars is not None):
             if (x_vars is None) or (y_vars is None):
                 raise ValueError("Must specify `x_vars` and `y_vars`")
@@ -798,16 +800,20 @@ class PairGrid(Grid):
             x_vars = numeric_cols
             y_vars = numeric_cols
 
-        self.x_vars = x_vars
-        self.y_vars = y_vars
-        self.square_grid = x_vars == y_vars
+        if np.isscalar(x_vars):
+            x_vars = [x_vars]
+        if np.isscalar(y_vars):
+            y_vars = [y_vars]
+
+        self.x_vars = list(x_vars)
+        self.y_vars = list(y_vars)
+        self.square_grid = self.x_vars == self.y_vars
 
         # Create the figure and the array of subplots
-        width = len(x_vars) * (aspect * size)
-        height = len(y_vars) * ((1 / aspect) * size)
+        figsize = len(x_vars) * size * aspect, len(y_vars) * size
 
         fig, axes = plt.subplots(len(y_vars), len(x_vars),
-                                 figsize=(width, height),
+                                 figsize=figsize,
                                  sharex="col", sharey="row",
                                  squeeze=False)
 
