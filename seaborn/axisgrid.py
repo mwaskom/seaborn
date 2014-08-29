@@ -800,7 +800,7 @@ class PairGrid(Grid):
 
         self.x_vars = x_vars
         self.y_vars = y_vars
-        self.square_grid = x_vars == y_vars
+        self.square_grid = np.all(x_vars == y_vars)
 
         # Create the figure and the array of subplots
         width = len(x_vars) * (aspect * size)
