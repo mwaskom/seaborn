@@ -530,6 +530,29 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    def test_specific_square_axes_with_array(self):
+
+        vars = np.array(["z", "x"])
+        g = ag.PairGrid(self.df, vars=vars)
+        nt.assert_equal(g.axes.shape, (len(vars), len(vars)))
+        nt.assert_equal(g.x_vars, vars)
+        nt.assert_equal(g.y_vars, vars)
+        nt.assert_true(g.square_grid)
+
+        plt.close("all")
+
+    def test_specific_nonsquare_axes_with_array(self):
+
+        x_vars = np.array(["x", "y"])
+        y_vars = np.array(["z", "y", "x"])
+        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
+        nt.assert_equal(g.x_vars, x_vars)
+        nt.assert_equal(g.y_vars, y_vars)
+        nt.assert_true(not g.square_grid)
+
+        plt.close("all")
+
     def test_map(self):
 
         vars = ["x", "y", "z"]
