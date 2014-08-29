@@ -8,6 +8,27 @@ import numpy.testing as npt
 
 from .. import rcmod
 
+def has_verdana():
+    """Helper to verify if Verdana font is present"""
+    # This import is relatively lengthy, so to prevent its import for
+    # testing other tests in this module not requiring this knowledge,
+    # import font_manager here
+    import matplotlib.font_manager as mplfm
+    try:
+        verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
+    except:
+        # if https://github.com/matplotlib/matplotlib/pull/3435
+        # gets accepted
+        return False
+    # otherwise check if not matching the logic for a 'default' one
+    try:
+        unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
+                                       fallback_to_default=False)
+    except:
+        # if matched verdana but not unlikely, Verdana must exist
+        return True
+    # otherwise -- if they match, must be the same default
+    return verdana_font != unlikely_font
 
 class RCParamTester(object):
 
@@ -167,6 +188,8 @@ class TestPlottingContext(RCParamTester):
 class TestFonts(object):
 
     def test_set_font(self):
+        if not has_verdana():
+            raise nose.SkipTest("Verdana font is not present")
 
         rcmod.set(font="Verdana")
 
@@ -196,6 +219,9 @@ class TestFonts(object):
 
         if LooseVersion(mpl.__version__) < LooseVersion("1.4"):
             raise nose.SkipTest
+
+        if not has_verdana():
+            raise nose.SkipTest("Verdana font is not present")
 
         rcmod.set()
         rcmod.set_style(rc={"font.sans-serif":
