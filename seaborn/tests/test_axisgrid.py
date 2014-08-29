@@ -528,6 +528,37 @@ class TestPairGrid(object):
         nt.assert_equal(g.y_vars, y_vars)
         nt.assert_true(not g.square_grid)
 
+        x_vars = ["x", "y"]
+        y_vars = "z"
+        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
+        nt.assert_equal(g.x_vars, list(x_vars))
+        nt.assert_equal(g.y_vars, list(y_vars))
+        nt.assert_true(not g.square_grid)
+
+        plt.close("all")
+
+    def test_specific_square_axes_with_array(self):
+
+        vars = np.array(["z", "x"])
+        g = ag.PairGrid(self.df, vars=vars)
+        nt.assert_equal(g.axes.shape, (len(vars), len(vars)))
+        nt.assert_equal(g.x_vars, list(vars))
+        nt.assert_equal(g.y_vars, list(vars))
+        nt.assert_true(g.square_grid)
+
+        plt.close("all")
+
+    def test_specific_nonsquare_axes_with_array(self):
+
+        x_vars = np.array(["x", "y"])
+        y_vars = np.array(["z", "y", "x"])
+        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
+        nt.assert_equal(g.x_vars, list(x_vars))
+        nt.assert_equal(g.y_vars, list(y_vars))
+        nt.assert_true(not g.square_grid)
+
         plt.close("all")
 
     def test_size(self):
@@ -538,7 +569,7 @@ class TestPairGrid(object):
         g2 = ag.PairGrid(self.df, size=4, aspect=.5)
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 12))
 
-        g3 = ag.PairGrid(self.df, y_vars = ["z"], x_vars=["x", "y"],
+        g3 = ag.PairGrid(self.df, y_vars=["z"], x_vars=["x", "y"],
                          size=2, aspect=2)
         npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
 
