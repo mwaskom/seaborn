@@ -42,4 +42,4 @@ Other API Changes
 Style
 ^^^^^
 
-Font-handling should work better on systems without Arial installed. This is accomplished by adding the ``font.sans-serif`` field to the ``axes_style`` definition with Arial and Liberation Sans prepended to matplotlib defaults. The font family can also be set through the ``font`` keyword argument in :func:`set`. Due to matplotlib bugs, this might not work as expected on matplotlib 1.3.
+- Font-handling should work better on systems without Arial installed. This is accomplished by adding the ``font.sans-serif`` field to the ``axes_style`` definition with Arial and Liberation Sans prepended to matplotlib defaults. The font family can also be set through the ``font`` keyword argument in :func:`set`. Due to matplotlib bugs, this might not work as expected on matplotlib 1.3.
