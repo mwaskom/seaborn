@@ -177,7 +177,7 @@ class TestFonts(object):
             nt.assert_equal(ax.xaxis.label.get_fontname(),
                             "Verdana")
         except AssertionError:
-            if has_verdana:
+            if has_verdana():
                 raise
             else:
                 raise nose.SkipTest("Verdana font is not present")
@@ -214,7 +214,7 @@ class TestFonts(object):
             nt.assert_equal(ax.xaxis.label.get_fontname(),
                             "Verdana")
         except AssertionError:
-            if has_verdana:
+            if has_verdana():
                 raise
             else:
                 raise nose.SkipTest("Verdana font is not present")
