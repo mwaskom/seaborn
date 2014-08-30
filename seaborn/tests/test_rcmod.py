@@ -173,11 +173,17 @@ class TestFonts(object):
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
 
-        nt.assert_equal(ax.xaxis.label.get_fontname(),
-                        "Verdana")
-
-        rcmod.set()
-        plt.close("all")
+        try:
+            nt.assert_equal(ax.xaxis.label.get_fontname(),
+                            "Verdana")
+        except AssertionError:
+            if has_verdana:
+                raise
+            else:
+                raise nose.SkipTest("Verdana font is not present")
+        finally:
+            rcmod.set()
+            plt.close("all")
 
     def test_set_serif_font(self):
 
@@ -204,8 +210,37 @@ class TestFonts(object):
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
 
-        nt.assert_equal(ax.xaxis.label.get_fontname(),
-                        "Verdana")
+        try:
+            nt.assert_equal(ax.xaxis.label.get_fontname(),
+                            "Verdana")
+        except AssertionError:
+            if has_verdana:
+                raise
+            else:
+                raise nose.SkipTest("Verdana font is not present")
+        finally:
+            rcmod.set()
+            plt.close("all")
 
-        rcmod.set()
-        plt.close("all")
+
+def has_verdana():
+    """Helper to verify if Verdana font is present"""
+    # This import is relatively lengthy, so to prevent its import for
+    # testing other tests in this module not requiring this knowledge,
+    # import font_manager here
+    import matplotlib.font_manager as mplfm
+    try:
+        verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
+    except:
+        # if https://github.com/matplotlib/matplotlib/pull/3435
+        # gets accepted
+        return False
+    # otherwise check if not matching the logic for a 'default' one
+    try:
+        unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
+                                       fallback_to_default=False)
+    except:
+        # if matched verdana but not unlikely, Verdana must exist
+        return True
+    # otherwise -- if they match, must be the same default
+    return verdana_font != unlikely_font
