@@ -28,9 +28,12 @@ Style and color palettes
 
 - Added the ``font_scale`` option to :func:`plotting_context`, :func:`set_context`, and :func:`set`. ``font_scale`` can independently increase or decrease the size of the font elements in the plot.
 
+- Font-handling should work better on systems without Arial installed. This is accomplished by adding the ``font.sans-serif`` field to the ``axes_style`` definition with Arial and Liberation Sans prepended to matplotlib defaults. The font family can also be set through the ``font`` keyword argument in :func:`set`. Due to matplotlib bugs, this might not work as expected on matplotlib 1.3.
+
 - The :func:`despine` function gets a new keyword argument ``offset``, which replaces the deprecated :func:`offset_spines` function. You no longer need to offset the spines before plotting data.
 
 - Added a default value for ``pdf.fonttype`` so that text in PDFs is editable in Adobe Illustrator.
+
 
 Other API Changes
 ~~~~~~~~~~~~~~~~~
@@ -38,8 +41,3 @@ Other API Changes
 - Removed the deprecated ``set_color_palette`` and ``palette_context`` functions. These were replaced in version 0.3 by the :func:`set_palette` function and ability to use :func:`color_palette` directly in a ``with`` statement.
 
 - Removed the ability to specify a ``nogrid`` style, which was renamed to ``white`` in 0.3.
-
-Style
-^^^^^
-
-- Font-handling should work better on systems without Arial installed. This is accomplished by adding the ``font.sans-serif`` field to the ``axes_style`` definition with Arial and Liberation Sans prepended to matplotlib defaults. The font family can also be set through the ``font`` keyword argument in :func:`set`. Due to matplotlib bugs, this might not work as expected on matplotlib 1.3.
