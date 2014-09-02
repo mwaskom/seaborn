@@ -361,7 +361,16 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
             continue
 
         # Fit the KDE
-        kde = stats.gaussian_kde(a, bw)
+        try:
+            kde = stats.gaussian_kde(a, bw)
+        except TypeError:
+            kde = stats.gaussian_kde(a)
+            if bw != "scott":  # scipy default
+                msg = ("Ignoring bandwidth choice, "
+                       "please upgrade scipy to use a different bandwidth.")
+                warnings.warn(msg, UserWarning)
+
+        # Determine the support region
         if isinstance(bw, str):
             bw_name = "scotts" if bw == "scott" else bw
             _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
