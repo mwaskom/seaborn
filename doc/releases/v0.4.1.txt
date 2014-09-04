@@ -1,0 +1,6 @@
+
+v0.4.1 (Unreleased)
+-------------------
+
+- Fixed a bug in :class:`PairGrid` where passing columns with a date-like
+  datatype raised an exception.
