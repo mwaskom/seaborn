@@ -1025,7 +1025,7 @@ class PairGrid(Grid):
             try:
                 data[col].astype(np.float)
                 numeric_cols.append(col)
-            except ValueError:
+            except (ValueError, TypeError):
                 pass
         return numeric_cols
 

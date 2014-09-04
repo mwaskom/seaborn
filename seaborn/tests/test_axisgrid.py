@@ -8,6 +8,7 @@ from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
+import pandas.util.testing as tm
 
 from .. import axisgrid as ag
 from .. import rcmod
@@ -481,6 +482,15 @@ class TestPairGrid(object):
 
         g = ag.PairGrid(self.df)
         nt.assert_is(g.data, self.df)
+        plt.close("all")
+
+    def test_ignore_datelike_data(self):
+
+        df = self.df.copy()
+        df['date'] = pd.date_range('2010-01-01', periods=len(df), freq='d')
+        result = ag.PairGrid(self.df).data
+        expected = df.drop('date', axis=1)
+        tm.assert_frame_equal(result, expected)
         plt.close("all")
 
     def test_self_fig(self):
