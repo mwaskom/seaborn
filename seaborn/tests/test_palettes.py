@@ -205,7 +205,7 @@ class TestColorPalettes(object):
 
     def test_xkcd_palette(self):
 
-        names = xkcd_rgb.keys()[10:15]
+        names = list(xkcd_rgb.keys())[10:15]
         colors = palettes.xkcd_palette(names)
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
