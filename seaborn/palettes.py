@@ -461,6 +461,70 @@ def _update_lut(cmap, colors):
     cmap._lut[:] = colors
 
 
+def choose_colorbrewer_palette(data_type, as_cmap=False):
+
+    from IPython.html.widgets import interact, FloatSliderWidget
+
+    if data_type.startswith("q") and as_cmap:
+        raise ValueError("Qualitative palettes cannot be colormaps.")
+
+    pal = []
+    if as_cmap:
+        cmap = _init_mutable_colormap()
+
+    if data_type.startswith("s"):
+        opts = ["Greys", "Reds", "Greens", "Blues", "Oranges", "Purples",
+                "BuGn", "BuPu", "GnBu", "OrRd", "PuBu", "PuRd", "RdPu", "YlGn",
+                "PuBuGn", "YlGnBu", "YlOrBr", "YlOrRd"]
+        variants = ["regular", "reverse", "dark"]
+
+        @interact
+        def choose_sequential(name=opts, n=(2, 18),
+                              desat=FloatSliderWidget(min=0, max=1, value=1),
+                              variant=variants):
+            if variant == "reverse":
+                name += "_r"
+            elif variant == "dark":
+                name += "_d"
+
+            pal[:] = color_palette(name, n, desat)
+            palplot(pal)
+            if as_cmap:
+                colors = color_palette(name, 256, desat)
+                _update_lut(cmap, np.c_[colors, np.ones(256)])
+
+    elif data_type.startswith("d"):
+        opts = ["RdBu", "RdGy", "PRGn", "PiYG", "BrBG",
+                "RdYlBu", "RdYlGn", "Spectral"]
+        variants = ["regular", "reverse"]
+
+        @interact
+        def choose_diverging(name=opts, n=(2, 16),
+                             desat=FloatSliderWidget(min=0, max=1, value=1),
+                             variant=variants):
+            if variant == "reverse":
+                name += "_r"
+            pal[:] = color_palette(name, n, desat)
+            palplot(pal)
+            if as_cmap:
+                colors = color_palette(name, 256, desat)
+                _update_lut(cmap, np.c_[colors, np.ones(256)])
+
+    elif data_type.startswith("q"):
+        opts = ["Set1", "Set2", "Set3", "Paired", "Accent",
+                "Pastel1", "Pastel2", "Dark2"]
+
+        @interact
+        def choose_qualitative(name=opts, n=(2, 16),
+                               desat=FloatSliderWidget(min=0, max=1, value=1)):
+            pal[:] = color_palette(name, n, desat)
+            palplot(pal)
+
+    if as_cmap:
+        return cmap
+    return pal
+
+
 def choose_dark_palette(input="rgb", as_cmap=False):
 
     from IPython.html.widgets import interact
