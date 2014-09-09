@@ -105,6 +105,8 @@ def color_palette(name=None, n_colors=6, desat=None):
         palette = hls_palette(n_colors)
     elif name == "husl":
         palette = husl_palette(n_colors)
+    elif name.lower() == "jet":
+        raise ValueError("No.")
     elif name in seaborn_palettes:
         palette = seaborn_palettes[name]
     elif name in dir(mpl.cm):
