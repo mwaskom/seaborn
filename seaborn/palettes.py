@@ -454,13 +454,12 @@ def _init_mutable_colormap():
     greys = color_palette("Greys", 256)
     cmap = LinearSegmentedColormap.from_list("interactive", greys)
     cmap._init()
-    cmap._lut = cmap._lut[:256]
     return cmap
 
 
 def _update_lut(cmap, colors):
 
-    cmap._lut[:] = colors
+    cmap._lut[:256] = colors
 
 
 def choose_colorbrewer_palette(data_type, as_cmap=False):
