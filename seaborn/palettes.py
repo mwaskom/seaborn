@@ -300,6 +300,38 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
     return blend_palette(colors, n_colors, as_cmap)
 
 
+def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
+                  input="rgb"):
+    """Make a sequential palette that blends from gray to ``color``.
+
+    Parameters
+    ----------
+    color : matplotlib color
+        hex, rgb-tuple, or html color name
+    n_colors : int, optional
+        number of colors in the palette
+    reverse : bool, optional
+        if True, reverse the direction of the blend
+    as_cmap : bool, optional
+        if True, return as a matplotlib colormap instead of list
+
+    Returns
+    -------
+    palette : list or colormap
+
+    """
+    if input == "hls":
+        color = colorsys.hls_to_rgb(*color)
+    elif input == "husl":
+        color = husl.husl_to_rgb(*color)
+    elif input == "xkcd":
+        color = xkcd_rgb[color]
+
+    flat = desaturate(color, 0)
+    colors = [color, flat] if reverse else [flat, color]
+    return blend_palette(colors, n_colors, as_cmap)
+
+
 def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
                       as_cmap=False):
     """Make a diverging palette between two HUSL colors.
