@@ -205,6 +205,9 @@ def mpl_palette(name, n_colors=6):
     qualitative palette can provide you will fewer than you are
     expecting.
 
+    If you are using the IPython notebook, you can also use the function
+    :func:`choose_colorbrewer_palette` to interactively select palettes.
+
     Parameters
     ----------
     name : string
@@ -240,9 +243,20 @@ def mpl_palette(name, n_colors=6):
 def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     """Make a sequential palette that blends from dark to ``color``.
 
+    This kind of palette is good for data that range between relatively
+    uninteresting low values and interesting high values.
+
+    The ``color`` parameter can be specified in a number of ways, including
+    all options for defining a color in matplotlib and several additional
+    color spaces that are handled by seaborn. You can also use the database
+    of named colors from the XKCD color survey.
+
+    If you are using the IPython notebook, you can also choose this palette
+    interactively with the :func:`choose_dark_palette` function.
+
     Parameters
     ----------
-    color : matplotlib color
+    color : base color for high values
         hex, rgb-tuple, or html color name
     n_colors : int, optional
         number of colors in the palette
@@ -250,10 +264,17 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
         if True, reverse the direction of the blend
     as_cmap : bool, optional
         if True, return as a matplotlib colormap instead of list
+    input : {'rgb', 'hls', 'husl', xkcd'}
+        Color space to interpret the input color. The first three options
+        apply to tuple inputs and the latter applies to string inputs.
 
     Returns
     -------
     palette : list or colormap
+
+    See Also
+    --------
+    light_palette : Create a sequential palette with bright low values.
 
     """
     if input == "hls":
@@ -272,20 +293,38 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
                   input="rgb"):
     """Make a sequential palette that blends from light to ``color``.
 
+    This kind of palette is good for data that range between relatively
+    uninteresting low values and interesting high values.
+
+    The ``color`` parameter can be specified in a number of ways, including
+    all options for defining a color in matplotlib and several additional
+    color spaces that are handled by seaborn. You can also use the database
+    of named colors from the XKCD color survey.
+
+    If you are using the IPython notebook, you can also choose this palette
+    interactively with the :func:`choose_light_palette` function.
+
     Parameters
     ----------
-    color : matplotlib color
-        hex, rgb-tuple, or html color name
+    color : base color for high values
+        hex code, html color name, or tuple in ``input`` space.
     n_colors : int, optional
         number of colors in the palette
     reverse : bool, optional
         if True, reverse the direction of the blend
     as_cmap : bool, optional
         if True, return as a matplotlib colormap instead of list
+    input : {'rgb', 'hls', 'husl', xkcd'}
+        Color space to interpret the input color. The first three options
+        apply to tuple inputs and the latter applies to string inputs.
 
     Returns
     -------
     palette : list or colormap
+
+    See Also
+    --------
+    dark_palette : Create a sequential palette with dark low values.
 
     """
     if input == "hls":
@@ -318,6 +357,7 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
     Returns
     -------
     palette : list or colormap
+    dark_palette : Create a sequential palette with dark low values.
 
     """
     if input == "hls":
@@ -335,6 +375,9 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
 def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
                       as_cmap=False):
     """Make a diverging palette between two HUSL colors.
+
+    If you are using the IPython notebook, you can also choose this palette
+    interactively with the :func:`choose_diverging_palette` function.
 
     Parameters
     ----------
@@ -355,9 +398,6 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
     Returns
     -------
     palette : array of r, g, b colors or colormap
-
-    See also
-    --------
 
     """
 
@@ -453,7 +493,10 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
     See Also
     --------
-    choose_cubehelix : Launch an interactive widget to select parameters.
+    choose_cubehelix_palette : Launch an interactive widget to select cubehelix
+                               palette parameters.
+    dark_palette : Create a sequential palette with dark low values.
+    light_palette : Create a sequential palette with bright low values.
 
     References
     ----------
@@ -482,7 +525,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
 
 def _init_mutable_colormap():
-
+    """Create a matplotlib colormap that will be updated by the widgets."""
     greys = color_palette("Greys", 256)
     cmap = LinearSegmentedColormap.from_list("interactive", greys)
     cmap._init()
@@ -490,12 +533,42 @@ def _init_mutable_colormap():
 
 
 def _update_lut(cmap, colors):
-
+    """Change the LUT values in a matplotlib colormap in-place."""
     cmap._lut[:256] = colors
 
 
 def choose_colorbrewer_palette(data_type, as_cmap=False):
+    """Select a palette from the ColorBrewer set.
 
+    These palettes are built into matplotlib and can be used by name in
+    many seaborn functions, or by passing the object returned by this function.
+
+    Parameters
+    ----------
+    data_type : {'sequential', 'diverging', 'qualitative'}
+        This describes the kind of data you want to visualize. See the seaborn
+        color palette docs for more information about how to choose this value.
+        Note that you can pass substrings (e.g. 'q' for 'qualitative.
+
+    as_cmap : bool
+        If True, the return value is a matplotlib colormap rather than a
+        list of discrete colors.
+
+    Returns
+    -------
+    pal or cmap : list of colors or matplotlib colormap
+        Object that can be passed to plotting functions.
+
+    See Also
+    --------
+    dark_palette : Create a sequential palette with dark low values.
+    light_palette : Create a sequential palette with bright low values.
+    diverging_palette : Create a diverging palette from selected colors.
+    cubehelix_palette : Create a sequential palette or colormap using the
+                        cubehelix system.
+
+
+    """
     from IPython.html.widgets import interact, FloatSliderWidget
 
     if data_type.startswith("q") and as_cmap:
@@ -558,8 +631,37 @@ def choose_colorbrewer_palette(data_type, as_cmap=False):
     return pal
 
 
-def choose_dark_palette(input="rgb", as_cmap=False):
+def choose_dark_palette(input="husl", as_cmap=False):
+    """Launch an interactive widget to create a sequential palette.
 
+    This corresponds with the :func:`dark_palette` function. This kind
+    of palette is good for data that range between relatively uninteresting
+    low values and interesting high values.
+
+    Requires IPython 2+ and must be used in the notebook.
+
+    Parameters
+    ----------
+    input : {'husl', 'hls', 'rgb'}
+        Color space for defining the seed value. Note that the default is
+        different than the default input for :func:`dark_palette`.
+    as_cmap : bool
+        If True, the return value is a matplotlib colormap rather than a
+        list of discrete colors.
+
+    Returns
+    -------
+    pal or cmap : list of colors or matplotlib colormap
+        Object that can be passed to plotting functions.
+
+    See Also
+    --------
+    dark_palette : Create a sequential palette with dark low values.
+    light_palette : Create a sequential palette with bright low values.
+    cubehelix_palette : Create a sequential palette or colormap using the
+                        cubehelix system.
+
+    """
     from IPython.html.widgets import interact
 
     pal = []
@@ -610,8 +712,37 @@ def choose_dark_palette(input="rgb", as_cmap=False):
     return pal
 
 
-def choose_light_palette(input="rgb", as_cmap=False):
+def choose_light_palette(input="husl", as_cmap=False):
+    """Launch an interactive widget to create a sequential palette.
 
+    This corresponds with the :func:`light_palette` function. This kind
+    of palette is good for data that range between relatively uninteresting
+    low values and interesting high values.
+
+    Requires IPython 2+ and must be used in the notebook.
+
+    Parameters
+    ----------
+    input : {'husl', 'hls', 'rgb'}
+        Color space for defining the seed value. Note that the default is
+        different than the default input for :func:`light_palette`.
+    as_cmap : bool
+        If True, the return value is a matplotlib colormap rather than a
+        list of discrete colors.
+
+    Returns
+    -------
+    pal or cmap : list of colors or matplotlib colormap
+        Object that can be passed to plotting functions.
+
+    See Also
+    --------
+    light_palette : Create a sequential palette with bright low values.
+    dark_palette : Create a sequential palette with dark low values.
+    cubehelix_palette : Create a sequential palette or colormap using the
+                        cubehelix system.
+
+    """
     from IPython.html.widgets import interact
 
     pal = []
@@ -663,7 +794,33 @@ def choose_light_palette(input="rgb", as_cmap=False):
 
 
 def choose_diverging_palette(as_cmap=False):
+    """Launch an interactive widget to choose a diverging color palette.
 
+    This corresponds with the :func:`diverging_palette` function. This kind
+    of palette is good for data that range between interesting low values
+    and interesting high values with a meaningful midpoint. (For example,
+    change scores relative to some baseline value).
+
+    Requires IPython 2+ and must be used in the notebook.
+
+    Parameters
+    ----------
+    as_cmap : bool
+        If True, the return value is a matplotlib colormap rather than a
+        list of discrete colors.
+
+    Returns
+    -------
+    pal or cmap : list of colors or matplotlib colormap
+        Object that can be passed to plotting functions.
+
+    See Also
+    --------
+    diverging_palette : Create a diverging color palette or colormap.
+    choose_colorbrewer_palette : Interactively choose palettes from the
+                                 colorbrewer set, including diverging palettes.
+
+    """
     from IPython.html.widgets import interact, IntSliderWidget
 
     pal = []
@@ -694,13 +851,31 @@ def choose_diverging_palette(as_cmap=False):
 
 
 def choose_cubehelix(as_cmap=False):
-    """Launch an interactive widget to select cubehelix parameters.
+    """Launch an interactive widget to create a sequential cubehelix palette.
 
-    Requires IPython 2 and must be used in a notebook.
+    This corresponds with the :func:`cubehelix_palette` function. This kind
+    of palette is good for data that range between relatively uninteresting
+    low values and interesting high values. The cubehelix system allows the
+    palette to have more hue variance across the range, which can be helpful
+    for distinguishing a wider range of values.
+
+    Requires IPython 2+ and must be used in the notebook.
+
+    Parameters
+    ----------
+    as_cmap : bool
+        If True, the return value is a matplotlib colormap rather than a
+        list of discrete colors.
+
+    Returns
+    -------
+    pal or cmap : list of colors or matplotlib colormap
+        Object that can be passed to plotting functions.
 
     See Also
     --------
-    cubehelix_palette: Make a sequential palette from the cubehelix system.
+    cubehelix_palette : Create a sequential palette or colormap using the
+                        cubehelix system.
 
     """
     from IPython.html.widgets import (interact,
