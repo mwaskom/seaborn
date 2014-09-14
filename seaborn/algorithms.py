@@ -37,7 +37,7 @@ def bootstrap(*args, **kwargs):
 
     """
     # Ensure list of arrays are same length
-    if len(np.unique(map(len, args))) > 1:
+    if len(np.unique(list(map(len, args)))) > 1:
         raise ValueError("All input arrays must have the same length")
     n = len(args[0])
 
