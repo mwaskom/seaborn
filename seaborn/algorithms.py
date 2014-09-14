@@ -141,7 +141,7 @@ def randomize_corrmat(a, tail="both", corrected=True, n_iter=1000,
 
     rs = np.random.RandomState(random_seed)
 
-    a = np.asarray(a)
+    a = np.asarray(a, np.float)
     flat_a = a.ravel()
     n_vars, n_obs = a.shape
 
