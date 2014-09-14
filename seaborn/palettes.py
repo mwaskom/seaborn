@@ -240,6 +240,17 @@ def mpl_palette(name, n_colors=6):
     return palette
 
 
+def _color_to_rgb(color, input):
+    """Add some more flexibility to color choices."""
+    if input == "hls":
+        color = colorsys.hls_to_rgb(*color)
+    elif input == "husl":
+        color = husl.husl_to_rgb(*color)
+    elif input == "xkcd":
+        color = xkcd_rgb[color]
+    return color
+
+
 def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     """Make a sequential palette that blends from dark to ``color``.
 
@@ -277,13 +288,7 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     light_palette : Create a sequential palette with bright low values.
 
     """
-    if input == "hls":
-        color = colorsys.hls_to_rgb(*color)
-    elif input == "husl":
-        color = husl.husl_to_rgb(*color)
-    elif input == "xkcd":
-        color = xkcd_rgb[color]
-
+    color = _color_to_rgb(color, input)
     gray = "#222222"
     colors = [color, gray] if reverse else [gray, color]
     return blend_palette(colors, n_colors, as_cmap)
@@ -327,13 +332,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
     dark_palette : Create a sequential palette with dark low values.
 
     """
-    if input == "hls":
-        color = colorsys.hls_to_rgb(*color)
-    elif input == "husl":
-        color = husl.husl_to_rgb(*color)
-    elif input == "xkcd":
-        color = xkcd_rgb[color]
-
+    color = _color_to_rgb(color, input)
     light = set_hls_values(color, l=.95)
     colors = [color, light] if reverse else [light, color]
     return blend_palette(colors, n_colors, as_cmap)
@@ -360,13 +359,7 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
     dark_palette : Create a sequential palette with dark low values.
 
     """
-    if input == "hls":
-        color = colorsys.hls_to_rgb(*color)
-    elif input == "husl":
-        color = husl.husl_to_rgb(*color)
-    elif input == "xkcd":
-        color = xkcd_rgb[color]
-
+    color = _color_to_rgb(color, input)
     flat = desaturate(color, 0)
     colors = [color, flat] if reverse else [flat, color]
     return blend_palette(colors, n_colors, as_cmap)
@@ -894,8 +887,9 @@ def choose_cubehelix_palette(as_cmap=False):
                          dark=FloatSliderWidget(min=0, max=1, value=.15),
                          light=FloatSliderWidget(min=0, max=1, value=.85),
                          reverse=False):
-        palplot(cubehelix_palette(n_colors, start, rot, gamma,
-                                  hue, dark, light, reverse))
+        pal[:] = cubehelix_palette(n_colors, start, rot, gamma,
+                                   hue, dark, light, reverse)
+        palplot(pal)
         if as_cmap:
             colors = cubehelix_palette(256, start, rot, gamma,
                                        hue, dark, light, reverse)
