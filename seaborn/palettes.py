@@ -850,7 +850,7 @@ def choose_diverging_palette(as_cmap=False):
     return pal
 
 
-def choose_cubehelix(as_cmap=False):
+def choose_cubehelix_palette(as_cmap=False):
     """Launch an interactive widget to create a sequential cubehelix palette.
 
     This corresponds with the :func:`cubehelix_palette` function. This kind
