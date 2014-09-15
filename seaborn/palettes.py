@@ -421,14 +421,8 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     palette : list or colormap
 
     """
-    if input == "hls":
-        colors = [colorsys.hls_to_rgb(*c) for c in colors]
-    elif input == "husl":
-        colors = [husl.husl_to_rgb(*c) for c in colors]
-    elif input == "xkcd":
-        colors = xkcd_palette(colors)
-
-    name = "-".join(map(str, colors))
+    colors = [_color_to_rgb(color, input) for color in colors]
+    name = "blend"
     pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
     if not as_cmap:
         pal = pal(np.linspace(0, 1, n_colors))
