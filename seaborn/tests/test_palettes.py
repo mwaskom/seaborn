@@ -42,7 +42,7 @@ class TestColorPalettes(object):
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
         for name in pals:
             pal_out = palettes.color_palette(name)
-            nt.assert_equal(len(np.unique(pal_out)), 6)
+            nt.assert_equal(len(pal_out), 6)
 
     def test_hls_palette(self):
 

@@ -37,7 +37,7 @@ def bootstrap(*args, **kwargs):
 
     """
     # Ensure list of arrays are same length
-    if len(np.unique(map(len, args))) > 1:
+    if len(np.unique(list(map(len, args)))) > 1:
         raise ValueError("All input arrays must have the same length")
     n = len(args[0])
 
@@ -141,7 +141,7 @@ def randomize_corrmat(a, tail="both", corrected=True, n_iter=1000,
 
     rs = np.random.RandomState(random_seed)
 
-    a = np.asarray(a)
+    a = np.asarray(a, np.float)
     flat_a = a.ravel()
     n_vars, n_obs = a.shape
 
