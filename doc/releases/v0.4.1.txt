@@ -2,5 +2,19 @@
 v0.4.1 (Unreleased)
 -------------------
 
+Color palettes
+~~~~~~~~~~~~~~
+
+- Added two new functions to create custom color palettes. For sequential palettes, you can use the :func:`light_palette` function, which takes a seed color and creates a ramp from a very light, desaturated variant of it. For diverging palettes, you can use the :func:`diverging_palette` function to create a balanced ramp between two endpoints to a light or dark midpoint. See the :ref:`palette tutorial <palette_tutorials>` for more information.
+
+- Added the ability to specify the seed color for :func:`light_palette` and :func:`dark_palette` as a tuple of ``husl`` or ``hls`` space values or as a named ``xkcd`` color. The interpretation of the seed color is now provided by the new ``input`` parameter to these functions.
+
+- Added several new interactive palette widgets: :func:`choose_colorbrewer_palette`, :func:`choose_light_palette`, :func:`choose_dark_palette`, and :func:`choose_diverging_palette`. For consistency, renamed the cubehelix widget to :func:`choose_cubehelix_palette` (and fixed a bug where the cubehelix palette was reversed). These functions also now return either a color palette list or a matplotlib colormap when called, and that object will be live-updated as you play with the widget. This should make it easy to iterate over a plot until you find a good representation for the data. See the `Github pull request <https://github.com/mwaskom/seaborn/pull/286>`_ for more information.
+
+- Overhauled the color :ref:`palette tutorial <palette_tutorial>` to organize the discussion by class of color palette and provide more motivation behind the various choices one might make when choosing colors for their data.
+
+Bug fixes
+~~~~~~~~~
+
 - Fixed a bug in :class:`PairGrid` where passing columns with a date-like
   datatype raised an exception.
