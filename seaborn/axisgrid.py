@@ -832,7 +832,8 @@ class PairGrid(Grid):
         self._hue_var = hue
         if hue is None:
             self.hue_names = None
-            self.hue_vals = pd.Series(["_nolegend_"] * len(data))
+            self.hue_vals = pd.Series(["_nolegend_"] * len(data),
+                                      index=data.index)
         else:
             if hue_order is None:
                 hue_names = np.unique(np.sort(data[hue]))
