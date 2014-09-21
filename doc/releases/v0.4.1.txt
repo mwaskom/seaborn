@@ -16,5 +16,6 @@ Color palettes
 Bug fixes
 ~~~~~~~~~
 
-- Fixed a bug in :class:`PairGrid` where passing columns with a date-like
-  datatype raised an exception.
+- Fixed a bug in :class:`PairGrid` that gave incorrect results (or a crash) when the input DataFrame has a non-default index.
+
+- Fixed a bug in :class:`PairGrid` where passing columns with a date-like datatype raised an exception.
