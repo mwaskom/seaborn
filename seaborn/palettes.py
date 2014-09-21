@@ -619,7 +619,7 @@ def choose_colorbrewer_palette(data_type, as_cmap=False):
 
 
 def choose_dark_palette(input="husl", as_cmap=False):
-    """Launch an interactive widget to create a sequential palette.
+    """Launch an interactive widget to create a dark sequential palette.
 
     This corresponds with the :func:`dark_palette` function. This kind
     of palette is good for data that range between relatively uninteresting
@@ -700,7 +700,7 @@ def choose_dark_palette(input="husl", as_cmap=False):
 
 
 def choose_light_palette(input="husl", as_cmap=False):
-    """Launch an interactive widget to create a sequential palette.
+    """Launch an interactive widget to create a light sequential palette.
 
     This corresponds with the :func:`light_palette` function. This kind
     of palette is good for data that range between relatively uninteresting
