@@ -878,15 +878,15 @@ def choose_cubehelix_palette(as_cmap=False):
                          rot=FloatSliderWidget(min=-1, max=1, value=.4),
                          gamma=FloatSliderWidget(min=0, max=5, value=1),
                          hue=FloatSliderWidget(min=0, max=1, value=.8),
-                         dark=FloatSliderWidget(min=0, max=1, value=.15),
                          light=FloatSliderWidget(min=0, max=1, value=.85),
+                         dark=FloatSliderWidget(min=0, max=1, value=.15),
                          reverse=False):
         pal[:] = cubehelix_palette(n_colors, start, rot, gamma,
-                                   hue, dark, light, reverse)
+                                   hue, light, dark, reverse)
         palplot(pal)
         if as_cmap:
             colors = cubehelix_palette(256, start, rot, gamma,
-                                       hue, dark, light, reverse)
+                                       hue, light, dark, reverse)
             _update_lut(cmap, np.c_[colors, np.ones(256)])
 
     if as_cmap:
