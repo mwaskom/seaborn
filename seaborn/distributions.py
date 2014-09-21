@@ -182,11 +182,18 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     # Reshape and find labels for the plot
     vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
 
-    # Draw the boxplot using matplotlib
-    boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
-
     # Find plot colors
     colors, gray = _box_colors(vals, color, saturation)
+
+    # Make a flierprops dict and set symbol to override buggy default behavior
+    # on matplotlib 1.4.0
+    kwargs["flierprops"] = {"markerfacecolor": gray,
+                            "markeredgecolor": gray,
+                            "markersize": fliersize}
+    kwargs["sym"] = "d"
+
+    # Draw the boxplot using matplotlib
+    boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
 
     # Set the new aesthetics
     for i, box in enumerate(boxes["boxes"]):
@@ -205,6 +212,9 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     for i, med in enumerate(boxes["medians"]):
         med.set_color(gray)
         med.set_linewidth(linewidth)
+
+    # As of matplotlib 1.4.0 there is a bug where these values are being
+    # ignored, so this is redundant with what's above but I am keeping it
     for i, fly in enumerate(boxes["fliers"]):
         fly.set_color(gray)
         fly.set_marker("d")
