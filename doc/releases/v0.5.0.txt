@@ -16,6 +16,8 @@ Color palettes
 Bug fixes
 ~~~~~~~~~
 
+- Fixed a bug where :func:`lmplot` would show a legend when the hue variable was also used on either the rows or columns (making the legend redundant).
+
 - Fixed a bug in :class:`PairGrid` that gave incorrect results (or a crash) when the input DataFrame has a non-default index.
 
 - Fixed a bug in :class:`PairGrid` where passing columns with a date-like datatype raised an exception.

@@ -932,6 +932,11 @@ class TestRegressionPlots(object):
 
         plt.close("all")
 
+    def test_lmplot_hue_col_nolegend(self):
+
+        g = lm.lmplot("x", "y", data=self.df, col="h", hue="h")
+        nt.assert_is(g._legend, None)
+
     def test_lmplot_scatter_kws(self):
 
         g = lm.lmplot("x", "y", hue="h", data=self.df, ci=None)

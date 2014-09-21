@@ -771,7 +771,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     facets.map_dataframe(regplot, x, y, **kwargs)
 
     # Add a legend
-    if hue is not None and legend:
+    if legend and (hue is not None) and (hue not in [col, row]):
         facets.add_legend()
     return facets
 
