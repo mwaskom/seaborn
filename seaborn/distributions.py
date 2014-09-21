@@ -1,5 +1,6 @@
 """Plottng functions for visualizing distributions."""
 from __future__ import division
+import inspect
 import colorsys
 import numpy as np
 from scipy import stats
@@ -187,10 +188,13 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
     # Make a flierprops dict and set symbol to override buggy default behavior
     # on matplotlib 1.4.0
-    kwargs["flierprops"] = {"markerfacecolor": gray,
-                            "markeredgecolor": gray,
-                            "markersize": fliersize}
     kwargs["sym"] = "d"
+
+    # Later versions of matplotlib only (but those are the one with the bug)
+    if "flierprops" in inspect.getargspec(ax.boxplot).args:
+        kwargs["flierprops"] = {"markerfacecolor": gray,
+                                "markeredgecolor": gray,
+                                "markersize": fliersize}
 
     # Draw the boxplot using matplotlib
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
