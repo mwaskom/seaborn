@@ -1,8 +1,8 @@
 import numpy as np
 from scipy import stats
 from ..external.six.moves import range
+from ..external.six import StringIO
 import pandas
-from ..six import StringIO
 
 
 import numpy.testing as npt
@@ -255,7 +255,6 @@ Baseline,One year
         ci = algo.ci(self.bootstrap, how='bca', refval=self.refval)
         npt.assert_array_almost_equal(ci, self.known_ci_bca, decimal=2)
 
-    @npt.decorators.skipif(True, "test is unreliable")
     def test_ci_bca_norefval(self):
         ci = algo.ci(self.bootstrap, how='bca')
         npt.assert_array_almost_equal(ci, self.known_ci_bca_norefval,
