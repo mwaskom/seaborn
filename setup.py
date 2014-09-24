@@ -30,8 +30,8 @@ try:
 except ImportError:
     from distutils.core import setup
 
-
 def check_dependencies():
+    install_requires = []
 
     # Just make sure dependencies exist, I haven't rigorously
     # tested what the minimal versions that will work are
@@ -39,19 +39,21 @@ def check_dependencies():
     try:
         import numpy
     except ImportError:
-        raise ImportError("seaborn requires numpy")
+        install_requires.append('numpy')
     try:
         import scipy
     except ImportError:
-        raise ImportError("seaborn requires scipy")
+        install_requires.append('scipy')
     try:
         import matplotlib
     except ImportError:
-        raise ImportError("seaborn requires matplotlib")
+        install_requires.append('matplotlib')
     try:
         import pandas
     except ImportError:
-        raise ImportError("seaborn requires pandas")
+        install_requires.append('pandas')
+
+    return install_requires
 
 if __name__ == "__main__":
     import os
@@ -62,7 +64,9 @@ if __name__ == "__main__":
     if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
             sys.argv[1] in ('--help-commands', 'egg_info', '--version',
                             'clean'))):
-        check_dependencies()
+        install_requires = check_dependencies()
+    else:
+        install_requires = []
 
     setup(name=DISTNAME,
         maintainer=MAINTAINER,
@@ -73,6 +77,7 @@ if __name__ == "__main__":
         url=URL,
         version=VERSION,
         download_url=DOWNLOAD_URL,
+        install_requires=install_requires,
         packages=['seaborn', 'seaborn.external', 'seaborn.tests'],
         classifiers=[
                      'Intended Audience :: Science/Research',
