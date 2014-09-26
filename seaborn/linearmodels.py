@@ -399,7 +399,7 @@ class _RegressionPlotter(_LinearPlotter):
                  units=None, order=1, logistic=False, lowess=False,
                  robust=False, logx=False, x_partial=None, y_partial=None,
                  truncate=False, dropna=True, x_jitter=None, y_jitter=None,
-                 color=None, label=None):
+                 color=None, label=None, mem=None):
 
         # Set member attributes
         self.x_estimator = x_estimator
@@ -447,6 +447,9 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Save the range of the x variable for the grid later
         self.x_range = self.x.min(), self.x.max()
+
+        if mem is not None:
+            self.fit_fast = mem.cache(self.fit_fast, ignore=["self"])
 
     @property
     def scatter_data(self):
@@ -523,7 +526,7 @@ class _RegressionPlotter(_LinearPlotter):
         elif self.logx:
             yhat, yhat_boots = self.fit_logx(grid)
         else:
-            yhat, yhat_boots = self.fit_fast(grid)
+            yhat, yhat_boots = self.fit_fast(self.x, self.y, grid)
 
         # Compute the confidence interval at each grid point
         if ci is None:
@@ -533,9 +536,9 @@ class _RegressionPlotter(_LinearPlotter):
 
         return grid, yhat, err_bands
 
-    def fit_fast(self, grid):
+    def fit_fast(self, x, y, grid):
         """Low-level regression and prediction using linear algebra."""
-        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+        X, y = np.c_[np.ones(len(x)), x], y
         grid = np.c_[np.ones(len(grid)), grid]
         reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
         yhat = grid.dot(reg_func(X, y))
@@ -1054,7 +1057,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
             color=None, scatter_kws=None, line_kws=None,
-            ax=None):
+            mem=None, ax=None):
     """Draw a scatter plot between x and y with a regression line.
 
     Parameters
@@ -1150,7 +1153,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
                                  scatter, fit_reg, ci, n_boot, units,
                                  order, logistic, lowess, robust, logx,
                                  x_partial, y_partial, truncate, dropna,
-                                 x_jitter, y_jitter, color, label)
+                                 x_jitter, y_jitter, color, label, mem)
 
     if ax is None:
         ax = plt.gca()
