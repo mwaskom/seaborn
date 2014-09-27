@@ -56,19 +56,16 @@ def check_dependencies():
     return install_requires
 
 if __name__ == "__main__":
+
     import os
     if os.path.exists('MANIFEST'):
         os.remove('MANIFEST')
 
-    import sys
-    if not (len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
-            sys.argv[1] in ('--help-commands', 'egg_info', '--version',
-                            'clean'))):
-        install_requires = check_dependencies()
-    else:
-        install_requires = []
+    install_requires = check_dependencies()
 
     setup(name=DISTNAME,
+        author=MAINTAINER,
+        author_email=MAINTAINER_EMAIL,
         maintainer=MAINTAINER,
         maintainer_email=MAINTAINER_EMAIL,
         description=DESCRIPTION,
