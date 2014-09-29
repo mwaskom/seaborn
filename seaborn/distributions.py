@@ -759,6 +759,12 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
         bw = [x_bw, y_bw]
     elif np.isscalar(bw):
         bw = [bw, bw]
+
+    if isinstance(x, pd.Series):
+        x = x.values
+    if isinstance(y, pd.Series):
+        y = y.values
+
     kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
