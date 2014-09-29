@@ -812,7 +812,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     units : vector, optional
         Vector with ids for sampling units; bootstrap will be performed over
         these units and then within them.
-    kind : {"auto", "point", "bar"}, optional
+    kind : {"auto", "point", "bar", "box"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
     markers : list of strings, optional
