@@ -23,3 +23,6 @@ Bug fixes
 - Fixed a bug in :class:`PairGrid` where passing columns with a date-like datatype raised an exception.
 
 - Worked around a matplotlib bug that was forcing outliers in :func:`boxplot` to appear as blue.
+
+- :func:`kdeplot` now accepts pandas Series for the ``data`` and ``data2``
+- arguments.
