@@ -10,4 +10,4 @@ from .xkcd_rgb import xkcd_rgb
 from .clustering import *
 set()
 
-__version__ = "0.3"
+__version__ = "0.4.dev"

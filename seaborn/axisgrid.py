@@ -436,13 +436,14 @@ class FacetGrid(object):
         utils.despine(self.fig, **kwargs)
         return self
 
-    def set_axis_labels(self, x_var, y_var=None):
+    def set_axis_labels(self, x_var=None, y_var=None):
         """Set axis labels on the left column and bottom row of the grid."""
+        if x_var is not None:
+            self._x_var = x_var
+            self.set_xlabels(x_var)
         if y_var is not None:
             self._y_var = y_var
             self.set_ylabels(y_var)
-        self._x_var = x_var
-        self.set_xlabels(x_var)
         return self
 
     def set_xlabels(self, label=None, **kwargs):

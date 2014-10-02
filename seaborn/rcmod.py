@@ -5,7 +5,6 @@ import matplotlib as mpl
 
 from . import palettes
 
-from . import palettes
 
 _style_keys = (
     "axes.facecolor",
