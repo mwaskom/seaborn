@@ -2,6 +2,13 @@
 v0.5.0 (Unreleased)
 -------------------
 
+Plotting functions
+~~~~~~~~~~~~~~~~~~
+
+- :func:`lmplot` and :func:`pairplot` get a new keyword argument, ``markers``. This can be a single kind of marker or a list of different markers for each level of the ``hue`` variable. Using different markers for different hues should let plots be more comprehensible when reproduced to black-and-white (i.e. when printed). See the `github pull request <https://github.com/mwaskom/seaborn/pull/323>`_ for examples.
+
+- More generally, there is a new keyword argument in :class:`FacetGrid` and :class:`PairGrid`, ``hue_kws``. This similarly lets plot aesthetics vary across the levels of the hue variable, but more flexibily. ``hue_kws`` should be a dictionary that maps the name of keyword arguments to lists of values that are as long as the number of levels of the hue variable.
+
 Color palettes
 ~~~~~~~~~~~~~~
 
