@@ -706,7 +706,6 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
            dropna=True, legend=True, legend_out=True, **kwargs):
-    # TODO markers in params
     """Plot a data and a regression model fit onto a FacetGrid.
 
     Parameters
@@ -729,10 +728,15 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
         Height (in inches) of each facet.
     aspect : scalar, optional
         Aspect * size gives the width (in inches) of each facet.
+    markers : single matplotlib marker code or list, optional
+        Either the marker to use for all datapoints or a list of markers with
+        a length the same as the number of levels in the hue variable so that
+        differently colored points will also have different scatterplot
+        markers.
     share{x, y}: booleans, optional
         Lock the limits of the vertical and horizontal axes across the
         facets.
-    {hue, col, row}_order: sequence of strings
+    {hue, col, row}_order: sequence of strings, optional
         Order to plot the values in the faceting variables in, otherwise
         sorts the unique values.
     dropna : boolean, optional
@@ -1082,7 +1086,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             xlabel=None, ylabel=None, label=None,
             color=None, marker="o", scatter_kws=None, line_kws=None,
             ax=None):
-    # TODO document marker
     """Draw a scatter plot between x and y with a regression line.
 
     Parameters
@@ -1154,6 +1157,8 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         Color to use for all elements of the plot. Can set the scatter and
         regression colors separately using the `kws` dictionaries. If not
         provided, the current color in the axis cycle is used.
+    marker : matplotlib marker code, optional
+        Marker to use for the scatterplot points.
     {scatter, line}_kws : dictionaries, optional
         Additional keyword arguments passed to scatter() and plot() for drawing
         the components of the plot.

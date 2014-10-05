@@ -145,7 +145,6 @@ class FacetGrid(Grid):
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None):
-        # TODO hue_kws in params
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -170,6 +169,10 @@ class FacetGrid(Grid):
         {row, col, hue}_order: sequence of strings
             Order to plot the values in the faceting variables in, otherwise
             sorts the unique values.
+        hue_kws : dictionary of param -> list of values mapping
+            Other keyword arguments to insert into the plotting call to let
+            other plot attributes vary across levels of the hue variable (e.g.
+            the markers in a scatterplot).
         dropna : boolean, optional
             Drop missing values from the data before plotting.
         legend : boolean, optional
