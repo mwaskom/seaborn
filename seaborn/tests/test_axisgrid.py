@@ -449,6 +449,15 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
+    def test_hue_kws(self):
+
+        kws = dict(marker=["o", "s", "D"])
+        g = ag.FacetGrid(self.df, hue="c", hue_kws=kws)
+        g.map(plt.plot, "x", "y")
+
+        for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
+            nt.assert_equal(line.get_marker(), marker)
+
     def test_dropna(self):
 
         df = self.df.copy()

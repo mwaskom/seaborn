@@ -622,10 +622,10 @@ class _RegressionPlotter(_LinearPlotter):
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
         # Insert the plot label into the correct set of keyword arguments
-        if self.fit_reg:
-            line_kws["label"] = self.label
-        else:
+        if self.scatter:
             scatter_kws["label"] = self.label
+        else:
+            line_kws["label"] = self.label
 
         # Use the current color cycle state as a default
         if self.color is None:
@@ -653,9 +653,22 @@ class _RegressionPlotter(_LinearPlotter):
 
     def scatterplot(self, ax, kws):
         """Draw the data."""
+        # Treat the line-based markers specially, explicitly setting larger
+        # linewidth than is provided by the seaborn style defaults.
+        # This would ideally be handled better in matplotlib (i.e., distinguish
+        # between edgewidth for solid glyphs and linewidth for line glyphs
+        # but this should do for now.
+        line_markers = ["1", "2", "3", "4", "+", "x", "|", "_"]
         if self.x_estimator is None:
+            if "marker" in kws and kws["marker"] in line_markers:
+                lw = mpl.rcParams["lines.linewidth"]
+            else:
+                lw = mpl.rcParams["lines.markeredgewidth"]
+            kws.setdefault("linewidths", lw)
+
             if not hasattr(kws['color'], 'shape') or kws['color'].shape[1] < 4:
                 kws.setdefault("alpha", .8)
+
             x, y = self.scatter_data
             ax.scatter(x, y, **kws)
         else:
@@ -690,10 +703,11 @@ class _RegressionPlotter(_LinearPlotter):
 
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
-           hue_order=None, col_order=None, row_order=None, dropna=True,
-           legend=True, legend_out=True, **kwargs):
-    """Plot a linear regression model and data onto a FacetGrid.
+           col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
+           sharey=True, hue_order=None, col_order=None, row_order=None,
+           dropna=True, legend=True, legend_out=True, **kwargs):
+    # TODO markers in params
+    """Plot a data and a regression model fit onto a FacetGrid.
 
     Parameters
     ----------
@@ -758,6 +772,19 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
                        size=size, aspect=aspect, col_wrap=col_wrap,
                        sharex=sharex, sharey=sharey,
                        legend=legend, legend_out=legend_out)
+
+    # Add the markers here as FacetGrid has figured out how many levels of the
+    # hue variable are needed and we don't want to duplicate that process
+    if facets.hue_names is None:
+        n_markers = 1
+    else:
+        n_markers = len(facets.hue_names)
+    if not isinstance(markers, list):
+        markers = [markers] * n_markers
+    if len(markers) != n_markers:
+        raise ValueError(("markers must be a singeton or a list of markers "
+                          "for each level of the hue variable"))
+    facets.hue_kws = {"marker": markers}
 
     # Hack to set the x limits properly, which needs to happen here
     # because the extent of the regression estimate is determined
@@ -1053,8 +1080,9 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             logx=False, x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
-            color=None, scatter_kws=None, line_kws=None,
+            color=None, marker="o", scatter_kws=None, line_kws=None,
             ax=None):
+    # TODO document marker
     """Draw a scatter plot between x and y with a regression line.
 
     Parameters
@@ -1156,6 +1184,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         ax = plt.gca()
 
     scatter_kws = {} if scatter_kws is None else copy.copy(scatter_kws)
+    scatter_kws["marker"] = marker
     line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
     return ax

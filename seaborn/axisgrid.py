@@ -142,9 +142,10 @@ class FacetGrid(Grid):
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
-                 row_order=None, col_order=None, hue_order=None,
+                 row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None):
+        # TODO hue_kws in params
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -271,6 +272,9 @@ class FacetGrid(Grid):
 
         colors = self._get_palette(data, hue, hue_order, palette, dropna)
 
+        # Additional dict of kwarg -> list of values for mapping the hue var
+        hue_kws = hue_kws if hue_kws is not None else {}
+
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
         none_na = np.zeros(len(data), np.bool)
@@ -312,6 +316,7 @@ class FacetGrid(Grid):
         self.row_names = row_names
         self.col_names = col_names
         self.hue_names = hue_names
+        self.hue_kws = hue_kws
 
         # Next the private variables
         self._nrow = nrow
@@ -417,6 +422,10 @@ class FacetGrid(Grid):
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
 
+            # Insert the other hue aesthetics if appropriate
+            for kw, val_list in self.hue_kws.items():
+                kwargs[kw] = val_list[hue_k]
+
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
                 kwargs["label"] = str(self.hue_names[hue_k])
@@ -483,6 +492,10 @@ class FacetGrid(Grid):
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
+
+            # Insert the other hue aesthetics if appropriate
+            for kw, val_list in self.hue_kws.items():
+                kwargs[kw] = val_list[hue_k]
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:

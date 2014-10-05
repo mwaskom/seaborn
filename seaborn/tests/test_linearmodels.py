@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -889,6 +890,8 @@ class TestRegressionPlots(object):
         ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
         nt.assert_equal(ax.collections[0]._alpha, 0.8)
 
+        plt.close("all")
+
     def test_regplot_binned(self):
 
         ax = lm.regplot("x", "y", self.df, x_bins=5)
@@ -919,6 +922,29 @@ class TestRegressionPlots(object):
         nt.assert_equal(len(ax.collections), 4)
         plt.close("all")
 
+    def test_lmplot_markers(self):
+
+        g1 = lm.lmplot("x", "y", data=self.df, hue="h", markers="s")
+        nt.assert_equal(g1.hue_kws, {"marker": ["s", "s"]})
+
+        g2 = lm.lmplot("x", "y", data=self.df, hue="h", markers=["o", "s"])
+        nt.assert_equal(g2.hue_kws, {"marker": ["o", "s"]})
+
+        with nt.assert_raises(ValueError):
+            lm.lmplot("x", "y", data=self.df, hue="h", markers=["o", "s", "d"])
+
+        plt.close("all")
+
+    def test_lmplot_marker_linewidths(self):
+
+        g = lm.lmplot("x", "y", data=self.df, hue="h",
+                      fit_reg=False, markers=["o", "+"])
+        c = g.axes[0, 0].collections
+        nt.assert_equal(c[0].get_linewidths()[0], 0)
+        rclw = mpl.rcParams["lines.linewidth"]
+        nt.assert_equal(c[1].get_linewidths()[0], rclw)
+        plt.close("all")
+
     def test_lmplot_facets(self):
 
         g = lm.lmplot("x", "y", data=self.df, row="g", col="h")
@@ -929,13 +955,13 @@ class TestRegressionPlots(object):
 
         g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
-
         plt.close("all")
 
     def test_lmplot_hue_col_nolegend(self):
 
         g = lm.lmplot("x", "y", data=self.df, col="h", hue="h")
         nt.assert_is(g._legend, None)
+        plt.close("all")
 
     def test_lmplot_scatter_kws(self):
 
@@ -945,6 +971,8 @@ class TestRegressionPlots(object):
         red, blue = color_palette(n_colors=2)
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
+
+        plt.close("all")
 
     def test_residplot(self):
 
