@@ -1650,7 +1650,7 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist",
+             kind="scatter", diag_kind="hist", markers=None,
              size=3, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
@@ -1677,6 +1677,11 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         Kind of plot for the non-identity relationships.
     diag_kind : {'hist', 'kde'}, optional
         Kind of plot for the diagonal subplots.
+    markers : single matplotlib marker code or list, optional
+        Either the marker to use for all datapoints or a list of markers with
+        a length the same as the number of levels in the hue variable so that
+        differently colored points will also have different scatterplot
+        markers.
     size : scalar, optional
         Height (in inches) of each facet.
     aspect : scalar, optional
@@ -1710,6 +1715,20 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
                     hue_order=hue_order, palette=palette,
                     diag_sharey=diag_sharey,
                     size=size, aspect=aspect, dropna=dropna, **grid_kws)
+
+    # Add the markers here as PairGrid has figured out how many levels of the
+    # hue variable are needed and we don't want to duplicate that process
+    if markers is not None:
+        if grid.hue_names is None:
+            n_markers = 1
+        else:
+            n_markers = len(grid.hue_names)
+        if not isinstance(markers, list):
+            markers = [markers] * n_markers
+        if len(markers) != n_markers:
+            raise ValueError(("markers must be a singeton or a list of markers"
+                              " for each level of the hue variable"))
+        grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
     if grid.square_grid:

@@ -760,7 +760,7 @@ class PairGrid(Grid):
     """Subplot grid for plotting pairwise relationships in a dataset."""
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
-                 vars=None, x_vars=None, y_vars=None,
+                 hue_kws=None, vars=None, x_vars=None, y_vars=None,
                  diag_sharey=True, size=3, aspect=1,
                  despine=True, dropna=True):
         """Initialize the plot figure and PairGrid object.
@@ -777,6 +777,10 @@ class PairGrid(Grid):
         palette : dict or seaborn color palette
             Set of colors for mapping the ``hue`` variable. If a dict, keys
             should be values  in the ``hue`` variable.
+        hue_kws : dictionary of param -> list of values mapping
+            Other keyword arguments to insert into the plotting call to let
+            other plot attributes vary across levels of the hue variable (e.g.
+            the markers in a scatterplot).
         vars : list of variable names, optional
             Variables within ``data`` to use, otherwise use every column with
             a numeric datatype.
@@ -861,6 +865,9 @@ class PairGrid(Grid):
             self.hue_names = hue_names
             self.hue_vals = data[hue]
 
+        # Additional dict of kwarg -> list of values for mapping the hue var
+        self.hue_kws = hue_kws if hue_kws is not None else {}
+
         self.palette = self._get_palette(data, hue, hue_order, palette, dropna)
         self._legend_data = {}
 
@@ -886,6 +893,10 @@ class PairGrid(Grid):
                 for k, (label_k, data_k) in enumerate(hue_grouped):
                     ax = self.axes[i, j]
                     plt.sca(ax)
+
+                    # Insert the other hue aesthetics if appropriate
+                    for kw, val_list in self.hue_kws.items():
+                        kwargs[kw] = val_list[k]
 
                     color = self.palette[k] if kw_color is None else kw_color
                     func(data_k[x_var], data_k[y_var],
@@ -969,6 +980,10 @@ class PairGrid(Grid):
                 x_var = self.x_vars[j]
                 y_var = self.y_vars[i]
 
+                # Insert the other hue aesthetics if appropriate
+                for kw, val_list in self.hue_kws.items():
+                    kwargs[kw] = val_list[k]
+
                 color = self.palette[k] if kw_color is None else kw_color
                 func(data_k[x_var], data_k[y_var], label=label_k,
                      color=color, **kwargs)
@@ -1001,6 +1016,10 @@ class PairGrid(Grid):
 
                 x_var = self.x_vars[j]
                 y_var = self.y_vars[i]
+
+                # Insert the other hue aesthetics if appropriate
+                for kw, val_list in self.hue_kws.items():
+                    kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
                 func(data_k[x_var], data_k[y_var], label=label_k,

@@ -762,6 +762,15 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    def test_hue_kws(self):
+
+        kws = dict(marker=["o", "s", "d", "+"])
+        g = ag.PairGrid(self.df, hue="a", hue_kws=kws)
+        g.map(plt.plot)
+
+        for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
+            nt.assert_equal(line.get_marker(), marker)
+
     def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")
@@ -892,6 +901,18 @@ class TestPairGrid(object):
             nt.assert_equal(len(ax.collections), 0)
 
         plt.close("all")
+
+    @skipif(old_matplotlib)
+    def test_pairplot_markers(self):
+
+        vars = ["x", "y", "z"]
+        markers = ["o", "x", "s", "d"]
+        g = pairplot(self.df, hue="a", vars=vars, markers=markers)
+        nt.assert_equal(g.hue_kws["marker"], markers)
+        plt.close("all")
+
+        with nt.assert_raises(ValueError):
+            g = pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
     @classmethod
     def teardown_class(cls):
