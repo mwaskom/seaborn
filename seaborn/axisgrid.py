@@ -142,7 +142,7 @@ class FacetGrid(Grid):
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
-                 row_order=None, col_order=None, hue_order=None,
+                 row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None):
         """Initialize the plot figure and FacetGrid object.
@@ -169,6 +169,10 @@ class FacetGrid(Grid):
         {row, col, hue}_order: sequence of strings
             Order to plot the values in the faceting variables in, otherwise
             sorts the unique values.
+        hue_kws : dictionary of param -> list of values mapping
+            Other keyword arguments to insert into the plotting call to let
+            other plot attributes vary across levels of the hue variable (e.g.
+            the markers in a scatterplot).
         dropna : boolean, optional
             Drop missing values from the data before plotting.
         legend : boolean, optional
@@ -271,6 +275,9 @@ class FacetGrid(Grid):
 
         colors = self._get_palette(data, hue, hue_order, palette, dropna)
 
+        # Additional dict of kwarg -> list of values for mapping the hue var
+        hue_kws = hue_kws if hue_kws is not None else {}
+
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
         none_na = np.zeros(len(data), np.bool)
@@ -312,6 +319,7 @@ class FacetGrid(Grid):
         self.row_names = row_names
         self.col_names = col_names
         self.hue_names = hue_names
+        self.hue_kws = hue_kws
 
         # Next the private variables
         self._nrow = nrow
@@ -417,6 +425,10 @@ class FacetGrid(Grid):
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
 
+            # Insert the other hue aesthetics if appropriate
+            for kw, val_list in self.hue_kws.items():
+                kwargs[kw] = val_list[hue_k]
+
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
                 kwargs["label"] = str(self.hue_names[hue_k])
@@ -483,6 +495,10 @@ class FacetGrid(Grid):
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
+
+            # Insert the other hue aesthetics if appropriate
+            for kw, val_list in self.hue_kws.items():
+                kwargs[kw] = val_list[hue_k]
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
@@ -744,7 +760,7 @@ class PairGrid(Grid):
     """Subplot grid for plotting pairwise relationships in a dataset."""
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
-                 vars=None, x_vars=None, y_vars=None,
+                 hue_kws=None, vars=None, x_vars=None, y_vars=None,
                  diag_sharey=True, size=3, aspect=1,
                  despine=True, dropna=True):
         """Initialize the plot figure and PairGrid object.
@@ -761,6 +777,10 @@ class PairGrid(Grid):
         palette : dict or seaborn color palette
             Set of colors for mapping the ``hue`` variable. If a dict, keys
             should be values  in the ``hue`` variable.
+        hue_kws : dictionary of param -> list of values mapping
+            Other keyword arguments to insert into the plotting call to let
+            other plot attributes vary across levels of the hue variable (e.g.
+            the markers in a scatterplot).
         vars : list of variable names, optional
             Variables within ``data`` to use, otherwise use every column with
             a numeric datatype.
@@ -845,6 +865,9 @@ class PairGrid(Grid):
             self.hue_names = hue_names
             self.hue_vals = data[hue]
 
+        # Additional dict of kwarg -> list of values for mapping the hue var
+        self.hue_kws = hue_kws if hue_kws is not None else {}
+
         self.palette = self._get_palette(data, hue, hue_order, palette, dropna)
         self._legend_data = {}
 
@@ -870,6 +893,10 @@ class PairGrid(Grid):
                 for k, (label_k, data_k) in enumerate(hue_grouped):
                     ax = self.axes[i, j]
                     plt.sca(ax)
+
+                    # Insert the other hue aesthetics if appropriate
+                    for kw, val_list in self.hue_kws.items():
+                        kwargs[kw] = val_list[k]
 
                     color = self.palette[k] if kw_color is None else kw_color
                     func(data_k[x_var], data_k[y_var],
@@ -953,6 +980,10 @@ class PairGrid(Grid):
                 x_var = self.x_vars[j]
                 y_var = self.y_vars[i]
 
+                # Insert the other hue aesthetics if appropriate
+                for kw, val_list in self.hue_kws.items():
+                    kwargs[kw] = val_list[k]
+
                 color = self.palette[k] if kw_color is None else kw_color
                 func(data_k[x_var], data_k[y_var], label=label_k,
                      color=color, **kwargs)
@@ -985,6 +1016,10 @@ class PairGrid(Grid):
 
                 x_var = self.x_vars[j]
                 y_var = self.y_vars[i]
+
+                # Insert the other hue aesthetics if appropriate
+                for kw, val_list in self.hue_kws.items():
+                    kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
                 func(data_k[x_var], data_k[y_var], label=label_k,
