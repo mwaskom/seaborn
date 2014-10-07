@@ -5,12 +5,14 @@ import pandas as pd
 
 from .utils import despine
 
+
 def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
             cmap=None, center_value=0, yticklabels_rotation='horizontal',
             xticklabels_rotation='vertical', colorbar=True,
             colorbar_ax=None, ax=None,
             fig=None, colorbar_orientation='vertical', colorbar_label='',
-            colorbar_ticklabel_fontsize=8):
+            colorbar_ticklabel_fontsize=8,
+            edgecolor='white', linewidth=.5, **kwargs):
     """
     Use for large datasets
 
@@ -51,6 +53,10 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         Where to place the colorbar ax. Default None.
     colorbar_orientation : 'vertical' | 'horizontal'
         How to rotate the colorbar. Default 'horizontal'
+    edgecolor : matplotlib color
+        Color of lines between matrix cells
+    linewidth : float
+        Width of lines between matrix cells. Default 0.5
 
     Returns
     -------
@@ -84,7 +90,8 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         else:
             cmap = mpl.cm.YlGnBu
 
-    p = ax.pcolormesh(array, cmap=cmap, vmin=vmin, vmax=vmax)
+    p = ax.pcolormesh(array, cmap=cmap, vmin=vmin, vmax=vmax,
+                      edgecolor=edgecolor, linewidth=linewidth, **kwargs)
 
     # Get rid of ALL axes
     despine(bottom=True, left=True)
@@ -114,8 +121,10 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
     # Show the scale of the colorbar
     if colorbar:
         cb = fig.colorbar(p, cax=colorbar_ax, use_gridspec=True,
-                     orientation=colorbar_orientation, label=colorbar_label)
-        tick_locator = mpl.ticker.MaxNLocator(nbins=2, symmetric=divergent_data,
+                          orientation=colorbar_orientation,
+                          label=colorbar_label)
+        tick_locator = mpl.ticker.MaxNLocator(nbins=2,
+                                              symmetric=divergent_data,
                                               prune=None, trim=False)
         if 'horizontal'.startswith(colorbar_orientation):
             cb.ax.set_xticklabels(tick_locator.bin_boundaries(vmin, vmax))
