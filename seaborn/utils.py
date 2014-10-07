@@ -356,3 +356,38 @@ def load_dataset(name):
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
     return df
+
+
+def axis_ticklabels_overlap(labels):
+    """Return a boolean for whether the list of ticklabels have overlaps.
+
+    Parameters
+    ----------
+    labels : list of ticklabels
+
+    Returns
+    -------
+    overlap : boolean
+        True if any of the labels overlap.
+
+    """
+    bboxes = [l.get_window_extent() for l in labels]
+    overlaps = [b.count_overlaps(bboxes) for b in bboxes]
+    return max(overlaps) > 1
+
+
+def axes_ticklabels_overlap(ax):
+    """Return booleans for whether the x and y ticklabels on an Axes overlap.
+
+    Parameters
+    ----------
+    ax : matplotlib Axes
+
+    Returns
+    -------
+    x_overlap, y_overlap : booleans
+        True when the labels on that axis overlap.
+
+    """
+    return (axis_ticklabels_overlap(ax.get_xticklabels()),
+            axis_ticklabels_overlap(ax.get_yticklabels()))

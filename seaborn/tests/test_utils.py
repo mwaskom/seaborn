@@ -1,4 +1,5 @@
 """Tests for plotting utilities."""
+import string
 import warnings
 
 import numpy as np
@@ -8,7 +9,7 @@ import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
 
-from .. import utils
+from .. import utils, rcmod
 
 
 a_norm = np.random.randn(100)
@@ -224,3 +225,23 @@ class TestSpineUtils(object):
                 nt.assert_equal(ax2.spines[side].get_position(),
                                 self.offset_position)
         plt.close("all")
+
+
+def test_ticklabels_overlap():
+
+    rcmod.set()
+    f, ax = plt.subplots(figsize=(2, 2))
+    f.tight_layout()  # This gets the Agg renderer working
+
+    assert not utils.axis_ticklabels_overlap(ax.get_xticklabels())
+
+    big_strings = string.letters[:26], string.letters[26:]
+    ax.set_xlim(-.5, 1.5)
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(big_strings)
+
+    assert utils.axis_ticklabels_overlap(ax.get_xticklabels())
+
+    x, y = utils.axes_ticklabels_overlap(ax)
+    assert x
+    assert not y
