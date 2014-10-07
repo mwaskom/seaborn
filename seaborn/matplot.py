@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from .utils import despine
 
@@ -8,7 +9,8 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
             cmap=None, center_value=0, yticklabels_rotation='horizontal',
             xticklabels_rotation='vertical', colorbar=True,
             colorbar_ax=None, ax=None,
-            fig=None, colorbar_orientation='vertical', colorbar_label=''):
+            fig=None, colorbar_orientation='vertical', colorbar_label='',
+            colorbar_ticklabel_fontsize=8):
     """
     Use for large datasets
 
@@ -53,15 +55,19 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
     Returns
     -------
     p : matplotlib.pyplot.pcolormesh instance
-
+        Returns a pcolormesh instance
     """
     if fig is None:
         fig = plt.gcf()
     if ax is None:
         ax = plt.gca()
 
-    vmin = data.min() if vmin is None else vmin
-    vmax = data.max() if vmax is None else vmax
+    if isinstance(data, pd.DataFrame):
+        array = data.values
+    else:
+        array = data
+    vmin = array.min() if vmin is None else vmin
+    vmax = array.max() if vmax is None else vmax
 
     # If this data has both negative and positive values, call it divergent
     divergent_data = False
@@ -78,7 +84,7 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         else:
             cmap = mpl.cm.YlGnBu
 
-    p = ax.pcolormesh(data, cmap=cmap, vmin=vmin, vmax=vmax)
+    p = ax.pcolormesh(array, cmap=cmap, vmin=vmin, vmax=vmax)
 
     # Get rid of ALL axes
     despine(bottom=True, left=True)
@@ -91,7 +97,7 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
             xticklabels = []
     if isinstance(yticklabels, bool):
         if yticklabels:
-            yticklabels = data.columns
+            yticklabels = data.index
         else:
             yticklabels = []
 
@@ -101,12 +107,28 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         ax.set_xticklabels(xticklabels, rotation=xticklabels_rotation)
 
     if any(yticklabels):
-        yticks = np.arange(0.5, data.shape[1] + 0.5)
+        yticks = np.arange(0.5, data.shape[0] + 0.5)
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticklabels, rotation=yticklabels_rotation)
 
     # Show the scale of the colorbar
     if colorbar:
-        fig.colorbar(p, cax=colorbar_ax, use_gridspec=True,
-                     orientation=colorbar_orientation)
+        cb = fig.colorbar(p, cax=colorbar_ax, use_gridspec=True,
+                     orientation=colorbar_orientation, label=colorbar_label)
+        tick_locator = mpl.ticker.MaxNLocator(nbins=2, symmetric=divergent_data,
+                                              prune=None, trim=False)
+        if 'horizontal'.startswith(colorbar_orientation):
+            cb.ax.set_xticklabels(tick_locator.bin_boundaries(vmin, vmax))
+            cb.ax.xaxis.set_major_locator(tick_locator)
+        else:
+            cb.ax.set_yticklabels(tick_locator.bin_boundaries(vmin, vmax))
+            cb.ax.yaxis.set_major_locator(tick_locator)
+            cb.ax.yaxis.set_ticks_position('right')
+
+        # move ticks to left side of colorbar to avoid problems with
+        # tight_layout
+        # cb.ax.yaxis.set_ticks_position('right')
+        if colorbar_ticklabel_fontsize is not None:
+            cb.ax.tick_params(labelsize=colorbar_ticklabel_fontsize)
+        cb.outline.set_linewidth(0)
     return p
