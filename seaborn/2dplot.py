@@ -6,7 +6,8 @@ from .utils import despine
 
 def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
             cmap=None, center_value=0, yticklabels_rotation='horizontal',
-            xticklabels_rotation='vertical', colorbar_ax=None, ax=None,
+            xticklabels_rotation='vertical', colorbar=True,
+            colorbar_ax=None, ax=None,
             fig=None, colorbar_orientation='vertical', colorbar_label=''):
     """
     Use for large datasets
@@ -42,6 +43,8 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         How to rotate the yticklabels. Default "vertical"
     yticklabels_rotation : 'horizontal' | 'vertical'
         How to rotate the yticklabels. Default "horizontal"
+    colorbar : bool
+        Whether or not to plot the colorbar
     colorbar_ax : matplotlib.Axes
         Where to place the colorbar ax. Default None.
     colorbar_orientation : 'vertical' | 'horizontal'
@@ -103,6 +106,7 @@ def heatmap(data, xticklabels=True, yticklabels=True, vmin=None, vmax=None,
         ax.set_yticklabels(yticklabels, rotation=yticklabels_rotation)
 
     # Show the scale of the colorbar
-    fig.colorbar(p, cax=colorbar_ax, use_gridspec=True,
-                 orientation=colorbar_orientation)
+    if colorbar:
+        fig.colorbar(p, cax=colorbar_ax, use_gridspec=True,
+                     orientation=colorbar_orientation)
     return p
