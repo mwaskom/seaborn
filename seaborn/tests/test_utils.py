@@ -1,5 +1,4 @@
 """Tests for plotting utilities."""
-import string
 import warnings
 
 import numpy as np
@@ -235,7 +234,7 @@ def test_ticklabels_overlap():
 
     assert not utils.axis_ticklabels_overlap(ax.get_xticklabels())
 
-    big_strings = string.letters[:26], string.letters[26:]
+    big_strings = "abcdefgh", "ijklmnop"
     ax.set_xlim(-.5, 1.5)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(big_strings)
