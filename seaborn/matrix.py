@@ -22,6 +22,10 @@ class _HeatMapper(object):
             plot_data = np.asarray(data)
             data = pd.DataFrame(plot_data)
 
+        # Reverse the rows so the plot looks like the matrix
+        plot_data = plot_data[::-1]
+        data = data.ix[::-1]
+
         # Get good names for the rows and columns
         if isinstance(data.columns, pd.MultiIndex):
             self.xticklabels = ["-".join(i) for i in data.columns.values]
