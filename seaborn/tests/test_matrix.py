@@ -133,9 +133,11 @@ class TestHeatmap(object):
 
     def test_heatmap_annotation(self):
 
-        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f")
+        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
+                         annot_kws={"fontsize": 14})
         for val, text in zip(self.x_norm[::-1].flat, ax.texts):
-            nt.assert_equal("{:.1f}".format(val), text.get_text())
+            nt.assert_equal(text.get_text(), "{:.1f}".format(val))
+            nt.assert_equal(text.get_fontsize(), 14)
 
     def test_heatmap_cbar(self):
 
