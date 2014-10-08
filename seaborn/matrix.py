@@ -28,18 +28,22 @@ class _HeatMapper(object):
 
         # Get good names for the rows and columns
         if isinstance(data.columns, pd.MultiIndex):
-            self.xticklabels = ["-".join(i) for i in data.columns.values]
+            xtl = ["-".join(map(str, i)) for i in data.columns.values]
+            self.xticklabels = xtl
+            xlabel = "-".join(map(str, data.columns.names))
         else:
             self.xticklabels = data.columns
+            xlabel = data.columns.name
         if isinstance(data.index, pd.MultiIndex):
-            self.yticklabels = ["-".join(i) for i in data.index.values]
+            ytl = ["-".join(map(str, i)) for i in data.index.values]
+            self.yticklabels = ytl
+            ylabel = "-".join(map(str, data.index.names))
         else:
             self.yticklabels = data.index
+            ylabel = data.index.name
 
         # Get good names for the axis labels
-        xlabel = data.columns.name
         self.xlabel = xlabel if xlabel is not None else ""
-        ylabel = data.index.name
         self.ylabel = ylabel if ylabel is not None else ""
 
         # Determine good default values for the colormapping
@@ -92,7 +96,7 @@ class _HeatMapper(object):
             self.cmap = cmap
 
     def _annotate_heatmap(self, ax, mesh):
-
+        """Add textual labels with the value in each cell."""
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(),  mesh.get_facecolors()):
