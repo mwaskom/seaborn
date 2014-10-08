@@ -107,6 +107,9 @@ class _HeatMapper(object):
         mesh = ax.pcolormesh(self.plot_data, vmin=self.vmin, vmax=self.vmax,
                              cmap=self.cmap, **kws)
 
+        # Set the axis limits
+        ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
+
         # Add row and column labels
         nx, ny = self.data.T.shape
         ax.set(xticks=np.arange(nx) + .5, yticks=np.arange(ny) + .5)
