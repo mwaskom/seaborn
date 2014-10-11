@@ -17,4 +17,4 @@ def convert_nb(nbname):
 if __name__ == "__main__":
 
     for nbname in sys.argv[1:]:
-        convert_nb(nbname.strip(".ipynb"))
+        convert_nb(nbname)
