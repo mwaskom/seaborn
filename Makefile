@@ -2,13 +2,17 @@ export SHELL := /bin/bash
 
 test:
 
+	cp testing/matplotlibrc .
 	nosetests --with-doctest
 	python ipnbdoctest.py examples/*.ipynb
+	rm matplotlibrc
 
 
 coverage:
 
+	cp testing/matplotlibrc .
 	nosetests --cover-erase --with-coverage --cover-html --cover-package seaborn
+	rm matplotlibrc
 
 lint:
 
