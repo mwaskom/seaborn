@@ -348,11 +348,11 @@ def iqr(a):
     return q3 - q1
 
 
-def load_dataset(name):
+def load_dataset(name, **kws):
     """Load a dataset from the online repository (requires internet)."""
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
-    df = pd.read_csv(full_path)
+    df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
     return df
