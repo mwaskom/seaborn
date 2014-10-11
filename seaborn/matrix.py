@@ -150,7 +150,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=False, fmt=".2g", annot_kws=None,
             linewidths=.5, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
-            ax=None, **kwargs):
+            square=False, ax=None, **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
     This function tries to infer a good colormap to use from the data, but
@@ -199,6 +199,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     cbar_ax : matplotlib Axes, optional
         Axes in which to draw the colorbar, otherwise take space from the
         main Axes.
+    square : boolean, optional
+        If True, set the Axes aspect to "equal" so each cell will be
+        square-shaped.
     ax : matplotlib Axes, optional
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
@@ -222,5 +225,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     # Draw the plot and return the Axes
     if ax is None:
         ax = plt.gca()
+    if square:
+        ax.set_aspect("equal")
     plotter.plot(ax, cbar_ax, kwargs)
     return ax

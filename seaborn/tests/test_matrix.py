@@ -210,3 +210,9 @@ class TestHeatmap(object):
         nt.assert_equal(tuple(mesh.get_edgecolor()[0]), c)
 
         plt.close("all")
+
+    def test_square_aspect(self):
+
+        ax = mat.heatmap(self.df_norm, square=True)
+        nt.assert_equal(ax.get_aspect(), "equal")
+        plt.close("all")
