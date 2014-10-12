@@ -307,6 +307,9 @@ class TestRegressionPlotter(object):
 
     def test_estimate_units(self):
 
+        # Seed the RNG locally
+        np.random.seed(345)
+
         p = lm._RegressionPlotter("x", "y", data=self.df, units="s", x_bins=3)
         _, _, ci_big = p.estimate_data
         ci_big = np.diff(ci_big, axis=1)
