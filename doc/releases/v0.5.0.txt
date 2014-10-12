@@ -11,6 +11,8 @@ Plotting functions
 
 - More generally, there is a new keyword argument in :class:`FacetGrid` and :class:`PairGrid`, ``hue_kws``. This similarly lets plot aesthetics vary across the levels of the hue variable, but more flexibily. ``hue_kws`` should be a dictionary that maps the name of keyword arguments to lists of values that are as long as the number of levels of the hue variable.
 
+- The argument ``subplot_kws`` has been added to ``FacetGrid``. This allows for faceted plots with custom projections, including `maps with Cartopy <http://nbviewer.ipython.org/gist/shoyer/16db9cd187886a3effd8>`_.
+
 Color palettes
 ~~~~~~~~~~~~~~
 

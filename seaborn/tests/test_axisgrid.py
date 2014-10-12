@@ -226,6 +226,12 @@ class TestFacetGrid(object):
         g.map(plt.plot, "x", "y", linewidth=3)
         g.add_legend()
 
+    def test_subplot_kws(self):
+
+        g = ag.FacetGrid(self.df, subplot_kws=dict(axisbg="blue"))
+        for ax in g.axes.flat:
+            nt.assert_equal(ax.get_axis_bgcolor(), "blue")
+
     def test_data_generator(self):
 
         g = ag.FacetGrid(self.df, row="a")
