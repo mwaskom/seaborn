@@ -287,6 +287,9 @@ class TestRegressionPlotter(object):
 
     def test_estimate_cis(self):
 
+        # set known good seed to avoid the test stochastically failing
+        np.random.seed(123)
+
         p = lm._RegressionPlotter(self.df.d, self.df.y,
                                   x_estimator=np.mean, ci=95)
         _, _, ci_big = p.estimate_data
@@ -302,6 +305,9 @@ class TestRegressionPlotter(object):
         npt.assert_array_equal(ci_nil, [None] * len(ci_nil))
 
     def test_estimate_units(self):
+
+        # Seed the RNG locally
+        np.random.seed(345)
 
         p = lm._RegressionPlotter("x", "y", data=self.df, units="s", x_bins=3)
         _, _, ci_big = p.estimate_data

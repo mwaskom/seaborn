@@ -204,6 +204,9 @@ class ExampleGenerator(object):
         match = re.search(r"sns\.(.+plot)\(", self.filetext)
         if match:
             return match.group(1)
+        match = re.search(r"sns\.(.+map)\(", self.filetext)
+        if match:
+            return match.group(1)
         match = re.search(r"sns\.(.+Grid)\(", self.filetext)
         if match:
             return match.group(1)

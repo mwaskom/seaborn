@@ -34,6 +34,14 @@ Distribution plots
     kdeplot
     rugplot
 
+Matrix plots
+------------
+
+.. autosummary::
+   :toctree: generated/
+
+    heatmap
+
 Timeseries plots
 ----------------
 

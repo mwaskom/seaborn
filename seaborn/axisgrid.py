@@ -16,7 +16,7 @@ class FacetGrid(object):
                  sharex=True, sharey=True, size=3, aspect=1, palette="husl",
                  row_order=None, col_order=None, hue_order=None,
                  dropna=True, legend=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None):
+                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None):
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -54,6 +54,8 @@ class FacetGrid(object):
             grid rather than above each plot.
         {x, y}lim: tuples, optional
             Limits for each of the axes on each facet when share{x, y} is True.
+        subplot_kws : dict, optional
+            Dictionary of keyword arguments.
 
         Returns
         -------
@@ -87,18 +89,18 @@ class FacetGrid(object):
             margin_titles = False
 
         # Build the subplot keyword dictionary
-        subplot_kw = {}
+        subplot_kws = {} if subplot_kws is None else subplot_kws.copy()
         if xlim is not None:
-            subplot_kw["xlim"] = xlim
+            subplot_kws["xlim"] = xlim
         if ylim is not None:
-            subplot_kw["ylim"] = ylim
+            subplot_kws["ylim"] = ylim
 
         # Initialize the subplot grid
         if col_wrap is None:
             fig, axes = plt.subplots(nrow, ncol, figsize=figsize,
                                      squeeze=False,
                                      sharex=sharex, sharey=sharey,
-                                     subplot_kw=subplot_kw)
+                                     subplot_kw=subplot_kws)
             self.axes = axes
 
         else:
@@ -106,13 +108,13 @@ class FacetGrid(object):
             n_axes = len(data[col].unique())
             fig = plt.figure(figsize=figsize)
             axes = np.empty(n_axes, object)
-            axes[0] = fig.add_subplot(nrow, ncol, 1, **subplot_kw)
+            axes[0] = fig.add_subplot(nrow, ncol, 1, **subplot_kws)
             if sharex:
-                subplot_kw["sharex"] = axes[0]
+                subplot_kws["sharex"] = axes[0]
             if sharey:
-                subplot_kw["sharey"] = axes[0]
+                subplot_kws["sharey"] = axes[0]
             for i in range(1, n_axes):
-                axes[i] = fig.add_subplot(nrow, ncol, i + 1, **subplot_kw)
+                axes[i] = fig.add_subplot(nrow, ncol, i + 1, **subplot_kws)
             self.axes = axes
 
             # Now we turn off labels on the inner axes
