@@ -13,7 +13,6 @@ Linear model plots
 
     lmplot
     factorplot
-    pairplot
     regplot
     interactplot
     residplot
@@ -66,7 +65,6 @@ Axis grids
    :toctree: generated/
 
     FacetGrid
-    PairGrid
     JointGrid
 
 Style frontend
@@ -91,27 +89,12 @@ Color palettes
 
     set_palette
     color_palette
-    husl_palette
     hls_palette
-    cubehelix_palette
-    dark_palette
-    light_palette
-    diverging_palette
-    blend_palette
-    xkcd_palette
+    husl_palette
     mpl_palette
-
-Palette widgets
----------------
-
-.. autosummary::
-    :toctree: generated/
-
-    choose_colorbrewer_palette
-    choose_cubehelix_palette
-    choose_light_palette
-    choose_dark_palette
-    choose_diverging_palette
+    dark_palette
+    blend_palette
+    cubehelix_palette
 
 
 Utility functions

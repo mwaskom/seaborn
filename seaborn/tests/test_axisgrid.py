@@ -1,24 +1,17 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from distutils.version import LooseVersion
 
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
-import pandas.util.testing as tm
 
 from .. import axisgrid as ag
-from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
-from ..linearmodels import pointplot, pairplot
+from ..linearmodels import pointplot
 
 rs = np.random.RandomState(0)
-
-old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
 
 
 class TestFacetGrid(object):
@@ -151,13 +144,13 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5)
         npt.assert_array_equal(g1.fig.get_size_inches(), (6, 4))
-        g1.add_legend()
+        g1.set_legend()
         nt.assert_greater(g1.fig.get_size_inches()[0], 6)
 
         g2 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5,
                           legend_out=False)
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
-        g2.add_legend()
+        g2.set_legend()
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
 
         plt.close("all")
@@ -166,8 +159,7 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, hue="a")
         g1.map(plt.plot, "x", "y")
-        g1.add_legend()
-        palette = color_palette(n_colors=3)
+        palette = color_palette("husl", 3)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "a")
 
@@ -192,8 +184,7 @@ class TestFacetGrid(object):
         self.df["b_bool"] = self.df.b == "m"
         g1 = ag.FacetGrid(self.df, hue="b_bool")
         g1.map(plt.plot, "x", "y")
-        g1.add_legend()
-        palette = color_palette(n_colors=2)
+        palette = color_palette("husl", 2)
 
         nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
 
@@ -217,14 +208,6 @@ class TestFacetGrid(object):
 
         g1 = ag.FacetGrid(self.df, hue="b")
         g1.map(plt.plot, "x", "y")
-        g1.add_legend()
-
-    def test_legendout_with_colwrap(self):
-
-        g = ag.FacetGrid(self.df, col="d", hue='b',
-                         col_wrap=4, legend_out=False)
-        g.map(plt.plot, "x", "y", linewidth=3)
-        g.add_legend()
 
     def test_subplot_kws(self):
 
@@ -432,13 +415,8 @@ class TestFacetGrid(object):
 
     def test_palette(self):
 
-        rcmod.set()
-
         g = ag.FacetGrid(self.df, hue="c")
-        nt.assert_equal(g._colors, color_palette(n_colors=3))
-
-        g = ag.FacetGrid(self.df, hue="d")
-        nt.assert_equal(g._colors, color_palette("husl", 10))
+        nt.assert_equal(g._colors, color_palette("husl", 3))
 
         g = ag.FacetGrid(self.df, hue="c", palette="Set2")
         nt.assert_equal(g._colors, color_palette("Set2", 3))
@@ -455,15 +433,6 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
-    def test_hue_kws(self):
-
-        kws = dict(marker=["o", "s", "D"])
-        g = ag.FacetGrid(self.df, hue="c", hue_kws=kws)
-        g.map(plt.plot, "x", "y")
-
-        for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
-            nt.assert_equal(line.get_marker(), marker)
-
     def test_dropna(self):
 
         df = self.df.copy()
@@ -477,448 +446,6 @@ class TestFacetGrid(object):
         nt.assert_equal(g._not_na.sum(), 50)
 
         plt.close("all")
-
-    @classmethod
-    def teardown_class(cls):
-        """Ensure that all figures are closed on exit."""
-        plt.close("all")
-
-
-class TestPairGrid(object):
-
-    rs = np.random.RandomState(sum(map(ord, "PairGrid")))
-    df = pd.DataFrame(dict(x=rs.normal(size=80),
-                           y=rs.randint(0, 4, size=(80)),
-                           z=rs.gamma(3, size=80),
-                           a=np.repeat(list("abcd"), 20),
-                           b=np.repeat(list("abcdefgh"), 10)))
-
-    def test_self_data(self):
-
-        g = ag.PairGrid(self.df)
-        nt.assert_is(g.data, self.df)
-        plt.close("all")
-
-    def test_ignore_datelike_data(self):
-
-        df = self.df.copy()
-        df['date'] = pd.date_range('2010-01-01', periods=len(df), freq='d')
-        result = ag.PairGrid(self.df).data
-        expected = df.drop('date', axis=1)
-        tm.assert_frame_equal(result, expected)
-        plt.close("all")
-
-    def test_self_fig(self):
-
-        g = ag.PairGrid(self.df)
-        nt.assert_is_instance(g.fig, plt.Figure)
-        plt.close("all")
-
-    def test_self_axes(self):
-
-        g = ag.PairGrid(self.df)
-        for ax in g.axes.flat:
-            nt.assert_is_instance(ax, plt.Axes)
-
-        plt.close("all")
-
-    def test_default_axes(self):
-
-        g = ag.PairGrid(self.df)
-        nt.assert_equal(g.axes.shape, (3, 3))
-        nt.assert_equal(g.x_vars, ["x", "y", "z"])
-        nt.assert_equal(g.y_vars, ["x", "y", "z"])
-        nt.assert_true(g.square_grid)
-
-        plt.close("all")
-
-    def test_specific_square_axes(self):
-
-        vars = ["z", "x"]
-        g = ag.PairGrid(self.df, vars=vars)
-        nt.assert_equal(g.axes.shape, (len(vars), len(vars)))
-        nt.assert_equal(g.x_vars, vars)
-        nt.assert_equal(g.y_vars, vars)
-        nt.assert_true(g.square_grid)
-
-        plt.close("all")
-
-    def test_specific_nonsquare_axes(self):
-
-        x_vars = ["x", "y"]
-        y_vars = ["z", "y", "x"]
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
-        nt.assert_equal(g.x_vars, x_vars)
-        nt.assert_equal(g.y_vars, y_vars)
-        nt.assert_true(not g.square_grid)
-
-        x_vars = ["x", "y"]
-        y_vars = "z"
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
-        nt.assert_equal(g.x_vars, list(x_vars))
-        nt.assert_equal(g.y_vars, list(y_vars))
-        nt.assert_true(not g.square_grid)
-
-        plt.close("all")
-
-    def test_specific_square_axes_with_array(self):
-
-        vars = np.array(["z", "x"])
-        g = ag.PairGrid(self.df, vars=vars)
-        nt.assert_equal(g.axes.shape, (len(vars), len(vars)))
-        nt.assert_equal(g.x_vars, list(vars))
-        nt.assert_equal(g.y_vars, list(vars))
-        nt.assert_true(g.square_grid)
-
-        plt.close("all")
-
-    def test_specific_nonsquare_axes_with_array(self):
-
-        x_vars = np.array(["x", "y"])
-        y_vars = np.array(["z", "y", "x"])
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        nt.assert_equal(g.axes.shape, (len(y_vars), len(x_vars)))
-        nt.assert_equal(g.x_vars, list(x_vars))
-        nt.assert_equal(g.y_vars, list(y_vars))
-        nt.assert_true(not g.square_grid)
-
-        plt.close("all")
-
-    def test_size(self):
-
-        g1 = ag.PairGrid(self.df, size=3)
-        npt.assert_array_equal(g1.fig.get_size_inches(), (9, 9))
-
-        g2 = ag.PairGrid(self.df, size=4, aspect=.5)
-        npt.assert_array_equal(g2.fig.get_size_inches(), (6, 12))
-
-        g3 = ag.PairGrid(self.df, y_vars=["z"], x_vars=["x", "y"],
-                         size=2, aspect=2)
-        npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
-
-        plt.close("all")
-
-    def test_map(self):
-
-        vars = ["x", "y", "z"]
-        g1 = ag.PairGrid(self.df)
-        g1.map(plt.scatter)
-
-        for i, axes_i in enumerate(g1.axes):
-            for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
-                x_out, y_out = ax.collections[0].get_offsets().T
-                npt.assert_array_equal(x_in, x_out)
-                npt.assert_array_equal(y_in, y_out)
-
-        g2 = ag.PairGrid(self.df, "a")
-        g2.map(plt.scatter)
-
-        for i, axes_i in enumerate(g2.axes):
-            for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
-                for k, k_level in enumerate("abcd"):
-                    x_in_k = x_in[self.df.a == k_level]
-                    y_in_k = y_in[self.df.a == k_level]
-                    x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
-
-        plt.close("all")
-
-    def test_map_nonsquare(self):
-
-        x_vars = ["x"]
-        y_vars = ["y", "z"]
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        g.map(plt.scatter)
-
-        x_in = self.df.x
-        for i, i_var in enumerate(y_vars):
-            ax = g.axes[i, 0]
-            y_in = self.df[i_var]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        plt.close("all")
-
-    def test_map_lower(self):
-
-        vars = ["x", "y", "z"]
-        g = ag.PairGrid(self.df)
-        g.map_lower(plt.scatter)
-
-        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.triu_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    def test_map_upper(self):
-
-        vars = ["x", "y", "z"]
-        g = ag.PairGrid(self.df)
-        g.map_upper(plt.scatter)
-
-        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.tril_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_map_diag(self):
-
-        g1 = ag.PairGrid(self.df)
-        g1.map_diag(plt.hist)
-
-        for ax in g1.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
-
-        g2 = ag.PairGrid(self.df)
-        g2.map_diag(plt.hist, bins=15)
-
-        for ax in g2.diag_axes:
-            nt.assert_equal(len(ax.patches), 15)
-
-        g3 = ag.PairGrid(self.df, hue="a")
-        g3.map_diag(plt.hist)
-
-        for ax in g3.diag_axes:
-            nt.assert_equal(len(ax.patches), 40)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_map_diag_and_offdiag(self):
-
-        vars = ["x", "y", "z"]
-        g = ag.PairGrid(self.df)
-        g.map_offdiag(plt.scatter)
-        g.map_diag(plt.hist)
-
-        for ax in g.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
-
-        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.diag_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    def test_palette(self):
-
-        rcmod.set()
-
-        g = ag.PairGrid(self.df, hue="a")
-        nt.assert_equal(g.palette, color_palette(n_colors=4))
-
-        g = ag.PairGrid(self.df, hue="b")
-        nt.assert_equal(g.palette, color_palette("husl", 8))
-
-        g = ag.PairGrid(self.df, hue="a", palette="Set2")
-        nt.assert_equal(g.palette, color_palette("Set2", 4))
-
-        dict_pal = dict(a="red", b="green", c="blue", d="purple")
-        list_pal = color_palette(["red", "green", "blue", "purple"], 4)
-        g = ag.PairGrid(self.df, hue="a", palette=dict_pal)
-        nt.assert_equal(g.palette, list_pal)
-
-        list_pal = color_palette(["purple", "blue", "red", "green"], 4)
-        g = ag.PairGrid(self.df, hue="a", hue_order=list("dcab"),
-                        palette=dict_pal)
-        nt.assert_equal(g.palette, list_pal)
-
-        plt.close("all")
-
-    def test_hue_kws(self):
-
-        kws = dict(marker=["o", "s", "d", "+"])
-        g = ag.PairGrid(self.df, hue="a", hue_kws=kws)
-        g.map(plt.plot)
-
-        for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
-            nt.assert_equal(line.get_marker(), marker)
-
-    def test_nondefault_index(self):
-
-        df = self.df.copy().set_index("b")
-
-        vars = ["x", "y", "z"]
-        g1 = ag.PairGrid(df)
-        g1.map(plt.scatter)
-
-        for i, axes_i in enumerate(g1.axes):
-            for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
-                x_out, y_out = ax.collections[0].get_offsets().T
-                npt.assert_array_equal(x_in, x_out)
-                npt.assert_array_equal(y_in, y_out)
-
-        g2 = ag.PairGrid(df, "a")
-        g2.map(plt.scatter)
-
-        for i, axes_i in enumerate(g2.axes):
-            for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
-                for k, k_level in enumerate("abcd"):
-                    x_in_k = x_in[self.df.a == k_level]
-                    y_in_k = y_in[self.df.a == k_level]
-                    x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_pairplot(self):
-
-        vars = ["x", "y", "z"]
-        g = pairplot(self.df)
-
-        for ax in g.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
-
-        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.diag_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_pairplot_reg(self):
-
-        vars = ["x", "y", "z"]
-        g = pairplot(self.df, kind="reg")
-
-        for ax in g.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
-
-        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-            nt.assert_equal(len(ax.lines), 1)
-            nt.assert_equal(len(ax.collections), 2)
-
-        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-            nt.assert_equal(len(ax.lines), 1)
-            nt.assert_equal(len(ax.collections), 2)
-
-        for i, j in zip(*np.diag_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_pairplot_kde(self):
-
-        vars = ["x", "y", "z"]
-        g = pairplot(self.df, diag_kind="kde")
-
-        for ax in g.diag_axes:
-            nt.assert_equal(len(ax.lines), 1)
-
-        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.tril_indices_from(g.axes, -1)):
-            ax = g.axes[i, j]
-            x_in = self.df[vars[j]]
-            y_in = self.df[vars[i]]
-            x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
-
-        for i, j in zip(*np.diag_indices_from(g.axes)):
-            ax = g.axes[i, j]
-            nt.assert_equal(len(ax.collections), 0)
-
-        plt.close("all")
-
-    @skipif(old_matplotlib)
-    def test_pairplot_markers(self):
-
-        vars = ["x", "y", "z"]
-        markers = ["o", "x", "s", "d"]
-        g = pairplot(self.df, hue="a", vars=vars, markers=markers)
-        nt.assert_equal(g.hue_kws["marker"], markers)
-        plt.close("all")
-
-        with nt.assert_raises(ValueError):
-            g = pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
     @classmethod
     def teardown_class(cls):

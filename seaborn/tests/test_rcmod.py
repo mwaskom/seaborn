@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib as mpl
 from distutils.version import LooseVersion
+
 import nose
-import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
@@ -55,6 +55,12 @@ class TestAxesStyle(RCParamTester):
         out = rcmod.axes_style("darkgrid", rc)
         nt.assert_equal(out["axes.facecolor"], "blue")
         nt.assert_not_in("foo.notaparam", out)
+
+    def test_back_compat(self):
+
+        nogrid = rcmod.axes_style("nogrid")
+        white = rcmod.axes_style("white")
+        nt.assert_equal(nogrid, white)
 
     def test_set_style(self):
 
@@ -162,85 +168,3 @@ class TestPlottingContext(RCParamTester):
             context_params = rcmod.plotting_context("paper")
             self.assert_rc_params(context_params)
         self.assert_rc_params(orig_params)
-
-
-class TestFonts(object):
-
-    def test_set_font(self):
-
-        rcmod.set(font="Verdana")
-
-        _, ax = plt.subplots()
-        ax.set_xlabel("foo")
-
-        try:
-            nt.assert_equal(ax.xaxis.label.get_fontname(),
-                            "Verdana")
-        except AssertionError:
-            if has_verdana():
-                raise
-            else:
-                raise nose.SkipTest("Verdana font is not present")
-        finally:
-            rcmod.set()
-            plt.close("all")
-
-    def test_set_serif_font(self):
-
-        rcmod.set(font="serif")
-
-        _, ax = plt.subplots()
-        ax.set_xlabel("foo")
-
-        nt.assert_in(ax.xaxis.label.get_fontname(),
-                     mpl.rcParams["font.serif"])
-
-        rcmod.set()
-        plt.close("all")
-
-    def test_different_sans_serif(self):
-
-        if LooseVersion(mpl.__version__) < LooseVersion("1.4"):
-            raise nose.SkipTest
-
-        rcmod.set()
-        rcmod.set_style(rc={"font.sans-serif":
-                            ["Verdana"]})
-
-        _, ax = plt.subplots()
-        ax.set_xlabel("foo")
-
-        try:
-            nt.assert_equal(ax.xaxis.label.get_fontname(),
-                            "Verdana")
-        except AssertionError:
-            if has_verdana():
-                raise
-            else:
-                raise nose.SkipTest("Verdana font is not present")
-        finally:
-            rcmod.set()
-            plt.close("all")
-
-
-def has_verdana():
-    """Helper to verify if Verdana font is present"""
-    # This import is relatively lengthy, so to prevent its import for
-    # testing other tests in this module not requiring this knowledge,
-    # import font_manager here
-    import matplotlib.font_manager as mplfm
-    try:
-        verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
-    except:
-        # if https://github.com/matplotlib/matplotlib/pull/3435
-        # gets accepted
-        return False
-    # otherwise check if not matching the logic for a 'default' one
-    try:
-        unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
-                                       fallback_to_default=False)
-    except:
-        # if matched verdana but not unlikely, Verdana must exist
-        return True
-    # otherwise -- if they match, must be the same default
-    return verdana_font != unlikely_font

@@ -1,6 +1,5 @@
 """Plottng functions for visualizing distributions."""
 from __future__ import division
-import inspect
 import colorsys
 import numpy as np
 from scipy import stats
@@ -102,15 +101,10 @@ def _box_reshape(vals, groupby, names, order):
     return vals, xlabel, ylabel, names
 
 
-def _box_colors(vals, color, sat):
+def _box_colors(vals, color):
     """Find colors to use for boxplots or violinplots."""
     if color is None:
-        # Default uses either the current palette or husl
-        current_palette = mpl.rcParams["axes.color_cycle"]
-        if len(vals) <= len(current_palette):
-            colors = color_palette(n_colors=len(vals))
-        else:
-            colors = husl_palette(len(vals), l=.7)
+        colors = husl_palette(len(vals), l=.7)
     else:
         try:
             color = mpl.colors.colorConverter.to_rgb(color)
@@ -120,7 +114,7 @@ def _box_colors(vals, color, sat):
 
     # Desaturate a bit because these are patches
     colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-    colors = [desaturate(c, sat) for c in colors]
+    colors = [desaturate(c, .7) for c in colors]
 
     # Determine the gray color for the lines
     light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
@@ -132,7 +126,7 @@ def _box_colors(vals, color, sat):
 
 def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
             color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            saturation=.7, label=None, ax=None, **kwargs):
+            label=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters
@@ -163,10 +157,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
         Markersize for the fliers.
     linewidth : float, optional
         Width for the box outlines and whiskers.
-    saturation : float, 0-1
-        Saturation relative to the fully-saturated color. Large patches tend
-        to look better at lower saturations, so this dims the palette colors
-        a bit by default.
     ax : matplotlib axis, optional
         Existing axis to plot into, otherwise grab current axis.
     kwargs : additional keyword arguments to boxplot
@@ -183,21 +173,11 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     # Reshape and find labels for the plot
     vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
 
-    # Find plot colors
-    colors, gray = _box_colors(vals, color, saturation)
-
-    # Make a flierprops dict and set symbol to override buggy default behavior
-    # on matplotlib 1.4.0
-    kwargs["sym"] = "d"
-
-    # Later versions of matplotlib only (but those are the one with the bug)
-    if "flierprops" in inspect.getargspec(ax.boxplot).args:
-        kwargs["flierprops"] = {"markerfacecolor": gray,
-                                "markeredgecolor": gray,
-                                "markersize": fliersize}
-
     # Draw the boxplot using matplotlib
     boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
+
+    # Find plot colors
+    colors, gray = _box_colors(vals, color)
 
     # Set the new aesthetics
     for i, box in enumerate(boxes["boxes"]):
@@ -216,9 +196,6 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
     for i, med in enumerate(boxes["medians"]):
         med.set_color(gray)
         med.set_linewidth(linewidth)
-
-    # As of matplotlib 1.4.0 there is a bug where these values are being
-    # ignored, so this is redundant with what's above but I am keeping it
     for i, fly in enumerate(boxes["fliers"]):
         fly.set_color(gray)
         fly.set_marker("d")
@@ -266,8 +243,8 @@ def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
 
 def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, bw="scott", widths=.8, alpha=None,
-               saturation=.7, join_rm=False, gridsize=100, cut=3,
-               inner_kws=None, ax=None, vert=True, **kwargs):
+               join_rm=False, gridsize=100, cut=3, inner_kws=None,
+               ax=None, vert=True, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
@@ -302,10 +279,6 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         Width of each violin at maximum density.
     alpha : float, optional
         Transparancy of violin fill.
-    saturation : float, 0-1
-        Saturation relative to the fully-saturated color. Large patches tend
-        to look better at lower saturations, so this dims the palette colors
-        a bit by default.
     join_rm : boolean, optional
         If True, positions in the input arrays are treated as repeated
         measures and are joined with a line plot.
@@ -336,7 +309,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
 
     # Sort out the plot colors
-    colors, gray = _box_colors(vals, color, saturation)
+    colors, gray = _box_colors(vals, color)
 
     # Initialize the kwarg dict for the inner plot
     if inner_kws is None:
@@ -363,28 +336,9 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     # Iterate over the variables
     for i, a in enumerate(vals):
 
-        x = positions[i]
-
-        # If we only have a single value, plot a horizontal line
-        if len(a) == 1:
-            y = a[0]
-            if vert:
-                ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)
-            else:
-                ax.plot([y, y], [x - widths / 2, x + widths / 2], **inner_kws)
-            continue
-
         # Fit the KDE
-        try:
-            kde = stats.gaussian_kde(a, bw)
-        except TypeError:
-            kde = stats.gaussian_kde(a)
-            if bw != "scott":  # scipy default
-                msg = ("Ignoring bandwidth choice, "
-                       "please upgrade scipy to use a different bandwidth.")
-                warnings.warn(msg, UserWarning)
-
-        # Determine the support region
+        x = positions[i]
+        kde = stats.gaussian_kde(a, bw)
         if isinstance(bw, str):
             bw_name = "scotts" if bw == "scott" else bw
             _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
@@ -696,14 +650,7 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
 
 def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
     """Compute a univariate kernel density estimate using scipy."""
-    try:
-        kde = stats.gaussian_kde(data, bw_method=bw)
-    except TypeError:
-        kde = stats.gaussian_kde(data)
-        if bw != "scott":  # scipy default
-            msg = ("Ignoring bandwidth choice, "
-                   "please upgrade scipy to use a different bandwidth.")
-            warnings.warn(msg, UserWarning)
+    kde = stats.gaussian_kde(data, bw_method=bw)
     if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)()
@@ -759,12 +706,6 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
         bw = [x_bw, y_bw]
     elif np.isscalar(bw):
         bw = [bw, bw]
-
-    if isinstance(x, pd.Series):
-        x = x.values
-    if isinstance(y, pd.Series):
-        y = y.values
-
     kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
@@ -1030,9 +971,6 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
                  **marginal_kws)
         stat_func = None
-    else:
-        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
-        raise ValueError(msg)
 
     if stat_func is not None:
         grid.annotate(stat_func, **annot_kws)

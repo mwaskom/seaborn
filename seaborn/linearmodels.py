@@ -2,6 +2,7 @@
 from __future__ import division
 import copy
 import itertools
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
@@ -21,8 +22,7 @@ from .external.six.moves import range
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
-from .axisgrid import FacetGrid, PairGrid
-from .distributions import kdeplot
+from .axisgrid import FacetGrid
 
 
 class _LinearPlotter(object):
@@ -152,11 +152,7 @@ class _DiscretePlotter(_LinearPlotter):
                 color = color_palette()[0]
             palette = [color for _ in self.x_order]
         elif palette is None:
-            current_palette = mpl.rcParams["axes.color_cycle"]
-            if len(current_palette) <= n_hues:
-                palette = color_palette("husl", n_hues)
-            else:
-                palette = color_palette(n_colors=n_hues)
+            palette = color_palette(n_colors=n_hues)
         elif isinstance(palette, dict):
             palette = [palette[k] for k in hue_names]
             palette = color_palette(palette, n_hues)
@@ -242,13 +238,6 @@ class _DiscretePlotter(_LinearPlotter):
 
                 # This is where the main computation happens
                 height.append(self.estimator(y_data))
-
-                # Only bootstrap with multple values
-                if current_data.sum() < 2:
-                    ci.append((None, None))
-                    continue
-
-                # Get the confidence intervals
                 if self.ci is not None:
                     boots = algo.bootstrap(y_data, func=self.estimator,
                                            n_boot=self.n_boot,
@@ -322,8 +311,6 @@ class _DiscretePlotter(_LinearPlotter):
 
             # The error bars
             for x, (low, high) in zip(pos, ci):
-                if low is None:
-                    continue
                 ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
 
         # Set the x limits
@@ -362,8 +349,6 @@ class _DiscretePlotter(_LinearPlotter):
 
             # The error bars
             for j, (x, (low, high)) in enumerate(zip(pos, ci)):
-                if low is None:
-                    continue
                 ecolor = err_palette[j] if self.x_palette else err_palette[i]
                 ax.plot([x, x], [low, high], linewidth=self.lw,
                         color=ecolor, zorder=z)
@@ -622,10 +607,10 @@ class _RegressionPlotter(_LinearPlotter):
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
         # Insert the plot label into the correct set of keyword arguments
-        if self.scatter:
-            scatter_kws["label"] = self.label
-        else:
+        if self.fit_reg:
             line_kws["label"] = self.label
+        else:
+            scatter_kws["label"] = self.label
 
         # Use the current color cycle state as a default
         if self.color is None:
@@ -653,22 +638,9 @@ class _RegressionPlotter(_LinearPlotter):
 
     def scatterplot(self, ax, kws):
         """Draw the data."""
-        # Treat the line-based markers specially, explicitly setting larger
-        # linewidth than is provided by the seaborn style defaults.
-        # This would ideally be handled better in matplotlib (i.e., distinguish
-        # between edgewidth for solid glyphs and linewidth for line glyphs
-        # but this should do for now.
-        line_markers = ["1", "2", "3", "4", "+", "x", "|", "_"]
         if self.x_estimator is None:
-            if "marker" in kws and kws["marker"] in line_markers:
-                lw = mpl.rcParams["lines.linewidth"]
-            else:
-                lw = mpl.rcParams["lines.markeredgewidth"]
-            kws.setdefault("linewidths", lw)
-
             if not hasattr(kws['color'], 'shape') or kws['color'].shape[1] < 4:
                 kws.setdefault("alpha", .8)
-
             x, y = self.scatter_data
             ax.scatter(x, y, **kws)
         else:
@@ -702,11 +674,11 @@ class _RegressionPlotter(_LinearPlotter):
         ax.set_xlim(*xlim)
 
 
-def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
-           sharey=True, hue_order=None, col_order=None, row_order=None,
-           dropna=True, legend=True, legend_out=True, **kwargs):
-    """Plot a data and a regression model fit onto a FacetGrid.
+def lmplot(x, y, data, hue=None, col=None, row=None, palette="husl",
+           col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
+           hue_order=None, col_order=None, row_order=None, dropna=True,
+           legend=True, legend_out=True, **kwargs):
+    """Plot a linear regression model and data onto a FacetGrid.
 
     Parameters
     ----------
@@ -728,15 +700,10 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
         Height (in inches) of each facet.
     aspect : scalar, optional
         Aspect * size gives the width (in inches) of each facet.
-    markers : single matplotlib marker code or list, optional
-        Either the marker to use for all datapoints or a list of markers with
-        a length the same as the number of levels in the hue variable so that
-        differently colored points will also have different scatterplot
-        markers.
     share{x, y}: booleans, optional
         Lock the limits of the vertical and horizontal axes across the
         facets.
-    {hue, col, row}_order: sequence of strings, optional
+    {hue, col, row}_order: sequence of strings
         Order to plot the values in the faceting variables in, otherwise
         sorts the unique values.
     dropna : boolean, optional
@@ -759,6 +726,13 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     regplot : Axes-level function for plotting linear regressions.
 
     """
+
+    # Backwards-compatibility warning layer
+    if "color" in kwargs:
+        msg = "`color` is deprecated and will be removed; using `hue` instead."
+        warnings.warn(msg, UserWarning)
+        hue = kwargs.pop("color")
+
     # Reduce the dataframe to only needed columns
     # Otherwise when dropna is True we could lose data because it is missing
     # in a column that isn't relevant to this plot
@@ -777,19 +751,6 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
                        sharex=sharex, sharey=sharey,
                        legend=legend, legend_out=legend_out)
 
-    # Add the markers here as FacetGrid has figured out how many levels of the
-    # hue variable are needed and we don't want to duplicate that process
-    if facets.hue_names is None:
-        n_markers = 1
-    else:
-        n_markers = len(facets.hue_names)
-    if not isinstance(markers, list):
-        markers = [markers] * n_markers
-    if len(markers) != n_markers:
-        raise ValueError(("markers must be a singeton or a list of markers "
-                          "for each level of the hue variable"))
-    facets.hue_kws = {"marker": markers}
-
     # Hack to set the x limits properly, which needs to happen here
     # because the extent of the regression estimate is determined
     # by the limits of the plot
@@ -800,10 +761,6 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
 
     # Draw the regression plot on each facet
     facets.map_dataframe(regplot, x, y, **kwargs)
-
-    # Add a legend
-    if legend and (hue is not None) and (hue not in [col, row]):
-        facets.add_legend()
     return facets
 
 
@@ -843,7 +800,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     units : vector, optional
         Vector with ids for sampling units; bootstrap will be performed over
         these units and then within them.
-    kind : {"auto", "point", "bar", "box"}, optional
+    kind : {"auto", "point", "bar"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
     markers : list of strings, optional
@@ -920,11 +877,6 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         else:
             kind = "point"
 
-    # Always use an x_order so that the plot is drawn properly when
-    # not all of the x variables are represented in each facet
-    if x_order is None:
-        x_order = np.sort(pd.unique(data[x]))
-
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
                   x_order=x_order, hue_order=hue_order, hline=hline)
@@ -955,7 +907,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         facets.fig.tight_layout()
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
-        facets.add_legend(title=hue, label_order=hue_order)
+        facets.set_legend(title=hue, label_order=hue_order)
 
     return facets
 
@@ -993,8 +945,9 @@ def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
 
     Returns
     -------
-    ax : Axes
-        Returns the matplotlib Axes with the plot on it for further tweaking.
+    facet : FacetGrid
+        Returns the :class:`FacetGrid` instance with the plot on it
+        for further tweaking.
 
 
     See Also
@@ -1084,7 +1037,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
             logx=False, x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
             xlabel=None, ylabel=None, label=None,
-            color=None, marker="o", scatter_kws=None, line_kws=None,
+            color=None, scatter_kws=None, line_kws=None,
             ax=None):
     """Draw a scatter plot between x and y with a regression line.
 
@@ -1157,8 +1110,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         Color to use for all elements of the plot. Can set the scatter and
         regression colors separately using the `kws` dictionaries. If not
         provided, the current color in the axis cycle is used.
-    marker : matplotlib marker code, optional
-        Marker to use for the scatterplot points.
     {scatter, line}_kws : dictionaries, optional
         Additional keyword arguments passed to scatter() and plot() for drawing
         the components of the plot.
@@ -1189,7 +1140,6 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         ax = plt.gca()
 
     scatter_kws = {} if scatter_kws is None else copy.copy(scatter_kws)
-    scatter_kws["marker"] = marker
     line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
@@ -1646,112 +1596,3 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
     ax.grid(True, which="minor", linestyle="-")
 
     return ax
-
-
-def pairplot(data, hue=None, hue_order=None, palette=None,
-             vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist", markers=None,
-             size=3, aspect=1, dropna=True,
-             plot_kws=None, diag_kws=None, grid_kws=None):
-    """Plot pairwise relationships in a dataset.
-
-    Parameters
-    ----------
-    data : DataFrame
-        Tidy (long-form) dataframe where each column is a variable and
-        each row is an observation.
-    hue : string (variable name), optional
-        Variable in ``data`` to map plot aspects to different colors.
-    hue_order : list of strings
-        Order for the levels of the hue variable in the palette
-    palette : dict or seaborn color palette
-        Set of colors for mapping the ``hue`` variable. If a dict, keys
-        should be values  in the ``hue`` variable.
-    vars : list of variable names, optional
-        Variables within ``data`` to use, otherwise use every column with
-        a numeric datatype.
-    {x, y}_vars : lists of variable names, optional
-        Variables within ``data`` to use separately for the rows and
-        columns of the figure; i.e. to make a non-square plot.
-    kind : {'scatter', 'reg'}, optional
-        Kind of plot for the non-identity relationships.
-    diag_kind : {'hist', 'kde'}, optional
-        Kind of plot for the diagonal subplots.
-    markers : single matplotlib marker code or list, optional
-        Either the marker to use for all datapoints or a list of markers with
-        a length the same as the number of levels in the hue variable so that
-        differently colored points will also have different scatterplot
-        markers.
-    size : scalar, optional
-        Height (in inches) of each facet.
-    aspect : scalar, optional
-        Aspect * size gives the width (in inches) of each facet.
-    dropna : boolean, optional
-        Drop missing values from the data before plotting.
-    {plot, diag, grid}_kws : dicts, optional
-        Dictionaries of keyword arguments.
-
-    Returns
-    -------
-    grid : PairGrid
-        Returns the underlying ``PairGrid`` instance for further tweaking.
-
-    See Also
-    --------
-    PairGrid : Subplot grid for more flexible plotting of pairwise
-               relationships.
-
-    """
-    if plot_kws is None:
-        plot_kws = {}
-    if diag_kws is None:
-        diag_kws = {}
-    if grid_kws is None:
-        grid_kws = {}
-
-    # Set up the PairGrid
-    diag_sharey = diag_kind == "hist"
-    grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
-                    hue_order=hue_order, palette=palette,
-                    diag_sharey=diag_sharey,
-                    size=size, aspect=aspect, dropna=dropna, **grid_kws)
-
-    # Add the markers here as PairGrid has figured out how many levels of the
-    # hue variable are needed and we don't want to duplicate that process
-    if markers is not None:
-        if grid.hue_names is None:
-            n_markers = 1
-        else:
-            n_markers = len(grid.hue_names)
-        if not isinstance(markers, list):
-            markers = [markers] * n_markers
-        if len(markers) != n_markers:
-            raise ValueError(("markers must be a singeton or a list of markers"
-                              " for each level of the hue variable"))
-        grid.hue_kws = {"marker": markers}
-
-    # Maybe plot on the diagonal
-    if grid.square_grid:
-        if diag_kind == "hist":
-            grid.map_diag(plt.hist, **diag_kws)
-        elif diag_kind == "kde":
-            diag_kws["legend"] = False
-            grid.map_diag(kdeplot, **diag_kws)
-
-    # Maybe plot on the off-diagonals
-    if grid.square_grid and diag_kind is not None:
-        plotter = grid.map_offdiag
-    else:
-        plotter = grid.map
-
-    if kind == "scatter":
-        plot_kws.setdefault("edgecolor", "white")
-        plotter(plt.scatter, **plot_kws)
-    elif kind == "reg":
-        plotter(regplot, **plot_kws)
-
-    # Add a legend
-    if hue is not None:
-        grid.add_legend()
-
-    return grid

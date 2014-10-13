@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -282,7 +281,7 @@ class TestRegressionPlotter(object):
         x, y, ci = p.estimate_data
 
         npt.assert_array_equal(x, np.sort(np.unique(self.df.d)))
-        npt.assert_array_almost_equal(y, self.df.groupby("d").y.mean())
+        npt.assert_array_equal(y, self.df.groupby("d").y.mean())
         npt.assert_array_less(np.array(ci)[:, 0], y)
         npt.assert_array_less(y, np.array(ci)[:, 1])
 
@@ -571,7 +570,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(pos, [0, 1, 2])
 
         height_want = self.df.groupby("x").y.mean()
-        npt.assert_array_almost_equal(height, height_want)
+        npt.assert_array_equal(height, height_want)
 
         get_cis = lambda x: utils.ci(algo.bootstrap(x, random_seed=0), 95)
         ci_want = np.array(self.df.groupby("x").y.apply(get_cis).tolist())
@@ -587,7 +586,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(pos, [-.2, .8, 1.8])
 
         height_want = first_hue.groupby("x").y.mean()
-        npt.assert_array_almost_equal(height, height_want)
+        npt.assert_array_equal(height, height_want)
 
         ci_want = np.array(first_hue.groupby("x").y.apply(get_cis).tolist())
         npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
@@ -598,7 +597,7 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(pos, [.2, 1.2, 2.2])
 
         height_want = second_hue.groupby("x").y.mean()
-        npt.assert_array_almost_equal(height, height_want)
+        npt.assert_array_equal(height, height_want)
 
         ci_want = np.array(second_hue.groupby("x").y.apply(get_cis).tolist())
         npt.assert_array_almost_equal(np.squeeze(ci), ci_want, 1)
@@ -715,7 +714,7 @@ class TestDiscretePlots(object):
 
         x, y = ax.collections[0].get_offsets().T
         npt.assert_array_equal(x, np.arange(3))
-        npt.assert_array_almost_equal(y, self.df.groupby("x").y.mean())
+        npt.assert_array_equal(y, self.df.groupby("x").y.mean())
 
         f, ax = plt.subplots()
         lm.pointplot("x", "y", "g", data=self.df, join=False, ax=ax)
@@ -723,7 +722,7 @@ class TestDiscretePlots(object):
         x, y = ax.collections[0].get_offsets().T
         npt.assert_array_equal(x, np.arange(3))
         expected_y = self.df[self.df.g == "x"].groupby("x").y.mean()
-        npt.assert_array_almost_equal(y, expected_y)
+        npt.assert_array_equal(y, expected_y)
 
         plt.close("all")
 
@@ -796,24 +795,6 @@ class TestDiscretePlots(object):
         nt.assert_is(g._legend, None)
 
         plt.close("all")
-
-    def test_factorplot_missing(self):
-
-        d = pd.DataFrame(dict(a=["a", "a", "b", "c", "c"],
-                              b=["x", "y", "x", "x", "y"],
-                              c=[1, 2, 3, 4, 5]))
-
-        g = lm.factorplot("a", "c", data=d, col="b", kind="point")
-
-        ax = g.axes[0, 0]
-        x1, y1 = ax.collections[0].get_offsets().T
-        npt.assert_array_equal(x1, [0, 1, 2])
-        npt.assert_array_equal(y1, [1, 3, 4])
-
-        ax = g.axes[0, 1]
-        x1, y1 = ax.collections[0].get_offsets().T
-        npt.assert_array_equal(x1, [0, 2])
-        npt.assert_array_equal(y1, [2, 5])
 
     def test_factorplot_hline(self):
 
@@ -896,8 +877,6 @@ class TestRegressionPlots(object):
         ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
         nt.assert_equal(ax.collections[0]._alpha, 0.8)
 
-        plt.close("all")
-
     def test_regplot_binned(self):
 
         ax = lm.regplot("x", "y", self.df, x_bins=5)
@@ -928,29 +907,6 @@ class TestRegressionPlots(object):
         nt.assert_equal(len(ax.collections), 4)
         plt.close("all")
 
-    def test_lmplot_markers(self):
-
-        g1 = lm.lmplot("x", "y", data=self.df, hue="h", markers="s")
-        nt.assert_equal(g1.hue_kws, {"marker": ["s", "s"]})
-
-        g2 = lm.lmplot("x", "y", data=self.df, hue="h", markers=["o", "s"])
-        nt.assert_equal(g2.hue_kws, {"marker": ["o", "s"]})
-
-        with nt.assert_raises(ValueError):
-            lm.lmplot("x", "y", data=self.df, hue="h", markers=["o", "s", "d"])
-
-        plt.close("all")
-
-    def test_lmplot_marker_linewidths(self):
-
-        g = lm.lmplot("x", "y", data=self.df, hue="h",
-                      fit_reg=False, markers=["o", "+"])
-        c = g.axes[0, 0].collections
-        nt.assert_equal(c[0].get_linewidths()[0], 0)
-        rclw = mpl.rcParams["lines.linewidth"]
-        nt.assert_equal(c[1].get_linewidths()[0], rclw)
-        plt.close("all")
-
     def test_lmplot_facets(self):
 
         g = lm.lmplot("x", "y", data=self.df, row="g", col="h")
@@ -961,12 +917,7 @@ class TestRegressionPlots(object):
 
         g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
-        plt.close("all")
 
-    def test_lmplot_hue_col_nolegend(self):
-
-        g = lm.lmplot("x", "y", data=self.df, col="h", hue="h")
-        nt.assert_is(g._legend, None)
         plt.close("all")
 
     def test_lmplot_scatter_kws(self):
@@ -974,11 +925,9 @@ class TestRegressionPlots(object):
         g = lm.lmplot("x", "y", hue="h", data=self.df, ci=None)
         red_scatter, blue_scatter = g.axes[0, 0].collections
 
-        red, blue = color_palette(n_colors=2)
+        red, blue = color_palette("husl", 2)
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
-
-        plt.close("all")
 
     def test_residplot(self):
 

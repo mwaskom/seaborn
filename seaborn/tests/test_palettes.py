@@ -1,11 +1,10 @@
-import colorsys
 import numpy as np
 import matplotlib as mpl
 
 import nose.tools as nt
 import numpy.testing as npt
 
-from .. import palettes, utils, rcmod, husl
+from .. import palettes, utils, rcmod
 from ..xkcd_rgb import xkcd_rgb
 
 
@@ -43,7 +42,7 @@ class TestColorPalettes(object):
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
         for name in pals:
             pal_out = palettes.color_palette(name)
-            nt.assert_equal(len(pal_out), 6)
+            nt.assert_equal(len(np.unique(pal_out)), 6)
 
     def test_hls_palette(self):
 
@@ -73,11 +72,6 @@ class TestColorPalettes(object):
 
         with nt.assert_raises(ValueError):
             palettes.color_palette("IAmNotAPalette")
-
-    def test_terrible_palette_name(self):
-
-        with nt.assert_raises(ValueError):
-            palettes.color_palette("jet")
 
     def test_bad_palette_colors(self):
 
@@ -158,47 +152,11 @@ class TestColorPalettes(object):
         pal_reverse = palettes.mpl_palette("BuPu_r", 6)
         nt.assert_equal(pal_forward, pal_reverse[::-1])
 
-    def test_rgb_from_hls(self):
-
-        color = .5, .8, .4
-        rgb_got = palettes._color_to_rgb(color, "hls")
-        rgb_want = colorsys.hls_to_rgb(*color)
-        nt.assert_equal(rgb_got, rgb_want)
-
-    def test_rgb_from_husl(self):
-
-        color = 120, 50, 40
-        rgb_got = palettes._color_to_rgb(color, "husl")
-        rgb_want = husl.husl_to_rgb(*color)
-        nt.assert_equal(rgb_got, rgb_want)
-
-    def test_rgb_from_xkcd(self):
-
-        color = "dull red"
-        rgb_got = palettes._color_to_rgb(color, "xkcd")
-        rgb_want = xkcd_rgb[color]
-        nt.assert_equal(rgb_got, rgb_want)
-
-    def test_light_palette(self):
-
-        pal_forward = palettes.light_palette("red")
-        pal_reverse = palettes.light_palette("red", reverse=True)
-        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
-
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
-
-        pal_cmap = palettes.light_palette("blue", as_cmap=True)
-        nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
-
     def test_dark_palette(self):
 
         pal_forward = palettes.dark_palette("red")
         pal_reverse = palettes.dark_palette("red", reverse=True)
         npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
-
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
 
         pal_cmap = palettes.dark_palette("blue", as_cmap=True)
         nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
@@ -247,7 +205,7 @@ class TestColorPalettes(object):
 
     def test_xkcd_palette(self):
 
-        names = list(xkcd_rgb.keys())[10:15]
+        names = xkcd_rgb.keys()[10:15]
         colors = palettes.xkcd_palette(names)
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
