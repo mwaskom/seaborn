@@ -22,29 +22,13 @@ MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.4.clustering'
+VERSION = '0.5.dev'
 
-def check_dependencies():
-
-    # Just make sure dependencies exist, I haven't rigorously
-    # tested what the minimal versions that will work are
-    # (help on that would be awesome)
-    try:
-        import numpy
-    except ImportError:
-        raise ImportError("seaborn requires numpy")
-    try:
-        import scipy
-    except ImportError:
-        raise ImportError("seaborn requires scipy")
-    try:
-        import matplotlib
-    except ImportError:
-        raise ImportError("seaborn requires matplotlib")
-    try:
-        import pandas
-    except ImportError:
-        raise ImportError("seaborn requires pandas")
+try:
+    from setuptools import setup
+    _has_setuptools = True
+except ImportError:
+    from distutils.core import setup
 
 def check_dependencies():
 
