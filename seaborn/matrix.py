@@ -36,27 +36,35 @@ class _HeatMapper(object):
             if isinstance(data.columns, pd.MultiIndex):
                 xtl = ["-".join(map(str, i)) for i in data.columns.values]
                 self.xticklabels = xtl
-                xlabel = "-".join(map(str, data.columns.names))
             else:
                 self.xticklabels = data.columns
-                xlabel = data.columns.name
         elif isinstance(xticklabels, bool) and not xticklabels:
             self.xticklabels = ['' for _ in xrange(data.shape[1])]
         else:
             self.xticklabels = xticklabels
 
+        if isinstance(data.columns, pd.MultiIndex):
+            xlabel = "-".join(map(str, data.columns.names))
+        else:
+            xlabel = data.columns.name
+
         if isinstance(yticklabels, bool) and yticklabels:
             if isinstance(data.index, pd.MultiIndex):
                 ytl = ["-".join(map(str, i)) for i in data.index.values]
                 self.yticklabels = ytl
-                ylabel = "-".join(map(str, data.index.names))
+
             else:
                 self.yticklabels = data.index
-                ylabel = data.index.name
+
         elif isinstance(yticklabels, bool) and not yticklabels:
             self.yticklabels = ['' for _ in xrange(data.shape[0])]
         else:
             self.yticklabels = yticklabels
+
+        if isinstance(data.columns, pd.MultiIndex):
+            ylabel = "-".join(map(str, data.index.names))
+        else:
+            ylabel = data.index.name
 
         # Get good names for the axis labels
         self.xlabel = xlabel if xlabel is not None else ""
@@ -274,12 +282,12 @@ class _DendrogramPlotter(object):
             data = data.T
 
         if isinstance(data, pd.DataFrame):
-            plot_data = data.values
+            array = data.values
         else:
-            plot_data = np.asarray(data)
-            data = pd.DataFrame(plot_data)
+            array = np.asarray(data)
+            data = pd.DataFrame(array)
 
-        self.plot_data = plot_data
+        self.array = array
         self.data = data
 
         self.shape = self.data.shape
@@ -302,46 +310,20 @@ class _DendrogramPlotter(object):
 
     @property
     def calculated_linkage(self):
-
-        if self.use_fastcluster:
-            return self.linkage_function(self.array, method=self.method,
-                                         metric=self.metric)
-        else:
+        try:
+            import fastcluster
+            return fastcluster.linkage_vector(self.array, method=self.method,
+                                              metric=self.metric)
+        except ImportError:
             from scipy.spatial import distance
+            from scipy.cluster import hierarchy
+
+            if np.product(self.shape) >= 10000:
+                warnings.warn('This will be slow...')
 
             pairwise_dists = distance.squareform(
-                distance.pdist(self.data, metric=self.metric))
-            return self.linkage_function(pairwise_dists, method=self.method)
-
-    @property
-    def linkage_function(self):
-        """
-        Notes
-        -----
-        If the product of the number of rows and cols exceeds
-        10000, this wil try to import fastcluster, and raise a warning if it
-        does not exist. Vanilla scipy.cluster.hierarchy.linkage will take a
-        long time on these matrices.
-        """
-        if np.product(self.shape) >= 10000 or self.use_fastcluster:
-            try:
-                import fastcluster
-
-                self.use_fastcluster = True
-                return fastcluster.linkage_vector
-            except ImportError:
-                raise warnings.warn(
-                    'Module "fastcluster" not found. The dataframe provided '
-                    'has shape {}, and one of the dimensions has greater than '
-                    '1000 variables. Calculating linkage on such a matrix will'
-                    ' take a long time with vanilla '
-                    '"scipy.cluster.hierarchy.linkage", and we suggest '
-                    'fastcluster for such large datasets'.format(self.shape),
-                    RuntimeWarning)
-        else:
-            import scipy.cluster.hierarchy as sch
-
-            return sch.linkage
+                distance.pdist(self.array, metric=self.metric))
+            return hierarchy.linkage(pairwise_dists, method=self.method)
 
     def calculate_dendrogram(self):
         """Calculates a dendrogram based on the linkage matrix
@@ -373,17 +355,25 @@ class _DendrogramPlotter(object):
         -------
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
-            .dendrogram. The important key-value pairing is "leaves" which
+            .dendrogram. The important key-value pairing is "_leaves" which
             tells the ordering of the matrix
         """
         import scipy.cluster.hierarchy as sch
+
         return sch.dendrogram(self.linkage, no_plot=True, color_list=['k'],
                               color_threshold=-np.inf)
 
     @property
-    def reordered_ind(self):
-        # Reversed to be consistent with seaborn.heatmap
+    def _leaves(self):
+        """For use only within-class and doesn't need to be reversed
+        """
         return self.dendrogram['leaves']
+
+    @property
+    def reordered_ind(self):
+        """For external use, needs to be reversed to be consistent with heatmap
+        """
+        return self.dendrogram['leaves'][::-1]
 
     def plot(self, label=False, rotate=False):
         """Plots a dendrogram on the figure at the gridspec location using
@@ -420,7 +410,7 @@ class _DendrogramPlotter(object):
 
         # Dendrogram ends are always at multiples of 5, who knows why
         ticks = 10 * np.arange(self.data.shape[0]) + 5
-        labels = self.data.index[self.reordered_ind]
+        labels = self.data.index[self._leaves]
 
         if label:
             if rotate:
@@ -469,7 +459,7 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis
     label : bool, optional
-        If True, label the dendrogram at the leaves with the column or row names
+        If True, label the dendrogram at the _leaves with the column or row names
     metric : str, optional
         Distance metric to use. Anything valid for scipy.spatial.distance.pdist
     method : str, optional
@@ -477,7 +467,7 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
         scipy.cluster.hierarchy.linkage
     rotate : bool, optional
         When plotting the matrix, whether to rotate it 90 degrees
-        counter-clockwise, so the leaves face right
+        counter-clockwise, so the _leaves face right
 
     Returns
     -------
@@ -485,8 +475,8 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
     """
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
-                           use_fastcluster=use_fastcluster,
-                           axis=axis, ax=ax, metric=metric, method=method)
+                                 use_fastcluster=use_fastcluster,
+                                 axis=axis, ax=ax, metric=metric, method=method)
     return plotter.plot(label=label, rotate=rotate)
 
 
@@ -523,15 +513,15 @@ class DendrogramGrid(Grid):
         self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2])
         self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1])
 
-        self.ax_row_side_colors = None
-        self.ax_col_side_colors = None
+        self.ax_row_colors = None
+        self.ax_col_colors = None
 
-        if self.col_colors is not None:
-            self.col_side_colors_ax = self.fig.add_subplot(
-                self.gs[nrows - 2, ncols - 1])
         if self.row_colors is not None:
-            self.row_side_colors_ax = self.fig.add_subplot(
+            self.ax_row_colors = self.fig.add_subplot(
                 self.gs[nrows - 1, ncols - 2])
+        if self.col_colors is not None:
+            self.ax_col_colors = self.fig.add_subplot(
+                self.gs[nrows - 2, ncols - 1])
 
         self.ax_heatmap = self.fig.add_subplot(self.gs[nrows - 1, ncols - 1])
 
@@ -543,6 +533,7 @@ class DendrogramGrid(Grid):
 
     def format_data(self, data, pivot_kws, z_score=None,
                     standard_scale=None):
+
         """Extract variables from data or use directly."""
 
         # Either the data is already in 2d matrix format, or need to do a pivot
@@ -556,9 +547,9 @@ class DendrogramGrid(Grid):
                 'Cannot perform both z-scoring and standard-scaling on the data')
 
         if z_score is not None:
-            data2d = self.z_score(self.data2d, z_score)
+            data2d = self.z_score(data2d, z_score)
         if standard_scale is not None:
-            data2d = self.standard_scale(self.data2d, standard_scale)
+            data2d = self.standard_scale(data2d, standard_scale)
         return data2d
 
     def z_score(self, data2d, axis=1):
@@ -660,6 +651,50 @@ class DendrogramGrid(Grid):
 
         return ratios
 
+    @staticmethod
+    def color_list_to_matrix_and_cmap(colors, ind, axis=0):
+        """Turns a list of colors into a numpy matrix and matplotlib colormap
+
+        These arguments can now be plotted using heatmap(matrix, cmap)
+        and the provided colors will be plotted.
+
+        Parameters
+        ----------
+        colors : list of matplotlib colors
+            Colors to label the rows or columns of a dataframe.
+        ind : list of ints
+            Ordering of the rows or columns, to reorder the original colors
+            by the clustered dendrogram order
+        axis : int
+            Which axis this is labeling
+
+        Returns
+        -------
+        matrix : numpy.array
+            A numpy array of integer values, where each corresponds to a color
+            from the originally provided list of colors
+        cmap : matplotlib.colors.ListedColormap
+
+        """
+        # TODO: Support multiple color labels on an element in the heatmap
+
+        colors_original = colors
+        colors = set(colors)
+        col_to_value = dict((col, i) for i, col in enumerate(colors))
+        matrix = np.array([col_to_value[col] for col in colors_original])[ind]
+
+        # Is this row-side or column side?
+        if axis == 0:
+            # shape of matrix: nrows x 1
+            new_shape = (len(colors_original), 1)
+        else:
+            # shape of matrix: 1 x ncols
+            new_shape = (1, len(colors_original))
+        matrix = matrix.reshape(new_shape)
+
+        cmap = mpl.colors.ListedColormap(colors)
+        return matrix, cmap
+
     def savefig(self, *args, **kwargs):
         if 'bbox_inches' not in kwargs:
             kwargs['bbox_inches'] = 'tight'
@@ -683,29 +718,51 @@ class DendrogramGrid(Grid):
                 method=method, label=False, axis=1, ax=self.ax_col_dendrogram,
                 linkage=col_linkage)
 
-    def plot_colors(self, kws):
-        pass
+    def plot_colors(self, heatmap_kws):
+        """Plots color labels between the dendrogram and the heatmap
+        Parameters
+        ----------
+        heatmap_kws : dict
+            Keyword arguments heatmap
+        """
+        if self.row_colors is not None:
+            matrix, cmap = self.color_list_to_matrix_and_cmap(
+                self.row_colors, self.dendrogram_row.reordered_ind, axis=0)
+            heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
+                    xticklabels=False, yticklabels=False,
+                    **heatmap_kws)
+        else:
+            despine(self.ax_row_colors, left=True, bottom=True)
 
-    def plot_matrix(self, pcolormesh_kws, colorbar_kws, row_labels=True,
+        if self.col_colors is not None:
+            matrix, cmap = self.color_list_to_matrix_and_cmap(
+                self.col_colors, self.dendrogram_col.reordered_ind, axis=1)
+            heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
+                    xticklabels=False, yticklabels=False,
+                    **heatmap_kws)
+        else:
+            despine(self.ax_col_colors, left=True, bottom=True)
+
+    def plot_matrix(self, heatmap_kws, colorbar_kws, row_labels=True,
                     col_labels=True):
         try:
-            xind = self.dendrogram_col.reordered_ind[::-1]
+            xind = self.dendrogram_col.reordered_ind
         except AttributeError:
             xind = np.arange(self.data2d.shape[0])
         try:
-            yind = self.dendrogram_row.reordered_ind[::-1]
+            yind = self.dendrogram_row.reordered_ind
         except AttributeError:
             yind = np.arange(self.data2d.shape[1])
 
-        data = self.data2d.ix[yind, xind]
-
+        data = self.data2d.iloc[yind, xind]
         heatmap(data, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, xticklabels=row_labels,
-                yticklabels=col_labels, **pcolormesh_kws)
+                yticklabels=col_labels, **heatmap_kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
+        self.ax_heatmap.yaxis.set_label_position('right')
 
     def plot(self, metric='euclidean', method='median',
-             pcolormesh_kws=None,
+             heatmap_kws=None,
              colorbar_kws=None,
              row_cluster=True,
              col_cluster=True,
@@ -714,20 +771,20 @@ class DendrogramGrid(Grid):
              row_labels=True,
              col_labels=True,
              use_fastcluster=False):
-        pcolormesh_kws = {} if pcolormesh_kws is None else pcolormesh_kws
+        heatmap_kws = {} if heatmap_kws is None else heatmap_kws
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage,
                               use_fastcluster=use_fastcluster)
-        self.plot_colors(pcolormesh_kws)
-        self.plot_matrix(pcolormesh_kws, colorbar_kws, row_labels=row_labels,
+        self.plot_colors(heatmap_kws)
+        self.plot_matrix(heatmap_kws, colorbar_kws, row_labels=row_labels,
                          col_labels=col_labels)
         return self
 
 
-def clusteredheatmap(data, pivot_kws=None, method='median', metric='euclidean',
+def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                      z_score=None, standard_scale=None, figsize=None,
-                     pcolormesh_kws=None, colorbar_kws=None,
+                     heatmap_kws=None, colorbar_kws=None,
                      row_cluster=True, col_cluster=True,
                      row_linkage=None, col_linkage=None,
                      row_labels=True, col_labels=True,
@@ -766,7 +823,7 @@ def clusteredheatmap(data, pivot_kws=None, method='median', metric='euclidean',
     figsize: tuple of two ints, optional
         Size of the figure to create. Default is a function of the dataframe
         size.
-    pcolormesh_kws : dict, optional
+    heatmap_kws : dict, optional
         Keyword arguments to pass to the heatmap pcolormesh plotter. E.g.
         vmin, vmax, cmap, norm. If these are none, they are auto-detected
         from your data. If the data is divergent, i.e. has values both
@@ -804,22 +861,23 @@ def clusteredheatmap(data, pivot_kws=None, method='median', metric='euclidean',
     Notes
     ----
     To save the figure, use:
-    >>> dg = clusteredheatmap(data)
-    >>> dg.savefig()
+    dg = clusteredheatmap(data)
+    dg.savefig()
 
     To access the reordered row indices, use:
-    >>> dg.dendrogram_row.reordered_ind
+    dg.dendrogram_row.reordered_ind
 
     Column indices, use:
-    >>> dg.dendrogram_col.reordered_ind
+    dg.dendrogram_col.reordered_ind
     """
     plotter = DendrogramGrid(data, pivot_kws=pivot_kws, figsize=figsize,
-                       row_colors=row_colors, col_colors=col_colors,
-                       z_score=z_score, standard_scale=standard_scale)
+                             row_colors=row_colors, col_colors=col_colors,
+                             z_score=z_score, standard_scale=standard_scale)
 
-    return plotter.plot(metric=metric, method=method, pcolormesh_kws=pcolormesh_kws,
-                  colorbar_kws=colorbar_kws,
-                  row_cluster=row_cluster, col_cluster=col_cluster,
-                  row_linkage=row_linkage, col_linkage=col_linkage,
-                  row_labels=row_labels, col_labels=col_labels,
-                  use_fastcluster=use_fastcluster)
+    return plotter.plot(metric=metric, method=method,
+                        heatmap_kws=heatmap_kws,
+                        colorbar_kws=colorbar_kws,
+                        row_cluster=row_cluster, col_cluster=col_cluster,
+                        row_linkage=row_linkage, col_linkage=col_linkage,
+                        row_labels=row_labels, col_labels=col_labels,
+                        use_fastcluster=use_fastcluster)
