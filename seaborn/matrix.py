@@ -266,10 +266,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 
 
 class _DendrogramPlotter(object):
-    """Plotting object for drawing a tree-diagram of the relationships between columns of data"""
+    """Plotting object for drawing a tree-diagram of the relationships between
+    columns of data"""
 
-    def __init__(self, data, linkage=None, use_fastcluster=False,
-                 metric='euclidean', method='average', axis=1,
+    def __init__(self, data, linkage=None, metric='euclidean',
+                 method='median', axis=1,
                  ax=None, cluster=True):
         """Plot a dendrogram of the relationships between the columns of data
 
@@ -292,7 +293,6 @@ class _DendrogramPlotter(object):
         self.data = data
 
         self.shape = self.data.shape
-        self.use_fastcluster = use_fastcluster
         self.metric = metric
         self.method = method
         self.axis = axis
@@ -313,6 +313,7 @@ class _DendrogramPlotter(object):
     def calculated_linkage(self):
         try:
             import fastcluster
+
             return fastcluster.linkage_vector(self.array, method=self.method,
                                               metric=self.metric)
         except ImportError:
@@ -320,7 +321,8 @@ class _DendrogramPlotter(object):
             from scipy.cluster import hierarchy
 
             if np.product(self.shape) >= 10000:
-                warnings.warn('This will be slow...')
+                warnings.warn('This will be slow... (gentle suggestion: '
+                              '"pip install fastcluster")')
 
             pairwise_dists = distance.squareform(
                 distance.pdist(self.array, metric=self.metric))
@@ -460,9 +462,9 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis
     label : bool, optional
-        If True, label the dendrogram at the _leaves with the column or row names
+        If True, label the dendrogram at leaves with column or row names
     metric : str, optional
-        Distance metric to use. Anything valid for scipy.spatial.distance.pdist
+        Distance metric. Anything valid for scipy.spatial.distance.pdist
     method : str, optional
         Linkage method to use. Anything valid for
         scipy.cluster.hierarchy.linkage
@@ -477,7 +479,8 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
                                  use_fastcluster=use_fastcluster,
-                                 axis=axis, ax=ax, metric=metric, method=method)
+                                 axis=axis, ax=ax, metric=metric,
+                                 method=method)
     return plotter.plot(label=label, rotate=rotate)
 
 
@@ -545,7 +548,7 @@ class DendrogramGrid(Grid):
 
         if z_score is not None and standard_scale is not None:
             raise ValueError(
-                'Cannot perform both z-scoring and standard-scaling on the data')
+                'Cannot perform both z-scoring and standard-scaling on data')
 
         if z_score is not None:
             data2d = self.z_score(data2d, z_score)
@@ -784,13 +787,13 @@ class DendrogramGrid(Grid):
 
 
 def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
-                     z_score=None, standard_scale=None, figsize=None,
-                     heatmap_kws=None, colorbar_kws=None,
-                     row_cluster=True, col_cluster=True,
-                     row_linkage=None, col_linkage=None,
-                     row_labels=True, col_labels=True,
-                     row_colors=None, col_colors=None,
-                     use_fastcluster=False):
+               z_score=None, standard_scale=None, figsize=None,
+               heatmap_kws=None, colorbar_kws=None,
+               row_cluster=True, col_cluster=True,
+               row_linkage=None, col_linkage=None,
+               row_labels=True, col_labels=True,
+               row_colors=None, col_colors=None,
+               use_fastcluster=False):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -811,12 +814,11 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
         Default "average"
     z_score : int or None, optional
-        Either 0 (rows) or 1 (columns). Whether or not to calculate z-scores for the
-        rows or the columns. Z scores are: z = (x - mean)/std, so values
-        in each row (column) will get the mean of the row (column)
-        subtracted, then divided by the standard deviation of the row (
-        column). This ensures that each row (column) has a mean of 0 and a
-        variance of 1.
+        Either 0 (rows) or 1 (columns). Whether or not to calculate z-scores
+        for the rows or the columns. Z scores are: z = (x - mean)/std, so
+        values in each row (column) will get the mean of the row (column)
+        subtracted, then divided by the standard deviation of the row (column).
+        This ensures that each row (column) has mean of 0 and variance of 1.
     standard_scale : int or None, optional
         Either 0 (rows) or 1 (columns). Whether or not to "standardize" that
         dimension, meaning to divide each row (column) by its minimum and
@@ -845,14 +847,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     {row,col}_labels : bool or list-like, optional
         If True, label the rows and columns with the labels in the DataFrame
     {row,col}_colors : list-like, optional
-        List of colors to label for either the rows or columns. Useful to evaluate
-        whether samples within a group are clustered together.
-        side_colors=None)
-    use_fastcluster: bool, optional
-        Whether or not to use the "fastcluster" package in Python,
-        which calculates linkage several times faster than
-        scipy.cluster.hierachy. The "fastcluster" package must be installed.
-        Default False except for datasets with more than 1000 rows or columns.
+        List of colors to label for either the rows or columns. Useful to
+        evaluate whether samples within a group are clustered together.
 
     Returns
     -------
@@ -880,5 +876,4 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                         colorbar_kws=colorbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        row_labels=row_labels, col_labels=col_labels,
-                        use_fastcluster=use_fastcluster)
+                        row_labels=row_labels, col_labels=col_labels)
