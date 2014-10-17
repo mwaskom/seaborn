@@ -427,7 +427,7 @@ class _DendrogramPlotter(object):
         else:
             xticks, yticks, yticklabels, xticklabels = [], [], [], []
 
-        self.ax.set(xticks=xticks, yticks=yticks)
+        self.ax.set(xticks=xticks, yticks=yticks, axis_bgcolor='white')
         xtl = self.ax.set_xticklabels(xticklabels)
         ytl = self.ax.set_yticklabels(yticklabels)
 
