@@ -17,7 +17,8 @@ class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
-                 annot_kws, cbar, cbar_kws, xticklabels, yticklabels):
+                 annot_kws, cbar, cbar_kws,
+                 xticklabels=True, yticklabels=True):
         """Initialize the plotting object."""
         # We always want to have a DataFrame with semantic information
         # and an ndarray to pass to matplotlib
