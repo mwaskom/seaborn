@@ -374,8 +374,12 @@ class _DendrogramPlotter(object):
     @property
     def reordered_ind(self):
         """For external use, needs to be reversed to be consistent with heatmap
+        if rows
         """
-        return self.dendrogram['leaves'][::-1]
+        if self.axis == 0:
+            return self._leaves[::-1]
+        else:
+            return self._leaves
 
     def plot(self, label=False, rotate=False):
         """Plots a dendrogram on the figure at the gridspec location using
