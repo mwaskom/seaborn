@@ -444,7 +444,7 @@ class _DendrogramPlotter(object):
         return self
 
 
-def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
+def dendrogramplot(data, linkage=None, axis=1, ax=None,
                    label=True, metric='euclidean', method='single',
                    rotate=False):
     """Draw a tree diagram of relationships within a matrix
@@ -478,7 +478,6 @@ def dendrogramplot(data, linkage=None, use_fastcluster=False, axis=1, ax=None,
     """
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
-                                 use_fastcluster=use_fastcluster,
                                  axis=axis, ax=ax, metric=metric,
                                  method=method)
     return plotter.plot(label=label, rotate=rotate)
@@ -556,7 +555,8 @@ class DendrogramGrid(Grid):
             data2d = self.standard_scale(data2d, standard_scale)
         return data2d
 
-    def z_score(self, data2d, axis=1):
+    @staticmethod
+    def z_score(data2d, axis=1):
         """Standarize the mean and variance of the data axis
 
         Parameters
@@ -585,7 +585,8 @@ class DendrogramGrid(Grid):
         else:
             return z_scored.T
 
-    def standard_scale(self, data2d, axis=1, vmin=0):
+    @staticmethod
+    def standard_scale(data2d, axis=1, vmin=0):
         """Divide the data by the difference between the max and min
 
         Parameters
@@ -607,10 +608,10 @@ class DendrogramGrid(Grid):
 
         >>> import numpy as np
         >>> d = np.arange(5, 8, 0.5)
-        >>> standard_scale(d)
-        [ 0.   0.2  0.4  0.6  0.8  1. ]
-        >>> standard_scale(d, vmin=None)
-        [ 2.   2.2  2.4  2.6  2.8  3. ]
+        >>> DendrogramGrid.standard_scale(d)
+        array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
+        >>> DendrogramGrid.standard_scale(d, vmin=None)
+        array([ 2.   2.2  2.4  2.6  2.8  3. ])
         """
         # Normalize these values to range from -1 to 1
         if axis == 1:
@@ -620,6 +621,8 @@ class DendrogramGrid(Grid):
 
         if vmin == 0:
             subtract = standardized.min()
+        else:
+            subtract = 0
 
         standardized = (standardized - subtract) / (
             standardized.max() - standardized.min())
@@ -706,23 +709,20 @@ class DendrogramGrid(Grid):
 
     def plot_dendrograms(self, row_cluster=True, col_cluster=True,
                          metric='euclidean', method='median',
-                         row_linkage=None, col_linkage=None,
-                         use_fastcluster=False):
+                         row_linkage=None, col_linkage=None):
         # Plot the row dendrogram
         if row_cluster:
             self.dendrogram_row = dendrogramplot(
-                self.data2d, use_fastcluster=use_fastcluster, metric=metric,
-                method=method, label=False, axis=0,
+                self.data2d, metric=metric, method=method, label=False, axis=0,
                 ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage)
 
         # PLot the column dendrogram
         if col_cluster:
             self.dendrogram_col = dendrogramplot(
-                self.data2d, use_fastcluster=use_fastcluster, metric=metric,
-                method=method, label=False, axis=1, ax=self.ax_col_dendrogram,
-                linkage=col_linkage)
+                self.data2d, metric=metric, method=method, label=False,
+                axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage)
 
-    def plot_colors(self, heatmap_kws):
+    def plot_colors(self, **kws):
         """Plots color labels between the dendrogram and the heatmap
         Parameters
         ----------
@@ -734,7 +734,7 @@ class DendrogramGrid(Grid):
                 self.row_colors, self.dendrogram_row.reordered_ind, axis=0)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
                     xticklabels=False, yticklabels=False,
-                    **heatmap_kws)
+                    **kws)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
@@ -743,7 +743,7 @@ class DendrogramGrid(Grid):
                 self.col_colors, self.dendrogram_col.reordered_ind, axis=1)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
                     xticklabels=False, yticklabels=False,
-                    **heatmap_kws)
+                    **kws)
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
@@ -766,34 +766,29 @@ class DendrogramGrid(Grid):
         self.ax_heatmap.yaxis.set_label_position('right')
 
     def plot(self, metric='euclidean', method='median',
-             heatmap_kws=None,
              colorbar_kws=None,
              row_cluster=True,
              col_cluster=True,
              row_linkage=None,
              col_linkage=None,
              row_labels=True,
-             col_labels=True,
-             use_fastcluster=False):
-        heatmap_kws = {} if heatmap_kws is None else heatmap_kws
+             col_labels=True, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
-                              row_linkage=row_linkage, col_linkage=col_linkage,
-                              use_fastcluster=use_fastcluster)
-        self.plot_colors(heatmap_kws)
-        self.plot_matrix(heatmap_kws, colorbar_kws, row_labels=row_labels,
+                              row_linkage=row_linkage, col_linkage=col_linkage)
+        self.plot_colors(**kws)
+        self.plot_matrix(**kws, colorbar_kws, row_labels=row_labels,
                          col_labels=col_labels)
         return self
 
 
 def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                z_score=None, standard_scale=None, figsize=None,
-               heatmap_kws=None, colorbar_kws=None,
+               colorbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_labels=True, col_labels=True,
-               row_colors=None, col_colors=None,
-               use_fastcluster=False):
+               row_colors=None, col_colors=None, **kwargs):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -857,9 +852,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
 
     Notes
     ----
-    To save the figure, use:
-    dg = clusteredheatmap(data)
-    dg.savefig()
+    The returned object has a `savefig` method that should be used if you want
+    to save the figure object without clipping the dendrograms
 
     To access the reordered row indices, use:
     dg.dendrogram_row.reordered_ind
@@ -872,8 +866,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                              z_score=z_score, standard_scale=standard_scale)
 
     return plotter.plot(metric=metric, method=method,
-                        heatmap_kws=heatmap_kws,
                         colorbar_kws=colorbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        row_labels=row_labels, col_labels=col_labels)
+                        row_labels=row_labels, col_labels=col_labels,
+                        **kwargs)
