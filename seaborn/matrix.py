@@ -747,8 +747,7 @@ class DendrogramGrid(Grid):
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
-    def plot_matrix(self, heatmap_kws, colorbar_kws, row_labels=True,
-                    col_labels=True):
+    def plot_matrix(self, colorbar_kws, **kws):
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
@@ -760,8 +759,7 @@ class DendrogramGrid(Grid):
 
         data = self.data2d.iloc[yind, xind]
         heatmap(data, ax=self.ax_heatmap, cbar_ax=self.cax,
-                cbar_kws=colorbar_kws, xticklabels=row_labels,
-                yticklabels=col_labels, **heatmap_kws)
+                cbar_kws=colorbar_kws, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
 
@@ -777,8 +775,7 @@ class DendrogramGrid(Grid):
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
         self.plot_colors(**kws)
-        self.plot_matrix(**kws, colorbar_kws, row_labels=row_labels,
-                         col_labels=col_labels)
+        self.plot_matrix(colorbar_kws, **kws)
         return self
 
 
@@ -839,8 +836,6 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     {row,col}_linkage : numpy.array, optional
         Precomputed linkage matrix for the rows or columns. See
         scipy.cluster.hierarchy.linkage for specific formats.
-    {row,col}_labels : bool or list-like, optional
-        If True, label the rows and columns with the labels in the DataFrame
     {row,col}_colors : list-like, optional
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together.
@@ -869,5 +864,4 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                         colorbar_kws=colorbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        row_labels=row_labels, col_labels=col_labels,
                         **kwargs)
