@@ -53,7 +53,6 @@ class _HeatMapper(object):
             if isinstance(data.index, pd.MultiIndex):
                 ytl = ["-".join(map(str, i)) for i in data.index.values]
                 self.yticklabels = ytl
-
             else:
                 self.yticklabels = data.index
 
@@ -62,7 +61,7 @@ class _HeatMapper(object):
         else:
             self.yticklabels = yticklabels
 
-        if isinstance(data.columns, pd.MultiIndex):
+        if isinstance(data.index, pd.MultiIndex):
             ylabel = "-".join(map(str, data.index.names))
         else:
             ylabel = data.index.name
@@ -611,7 +610,7 @@ class DendrogramGrid(Grid):
         >>> DendrogramGrid.standard_scale(d)
         array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
         >>> DendrogramGrid.standard_scale(d, vmin=None)
-        array([ 2.   2.2  2.4  2.6  2.8  3. ])
+        array([ 2. ,  2.2,  2.4,  2.6,  2.8,  3. ])
         """
         # Normalize these values to range from -1 to 1
         if axis == 1:
@@ -768,9 +767,7 @@ class DendrogramGrid(Grid):
              row_cluster=True,
              col_cluster=True,
              row_linkage=None,
-             col_linkage=None,
-             row_labels=True,
-             col_labels=True, **kws):
+             col_linkage=None, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
