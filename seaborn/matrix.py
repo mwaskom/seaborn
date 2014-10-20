@@ -271,7 +271,7 @@ class _DendrogramPlotter(object):
 
     def __init__(self, data, linkage=None, metric='euclidean',
                  method='median', axis=1,
-                 ax=None, cluster=True):
+                 ax=None, label=True, rotate=False):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
@@ -296,18 +296,50 @@ class _DendrogramPlotter(object):
         self.metric = metric
         self.method = method
         self.axis = axis
+        self.label = label
+        self.rotate = rotate
 
         if ax is None:
             ax = plt.gca()
         self.ax = ax
 
-        if linkage is None and cluster:
+        if linkage is None:
             self.linkage = self.calculated_linkage
-        elif cluster:
-            self.linkage = linkage
         else:
-            self.linkage = None
+            self.linkage = linkage
         self.dendrogram = self.calculate_dendrogram()
+
+        # Dendrogram ends are always at multiples of 5, who knows why
+        ticks = 10 * np.arange(self.data.shape[0]) + 5
+        labels = _index_to_ticklabels(self.data.index)[self._leaves]
+
+        if self.label:
+            if self.rotate:
+                self.ax.yaxis.set_ticks_position('right')
+                self.xticks = ['']
+                self.yticks = ticks
+                self.xticklabels = []
+                self.yticklabels = labels
+                self.ylabel = _index_to_label(self.data.index)
+                self.xlabel = ''
+            else:
+                self.xticks = ticks
+                self.yticks = ['']
+                self.xticklabels = labels
+                self.yticklabels = []
+                self.ylabel = ''
+                self.xlabel = _index_to_label(self.data.index)
+        else:
+            self.xticks, self.yticks = [], []
+            self.yticklabels, self.xticklabels = [], []
+            self.xlabel, self.ylabel = '', ''
+
+        if self.rotate:
+            self.X = self.dendrogram['dcoord']
+            self.Y = self.dendrogram['icoord']
+        else:
+            self.X = self.dendrogram['icoord']
+            self.Y = self.dendrogram['dcoord']
 
     @property
     def calculated_linkage(self):
@@ -336,6 +368,9 @@ class _DendrogramPlotter(object):
 
     def calculate_dendrogram(self):
         """Calculates a dendrogram based on the linkage matrix
+
+        Made a separate function, not a property because don't want to
+        recalculate the dendrogram every time it is accessed.
 
         Parameters
         ----------
@@ -388,7 +423,7 @@ class _DendrogramPlotter(object):
         else:
             return self._leaves
 
-    def plot(self, label=False, rotate=False):
+    def plot(self):
         """Plots a dendrogram on the figure at the gridspec location using
         the linkage matrix
 
@@ -401,48 +436,25 @@ class _DendrogramPlotter(object):
         ax : matplotlib.axes.Axes
             Axes object upon which the dendrogram is plotted
         """
-        if rotate:
-            X = self.dendrogram['dcoord']
-            Y = self.dendrogram['icoord']
-        else:
-            X = self.dendrogram['icoord']
-            Y = self.dendrogram['dcoord']
 
-        for x, y in zip(X, Y):
+        for x, y in zip(self.X, self.Y):
             self.ax.plot(x, y, color='k', linewidth=.5)
 
-        if rotate:
+        if self.rotate:
             self.ax.invert_xaxis()
-            ymax = min(map(min, Y)) + max(map(max, Y))
+            ymax = min(map(min, self.Y)) + max(map(max, self.Y))
             self.ax.set_ylim(0, ymax)
         else:
-            xmax = min(map(min, X)) + max(map(max, X))
+            xmax = min(map(min, self.X)) + max(map(max, self.X))
             self.ax.set_xlim(0, xmax)
 
         despine(ax=self.ax, bottom=True, left=True)
 
-        # Dendrogram ends are always at multiples of 5, who knows why
-        ticks = 10 * np.arange(self.data.shape[0]) + 5
-        labels = self.data.index[self._leaves]
-
-        if label:
-            if rotate:
-                self.ax.yaxis.set_ticks_position('right')
-                xticks = self.ax.get_xticks()
-                yticks = ticks
-                xticklabels = []
-                yticklabels = labels
-            else:
-                xticks = ticks
-                yticks = self.ax.get_yticks()
-                xticklabels = labels
-                yticklabels = []
-        else:
-            xticks, yticks, yticklabels, xticklabels = [], [], [], []
-
-        self.ax.set(xticks=xticks, yticks=yticks, axis_bgcolor='white')
-        xtl = self.ax.set_xticklabels(xticklabels)
-        ytl = self.ax.set_yticklabels(yticklabels)
+        self.ax.set(xticks=self.xticks, yticks=self.yticks,
+                    axis_bgcolor='white', xlabel=self.xlabel,
+                    ylabel=self.ylabel)
+        xtl = self.ax.set_xticklabels(self.xticklabels)
+        ytl = self.ax.set_yticklabels(self.yticklabels)
 
         # Force a draw of the plot to avoid matplotlib window error
         plt.draw()
@@ -480,7 +492,7 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
         scipy.cluster.hierarchy.linkage
     rotate : bool, optional
         When plotting the matrix, whether to rotate it 90 degrees
-        counter-clockwise, so the _leaves face right
+        counter-clockwise, so the leaves face right
 
     Returns
     -------
@@ -489,8 +501,8 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
                                  axis=axis, ax=ax, metric=metric,
-                                 method=method)
-    return plotter.plot(label=label, rotate=rotate)
+                                 method=method, label=label, rotate=rotate)
+    return plotter.plot()
 
 
 class DendrogramGrid(Grid):
