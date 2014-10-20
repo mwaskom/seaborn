@@ -1510,8 +1510,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         full range (-1, 1), or specify (min, max) values for the colormap.
     cbar : bool
         If true, plot the colorbar legend.
-    method: pearson | kendall | spearman
-        Correlation method to compute pairwise correlations.
+    method: None (pearson) | kendall | spearman
+        Correlation method to compute pairwise correlations. Methods other
+        than the default pearson correlation will not have a significance
+        computed.
     ax : matplotlib axis
         Axis to draw plot in.
     kwargs : other keyword arguments
@@ -1539,7 +1541,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     data = data[names]
 
     # Get p values with a permutation test
-    if annot and sig_stars:
+    if annot and sig_stars and method is None:
         p_mat = algo.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
