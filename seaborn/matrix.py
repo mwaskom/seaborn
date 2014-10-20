@@ -27,7 +27,7 @@ def _index_to_ticklabels(index):
     if isinstance(index, pd.MultiIndex):
         return ["-".join(map(str, i)) for i in index.values]
     else:
-        return index
+        return index.values
 
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
@@ -63,7 +63,7 @@ class _HeatMapper(object):
         elif isinstance(yticklabels, bool) and not yticklabels:
             self.yticklabels = ['' for _ in xrange(data.shape[0])]
         else:
-            self.yticklabels = yticklabels
+            self.yticklabels = yticklabels[::-1]
 
         ylabel = _index_to_label(data.index)
 
@@ -280,7 +280,9 @@ class _DendrogramPlotter(object):
             Rectangular data
 
         """
-        if axis == 1:
+        self.axis = axis
+
+        if self.axis == 1:
             data = data.T
 
         if isinstance(data, pd.DataFrame):
@@ -402,10 +404,10 @@ class _DendrogramPlotter(object):
             .dendrogram. The important key-value pairing is "_leaves" which
             tells the ordering of the matrix
         """
-        import scipy.cluster.hierarchy as sch
+        from scipy.cluster import hierarchy
 
-        return sch.dendrogram(self.linkage, no_plot=True, color_list=['k'],
-                              color_threshold=-np.inf)
+        return hierarchy.dendrogram(self.linkage, no_plot=True,
+                                    color_list=['k'], color_threshold=-np.inf)
 
     @property
     def _leaves(self):
@@ -418,7 +420,7 @@ class _DendrogramPlotter(object):
         """For external use, needs to be reversed to be consistent with heatmap
         if rows
         """
-        if self.axis == 0:
+        if self.axis == 0 and self.rotate:
             return self._leaves[::-1]
         else:
             return self._leaves
@@ -454,14 +456,14 @@ class _DendrogramPlotter(object):
                     axis_bgcolor='white', xlabel=self.xlabel,
                     ylabel=self.ylabel)
         xtl = self.ax.set_xticklabels(self.xticklabels)
-        ytl = self.ax.set_yticklabels(self.yticklabels)
+        ytl = self.ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
         plt.draw()
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
-            plt.setp(ytl, rotation="vertical")
+            plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
-            plt.setp(xtl, rotation="horizontal")
+            plt.setp(xtl, rotation="vertical")
 
         return self
 
@@ -809,7 +811,6 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                colorbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
-               row_labels=True, col_labels=True,
                row_colors=None, col_colors=None, **kwargs):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
