@@ -13,6 +13,22 @@ from .palettes import cubehelix_palette
 from .utils import despine, axis_ticklabels_overlap
 
 
+def _index_to_label(index):
+    """Convert a pandas index or multiindex to an axis label
+    """
+    if isinstance(index, pd.MultiIndex):
+        return "-".join(map(str, index.names))
+    else:
+        return index.name
+
+def _index_to_ticklabels(index):
+    """Convert a pandas index or multiindex into ticklabels
+    """
+    if isinstance(index, pd.MultiIndex):
+        return ["-".join(map(str, i)) for i in index.values]
+    else:
+        return index
+
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
@@ -34,37 +50,22 @@ class _HeatMapper(object):
 
         # Get good names for the rows and columns
         if isinstance(xticklabels, bool) and xticklabels:
-            if isinstance(data.columns, pd.MultiIndex):
-                xtl = ["-".join(map(str, i)) for i in data.columns.values]
-                self.xticklabels = xtl
-            else:
-                self.xticklabels = data.columns
+            self.xticklabels = _index_to_ticklabels(data.columns)
         elif isinstance(xticklabels, bool) and not xticklabels:
             self.xticklabels = ['' for _ in xrange(data.shape[1])]
         else:
             self.xticklabels = xticklabels
 
-        if isinstance(data.columns, pd.MultiIndex):
-            xlabel = "-".join(map(str, data.columns.names))
-        else:
-            xlabel = data.columns.name
+        xlabel = _index_to_label(data.columns)
 
         if isinstance(yticklabels, bool) and yticklabels:
-            if isinstance(data.index, pd.MultiIndex):
-                ytl = ["-".join(map(str, i)) for i in data.index.values]
-                self.yticklabels = ytl
-            else:
-                self.yticklabels = data.index
-
+            self.yticklabels = _index_to_ticklabels(data.index)
         elif isinstance(yticklabels, bool) and not yticklabels:
             self.yticklabels = ['' for _ in xrange(data.shape[0])]
         else:
             self.yticklabels = yticklabels
 
-        if isinstance(data.index, pd.MultiIndex):
-            ylabel = "-".join(map(str, data.index.names))
-        else:
-            ylabel = data.index.name
+        ylabel = _index_to_label(data.index)
 
         # Get good names for the axis labels
         self.xlabel = xlabel if xlabel is not None else ""
@@ -453,9 +454,9 @@ class _DendrogramPlotter(object):
         return self
 
 
-def dendrogramplot(data, linkage=None, axis=1, ax=None,
-                   label=True, metric='euclidean', method='median',
-                   rotate=False):
+def dendrogram(data, linkage=None, axis=1, ax=None,
+               label=True, metric='euclidean', method='median',
+               rotate=False):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -721,7 +722,7 @@ class DendrogramGrid(Grid):
                          row_linkage=None, col_linkage=None):
         # Plot the row dendrogram
         if row_cluster:
-            self.dendrogram_row = dendrogramplot(
+            self.dendrogram_row = dendrogram(
                 self.data2d, metric=metric, method=method, label=False, axis=0,
                 ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage)
         else:
@@ -729,7 +730,7 @@ class DendrogramGrid(Grid):
             self.ax_row_dendrogram.set_yticks([])
         # PLot the column dendrogram
         if col_cluster:
-            self.dendrogram_col = dendrogramplot(
+            self.dendrogram_col = dendrogram(
                 self.data2d, metric=metric, method=method, label=False,
                 axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage)
         else:
