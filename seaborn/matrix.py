@@ -313,8 +313,14 @@ class _DendrogramPlotter(object):
         try:
             import fastcluster
 
-            return fastcluster.linkage_vector(self.array, method=self.method,
-                                              metric=self.metric)
+            try:
+                # Memory-saving version, but only certain linkage methods
+                return fastcluster.linkage_vector(self.array,
+                                                  method=self.method,
+                                                  metric=self.metric)
+            except IndexError:
+                return fastcluster.linkage(self.array, method=self.method,
+                                           metric=self.metric)
         except ImportError:
             from scipy.spatial import distance
             from scipy.cluster import hierarchy
@@ -448,7 +454,7 @@ class _DendrogramPlotter(object):
 
 
 def dendrogramplot(data, linkage=None, axis=1, ax=None,
-                   label=True, metric='euclidean', method='single',
+                   label=True, metric='euclidean', method='median',
                    rotate=False):
     """Draw a tree diagram of relationships within a matrix
 
@@ -718,12 +724,17 @@ class DendrogramGrid(Grid):
             self.dendrogram_row = dendrogramplot(
                 self.data2d, metric=metric, method=method, label=False, axis=0,
                 ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage)
-
+        else:
+            self.ax_row_dendrogram.set_xticks([])
+            self.ax_row_dendrogram.set_yticks([])
         # PLot the column dendrogram
         if col_cluster:
             self.dendrogram_col = dendrogramplot(
                 self.data2d, metric=metric, method=method, label=False,
                 axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage)
+        else:
+            self.ax_col_dendrogram.set_xticks([])
+            self.ax_col_dendrogram.set_yticks([])
 
     def plot_colors(self, **kws):
         """Plots color labels between the dendrogram and the heatmap
