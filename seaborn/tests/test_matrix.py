@@ -14,6 +14,7 @@ from numpy.testing.decorators import skipif
 
 from .. import matrix as mat
 from .. import color_palette
+from ..external.six.moves import range
 
 try:
     import fastcluster
@@ -147,9 +148,9 @@ class TestHeatmap(object):
         kws['xticklabels'] = False
         kws['yticklabels'] = False
         p = mat._HeatMapper(self.df_norm, **kws)
-        nt.assert_equal(p.xticklabels, ['' for _ in xrange(
+        nt.assert_equal(p.xticklabels, ['' for _ in range(
             self.df_norm.shape[1])])
-        nt.assert_equal(p.yticklabels, ['' for _ in xrange(
+        nt.assert_equal(p.yticklabels, ['' for _ in range(
             self.df_norm.shape[0])])
 
     def test_custom_ticklabels(self):
