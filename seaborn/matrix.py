@@ -507,10 +507,15 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     return plotter.plot()
 
 
-class DendrogramGrid(Grid):
+class ClusterMapper(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None):
-        self.data = data
+
+        if isinstance(data, pd.DataFrame):
+            self.data = data
+        else:
+            self.data = pd.DataFrame(data)
+
         self.data2d = self.format_data(self.data, pivot_kws, z_score,
                                        standard_scale)
 
@@ -610,7 +615,7 @@ class DendrogramGrid(Grid):
             return z_scored.T
 
     @staticmethod
-    def standard_scale(data2d, axis=1, vmin=0):
+    def standard_scale(data2d, axis=1):
         """Divide the data by the difference between the max and min
 
         Parameters
@@ -632,22 +637,18 @@ class DendrogramGrid(Grid):
 
         >>> import numpy as np
         >>> d = np.arange(5, 8, 0.5)
-        >>> DendrogramGrid.standard_scale(d)
+        >>> ClusterMapper.standard_scale(d)
         array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
-        >>> DendrogramGrid.standard_scale(d, vmin=None)
+        >>> ClusterMapper.standard_scale(d, vmin=None)
         array([ 2. ,  2.2,  2.4,  2.6,  2.8,  3. ])
         """
-        # Normalize these values to range from -1 to 1
+        # Normalize these values to range from 0 to 1
         if axis == 1:
             standardized = data2d
         else:
             standardized = data2d.T
 
-        if vmin == 0:
-            subtract = standardized.min()
-        else:
-            subtract = 0
-
+        subtract = standardized.min()
         standardized = (standardized - subtract) / (
             standardized.max() - standardized.min())
 
@@ -716,10 +717,10 @@ class DendrogramGrid(Grid):
 
         # Is this row-side or column side?
         if axis == 0:
-            # shape of matrix: nrows x 1
+            # row-side: shape of matrix: nrows x 1
             new_shape = (len(colors_original), 1)
         else:
-            # shape of matrix: 1 x ncols
+            # col-side: shape of matrix: 1 x ncols
             new_shape = (1, len(colors_original))
         matrix = matrix.reshape(new_shape)
 
@@ -750,6 +751,8 @@ class DendrogramGrid(Grid):
         else:
             self.ax_col_dendrogram.set_xticks([])
             self.ax_col_dendrogram.set_yticks([])
+        despine(ax=self.ax_row_dendrogram, bottom=True, left=True)
+        despine(ax=self.ax_col_dendrogram, bottom=True, left=True)
 
     def plot_colors(self, **kws):
         """Plots color labels between the dendrogram and the heatmap
@@ -780,14 +783,14 @@ class DendrogramGrid(Grid):
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
-            xind = np.arange(self.data2d.shape[0])
+            xind = np.arange(self.data2d.shape[1])
         try:
             yind = self.dendrogram_row.reordered_ind
         except AttributeError:
-            yind = np.arange(self.data2d.shape[1])
+            yind = np.arange(self.data2d.shape[0])
 
-        data = self.data2d.iloc[yind, xind]
-        heatmap(data, ax=self.ax_heatmap, cbar_ax=self.cax,
+        self.data2d = self.data2d.iloc[yind, xind]
+        heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
@@ -868,8 +871,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
 
     Returns
     -------
-    dendrogramgrid : DendrogramGrid
-        A DendrogramGrid instance. Use this directly if you need more power
+    dendrogramgrid : ClusterMapper
+        A ClusterMapper instance. Use this directly if you need more power
 
     Notes
     ----
@@ -882,7 +885,7 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     Column indices, use:
     dg.dendrogram_col.reordered_ind
     """
-    plotter = DendrogramGrid(data, pivot_kws=pivot_kws, figsize=figsize,
+    plotter = ClusterMapper(data, pivot_kws=pivot_kws, figsize=figsize,
                              row_colors=row_colors, col_colors=col_colors,
                              z_score=z_score, standard_scale=standard_scale)
 
