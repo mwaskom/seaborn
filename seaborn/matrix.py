@@ -13,6 +13,7 @@ from .palettes import cubehelix_palette
 from .utils import despine, axis_ticklabels_overlap
 from .external.six.moves import range
 
+
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label
     """
@@ -21,6 +22,7 @@ def _index_to_label(index):
     else:
         return index.name
 
+
 def _index_to_ticklabels(index):
     """Convert a pandas index or multiindex into ticklabels
     """
@@ -28,6 +30,7 @@ def _index_to_ticklabels(index):
         return ["-".join(map(str, i)) for i in index.values]
     else:
         return index.values
+
 
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
@@ -884,8 +887,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     dg.dendrogram_col.reordered_ind
     """
     plotter = ClusterMapper(data, pivot_kws=pivot_kws, figsize=figsize,
-                             row_colors=row_colors, col_colors=col_colors,
-                             z_score=z_score, standard_scale=standard_scale)
+                            row_colors=row_colors, col_colors=col_colors,
+                            z_score=z_score, standard_scale=standard_scale)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=colorbar_kws,

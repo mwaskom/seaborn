@@ -17,6 +17,7 @@ from .. import color_palette
 
 try:
     import fastcluster
+
     assert fastcluster
     _no_fastcluster = False
 except ImportError:
@@ -366,7 +367,6 @@ class TestDendrogram(object):
 
         npt.assert_array_equal(p.linkage, linkage)
         nt.assert_dict_equal(p.dendrogram, dendrogram)
-
 
     def test_label_false(self):
         kws = self.default_kws.copy()
