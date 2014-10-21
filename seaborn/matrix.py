@@ -11,7 +11,7 @@ import pandas as pd
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
 from .utils import despine, axis_ticklabels_overlap
-
+from .external.six.moves import range
 
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label
@@ -52,7 +52,7 @@ class _HeatMapper(object):
         if isinstance(xticklabels, bool) and xticklabels:
             self.xticklabels = _index_to_ticklabels(data.columns)
         elif isinstance(xticklabels, bool) and not xticklabels:
-            self.xticklabels = ['' for _ in xrange(data.shape[1])]
+            self.xticklabels = ['' for _ in range(data.shape[1])]
         else:
             self.xticklabels = xticklabels
 
@@ -61,7 +61,7 @@ class _HeatMapper(object):
         if isinstance(yticklabels, bool) and yticklabels:
             self.yticklabels = _index_to_ticklabels(data.index)
         elif isinstance(yticklabels, bool) and not yticklabels:
-            self.yticklabels = ['' for _ in xrange(data.shape[0])]
+            self.yticklabels = ['' for _ in range(data.shape[0])]
         else:
             self.yticklabels = yticklabels[::-1]
 
@@ -639,8 +639,6 @@ class ClusterMapper(Grid):
         >>> d = np.arange(5, 8, 0.5)
         >>> ClusterMapper.standard_scale(d)
         array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
-        >>> ClusterMapper.standard_scale(d, vmin=None)
-        array([ 2. ,  2.2,  2.4,  2.6,  2.8,  3. ])
         """
         # Normalize these values to range from 0 to 1
         if axis == 1:
