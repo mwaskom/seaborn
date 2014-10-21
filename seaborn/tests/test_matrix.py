@@ -37,7 +37,7 @@ class TestHeatmap(object):
 
     default_kws = dict(vmin=None, vmax=None, cmap=None, center=None,
                        robust=False, annot=False, fmt=".2f", annot_kws=None,
-                       cbar=True, cbar_kws=None)
+                       cbar=True, cbar_kws=None, mask=None)
 
     def test_ndarray_input(self):
 
@@ -81,6 +81,16 @@ class TestHeatmap(object):
 
         npt.assert_array_equal(p.xticklabels, ["A-1", "B-2", "C-3", "D-4"])
         nt.assert_equal(p.xlabel, "letter-number")
+
+    def test_mask_input(self):
+        kws = self.default_kws.copy()
+
+        mask = self.x_norm > 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+        plot_data = np.ma.masked_where(mask, self.x_norm)
+
+        npt.assert_array_equal(p.plot_data, plot_data[::-1])
 
     def test_default_sequential_vlims(self):
 
@@ -587,7 +597,7 @@ class TestClustermap(object):
     def test_savefig(self):
         # Not sure if this is the right way to test....
         cm = mat.ClusterMapper(self.df_norm, **self.default_kws)
-        cm.savefig(tempfile.NamedTemporaryFile())
+        cm.savefig(tempfile.NamedTemporaryFile(), format='png')
 
     def test_plot_dendrograms(self):
         cm = mat.clustermap(self.df_norm, **self.default_kws)

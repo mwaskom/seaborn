@@ -37,7 +37,7 @@ class _HeatMapper(object):
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
                  annot_kws, cbar, cbar_kws,
-                 xticklabels=True, yticklabels=True):
+                 xticklabels=True, yticklabels=True, mask=None):
         """Initialize the plotting object."""
         # We always want to have a DataFrame with semantic information
         # and an ndarray to pass to matplotlib
@@ -50,6 +50,8 @@ class _HeatMapper(object):
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
         data = data.ix[::-1]
+
+        plot_data = np.ma.masked_where(mask, plot_data)
 
         # Get good names for the rows and columns
         if isinstance(xticklabels, bool) and xticklabels:
@@ -179,6 +181,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             linewidths=.5, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
+            mask=None,
             **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
@@ -253,7 +256,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
-                          annot_kws, cbar, cbar_kws, xticklabels, yticklabels)
+                          annot_kws, cbar, cbar_kws, xticklabels, yticklabels,
+                          mask)
 
     # Add the pcolormesh kwargs here
     kwargs["linewidths"] = linewidths
@@ -780,7 +784,7 @@ class ClusterMapper(Grid):
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
-    def plot_matrix(self, colorbar_kws, **kws):
+    def plot_matrix(self, colorbar_kws, mask, **kws):
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
@@ -792,7 +796,7 @@ class ClusterMapper(Grid):
 
         self.data2d = self.data2d.iloc[yind, xind]
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
-                cbar_kws=colorbar_kws, **kws)
+                cbar_kws=colorbar_kws, mask=mask, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
 
@@ -801,12 +805,13 @@ class ClusterMapper(Grid):
              row_cluster=True,
              col_cluster=True,
              row_linkage=None,
-             col_linkage=None, **kws):
+             col_linkage=None,
+             mask=None, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
         self.plot_colors(**kws)
-        self.plot_matrix(colorbar_kws, **kws)
+        self.plot_matrix(colorbar_kws, mask, **kws)
         return self
 
 
@@ -815,7 +820,7 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                colorbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
-               row_colors=None, col_colors=None, **kwargs):
+               row_colors=None, col_colors=None, mask=None, **kwargs):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
@@ -869,6 +874,9 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     {row,col}_colors : list-like, optional
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together.
+    mask : boolean numpy.array, optional
+        A boolean array indicating where to mask the data so it is not
+        plotted on the heatmap. Only used for visualizing, not for calculating.
 
     Returns
     -------
@@ -894,4 +902,5 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                         colorbar_kws=colorbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
+                        mask=mask,
                         **kwargs)
