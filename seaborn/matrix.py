@@ -898,8 +898,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     dg.dendrogram_col.reordered_ind
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
-                            row_colors=row_colors, col_colors=col_colors,
-                            z_score=z_score, standard_scale=standard_scale)
+                          row_colors=row_colors, col_colors=col_colors,
+                          z_score=z_score, standard_scale=standard_scale)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=colorbar_kws,
