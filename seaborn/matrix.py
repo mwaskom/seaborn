@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 import pandas as pd
+from scipy.spatial import distance
+from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
@@ -352,9 +354,6 @@ class _DendrogramPlotter(object):
             self.Y = self.dendrogram['dcoord']
 
     def _calculate_linkage_scipy(self):
-        from scipy.spatial import distance
-        from scipy.cluster import hierarchy
-
         if np.product(self.shape) >= 10000:
             UserWarning('This will be slow... (gentle suggestion: '
                         '"pip install fastcluster")')
@@ -417,8 +416,6 @@ class _DendrogramPlotter(object):
             .dendrogram. The important key-value pairing is "_leaves" which
             tells the ordering of the matrix
         """
-        from scipy.cluster import hierarchy
-
         return hierarchy.dendrogram(self.linkage, no_plot=True,
                                     color_list=['k'], color_threshold=-np.inf)
 
