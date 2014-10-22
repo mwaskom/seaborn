@@ -327,7 +327,7 @@ class _DendrogramPlotter(object):
         if self.label:
             if self.rotate:
                 self.ax.yaxis.set_ticks_position('right')
-                self.xticks = ['']
+                self.xticks = []
                 self.yticks = ticks
                 self.xticklabels = []
 
@@ -336,7 +336,7 @@ class _DendrogramPlotter(object):
                 self.xlabel = ''
             else:
                 self.xticks = ticks
-                self.yticks = ['']
+                self.yticks = []
                 self.xticklabels = labels
                 self.yticklabels = []
                 self.ylabel = ''
