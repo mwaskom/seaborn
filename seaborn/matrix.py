@@ -517,7 +517,7 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     return plotter.plot()
 
 
-class ClusterMapper(Grid):
+class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None):
 
@@ -647,7 +647,7 @@ class ClusterMapper(Grid):
 
         >>> import numpy as np
         >>> d = np.arange(5, 8, 0.5)
-        >>> ClusterMapper.standard_scale(d)
+        >>> ClusterGrid.standard_scale(d)
         array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
         """
         # Normalize these values to range from 0 to 1
@@ -883,8 +883,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
 
     Returns
     -------
-    dendrogramgrid : ClusterMapper
-        A ClusterMapper instance. Use this directly if you need more power
+    dendrogramgrid : ClusterGrid
+        A ClusterGrid instance. Use this directly if you need more power
 
     Notes
     ----
@@ -897,7 +897,7 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     Column indices, use:
     dg.dendrogram_col.reordered_ind
     """
-    plotter = ClusterMapper(data, pivot_kws=pivot_kws, figsize=figsize,
+    plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                             row_colors=row_colors, col_colors=col_colors,
                             z_score=z_score, standard_scale=standard_scale)
 

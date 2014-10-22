@@ -500,14 +500,14 @@ class TestClustermap(object):
     col_colors = color_palette('Dark2', df_norm.shape[1])
 
     def test_ndarray_input(self):
-        cm = mat.ClusterMapper(self.x_norm, **self.default_kws)
+        cm = mat.ClusterGrid(self.x_norm, **self.default_kws)
         pdt.assert_frame_equal(cm.data, pd.DataFrame(self.x_norm))
         nt.assert_equal(len(cm.fig.axes), 4)
         nt.assert_equal(cm.ax_row_colors, None)
         nt.assert_equal(cm.ax_col_colors, None)
 
     def test_df_input(self):
-        cm = mat.ClusterMapper(self.df_norm, **self.default_kws)
+        cm = mat.ClusterGrid(self.df_norm, **self.default_kws)
         pdt.assert_frame_equal(cm.data, self.df_norm)
 
     def test_pivot_input(self):
@@ -518,7 +518,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         kws['pivot_kws'] = dict(index='numbers', columns='letters',
                                 values='value')
-        cm = mat.ClusterMapper(df_long, **kws)
+        cm = mat.ClusterGrid(df_long, **kws)
 
         pdt.assert_frame_equal(cm.data2d, df_norm)
 
@@ -528,7 +528,7 @@ class TestClustermap(object):
         kws['row_colors'] = self.row_colors
         kws['col_colors'] = self.col_colors
 
-        cm = mat.ClusterMapper(self.df_norm, **kws)
+        cm = mat.ClusterGrid(self.df_norm, **kws)
         npt.assert_array_equal(cm.row_colors, self.row_colors)
         npt.assert_array_equal(cm.col_colors, self.col_colors)
 
@@ -540,7 +540,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         kws['z_score'] = 1
 
-        cm = mat.ClusterMapper(self.df_norm, **kws)
+        cm = mat.ClusterGrid(self.df_norm, **kws)
         pdt.assert_frame_equal(cm.data2d, df)
 
     def test_z_score_axis0(self):
@@ -551,7 +551,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         kws['z_score'] = 0
 
-        cm = mat.ClusterMapper(self.df_norm, **kws)
+        cm = mat.ClusterGrid(self.df_norm, **kws)
         pdt.assert_frame_equal(cm.data2d, df)
 
     def test_standard_scale(self):
@@ -560,7 +560,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         kws['standard_scale'] = 1
 
-        cm = mat.ClusterMapper(self.df_norm, **kws)
+        cm = mat.ClusterGrid(self.df_norm, **kws)
         pdt.assert_frame_equal(cm.data2d, df)
 
     def test_standard_scale_axis0(self):
@@ -571,7 +571,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         kws['standard_scale'] = 0
 
-        cm = mat.ClusterMapper(self.df_norm, **kws)
+        cm = mat.ClusterGrid(self.df_norm, **kws)
         pdt.assert_frame_equal(cm.data2d, df)
 
     def test_z_score_standard_scale(self):
@@ -579,10 +579,10 @@ class TestClustermap(object):
         kws['z_score'] = True
         kws['standard_scale'] = True
         with nt.assert_raises(ValueError):
-            cm = mat.ClusterMapper(self.df_norm, **kws)
+            cm = mat.ClusterGrid(self.df_norm, **kws)
 
     def test_color_list_to_matrix_and_cmap(self):
-        matrix, cmap = mat.ClusterMapper.color_list_to_matrix_and_cmap(
+        matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
             self.col_colors, self.x_norm_leaves)
 
         colors_set = set(self.col_colors)
@@ -596,7 +596,7 @@ class TestClustermap(object):
         npt.assert_array_equal(cmap.colors, cmap_test.colors)
 
     def test_color_list_to_matrix_and_cmap_axis1(self):
-        matrix, cmap = mat.ClusterMapper.color_list_to_matrix_and_cmap(
+        matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
             self.col_colors, self.x_norm_leaves, axis=1)
 
         colors_set = set(self.col_colors)
@@ -611,7 +611,7 @@ class TestClustermap(object):
 
     def test_savefig(self):
         # Not sure if this is the right way to test....
-        cm = mat.ClusterMapper(self.df_norm, **self.default_kws)
+        cm = mat.ClusterGrid(self.df_norm, **self.default_kws)
         cm.savefig(tempfile.NamedTemporaryFile(), format='png')
 
     def test_plot_dendrograms(self):
