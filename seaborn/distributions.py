@@ -465,6 +465,182 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     ax.xaxis.grid(False)
     return ax
 
+def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
+               names=None, order=None, widths=.8, alpha=None,
+               saturation=.7, join_rm=False, inner_kws=None, ax=None, vert=True, **kwargs):
+    
+    """Create a letter-value plot.
+
+    Parameters
+    ----------
+    vals : DataFrame, Series, 2D array, or list of vectors.
+        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
+        each column mapping to a box. Lists of data are assumed to have one
+        element per box.  Can also provide one long Series in conjunction with
+        a grouping element as the `groupy` parameter to reshape the data into
+        several violins. Otherwise 1D data will produce a single violins.
+    groupby : grouping object
+        If `vals` is a Series, this is used to group into boxes by calling
+        pd.groupby(vals, groupby).
+    inner : {'box' | 'stick' | 'points'}
+        Plot quartiles or individual sample values inside violin.
+    color : a valid matplotlib color map or equivalent
+        Inner violin colors
+    positions : number or sequence of numbers
+        Position of first violin or positions of each violin.
+    names : list of strings, optional
+        Names to plot on x axis; otherwise plots numbers. This will override
+        names inferred from Pandas inputs.
+    order : list of strings, optional
+        If vals is a Pandas object with name information, you can control the
+        order of the plot by providing the violin names in your preferred
+        order.
+    widths : float
+        Width of each violin at maximum density.
+    alpha : float, optional
+        Transparancy of violin fill.
+    saturation : float, 0-1
+        Saturation relative to the fully-saturated color. Large patches tend
+        to look better at lower saturations, so this dims the palette colors
+        a bit by default.
+    join_rm : boolean, optional
+        If True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot.
+    inner_kws : dict, optional
+        Keyword arugments for inner plot.
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise grab current axis.
+    vert : boolean, optional
+        If true (default), draw vertical plots; otherwise, draw horizontal
+        ones.
+    kwargs : additional parameters to fill_betweenx
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis with violin plot.
+
+    """
+    
+    # If no axis is passed, grab the current one
+    if ax is None:
+        ax = plt.gca()
+
+    # Reshape and find labels for the plot
+    vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
+
+    # Sort out the plot colors
+    colors, gray = _box_colors(vals, color, saturation)
+    
+    # Initialize the kwarg dict for the inner plot
+    if inner_kws is None:
+        inner_kws = {}
+    inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
+    inner_kws["alpha"] *= 1 if alpha is None else alpha
+    inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("marker", "." if inner == "points" else "")
+    lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("linewidth", lw)
+    
+    # Find where the lv-plots are going
+    if positions is None:
+        positions = np.arange(1, len(vals) + 1)
+    elif not hasattr(positions, "__iter__"):
+        positions = np.arange(positions, len(vals) + positions)
+
+    # Set the default linewidth if not provided in kwargs
+    try:
+        lw = kwargs[({"lw", "linewidth"} & set(kwargs)).pop()]
+    except KeyError:
+        lw = 1.5
+    
+    # Iterate over the variables
+    for i, a in enumerate(vals):
+        
+        x = positions[i]
+        
+        if len(a) == 1:
+            y = a[0]
+            if vert:
+                ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)
+            else:
+                ax.plot([y, y], [x - widths / 2, x + widths / 2], **inner_kws)
+            continue
+        
+        # Get the number of data points and calculate "depth" of
+        # letter-value plot
+        n = len(a)
+        p = 8./n
+        k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+        upper = [1 - 0.5**(i+2) for i in range(k)]
+        lower = [0.5**(i+2) for i in range(k)]
+        percentile_ends = [(i, j) for i, j in zip(lower, upper)]
+        box_ends = [np.percentile(a, q) for q in percentile_ends]
+        
+        if vert:
+            boxes = [Patches.Rectangle((x - (widths**(i+1)) / 2, b[0]), 
+                                       widths**(i+1), 
+                                       b[1] - b[0], **inner_kws) 
+                     for i, b in enumerate(box_ends)]
+        else:
+            boxes = [Patches.Rectangle((b[0], x - (widths**(i+1)) / 2), 
+                                       b[1] - b[0], widths**(i+1), 
+                                       **inner_kws) 
+                     for i, b in enumerate(box_ends)]
+        
+        
+        # matplotlib colormap Blues is used by default
+        if color:
+            collection = PatchCollection(boxes, cmap=plt.cm.Blues)
+        else:
+            try:
+                collection = PatchCollection(boxes, cmap=color)
+            except ValueError:
+                msg = ("Ignoring color choice,"
+                       "See matplotlib listing for valid colormap choices")
+                warnings.warn(msg, UserWarning)
+        
+        # Set the color gradation
+        collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
+        
+        # Plot the boxes
+        ax.add_collection(collection)
+        
+    # Draw the repeated measure bridges
+    if join_rm:
+        ax.plot(range(1, len(vals) + 1), vals,
+                color=inner_kws["color"], alpha=2. / 3)
+
+    # Add in semantic labels
+    if names is not None:
+        if len(vals) != len(names):
+            raise ValueError("Length of names list must match nuber of bins")
+        names = list(names)
+
+    if vert:
+        # Add in semantic labels
+        ax.set_xticks(positions)
+        ax.set_xlim(positions[0] - .5, positions[-1] + .5)
+        ax.set_xticklabels(names)
+
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+    else:
+        # Add in semantic labels
+        ax.set_yticks(positions)
+        ax.set_yticklabels(names)
+        ax.set_ylim(positions[0] - .5, positions[-1] + .5)
+
+        if ylabel is not None:
+            ax.set_ylabel(xlabel)
+        if xlabel is not None:
+            ax.set_xlabel(ylabel)
+
+    ax.xaxis.grid(False)
+    return ax
+
 
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
