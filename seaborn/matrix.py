@@ -328,6 +328,7 @@ class _DendrogramPlotter(object):
                 self.xticks = ['']
                 self.yticks = ticks
                 self.xticklabels = []
+
                 self.yticklabels = labels
                 self.ylabel = _index_to_label(self.data.index)
                 self.xlabel = ''
@@ -350,30 +351,35 @@ class _DendrogramPlotter(object):
             self.X = self.dendrogram['icoord']
             self.Y = self.dendrogram['dcoord']
 
+    def _calculate_linkage_scipy(self):
+        from scipy.spatial import distance
+        from scipy.cluster import hierarchy
+
+        if np.product(self.shape) >= 10000:
+            UserWarning('This will be slow... (gentle suggestion: '
+                        '"pip install fastcluster")')
+
+        pairwise_dists = distance.squareform(
+            distance.pdist(self.array, metric=self.metric))
+        return hierarchy.linkage(pairwise_dists, method=self.method)
+
+    def _calculate_linkage_fastcluster(self):
+        try:
+            import fastcluster
+            # Memory-saving version, but only certain linkage methods
+            return fastcluster.linkage_vector(self.array,
+                                              method=self.method,
+                                              metric=self.metric)
+        except IndexError:
+            return fastcluster.linkage(self.array, method=self.method,
+                                       metric=self.metric)
+
     @property
     def calculated_linkage(self):
         try:
-            import fastcluster
-
-            try:
-                # Memory-saving version, but only certain linkage methods
-                return fastcluster.linkage_vector(self.array,
-                                                  method=self.method,
-                                                  metric=self.metric)
-            except IndexError:
-                return fastcluster.linkage(self.array, method=self.method,
-                                           metric=self.metric)
+            return self._calculate_linkage_fastcluster()
         except ImportError:
-            from scipy.spatial import distance
-            from scipy.cluster import hierarchy
-
-            if np.product(self.shape) >= 10000:
-                warnings.warn('This will be slow... (gentle suggestion: '
-                              '"pip install fastcluster")')
-
-            pairwise_dists = distance.squareform(
-                distance.pdist(self.array, metric=self.metric))
-            return hierarchy.linkage(pairwise_dists, method=self.method)
+            return self._calculate_linkage_scipy()
 
     def calculate_dendrogram(self):
         """Calculates a dendrogram based on the linkage matrix

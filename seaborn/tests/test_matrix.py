@@ -390,8 +390,23 @@ class TestDendrogram(object):
         nt.assert_equal(p.xlabel, "")
         nt.assert_equal(p.ylabel, "")
 
+    def test_linkage_scipy(self):
+        p = mat._DendrogramPlotter(self.x_norm, **self.default_kws)
+
+        scipy_linkage = p._calculate_linkage_scipy()
+
+        from scipy.spatial import distance
+        from scipy.cluster import hierarchy
+
+        dists = distance.squareform(distance.pdist(self.x_norm.T,
+                                                   metric=self.default_kws[
+                                                       'metric']))
+        linkage = hierarchy.linkage(dists, method=self.default_kws['method'])
+
+        npt.assert_array_equal(scipy_linkage, linkage)
+
     @skipif(_no_fastcluster)
-    def test_fastcluster_indexerror(self):
+    def test_fastcluster_indexerror_except(self):
         import fastcluster
 
         kws = self.default_kws.copy()
