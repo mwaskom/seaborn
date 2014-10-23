@@ -539,12 +539,11 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
     vert : boolean, optional
         If true (default), draw vertical plots; otherwise, draw horizontal
         ones.
-    kwargs : additional parameters to fill_betweenx
 
     Returns
     -------
     ax : matplotlib axis
-        Axis with violin plot.
+        Axis with letter-value plot.
 
     """
 
@@ -619,10 +618,12 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # matplotlib colormap Blues is used by default
         if color:
-            collection = PatchCollection(boxes, cmap=plt.cm.Blues_r)
+            rgb = [[1, 1, 1], list(color)]
+            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+            collection = PatchCollection(boxes, cmap=)
         else:
             try:
-                collection = PatchCollection(boxes, cmap=color)
+                collection = PatchCollection(boxes, cmap='Blues')
             except ValueError:
                 msg = ("Ignoring color choice,"
                        "See matplotlib listing for valid colormap choices")
@@ -636,7 +637,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Calculate the outliers and plot
         outliers = _lv_outliers(a)
-        ax.scatter(np.repeat(x, len(outliers)), outliers)
+        ax.scatter(np.repeat(x, len(outliers)), outliers, c=color)
 
 
     # Draw the repeated measure bridges
