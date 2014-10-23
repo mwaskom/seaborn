@@ -620,7 +620,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         if color:
             rgb = [[1, 1, 1], list(color)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            collection = PatchCollection(boxes, cmap=)
+            collection = PatchCollection(boxes, cmap=cmap)
         else:
             try:
                 collection = PatchCollection(boxes, cmap='Blues')
