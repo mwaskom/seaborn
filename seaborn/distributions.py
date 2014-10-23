@@ -539,12 +539,11 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
     vert : boolean, optional
         If true (default), draw vertical plots; otherwise, draw horizontal
         ones.
-    kwargs : additional parameters to fill_betweenx
 
     Returns
     -------
     ax : matplotlib axis
-        Axis with violin plot.
+        Axis with letter-value plot.
 
     """
 
@@ -563,7 +562,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         inner_kws = {}
     inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
     inner_kws["alpha"] *= 1 if alpha is None else alpha
-    #inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("color", gray)
     inner_kws.setdefault("marker", "." if inner == "points" else "")
     lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
     inner_kws.setdefault("linewidth", lw)
@@ -584,6 +583,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
     for i, a in enumerate(vals):
 
         x = positions[i]
+        color = colors[i]
 
         if len(a) == 1:
             y = a[0]
@@ -619,7 +619,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # matplotlib colormap Blues is used by default
         if color:
-            collection = PatchCollection(boxes, cmap=plt.cm.Blues_r)
+            collection = PatchCollection(boxes, cmap=color)
         else:
             try:
                 collection = PatchCollection(boxes, cmap=color)
@@ -636,7 +636,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Calculate the outliers and plot
         outliers = _lv_outliers(a)
-        ax.scatter(np.repeat(x, len(outliers)), outliers)
+        ax.scatter(np.repeat(x, len(outliers)), outliers, alpha=.7, c=)
 
 
     # Draw the repeated measure bridges
