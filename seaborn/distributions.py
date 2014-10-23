@@ -636,7 +636,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Calculate the outliers and plot
         outliers = _lv_outliers(a)
-        ax.scatter(np.repeat(x, len(outliers)))
+        ax.scatter(np.repeat(x, len(outliers)), outliers)
 
 
     # Draw the repeated measure bridges
