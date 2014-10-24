@@ -580,9 +580,9 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         lw = 1.5
 
     # Iterate over the variables
-    for i, a in enumerate(vals):
+    for j, a in enumerate(vals):
 
-        x = positions[i]
+        x = positions[j]
 
         if len(a) == 1:
             y = a[0]
@@ -618,6 +618,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # matplotlib colormap Blues is used by default
         if color:
+            color = colors[j]
             rgb = [[1, 1, 1], list(color)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap)
@@ -637,7 +638,12 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Calculate the outliers and plot
         outliers = _lv_outliers(a)
-        ax.scatter(np.repeat(x, len(outliers)), outliers, c=color)
+
+        if color:
+            ax.scatter(np.repeat(x, len(outliers)), outliers, marker="*", c=color)
+        else:
+            color = colors[j]
+            ax.scatter(np.repeat(x, len(outliers)), outliers, marker="*", c=color)
 
 
     # Draw the repeated measure bridges
