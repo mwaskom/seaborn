@@ -1,3 +1,4 @@
+import itertools
 import tempfile
 
 import numpy as np
@@ -592,6 +593,24 @@ class TestClustermap(object):
         shape = len(self.col_colors), 1
         matrix_test = matrix_test.reshape(shape)
         cmap_test = mpl.colors.ListedColormap(colors_set)
+        npt.assert_array_equal(matrix, matrix_test)
+        npt.assert_array_equal(cmap.colors, cmap_test.colors)
+
+    def test_nested_color_list_to_matrix_and_cmap(self):
+        colors = [self.col_colors, self.col_colors]
+        matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
+            colors, self.x_norm_leaves)
+
+        all_colors = set(itertools.chain(*colors))
+        color_to_value = dict((col, i) for i, col in enumerate(all_colors))
+        matrix_test = np.array(
+            [color_to_value[c] for color in colors for c in color])
+        shape = len(colors), len(colors[0])
+        matrix_test = matrix_test.reshape(shape)
+        matrix_test = matrix_test[:, self.x_norm_leaves]
+        matrix_test = matrix_test.T
+
+        cmap_test = mpl.colors.ListedColormap(all_colors)
         npt.assert_array_equal(matrix, matrix_test)
         npt.assert_array_equal(cmap.colors, cmap_test.colors)
 

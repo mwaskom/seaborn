@@ -1,5 +1,5 @@
 """Functions to visualize matrices of data."""
-import warnings
+import itertools
 
 import colorsys
 import matplotlib as mpl
@@ -716,23 +716,30 @@ class ClusterGrid(Grid):
         cmap : matplotlib.colors.ListedColormap
 
         """
-        # TODO: Support multiple color labels on an element in the heatmap
-
-        colors_original = colors
-        colors = set(colors)
-        col_to_value = dict((col, i) for i, col in enumerate(colors))
-        matrix = np.array([col_to_value[col] for col in colors_original])[ind]
-
-        # Is this row-side or column side?
-        if axis == 0:
-            # row-side: shape of matrix: nrows x 1
-            new_shape = (len(colors_original), 1)
+        # check for nested lists/color palettes.
+        # Will fail if matplotlib color is list not tuple
+        if any(issubclass(type(x), list) for x in colors):
+            all_colors = set(itertools.chain(*colors))
+            n = len(colors)
+            m = len(colors[0])
         else:
-            # col-side: shape of matrix: 1 x ncols
-            new_shape = (1, len(colors_original))
-        matrix = matrix.reshape(new_shape)
+            all_colors = set(colors)
+            n = 1
+            m = len(colors)
+            colors = [colors]
+        color_to_value = dict((col, i) for i, col in enumerate(all_colors))
 
-        cmap = mpl.colors.ListedColormap(colors)
+        matrix = np.array([color_to_value[c]
+                           for color in colors for c in color])
+
+        shape = (n, m)
+        matrix = matrix.reshape(shape)
+        matrix = matrix[:, ind]
+        if axis == 0:
+            # row-side:
+            matrix = matrix.T
+
+        cmap = mpl.colors.ListedColormap(all_colors)
         return matrix, cmap
 
     def savefig(self, *args, **kwargs):
