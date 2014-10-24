@@ -28,6 +28,7 @@ _style_keys = (
     "ytick.minor.size",
 
     "legend.frameon",
+    "legend.framealpha",
     "legend.numpoints",
     "legend.scatterpoints",
 
@@ -189,6 +190,7 @@ def axes_style(style=None, rc=None):
             "text.color": dark_gray,
             "axes.labelcolor": dark_gray,
             "legend.frameon": False,
+            "legend.framealpha": 0.7,
             "legend.numpoints": 1,
             "legend.scatterpoints": 1,
             "xtick.direction": "out",
