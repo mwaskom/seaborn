@@ -322,7 +322,8 @@ class _DendrogramPlotter(object):
 
         # Dendrogram ends are always at multiples of 5, who knows why
         ticks = 10 * np.arange(self.data.shape[0]) + 5
-        labels = _index_to_ticklabels(self.data.index)[self._leaves]
+        ticklabels = _index_to_ticklabels(self.data.index)
+        ticklabels = [ticklabels[i] for i in self._leaves]
 
         if self.label:
             if self.rotate:
@@ -331,13 +332,13 @@ class _DendrogramPlotter(object):
                 self.yticks = ticks
                 self.xticklabels = []
 
-                self.yticklabels = labels
+                self.yticklabels = ticklabels
                 self.ylabel = _index_to_label(self.data.index)
                 self.xlabel = ''
             else:
                 self.xticks = ticks
                 self.yticks = []
-                self.xticklabels = labels
+                self.xticklabels = ticklabels
                 self.yticklabels = []
                 self.ylabel = ''
                 self.xlabel = _index_to_label(self.data.index)
