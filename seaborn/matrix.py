@@ -431,10 +431,7 @@ class _DendrogramPlotter(object):
         """For external use, needs to be reversed to be consistent with heatmap
         if rows
         """
-        if self.axis == 0 and self.rotate:
-            return self._leaves[::-1]
-        else:
-            return self._leaves
+        return self._leaves
 
     def plot(self):
         """Plots a dendrogram on the figure at the gridspec location using
@@ -453,10 +450,11 @@ class _DendrogramPlotter(object):
         for x, y in zip(self.X, self.Y):
             self.ax.plot(x, y, color='k', linewidth=.5)
 
-        if self.rotate:
+        if self.rotate and self.axis == 0:
             self.ax.invert_xaxis()
             ymax = min(map(min, self.Y)) + max(map(max, self.Y))
             self.ax.set_ylim(0, ymax)
+            self.ax.invert_yaxis()
         else:
             xmax = min(map(min, self.X)) + max(map(max, self.X))
             self.ax.set_xlim(0, xmax)
