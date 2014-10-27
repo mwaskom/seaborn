@@ -494,7 +494,7 @@ def _lv_outliers(vals, p=None):
 def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, widths=.7, alpha=None,
                saturation=.7, join_rm=False, inner_kws=None,
-               ax=None, vert=True, box_w='linear', **kwargs):
+               ax=None, vert=True, box_w='linear', p=None, **kwargs):
 
     """Create a letter-value plot.
 
@@ -541,6 +541,9 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
     vert : boolean, optional
         If true (default), draw vertical plots; otherwise, draw horizontal
         ones.
+    p : float, 0-1
+        The percentage of the data to consider as outliers. The default is to
+        set the number of outliers to 8 and calculate the percentage accordingly.
 
     Returns
     -------
@@ -597,7 +600,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Get the number of data points and calculate "depth" of
         # letter-value plot
-        box_ends, k = _lv_box_ends(a)
+        box_ends, k = _lv_box_ends(a, p)
 
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
@@ -623,7 +626,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
         else:
             boxes = [horz_perc_box(x, b, i, k) for i, b in enumerate(box_ends)]
 
-        # matplotlib colormap Blues is used by default
+        # Construct a color map from the input color
         rgb = [[1, 1, 1], list(color)]
         cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
         collection = PatchCollection(boxes, cmap=cmap)
@@ -637,14 +640,8 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
         # Calculate the outliers and plot
         outliers = _lv_outliers(a)
 
-        if color:
-            ax.scatter(np.repeat(x, len(outliers)), outliers,
-                       marker=r"$\ast$", c=color)
-        else:
-            color = colors[j]
-            ax.scatter(np.repeat(x, len(outliers)), outliers,
-                       marker=r"$\ast$", c=color)
-
+        ax.scatter(np.repeat(x, len(outliers)), outliers,
+                   marker=r"$\ast$", c=color)
 
     # Draw the repeated measure bridges
     if join_rm:
