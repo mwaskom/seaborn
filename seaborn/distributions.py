@@ -467,11 +467,12 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     ax.xaxis.grid(False)
     return ax
 
-def _lv_box_ends(vals):
+def _lv_box_ends(vals, p=None):
     """Get the number of data points and calculate "depth" of
     letter-value plot."""
     n = len(vals)
-    p = 8./n
+    if not p:
+        p = 8./n
     k = int(np.log2(n)) - int(np.log2(n*p)) + 1
     upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
     lower = [100*(0.5**(i+2)) for i in range(k, -1, -1)]
@@ -601,7 +602,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Get the number of data points and calculate "depth" of
         # letter-value plot
-        box_ends, k = _lv_box_ends(a)
+        box_ends, k = _lv_box_ends(a, p)
 
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
@@ -637,6 +638,11 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Plot the boxes
         ax.add_collection(collection)
+
+        # Plot the medians
+        y = np.median(a)
+        w = (widths + .1)
+        ax.plot([x -  w / 2, x + w / 2], [y, y], **inner_kws)
 
         # Calculate the outliers and plot
         outliers = _lv_outliers(a, p)
