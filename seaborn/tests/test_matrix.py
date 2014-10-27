@@ -530,6 +530,12 @@ class TestClustermap(object):
         cm = mat.ClusterGrid(self.df_norm, **self.default_kws)
         pdt.assert_frame_equal(cm.data, self.df_norm)
 
+    def test_corr_df_input(self):
+        df = self.df_norm.corr()
+        cg = mat.ClusterGrid(df, **self.default_kws)
+        cg.plot()
+        npt.assert_equal(cg.data2d.ix[0, 0], 1)
+
     def test_pivot_input(self):
         df_norm = self.df_norm.copy()
         df_norm.index.name = 'numbers'
@@ -650,6 +656,7 @@ class TestClustermap(object):
     def test_savefig(self):
         # Not sure if this is the right way to test....
         cm = mat.ClusterGrid(self.df_norm, **self.default_kws)
+        cm.plot()
         cm.savefig(tempfile.NamedTemporaryFile(), format='png')
 
     def test_plot_dendrograms(self):
@@ -690,3 +697,4 @@ class TestClustermap(object):
 
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
+
