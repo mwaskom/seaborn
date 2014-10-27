@@ -474,6 +474,8 @@ def _lv_box_ends(vals, p=None):
     if not p:
         p = 8./n
     k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+    if k < 1:
+        k = 1
     upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
     lower = [100*(0.5**(i+2)) for i in range(k, -1, -1)]
     percentile_ends = [(i, j) for i, j in zip(lower, upper)]
@@ -486,6 +488,8 @@ def _lv_outliers(vals, p=None):
     if not p:
         p = 8./n
     k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+    if k < 1:
+        k = 1
     perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
     edges = np.percentile(vals, perc_ends)
     lower_out = vals[np.where(vals < edges[0])[0]]
