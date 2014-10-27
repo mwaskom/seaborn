@@ -534,7 +534,8 @@ class TestClustermap(object):
         df = self.df_norm.corr()
         cg = mat.ClusterGrid(df, **self.default_kws)
         cg.plot()
-        npt.assert_equal(cg.data2d.ix[0, 0], 1)
+        diag = cg.data2d.values[np.diag_indices_from(cg.data2d)]
+        npt.assert_array_equal(diag, np.ones(cg.data2d.shape[0]))
 
     def test_pivot_input(self):
         df_norm = self.df_norm.copy()
@@ -697,4 +698,3 @@ class TestClustermap(object):
 
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
-
