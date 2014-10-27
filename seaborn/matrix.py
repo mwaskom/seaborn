@@ -322,10 +322,10 @@ class _DendrogramPlotter(object):
 
         # Dendrogram ends are always at multiples of 5, who knows why
         ticks = 10 * np.arange(self.data.shape[0]) + 5
-        ticklabels = _index_to_ticklabels(self.data.index)
-        ticklabels = [ticklabels[i] for i in self._leaves]
 
         if self.label:
+            ticklabels = _index_to_ticklabels(self.data.index)
+            ticklabels = [ticklabels[i] for i in self._leaves]
             if self.rotate:
                 self.ax.yaxis.set_ticks_position('right')
                 self.xticks = []
@@ -428,8 +428,7 @@ class _DendrogramPlotter(object):
 
     @property
     def reordered_ind(self):
-        """For external use, needs to be reversed to be consistent with heatmap
-        if rows
+        """For external use, more explicit name
         """
         return self._leaves
 

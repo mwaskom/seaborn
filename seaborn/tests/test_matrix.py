@@ -321,6 +321,25 @@ class TestDendrogram(object):
         nt.assert_equal(p.xlabel, 'letters')
         nt.assert_equal(p.ylabel, '')
 
+    def test_df_multindex_input(self):
+
+        df = self.df_norm.copy()
+        index = pd.MultiIndex.from_tuples([("A", 1), ("B", 2),
+                                           ("C", 3), ("D", 4)],
+                                          names=["letter", "number"])
+        index.name = "letter-number"
+        df.index = index
+        kws = self.default_kws
+        kws['label'] = True
+
+        p = mat._DendrogramPlotter(df.T, **kws)
+
+        xticklabels = ["A-1", "B-2", "C-3", "D-4"]
+        xticklabels = [xticklabels[i] for i in p._leaves]
+        npt.assert_array_equal(p.xticklabels, xticklabels)
+        npt.assert_array_equal(p.yticklabels, [])
+        nt.assert_equal(p.xlabel, "letter-number")
+
     def test_axis0_input(self):
         kws = self.default_kws.copy()
         kws['axis'] = 0
@@ -357,7 +376,7 @@ class TestDendrogram(object):
         kws['axis'] = 0
         p = mat._DendrogramPlotter(self.df_norm.T, **kws)
 
-        npt.assert_array_equal(p.reordered_ind, self.x_norm_leaves[::-1])
+        npt.assert_array_equal(p.reordered_ind, self.x_norm_leaves)
 
     def test_custom_linkage(self):
         kws = self.default_kws.copy()
