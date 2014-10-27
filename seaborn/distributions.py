@@ -601,7 +601,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Get the number of data points and calculate "depth" of
         # letter-value plot
-        box_ends, k = _lv_box_ends(a, p)
+        box_ends, k = _lv_box_ends(a)
 
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
@@ -639,7 +639,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
         ax.add_collection(collection)
 
         # Calculate the outliers and plot
-        outliers = _lv_outliers(a)
+        outliers = _lv_outliers(a, p)
 
         ax.scatter(np.repeat(x, len(outliers)), outliers,
                    marker=r"$\ast$", c=color)
