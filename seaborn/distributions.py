@@ -479,10 +479,11 @@ def _lv_box_ends(vals):
     box_ends = [np.percentile(vals, q) for q in percentile_ends]
     return box_ends, k
 
-def _lv_outliers(vals):
+def _lv_outliers(vals, p=None):
     """Find the outliers based on the letter value depth."""
     n = len(vals)
-    p = 8./n
+    if not p:
+        p = 8./n
     k = int(np.log2(n)) - int(np.log2(n*p)) + 1
     perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
     edges = np.percentile(vals, perc_ends)
@@ -490,10 +491,10 @@ def _lv_outliers(vals):
     upper_out = vals[np.where(vals > edges[1])[0]]
     return np.concatenate((lower_out, upper_out))
 
-def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, order=None, widths=.8, alpha=None,
+def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
+               names=None, order=None, widths=.7, alpha=None,
                saturation=.7, join_rm=False, inner_kws=None,
-               ax=None, vert=True, **kwargs):
+               ax=None, vert=True, box_w='linear', **kwargs):
 
     """Create a letter-value plot.
 
@@ -504,16 +505,17 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         each column mapping to a box. Lists of data are assumed to have one
         element per box.  Can also provide one long Series in conjunction with
         a grouping element as the `groupy` parameter to reshape the data into
-        several violins. Otherwise 1D data will produce a single violins.
+        several letter value plots. Otherwise 1D data will produce a single
+        LV-plots.
     groupby : grouping object
         If `vals` is a Series, this is used to group into boxes by calling
         pd.groupby(vals, groupby).
     inner : {'box' | 'stick' | 'points'}
-        Plot quartiles or individual sample values inside violin.
+        Plot quartiles or individual sample values inside LV-boxes.
     color : a valid matplotlib color map or equivalent
-        Inner violin colors
+        Inner box colors
     positions : number or sequence of numbers
-        Position of first violin or positions of each violin.
+        Position of first violin or positions of each LV-box.
     names : list of strings, optional
         Names to plot on x axis; otherwise plots numbers. This will override
         names inferred from Pandas inputs.
@@ -522,9 +524,9 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         order of the plot by providing the violin names in your preferred
         order.
     widths : float
-        Width of each violin at maximum density.
+        Width of each LV-box at maximum density.
     alpha : float, optional
-        Transparancy of violin fill.
+        Transparancy of LV-box fill.
     saturation : float, 0-1
         Saturation relative to the fully-saturated color. Large patches tend
         to look better at lower saturations, so this dims the palette colors
@@ -562,7 +564,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         inner_kws = {}
     inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
     inner_kws["alpha"] *= 1 if alpha is None else alpha
-    #inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("color", gray)
     inner_kws.setdefault("marker", "." if inner == "points" else "")
     lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
     inner_kws.setdefault("linewidth", lw)
@@ -583,6 +585,7 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
     for j, a in enumerate(vals):
 
         x = positions[j]
+        color = colors[j]
 
         if len(a) == 1:
             y = a[0]
@@ -596,7 +599,11 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         # letter-value plot
         box_ends, k = _lv_box_ends(a)
 
-        width = lambda h, i, k: (1 - 2**(-k+i-1)) / h
+        # Dictionary of functions for computing the width of the boxes
+        width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
+                           'exponential' : lambda h, i, k: 2**(-k+i-1)}
+
+        width = width_functions[box_w]
         height = lambda b: b[1] - b[0]
 
         def vert_perc_box(x, b, i, k):
@@ -617,18 +624,9 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
             boxes = [horz_perc_box(x, b, i, k) for i, b in enumerate(box_ends)]
 
         # matplotlib colormap Blues is used by default
-        if color:
-            color = colors[j]
-            rgb = [[1, 1, 1], list(color)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            collection = PatchCollection(boxes, cmap=cmap)
-        else:
-            try:
-                collection = PatchCollection(boxes, cmap='Blues')
-            except ValueError:
-                msg = ("Ignoring color choice,"
-                       "See matplotlib listing for valid colormap choices")
-                warnings.warn(msg, UserWarning)
+        rgb = [[1, 1, 1], list(color)]
+        cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+        collection = PatchCollection(boxes, cmap=cmap)
 
         # Set the color gradation
         collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
@@ -640,10 +638,12 @@ def lv_plot(vals, groupby=None, inner="box", color=None, positions=None,
         outliers = _lv_outliers(a)
 
         if color:
-            ax.scatter(np.repeat(x, len(outliers)), outliers, marker="*", c=color)
+            ax.scatter(np.repeat(x, len(outliers)), outliers,
+                       marker=r"$\ast$", c=color)
         else:
             color = colors[j]
-            ax.scatter(np.repeat(x, len(outliers)), outliers, marker="*", c=color)
+            ax.scatter(np.repeat(x, len(outliers)), outliers,
+                       marker=r"$\ast$", c=color)
 
 
     # Draw the repeated measure bridges
