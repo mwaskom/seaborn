@@ -496,7 +496,8 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
                saturation=.7, join_rm=False, inner_kws=None,
                ax=None, vert=True, box_w='linear', p=None, **kwargs):
 
-    """Create a letter-value plot.
+    """Create a letter-value plot. See the Hadley Wickham paper for a thorough
+    explanation: http://vita.had.co.nz/papers/letter-value-plot.html
 
     Parameters
     ----------
