@@ -610,27 +610,42 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
-                           'exponential' : lambda h, i, k: 2**(-k+i-1)}
+                           'exponential' : lambda h, i, k: 2**(-k+i-1),
+                           'area' : lambda h, i, k: (1 - 2**(-k+i-2)) / h}
 
         width = width_functions[box_w]
         height = lambda b: b[1] - b[0]
 
-        def vert_perc_box(x, b, i, k):
-            rect = Patches.Rectangle((x - widths*width(height(b), i, k) / 2, b[0]),
-                                       widths*width(height(b), i, k),
+        def vert_perc_box(x, b, i, k, w):
+            rect = Patches.Rectangle((x - widths*w / 2, b[0]),
+                                       widths*w,
                                        height(b), fill=True)
             return rect
 
-        def horz_perc_box(x, b, i, k):
-            rect = Patches.Rectangle((b[0], x - widths*width(height(b), i, k) / 2),
-                                       height(b), widths*width(height(b), i, k),
+        def horz_perc_box(x, b, i, k, w):
+            rect = Patches.Rectangle((b[0], x - widths*w / 2),
+                                       height(b), widths*w,
                                        fill=True)
             return rect
 
         if vert:
-            boxes = [vert_perc_box(x, b, i, k) for i, b in enumerate(box_ends)]
+            if box_w is 'area':
+                w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
+                w_area = w_area / np.max(w_area)
+                boxes = [vert_perc_box(x, b[0], i, k, b[1])
+                                                for i, b in enumerate(zip(box_ends, w_area))]
+            else:
+                boxes = [vert_perc_box(x, b, i, k, width(height(b), i, k))
+                                                for i, b in enumerate(box_ends)]
         else:
-            boxes = [horz_perc_box(x, b, i, k) for i, b in enumerate(box_ends)]
+            if box_w is 'area':
+                w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
+                w_area = w_area / np.max(w_area)
+                boxes = [horz_perc_box(x, b[0], i, k, b[1])
+                                                for i, b in enumerate(zip(box_ends, w_area))]
+            else:
+                boxes = [horz_perc_box(x, b, i, k, width(height(b), i, k))
+                                                for i, b in enumerate(box_ends)]
 
         # Construct a color map from the input color
         rgb = [[1, 1, 1], list(color)]
