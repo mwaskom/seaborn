@@ -13,18 +13,10 @@ corrmat = df.corr()
 f, ax = plt.subplots(figsize=(12, 9))
 sns.heatmap(corrmat, vmax=.8, linewidths=0, square=True)
 
-
-networks = corrmat.columns.get_level_values("network").astype(int).values
-
-start, end = ax.get_ylim()
-rect_kws = dict(facecolor="none", edgecolor=".2",
-                linewidth=1.5, capstyle="projecting")
-
-for n in range(1, 18):
-    n_nodes = (networks == n).sum()
-    rect = plt.Rectangle((start, end), n_nodes, -n_nodes, **rect_kws)                         
-    start += n_nodes
-    end -= n_nodes
-    ax.add_artist(rect)
+networks = corrmat.columns.get_level_values("network")
+for i, network in enumerate(networks):
+    if i and network != networks[i - 1]:
+        ax.axhline(len(networks) - i, c="w")
+        ax.axvline(i, c="w")
 
 f.tight_layout()
