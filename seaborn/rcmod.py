@@ -197,7 +197,7 @@ def axes_style(style=None, rc=None):
             "ytick.color": dark_gray,
             "axes.axisbelow": True,
             "image.cmap": "Greys",
-            "font.family": "sans-serif",
+            "font.family": ["sans-serif"],
             "font.sans-serif": ["Arial", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
