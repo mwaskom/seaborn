@@ -426,13 +426,25 @@ class TestDendrogram(object):
         npt.assert_array_equal(scipy_linkage, linkage)
 
     @skipif(_no_fastcluster)
-    def test_fastcluster_indexerror_except(self):
+    def test_fastcluster_other_method(self):
         import fastcluster
 
         kws = self.default_kws.copy()
         kws['method'] = 'average'
         linkage = fastcluster.linkage(self.x_norm.T, method='average',
                                       metric='euclidean')
+        p = mat._DendrogramPlotter(self.x_norm, **kws)
+        npt.assert_array_equal(p.linkage, linkage)
+
+    @skipif(_no_fastcluster)
+    def test_fastcluster_non_euclidean(self):
+        import fastcluster
+
+        kws = self.default_kws.copy()
+        kws['metric'] = 'cosine'
+        kws['method'] = 'average'
+        linkage = fastcluster.linkage(self.x_norm.T, method=kws['method'],
+                                      metric=kws['metric'])
         p = mat._DendrogramPlotter(self.x_norm, **kws)
         npt.assert_array_equal(p.linkage, linkage)
 

@@ -361,18 +361,27 @@ class _DendrogramPlotter(object):
 
         pairwise_dists = distance.squareform(
             distance.pdist(self.array, metric=self.metric))
-        return hierarchy.linkage(pairwise_dists, method=self.method)
+        linkage = hierarchy.linkage(pairwise_dists, method=self.method)
+        del pairwise_dists
+        return linkage
 
     def _calculate_linkage_fastcluster(self):
-        try:
-            import fastcluster
-            # Memory-saving version, but only certain linkage methods
+        import fastcluster
+        # Fastcluster has a memory-saving vectorized version, but only
+        # with certain linkage methods, and mostly with euclidean metric
+        vector_methods = ('single', 'centroid', 'median', 'ward')
+        euclidean_methods = ('centroid', 'median', 'ward')
+        euclidean = self.metric == 'euclidean' and self.method in \
+            euclidean_methods
+        if euclidean or self.method == 'single':
             return fastcluster.linkage_vector(self.array,
                                               method=self.method,
                                               metric=self.metric)
-        except IndexError:
-            return fastcluster.linkage(self.array, method=self.method,
-                                       metric=self.metric)
+        else:
+            pairwise_dists = distance.pdist(self.array, metric=self.metric)
+            linkage = fastcluster.linkage(pairwise_dists, method=self.method)
+            del pairwise_dists
+            return linkage
 
     @property
     def calculated_linkage(self):
@@ -487,10 +496,9 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
         Rectangular data
     linkage : numpy.array, optional
         Linkage matrix
-    use_fastcluster : bool, default False
-        Whether or not to use the "fastcluster" package to calculate linkage
     axis : int, optional
         Which axis to use to calculate linkage. 0 is rows, 1 is columns.
+        (default 1)
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis
     label : bool, optional
@@ -507,6 +515,12 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     Returns
     -------
     dendrogramplotter : _DendrogramPlotter
+        A Dendrogram plotter object.
+
+    Notes
+    -----
+    Access the reordered dendrogram indices with
+    dendrogramplotter.reordered_ind
     """
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
@@ -528,8 +542,6 @@ class ClusterGrid(Grid):
                                        standard_scale)
 
         if figsize is None:
-            # width = min(self.data2d.shape[1] * 0.5, 40)
-            # height = min(self.data2d.shape[0] * 0.5, 40)
             width, height = 10, 10
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
@@ -825,29 +837,28 @@ class ClusterGrid(Grid):
 
 def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
                z_score=None, standard_scale=None, figsize=None,
-               colorbar_kws=None,
+               cbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None, **kwargs):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
-    This is liberally borrowed (with permission) from http://bit.ly/1eWcYWc
-    Many thanks to Christopher DeBoever and Mike Lovci for providing
-    heatmap/gridspec/colorbar positioning guidance.
-
     Parameters
     ----------
     data: pandas.DataFrame
         Rectangular data for clustering. Cannot contain NAs.
-    metric : str, optional
-        Distance metric to use for the data. Default is "euclidean." See
-        scipy.spatial.distance.pdist documentation for more options
-        http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+    pivot_kws : dict, optional
+        If `data` is a tidy dataframe, can provide keyword arguments for
+        pivot to create a rectangular dataframe.
     method : str, optional
         Linkage method to use for calculating clusters.
         See scipy.cluster.hierarchy.linkage documentation for more information:
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
         Default "average"
+    metric : str, optional
+        Distance metric to use for the data. Default is "euclidean." See
+        scipy.spatial.distance.pdist documentation for more options
+        http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
     z_score : int or None, optional
         Either 0 (rows) or 1 (columns). Whether or not to calculate z-scores
         for the rows or the columns. Z scores are: z = (x - mean)/std, so
@@ -855,25 +866,14 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
         subtracted, then divided by the standard deviation of the row (column).
         This ensures that each row (column) has mean of 0 and variance of 1.
     standard_scale : int or None, optional
-        Either 0 (rows) or 1 (columns). Whether or not to "standardize" that
-        dimension, meaning to divide each row (column) by its minimum and
-        maximum.
+        Either 0 (rows) or 1 (columns). Whether or not to standardize that
+        dimension, meaning for each row or column, subtract the minimum and
+        divide each by its maximum.
+    cbar_kws : dict, optional
+        Keyword arguments to pass to ``cbar_kws`` in ``heatmap``, e.g. to
+        add a label to the colorbar.
     figsize: tuple of two ints, optional
-        Size of the figure to create. Default is a function of the dataframe
-        size.
-    heatmap_kws : dict, optional
-        Keyword arguments to pass to the heatmap pcolormesh plotter. E.g.
-        vmin, vmax, cmap, norm. If these are none, they are auto-detected
-        from your data. If the data is divergent, i.e. has values both
-        above and below zero, then the colormap is blue-red with blue
-        as negative values and red as positive. If the data is not
-        divergent, then the colormap is YlGnBu.
-        Default:
-        dict(vmin=None, vmax=None, edgecolor='white', linewidth=0, cmap=None,
-        norm=None)
-    colorbar_kws : dict, optional
-        Keyword arguments for the colorbar. The ticklabel fontsize is
-        extracted from this dict, then removed.
+        Size of the figure to create. (default (10, 10))
     {row,col}_cluster : bool, optional
         If True, cluster the {rows, columns}. Default True.
     {row,col}_linkage : numpy.array, optional
@@ -881,33 +881,41 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
         scipy.cluster.hierarchy.linkage for specific formats.
     {row,col}_colors : list-like, optional
         List of colors to label for either the rows or columns. Useful to
-        evaluate whether samples within a group are clustered together.
+        evaluate whether samples within a group are clustered together. Can
+        use nested lists for multiple color levels of labeling.
     mask : boolean numpy.array, optional
         A boolean array indicating where to mask the data so it is not
         plotted on the heatmap. Only used for visualizing, not for calculating.
+    kwargs : other keyword arguments
+        All other keyword arguments are passed to ``sns.heatmap``
 
     Returns
     -------
-    dendrogramgrid : ClusterGrid
+    clustergrid : ClusterGrid
         A ClusterGrid instance. Use this directly if you need more power
+
+    See Also
+    --------
+    ClusterGrid : The Grid class used for drawing this plot. Use this
+                  directly if you need more flexibility.
 
     Notes
     ----
-    The returned object has a `savefig` method that should be used if you want
-    to save the figure object without clipping the dendrograms
+    The returned object has a ``savefig`` method that should be used if you
+    want to save the figure object without clipping the dendrograms.
 
     To access the reordered row indices, use:
-    dg.dendrogram_row.reordered_ind
+    ``dg.dendrogram_row.reordered_ind``
 
     Column indices, use:
-    dg.dendrogram_col.reordered_ind
+    ``dg.dendrogram_col.reordered_ind``
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale)
 
     return plotter.plot(metric=metric, method=method,
-                        colorbar_kws=colorbar_kws,
+                        colorbar_kws=cbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
                         mask=mask,
