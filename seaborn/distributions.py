@@ -467,13 +467,18 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
     ax.xaxis.grid(False)
     return ax
 
-def _lv_box_ends(vals, p=None):
+def _lv_box_ends(vals, k_depth='proportion', p=None):
     """Get the number of data points and calculate "depth" of
     letter-value plot."""
     n = len(vals)
     if not p:
-        p = 8./n
-    k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+            p = 8./n
+    if k_depth == 'proportion':
+        k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+    elif k_depth == 'tukey':
+        k = int(np.log2(n)) - 3
+    elif k_depth == 'trustworthy':
+        k = int(np.log2(n) - np.log2(2*stats.norm.ppf((1-p))**2)) + 1
     if k < 1:
         k = 1
     upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
@@ -482,14 +487,8 @@ def _lv_box_ends(vals, p=None):
     box_ends = [np.percentile(vals, q) for q in percentile_ends]
     return box_ends, k
 
-def _lv_outliers(vals, p=None):
+def _lv_outliers(vals, k):
     """Find the outliers based on the letter value depth."""
-    n = len(vals)
-    if not p:
-        p = 8./n
-    k = int(np.log2(n)) - int(np.log2(n*p)) + 1
-    if k < 1:
-        k = 1
     perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
     edges = np.percentile(vals, perc_ends)
     lower_out = vals[np.where(vals < edges[0])[0]]
@@ -499,7 +498,8 @@ def _lv_outliers(vals, p=None):
 def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
                names=None, order=None, widths=.7, alpha=None,
                saturation=.7, join_rm=False, inner_kws=None,
-               ax=None, vert=True, box_w='linear', p=None, **kwargs):
+               ax=None, vert=True, box_w='linear', p=None, k_depth='proportion',
+               **kwargs):
 
     """Create a letter-value plot. See the Hadley Wickham paper for a thorough
     explanation: http://vita.had.co.nz/papers/letter-value-plot.html
@@ -547,9 +547,18 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
     vert : boolean, optional
         If true (default), draw vertical plots; otherwise, draw horizontal
         ones.
+    box_w : {'linear' | 'area' | 'exponential'}
+        Method for calculating width (not the quantile distance) of the quantile
+        boxes. Linear reduces the boxes by a constant factor for each level,
+        area modifes the width based on the proportion of data covered, and
+        exponential makes the width proportional to the proportion of data
+        excluded.
     p : float, 0-1
         The percentage of the data to consider as outliers. The default is to
         set the number of outliers to 8 and calculate the percentage accordingly.
+    k_depth : {'proportion' | 'tukey' | 'trustworthy'}
+        The depth of the letter value plot. Corresponds to the number of
+        percentile boxes drawn.
 
     Returns
     -------
@@ -606,7 +615,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Get the number of data points and calculate "depth" of
         # letter-value plot
-        box_ends, k = _lv_box_ends(a, p)
+        box_ends, k = _lv_box_ends(a, k_depth, p)
 
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
@@ -664,7 +673,7 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
         ax.plot([x -  w / 2, x + w / 2], [y, y], **inner_kws)
 
         # Calculate the outliers and plot
-        outliers = _lv_outliers(a, p)
+        outliers = _lv_outliers(a, k)
 
         ax.scatter(np.repeat(x, len(outliers)), outliers,
                    marker=r"$\ast$", c=color)
