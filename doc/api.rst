@@ -42,6 +42,7 @@ Matrix plots
    :toctree: generated/
 
     heatmap
+    clustermap
 
 Timeseries plots
 ----------------
