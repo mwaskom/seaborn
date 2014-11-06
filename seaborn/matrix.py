@@ -442,6 +442,7 @@ class _DendrogramPlotter(object):
             plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
+        return self
 
 
 def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',

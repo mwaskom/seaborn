@@ -335,7 +335,7 @@ class TestDendrogram(object):
         p = mat._DendrogramPlotter(df.T, **kws)
 
         xticklabels = ["A-1", "B-2", "C-3", "D-4"]
-        xticklabels = [xticklabels[i] for i in p._leaves]
+        xticklabels = [xticklabels[i] for i in p.reordered_ind]
         npt.assert_array_equal(p.xticklabels, xticklabels)
         npt.assert_array_equal(p.yticklabels, [])
         nt.assert_equal(p.xlabel, "letter-number")
@@ -451,13 +451,14 @@ class TestDendrogram(object):
     def test_dendrogram_plot(self):
         d = mat.dendrogram(self.x_norm, **self.default_kws)
 
-        d.xmin, d.xmax = d.ax.get_xlim()
+        ax = plt.gca()
+        d.xmin, d.xmax = ax.get_xlim()
         xmax = min(map(min, d.X)) + max(map(max, d.X))
         nt.assert_equal(d.xmin, 0)
         nt.assert_equal(d.xmax, xmax)
 
-        nt.assert_equal(len(d.ax.get_lines()), len(d.X))
-        nt.assert_equal(len(d.ax.get_lines()), len(d.Y))
+        nt.assert_equal(len(ax.get_lines()), len(d.X))
+        nt.assert_equal(len(ax.get_lines()), len(d.Y))
         plt.close('all')
 
     def test_dendrogram_rotate(self):
@@ -466,7 +467,8 @@ class TestDendrogram(object):
 
         d = mat.dendrogram(self.x_norm, **kws)
 
-        d.ymin, d.ymax = d.ax.get_ylim()
+        ax = plt.gca()
+        d.ymin, d.ymax = ax.get_ylim()
         ymax = min(map(min, d.Y)) + max(map(max, d.Y))
         nt.assert_equal(d.ymin, 0)
         nt.assert_equal(d.ymax, ymax)
