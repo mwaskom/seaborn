@@ -738,13 +738,20 @@ class ClusterGrid(Grid):
         despine(ax=self.ax_row_dendrogram, bottom=True, left=True)
         despine(ax=self.ax_col_dendrogram, bottom=True, left=True)
 
-    def plot_colors(self):
-        """Plots color labels between the dendrogram and the heatmap."""
+    def plot_colors(self, **kws):
+        """Plots color labels between the dendrogram and the heatmap
+
+        Parameters
+        ----------
+        heatmap_kws : dict
+            Keyword arguments heatmap
+        """
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, self.dendrogram_row.reordered_ind, axis=0)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
-                    xticklabels=False, yticklabels=False)
+                    xticklabels=False, yticklabels=False,
+                    **kws)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
@@ -752,7 +759,8 @@ class ClusterGrid(Grid):
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, self.dendrogram_col.reordered_ind, axis=1)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
-                    xticklabels=False, yticklabels=False)
+                    xticklabels=False, yticklabels=False,
+                    **kws)
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
@@ -782,7 +790,7 @@ class ClusterGrid(Grid):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
-        self.plot_colors()
+        self.plot_colors(**kws)
         self.plot_matrix(colorbar_kws, mask, **kws)
         return self
 
