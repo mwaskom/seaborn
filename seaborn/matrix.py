@@ -744,6 +744,9 @@ class ClusterGrid(Grid):
         heatmap_kws : dict
             Keyword arguments heatmap
         """
+        # Remove any custom colormap
+        kws = kws.copy()
+        kws.pop('cmap', None)
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, self.dendrogram_row.reordered_ind, axis=0)
