@@ -275,8 +275,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 
 
 class _DendrogramPlotter(object):
-    """Plotting object for drawing a tree-diagram of the relationships between
-    columns of data"""
+    """Object for drawing tree of similarities between data rows/columns"""
 
     def __init__(self, data, linkage=None, metric='euclidean',
                  method='median', axis=1,
@@ -781,6 +780,7 @@ class ClusterGrid(Grid):
 
     def plot_colors(self, **kws):
         """Plots color labels between the dendrogram and the heatmap
+
         Parameters
         ----------
         heatmap_kws : dict
