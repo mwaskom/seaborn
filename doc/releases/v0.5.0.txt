@@ -18,7 +18,7 @@ Plotting functions
 Color palettes
 ~~~~~~~~~~~~~~
 
-- Added two new functions to create custom color palettes. For sequential palettes, you can use the :func:`light_palette` function, which takes a seed color and creates a ramp from a very light, desaturated variant of it. For diverging palettes, you can use the :func:`diverging_palette` function to create a balanced ramp between two endpoints to a light or dark midpoint. See the :ref:`palette tutorial <palette_tutorials>` for more information.
+- Added two new functions to create custom color palettes. For sequential palettes, you can use the :func:`light_palette` function, which takes a seed color and creates a ramp from a very light, desaturated variant of it. For diverging palettes, you can use the :func:`diverging_palette` function to create a balanced ramp between two endpoints to a light or dark midpoint. See the :ref:`palette tutorial <palette_tutorial>` for more information.
 
 - Added the ability to specify the seed color for :func:`light_palette` and :func:`dark_palette` as a tuple of ``husl`` or ``hls`` space values or as a named ``xkcd`` color. The interpretation of the seed color is now provided by the new ``input`` parameter to these functions.
 
@@ -39,4 +39,4 @@ Bug fixes
 
 - :func:`kdeplot` now accepts pandas Series for the ``data`` and ``data2`` arguments.
 
-- Using a non-default correlation method in :func:`corrplot` now implies ``sig_stars=False` as the permutation test used to significance values for the correlations uses a pearson metric.
+- Using a non-default correlation method in :func:`corrplot` now implies ``sig_stars=False`` as the permutation test used to significance values for the correlations uses a pearson metric.
