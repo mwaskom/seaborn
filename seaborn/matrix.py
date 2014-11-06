@@ -862,12 +862,7 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     Returns
     -------
     clustergrid : ClusterGrid
-        A ClusterGrid instance. Use this directly if you need more power
-
-    See Also
-    --------
-    ClusterGrid : The Grid class used for drawing this plot. Use this
-                  directly if you need more flexibility.
+        A ClusterGrid instance.
 
     Notes
     ----
