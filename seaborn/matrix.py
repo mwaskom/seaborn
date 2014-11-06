@@ -392,8 +392,8 @@ class _DendrogramPlotter(object):
         -------
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
-            .dendrogram. The important key-value pairing is "reordered_ind" which
-            tells the ordering of the matrix
+            .dendrogram. The important key-value pairing is
+            "reordered_ind" which indicates the re-ordering of the matrix
         """
         return hierarchy.dendrogram(self.linkage, no_plot=True,
                                     color_list=['k'], color_threshold=-np.inf)
@@ -431,8 +431,7 @@ class _DendrogramPlotter(object):
         despine(ax=ax, bottom=True, left=True)
 
         ax.set(xticks=self.xticks, yticks=self.yticks,
-                    axis_bgcolor='white', xlabel=self.xlabel,
-                    ylabel=self.ylabel)
+               axis_bgcolor='white', xlabel=self.xlabel, ylabel=self.ylabel)
         xtl = ax.set_xticklabels(self.xticklabels)
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
