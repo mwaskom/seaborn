@@ -309,10 +309,6 @@ class _DendrogramPlotter(object):
         self.label = label
         self.rotate = rotate
 
-        if ax is None:
-            ax = plt.gca()
-        self.ax = ax
-
         if linkage is None:
             self.linkage = self.calculated_linkage
         else:
@@ -395,29 +391,6 @@ class _DendrogramPlotter(object):
         Made a separate function, not a property because don't want to
         recalculate the dendrogram every time it is accessed.
 
-        Parameters
-        ----------
-        kws : dict
-            Keyword arguments for column or row plotting passed to clusterplot
-        linkage : numpy.array
-            Linkage matrix, usually created by scipy.cluster.hierarchy.linkage
-        orientation : str
-            (docstring stolen from scipy.cluster.hierarchy.linkage)
-            The direction to plot the dendrogram, which can be any
-            of the following strings:
-
-            'top' plots the root at the top, and plot descendent
-              links going downwards. (default).
-
-            'bottom'- plots the root at the bottom, and plot descendent
-              links going upwards.
-
-            'left'- plots the root at the left, and plot descendent
-              links going right.
-
-            'right'- plots the root at the right, and plot descendent
-              links going left.
-
         Returns
         -------
         dendrogram : dict
@@ -440,7 +413,7 @@ class _DendrogramPlotter(object):
         """
         return self._leaves
 
-    def plot(self):
+    def plot(self, ax=None):
         """Plots a dendrogram on the figure at the gridspec location using
         the linkage matrix
 
@@ -453,26 +426,28 @@ class _DendrogramPlotter(object):
         ax : matplotlib.axes.Axes
             Axes object upon which the dendrogram is plotted
         """
+        if ax is None:
+            ax = plt.gca()
 
         for x, y in zip(self.X, self.Y):
-            self.ax.plot(x, y, color='k', linewidth=.5)
+            ax.plot(x, y, color='k', linewidth=.5)
 
         if self.rotate and self.axis == 0:
-            self.ax.invert_xaxis()
+            ax.invert_xaxis()
             ymax = min(map(min, self.Y)) + max(map(max, self.Y))
-            self.ax.set_ylim(0, ymax)
-            self.ax.invert_yaxis()
+            ax.set_ylim(0, ymax)
+            ax.invert_yaxis()
         else:
             xmax = min(map(min, self.X)) + max(map(max, self.X))
-            self.ax.set_xlim(0, xmax)
+            ax.set_xlim(0, xmax)
 
-        despine(ax=self.ax, bottom=True, left=True)
+        despine(ax=ax, bottom=True, left=True)
 
-        self.ax.set(xticks=self.xticks, yticks=self.yticks,
+        ax.set(xticks=self.xticks, yticks=self.yticks,
                     axis_bgcolor='white', xlabel=self.xlabel,
                     ylabel=self.ylabel)
-        xtl = self.ax.set_xticklabels(self.xticklabels)
-        ytl = self.ax.set_yticklabels(self.yticklabels, rotation='vertical')
+        xtl = ax.set_xticklabels(self.xticklabels)
+        ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
         plt.draw()
@@ -481,12 +456,9 @@ class _DendrogramPlotter(object):
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
 
-        return self
 
-
-def dendrogram(data, linkage=None, axis=1, ax=None,
-               label=True, metric='euclidean', method='median',
-               rotate=False):
+def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
+               method='median', rotate=False, ax=None):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -498,8 +470,6 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     axis : int, optional
         Which axis to use to calculate linkage. 0 is rows, 1 is columns.
         (default 1)
-    ax : matplotlib axis, optional
-        Axis to plot on, otherwise uses current axis
     label : bool, optional
         If True, label the dendrogram at leaves with column or row names
     metric : str, optional
@@ -510,6 +480,8 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     rotate : bool, optional
         When plotting the matrix, whether to rotate it 90 degrees
         counter-clockwise, so the leaves face right
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise uses current axis
 
     Returns
     -------
@@ -523,9 +495,9 @@ def dendrogram(data, linkage=None, axis=1, ax=None,
     """
 
     plotter = _DendrogramPlotter(data, linkage=linkage,
-                                 axis=axis, ax=ax, metric=metric,
+                                 axis=axis, metric=metric,
                                  method=method, label=label, rotate=rotate)
-    return plotter.plot()
+    return plotter.plot(ax=ax)
 
 
 class ClusterGrid(Grid):
