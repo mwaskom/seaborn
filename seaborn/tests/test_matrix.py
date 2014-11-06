@@ -582,7 +582,20 @@ class TestClustermap(object):
         npt.assert_array_equal(cm.col_colors, self.col_colors)
 
         nt.assert_equal(len(cm.fig.axes), 6)
+        plt.close('all')
 
+    def test_colors_input_custom_cmap(self):
+        kws = self.default_kws.copy()
+
+        kws['cmap'] = mpl.cm.PRGn
+        kws['row_colors'] = self.row_colors
+        kws['col_colors'] = self.col_colors
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        npt.assert_array_equal(cm.row_colors, self.row_colors)
+        npt.assert_array_equal(cm.col_colors, self.col_colors)
+
+        nt.assert_equal(len(cm.fig.axes), 6)
         plt.close('all')
 
     def test_z_score(self):
