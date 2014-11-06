@@ -286,10 +286,8 @@ class _DendrogramPlotter(object):
         ----------
         data : pandas.DataFrame
             Rectangular data
-
         """
         self.axis = axis
-
         if self.axis == 1:
             data = data.T
 
@@ -320,9 +318,8 @@ class _DendrogramPlotter(object):
 
         if self.label:
             ticklabels = _index_to_ticklabels(self.data.index)
-            ticklabels = [ticklabels[i] for i in self._leaves]
+            ticklabels = [ticklabels[i] for i in self.reordered_ind]
             if self.rotate:
-                self.ax.yaxis.set_ticks_position('right')
                 self.xticks = []
                 self.yticks = ticks
                 self.xticklabels = []
@@ -395,31 +392,19 @@ class _DendrogramPlotter(object):
         -------
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
-            .dendrogram. The important key-value pairing is "_leaves" which
+            .dendrogram. The important key-value pairing is "reordered_ind" which
             tells the ordering of the matrix
         """
         return hierarchy.dendrogram(self.linkage, no_plot=True,
                                     color_list=['k'], color_threshold=-np.inf)
 
     @property
-    def _leaves(self):
-        """For use only within-class and doesn't need to be reversed
-        """
+    def reordered_ind(self):
+        """Indices of the matrix, reordered by the dendrogram"""
         return self.dendrogram['leaves']
 
-    @property
-    def reordered_ind(self):
-        """For external use, more explicit name
-        """
-        return self._leaves
-
     def plot(self, ax=None):
-        """Plots a dendrogram on the figure at the gridspec location using
-        the linkage matrix
-
-        Both the computation and plotting must be in this same function because
-        scipy.cluster.hierarchy.dendrogram does ax = plt.gca() and cannot be
-        specified its own ax object.
+        """Plots a dendrogram of the similarities between data on the axes
 
         Parameters
         ----------
@@ -434,6 +419,8 @@ class _DendrogramPlotter(object):
 
         if self.rotate and self.axis == 0:
             ax.invert_xaxis()
+            ax.yaxis.set_ticks_position('right')
+
             ymax = min(map(min, self.Y)) + max(map(max, self.Y))
             ax.set_ylim(0, ymax)
             ax.invert_yaxis()
