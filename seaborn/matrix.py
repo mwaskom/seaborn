@@ -431,7 +431,7 @@ class _DendrogramPlotter(object):
         despine(ax=ax, bottom=True, left=True)
 
         ax.set(xticks=self.xticks, yticks=self.yticks,
-               axis_bgcolor='white', xlabel=self.xlabel, ylabel=self.ylabel)
+               xlabel=self.xlabel, ylabel=self.ylabel)
         xtl = ax.set_xticklabels(self.xticklabels)
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
@@ -520,8 +520,10 @@ class ClusterGrid(Grid):
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
-        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2])
-        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1])
+        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2],
+                                                      axisbg="white")
+        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1],
+                                                      axisbg="white")
 
         self.ax_row_colors = None
         self.ax_col_colors = None
