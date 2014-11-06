@@ -503,7 +503,13 @@ class ClusterGrid(Grid):
             width, height = 10, 10
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
+
+        to_rgb = mpl.colors.colorConverter.to_rgb
+        if row_colors is not None:
+            row_colors = list(map(to_rgb, row_colors))
         self.row_colors = row_colors
+        if col_colors is not None:
+            col_colors = list(map(to_rgb, col_colors))
         self.col_colors = col_colors
 
         width_ratios = self.dim_ratios(self.row_colors,
