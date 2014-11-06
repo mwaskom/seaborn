@@ -7,7 +7,7 @@ Plotting functions
 
 - Added the :func:`heatmap` function for visualizing a matrix of data by color-encoding the values. See the :ref:`docs <heatmap>` for more information.
 
-- Added the :func:`clustermap` function for clustering and visualizing a matrix of data, with options to label individual rows and columns by colors.
+- Added the :func:`clustermap` function for clustering and visualizing a matrix of data, with options to label individual rows and columns by colors. See the :ref:`docs <clustermap>` for more information. This work was lead by Olga Botvinnik.
 
 - :func:`lmplot` and :func:`pairplot` get a new keyword argument, ``markers``. This can be a single kind of marker or a list of different markers for each level of the ``hue`` variable. Using different markers for different hues should let plots be more comprehensible when reproduced to black-and-white (i.e. when printed). See the `github pull request <https://github.com/mwaskom/seaborn/pull/323>`_ for examples.
 
