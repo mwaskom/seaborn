@@ -469,7 +469,6 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
         Linkage matrix
     axis : int, optional
         Which axis to use to calculate linkage. 0 is rows, 1 is columns.
-        (default 1)
     label : bool, optional
         If True, label the dendrogram at leaves with column or row names
     metric : str, optional
@@ -585,7 +584,7 @@ class ClusterGrid(Grid):
             Data to normalize
         axis : int
             Which axis to normalize across. If 0, normalize across rows, if 1,
-            normalize across columns. Default 1 (across columns)
+            normalize across columns.
 
         Returns
         -------
@@ -615,7 +614,7 @@ class ClusterGrid(Grid):
             Data to normalize
         axis : int
             Which axis to normalize across. If 0, normalize across rows, if 1,
-            normalize across columns. Default 1 (across columns)
+            normalize across columns.
         vmin : int
             If 0, then subtract the minimum of the data before dividing by
             the range.
@@ -826,9 +825,8 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
         Linkage method to use for calculating clusters.
         See scipy.cluster.hierarchy.linkage documentation for more information:
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
-        Default "average"
     metric : str, optional
-        Distance metric to use for the data. Default is "euclidean." See
+        Distance metric to use for the data. See
         scipy.spatial.distance.pdist documentation for more options
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
     z_score : int or None, optional
@@ -841,13 +839,13 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
         Either 0 (rows) or 1 (columns). Whether or not to standardize that
         dimension, meaning for each row or column, subtract the minimum and
         divide each by its maximum.
+    figsize: tuple of two ints, optional
+        Size of the figure to create.
     cbar_kws : dict, optional
         Keyword arguments to pass to ``cbar_kws`` in ``heatmap``, e.g. to
         add a label to the colorbar.
-    figsize: tuple of two ints, optional
-        Size of the figure to create. (default (10, 10))
     {row,col}_cluster : bool, optional
-        If True, cluster the {rows, columns}. Default True.
+        If True, cluster the {rows, columns}.
     {row,col}_linkage : numpy.array, optional
         Precomputed linkage matrix for the rows or columns. See
         scipy.cluster.hierarchy.linkage for specific formats.
@@ -877,10 +875,10 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
     want to save the figure object without clipping the dendrograms.
 
     To access the reordered row indices, use:
-    ``dg.dendrogram_row.reordered_ind``
+    ``clustergrid.dendrogram_row.reordered_ind``
 
     Column indices, use:
-    ``dg.dendrogram_col.reordered_ind``
+    ``clustergrid.dendrogram_col.reordered_ind``
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
