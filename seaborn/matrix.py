@@ -503,6 +503,7 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None):
+        """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
             self.data = data
@@ -556,7 +557,6 @@ class ClusterGrid(Grid):
 
     def format_data(self, data, pivot_kws, z_score=None,
                     standard_scale=None):
-
         """Extract variables from data or use directly."""
 
         # Either the data is already in 2d matrix format, or need to do a pivot
