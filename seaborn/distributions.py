@@ -646,6 +646,17 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
             else:
                 boxes = [vert_perc_box(x, b, i, k, width(height(b), i, k))
                                                 for i, b in enumerate(box_ends)]
+
+            # Plot the medians
+            y = np.median(a)
+            w = (widths + .1)
+            ax.plot([x -  w / 2, x + w / 2], [y, y], **inner_kws)
+
+            # Calculate the outliers and plot
+            outliers = _lv_outliers(a, k)
+
+            ax.scatter(np.repeat(x, len(outliers)), outliers,
+                       marker=r"$\ast$", c=color)
         else:
             if box_w is 'area':
                 w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
@@ -655,6 +666,17 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
             else:
                 boxes = [horz_perc_box(x, b, i, k, width(height(b), i, k))
                                                 for i, b in enumerate(box_ends)]
+
+            # Plot the medians
+            y = np.median(a)
+            w = (widths + .1)
+            ax.plot([y, y], [x -  w / 2, x + w / 2], **inner_kws)
+
+            # Calculate the outliers and plot
+            outliers = _lv_outliers(a, k)
+
+            ax.scatter(outliers, np.repeat(x, len(outliers)),
+                       marker=r"$\ast$", c=color)
 
         # Construct a color map from the input color
         rgb = [[1, 1, 1], list(color)]
@@ -666,17 +688,6 @@ def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
 
         # Plot the boxes
         ax.add_collection(collection)
-
-        # Plot the medians
-        y = np.median(a)
-        w = (widths + .1)
-        ax.plot([x -  w / 2, x + w / 2], [y, y], **inner_kws)
-
-        # Calculate the outliers and plot
-        outliers = _lv_outliers(a, k)
-
-        ax.scatter(np.repeat(x, len(outliers)), outliers,
-                   marker=r"$\ast$", c=color)
 
     # Draw the repeated measure bridges
     if join_rm:
