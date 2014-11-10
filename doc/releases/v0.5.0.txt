@@ -40,3 +40,5 @@ Bug fixes
 - :func:`kdeplot` now accepts pandas Series for the ``data`` and ``data2`` arguments.
 
 - Using a non-default correlation method in :func:`corrplot` now implies ``sig_stars=False`` as the permutation test used to significance values for the correlations uses a pearson metric.
+
+- Removed ``pdf.fonttype`` from the style definitions, as the value used in version 0.4 resulted in very large PDF files.

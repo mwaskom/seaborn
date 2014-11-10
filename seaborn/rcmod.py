@@ -35,7 +35,6 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
-    "pdf.fonttype",
     "font.sans-serif",
     )
 
@@ -202,7 +201,6 @@ def axes_style(style=None, rc=None):
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
-            "pdf.fonttype": 42,
             }
 
         # Set grid on or off
