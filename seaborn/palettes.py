@@ -17,6 +17,22 @@ from .crayons import crayons
 from .miscplot import palplot
 
 
+SEABORN_PALETTES = dict(
+    deep=["#4C72B0", "#55A868", "#C44E52",
+          "#8172B2", "#CCB974", "#64B5CD"],
+    muted=["#4878CF", "#6ACC65", "#D65F5F",
+           "#B47CC7", "#C4AD66", "#77BEDB"],
+    pastel=["#92C6FF", "#97F0AA", "#FF9F9A",
+            "#D0BBFF", "#FFFEA3", "#B0E0E6"],
+    bright=["#003FFF", "#03ED3A", "#E8000B",
+            "#8A2BE2", "#FFC400", "#00D7FF"],
+    dark=["#001C7F", "#017517", "#8C0900",
+          "#7600A1", "#B8860B", "#006374"],
+    colorblind=["#0072B2", "#009E73", "#D55E00",
+                "#CC79A7", "#F0E442", "#56B4E9"]
+    )
+
+
 class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
     def __enter__(self):
@@ -84,21 +100,6 @@ def color_palette(name=None, n_colors=6, desat=None):
     plotting_context : define parameters to scale plot elements
 
     """
-    seaborn_palettes = dict(
-        deep=["#4C72B0", "#55A868", "#C44E52",
-              "#8172B2", "#CCB974", "#64B5CD"],
-        muted=["#4878CF", "#6ACC65", "#D65F5F",
-               "#B47CC7", "#C4AD66", "#77BEDB"],
-        pastel=["#92C6FF", "#97F0AA", "#FF9F9A",
-                "#D0BBFF", "#FFFEA3", "#B0E0E6"],
-        bright=["#003FFF", "#03ED3A", "#E8000B",
-                "#8A2BE2", "#FFC400", "#00D7FF"],
-        dark=["#001C7F", "#017517", "#8C0900",
-              "#7600A1", "#B8860B", "#006374"],
-        colorblind=["#0072B2", "#009E73", "#D55E00",
-                    "#CC79A7", "#F0E442", "#56B4E9"],
-    )
-
     if name is None:
         palette = mpl.rcParams["axes.color_cycle"]
     elif not isinstance(name, string_types):
@@ -109,8 +110,8 @@ def color_palette(name=None, n_colors=6, desat=None):
         palette = husl_palette(n_colors)
     elif name.lower() == "jet":
         raise ValueError("No.")
-    elif name in seaborn_palettes:
-        palette = seaborn_palettes[name]
+    elif name in SEABORN_PALETTES:
+        palette = SEABORN_PALETTES[name]
     elif name in dir(mpl.cm):
         palette = mpl_palette(name, n_colors)
     elif name[:-2] in dir(mpl.cm):
@@ -524,6 +525,25 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return cmap
     else:
         return pal
+
+
+def set_color_shorthands(palette="deep"):
+    """Change how matplotlib color shorthands are interpreted.
+
+    Calling this will change how shorthand codes like "b" or "g"
+    are interpreted by matplotlib in subsequent plots.
+
+    Parameters
+    ----------
+    palette : string
+        Named seaborn palette to use as the source of colors.
+
+    """
+    colors = SEABORN_PALETTES[palette]
+    for code, color in zip("bgrmyc", colors):
+        rgb = mpl.colors.colorConverter.to_rgb(color)
+        mpl.colors.colorConverter.colors[code] = rgb
+    mpl.colors.colorConverter.colors["k"] = (.1, .1, .1)
 
 
 def _init_mutable_colormap():
