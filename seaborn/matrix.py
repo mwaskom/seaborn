@@ -277,9 +277,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 class _DendrogramPlotter(object):
     """Object for drawing tree of similarities between data rows/columns"""
 
-    def __init__(self, data, linkage=None, metric='euclidean',
-                 method='median', axis=1,
-                 ax=None, label=True, rotate=False):
+    def __init__(self, data, linkage, metric, method, axis, label, rotate):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
@@ -403,17 +401,15 @@ class _DendrogramPlotter(object):
         """Indices of the matrix, reordered by the dendrogram"""
         return self.dendrogram['leaves']
 
-    def plot(self, ax=None):
+    def plot(self, ax):
         """Plots a dendrogram of the similarities between data on the axes
 
         Parameters
         ----------
         ax : matplotlib.axes.Axes
             Axes object upon which the dendrogram is plotted
-        """
-        if ax is None:
-            ax = plt.gca()
 
+        """
         for x, y in zip(self.X, self.Y):
             ax.plot(x, y, color='k', linewidth=.5)
 
@@ -445,7 +441,7 @@ class _DendrogramPlotter(object):
 
 
 def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
-               method='median', rotate=False, ax=None):
+               method='average', rotate=False, ax=None):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -478,11 +474,13 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
     -----
     Access the reordered dendrogram indices with
     dendrogramplotter.reordered_ind
-    """
 
-    plotter = _DendrogramPlotter(data, linkage=linkage,
-                                 axis=axis, metric=metric,
-                                 method=method, label=label, rotate=rotate)
+    """
+    plotter = _DendrogramPlotter(data, linkage=linkage, axis=axis,
+                                 metric=metric, method=method,
+                                 label=label, rotate=rotate)
+    if ax is None:
+        ax = plt.gca()
     return plotter.plot(ax=ax)
 
 
@@ -722,9 +720,8 @@ class ClusterGrid(Grid):
             kwargs['bbox_inches'] = 'tight'
         self.fig.savefig(*args, **kwargs)
 
-    def plot_dendrograms(self, row_cluster=True, col_cluster=True,
-                         metric='euclidean', method='median',
-                         row_linkage=None, col_linkage=None):
+    def plot_dendrograms(self, row_cluster, col_cluster, metric, method,
+                         row_linkage, col_linkage):
         # Plot the row dendrogram
         if row_cluster:
             self.dendrogram_row = dendrogram(
@@ -789,13 +786,8 @@ class ClusterGrid(Grid):
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
 
-    def plot(self, metric='euclidean', method='median',
-             colorbar_kws=None,
-             row_cluster=True,
-             col_cluster=True,
-             row_linkage=None,
-             col_linkage=None,
-             mask=None, **kws):
+    def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
+             row_linkage, col_linkage, mask, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
@@ -804,9 +796,8 @@ class ClusterGrid(Grid):
         return self
 
 
-def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
-               z_score=None, standard_scale=None, figsize=None,
-               cbar_kws=None,
+def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
+               z_score=None, standard_scale=None, figsize=None, cbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None, **kwargs):
@@ -872,6 +863,7 @@ def clustermap(data, pivot_kws=None, method='median', metric='euclidean',
 
     Column indices, use:
     ``clustergrid.dendrogram_col.reordered_ind``
+
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,

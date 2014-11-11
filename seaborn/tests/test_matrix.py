@@ -275,19 +275,19 @@ class TestDendrogram(object):
 
         x_norm_linkage = fastcluster.linkage_vector(x_norm.T,
                                                     metric='euclidean',
-                                                    method='median')
+                                                    method='single')
     except ImportError:
         x_norm_distances = distance.squareform(
             distance.pdist(x_norm.T, metric='euclidean'))
-        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='median')
+        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_list=['k'],
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
 
-    default_kws = dict(linkage=None, metric='euclidean', method='median',
-                       axis=1, ax=None, label=True, rotate=False)
+    default_kws = dict(linkage=None, metric='euclidean', method='single',
+                       axis=1, label=True, rotate=False)
 
     def test_ndarray_input(self):
         p = mat._DendrogramPlotter(self.x_norm, **self.default_kws)
@@ -329,7 +329,7 @@ class TestDendrogram(object):
                                           names=["letter", "number"])
         index.name = "letter-number"
         df.index = index
-        kws = self.default_kws
+        kws = self.default_kws.copy()
         kws['label'] = True
 
         p = mat._DendrogramPlotter(df.T, **kws)
@@ -516,11 +516,11 @@ class TestClustermap(object):
 
         x_norm_linkage = fastcluster.linkage_vector(x_norm.T,
                                                     metric='euclidean',
-                                                    method='median')
+                                                    method='single')
     except ImportError:
         x_norm_distances = distance.squareform(
             distance.pdist(x_norm.T, metric='euclidean'))
-        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='median')
+        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_list=['k'],
                                              color_threshold=-np.inf)
@@ -529,6 +529,11 @@ class TestClustermap(object):
 
     default_kws = dict(pivot_kws=None, z_score=None, standard_scale=None,
                        figsize=None, row_colors=None, col_colors=None)
+
+    default_plot_kws = dict(metric='euclidean', method='average',
+                            colorbar_kws=None,
+                            row_cluster=True, col_cluster=True,
+                            row_linkage=None, col_linkage=None, mask=None)
 
     row_colors = color_palette('Set2', df_norm.shape[0])
     col_colors = color_palette('Dark2', df_norm.shape[1])
@@ -551,7 +556,7 @@ class TestClustermap(object):
     def test_corr_df_input(self):
         df = self.df_norm.corr()
         cg = mat.ClusterGrid(df, **self.default_kws)
-        cg.plot()
+        cg.plot(**self.default_plot_kws)
         diag = cg.data2d.values[np.diag_indices_from(cg.data2d)]
         npt.assert_array_equal(diag, np.ones(cg.data2d.shape[0]))
 
@@ -710,7 +715,7 @@ class TestClustermap(object):
     def test_savefig(self):
         # Not sure if this is the right way to test....
         cm = mat.ClusterGrid(self.df_norm, **self.default_kws)
-        cm.plot()
+        cm.plot(**self.default_plot_kws)
         cm.savefig(tempfile.NamedTemporaryFile(), format='png')
 
         plt.close('all')
