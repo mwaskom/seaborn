@@ -774,8 +774,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
                        row_order=row_order, col_order=col_order,
                        hue_order=hue_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
-                       sharex=sharex, sharey=sharey,
-                       legend=legend, legend_out=legend_out)
+                       sharex=sharex, sharey=sharey, legend_out=legend_out)
 
     # Add the markers here as FacetGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
@@ -909,8 +908,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     facets = FacetGrid(data, row, col, facet_hue, palette=facet_palette,
                        row_order=row_order, col_order=col_order, dropna=dropna,
                        size=size, aspect=aspect, col_wrap=col_wrap,
-                       legend=legend, legend_out=legend_out,
-                       sharex=sharex, sharey=sharey,
+                       legend_out=legend_out, sharex=sharex, sharey=sharey,
                        margin_titles=margin_titles)
 
     if kind == "auto":
