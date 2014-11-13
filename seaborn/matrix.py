@@ -94,10 +94,11 @@ class _HeatMapper(object):
     def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
         """Use some heuristics to set good defaults for colorbar and range."""
+        calc_data = plot_data.data[~np.isnan(plot_data.data)]
         if vmin is None:
-            vmin = np.percentile(plot_data, 2) if robust else plot_data.min()
+            vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
         if vmax is None:
-            vmax = np.percentile(plot_data, 98) if robust else plot_data.max()
+            vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
 
         # Simple heuristics for whether these data should  have a divergent map
         divergent = ((vmin < 0) and (vmax > 0)) or center is not None

@@ -137,6 +137,18 @@ class TestHeatmap(object):
         nt.assert_equal(p.vmin, -5)
         nt.assert_equal(p.vmax, 5)
 
+    def test_array_with_nans(self):
+
+        x1 = self.rs.rand(10, 10)
+        nulls = np.zeros(10) * np.nan
+        x2 = np.c_[x1, nulls]
+
+        m1 = mat._HeatMapper(x1, **self.default_kws)
+        m2 = mat._HeatMapper(x2, **self.default_kws)
+
+        nt.assert_equal(m1.vmin, m2.vmin)
+        nt.assert_equal(m1.vmax, m2.vmax)
+
     def test_custom_cmap(self):
 
         kws = self.default_kws.copy()
