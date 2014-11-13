@@ -819,23 +819,23 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     Parameters
     ----------
     x : string
-        Variable name in `data` for splitting the plot on the x axis.
+        Variable name in ``data`` for splitting the plot on the x axis.
     y : string, optional
-        Variable name in `data` for the dependent variable. If omitted, the
+        Variable name in ``data`` for the dependent variable. If omitted, the
         counts within each bin are plotted (without confidence intervals).
+    hue : string, optional
+        Variable name in ``data`` for splitting the plot by color. In the case
+        of ``kind="bar`"`, this also influences the placement on the x axis.
     data : DataFrame
         Long-form (tidy) dataframe with variables in columns and observations
         in rows.
-    hue : string, optional
-        Variable name in `data` for splitting the plot by color. In the case
-        of `kind="bar"`, this also influences the placement on the x axis.
     row, col : strings, optional
-        Variable name(s) in `data` for splitting the plot into a facet grid
+        Variable name(s) in ``data`` for splitting the plot into a facet grid
         along row and columns.
     col_wrap : int or None, optional
-        Wrap the column variable at this width (incompatible with `row`).
+        Wrap the column variable at this width (incompatible with ``row``).
     estimator : vector -> scalar function, optional
-        Function to aggregate `y` values at each level of the factors.
+        Function to aggregate ``y`` values at each level of the factors.
     ci : int in {0, 100}, optional
         Size of confidene interval to draw around the aggregated value.
     n_boot : int, optional
@@ -843,30 +843,33 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     units : vector, optional
         Vector with ids for sampling units; bootstrap will be performed over
         these units and then within them.
+    {x, hue, col, row}_order : list-like, optional
+        Order of levels plotted on various dimensions of the figure. Default
+        is to use sorted level values.
     kind : {"auto", "point", "bar", "box"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
     markers : list of strings, optional
-        Marker codes to map the `hue` variable with. Only relevant when kind
+        Marker codes to map the ``hue`` variable with. Only relevant when kind
         is "point".
     linestyles : list of strings, optional
-        Linestyle codes to map the `hue` variable with. Only relevant when
+        Linestyle codes to map the ``hue`` variable with. Only relevant when
         kind is "point".
     dodge : positive scalar, optional
-        Horizontal offset applies to different `hue` levels. Only relevant
+        Horizontal offset applies to different ``hue`` levels. Only relevant
         when kind is "point".
     join : boolean, optional
-        Whether points from the same level of `hue` should be joined. Only
+        Whether points from the same level of ``hue`` should be joined. Only
         relevant when kind is "point".
     size : positive scalar, optional
         Height (in inches) of each facet.
     aspect : positive scalar, optional
         Ratio of facet width to facet height.
     palette : seaborn color palette, optional
-        Palette to map `hue` variable with (or `x` variable when `hue` is
-        None).
+        Palette to map ``hue`` variable with (or ``x`` variable when ``hue``
+        is None).
     legend : boolean, optional
-        Draw a legend, only if `hue` is used and does not overlap with other
+        Draw a legend, only if ``hue`` is used and does not overlap with other
         variables.
     legend_out : boolean, optional
         Draw the legend outside the grid; otherwise it is placed within the
@@ -878,7 +881,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
         Lock the limits of the vertical and/or horizontal axes across the
         facets.
     margin_titles : bool, optional
-        If True and there is a `row` variable, draw the titles on the right
+        If True and there is a ``row`` variable, draw the titles on the right
         margin of the grid (experimental).
 
     Returns
