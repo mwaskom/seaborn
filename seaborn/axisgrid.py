@@ -143,7 +143,7 @@ class FacetGrid(Grid):
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
-                 dropna=True, legend=True, legend_out=True, despine=True,
+                 dropna=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None):
         """Initialize the plot figure and FacetGrid object.
 
@@ -175,8 +175,6 @@ class FacetGrid(Grid):
             the markers in a scatterplot).
         dropna : boolean, optional
             Drop missing values from the data before plotting.
-        legend : boolean, optional
-            Draw a legend for the data when using a `hue` variable.
         legend_out: boolean, optional
             Draw the legend outside the grid of plots.
         despine : boolean, optional
@@ -333,8 +331,6 @@ class FacetGrid(Grid):
         self._col_wrap = col_wrap
         self._hue_var = hue_var
         self._colors = colors
-        self._draw_legend = ((hue is not None and hue not in [col, row])
-                             and legend)
         self._legend_out = legend_out
         self._legend = None
         self._legend_data = {}
