@@ -11,6 +11,7 @@ Some of the features that seaborn offers are
 - Tools for choosing :ref:`color palettes <palette_tutorial>` to make beautiful plots that reveal patterns in your data
 - Functions for visualizing :ref:`univariate <distplot_options>` and :ref:`bivariate <joint_kde>` distributions or for :ref:`comparing <violinplots>` them between subsets of data
 - Tools that fit and visualize :ref:`linear regression <anscombes_quartet>` models for different kinds of :ref:`independent <pointplot_anova>` and :ref:`dependent <logistic_regression>` variables
+- Functions that visualize :ref:`matrices of data <heatmap_annotation>` and use clustering algorithms to :ref:`discover structure <structured_heatmap>` in those matrices
 - A function to plot :ref:`statistical timeseries <timeseries_from_dataframe>` data with flexible estimation and :ref:`representation <timeseries_bootstrapped>` of uncertainty around the estimate
 - High-level abstractions for structuring :ref:`grids of plots <faceted_histogram>` that let you easily build :ref:`complex <many_facets>` visualizations
 
