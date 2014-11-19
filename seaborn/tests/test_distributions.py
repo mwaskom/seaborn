@@ -284,6 +284,12 @@ class TestViolinPlot(object):
         nt.assert_equal(len(ax.lines), 11)
         plt.close("all")
 
+        data = [np.random.randn(30), [0, 0, 0]]
+        ax = dist.violinplot(data)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 6)
+        plt.close("all")
+
     @classmethod
     def teardown_class(cls):
         """Ensure that all figures are closed on exit."""
