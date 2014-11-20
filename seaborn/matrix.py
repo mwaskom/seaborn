@@ -52,6 +52,8 @@ class _HeatMapper(object):
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
         data = data.ix[::-1]
+        if mask is not None:
+            mask = mask.ix[::-1]
 
         plot_data = np.ma.masked_where(mask, plot_data)
 
