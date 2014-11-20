@@ -250,6 +250,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         If True, plot the row names of the dataframe. If False, don't plot
         the row names. If list-like, plot these alternate labels as the
         yticklabels
+    mask : boolean numpy.array, optional
+        A boolean array indicating where to mask the data so it is not
+        plotted on the heatmap. Only used for visualizing, not for calculating.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
