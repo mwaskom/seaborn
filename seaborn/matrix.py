@@ -40,6 +40,7 @@ def _convert_hex_list_to_rgb(colors):
     except ValueError:
         return [map(mpl.colors.colorConverter.to_rgb, x) for x in colors]
 
+
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
