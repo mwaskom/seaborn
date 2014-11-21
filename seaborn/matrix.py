@@ -55,7 +55,7 @@ class _HeatMapper(object):
         if mask is not None:
             try:
                 mask = mask.ix[::-1]
-            except:
+            except AttributeError:
                 mask = mask[::-1]
 
         plot_data = np.ma.masked_where(mask, plot_data)
