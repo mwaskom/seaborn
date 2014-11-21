@@ -389,6 +389,13 @@ def plotting_context(context=None, font_scale=1, rc=None):
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)
 
+    # Implement hack workaround for matplotlib bug
+    # See https://github.com/mwaskom/seaborn/issues/344
+    # There is a bug in matplotlib 1.4.2 that makes points invisible when
+    # they don't have an edgewidth. It will supposedly be fixed in 1.4.3.
+    if mpl.__version__ == "1.4.2":
+        context_dict["lines.markeredgewidth"] = 0.01
+
     # Override these settings with the provided rc dictionary
     if rc is not None:
         rc = {k: v for k, v in rc.items() if k in _context_keys}

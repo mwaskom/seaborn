@@ -7,6 +7,7 @@ import nose.tools as nt
 import numpy.testing as npt
 import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
+from nose import SkipTest
 
 try:
     import statsmodels.api as sm
@@ -942,6 +943,9 @@ class TestRegressionPlots(object):
         plt.close("all")
 
     def test_lmplot_marker_linewidths(self):
+
+        if mpl.__version__ == "1.4.2":
+            raise SkipTest
 
         g = lm.lmplot("x", "y", data=self.df, hue="h",
                       fit_reg=False, markers=["o", "+"])
