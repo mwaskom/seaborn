@@ -52,6 +52,11 @@ class _HeatMapper(object):
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
         data = data.ix[::-1]
+        if mask is not None:
+            try:
+                mask = mask.ix[::-1]
+            except AttributeError:
+                mask = mask[::-1]
 
         plot_data = np.ma.masked_where(mask, plot_data)
 
@@ -248,6 +253,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         If True, plot the row names of the dataframe. If False, don't plot
         the row names. If list-like, plot these alternate labels as the
         yticklabels
+    mask : boolean numpy.array, optional
+        A boolean array indicating where to mask the data so it is not
+        plotted on the heatmap. Only used for visualizing, not for calculating.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
