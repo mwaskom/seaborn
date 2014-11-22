@@ -10,4 +10,4 @@ from .axisgrid import *
 from .xkcd_rgb import xkcd_rgb
 set()
 
-__version__ = "0.6.dev"
+__version__ = "0.5.1"
