@@ -103,7 +103,7 @@ class TestRegressionPlotter(object):
     df["z"] = df.y + rs.randn(60)
     df["y_na"] = df.y.copy()
 
-    bw_err = rs.randn(6)[df.s.values]
+    bw_err = rs.randn(6)[df.s.values] * 2
     df.y += bw_err
 
     p = 1 / (1 + np.exp(-(df.x * 2 + rs.randn(60))))
@@ -311,7 +311,8 @@ class TestRegressionPlotter(object):
         # Seed the RNG locally
         np.random.seed(345)
 
-        p = lm._RegressionPlotter("x", "y", data=self.df, units="s", x_bins=3)
+        p = lm._RegressionPlotter("x", "y", data=self.df,
+                                  units="s", x_bins=3)
         _, _, ci_big = p.estimate_data
         ci_big = np.diff(ci_big, axis=1)
 
