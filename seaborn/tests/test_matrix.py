@@ -156,7 +156,7 @@ class TestHeatmap(object):
                                 'c': [3, 3, np.nan]})
 
         kws = self.default_kws.copy()
-        kws["mask"] = df.isnull()
+        kws["mask"] = np.isnan(df.values)
 
         m = mat._HeatMapper(df, **kws)
 
