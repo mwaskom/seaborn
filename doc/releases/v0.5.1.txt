@@ -4,3 +4,4 @@ v0.5.1 (Unreleased)
 
 - Implemented a workaround for a bug in matplotlib 1.4.2 that prevented point markers from being drawn when the seaborn styles had been set. See this `github issue <https://github.com/mwaskom/seaborn/issues/344>`_ for more information.
 
+- Fixed a bug in :func:`heatmap` where the mask was vertically reversed relative to the data.

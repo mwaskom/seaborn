@@ -149,6 +149,20 @@ class TestHeatmap(object):
         nt.assert_equal(m1.vmin, m2.vmin)
         nt.assert_equal(m1.vmax, m2.vmax)
 
+    def test_mask(self):
+
+        df = pd.DataFrame(data={'a': [1, 1, 1],
+                                'b': [2, np.nan, 2],
+                                'c': [3, 3, np.nan]})
+
+        kws = self.default_kws.copy()
+        kws["mask"] = df.isnull()
+
+        m = mat._HeatMapper(df, **kws)
+
+        npt.assert_array_equal(np.isnan(m.plot_data.data),
+                               m.plot_data.mask)
+
     def test_custom_cmap(self):
 
         kws = self.default_kws.copy()
