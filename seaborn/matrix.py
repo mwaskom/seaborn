@@ -17,8 +17,7 @@ from .external.six.moves import range
 
 
 def _index_to_label(index):
-    """Convert a pandas index or multiindex to an axis label
-    """
+    """Convert a pandas index or multiindex to an axis label."""
     if isinstance(index, pd.MultiIndex):
         return "-".join(map(str, index.names))
     else:
@@ -26,19 +25,23 @@ def _index_to_label(index):
 
 
 def _index_to_ticklabels(index):
-    """Convert a pandas index or multiindex into ticklabels
-    """
+    """Convert a pandas index or multiindex into ticklabels."""
     if isinstance(index, pd.MultiIndex):
         return ["-".join(map(str, i)) for i in index.values]
     else:
         return index.values
 
 
-def _convert_hex_list_to_rgb(colors):
+def _convert_colors(colors):
+    """Convert either a list of colors or nested lists of colors to RGB."""
+    to_rgb = mpl.colors.colorConverter.to_rgb
     try:
-        return list(map(mpl.colors.colorConverter.to_rgb, colors))
+        to_rgb(colors[0])
+        # If this works, there is only one level of colors
+        return list(map(to_rgb, colors))
     except ValueError:
-        return [map(mpl.colors.colorConverter.to_rgb, x) for x in colors]
+        # If we get here, we have nested lists
+        return [list(map(to_rgb, l)) for l in colors]
 
 
 class _HeatMapper(object):
@@ -519,10 +522,10 @@ class ClusterGrid(Grid):
         self.fig = plt.figure(figsize=figsize)
 
         if row_colors is not None:
-            row_colors = _convert_hex_list_to_rgb(row_colors)
+            row_colors = _convert_colors(row_colors)
         self.row_colors = row_colors
         if col_colors is not None:
-            col_colors = _convert_hex_list_to_rgb(col_colors)
+            col_colors = _convert_colors(col_colors)
         self.col_colors = col_colors
 
         width_ratios = self.dim_ratios(self.row_colors,
