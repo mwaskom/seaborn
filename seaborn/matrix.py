@@ -34,6 +34,13 @@ def _index_to_ticklabels(index):
         return index.values
 
 
+def _convert_hex_list_to_rgb(colors):
+    try:
+        return list(map(mpl.colors.colorConverter.to_rgb, colors))
+    except ValueError:
+        return [map(mpl.colors.colorConverter.to_rgb, x) for x in colors]
+
+
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
@@ -511,12 +518,11 @@ class ClusterGrid(Grid):
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
 
-        to_rgb = mpl.colors.colorConverter.to_rgb
         if row_colors is not None:
-            row_colors = list(map(to_rgb, row_colors))
+            row_colors = _convert_hex_list_to_rgb(row_colors)
         self.row_colors = row_colors
         if col_colors is not None:
-            col_colors = list(map(to_rgb, col_colors))
+            col_colors = _convert_hex_list_to_rgb(col_colors)
         self.col_colors = col_colors
 
         width_ratios = self.dim_ratios(self.row_colors,
