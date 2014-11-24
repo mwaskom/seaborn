@@ -36,7 +36,6 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
-    "pdf.fonttype",
     "font.sans-serif",
     )
 
@@ -199,12 +198,11 @@ def axes_style(style=None, rc=None):
             "ytick.color": dark_gray,
             "axes.axisbelow": True,
             "image.cmap": "Greys",
-            "font.family": "sans-serif",
+            "font.family": ["sans-serif"],
             "font.sans-serif": ["Arial", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
-            "pdf.fonttype": 42,
             }
 
         # Set grid on or off
@@ -392,6 +390,13 @@ def plotting_context(context=None, font_scale=1, rc=None):
                      "xtick.labelsize", "ytick.labelsize"]
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)
+
+    # Implement hack workaround for matplotlib bug
+    # See https://github.com/mwaskom/seaborn/issues/344
+    # There is a bug in matplotlib 1.4.2 that makes points invisible when
+    # they don't have an edgewidth. It will supposedly be fixed in 1.4.3.
+    if mpl.__version__ == "1.4.2":
+        context_dict["lines.markeredgewidth"] = 0.01
 
     # Override these settings with the provided rc dictionary
     if rc is not None:

@@ -1,11 +1,15 @@
 
-v0.5.0 (Unreleased)
--------------------
+v0.5.0 (November 2014)
+--------------------------
+
+This is a major release from 0.4. Highlights include new functions for :ref:`plotting heatmaps <network_correlations>`, possibly while :ref:`applying clustering algorithms <structured_heatmap>` to discover structured relationships. These functions are complemented by new custom colormap functions and a full set of IPython widgets that allow interactive selection of colormap parameters. The :ref:`palette tutorial <palette_tutorial>` has been rewritten to cover these new tools and more generally provide guidance on how to use color in visualizations. There are also a number of smaller changes and bugfixes.
 
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
 
 - Added the :func:`heatmap` function for visualizing a matrix of data by color-encoding the values. See the :ref:`docs <heatmap>` for more information.
+
+- Added the :func:`clustermap` function for clustering and visualizing a matrix of data, with options to label individual rows and columns by colors. See the :ref:`docs <clustermap>` for more information. This work was lead by Olga Botvinnik.
 
 - :func:`lmplot` and :func:`pairplot` get a new keyword argument, ``markers``. This can be a single kind of marker or a list of different markers for each level of the ``hue`` variable. Using different markers for different hues should let plots be more comprehensible when reproduced to black-and-white (i.e. when printed). See the `github pull request <https://github.com/mwaskom/seaborn/pull/323>`_ for examples.
 
@@ -16,25 +20,26 @@ Plotting functions
 Color palettes
 ~~~~~~~~~~~~~~
 
-- Added two new functions to create custom color palettes. For sequential palettes, you can use the :func:`light_palette` function, which takes a seed color and creates a ramp from a very light, desaturated variant of it. For diverging palettes, you can use the :func:`diverging_palette` function to create a balanced ramp between two endpoints to a light or dark midpoint. See the :ref:`palette tutorial <palette_tutorials>` for more information.
+- Added two new functions to create custom color palettes. For sequential palettes, you can use the :func:`light_palette` function, which takes a seed color and creates a ramp from a very light, desaturated variant of it. For diverging palettes, you can use the :func:`diverging_palette` function to create a balanced ramp between two endpoints to a light or dark midpoint. See the :ref:`palette tutorial <palette_tutorial>` for more information.
 
 - Added the ability to specify the seed color for :func:`light_palette` and :func:`dark_palette` as a tuple of ``husl`` or ``hls`` space values or as a named ``xkcd`` color. The interpretation of the seed color is now provided by the new ``input`` parameter to these functions.
 
-- Added several new interactive palette widgets: :func:`choose_colorbrewer_palette`, :func:`choose_light_palette`, :func:`choose_dark_palette`, and :func:`choose_diverging_palette`. For consistency, renamed the cubehelix widget to :func:`choose_cubehelix_palette` (and fixed a bug where the cubehelix palette was reversed). These functions also now return either a color palette list or a matplotlib colormap when called, and that object will be live-updated as you play with the widget. This should make it easy to iterate over a plot until you find a good representation for the data. See the `Github pull request <https://github.com/mwaskom/seaborn/pull/286>`_ for more information.
+- Added several new interactive palette widgets: :func:`choose_colorbrewer_palette`, :func:`choose_light_palette`, :func:`choose_dark_palette`, and :func:`choose_diverging_palette`. For consistency, renamed the cubehelix widget to :func:`choose_cubehelix_palette` (and fixed a bug where the cubehelix palette was reversed). These functions also now return either a color palette list or a matplotlib colormap when called, and that object will be live-updated as you play with the widget. This should make it easy to iterate over a plot until you find a good representation for the data. See the `Github pull request <https://github.com/mwaskom/seaborn/pull/286>`_ or `this notebook (download it to use the widgets) <http://nbviewer.ipython.org/381a5f5f7e38f8e45bd6>`_ for more information.
 
 - Overhauled the color :ref:`palette tutorial <palette_tutorial>` to organize the discussion by class of color palette and provide more motivation behind the various choices one might make when choosing colors for their data.
 
 Bug fixes
 ~~~~~~~~~
-
-- Fixed a bug where :func:`lmplot` would show a legend when the hue variable was also used on either the rows or columns (making the legend redundant).
-
 - Fixed a bug in :class:`PairGrid` that gave incorrect results (or a crash) when the input DataFrame has a non-default index.
 
 - Fixed a bug in :class:`PairGrid` where passing columns with a date-like datatype raised an exception.
+
+- Fixed a bug where :func:`lmplot` would show a legend when the hue variable was also used on either the rows or columns (making the legend redundant).
 
 - Worked around a matplotlib bug that was forcing outliers in :func:`boxplot` to appear as blue.
 
 - :func:`kdeplot` now accepts pandas Series for the ``data`` and ``data2`` arguments.
 
-- Using a non-default correlation method in :func:`corrplot` now implies ``sig_stars=False` as the permutation test used to significance values for the correlations uses a pearson metric.
+- Using a non-default correlation method in :func:`corrplot` now implies ``sig_stars=False`` as the permutation test used to significance values for the correlations uses a pearson metric.
+
+- Removed ``pdf.fonttype`` from the style definitions, as the value used in version 0.4 resulted in very large PDF files.

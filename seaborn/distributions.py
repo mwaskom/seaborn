@@ -366,7 +366,7 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         x = positions[i]
 
         # If we only have a single value, plot a horizontal line
-        if len(a) == 1:
+        if len(np.unique(a)) == 1:
             y = a[0]
             if vert:
                 ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)

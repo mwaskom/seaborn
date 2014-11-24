@@ -7,6 +7,7 @@ import nose.tools as nt
 import numpy.testing as npt
 import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
+from nose import SkipTest
 
 try:
     import statsmodels.api as sm
@@ -102,7 +103,7 @@ class TestRegressionPlotter(object):
     df["z"] = df.y + rs.randn(60)
     df["y_na"] = df.y.copy()
 
-    bw_err = rs.randn(6)[df.s.values]
+    bw_err = rs.randn(6)[df.s.values] * 2
     df.y += bw_err
 
     p = 1 / (1 + np.exp(-(df.x * 2 + rs.randn(60))))
@@ -310,7 +311,8 @@ class TestRegressionPlotter(object):
         # Seed the RNG locally
         np.random.seed(345)
 
-        p = lm._RegressionPlotter("x", "y", data=self.df, units="s", x_bins=3)
+        p = lm._RegressionPlotter("x", "y", data=self.df,
+                                  units="s", x_bins=3)
         _, _, ci_big = p.estimate_data
         ci_big = np.diff(ci_big, axis=1)
 
@@ -942,6 +944,9 @@ class TestRegressionPlots(object):
         plt.close("all")
 
     def test_lmplot_marker_linewidths(self):
+
+        if mpl.__version__ == "1.4.2":
+            raise SkipTest
 
         g = lm.lmplot("x", "y", data=self.df, hue="h",
                       fit_reg=False, markers=["o", "+"])

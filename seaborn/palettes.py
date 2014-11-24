@@ -516,12 +516,14 @@ def _init_mutable_colormap():
     greys = color_palette("Greys", 256)
     cmap = LinearSegmentedColormap.from_list("interactive", greys)
     cmap._init()
+    cmap._set_extremes()
     return cmap
 
 
 def _update_lut(cmap, colors):
     """Change the LUT values in a matplotlib colormap in-place."""
     cmap._lut[:256] = colors
+    cmap._set_extremes()
 
 
 def choose_colorbrewer_palette(data_type, as_cmap=False):

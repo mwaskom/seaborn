@@ -1,0 +1,11 @@
+
+v0.5.1 (November 2014)
+----------------------
+
+This is a bugfix release that includes a workaround for an issue in matplotlib 1.4.2 and fixes for two bugs in functions that were new in 0.5.0.
+
+- Implemented a workaround for a bug in matplotlib 1.4.2 that prevented point markers from being drawn when the seaborn styles had been set. See this `github issue <https://github.com/mwaskom/seaborn/issues/344>`_ for more information.
+
+- Fixed a bug in :func:`heatmap` where the mask was vertically reversed relative to the data.
+
+- Fixed a bug in :func:`clustermap` when using nested lists of side colors.
