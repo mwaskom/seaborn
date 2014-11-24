@@ -1,0 +1,9 @@
+include *.md
+include *.txt
+include LICENSE
+include Makefile
+include ipnbdoctest.py
+recursive-include licences *
+recursive-include doc *
+recursive-include examples *
+recursive-include testing *
