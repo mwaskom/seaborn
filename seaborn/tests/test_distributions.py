@@ -216,6 +216,16 @@ class TestKDE(object):
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
 
+        # Test a specific bandwidth
+        clip = [self.clip, self.clip]
+        x, y, z = dist._scipy_bivariate_kde(self.x, self.y, 1,
+                                            self.gridsize, self.cut, clip)
+
+        # Test that we get an error with an invalid bandwidth
+        with nt.assert_raises(ValueError):
+            dist._scipy_bivariate_kde(self.x, self.y, (1, 2),
+                                      self.gridsize, self.cut, clip)
+
     @skipif(_no_statsmodels)
     def test_statsmodels_bivariate_kde(self):
         """Test the bivariate KDE estimation with statsmodels."""
