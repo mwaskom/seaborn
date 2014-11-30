@@ -759,7 +759,7 @@ class ClusterGrid(Grid):
         despine(ax=self.ax_row_dendrogram, bottom=True, left=True)
         despine(ax=self.ax_col_dendrogram, bottom=True, left=True)
 
-    def plot_colors(self, **kws):
+    def plot_colors(self, xind, yind, **kws):
         """Plots color labels between the dendrogram and the heatmap
 
         Parameters
@@ -767,12 +767,13 @@ class ClusterGrid(Grid):
         heatmap_kws : dict
             Keyword arguments heatmap
         """
-        # Remove any custom colormap
+        # Remove any custom colormap and centering
         kws = kws.copy()
         kws.pop('cmap', None)
+        kws.pop('center', None)
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
-                self.row_colors, self.dendrogram_row.reordered_ind, axis=0)
+                self.row_colors, yind, axis=0)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
                     xticklabels=False, yticklabels=False,
                     **kws)
@@ -781,23 +782,14 @@ class ClusterGrid(Grid):
 
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
-                self.col_colors, self.dendrogram_col.reordered_ind, axis=1)
+                self.col_colors, xind, axis=1)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
                     xticklabels=False, yticklabels=False,
                     **kws)
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
-    def plot_matrix(self, colorbar_kws, mask, **kws):
-        try:
-            xind = self.dendrogram_col.reordered_ind
-        except AttributeError:
-            xind = np.arange(self.data2d.shape[1])
-        try:
-            yind = self.dendrogram_row.reordered_ind
-        except AttributeError:
-            yind = np.arange(self.data2d.shape[0])
-
+    def plot_matrix(self, colorbar_kws, mask, xind, yind, **kws):
         self.data2d = self.data2d.iloc[yind, xind]
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=mask, **kws)
@@ -809,8 +801,17 @@ class ClusterGrid(Grid):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
-        self.plot_colors(**kws)
-        self.plot_matrix(colorbar_kws, mask, **kws)
+        try:
+            xind = self.dendrogram_col.reordered_ind
+        except AttributeError:
+            xind = np.arange(self.data2d.shape[1])
+        try:
+            yind = self.dendrogram_row.reordered_ind
+        except AttributeError:
+            yind = np.arange(self.data2d.shape[0])
+
+        self.plot_colors(xind, yind, **kws)
+        self.plot_matrix(colorbar_kws, mask, xind, yind, **kws)
         return self
 
 
