@@ -58,10 +58,6 @@ def check_dependencies():
 
 if __name__ == "__main__":
 
-    import os
-    if os.path.exists('MANIFEST'):
-        os.remove('MANIFEST')
-
     install_requires = check_dependencies()
 
     setup(name=DISTNAME,
