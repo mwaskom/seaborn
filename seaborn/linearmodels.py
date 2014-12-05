@@ -622,10 +622,10 @@ class _RegressionPlotter(_LinearPlotter):
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
         # Insert the plot label into the correct set of keyword arguments
-        if self.scatter:
-            scatter_kws["label"] = self.label
-        else:
-            line_kws["label"] = self.label
+        #if self.scatter:
+        scatter_kws["label"] = self.label
+        #else:
+        line_kws["label"] = self.label
 
         # Use the current color cycle state as a default
         if self.color is None:
