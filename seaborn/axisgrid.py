@@ -8,10 +8,11 @@ import matplotlib.pyplot as plt
 from six import string_types
 
 from . import utils
-from .palettes import color_palette
+from .palettes import color_palette, light_palette
 
 
 class Grid(object):
+
     """Base class for grids of subplots."""
     _margin_titles = False
     _legend_out = True
@@ -138,6 +139,7 @@ class Grid(object):
 
 
 class FacetGrid(Grid):
+
     """Subplot grid for plotting conditional relationships in a dataset."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
@@ -755,6 +757,7 @@ class FacetGrid(Grid):
 
 
 class PairGrid(Grid):
+
     """Subplot grid for plotting pairwise relationships in a dataset."""
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
@@ -1065,9 +1068,11 @@ class PairGrid(Grid):
 
 
 class JointGrid(object):
+
     """Grid for drawing a bivariate plot with marginal univariate plots."""
-    def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
-                 dropna=True, xlim=None, ylim=None):
+
+    def __init__(self, x, y, data=None, hue=None, hue_order=None, size=6,
+                 ratio=5, space=.2, dropna=True, xlim=None, ylim=None):
         """Set up the grid of subplots.
 
         Parameters
@@ -1076,6 +1081,8 @@ class JointGrid(object):
             Data or names of variables in `data`.
         data : DataFrame, optional
             DataFrame when `x` and `y` are variable names.
+        hue : string (variable name), optional
+            Variable in ``data`` to map plot aspects to different colors.
         size : numeric
             Size of the figure (it will be square).
         ratio : numeric
@@ -1120,18 +1127,17 @@ class JointGrid(object):
         ax_marg_x.yaxis.grid(False)
         ax_marg_y.xaxis.grid(False)
 
+        # Possibly drop NA
+        if dropna:
+            not_na = pd.notnull(data[x]) & pd.notnull(data[y])
+            data = data[not_na]
+
         # Possibly extract the variables from a DataFrame
         if data is not None:
             if x in data:
                 x = data[x]
             if y in data:
                 y = data[y]
-
-        # Possibly drop NA
-        if dropna:
-            not_na = pd.notnull(x) & pd.notnull(y)
-            x = x[not_na]
-            y = y[not_na]
 
         # Find the names of the variables
         if hasattr(x, "name"):
@@ -1149,6 +1155,26 @@ class JointGrid(object):
             ax_joint.set_xlim(xlim)
         if ylim is not None:
             ax_joint.set_ylim(ylim)
+
+        # Sort out the hue variable
+        self._hue_var = hue
+        if hue is None:
+            self.hue_names = [None]
+            self.hue_vals = pd.Series(["_nolegend_"] * len(data),
+                                      index=data.index)
+        else:
+            if hue_order is None:
+                hue_names = np.atleast_1d(
+                    np.unique(np.sort(data[hue]))).tolist()
+            else:
+                hue_names = hue_order
+
+            self.hue_names = hue_names
+            self.hue_vals = data[hue]
+
+        # Additional dict of kwarg -> list of values for mapping the hue var
+        # self.hue_kws = hue_kws if hue_kws is not None else {}
+        self.palette = color_palette("husl", n_colors=len(self.hue_names))
 
         # Make the grid look nice
         utils.despine(f)
@@ -1196,8 +1222,43 @@ class JointGrid(object):
             Returns `self`.
 
         """
+        from .distributions import kdeplot
+        from matplotlib import patches as mpatches
+
         plt.sca(self.ax_joint)
-        func(self.x, self.y, **kwargs)
+
+        isscatter = (func == plt.scatter)
+        colorkw = 'cmap'
+
+        patches = []
+
+        if func == plt.scatter:
+            kwargs['edgecolor'] = 'white'
+            func = getattr(self.ax_joint, 'scatter')
+            colorkw = 'c'
+
+        for k, hue in enumerate(self.hue_names):
+            if hue is not None:
+                kwargs['label'] = hue
+                x = self.x[np.where(self.hue_vals == hue)]
+                y = self.y[np.where(self.hue_vals == hue)]
+            else:
+                x = self.x
+                y = self.y
+
+            thiscolor = self.palette[k]
+            patches.append(mpatches.Patch(color=thiscolor, label=hue))
+
+            if colorkw == 'c':
+                kwargs['c'] = thiscolor
+            elif colorkw == 'cmap':
+                kwargs['cmap'] = light_palette(
+                    thiscolor, as_cmap=True)
+
+            func(x, y, **kwargs)
+
+        if len(hue) > 1:
+            self.ax_joint.legend(handles=patches)
 
         return self
 
@@ -1220,12 +1281,37 @@ class JointGrid(object):
             Returns `self`.
 
         """
+
         plt.sca(self.ax_marg_x)
-        func(self.x, **kwargs)
+
+        for k, hue in enumerate(self.hue_names):
+            if hue is not None:
+                kwargs['label'] = hue
+                x = self.x[np.where(self.hue_vals == hue)]
+            else:
+                x = self.x
+            func(x, color=self.palette[k], **kwargs)
 
         kwargs["vertical"] = True
         plt.sca(self.ax_marg_y)
-        func(self.y, **kwargs)
+
+        for k, hue in enumerate(self.hue_names):
+            if hue is not None:
+                kwargs['label'] = hue
+                y = self.y[np.where(self.hue_vals == hue)]
+            else:
+                y = self.y
+            func(y, color=self.palette[k], **kwargs)
+
+        try:
+            self.ax_marg_x.legend_.remove()
+        except AttributeError:
+            pass
+
+        try:
+            self.ax_marg_y.legend_.remove()
+        except AttributeError:
+            pass
 
         return self
 
