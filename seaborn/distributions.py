@@ -471,7 +471,11 @@ def _freedman_diaconis_bins(a):
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
     h = 2 * iqr(a) / (len(a) ** (1 / 3))
-    return np.ceil((a.max() - a.min()) / h)
+    # fall back to 10 bins if iqr is 0
+    if h == 0:
+        return 10.
+    else:
+        return np.ceil((a.max() - a.min()) / h)
 
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
