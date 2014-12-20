@@ -1,0 +1,6 @@
+
+v0.6.0 (Unreleased)
+-------------------
+
+- Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
+
