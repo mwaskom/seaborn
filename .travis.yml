@@ -27,13 +27,10 @@ before_install:
   - sudo apt-get update -yq
   - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
   - sudo apt-get install msttcorefonts -qq
-  - if [ ${PYTHON:0:1} == "2" ]; then
-    wget http://repo.continuum.io/miniconda/Miniconda-2.2.2-Linux-x86_64.sh -O miniconda.sh; else
-    wget http://repo.continuum.io/miniconda/Miniconda3-2.2.2-Linux-x86_64.sh -O miniconda.sh;
-    fi
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-  - export PATH=/home/travis/anaconda/bin:$PATH
+  - export PATH=/home/travis/miniconda/bin:$PATH
 
 before_script:
   - if [ ${PYTHON:0:1} == "2" ]; then
