@@ -1198,7 +1198,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
 
 def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
               order=1, robust=False, dropna=True, label=None, color=None,
-              scatter_kws=None, ax=None):
+              scatter_kws=None, line_kws=None, ax=None):
     """Plot the residuals of a linear regression.
 
     This function will regress y on x (possibly as a robust or polynomial
@@ -1231,8 +1231,9 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
         Label that will be used in any plot legends.
     color : matplotlib color, optional
         Color to use for all elements of the plot.
-    scatter_kws : dictionaries, optional
-        Additional keyword arguments passed to scatter() for drawing.
+    {scatter, line}_kws : dictionaries, optional
+        Additional keyword arguments passed to scatter() and plot() for drawing
+        the components of the plot.
     ax : matplotlib axis, optional
         Plot into this axis, otherwise grab the current axis or make a new
         one if not existing.
@@ -1272,7 +1273,8 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
 
     # Draw the scatterplot
     scatter_kws = {} if scatter_kws is None else scatter_kws
-    plotter.plot(ax, scatter_kws, {})
+    line_kws = {} if line_kws is None else line_kws
+    plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
 
