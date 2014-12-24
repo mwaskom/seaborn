@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 #
 # Copyright (C) 2012-2014 Michael Waskom <mwaskom@stanford.edu>
+import os
+# temporarily redirect config directory to prevent matplotlib importing
+# testing that for writeable directory which results in sandbox error in
+# certain easy_install versions
+os.environ["MPLCONFIGDIR"] = "."
 
 DESCRIPTION = "Seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
