@@ -610,9 +610,10 @@ class TestPairGrid(object):
             for j, ax in enumerate(axes_i):
                 x_in = self.df[vars[j]]
                 y_in = self.df[vars[i]]
+                notna_idx = x_in.notnull() & y_in.notnull()
                 x_out, y_out = ax.collections[0].get_offsets().T
-                npt.assert_array_equal(x_in, x_out)
-                npt.assert_array_equal(y_in, y_out)
+                npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+                npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         g2 = ag.PairGrid(self.df, "a")
         g2.map(plt.scatter)
@@ -624,9 +625,10 @@ class TestPairGrid(object):
                 for k, k_level in enumerate("abcd"):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
+                    notna_idx = x_in_k.notnull() & y_in_k.notnull()
                     x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
+                npt.assert_array_equal(x_in_k.ix[notna_idx], x_out)
+                npt.assert_array_equal(y_in_k.ix[notna_idx], y_out)
 
         plt.close("all")
 
@@ -638,12 +640,15 @@ class TestPairGrid(object):
         g.map(plt.scatter)
 
         x_in = self.df.x
+        x_notna_idx = x_in.notnull()
         for i, i_var in enumerate(y_vars):
             ax = g.axes[i, 0]
             y_in = self.df[i_var]
+            y_notna_idx = y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            notna_idx = x_notna_idx & y_notna_idx
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         plt.close("all")
 
@@ -655,11 +660,13 @@ class TestPairGrid(object):
 
         for i, j in zip(*np.tril_indices_from(g.axes, -1)):
             ax = g.axes[i, j]
+            # for missing tests subclass
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.triu_indices_from(g.axes)):
             ax = g.axes[i, j]
@@ -677,9 +684,10 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.tril_indices_from(g.axes)):
             ax = g.axes[i, j]
@@ -725,17 +733,19 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.tril_indices_from(g.axes, -1)):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.diag_indices_from(g.axes)):
             ax = g.axes[i, j]
@@ -789,9 +799,10 @@ class TestPairGrid(object):
             for j, ax in enumerate(axes_i):
                 x_in = self.df[vars[j]]
                 y_in = self.df[vars[i]]
+                notna_idx = x_in.notnull() & y_in.notnull()
                 x_out, y_out = ax.collections[0].get_offsets().T
-                npt.assert_array_equal(x_in, x_out)
-                npt.assert_array_equal(y_in, y_out)
+                npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+                npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         g2 = ag.PairGrid(df, "a")
         g2.map(plt.scatter)
@@ -803,9 +814,10 @@ class TestPairGrid(object):
                 for k, k_level in enumerate("abcd"):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
+                    notna_idx = x_in_k.notnull() & y_in_k.notnull()
                     x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
+                npt.assert_array_equal(x_in_k.ix[notna_idx], x_out)
+                npt.assert_array_equal(y_in_k.ix[notna_idx], y_out)
 
         plt.close("all")
 
@@ -822,17 +834,19 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.tril_indices_from(g.axes, -1)):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.diag_indices_from(g.axes)):
             ax = g.axes[i, j]
@@ -853,9 +867,10 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
             nt.assert_equal(len(ax.lines), 1)
             nt.assert_equal(len(ax.collections), 2)
@@ -864,9 +879,10 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
             nt.assert_equal(len(ax.lines), 1)
             nt.assert_equal(len(ax.collections), 2)
@@ -890,17 +906,19 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.tril_indices_from(g.axes, -1)):
             ax = g.axes[i, j]
             x_in = self.df[vars[j]]
             y_in = self.df[vars[i]]
+            notna_idx = x_in.notnull() & y_in.notnull()
             x_out, y_out = ax.collections[0].get_offsets().T
-            npt.assert_array_equal(x_in, x_out)
-            npt.assert_array_equal(y_in, y_out)
+            npt.assert_array_equal(x_in.ix[notna_idx], x_out)
+            npt.assert_array_equal(y_in.ix[notna_idx], y_out)
 
         for i, j in zip(*np.diag_indices_from(g.axes)):
             ax = g.axes[i, j]
@@ -924,6 +942,18 @@ class TestPairGrid(object):
     def teardown_class(cls):
         """Ensure that all figures are closed on exit."""
         plt.close("all")
+
+
+class TestMissingPairGrid(TestPairGrid):
+
+    df = pd.DataFrame(dict(x=rs.normal(size=80),
+                           y=rs.randint(0, 4, size=(80)),
+                           z=rs.gamma(3, size=80),
+                           a=np.repeat(list("abcd"), 20),
+                           b=np.repeat(list("abcdefgh"), 10)))
+    df.ix[rs.randint(0, len(df), size=5), ['x']] = np.nan
+    df.ix[rs.randint(0, len(df), size=5), ['a']] = np.nan
+    df.ix[rs.randint(0, len(df), size=5), ['z']] = np.nan
 
 
 class TestJointGrid(object):
