@@ -838,6 +838,7 @@ class PairGrid(Grid):
         self.fig = fig
         self.axes = axes
         self.data = data
+        self._dropna = dropna
 
         # Save what we are going to do with the diagonal
         self.diag_sharey = diag_sharey
@@ -874,6 +875,12 @@ class PairGrid(Grid):
             utils.despine(fig=fig)
         fig.tight_layout()
 
+    def _maybe_pairwise_dropna(self, data, x_var, y_var):
+        if self._dropna:
+            return data[[x_var, y_var]].dropna()
+        else:
+            return data[[x_var, y_var]]
+
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
 
@@ -897,7 +904,10 @@ class PairGrid(Grid):
                         kwargs[kw] = val_list[k]
 
                     color = self.palette[k] if kw_color is None else kw_color
-                    func(data_k[x_var], data_k[y_var],
+
+                    data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
+
+                    func(data[x_var], data[y_var],
                          label=label_k, color=color, **kwargs)
 
                 self._clean_axis(ax)
@@ -939,7 +949,10 @@ class PairGrid(Grid):
         # Plot on each of the diagonal axes
         for i, var in enumerate(self.x_vars):
             ax = self.diag_axes[i]
-            hue_grouped = self.data[var].groupby(self.hue_vals)
+            if self._dropna:  # NOTE: Not dropping NA might break plotting
+                hue_grouped = self.data[var].dropna().groupby(self.hue_vals)
+            else:
+                hue_grouped = self.data[var].groupby(self.hue_vals)
 
             # Special-case plt.hist with stacked bars
             if func is plt.hist:
@@ -983,7 +996,8 @@ class PairGrid(Grid):
                     kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
-                func(data_k[x_var], data_k[y_var], label=label_k,
+                data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
+                func(data[x_var], data[y_var], label=label_k,
                      color=color, **kwargs)
 
             self._clean_axis(ax)
@@ -1020,7 +1034,8 @@ class PairGrid(Grid):
                     kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
-                func(data_k[x_var], data_k[y_var], label=label_k,
+                data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
+                func(data[x_var], data[y_var], label=label_k,
                      color=color, **kwargs)
 
             self._clean_axis(ax)
