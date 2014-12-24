@@ -106,7 +106,9 @@ class Grid(object):
 
         else:
             if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
+                # unique sorts, but treats NA differently than sort
+                # fails for obj. dtypes with NA. Can't compare nan and str
+                hue_names = data[hue].sort(inplace=False).unique()
             else:
                 hue_names = hue_order
             if dropna:
@@ -855,7 +857,9 @@ class PairGrid(Grid):
                                       index=data.index)
         else:
             if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
+                # unique sorts, but treats NA differently than sort
+                # fails for obj. dtypes with NA. Can't compare nan and str
+                hue_names = data[hue].sort(inplace=False).unique()
             else:
                 hue_names = hue_order
             if dropna:
@@ -877,9 +881,14 @@ class PairGrid(Grid):
 
     def _maybe_pairwise_dropna(self, data, x_var, y_var):
         if self._dropna:
-            return data[[x_var, y_var]].dropna()
+            if x_var == y_var:
+                data = data[x_var].dropna()
+                return data, data
+            else:
+                data = data[[x_var, y_var]].dropna()
+                return data[x_var], data[y_var]
         else:
-            return data[[x_var, y_var]]
+            return data[x_var], data[y_var]
 
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
@@ -905,10 +914,11 @@ class PairGrid(Grid):
 
                     color = self.palette[k] if kw_color is None else kw_color
 
-                    data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
+                    data_x, data_y = self._maybe_pairwise_dropna(data_k,
+                                                                 x_var,
+                                                                 y_var)
 
-                    func(data[x_var], data[y_var],
-                         label=label_k, color=color, **kwargs)
+                    func(data_x, data_y, label=label_k, color=color, **kwargs)
 
                 self._clean_axis(ax)
                 self._update_legend_data(ax)
@@ -996,9 +1006,9 @@ class PairGrid(Grid):
                     kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
-                data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
-                func(data[x_var], data[y_var], label=label_k,
-                     color=color, **kwargs)
+                data_x, data_y = self._maybe_pairwise_dropna(data_k,
+                                                             x_var, y_var)
+                func(data_x, data_y, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
             self._update_legend_data(ax)
@@ -1034,9 +1044,9 @@ class PairGrid(Grid):
                     kwargs[kw] = val_list[k]
 
                 color = self.palette[k] if kw_color is None else kw_color
-                data = self._maybe_pairwise_dropna(data_k, x_var, y_var)
-                func(data[x_var], data[y_var], label=label_k,
-                     color=color, **kwargs)
+                data_x, data_y = self._maybe_pairwise_dropna(data_k, x_var,
+                                                             y_var)
+                func(data_x, data_y, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
             self._update_legend_data(ax)
