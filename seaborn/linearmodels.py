@@ -924,7 +924,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     # Always use an x_order so that the plot is drawn properly when
     # not all of the x variables are represented in each facet
     if x_order is None:
-        x_order = np.sort(pd.unique(data[x]))
+        x_order = utils.sort_pandas_copy_series(data[x]).unique()
 
     # Draw the plot on each facet
     kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
