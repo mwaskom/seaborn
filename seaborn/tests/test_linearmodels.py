@@ -826,6 +826,15 @@ class TestDiscretePlots(object):
 
         plt.close("all")
 
+    @skipif(not utils._pd_new_categorical)
+    def test_factorplot_categorical_sort(self):
+        df = self.df.copy()
+        df["cat_x"] = pd.Categorical(df.x, ["c", "b", "a"])
+        g = lm.factorplot("cat_x", "y", "g", data=df)
+        labels = list(map(lambda x : x.get_text(),
+                          g.axes[0][0].get_xticklabels()))
+        npt.assert_equal(labels, ["c", "b", "a"])
+
 
 class TestRegressionPlots(object):
 
