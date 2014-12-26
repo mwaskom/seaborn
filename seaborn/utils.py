@@ -11,9 +11,14 @@ import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
 if LooseVersion(pd.__version__) >= "0.14.0":
-    _pd_inplace_sort=True  # inplace=True default sort added in 0.14.0
+    _pd_inplace_sort = True  # inplace=True default sort added in 0.14.0
 else:
-    _pd_inplace_sort=False
+    _pd_inplace_sort = False
+
+if LooseVersion(pd.__version__) >= "0.15.0":
+    _pd_new_categorical = True  # inplace=True default sort added in 0.14.0
+else:
+    _pd_new_categorical = False
 
 
 def ci_to_errsize(cis, heights):
@@ -417,8 +422,13 @@ def sort_pandas_copy_series(series, *args, **kwargs):
     series : pd.Series
         Sorted series.
     """
-    if _pd_inplace_sort:
-        kwargs.update({'inplace': False})
+    if not _pd_inplace_sort:
+        # then categorical doesn't exist
         return series.sort(*args, **kwargs)
-    else:
-        return series.sort(*args, **kwargs)
+    elif (_pd_new_categorical
+          and isinstance(series, pd.Categorical) and not series.cat.ordered):
+        # can't sort an unordered factor, pass through
+        return series
+
+    kwargs.update({'inplace': False})
+    return series.sort(*args, **kwargs)
