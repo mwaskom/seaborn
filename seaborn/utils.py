@@ -9,6 +9,12 @@ import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from distutils.version import LooseVersion
+if LooseVersion(pd.__version__) >= "0.14.0":
+    _pd_inplace_sort=True  # inplace=True default sort added in 0.14.0
+else:
+    _pd_inplace_sort=False
+
 
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
@@ -391,3 +397,28 @@ def axes_ticklabels_overlap(ax):
     """
     return (axis_ticklabels_overlap(ax.get_xticklabels()),
             axis_ticklabels_overlap(ax.get_yticklabels()))
+
+
+def sort_pandas_copy_series(series, *args, **kwargs):
+    """
+    Sort a pandas series by values and always return a copy.
+
+    Parameters
+    ----------
+    series : pd.Series
+        Series to sort
+    arg : arguments
+        Arguments to sort method
+    kwargs : keyword arguments
+        Keyword arguments to sort method
+
+    Returns
+    -------
+    series : pd.Series
+        Sorted series.
+    """
+    if _pd_inplace_sort:
+        kwargs.update({'inplace': False})
+        return series.sort(*args, **kwargs)
+    else:
+        return series.sort(*args, **kwargs)
