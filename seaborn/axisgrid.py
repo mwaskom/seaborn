@@ -108,7 +108,7 @@ class Grid(object):
             if hue_order is None:
                 # unique sorts, but treats NA differently than sort
                 # fails for obj. dtypes with NA. Can't compare nan and str
-                hue_names = data[hue].sort(inplace=False).unique()
+                hue_names = utils.sort_pandas_copy_series(data[hue]).unique()
             else:
                 hue_names = hue_order
             if dropna:
@@ -859,7 +859,7 @@ class PairGrid(Grid):
             if hue_order is None:
                 # unique sorts, but treats NA differently than sort
                 # fails for obj. dtypes with NA. Can't compare nan and str
-                hue_names = data[hue].sort(inplace=False).unique()
+                hue_names = utils.sort_pandas_copy_series(data[hue]).unique()
             else:
                 hue_names = hue_order
             if dropna:
