@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+from distutils.version import LooseVersion
+
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
@@ -26,7 +28,7 @@ class TestBoxPlotter(object):
         # Infer_orient is a static method
         p = dist._BoxPlotter
 
-        cat_series = pd.Series(["a", "b", "c"] * 10, dtype="category")
+        cat_series = pd.Series(["a", "b", "c"] * 10)
         num_series = pd.Series(self.rs.randn(30))
 
         x, y = cat_series, num_series
@@ -37,8 +39,10 @@ class TestBoxPlotter(object):
         nt.assert_equal(p.infer_orient(None, y), "h")
         nt.assert_equal(p.infer_orient(x, y), "v")
 
-        y, x = cat_series, num_series
-        nt.assert_equal(p.infer_orient(x, y), "h")
+        if LooseVersion(pd.__version__) >= "0.15":
+            cat_series = cat_series.astype("category")
+            y, x = cat_series, num_series
+            nt.assert_equal(p.infer_orient(x, y), "h")
 
 
 class TestBoxReshaping(object):
