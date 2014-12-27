@@ -17,6 +17,30 @@ except ImportError:
     _no_statsmodels = True
 
 
+class TestBoxPlotter(object):
+    """Test boxplot (also base class for things like violinplots)."""
+    rs = np.random.RandomState(30)
+
+    def test_orient_inference(self):
+
+        # Infer_orient is a static method
+        p = dist._BoxPlotter
+
+        cat_series = pd.Series(["a", "b", "c"] * 10, dtype="category")
+        num_series = pd.Series(self.rs.randn(30))
+
+        x, y = cat_series, num_series
+
+        nt.assert_equal(p.infer_orient(x, y, "horiz"), "h")
+        nt.assert_equal(p.infer_orient(x, y, "vert"), "v")
+        nt.assert_equal(p.infer_orient(x, None), "v")
+        nt.assert_equal(p.infer_orient(None, y), "h")
+        nt.assert_equal(p.infer_orient(x, y), "v")
+
+        y, x = cat_series, num_series
+        nt.assert_equal(p.infer_orient(x, y), "h")
+
+
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
     n_total = 60

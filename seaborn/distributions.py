@@ -22,6 +22,158 @@ from .palettes import color_palette, husl_palette, blend_palette
 from .axisgrid import JointGrid
 
 
+class _BoxPlotter(object):
+
+    def __init__(self):
+
+        pass
+
+    def establish_variables(self, x, y, hue, data, orient):
+        """Convert input specification into a common representation."""
+        # We are plotting a wide-form dataset
+        if x is None and y is None:
+
+            # Do a sanity check on the inputs
+            if hue is not None:
+                error = "Cannot use `hue` without `x` or `y`"
+                raise ValueError(error)
+
+            # The input data is a Pandas DataFrame
+            if isinstance(data, pd.DataFrame):
+
+                # Reduce to just the numeric columns
+                cols = []
+                for col in data:
+                    try:
+                        data[col].astype(np.float)
+                        cols.append(col)
+                    except ValueError:
+                        pass
+                plot_data = data[cols]
+
+                # Convert to a list of arrays, the common representation
+                iter_data = plot_data.iteritems()
+                plot_data = [np.asarray(s, np.float) for k, s in iter_data]
+
+            # The input data is an array or list
+            else:
+
+                # The input data is an array
+                if hasattr(data, "shape"):
+                    if len(data.shape) == 1:
+                        if np.isscalar(data[0]):
+                            plot_data = [data]
+                        else:
+                            plot_data = list(data)
+                    elif len(data.shape) == 2:
+                        nr, nc = data.shape
+                        if nr == 1:
+                            plot_data = [data]
+                        elif nc == 1:
+                            plot_data = [data.ravel()]
+                        else:
+                            plot_data = [data[:, i] for i in range(nc)]
+                    else:
+                        error = ("Input `data` can have no "
+                                 "more than 2 dimensions")
+                        raise ValueError(error)
+
+                # The input data is a flat list
+                elif np.isscalar(data[0]):
+                    plot_data = [data]
+
+                # Convert to a list of arrays, the common representation
+                plot_data = [np.asarray(d, np.float) for d in plot_data]
+
+            # Figure out the plotting orientation
+            orient = "h" if str(orient).startswith("h") else "v"
+
+        # We are plotting a long-form dataset
+        else:
+
+            # See if we need to get `x` and `y` from `data`
+            if data is not None:
+
+                if x is not None:
+                    x = data.get(x, x)
+                if y is not None:
+                    y = data.get(y, y)
+                if hue is not None:
+                    hue = data.get(hue, hue)
+
+            # Figure out the plotting orientation
+            orient = _BoxPlotter.infer_orient(x, y, orient)
+
+            # Determine which role each variable will play
+            if orient == "v":
+                vals, groups = x, y
+            else:
+                vals, groups = y, x
+
+            # Now we do the grouping
+            if groups is None:
+                plot_data = [np.asarray(vals, np.float)]
+            else:
+                if not isinstance(vals, pd.Series):
+                    vals = pd.Series(vals)
+                grouped = vals.groupby(groups)
+                plot_data = [np.asarray(s) for _, s in grouped]
+
+        return plot_data
+
+    @staticmethod
+    def infer_orient(x, y, orient=None):
+        """Determine how the plot should be oriented based on the data."""
+        orient = str(orient)
+
+        def is_categorical(s):
+            try:
+                # Correct way, but doesn't exist in older Pandas
+                return pd.core.common.is_categorical_dtype(s)
+            except AttributeError:
+                # Also works, but feels hackier
+                return str(s.dtype) == "categorical"
+
+        if orient.startswith("v"):
+            return "v"
+        elif orient.startswith("h"):
+            return "h"
+        elif x is None:
+            return "h"
+        elif y is None:
+            return "v"
+        elif is_categorical(y):
+            return "h"
+        else:
+            return "v"
+
+    def plot(self, ax):
+
+        pass
+
+
+class _ViolinPlotter(_BoxPlotter):
+
+    def __init__(self):
+
+        super(_ViolinPlotter, self).__init__()
+
+    def plot(self, ax):
+
+        pass
+
+
+class _SwarmPlotter(_BoxPlotter):
+
+    def __init__(self):
+
+        pass
+
+    def plot(self, ax):
+
+        pass
+
+
 def _box_reshape(vals, groupby, names, order):
     """Reshape the box/violinplot input options and find plot labels."""
 
