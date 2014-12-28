@@ -30,15 +30,21 @@ class _BoxPlotter(object):
 
     def establish_variables(self, x, y, hue, data, orient):
         """Convert input specification into a common representation."""
+        # Option 1:
         # We are plotting a wide-form dataset
+        # -----------------------------------
         if x is None and y is None:
 
             # Do a sanity check on the inputs
             if hue is not None:
                 error = "Cannot use `hue` without `x` or `y`"
                 raise ValueError(error)
+            plot_hues = None
 
+            # Option 1a:
             # The input data is a Pandas DataFrame
+            # ------------------------------------
+
             if isinstance(data, pd.DataFrame):
 
                 # Reduce to just the numeric columns
@@ -55,7 +61,10 @@ class _BoxPlotter(object):
                 iter_data = plot_data.iteritems()
                 plot_data = [np.asarray(s, np.float) for k, s in iter_data]
 
+            # Option 1b:
             # The input data is an array or list
+            # ----------------------------------
+
             else:
 
                 # The input data is an array
@@ -67,9 +76,7 @@ class _BoxPlotter(object):
                             plot_data = list(data)
                     elif len(data.shape) == 2:
                         nr, nc = data.shape
-                        if nr == 1:
-                            plot_data = [data]
-                        elif nc == 1:
+                        if nr == 1 or nc == 1:
                             plot_data = [data.ravel()]
                         else:
                             plot_data = [data[:, i] for i in range(nc)]
@@ -82,24 +89,29 @@ class _BoxPlotter(object):
                 elif np.isscalar(data[0]):
                     plot_data = [data]
 
+                # The input data is a nested list
+                # This will catch some things that might fail later
+                # but exhaustive checks are hard
+                else:
+                    plot_data = data
+
                 # Convert to a list of arrays, the common representation
                 plot_data = [np.asarray(d, np.float) for d in plot_data]
 
             # Figure out the plotting orientation
             orient = "h" if str(orient).startswith("h") else "v"
 
+        # Option 2:
         # We are plotting a long-form dataset
+        # -----------------------------------
+
         else:
 
-            # See if we need to get `x` and `y` from `data`
+            # See if we need to get `x` and `y` or `hue` from `data`
             if data is not None:
-
-                if x is not None:
-                    x = data.get(x, x)
-                if y is not None:
-                    y = data.get(y, y)
-                if hue is not None:
-                    hue = data.get(hue, hue)
+                x = data.get(x, x)
+                y = data.get(y, y)
+                hue = data.get(hue, hue)
 
             # Figure out the plotting orientation
             orient = _BoxPlotter.infer_orient(x, y, orient)
@@ -113,13 +125,29 @@ class _BoxPlotter(object):
             # Now we do the grouping
             if groups is None:
                 plot_data = [np.asarray(vals, np.float)]
+                if hue is not None:
+                    plot_hues = [np.asarray(hue)]
             else:
                 if not isinstance(vals, pd.Series):
                     vals = pd.Series(vals)
-                grouped = vals.groupby(groups)
-                plot_data = [np.asarray(s) for _, s in grouped]
 
-        return plot_data
+                # Group the numeric data
+                grouped_vals = vals.groupby(groups)
+                plot_data = [np.asarray(s) for _, s in grouped_vals]
+
+                # Group the hue categories
+                if hue is not None:
+                    grouped_hues = hue.groupby(groups)
+                    plot_hues = [np.asarray(s) for _, s in grouped_hues]
+
+            # Make sure we have a value for plot_hues
+            if hue is None:
+                plot_hues = None
+
+        # Assign object attributes
+        self.orient = orient
+        self.plot_data = plot_data
+        self.plot_hues = plot_hues
 
     @staticmethod
     def infer_orient(x, y, orient=None):

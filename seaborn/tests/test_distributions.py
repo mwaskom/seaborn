@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 from distutils.version import LooseVersion
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 import nose.tools as nt
 import numpy.testing as npt
@@ -22,6 +23,140 @@ except ImportError:
 class TestBoxPlotter(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
+    n_total = 60
+    x = rs.randn(n_total / 3, 3)
+    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
+    y = pd.Series(rs.randn(n_total), name="y_data")
+    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
+    h = pd.Series(np.tile(list("mno"), n_total / 3), name="medium")
+    df = pd.DataFrame(dict(y=y, g=g, h=h))
+    x_df["W"] = g
+
+    def test_wide_df_data(self):
+
+        p = dist._BoxPlotter()
+
+        p.establish_variables(None, None, None, self.x_df, None)
+        for x, y, in zip(p.plot_data, self.x_df[["X", "Y", "Z"]].values.T):
+            npt.assert_array_equal(x, y)
+        nt.assert_equal(p.orient, "v")
+        nt.assert_is(p.plot_hues, None)
+
+        p.establish_variables(None, None, None, self.x_df, "horiz")
+        nt.assert_equal(p.orient, "h")
+
+        with nt.assert_raises(ValueError):
+            p.establish_variables(None, None, "d", self.x_df, None)
+
+    def test_1d_input_data(self):
+
+        p = dist._BoxPlotter()
+
+        x_1d_array = self.x.ravel()
+        p.establish_variables(None, None, None, x_1d_array, None)
+        nt.assert_equal(len(p.plot_data), 1)
+        nt.assert_equal(len(p.plot_data[0]), self.n_total)
+
+        x_1d_list = x_1d_array.tolist()
+        p.establish_variables(None, None, None, x_1d_list, None)
+        nt.assert_equal(len(p.plot_data), 1)
+        nt.assert_equal(len(p.plot_data[0]), self.n_total)
+
+        x_notreally_1d = np.array([self.x.ravel(),
+                                   self.x.ravel()[:self.n_total / 2]])
+        p.establish_variables(None, None, None, x_notreally_1d, None)
+        nt.assert_equal(len(p.plot_data), 2)
+        nt.assert_equal(len(p.plot_data[0]), self.n_total)
+        nt.assert_equal(len(p.plot_data[1]), self.n_total / 2)
+
+    def test_2d_input_data(self):
+
+        p = dist._BoxPlotter()
+
+        x = self.x[:, 0]
+
+        p.establish_variables(None, None, None, x[:, np.newaxis], None)
+        nt.assert_equal(len(p.plot_data), 1)
+        nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
+
+        p.establish_variables(None, None, None, x[np.newaxis, :], None)
+        nt.assert_equal(len(p.plot_data), 1)
+        nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
+
+    def test_3d_input_data(self):
+
+        p = dist._BoxPlotter()
+
+        x = np.zeros((5, 5, 5))
+        with nt.assert_raises(ValueError):
+            p.establish_variables(None, None, None, x, None)
+
+    def test_list_of_array_input_data(self):
+
+        p = dist._BoxPlotter()
+
+        x_list = self.x.T.tolist()
+        p.establish_variables(None, None, None, x_list, None)
+        nt.assert_equal(len(p.plot_data), 3)
+
+        lengths = [len(v_i) for v_i in p.plot_data]
+        nt.assert_equal(lengths, [self.n_total / 3] * 3)
+
+    def test_wide_array_input_data(self):
+
+        p = dist._BoxPlotter()
+
+        p.establish_variables(None, None, None, self.x, None)
+        nt.assert_equal(np.shape(p.plot_data), (3, self.n_total / 3))
+        npt.assert_array_equal(p.plot_data, self.x.T)
+
+    def test_single_long_direct_inputs(self):
+
+        p = dist._BoxPlotter()
+
+        p.establish_variables(self.y, None, self.h, None, None)
+        npt.assert_equal(p.plot_data, [self.y])
+        npt.assert_equal(p.plot_hues, [self.h])
+        nt.assert_equal(p.orient, "v")
+
+        p.establish_variables(None, self.y, None, None, None)
+        npt.assert_equal(p.plot_data, [self.y])
+        nt.assert_equal(p.orient, "h")
+
+        p.establish_variables(self.y, None, None, self.df[["g", "h"]], None)
+        npt.assert_equal(p.plot_data, [self.y])
+
+    def test_single_long_indirect_inputs(self):
+
+        p = dist._BoxPlotter()
+
+        p.establish_variables("y", None, "h", self.df, None)
+        npt.assert_equal(p.plot_data, [self.y])
+        npt.assert_equal(p.plot_hues, [self.h])
+        nt.assert_equal(p.orient, "v")
+
+        p.establish_variables(None, "y", None, self.df, None)
+        npt.assert_equal(p.plot_data, [self.y])
+        nt.assert_equal(p.orient, "h")
+
+    def test_longform_groupby(self):
+
+        p = dist._BoxPlotter()
+
+        p.establish_variables("y", "g", "h", self.df, None)
+        nt.assert_equal(len(p.plot_data), 3)
+        nt.assert_equal(len(p.plot_hues), 3)
+
+        for group, vals in zip(["a", "b", "c"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
+
+        for group, hues in zip(["a", "b", "c"], p.plot_hues):
+            npt.assert_array_equal(hues, self.h[self.g == group])
+
+        p.establish_variables(self.y.values, "g", "h", self.df, None)
+
+        for group, vals in zip(["a", "b", "c"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
 
     def test_orient_inference(self):
 
@@ -39,7 +174,7 @@ class TestBoxPlotter(object):
         nt.assert_equal(p.infer_orient(None, y), "h")
         nt.assert_equal(p.infer_orient(x, y), "v")
 
-        if LooseVersion(pd.__version__) >= "0.15":
+        if pandas_has_categoricals:
             cat_series = cat_series.astype("category")
             y, x = cat_series, num_series
             nt.assert_equal(p.infer_orient(x, y), "h")
@@ -53,7 +188,8 @@ class TestBoxReshaping(object):
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
     g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    df = pd.DataFrame(dict(y=y, g=g))
+    h = pd.Series(np.tile(list("mno"), n_total / 3), name="medium")
+    df = pd.DataFrame(dict(y=y, g=g, h=h))
 
     def test_1d_values(self):
         """Test boxplot prep for 1D data in various forms."""
