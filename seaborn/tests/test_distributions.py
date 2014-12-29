@@ -36,35 +36,35 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables(None, None, None, self.x_df, None)
+        p.establish_variables(data=self.x_df)
         for x, y, in zip(p.plot_data, self.x_df[["X", "Y", "Z"]].values.T):
             npt.assert_array_equal(x, y)
         nt.assert_equal(p.orient, "v")
         nt.assert_is(p.plot_hues, None)
 
-        p.establish_variables(None, None, None, self.x_df, "horiz")
+        p.establish_variables(data=self.x_df, orient="horiz")
         nt.assert_equal(p.orient, "h")
 
         with nt.assert_raises(ValueError):
-            p.establish_variables(None, None, "d", self.x_df, None)
+            p.establish_variables(hue="d", data=self.x_df)
 
     def test_1d_input_data(self):
 
         p = dist._BoxPlotter()
 
         x_1d_array = self.x.ravel()
-        p.establish_variables(None, None, None, x_1d_array, None)
+        p.establish_variables(data=x_1d_array)
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
 
         x_1d_list = x_1d_array.tolist()
-        p.establish_variables(None, None, None, x_1d_list, None)
+        p.establish_variables(data=x_1d_list)
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
 
         x_notreally_1d = np.array([self.x.ravel(),
                                    self.x.ravel()[:self.n_total / 2]])
-        p.establish_variables(None, None, None, x_notreally_1d, None)
+        p.establish_variables(data=x_notreally_1d)
         nt.assert_equal(len(p.plot_data), 2)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
         nt.assert_equal(len(p.plot_data[1]), self.n_total / 2)
@@ -75,11 +75,11 @@ class TestBoxPlotter(object):
 
         x = self.x[:, 0]
 
-        p.establish_variables(None, None, None, x[:, np.newaxis], None)
+        p.establish_variables(data=x[:, np.newaxis])
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
 
-        p.establish_variables(None, None, None, x[np.newaxis, :], None)
+        p.establish_variables(data=x[np.newaxis, :])
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
 
@@ -89,14 +89,14 @@ class TestBoxPlotter(object):
 
         x = np.zeros((5, 5, 5))
         with nt.assert_raises(ValueError):
-            p.establish_variables(None, None, None, x, None)
+            p.establish_variables(data=x)
 
     def test_list_of_array_input_data(self):
 
         p = dist._BoxPlotter()
 
         x_list = self.x.T.tolist()
-        p.establish_variables(None, None, None, x_list, None)
+        p.establish_variables(data=x_list)
         nt.assert_equal(len(p.plot_data), 3)
 
         lengths = [len(v_i) for v_i in p.plot_data]
@@ -106,7 +106,7 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables(None, None, None, self.x, None)
+        p.establish_variables(data=self.x)
         nt.assert_equal(np.shape(p.plot_data), (3, self.n_total / 3))
         npt.assert_array_equal(p.plot_data, self.x.T)
 
@@ -114,28 +114,28 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables(self.y, None, self.h, None, None)
+        p.establish_variables(x=self.y, hue=self.h)
         npt.assert_equal(p.plot_data, [self.y])
         npt.assert_equal(p.plot_hues, [self.h])
         nt.assert_equal(p.orient, "v")
 
-        p.establish_variables(None, self.y, None, None, None)
+        p.establish_variables(y=self.y)
         npt.assert_equal(p.plot_data, [self.y])
         nt.assert_equal(p.orient, "h")
 
-        p.establish_variables(self.y, None, None, self.df[["g", "h"]], None)
+        p.establish_variables(x=self.y, data=self.df[["g", "h"]])
         npt.assert_equal(p.plot_data, [self.y])
 
     def test_single_long_indirect_inputs(self):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables("y", None, "h", self.df, None)
+        p.establish_variables(x="y", hue="h", data=self.df)
         npt.assert_equal(p.plot_data, [self.y])
         npt.assert_equal(p.plot_hues, [self.h])
         nt.assert_equal(p.orient, "v")
 
-        p.establish_variables(None, "y", None, self.df, None)
+        p.establish_variables(y="y", data=self.df)
         npt.assert_equal(p.plot_data, [self.y])
         nt.assert_equal(p.orient, "h")
 
@@ -143,7 +143,7 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables("y", "g", "h", self.df, None)
+        p.establish_variables("g", "y", "h", data=self.df)
         nt.assert_equal(len(p.plot_data), 3)
         nt.assert_equal(len(p.plot_hues), 3)
 
@@ -153,7 +153,7 @@ class TestBoxPlotter(object):
         for group, hues in zip(["a", "b", "c"], p.plot_hues):
             npt.assert_array_equal(hues, self.h[self.g == group])
 
-        p.establish_variables(self.y.values, "g", "h", self.df, None)
+        p.establish_variables("g", self.y.values, "h", self.df, None)
 
         for group, vals in zip(["a", "b", "c"], p.plot_data):
             npt.assert_array_equal(vals, self.y[self.g == group])

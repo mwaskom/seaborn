@@ -26,9 +26,10 @@ class _BoxPlotter(object):
 
     def __init__(self):
 
-        pass
+        self.width = .8
 
-    def establish_variables(self, x, y, hue, data, orient):
+    def establish_variables(self, x=None, y=None, hue=None, data=None,
+                            orient=None, order=None, hue_order=None):
         """Convert input specification into a common representation."""
         # Option 1:
         # We are plotting a wide-form dataset
@@ -39,7 +40,15 @@ class _BoxPlotter(object):
             if hue is not None:
                 error = "Cannot use `hue` without `x` or `y`"
                 raise ValueError(error)
+
+            # No hue grouping with wide inputs
             plot_hues = None
+            hue_title = None
+            hue_names = None
+
+            # We also won't get a axes labels here
+            value_label = None
+            group_label = None
 
             # Option 1a:
             # The input data is a Pandas DataFrame
@@ -47,15 +56,18 @@ class _BoxPlotter(object):
 
             if isinstance(data, pd.DataFrame):
 
-                # Reduce to just the numeric columns
-                cols = []
-                for col in data:
-                    try:
-                        data[col].astype(np.float)
-                        cols.append(col)
-                    except ValueError:
-                        pass
-                plot_data = data[cols]
+                # Order the data correctly
+                if order is None:
+                    order = []
+                    # Reduce to just numeric columns
+                    for col in data:
+                        try:
+                            data[col].astype(np.float)
+                            order.append(col)
+                        except ValueError:
+                            pass
+                plot_data = data[order]
+                group_names = order
 
                 # Convert to a list of arrays, the common representation
                 iter_data = plot_data.iteritems()
@@ -66,6 +78,11 @@ class _BoxPlotter(object):
             # ----------------------------------
 
             else:
+
+                # We can't reorder the data
+                if order is not None:
+                    error = "Input data must be a pandas object to reorder"
+                    raise ValueError(error)
 
                 # The input data is an array
                 if hasattr(data, "shape"):
@@ -98,6 +115,9 @@ class _BoxPlotter(object):
                 # Convert to a list of arrays, the common representation
                 plot_data = [np.asarray(d, np.float) for d in plot_data]
 
+                # The group names will just be numeric indices
+                group_names = list(range((len(plot_data))))
+
             # Figure out the plotting orientation
             orient = "h" if str(orient).startswith("h") else "v"
 
@@ -116,38 +136,97 @@ class _BoxPlotter(object):
             # Figure out the plotting orientation
             orient = _BoxPlotter.infer_orient(x, y, orient)
 
-            # Determine which role each variable will play
-            if orient == "v":
-                vals, groups = x, y
-            else:
-                vals, groups = y, x
+            # Option 2a:
+            # We are plotting a single set of data
+            # ------------------------------------
+            if x is None or y is None:
 
-            # Now we do the grouping
-            if groups is None:
-                plot_data = [np.asarray(vals, np.float)]
-                if hue is not None:
-                    plot_hues = [np.asarray(hue)]
+                # Determine where the data are
+                vals = y if x is None else x
+
+                # Put them into the common representation
+                plot_data = [np.asarray(vals)]
+
+                # Get a label for the value axis
+                if hasattr(vals, "name"):
+                    value_label = vals.name
+                else:
+                    value_label = None
+
+                # This plot will not have group labels or hue nesting
+                groups = None
+                group_label = None
+                group_names = []
+                plot_hues = None
+                hue_names = None
+                hue_title = None
+
+            # Option 2b:
+            # We are grouping the data values by another variable
+            # ---------------------------------------------------
             else:
+
+                # Determine which role each variable will play
+                if orient == "v":
+                    vals, groups = y, x
+                else:
+                    vals, groups = x, y
+
+                # Make sure the groupby is going to work
                 if not isinstance(vals, pd.Series):
                     vals = pd.Series(vals)
 
+                # Get the order of the box groups
+                if order is None:
+                    order = groups.unique()
+                group_names = order
+
                 # Group the numeric data
                 grouped_vals = vals.groupby(groups)
-                plot_data = [np.asarray(s) for _, s in grouped_vals]
+                plot_data = [grouped_vals.get_group(g) for g in order]
+                plot_data = [d.values for d in plot_data]
 
-                # Group the hue categories
-                if hue is not None:
+                # Get the categorical axis label
+                if hasattr(groups, "name"):
+                    group_label = groups.name
+
+                # Get the numerical axis label
+                value_label = vals.name
+
+                # Now handle the hue levels for nested ordering
+                if hue is None:
+                    plot_hues = None
+                    hue_title = None
+                    hue_names = None
+                else:
+
+                    # Make sure the groupby is going to work
+                    if not isinstance(hue, pd.Series):
+                        hue = pd.Series(hue)
+
+                    # Get the order of the hue levels
+                    if hue_order is None:
+                        hue_order = hue.unique()
+                    hue_names = hue_order
+
+                    # Group the hue categories
                     grouped_hues = hue.groupby(groups)
-                    plot_hues = [np.asarray(s) for _, s in grouped_hues]
+                    plot_hues = [grouped_hues.get_group(g) for g in order]
+                    plot_hues = [h.values for h in plot_hues]
 
-            # Make sure we have a value for plot_hues
-            if hue is None:
-                plot_hues = None
+                    # Get the title for the hues (will title the legend)
+                    hue_title = hue.name
 
         # Assign object attributes
+        # ------------------------
         self.orient = orient
         self.plot_data = plot_data
+        self.group_label = group_label
+        self.value_label = value_label
+        self.group_names = group_names
         self.plot_hues = plot_hues
+        self.hue_title = hue_title
+        self.hue_names = hue_names
 
     @staticmethod
     def infer_orient(x, y, orient=None):
@@ -167,17 +246,79 @@ class _BoxPlotter(object):
         elif orient.startswith("h"):
             return "h"
         elif x is None:
-            return "h"
-        elif y is None:
             return "v"
+        elif y is None:
+            return "h"
         elif is_categorical(y):
             return "h"
         else:
             return "v"
 
+    @property
+    def hue_offsets(self):
+
+        n_levels = len(self.hue_names)
+        each_width = self.width / n_levels
+        offsets = np.linspace(0, self.width - each_width, n_levels)
+        offsets -= offsets.mean()
+
+        return offsets
+
+    @property
+    def nested_width(self):
+
+        return self.width / len(self.hue_names) * .98
+
+    def annotate_axes(self, ax):
+
+        if self.orient == "v":
+            xlabel, ylabel = self.group_label, self.value_label
+        else:
+            xlabel, ylabel = self.value_label, self.group_label
+
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+
+        if self.group_names is None:
+            if self.orient == "v":
+                ax.set_xticks([])
+            else:
+                ax.set_yticks([])
+        else:
+            if self.orient == "v":
+                ax.set_xticks(np.arange(len(self.plot_data)))
+                ax.set_xticklabels(self.group_names)
+            else:
+                ax.set_yticks(np.arange(len(self.plot_data)))
+                ax.set_yticklabels(self.group_names)
+
+        if self.orient == "v":
+            ax.xaxis.grid(False)
+            ax.set_xlim(-.5, len(self.plot_data) - .5)
+        else:
+            ax.yaxis.grid(False)
+            ax.set_ylim(-.5, len(self.plot_data) - .5)
+
     def plot(self, ax):
 
-        pass
+        vert = self.orient == "v"
+
+        for i, group_data in enumerate(self.plot_data):
+            if self.plot_hues is None:
+                ax.boxplot(group_data, vert=vert,
+                           widths=self.width, positions=[i])
+            else:
+                offsets = self.hue_offsets
+                for j, hue_level in enumerate(self.hue_names):
+                    hue_mask = self.plot_hues[i] == hue_level
+                    if hue_mask.any():
+                        ax.boxplot(group_data[hue_mask], vert=vert,
+                                   positions=[i + offsets[j]],
+                                   widths=self.nested_width)
+
+        self.annotate_axes(ax)
 
 
 class _ViolinPlotter(_BoxPlotter):
