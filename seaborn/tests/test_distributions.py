@@ -36,15 +36,24 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
+        # Test basic wide DataFrame
         p.establish_variables(data=self.x_df)
+
+        # Check data attribute
         for x, y, in zip(p.plot_data, self.x_df[["X", "Y", "Z"]].values.T):
             npt.assert_array_equal(x, y)
+
+        # Check semantic attributes
         nt.assert_equal(p.orient, "v")
         nt.assert_is(p.plot_hues, None)
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
+        # Test wide dataframe with forced horizontal orientation
         p.establish_variables(data=self.x_df, orient="horiz")
         nt.assert_equal(p.orient, "h")
 
+        # Text exception by trying to hue-group with a wide dataframe
         with nt.assert_raises(ValueError):
             p.establish_variables(hue="d", data=self.x_df)
 
@@ -52,22 +61,31 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
+        # Test basic vector data
         x_1d_array = self.x.ravel()
         p.establish_variables(data=x_1d_array)
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
+        # Test basic vector data in list form
         x_1d_list = x_1d_array.tolist()
         p.establish_variables(data=x_1d_list)
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
+        # Test an object array that looks 1D but isn't
         x_notreally_1d = np.array([self.x.ravel(),
                                    self.x.ravel()[:self.n_total / 2]])
         p.establish_variables(data=x_notreally_1d)
         nt.assert_equal(len(p.plot_data), 2)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
         nt.assert_equal(len(p.plot_data[1]), self.n_total / 2)
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
     def test_2d_input_data(self):
 
@@ -75,18 +93,25 @@ class TestBoxPlotter(object):
 
         x = self.x[:, 0]
 
+        # Test vector data that looks 2D but doesn't really have columns
         p.establish_variables(data=x[:, np.newaxis])
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
+        # Test vector data that looks 2D but doesn't really have rows
         p.establish_variables(data=x[np.newaxis, :])
         nt.assert_equal(len(p.plot_data), 1)
         nt.assert_equal(len(p.plot_data[0]), self.x.shape[0])
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
     def test_3d_input_data(self):
 
         p = dist._BoxPlotter()
 
+        # Test that passing actually 3D data raises
         x = np.zeros((5, 5, 5))
         with nt.assert_raises(ValueError):
             p.establish_variables(data=x)
@@ -95,6 +120,7 @@ class TestBoxPlotter(object):
 
         p = dist._BoxPlotter()
 
+        # Test 2D input in list form
         x_list = self.x.T.tolist()
         p.establish_variables(data=x_list)
         nt.assert_equal(len(p.plot_data), 3)
@@ -102,50 +128,76 @@ class TestBoxPlotter(object):
         lengths = [len(v_i) for v_i in p.plot_data]
         nt.assert_equal(lengths, [self.n_total / 3] * 3)
 
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
+
     def test_wide_array_input_data(self):
 
         p = dist._BoxPlotter()
 
+        # Test 2D input in array form
         p.establish_variables(data=self.x)
         nt.assert_equal(np.shape(p.plot_data), (3, self.n_total / 3))
         npt.assert_array_equal(p.plot_data, self.x.T)
+
+        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.value_label, None)
 
     def test_single_long_direct_inputs(self):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables(x=self.y, hue=self.h)
-        npt.assert_equal(p.plot_data, [self.y])
-        npt.assert_equal(p.plot_hues, [self.h])
-        nt.assert_equal(p.orient, "v")
-
-        p.establish_variables(y=self.y)
+        # Test passing a series to the x variable
+        p.establish_variables(x=self.y)
         npt.assert_equal(p.plot_data, [self.y])
         nt.assert_equal(p.orient, "h")
+        nt.assert_equal(p.value_label, "y_data")
+        nt.assert_is(p.group_label, None)
 
-        p.establish_variables(x=self.y, data=self.df[["g", "h"]])
+        # Test passing a series to the y variable
+        p.establish_variables(y=self.y)
         npt.assert_equal(p.plot_data, [self.y])
+        nt.assert_equal(p.orient, "v")
+        nt.assert_equal(p.value_label, "y_data")
+        nt.assert_is(p.group_label, None)
+
+        # Test passing an array to the y variable
+        p.establish_variables(y=self.y.values)
+        npt.assert_equal(p.plot_data, [self.y])
+        nt.assert_equal(p.orient, "v")
+        nt.assert_is(p.value_label, None)
+        nt.assert_is(p.group_label, None)
 
     def test_single_long_indirect_inputs(self):
 
         p = dist._BoxPlotter()
 
-        p.establish_variables(x="y", hue="h", data=self.df)
-        npt.assert_equal(p.plot_data, [self.y])
-        npt.assert_equal(p.plot_hues, [self.h])
-        nt.assert_equal(p.orient, "v")
-
-        p.establish_variables(y="y", data=self.df)
+        # Test referencing a DataFrame series in the x variable
+        p.establish_variables(x="y", data=self.df)
         npt.assert_equal(p.plot_data, [self.y])
         nt.assert_equal(p.orient, "h")
+        nt.assert_equal(p.value_label, "y")
+        nt.assert_is(p.group_label, None)
+
+        # Test referencing a DataFrame series in the y variable
+        p.establish_variables(y="y", data=self.df)
+        npt.assert_equal(p.plot_data, [self.y])
+        nt.assert_equal(p.orient, "v")
+        nt.assert_equal(p.value_label, "y")
+        nt.assert_is(p.group_label, None)
 
     def test_longform_groupby(self):
 
         p = dist._BoxPlotter()
 
+        # Test a vertically oriented grouped and nested plot
         p.establish_variables("g", "y", "h", data=self.df)
         nt.assert_equal(len(p.plot_data), 3)
         nt.assert_equal(len(p.plot_hues), 3)
+        nt.assert_equal(p.orient, "v")
+        nt.assert_equal(p.value_label, "y")
+        nt.assert_equal(p.group_label, "g")
+        nt.assert_equal(p.hue_title, "h")
 
         for group, vals in zip(["a", "b", "c"], p.plot_data):
             npt.assert_array_equal(vals, self.y[self.g == group])
@@ -153,10 +205,100 @@ class TestBoxPlotter(object):
         for group, hues in zip(["a", "b", "c"], p.plot_hues):
             npt.assert_array_equal(hues, self.h[self.g == group])
 
-        p.establish_variables("g", self.y.values, "h", self.df, None)
+        # Test a grouped and nested plot with direct array value data
+        p.establish_variables("g", self.y.values, "h", self.df)
+        nt.assert_is(p.value_label, None)
+        nt.assert_equal(p.group_label, "g")
 
         for group, vals in zip(["a", "b", "c"], p.plot_data):
             npt.assert_array_equal(vals, self.y[self.g == group])
+
+        # Test a grouped and nested plot with direct array hue data
+        p.establish_variables("g", "y", self.h.values, self.df)
+
+        for group, hues in zip(["a", "b", "c"], p.plot_hues):
+            npt.assert_array_equal(hues, self.h[self.g == group])
+
+        # Test categorical grouping data
+        if pandas_has_categoricals:
+            df = self.df.copy()
+            df.g = df.g.astype("category")
+
+            # Test that horizontal orientation is automatically detected
+            p.establish_variables("y", "g", "h", data=df)
+            nt.assert_equal(len(p.plot_data), 3)
+            nt.assert_equal(len(p.plot_hues), 3)
+            nt.assert_equal(p.orient, "h")
+            nt.assert_equal(p.value_label, "y")
+            nt.assert_equal(p.group_label, "g")
+            nt.assert_equal(p.hue_title, "h")
+
+            for group, vals in zip(["a", "b", "c"], p.plot_data):
+                npt.assert_array_equal(vals, self.y[self.g == group])
+
+            for group, hues in zip(["a", "b", "c"], p.plot_hues):
+                npt.assert_array_equal(hues, self.h[self.g == group])
+
+    def test_order(self):
+
+        p = dist._BoxPlotter()
+
+        # Test inferred order from a wide dataframe input
+        p.establish_variables(data=self.x_df)
+        nt.assert_equal(p.group_names, ["X", "Y", "Z"])
+
+        # Test specified order with a wide dataframe input
+        p.establish_variables(data=self.x_df, order=["Y", "Z", "X"])
+        nt.assert_equal(p.group_names, ["Y", "Z", "X"])
+
+        for group, vals in zip(["Y", "Z", "X"], p.plot_data):
+            npt.assert_array_equal(vals, self.x_df[group])
+
+        with nt.assert_raises(ValueError):
+            p.establish_variables(data=self.x, order=[1, 2, 0])
+
+        # Test inferred order from a grouped longform input
+        p.establish_variables("g", "y", data=self.df)
+        nt.assert_equal(p.group_names, ["a", "b", "c"])
+
+        # Test specified order from a grouped longform input
+        p.establish_variables("g", "y", data=self.df, order=["b", "a", "c"])
+        nt.assert_equal(p.group_names, ["b", "a", "c"])
+
+        for group, vals in zip(["b", "a", "c"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
+
+        # Test inferred order from a grouped input with categorical groups
+        if pandas_has_categoricals:
+            df = self.df.copy()
+            df.g = df.g.astype("category")
+            df.g = df.g.cat.reorder_categories(["c", "b", "a"])
+            p.establish_variables("g", "y", data=df)
+            nt.assert_equal(p.group_names, ["c", "b", "a"])
+
+            for group, vals in zip(["c", "b", "a"], p.plot_data):
+                npt.assert_array_equal(vals, self.y[self.g == group])
+
+    def test_hue_order(self):
+
+        p = dist._BoxPlotter()
+
+        # Test inferred hue order
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_equal(p.hue_names, ["m", "n", "o"])
+
+        # Test specified hue order
+        p.establish_variables("g", "y", "h", data=self.df,
+                              hue_order=["n", "o", "m"])
+        nt.assert_equal(p.hue_names, ["n", "o", "m"])
+
+        # Test inferred hue order from a categorical hue input
+        if pandas_has_categoricals:
+            df = self.df.copy()
+            df.h = df.h.astype("category")
+            df.h = df.h.cat.reorder_categories(["o", "n", "m"])
+            p.establish_variables("g", "y", "h", data=df)
+            nt.assert_equal(p.hue_names, ["o", "n", "m"])
 
     def test_orient_inference(self):
 
@@ -170,8 +312,8 @@ class TestBoxPlotter(object):
 
         nt.assert_equal(p.infer_orient(x, y, "horiz"), "h")
         nt.assert_equal(p.infer_orient(x, y, "vert"), "v")
-        nt.assert_equal(p.infer_orient(x, None), "v")
-        nt.assert_equal(p.infer_orient(None, y), "h")
+        nt.assert_equal(p.infer_orient(x, None), "h")
+        nt.assert_equal(p.infer_orient(None, y), "v")
         nt.assert_equal(p.infer_orient(x, y), "v")
 
         if pandas_has_categoricals:

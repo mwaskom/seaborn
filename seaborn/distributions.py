@@ -179,7 +179,7 @@ class _BoxPlotter(object):
                 # Get the order of the box groups
                 if order is None:
                     order = groups.unique()
-                group_names = order
+                group_names = list(order)
 
                 # Group the numeric data
                 grouped_vals = vals.groupby(groups)
@@ -207,7 +207,7 @@ class _BoxPlotter(object):
                     # Get the order of the hue levels
                     if hue_order is None:
                         hue_order = hue.unique()
-                    hue_names = hue_order
+                    hue_names = list(hue_order)
 
                     # Group the hue categories
                     grouped_hues = hue.groupby(groups)
