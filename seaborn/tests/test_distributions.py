@@ -11,6 +11,7 @@ import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
 from .. import distributions as dist
+from .. import palettes
 
 try:
     import statsmodels.nonparametric.api
@@ -28,7 +29,7 @@ class TestBoxPlotter(object):
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
     g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mno"), n_total / 3), name="medium")
+    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
     df = pd.DataFrame(dict(y=y, g=g, h=h))
     x_df["W"] = g
 
@@ -291,20 +292,20 @@ class TestBoxPlotter(object):
 
         # Test inferred hue order
         p.establish_variables("g", "y", "h", data=self.df)
-        nt.assert_equal(p.hue_names, ["m", "n", "o"])
+        nt.assert_equal(p.hue_names, ["m", "n"])
 
         # Test specified hue order
         p.establish_variables("g", "y", "h", data=self.df,
-                              hue_order=["n", "o", "m"])
-        nt.assert_equal(p.hue_names, ["n", "o", "m"])
+                              hue_order=["n", "m"])
+        nt.assert_equal(p.hue_names, ["n", "m"])
 
         # Test inferred hue order from a categorical hue input
         if pandas_has_categoricals:
             df = self.df.copy()
             df.h = df.h.astype("category")
-            df.h = df.h.cat.reorder_categories(["o", "n", "m"])
+            df.h = df.h.cat.reorder_categories(["n", "m"])
             p.establish_variables("g", "y", "h", data=df)
-            nt.assert_equal(p.hue_names, ["o", "n", "m"])
+            nt.assert_equal(p.hue_names, ["n", "m"])
 
     def test_orient_inference(self):
 
@@ -327,6 +328,86 @@ class TestBoxPlotter(object):
             y, x = cat_series, num_series
             nt.assert_equal(p.infer_orient(x, y), "h")
 
+    def test_default_palettes(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+
+        # Test palette mapping the x position
+        p.establish_variables("g", "y", data=self.df)
+        p.establish_colors(None, None, 1)
+        nt.assert_equal(p.colors, palettes.color_palette("deep", 3))
+
+        # Test palette mapping the hue position
+        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_colors(None, None, 1)
+        nt.assert_equal(p.colors, palettes.color_palette("deep", 2))
+
+    def test_default_palette_with_many_levels(self):
+
+        with palettes.color_palette(["blue", "red"], 2):
+            p = dist._BoxPlotter(**self.default_kws)
+            p.establish_variables("g", "y", data=self.df)
+            p.establish_colors(None, None, 1)
+            npt.assert_array_equal(p.colors, palettes.husl_palette(3, l=.7))
+
+    def test_specific_color(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+
+        # Test the same color for each x position
+        p.establish_variables("g", "y", data=self.df)
+        p.establish_colors("blue", None, 1)
+        blue_rgb = mpl.colors.colorConverter.to_rgb("blue")
+        nt.assert_equal(p.colors, [blue_rgb] * 3)
+
+        # Test a color-based blend for the hue mapping
+        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_colors("#ff0022", None, 1)
+        rgba_array = palettes.light_palette("#ff0022", 2)
+        npt.assert_array_almost_equal(p.colors,
+                                      rgba_array[:, :3])
+
+    def test_specific_palette(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+
+        # Test palette mapping the x position
+        p.establish_variables("g", "y", data=self.df)
+        p.establish_colors(None, "dark", 1)
+        nt.assert_equal(p.colors, palettes.color_palette("dark", 3))
+
+        # Test that non-None `color` and `hue` raises an error
+        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_colors(None, "muted", 1)
+        nt.assert_equal(p.colors, palettes.color_palette("muted", 2))
+
+    def test_color_palette_error(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+        p.establish_variables("g", "y", data=self.df)
+        with nt.assert_raises(ValueError):
+            p.establish_colors("blue", "deep", 1)
+
+    def test_dict_as_palette(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        pal = {"m": (0, 0, 1), "n": (1, 0 ,0)}
+        p.establish_colors(None, pal, 1)
+        nt.assert_equal(p.colors, [(0, 0, 1), (1, 0, 0)])
+
+
+    def test_palette_desaturation(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+        p.establish_variables("g", "y", data=self.df)
+        p.establish_colors((0, 0, 1), None, .5)
+        nt.assert_equal(p.colors, [(.25, .25, .75)] * 3)
+
+        p.establish_colors(None, [(0, 0, 1), (1, 0, 0), "w"], .5)
+        nt.assert_equal(p.colors, [(.25, .25, .75),
+                                   (.75, .25, .25),
+                                   (1, 1, 1)])
 
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""

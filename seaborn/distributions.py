@@ -18,7 +18,7 @@ except ImportError:
 from .external.six.moves import range
 
 from .utils import set_hls_values, desaturate, percentiles, iqr, _kde_support
-from .palettes import color_palette, husl_palette, blend_palette
+from .palettes import color_palette, husl_palette, blend_palette, light_palette
 from .axisgrid import JointGrid
 
 
@@ -35,6 +35,10 @@ class _BoxPlotter(object):
         self.width = width
         self.fliersize = fliersize
         self.linewidth = linewidth
+
+        # TODO
+        # labels for the hue levels and legend
+        # dropna for each dataset right before plotting
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None):
@@ -257,16 +261,38 @@ class _BoxPlotter(object):
                 colors = color_palette(n_colors=n_colors)
             else:
                 colors = husl_palette(n_colors, l=.7)
+
         elif color is None:
+
+            # Let `palette` be a dict mapping level to color
+            if isinstance(palette, dict):
+                if self.hue_names is None:
+                    levels = self.group_names
+                else:
+                    levels = self.hue_names
+                palette = [palette[l] for l in levels]
+
             colors = color_palette(palette, n_colors)
+
         elif palette is None:
-            colors = [color] * n_colors
+            # When passing a specific color, the interpretation depends
+            # on whether there is a hue variable or not.
+            # If so, we will make a blend palette so that the different
+            # levels have some amount of variation.
+            if self.hue_names is None:
+                colors = [color] * n_colors
+            else:
+                colors = light_palette(color, n_colors)
+
         else:
             raise ValueError("Cannot pass both `color` and `palette`")
 
-        # Desaturate a bit because these are patches
+        # Conver the colors to a common rgb representation
         colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-        colors = [desaturate(c, saturation) for c in colors]
+
+        # Desaturate a bit because these are patches
+        if saturation < 1:
+            colors = [desaturate(c, saturation) for c in colors]
 
         # Determine the gray color to use for the lines framing the plot
         light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
@@ -549,6 +575,8 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         ax = plt.gca()
 
     plotter.plot(ax, kwargs)
+
+    return ax
 
 
 def boxplot_old(vals, groupby=None, names=None, join_rm=False, order=None,
