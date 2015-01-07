@@ -37,7 +37,7 @@ class TestBoxPlotter(object):
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
                        saturation=.75, alpha=None,
-                       width=None, fliersize=None, linewidth=None)
+                       width=.8, fliersize=5, linewidth=None)
 
     def test_wide_df_data(self):
 
@@ -408,6 +408,34 @@ class TestBoxPlotter(object):
         nt.assert_equal(p.colors, [(.25, .25, .75),
                                    (.75, .25, .25),
                                    (1, 1, 1)])
+
+    def test_nested_width(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_equal(p.nested_width, .4 * .98)
+
+        kws = self.default_kws.copy()
+        kws["width"] = .6
+        p = dist._BoxPlotter(**kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_equal(p.nested_width, .3 * .98)
+
+    def test_hue_offsets(self):
+
+        p = dist._BoxPlotter(**self.default_kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        npt.assert_array_equal(p.hue_offsets, [-.2, .2])
+
+        kws = self.default_kws.copy()
+        kws["width"] = .6
+        p = dist._BoxPlotter(**kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        npt.assert_array_equal(p.hue_offsets, [-.15, .15])
+
+        p = dist._BoxPlotter(**kws)
+        p.establish_variables("h", "y", "g", data=self.df)
+        npt.assert_array_almost_equal(p.hue_offsets, [-.2, 0, .2])
 
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
