@@ -262,7 +262,16 @@ class _BoxPlotter(object):
             else:
                 colors = husl_palette(n_colors, l=.7)
 
-        elif color is None:
+        elif palette is None:
+            # When passing a specific color, the interpretation depends
+            # on whether there is a hue variable or not.
+            # If so, we will make a blend palette so that the different
+            # levels have some amount of variation.
+            if self.hue_names is None:
+                colors = [color] * n_colors
+            else:
+                colors = light_palette(color, n_colors)
+        else:
 
             # Let `palette` be a dict mapping level to color
             if isinstance(palette, dict):
@@ -273,19 +282,6 @@ class _BoxPlotter(object):
                 palette = [palette[l] for l in levels]
 
             colors = color_palette(palette, n_colors)
-
-        elif palette is None:
-            # When passing a specific color, the interpretation depends
-            # on whether there is a hue variable or not.
-            # If so, we will make a blend palette so that the different
-            # levels have some amount of variation.
-            if self.hue_names is None:
-                colors = [color] * n_colors
-            else:
-                colors = light_palette(color, n_colors)
-
-        else:
-            raise ValueError("Cannot pass both `color` and `palette`")
 
         # Conver the colors to a common rgb representation
         colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
@@ -356,18 +352,12 @@ class _BoxPlotter(object):
         if ylabel is not None:
             ax.set_ylabel(ylabel)
 
-        if self.group_names is None:
-            if self.orient == "v":
-                ax.set_xticks([])
-            else:
-                ax.set_yticks([])
+        if self.orient == "v":
+            ax.set_xticks(np.arange(len(self.plot_data)))
+            ax.set_xticklabels(self.group_names)
         else:
-            if self.orient == "v":
-                ax.set_xticks(np.arange(len(self.plot_data)))
-                ax.set_xticklabels(self.group_names)
-            else:
-                ax.set_yticks(np.arange(len(self.plot_data)))
-                ax.set_yticklabels(self.group_names)
+            ax.set_yticks(np.arange(len(self.plot_data)))
+            ax.set_yticklabels(self.group_names)
 
         if self.orient == "v":
             ax.xaxis.grid(False)
@@ -388,23 +378,31 @@ class _BoxPlotter(object):
             box.set_linewidth(self.linewidth)
         for whisk in artist_dict["whiskers"]:
             whisk.set_color(self.gray)
+            whisk.set_alpha(self.alpha)
             whisk.set_linewidth(self.linewidth)
             whisk.set_linestyle("-")
         for cap in artist_dict["caps"]:
             cap.set_color(self.gray)
+            cap.set_alpha(self.alpha)
             cap.set_linewidth(self.linewidth)
         for med in artist_dict["medians"]:
             med.set_color(self.gray)
+            med.set_alpha(self.alpha)
             med.set_linewidth(self.linewidth)
         for fly in artist_dict["fliers"]:
             fly.set_color(self.gray)
+            fly.set_alpha(self.alpha)
             fly.set_marker("d")
             fly.set_markeredgecolor(self.gray)
             fly.set_markersize(self.fliersize)
 
     def add_legend_data(self, ax, x, y, color, label):
         """Add a dummy patch object so we can get legend data."""
-        rect = plt.Rectangle([x, y], 0, 0, color=color, label=label, zorder=-1)
+        rect = plt.Rectangle([x, y], 0, 0,
+                             linewidth=self.linewidth / 2,
+                             edgecolor=self.gray,
+                             facecolor=color,
+                             label=label, zorder=-1)
         ax.add_patch(rect)
 
     def draw_boxplot(self, ax, kws):
@@ -413,6 +411,8 @@ class _BoxPlotter(object):
 
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None:
+                # Draw a single box or a set of boxes
+                # with a single level of grouping
                 box_data = remove_na(group_data)
                 artist_dict = ax.boxplot(box_data,
                                          vert=vert,
@@ -423,25 +423,27 @@ class _BoxPlotter(object):
                 color = self.colors[i]
                 self.restyle_boxplot(artist_dict, color)
             else:
+                # Draw nested groups of boxes
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    if hue_mask.any():
-                        box_data = remove_na(group_data[hue_mask])
-                        center = i + offsets[j]
-                        artist_dict = ax.boxplot(box_data,
-                                                 vert=vert,
-                                                 patch_artist=True,
-                                                 positions=[center],
-                                                 widths=self.nested_width,
-                                                 **kws)
-                        color = self.colors[j]
-                        self.restyle_boxplot(artist_dict, color)
-                        # Add legend data, but just for one set of boxes
-                        if not i:
-                            self.add_legend_data(ax, center,
-                                                 np.median(box_data),
-                                                 color, hue_level)
+                    if not hue_mask.any():
+                        continue
+                    box_data = remove_na(group_data[hue_mask])
+                    center = i + offsets[j]
+                    artist_dict = ax.boxplot(box_data,
+                                             vert=vert,
+                                             patch_artist=True,
+                                             positions=[center],
+                                             widths=self.nested_width,
+                                             **kws)
+                    color = self.colors[j]
+                    self.restyle_boxplot(artist_dict, color)
+                    # Add legend data, but just for one set of boxes
+                    if not i:
+                        self.add_legend_data(ax, center,
+                                             np.median(box_data),
+                                             color, hue_level)
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""

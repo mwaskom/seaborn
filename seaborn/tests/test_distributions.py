@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
@@ -381,21 +381,19 @@ class TestBoxPlotter(object):
         p.establish_colors(None, "muted", 1)
         nt.assert_equal(p.colors, palettes.color_palette("muted", 2))
 
-    def test_color_palette_error(self):
-
+        # Test that specified palette overrides specified color
         p = dist._BoxPlotter(**self.default_kws)
         p.establish_variables("g", "y", data=self.df)
-        with nt.assert_raises(ValueError):
-            p.establish_colors("blue", "deep", 1)
+        p.establish_colors("blue", "deep", 1)
+        nt.assert_equal(p.colors, palettes.color_palette("deep", 3))
 
     def test_dict_as_palette(self):
 
         p = dist._BoxPlotter(**self.default_kws)
         p.establish_variables("g", "y", "h", data=self.df)
-        pal = {"m": (0, 0, 1), "n": (1, 0 ,0)}
+        pal = {"m": (0, 0, 1), "n": (1, 0, 0)}
         p.establish_colors(None, pal, 1)
         nt.assert_equal(p.colors, [(0, 0, 1), (1, 0, 0)])
-
 
     def test_palette_desaturation(self):
 
@@ -436,6 +434,70 @@ class TestBoxPlotter(object):
         p = dist._BoxPlotter(**kws)
         p.establish_variables("h", "y", "g", data=self.df)
         npt.assert_array_almost_equal(p.hue_offsets, [-.2, 0, .2])
+
+    def test_axes_data(self):
+
+        ax = dist.boxplot("g", "y", data=self.df)
+        nt.assert_equal(len(ax.artists), 3)
+        nt.assert_equal(len(ax.lines), 18)
+
+        plt.close("all")
+
+        ax = dist.boxplot("g", "y", "h", data=self.df)
+        nt.assert_equal(len(ax.artists), 6)
+        nt.assert_equal(len(ax.lines), 36)
+
+        plt.close("all")
+
+    def test_box_colors(self):
+
+        ax = dist.boxplot("g", "y", data=self.df, saturation=1)
+        pal = palettes.color_palette("deep", 3)
+        for patch, color in zip(ax.artists, pal):
+            nt.assert_equal(patch.get_facecolor()[:3], color)
+
+        plt.close("all")
+
+        ax = dist.boxplot("g", "y", "h", data=self.df, saturation=1)
+        pal = palettes.color_palette("deep", 2)
+        for patch, color in zip(ax.artists, pal * 2):
+            nt.assert_equal(patch.get_facecolor()[:3], color)
+
+        plt.close("all")
+
+    def test_axes_annotation(self):
+
+        ax = dist.boxplot("g", "y", data=self.df)
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "y")
+        nt.assert_equal(ax.get_xlim(), (-.5, 2.5))
+        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
+                               ["a", "b", "c"])
+
+        plt.close("all")
+
+        ax = dist.boxplot("g", "y", "h", data=self.df)
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "y")
+        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
+                               ["a", "b", "c"])
+        npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
+                               ["m", "n"])
+
+        plt.close("all")
+
+        ax = dist.boxplot("y", "g", data=self.df, orient="h")
+        nt.assert_equal(ax.get_xlabel(), "y")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        nt.assert_equal(ax.get_ylim(), (-.5, 2.5))
+        npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
+                               ["a", "b", "c"])
+
+        plt.close("all")
+
 
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
