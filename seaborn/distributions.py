@@ -24,9 +24,17 @@ from .axisgrid import JointGrid
 
 class _BoxPlotter(object):
 
-    def __init__(self):
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 orient, color, palette, saturation, alpha,
+                 width, fliersize, linewidth):
 
-        self.width = .8
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, saturation)
+
+        self.alpha = 1 if alpha is None else alpha
+        self.width = width
+        self.fliersize = fliersize
+        self.linewidth = linewidth
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None):
@@ -68,6 +76,7 @@ class _BoxPlotter(object):
                             pass
                 plot_data = data[order]
                 group_names = order
+                group_label = data.columns.name
 
                 # Convert to a list of arrays, the common representation
                 iter_data = plot_data.iteritems()
@@ -101,6 +110,10 @@ class _BoxPlotter(object):
                         error = ("Input `data` can have no "
                                  "more than 2 dimensions")
                         raise ValueError(error)
+
+                # Check if `data` is None to let us bail out here (for testing)
+                elif data is None:
+                    plot_data = [[]]
 
                 # The input data is a flat list
                 elif np.isscalar(data[0]):
@@ -228,6 +241,42 @@ class _BoxPlotter(object):
         self.hue_title = hue_title
         self.hue_names = hue_names
 
+    def establish_colors(self, color, palette, saturation):
+        """Get a list of colors for the main component of the plots."""
+        if self.hue_names is None:
+            n_colors = len(self.plot_data)
+        else:
+            n_colors = len(self.hue_names)
+
+        # Determine the main colors
+        if color is None and palette is None:
+            # Determine whether the current palette will have enough values
+            # If not, we'll default to the husl palette so each is distinct
+            current_palette = mpl.rcParams["axes.color_cycle"]
+            if n_colors <= len(current_palette):
+                colors = color_palette(n_colors=n_colors)
+            else:
+                colors = husl_palette(n_colors, l=.7)
+        elif color is None:
+            colors = color_palette(palette, n_colors)
+        elif palette is None:
+            colors = [color] * n_colors
+        else:
+            raise ValueError("Cannot pass both `color` and `palette`")
+
+        # Desaturate a bit because these are patches
+        colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+        colors = [desaturate(c, saturation) for c in colors]
+
+        # Determine the gray color to use for the lines framing the plot
+        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
+        l = min(light_vals) * .6
+        gray = (l, l, l)
+
+        # Assign object attributes
+        self.colors = colors
+        self.gray = gray
+
     @staticmethod
     def infer_orient(x, y, orient=None):
         """Determine how the plot should be oriented based on the data."""
@@ -256,7 +305,7 @@ class _BoxPlotter(object):
 
     @property
     def hue_offsets(self):
-
+        """A list of center positions for plots when hue nesting is used."""
         n_levels = len(self.hue_names)
         each_width = self.width / n_levels
         offsets = np.linspace(0, self.width - each_width, n_levels)
@@ -266,11 +315,11 @@ class _BoxPlotter(object):
 
     @property
     def nested_width(self):
-
+        """A float with the width of plot elements when hue nesting is used."""
         return self.width / len(self.hue_names) * .98
 
     def annotate_axes(self, ax):
-
+        """Add descriptive labels to an Axes object."""
         if self.orient == "v":
             xlabel, ylabel = self.group_label, self.value_label
         else:
@@ -301,23 +350,60 @@ class _BoxPlotter(object):
             ax.yaxis.grid(False)
             ax.set_ylim(-.5, len(self.plot_data) - .5)
 
-    def plot(self, ax):
+    def restyle_boxplot(self, artist_dict, color):
+        """Take a drawn matplotlib boxplot and make it look nice."""
+        for box in artist_dict["boxes"]:
+            box.set_color(color)
+            box.set_alpha(self.alpha)
+            box.set_edgecolor(self.gray)
+            box.set_linewidth(self.linewidth)
+        for whisk in artist_dict["whiskers"]:
+            whisk.set_color(self.gray)
+            whisk.set_linewidth(self.linewidth)
+            whisk.set_linestyle("-")
+        for cap in artist_dict["caps"]:
+            cap.set_color(self.gray)
+            cap.set_linewidth(self.linewidth)
+        for med in artist_dict["medians"]:
+            med.set_color(self.gray)
+            med.set_linewidth(self.linewidth)
+        for fly in artist_dict["fliers"]:
+            fly.set_color(self.gray)
+            fly.set_marker("d")
+            fly.set_markeredgecolor(self.gray)
+            fly.set_markersize(self.fliersize)
 
+    def draw_boxplot(self, ax, kws):
+        """Use matplotlib to draw a boxplot on an Axes."""
         vert = self.orient == "v"
 
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None:
-                ax.boxplot(group_data, vert=vert,
-                           widths=self.width, positions=[i])
+                artist_dict = ax.boxplot(group_data,
+                                         vert=vert,
+                                         patch_artist=True,
+                                         positions=[i],
+                                         widths=self.width,
+                                         **kws)
+                color = self.colors[i]
+                self.restyle_boxplot(artist_dict, color)
             else:
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
                     if hue_mask.any():
-                        ax.boxplot(group_data[hue_mask], vert=vert,
-                                   positions=[i + offsets[j]],
-                                   widths=self.nested_width)
+                        artist_dict = ax.boxplot(group_data[hue_mask],
+                                                 vert=vert,
+                                                 patch_artist=True,
+                                                 positions=[i + offsets[j]],
+                                                 widths=self.nested_width,
+                                                 **kws)
+                        color = self.colors[j]
+                        self.restyle_boxplot(artist_dict, color)
 
+    def plot(self, ax, boxplot_kws):
+        """Make the plot."""
+        self.draw_boxplot(ax, boxplot_kws)
         self.annotate_axes(ax)
 
 
@@ -451,9 +537,23 @@ def _box_colors(vals, color, sat):
     return colors, gray
 
 
-def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
-            color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            saturation=.7, label=None, ax=None, **kwargs):
+def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+            orient=None, color=None, palette=None, saturation=.75, alpha=None,
+            width=.8, fliersize=5, linewidth=1.5, ax=None, **kwargs):
+
+    plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
+                          orient, color, palette, saturation, alpha,
+                          width, fliersize, linewidth)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+
+
+def boxplot_old(vals, groupby=None, names=None, join_rm=False, order=None,
+                color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
+                saturation=.7, label=None, ax=None, **kwargs):
     """Wrapper for matplotlib boxplot with better aesthetics and functionality.
 
     Parameters

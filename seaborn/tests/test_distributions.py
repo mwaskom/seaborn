@@ -32,9 +32,15 @@ class TestBoxPlotter(object):
     df = pd.DataFrame(dict(y=y, g=g, h=h))
     x_df["W"] = g
 
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       order=None, hue_order=None,
+                       orient=None, color=None, palette=None,
+                       saturation=.75, alpha=None,
+                       width=None, fliersize=None, linewidth=None)
+
     def test_wide_df_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test basic wide DataFrame
         p.establish_variables(data=self.x_df)
@@ -46,7 +52,7 @@ class TestBoxPlotter(object):
         # Check semantic attributes
         nt.assert_equal(p.orient, "v")
         nt.assert_is(p.plot_hues, None)
-        nt.assert_is(p.group_label, None)
+        nt.assert_is(p.group_label, "big")
         nt.assert_is(p.value_label, None)
 
         # Test wide dataframe with forced horizontal orientation
@@ -59,7 +65,7 @@ class TestBoxPlotter(object):
 
     def test_1d_input_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test basic vector data
         x_1d_array = self.x.ravel()
@@ -89,7 +95,7 @@ class TestBoxPlotter(object):
 
     def test_2d_input_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         x = self.x[:, 0]
 
@@ -109,7 +115,7 @@ class TestBoxPlotter(object):
 
     def test_3d_input_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test that passing actually 3D data raises
         x = np.zeros((5, 5, 5))
@@ -118,7 +124,7 @@ class TestBoxPlotter(object):
 
     def test_list_of_array_input_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test 2D input in list form
         x_list = self.x.T.tolist()
@@ -133,7 +139,7 @@ class TestBoxPlotter(object):
 
     def test_wide_array_input_data(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test 2D input in array form
         p.establish_variables(data=self.x)
@@ -145,7 +151,7 @@ class TestBoxPlotter(object):
 
     def test_single_long_direct_inputs(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test passing a series to the x variable
         p.establish_variables(x=self.y)
@@ -170,7 +176,7 @@ class TestBoxPlotter(object):
 
     def test_single_long_indirect_inputs(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test referencing a DataFrame series in the x variable
         p.establish_variables(x="y", data=self.df)
@@ -188,7 +194,7 @@ class TestBoxPlotter(object):
 
     def test_longform_groupby(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test a vertically oriented grouped and nested plot
         p.establish_variables("g", "y", "h", data=self.df)
@@ -241,7 +247,7 @@ class TestBoxPlotter(object):
 
     def test_order(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test inferred order from a wide dataframe input
         p.establish_variables(data=self.x_df)
@@ -281,7 +287,7 @@ class TestBoxPlotter(object):
 
     def test_hue_order(self):
 
-        p = dist._BoxPlotter()
+        p = dist._BoxPlotter(**self.default_kws)
 
         # Test inferred hue order
         p.establish_variables("g", "y", "h", data=self.df)
