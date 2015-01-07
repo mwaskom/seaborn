@@ -5,6 +5,7 @@ import colorsys
 import numpy as np
 from scipy import stats
 import pandas as pd
+from pandas.core.series import remove_na
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
@@ -34,11 +35,10 @@ class _BoxPlotter(object):
         self.alpha = 1 if alpha is None else alpha
         self.width = width
         self.fliersize = fliersize
-        self.linewidth = linewidth
 
-        # TODO
-        # labels for the hue levels and legend
-        # dropna for each dataset right before plotting
+        if linewidth is None:
+            linewidth = mpl.rcParams["lines.linewidth"]
+        self.linewidth = linewidth
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None):
@@ -376,6 +376,9 @@ class _BoxPlotter(object):
             ax.yaxis.grid(False)
             ax.set_ylim(-.5, len(self.plot_data) - .5)
 
+        if self.hue_names is not None:
+            ax.legend(loc="best")
+
     def restyle_boxplot(self, artist_dict, color):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
@@ -399,13 +402,19 @@ class _BoxPlotter(object):
             fly.set_markeredgecolor(self.gray)
             fly.set_markersize(self.fliersize)
 
+    def add_legend_data(self, ax, x, y, color, label):
+        """Add a dummy patch object so we can get legend data."""
+        rect = plt.Rectangle([x, y], 0, 0, color=color, label=label, zorder=-1)
+        ax.add_patch(rect)
+
     def draw_boxplot(self, ax, kws):
         """Use matplotlib to draw a boxplot on an Axes."""
         vert = self.orient == "v"
 
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None:
-                artist_dict = ax.boxplot(group_data,
+                box_data = remove_na(group_data)
+                artist_dict = ax.boxplot(box_data,
                                          vert=vert,
                                          patch_artist=True,
                                          positions=[i],
@@ -418,14 +427,21 @@ class _BoxPlotter(object):
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
                     if hue_mask.any():
-                        artist_dict = ax.boxplot(group_data[hue_mask],
+                        box_data = remove_na(group_data[hue_mask])
+                        center = i + offsets[j]
+                        artist_dict = ax.boxplot(box_data,
                                                  vert=vert,
                                                  patch_artist=True,
-                                                 positions=[i + offsets[j]],
+                                                 positions=[center],
                                                  widths=self.nested_width,
                                                  **kws)
                         color = self.colors[j]
                         self.restyle_boxplot(artist_dict, color)
+                        # Add legend data, but just for one set of boxes
+                        if not i:
+                            self.add_legend_data(ax, center,
+                                                 np.median(box_data),
+                                                 color, hue_level)
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
@@ -565,7 +581,7 @@ def _box_colors(vals, color, sat):
 
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75, alpha=None,
-            width=.8, fliersize=5, linewidth=1.5, ax=None, **kwargs):
+            width=.8, fliersize=5, linewidth=None, ax=None, **kwargs):
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation, alpha,
