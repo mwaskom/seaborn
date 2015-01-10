@@ -151,7 +151,7 @@ class _BoxPlotter(object):
                 hue = data.get(hue, hue)
 
             # Figure out the plotting orientation
-            orient = _BoxPlotter.infer_orient(x, y, orient)
+            orient = self.infer_orient(x, y, orient)
 
             # Option 2a:
             # We are plotting a single set of data
@@ -299,8 +299,7 @@ class _BoxPlotter(object):
         self.colors = colors
         self.gray = gray
 
-    @staticmethod
-    def infer_orient(x, y, orient=None):
+    def infer_orient(self, x, y, orient=None):
         """Determine how the plot should be oriented based on the data."""
         orient = str(orient)
 

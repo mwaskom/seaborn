@@ -309,8 +309,7 @@ class TestBoxPlotter(object):
 
     def test_orient_inference(self):
 
-        # Infer_orient is a static method
-        p = dist._BoxPlotter
+        p = dist._BoxPlotter(**self.default_kws)
 
         cat_series = pd.Series(["a", "b", "c"] * 10)
         num_series = pd.Series(self.rs.randn(30))
