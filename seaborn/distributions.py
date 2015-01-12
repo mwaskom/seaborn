@@ -26,13 +26,12 @@ from .axisgrid import JointGrid
 class _BoxPlotter(object):
 
     def __init__(self, x, y, hue, data, order, hue_order,
-                 orient, color, palette, saturation, alpha,
+                 orient, color, palette, saturation,
                  width, fliersize, linewidth):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
 
-        self.alpha = 1 if alpha is None else alpha
         self.width = width
         self.fliersize = fliersize
 
@@ -372,25 +371,20 @@ class _BoxPlotter(object):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
             box.set_color(color)
-            box.set_alpha(self.alpha)
             box.set_edgecolor(self.gray)
             box.set_linewidth(self.linewidth)
         for whisk in artist_dict["whiskers"]:
             whisk.set_color(self.gray)
-            whisk.set_alpha(self.alpha)
             whisk.set_linewidth(self.linewidth)
             whisk.set_linestyle("-")
         for cap in artist_dict["caps"]:
             cap.set_color(self.gray)
-            cap.set_alpha(self.alpha)
             cap.set_linewidth(self.linewidth)
         for med in artist_dict["medians"]:
             med.set_color(self.gray)
-            med.set_alpha(self.alpha)
             med.set_linewidth(self.linewidth)
         for fly in artist_dict["fliers"]:
             fly.set_color(self.gray)
-            fly.set_alpha(self.alpha)
             fly.set_marker("d")
             fly.set_markeredgecolor(self.gray)
             fly.set_markersize(self.fliersize)
@@ -452,13 +446,219 @@ class _BoxPlotter(object):
 
 class _ViolinPlotter(_BoxPlotter):
 
-    def __init__(self):
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 bw, cut, scale, scale_hue, gridsize,
+                 width, inner, split, orient, linewidth,
+                 color, palette, saturation):
 
-        super(_ViolinPlotter, self).__init__()
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, saturation)
+        self.estimate_densities(bw, cut, scale, scale_hue, gridsize)
+
+        self.width = width
+        self.gridsize = gridsize
+        if split and self.hue_names is not None and len(self.hue_names) != 2:
+            raise ValueError("Cannot use `split` with more than 2 hue levels.")
+        self.split = split
+
+        if linewidth is None:
+            linewidth = mpl.rcParams["lines.linewidth"]
+        self.linewidth = linewidth
+
+    def estimate_densities(self, bw, cut, scale, scale_hue, gridsize):
+        """Find the support and density for all of the data."""
+        if self.hue_names is None:
+            support = []
+            density = []
+            counts = np.zeros(len(self.group_names))
+            max_density = np.zeros(len(self.group_names))
+        else:
+            support = [[] for _ in self.group_names]
+            density = [[] for _ in self.group_names]
+            size = len(self.group_names), len(self.hue_names)
+            counts = np.zeros(size)
+            max_density = np.zeros(size)
+
+        for i, group_data in enumerate(self.plot_data):
+            if self.plot_hues is None:
+
+                kde_data = remove_na(group_data)
+                kde, bw_used = self.fit_kde(kde_data, bw)
+
+                support_i = self.kde_support(kde_data, bw_used, cut, gridsize)
+                density_i = kde.evaluate(support_i)
+
+                support.append(support_i)
+                density.append(density_i)
+                counts[i] = kde_data.size
+                max_density[i] = density_i.max()
+
+            else:
+
+                for j, hue_level in enumerate(self.hue_names):
+
+                    hue_mask = self.plot_hues[i] == hue_level
+                    kde_data = remove_na(group_data[hue_mask])
+                    kde, bw_used = self.fit_kde(kde_data, bw)
+
+                    support_ij = self.kde_support(kde_data, bw_used,
+                                                  cut, gridsize)
+                    density_ij = kde.evaluate(support_ij)
+
+                    support[i].append(support_ij)
+                    density[i].append(density_ij)
+                    counts[i, j] = kde_data.size
+                    max_density[i, j] = density_ij.max()
+
+        if scale == "area":
+
+            if self.hue_names is None:
+                for d in density:
+                    d /= max_density.max()
+            else:
+                for i, group in enumerate(density):
+                    for d in group:
+                        if scale_hue:
+                            max = max_density[i].max()
+                        else:
+                            max = max_density.max()
+                        d /= max
+
+        elif scale == "width":
+
+            if self.hue_names is None:
+                for d in density:
+                    d /= d.max()
+            else:
+                for group in density:
+                    for d in group:
+                        d /= d.max()
+
+        elif scale == "count":
+
+            if self.hue_names is None:
+                for count, d in zip(counts, density):
+                    d /= d.max()
+                    d *= count / counts.max()
+            else:
+                for i, group in enumerate(density):
+                    for j, d in enumerate(group):
+                        count = counts[i, j]
+                        if scale_hue:
+                            denom = count / counts[i].max()
+                        else:
+                            denom = count / counts.max()
+                        d /= d.max()
+                        d *= denom
+
+        else:
+            raise ValueError("scale method '{}' not recognized".format(scale))
+
+        self.support = support
+        self.density = density
+
+    def fit_kde(self, x, bw):
+        """Estimate a KDE for a vector of data with flexible bandwidth."""
+        # Allow `bw` to be a callable function
+        try:
+            bw = bw(x)
+        except TypeError:
+            pass
+
+        # Allow for the use of old scipy where `bw` is fixed
+        try:
+            kde = stats.gaussian_kde(x, bw)
+        except TypeError:
+            kde = stats.gaussian_kde(x)
+            if bw != "scott":  # scipy default
+                msg = ("Ignoring bandwidth choice, "
+                       "please upgrade scipy to use a different bandwidth.")
+                warnings.warn(msg, UserWarning)
+
+        # Extract the numeric bandwidth from the KDE object
+        if isinstance(bw, str):
+            bw_name = "scotts" if bw == "scott" else bw
+            # This is a scale factor and not the actual bandwidth
+            bw = getattr(kde, "%s_factor" % bw_name)() * x.std(ddof=1)
+        else:
+            bw = bw * x.std(ddof=1)
+
+        # At this point, `bw` should be a numeric kernel size
+        return kde, bw
+
+    def kde_support(self, x, bw, cut, gridsize):
+        """Define a grid of support for the violin."""
+        support_min = x.min() - bw * cut
+        support_max = x.max() + bw * cut
+        return np.linspace(support_min, support_max, gridsize)
+
+    @property
+    def dwidth(self):
+
+        if self.hue_names is None:
+            return self.width / 2
+        elif self.split:
+            return self.width / 2
+        else:
+            return self.width / (2 * len(self.hue_names))
 
     def plot(self, ax):
+        """Draw the violins onto `ax`."""
+        fill_func = ax.fill_betweenx if self.orient == "v" else ax.fill_between
+        for i, group_data in enumerate(self.plot_data):
 
-        pass
+            kws = dict(edgecolor=self.gray, linewidth=self.linewidth)
+
+            if self.plot_hues is None:
+
+                support, density = self.support[i], self.density[i]
+                grid = np.ones(self.gridsize) * i
+                fill_func(support,
+                          grid - density * self.dwidth,
+                          grid + density * self.dwidth,
+                          color=self.colors[i],
+                          **kws)
+
+            else:
+
+                offsets = self.hue_offsets
+                for j, hue_level in enumerate(self.hue_names):
+
+                    support, density = self.support[i][j], self.density[i][j]
+                    kws["color"] = self.colors[j]
+
+                    if i:
+                        kws.pop("label", None)
+                    else:
+                        kws["label"] = hue_level
+
+                    if self.split:
+                        grid = np.ones(self.gridsize) * i
+                        if j:
+                            fill_func(support,
+                                      grid,
+                                      grid + density * self.dwidth,
+                                      **kws)
+                        else:
+                            fill_func(support,
+                                      grid - density * self.dwidth,
+                                      grid,
+                                      **kws)
+
+                    else:
+                        grid = np.ones(self.gridsize) * (i + offsets[j])
+                        fill_func(support,
+                                  grid - density * self.dwidth,
+                                  grid + density * self.dwidth,
+                                  **kws)
+
+                    # Add legend data, but just for one set of boxes
+                    if not i:
+                        self.add_legend_data(ax, support[0], grid[0],
+                                             self.colors[j],
+                                             hue_level)
+
+        self.annotate_axes(ax)
 
 
 class _SwarmPlotter(_BoxPlotter):
@@ -581,17 +781,35 @@ def _box_colors(vals, color, sat):
 
 
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            orient=None, color=None, palette=None, saturation=.75, alpha=None,
+            orient=None, color=None, palette=None, saturation=.75,
             width=.8, fliersize=5, linewidth=None, ax=None, **kwargs):
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
-                          orient, color, palette, saturation, alpha,
+                          orient, color, palette, saturation,
                           width, fliersize, linewidth)
 
     if ax is None:
         ax = plt.gca()
 
     plotter.plot(ax, kwargs)
+
+    return ax
+
+
+def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+               bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
+               width=.8, inner="box", split=False, orient=None, linewidth=None,
+               color=None, palette=None, saturation=.75, ax=None):
+
+    plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
+                             bw, cut, scale, scale_hue, gridsize,
+                             width, inner, split, orient, linewidth,
+                             color, palette, saturation)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax)
 
     return ax
 
@@ -730,10 +948,10 @@ def boxplot_old(vals, groupby=None, names=None, join_rm=False, order=None,
     return ax
 
 
-def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, order=None, bw="scott", widths=.8, alpha=None,
-               saturation=.7, join_rm=False, gridsize=100, cut=3,
-               inner_kws=None, ax=None, vert=True, **kwargs):
+def violinplot_old(vals, groupby=None, inner="box", color=None, positions=None,
+                   names=None, order=None, bw="scott", widths=.8, alpha=None,
+                   saturation=.7, join_rm=False, gridsize=100, cut=3,
+                   inner_kws=None, ax=None, vert=True, **kwargs):
 
     """Create a violin plot (a combination of boxplot and kernel density plot).
 
