@@ -36,8 +36,8 @@ class TestBoxPlotter(object):
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
-                       saturation=.75, alpha=None,
-                       width=.8, fliersize=5, linewidth=None)
+                       saturation=.75, width=.8,
+                       fliersize=5, linewidth=None)
 
     def test_wide_df_data(self):
 
@@ -498,6 +498,137 @@ class TestBoxPlotter(object):
         plt.close("all")
 
 
+class TestStripPlotter(object):
+    """Test boxplot (also base class for things like violinplots)."""
+    rs = np.random.RandomState(30)
+    n_total = 60
+    y = pd.Series(rs.randn(n_total), name="y_data")
+    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
+    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
+    df = pd.DataFrame(dict(y=y, g=g, h=h))
+
+    def test_stripplot_vertical(self):
+
+        pal = palettes.color_palette()
+
+        ax = dist.stripplot("g", "y", data=self.df)
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+
+            npt.assert_array_equal(x, np.ones(len(x)) * i)
+            npt.assert_array_equal(y, vals)
+
+            npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
+
+        plt.close("all")
+
+    @skipif(not pandas_has_categoricals)
+    def test_stripplot_horiztonal(self):
+
+        df = self.df.copy()
+        df.g = df.g.astype("category")
+
+        ax = dist.stripplot("y", "g", data=df)
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+
+            npt.assert_array_equal(x, vals)
+            npt.assert_array_equal(y, np.ones(len(x)) * i)
+
+        plt.close("all")
+
+    def test_stripplot_jitter(self):
+
+        pal = palettes.color_palette()
+
+        ax = dist.stripplot("g", "y", data=self.df, jitter=True)
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+
+            npt.assert_array_less(np.ones(len(x)) * i - .1, x)
+            npt.assert_array_less(x, np.ones(len(x)) * i + .1)
+            npt.assert_array_equal(y, vals)
+
+            npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
+
+        plt.close("all")
+
+    def test_split_nested_stripplot_vertical(self):
+
+        pal = palettes.color_palette()
+
+        ax = dist.stripplot("g", "y", "h", data=self.df)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+
+                npt.assert_array_equal(x, np.ones(len(x)) * i + [-.2, .2][j])
+                npt.assert_array_equal(y, vals)
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+        plt.close("all")
+
+    @skipif(not pandas_has_categoricals)
+    def test_split_nested_stripplot_horizontal(self):
+
+        df = self.df.copy()
+        df.g = df.g.astype("category")
+
+        ax = dist.stripplot("y", "g", "h", data=df)
+        plt.savefig("/Users/mwaskom/Desktop/nose.png")
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+
+                npt.assert_array_equal(x, vals)
+                npt.assert_array_equal(y, np.ones(len(x)) * i + [-.2, .2][j])
+
+        plt.close("all")
+
+    def test_unsplit_nested_stripplot_vertical(self):
+
+        pal = palettes.color_palette()
+
+        # Test a simple vertical strip plot
+        ax = dist.stripplot("g", "y", "h", data=self.df, split=False)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+
+                npt.assert_array_equal(x, np.ones(len(x)) * i)
+                npt.assert_array_equal(y, vals)
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+        plt.close("all")
+
+    @skipif(not pandas_has_categoricals)
+    def test_unsplit_nested_stripplot_horizontal(self):
+
+        df = self.df.copy()
+        df.g = df.g.astype("category")
+
+        ax = dist.stripplot("y", "g", "h", data=df, split=False)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+
+                npt.assert_array_equal(x, vals)
+                npt.assert_array_equal(y, np.ones(len(x)) * i)
+
+        plt.close("all")
+
+
 class TestBoxReshaping(object):
     """Tests for function that preps boxplot/violinplot data."""
     n_total = 60
@@ -746,45 +877,6 @@ class TestKDE(object):
                         len(ax_values.collections))
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
-        plt.close("all")
-
-
-class TestViolinPlot(object):
-
-    df = pd.DataFrame(dict(x=np.random.randn(60),
-                           y=list("abcdef") * 10,
-                           z=list("ab") * 29 + ["a", "c"]))
-
-    def test_single_violin(self):
-
-        ax = dist.violinplot(self.df.x)
-        nt.assert_equal(len(ax.collections), 1)
-        nt.assert_equal(len(ax.lines), 5)
-        plt.close("all")
-
-    def test_multi_violins(self):
-
-        ax = dist.violinplot(self.df.x, self.df.y)
-        nt.assert_equal(len(ax.collections), 6)
-        nt.assert_equal(len(ax.lines), 30)
-        plt.close("all")
-
-    def test_multi_violins_single_obs(self):
-
-        ax = dist.violinplot(self.df.x, self.df.z)
-        nt.assert_equal(len(ax.collections), 2)
-        nt.assert_equal(len(ax.lines), 11)
-        plt.close("all")
-
-        data = [np.random.randn(30), [0, 0, 0]]
-        ax = dist.violinplot(data)
-        nt.assert_equal(len(ax.collections), 1)
-        nt.assert_equal(len(ax.lines), 6)
-        plt.close("all")
-
-    @classmethod
-    def teardown_class(cls):
-        """Ensure that all figures are closed on exit."""
         plt.close("all")
 
 

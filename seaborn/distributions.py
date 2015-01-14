@@ -371,6 +371,7 @@ class _BoxPlotter(object):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
             box.set_color(color)
+            box.set_zorder(.9)
             box.set_edgecolor(self.gray)
             box.set_linewidth(self.linewidth)
         for whisk in artist_dict["whiskers"]:
@@ -661,6 +662,75 @@ class _ViolinPlotter(_BoxPlotter):
         self.annotate_axes(ax)
 
 
+class _StripPlotter(_BoxPlotter):
+    """1-d scatterplot with categorical organization."""
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 jitter, split, orient, color, palette):
+        """Initialize the plotter."""
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, 1)
+
+        # Set object attributes
+        self.split = split
+        self.width = .8
+
+        if jitter == 1:  # Use a good default for `jitter = True`
+            jlim = 0.1
+        else:
+            jlim = float(jitter)
+        if self.hue_names is not None and split:
+            jlim /= len(self.hue_names)
+        self.jitterer = stats.uniform(-jlim, jlim * 2).rvs
+
+    def draw_stripplot(self, ax, kws):
+        """Draw the points onto `ax`."""
+        for i, group_data in enumerate(self.plot_data):
+            if self.plot_hues is None:
+
+                # Determine the positions of the points
+                strip_data = remove_na(group_data)
+                jitter = self.jitterer(len(strip_data))
+                kws["color"] = self.colors[i]
+
+                # Draw the plot
+                if self.orient == "v":
+                    ax.scatter(i + jitter, strip_data, **kws)
+                else:
+                    ax.scatter(strip_data, i + jitter, **kws)
+
+            else:
+                offsets = self.hue_offsets
+                for j, hue_level in enumerate(self.hue_names):
+                    hue_mask = self.plot_hues[i] == hue_level
+                    if not hue_mask.any():
+                        continue
+
+                    # Determine the positions of the points
+                    strip_data = remove_na(group_data[hue_mask])
+                    pos = i + offsets[j] if self.split else i
+                    jitter = self.jitterer(len(strip_data))
+                    kws["color"] = self.colors[j]
+
+                    # Only label one set of plots
+                    if i:
+                        kws.pop("label", None)
+                    else:
+                        kws["label"] = hue_level
+
+                    # Draw the plot
+                    if self.orient == "v":
+                        ax.scatter(pos + jitter, strip_data, **kws)
+                    else:
+                        ax.scatter(strip_data, pos + jitter, **kws)
+
+    def plot(self, ax, kws):
+        """Make the plot."""
+        self.draw_stripplot(ax, kws)
+        self.annotate_axes(ax)
+
+# TODO The horizontal representation should go from top to bottom
+
+
 class _SwarmPlotter(_BoxPlotter):
 
     def __init__(self):
@@ -810,6 +880,20 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         ax = plt.gca()
 
     plotter.plot(ax)
+
+    return ax
+
+
+def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              jitter=False, split=True, orient=None, color=None, palette=None,
+              ax=None, **kwargs):
+
+    plotter = _StripPlotter(x, y, hue, data, order, hue_order,
+                            jitter, split, orient, color, palette)
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
 
     return ax
 
