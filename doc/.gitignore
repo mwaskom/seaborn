@@ -1,7 +1,6 @@
 *_files/
 _build/
 generated/
-_static/
 examples/
 example_thumbs/
 aesthetics.rst
