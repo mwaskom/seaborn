@@ -541,52 +541,24 @@ class _ViolinPlotter(_BoxPlotter):
                     counts[i, j] = kde_data.size
                     max_density[i, j] = density_ij.max()
 
-        if scale == "area":
+        # Scale the height of the density curve.
+        # For a violinplot the density is non-quantitative.
+        # The objective here is to scale the curves relative to 1 so that
+        # they can be multiplied by the width parameter during plotting.
 
-            if self.hue_names is None:
-                for d in density:
-                    if d.size > 1:
-                        d /= max_density.max()
-            else:
-                for i, group in enumerate(density):
-                    for d in group:
-                        if scale_hue:
-                            max = max_density[i].max()
-                        else:
-                            max = max_density.max()
-                        if d.size > 1:
-                            d /= max
+        if scale == "area":
+            self.scale_area(density, max_density, scale_hue)
 
         elif scale == "width":
-
-            if self.hue_names is None:
-                for d in density:
-                    d /= d.max()
-            else:
-                for group in density:
-                    for d in group:
-                        d /= d.max()
+            self.scale_width(density)
 
         elif scale == "count":
-
-            if self.hue_names is None:
-                for count, d in zip(counts, density):
-                    d /= d.max()
-                    d *= count / counts.max()
-            else:
-                for i, group in enumerate(density):
-                    for j, d in enumerate(group):
-                        count = counts[i, j]
-                        if scale_hue:
-                            scaler = count / counts[i].max()
-                        else:
-                            scaler = count / counts.max()
-                        d /= d.max()
-                        d *= scaler
+            self.scale_count(density, counts, scale_hue)
 
         else:
             raise ValueError("scale method '{}' not recognized".format(scale))
 
+        # Set object attributes that will be used while plotting
         self.support = support
         self.density = density
 
@@ -624,6 +596,55 @@ class _ViolinPlotter(_BoxPlotter):
         support_min = x.min() - bw * cut
         support_max = x.max() + bw * cut
         return np.linspace(support_min, support_max, gridsize)
+
+    def scale_area(self, density, max_density, scale_hue):
+        """Scale the relative area under the KDE curve.
+
+        This essentially preserves the "standard" KDE scaling, but the
+        resulting maximum density will be 1 so that the curve can be
+        properly multiplied by the violin width.
+
+        """
+        if self.hue_names is None:
+            for d in density:
+                if d.size > 1:
+                    d /= max_density.max()
+        else:
+            for i, group in enumerate(density):
+                for d in group:
+                    if scale_hue:
+                        max = max_density[i].max()
+                    else:
+                        max = max_density.max()
+                    if d.size > 1:
+                        d /= max
+
+    def scale_width(self, density):
+        """Scale each density curve to the same height."""
+        if self.hue_names is None:
+            for d in density:
+                d /= d.max()
+        else:
+            for group in density:
+                for d in group:
+                    d /= d.max()
+
+    def scale_count(self, density, counts, scale_hue):
+        """Scale each density curve by the number of observations."""
+        if self.hue_names is None:
+            for count, d in zip(counts, density):
+                d /= d.max()
+                d *= count / counts.max()
+        else:
+            for i, group in enumerate(density):
+                for j, d in enumerate(group):
+                    count = counts[i, j]
+                    if scale_hue:
+                        scaler = count / counts[i].max()
+                    else:
+                        scaler = count / counts.max()
+                    d /= d.max()
+                    d *= scaler
 
     @property
     def dwidth(self):

@@ -498,6 +498,122 @@ class TestBoxPlotter(object):
         plt.close("all")
 
 
+class TestViolinPlotter(object):
+    """Test violinplots."""
+    rs = np.random.RandomState(30)
+    n_total = 60
+    x = rs.randn(n_total / 3, 3)
+    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
+    y = pd.Series(rs.randn(n_total), name="y_data")
+    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
+    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
+    df = pd.DataFrame(dict(y=y, g=g, h=h))
+    x_df["W"] = g
+
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       order=None, hue_order=None,
+                       bw="scott", cut=2, scale="area", scale_hue=True,
+                       gridsize=100, width=.8, inner="box", split=False,
+                       orient=None, linewidth=None,
+                       color=None, palette=None, saturation=.75)
+
+    def test_scale_area(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        # Test single layer of grouping
+        p.hue_names = None
+        density = [self.rs.uniform(0, .8, 50), self.rs.uniform(0, .2, 50)]
+        max_before = np.array([d.max() for d in density])
+        p.scale_area(density, max_before, False)
+        max_after = np.array([d.max() for d in density])
+        nt.assert_equal(max_after[0], 1)
+
+        before_ratio = max_before[1] / max_before[0]
+        after_ratio = max_after[1] / max_after[0]
+        nt.assert_equal(before_ratio, after_ratio)
+
+        # Test nested grouping scaling across all densities
+        p.hue_names = ["foo", "bar"]
+        density = [[self.rs.uniform(0, .8, 50), self.rs.uniform(0, .2, 50)],
+                   [self.rs.uniform(0, .1, 50), self.rs.uniform(0, .02, 50)]]
+
+        max_before = np.array([[r.max() for r in row] for row in density])
+        p.scale_area(density, max_before, False)
+        max_after = np.array([[r.max() for r in row] for row in density])
+        nt.assert_equal(max_after[0, 0], 1)
+
+        before_ratio = max_before[1, 1] / max_before[0, 0]
+        after_ratio = max_after[1, 1] / max_after[0, 0]
+        nt.assert_equal(before_ratio, after_ratio)
+
+        # Test nested grouping scaling within hue
+        p.hue_names = ["foo", "bar"]
+        density = [[self.rs.uniform(0, .8, 50), self.rs.uniform(0, .2, 50)],
+                   [self.rs.uniform(0, .1, 50), self.rs.uniform(0, .02, 50)]]
+
+        max_before = np.array([[r.max() for r in row] for row in density])
+        p.scale_area(density, max_before, True)
+        max_after = np.array([[r.max() for r in row] for row in density])
+        nt.assert_equal(max_after[0, 0], 1)
+        nt.assert_equal(max_after[1, 0], 1)
+
+        before_ratio = max_before[1, 1] / max_before[1, 0]
+        after_ratio = max_after[1, 1] / max_after[1, 0]
+        nt.assert_equal(before_ratio, after_ratio)
+
+    def test_scale_width(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        # Test single layer of grouping
+        p.hue_names = None
+        density = [self.rs.uniform(0, .8, 50), self.rs.uniform(0, .2, 50)]
+        p.scale_width(density)
+        max_after = np.array([d.max() for d in density])
+        npt.assert_array_equal(max_after, [1, 1])
+
+        # Test nested grouping
+        p.hue_names = ["foo", "bar"]
+        density = [[self.rs.uniform(0, .8, 50), self.rs.uniform(0, .2, 50)],
+                   [self.rs.uniform(0, .1, 50), self.rs.uniform(0, .02, 50)]]
+
+        p.scale_width(density)
+        max_after = np.array([[r.max() for r in row] for row in density])
+        npt.assert_array_equal(max_after, [[1, 1], [1, 1]])
+
+    def test_scale_count(self):
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        # Test single layer of grouping
+        p.hue_names = None
+        density = [self.rs.uniform(0, .8, 20), self.rs.uniform(0, .2, 40)]
+        counts = np.array([20, 40])
+        p.scale_count(density, counts, False)
+        max_after = np.array([d.max() for d in density])
+        npt.assert_array_equal(max_after, [.5, 1])
+
+        # Test nested grouping scaling across all densities
+        p.hue_names = ["foo", "bar"]
+        density = [[self.rs.uniform(0, .8, 5), self.rs.uniform(0, .2, 40)],
+                   [self.rs.uniform(0, .1, 100), self.rs.uniform(0, .02, 50)]]
+
+        counts = np.array([[5, 40], [100, 50]])
+        p.scale_count(density, counts, False)
+        max_after = np.array([[r.max() for r in row] for row in density])
+        npt.assert_array_equal(max_after, [[.05, .4], [1, .5]])
+
+        # Test nested grouping scaling within hue
+        p.hue_names = ["foo", "bar"]
+        density = [[self.rs.uniform(0, .8, 5), self.rs.uniform(0, .2, 40)],
+                   [self.rs.uniform(0, .1, 100), self.rs.uniform(0, .02, 50)]]
+
+        counts = np.array([[5, 40], [100, 50]])
+        p.scale_count(density, counts, True)
+        max_after = np.array([[r.max() for r in row] for row in density])
+        npt.assert_array_equal(max_after, [[.125, 1], [1, .5]])
+
+
 class TestStripPlotter(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
