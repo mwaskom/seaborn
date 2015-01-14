@@ -811,6 +811,54 @@ class _SwarmPlotter(_BoxPlotter):
         pass
 
 
+def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+            orient=None, color=None, palette=None, saturation=.75,
+            width=.8, fliersize=5, linewidth=None, ax=None, **kwargs):
+
+    plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
+                          orient, color, palette, saturation,
+                          width, fliersize, linewidth)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+
+    return ax
+
+
+def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+               bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
+               width=.8, inner="box", split=False, orient=None, linewidth=None,
+               color=None, palette=None, saturation=.75, ax=None):
+
+    plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
+                             bw, cut, scale, scale_hue, gridsize,
+                             width, inner, split, orient, linewidth,
+                             color, palette, saturation)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax)
+
+    return ax
+
+
+def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              jitter=False, split=True, orient=None, color=None, palette=None,
+              ax=None, **kwargs):
+
+    plotter = _StripPlotter(x, y, hue, data, order, hue_order,
+                            jitter, split, orient, color, palette)
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+
+    return ax
+
+
 def _box_reshape(vals, groupby, names, order):
     """Reshape the box/violinplot input options and find plot labels."""
 
@@ -917,54 +965,6 @@ def _box_colors(vals, color, sat):
     gray = (l, l, l)
 
     return colors, gray
-
-
-def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            orient=None, color=None, palette=None, saturation=.75,
-            width=.8, fliersize=5, linewidth=None, ax=None, **kwargs):
-
-    plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
-                          orient, color, palette, saturation,
-                          width, fliersize, linewidth)
-
-    if ax is None:
-        ax = plt.gca()
-
-    plotter.plot(ax, kwargs)
-
-    return ax
-
-
-def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-               bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
-               width=.8, inner="box", split=False, orient=None, linewidth=None,
-               color=None, palette=None, saturation=.75, ax=None):
-
-    plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
-                             bw, cut, scale, scale_hue, gridsize,
-                             width, inner, split, orient, linewidth,
-                             color, palette, saturation)
-
-    if ax is None:
-        ax = plt.gca()
-
-    plotter.plot(ax)
-
-    return ax
-
-
-def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, split=True, orient=None, color=None, palette=None,
-              ax=None, **kwargs):
-
-    plotter = _StripPlotter(x, y, hue, data, order, hue_order,
-                            jitter, split, orient, color, palette)
-    if ax is None:
-        ax = plt.gca()
-
-    plotter.plot(ax, kwargs)
-
-    return ax
 
 
 def boxplot_old(vals, groupby=None, names=None, join_rm=False, order=None,
