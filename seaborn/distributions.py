@@ -484,6 +484,21 @@ class _ViolinPlotter(_BoxPlotter):
             if self.plot_hues is None:
 
                 kde_data = remove_na(group_data)
+
+                if kde_data.size == 0:
+                    support.append(np.array([]))
+                    density.append(np.array([1.]))
+                    counts[i] = 0
+                    max_density[i] = 0
+                    continue
+
+                elif kde_data.size == 1:
+                    support.append(kde_data)
+                    density.append(np.array([1.]))
+                    counts[i] = 1
+                    max_density[i] = 0
+                    continue
+
                 kde, bw_used = self.fit_kde(kde_data, bw)
 
                 support_i = self.kde_support(kde_data, bw_used, cut, gridsize)
@@ -500,6 +515,21 @@ class _ViolinPlotter(_BoxPlotter):
 
                     hue_mask = self.plot_hues[i] == hue_level
                     kde_data = remove_na(group_data[hue_mask])
+
+                    if kde_data.size == 0:
+                        support[i].append(np.array([]))
+                        density[i].append(np.array([1.]))
+                        counts[i, j] = 0
+                        max_density[i, j] = 0
+                        continue
+
+                    elif kde_data.size == 1:
+                        support[i].append(kde_data)
+                        density[i].append(np.array([1.]))
+                        counts[i, j] = 1
+                        max_density[i, j] = 0
+                        continue
+
                     kde, bw_used = self.fit_kde(kde_data, bw)
 
                     support_ij = self.kde_support(kde_data, bw_used,
@@ -515,7 +545,8 @@ class _ViolinPlotter(_BoxPlotter):
 
             if self.hue_names is None:
                 for d in density:
-                    d /= max_density.max()
+                    if d.size > 1:
+                        d /= max_density.max()
             else:
                 for i, group in enumerate(density):
                     for d in group:
@@ -523,7 +554,8 @@ class _ViolinPlotter(_BoxPlotter):
                             max = max_density[i].max()
                         else:
                             max = max_density.max()
-                        d /= max
+                        if d.size > 1:
+                            d /= max
 
         elif scale == "width":
 
@@ -546,11 +578,11 @@ class _ViolinPlotter(_BoxPlotter):
                     for j, d in enumerate(group):
                         count = counts[i, j]
                         if scale_hue:
-                            denom = count / counts[i].max()
+                            scaler = count / counts[i].max()
                         else:
-                            denom = count / counts.max()
+                            scaler = count / counts.max()
                         d /= d.max()
-                        d *= denom
+                        d *= scaler
 
         else:
             raise ValueError("scale method '{}' not recognized".format(scale))
@@ -613,6 +645,24 @@ class _ViolinPlotter(_BoxPlotter):
             if self.plot_hues is None:
 
                 support, density = self.support[i], self.density[i]
+
+                if support.size == 0:
+                    continue
+                elif support.size == 1:
+                    val = np.asscalar(support)
+                    d = np.asscalar(density)
+                    if self.orient == "v":
+                        ax.plot([i - d * self.dwidth, i + d * self.dwidth],
+                                [val, val],
+                                color=self.gray,
+                                linewidth=self.linewidth)
+                    else:
+                        ax.plot([val, val],
+                                [i - d * self.dwidth, i + d * self.dwidth],
+                                color=self.gray,
+                                linewidth=self.linewidth)
+                    continue
+
                 grid = np.ones(self.gridsize) * i
                 fill_func(support,
                           grid - density * self.dwidth,
@@ -632,6 +682,25 @@ class _ViolinPlotter(_BoxPlotter):
                         kws.pop("label", None)
                     else:
                         kws["label"] = hue_level
+
+                    if support.size == 0:
+                        continue
+                    elif support.size == 1:
+                        val = np.asscalar(support)
+                        d = np.asscalar(density)
+                        if self.orient == "v":
+                            ax.plot([i + offsets[j] - d * self.dwidth,
+                                     i + offsets[j] + d * self.dwidth],
+                                    [val, val],
+                                    color=self.gray,
+                                    linewidth=self.linewidth)
+                        else:
+                            ax.plot([val, val],
+                                    [i + offsets[j] - d * self.dwidth,
+                                     i + offsets[j] + d * self.dwidth],
+                                    color=self.gray,
+                                    linewidth=self.linewidth)
+                        continue
 
                     if self.split:
                         grid = np.ones(self.gridsize) * i
