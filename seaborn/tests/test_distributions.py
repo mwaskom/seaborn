@@ -517,6 +517,26 @@ class TestViolinPlotter(object):
                        orient=None, linewidth=None,
                        color=None, palette=None, saturation=.75)
 
+    def test_dwidth(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(x="g", y="y", data=self.df))
+
+        p = dist._ViolinPlotter(**kws)
+        nt.assert_equal(p.dwidth, .4)
+
+        kws.update(dict(width=.4))
+        p = dist._ViolinPlotter(**kws)
+        nt.assert_equal(p.dwidth, .2)
+
+        kws.update(dict(hue="h", width=.8))
+        p = dist._ViolinPlotter(**kws)
+        nt.assert_equal(p.dwidth, .2)
+
+        kws.update(dict(split=True))
+        p = dist._ViolinPlotter(**kws)
+        nt.assert_equal(p.dwidth, .4)
+
     def test_scale_area(self):
 
         p = dist._ViolinPlotter(**self.default_kws)
