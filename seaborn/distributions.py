@@ -520,8 +520,8 @@ class _ViolinPlotter(_BoxPlotter):
                 counts[i] = kde_data.size
                 max_density[i] = density_i.max()
 
-            # Option 1: we have a single level of grouping
-            # --------------------------------------------
+            # Option 2: we have nested grouping by a hue variable
+            # ---------------------------------------------------
 
             else:
                 for j, hue_level in enumerate(self.hue_names):
@@ -677,34 +677,46 @@ class _ViolinPlotter(_BoxPlotter):
         else:
             return self.width / (2 * len(self.hue_names))
 
-    def plot(self, ax):
+    def draw_single_observation(self, ax, at_group, at_quant, density):
+        """Draw a line to mark a single observation."""
+        d_width = density * self.dwidth
+        if self.orient == "v":
+            ax.plot([at_group - d_width, at_group + d_width],
+                    [at_quant, at_quant],
+                    color=self.gray,
+                    linewidth=self.linewidth)
+        else:
+            ax.plot([at_quant, at_quant],
+                    [at_group - d_width, at_group + d_width],
+                    color=self.gray,
+                    linewidth=self.linewidth)
+
+    def draw_violins(self, ax):
         """Draw the violins onto `ax`."""
         fill_func = ax.fill_betweenx if self.orient == "v" else ax.fill_between
         for i, group_data in enumerate(self.plot_data):
 
             kws = dict(edgecolor=self.gray, linewidth=self.linewidth)
 
+            # Option 1: we have a single level of grouping
+            # --------------------------------------------
+
             if self.plot_hues is None:
 
                 support, density = self.support[i], self.density[i]
 
+                # Handle special case of no observations in this bin
                 if support.size == 0:
                     continue
+
+                # Handle special case of a single observation
                 elif support.size == 1:
                     val = np.asscalar(support)
                     d = np.asscalar(density)
-                    if self.orient == "v":
-                        ax.plot([i - d * self.dwidth, i + d * self.dwidth],
-                                [val, val],
-                                color=self.gray,
-                                linewidth=self.linewidth)
-                    else:
-                        ax.plot([val, val],
-                                [i - d * self.dwidth, i + d * self.dwidth],
-                                color=self.gray,
-                                linewidth=self.linewidth)
+                    self.draw_single_observation(ax, i, val, d)
                     continue
 
+                # Draw the violin for this group
                 grid = np.ones(self.gridsize) * i
                 fill_func(support,
                           grid - density * self.dwidth,
@@ -712,39 +724,41 @@ class _ViolinPlotter(_BoxPlotter):
                           color=self.colors[i],
                           **kws)
 
-            else:
+            # Option 2: we have nested grouping by a hue variable
+            # ---------------------------------------------------
 
+            else:
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
 
                     support, density = self.support[i][j], self.density[i][j]
                     kws["color"] = self.colors[j]
 
-                    if i:
-                        kws.pop("label", None)
-                    else:
-                        kws["label"] = hue_level
+                    # Add legend data, but just for one set of violins
+                    if not i:
+                        self.add_legend_data(ax, support[0], 0,
+                                             self.colors[j],
+                                             hue_level)
 
+                    # Handle the special case where we have no observations
                     if support.size == 0:
                         continue
+
+                    # Handle the special case where we have one observation
                     elif support.size == 1:
                         val = np.asscalar(support)
                         d = np.asscalar(density)
-                        if self.orient == "v":
-                            ax.plot([i + offsets[j] - d * self.dwidth,
-                                     i + offsets[j] + d * self.dwidth],
-                                    [val, val],
-                                    color=self.gray,
-                                    linewidth=self.linewidth)
-                        else:
-                            ax.plot([val, val],
-                                    [i + offsets[j] - d * self.dwidth,
-                                     i + offsets[j] + d * self.dwidth],
-                                    color=self.gray,
-                                    linewidth=self.linewidth)
+                        if self.split:
+                            d = d / 2
+                        at_group = i + offsets[j]
+                        self.draw_single_observation(ax, at_group, val, d)
                         continue
 
+                    # Option 2a: we are drawing a single split violin
+                    # -----------------------------------------------
+
                     if self.split:
+
                         grid = np.ones(self.gridsize) * i
                         if j:
                             fill_func(support,
@@ -757,6 +771,9 @@ class _ViolinPlotter(_BoxPlotter):
                                       grid,
                                       **kws)
 
+                    # Option 2b: we are drawing full nested violins
+                    # -----------------------------------------------
+
                     else:
                         grid = np.ones(self.gridsize) * (i + offsets[j])
                         fill_func(support,
@@ -764,12 +781,9 @@ class _ViolinPlotter(_BoxPlotter):
                                   grid + density * self.dwidth,
                                   **kws)
 
-                    # Add legend data, but just for one set of boxes
-                    if not i:
-                        self.add_legend_data(ax, support[0], grid[0],
-                                             self.colors[j],
-                                             hue_level)
+    def plot(self, ax):
 
+        self.draw_violins(ax)
         self.annotate_axes(ax)
 
 
