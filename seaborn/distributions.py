@@ -468,6 +468,7 @@ class _ViolinPlotter(_BoxPlotter):
 
     def estimate_densities(self, bw, cut, scale, scale_hue, gridsize):
         """Find the support and density for all of the data."""
+        # Initialize data structures to keep track of plotting data
         if self.hue_names is None:
             support = []
             density = []
@@ -481,10 +482,16 @@ class _ViolinPlotter(_BoxPlotter):
             max_density = np.zeros(size)
 
         for i, group_data in enumerate(self.plot_data):
+
+            # Option 1: we have a single level of grouping
+            # --------------------------------------------
+
             if self.plot_hues is None:
 
+                # Strip missing datapoints
                 kde_data = remove_na(group_data)
 
+                # Handle special case of no data at this level
                 if kde_data.size == 0:
                     support.append(np.array([]))
                     density.append(np.array([1.]))
@@ -492,6 +499,7 @@ class _ViolinPlotter(_BoxPlotter):
                     max_density[i] = 0
                     continue
 
+                # Handle special case of a single datapoint
                 elif kde_data.size == 1:
                     support.append(kde_data)
                     density.append(np.array([1.]))
@@ -499,23 +507,32 @@ class _ViolinPlotter(_BoxPlotter):
                     max_density[i] = 0
                     continue
 
+                # Fit the KDE and get the used bandwidth size
                 kde, bw_used = self.fit_kde(kde_data, bw)
 
+                # Determine the support grid and get the density over it
                 support_i = self.kde_support(kde_data, bw_used, cut, gridsize)
                 density_i = kde.evaluate(support_i)
 
+                # Update the data structures with these results
                 support.append(support_i)
                 density.append(density_i)
                 counts[i] = kde_data.size
                 max_density[i] = density_i.max()
 
-            else:
+            # Option 1: we have a single level of grouping
+            # --------------------------------------------
 
+            else:
                 for j, hue_level in enumerate(self.hue_names):
 
+                    # Select out the observations for this hue level
                     hue_mask = self.plot_hues[i] == hue_level
+
+                    # Strip missing datapoints
                     kde_data = remove_na(group_data[hue_mask])
 
+                    # Handle special case of no data at this level
                     if kde_data.size == 0:
                         support[i].append(np.array([]))
                         density[i].append(np.array([1.]))
@@ -523,6 +540,7 @@ class _ViolinPlotter(_BoxPlotter):
                         max_density[i, j] = 0
                         continue
 
+                    # Handle special case of a single datapoint
                     elif kde_data.size == 1:
                         support[i].append(kde_data)
                         density[i].append(np.array([1.]))
@@ -530,12 +548,15 @@ class _ViolinPlotter(_BoxPlotter):
                         max_density[i, j] = 0
                         continue
 
+                    # Fit the KDE and get the used bandwidth size
                     kde, bw_used = self.fit_kde(kde_data, bw)
 
+                    # Determine the support grid and get the density over it
                     support_ij = self.kde_support(kde_data, bw_used,
                                                   cut, gridsize)
                     density_ij = kde.evaluate(support_ij)
 
+                    # Update the data structures with these results
                     support[i].append(support_ij)
                     density[i].append(density_ij)
                     counts[i, j] = kde_data.size
@@ -868,12 +889,14 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               jitter=False, split=True, orient=None, color=None, palette=None,
-              ax=None, **kwargs):
+              size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
 
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
                             jitter, split, orient, color, palette)
     if ax is None:
         ax = plt.gca()
+
+    kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
 
     plotter.plot(ax, kwargs)
 
