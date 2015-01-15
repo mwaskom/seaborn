@@ -194,7 +194,10 @@ class _BoxPlotter(object):
 
                 # Get the order of the box groups
                 if order is None:
-                    order = groups.unique()
+                    try:
+                        order = groups.unique()
+                    except AttributeError:
+                        order = pd.unique(groups)
                 group_names = list(order)
 
                 # Group the numeric data
@@ -205,6 +208,8 @@ class _BoxPlotter(object):
                 # Get the categorical axis label
                 if hasattr(groups, "name"):
                     group_label = groups.name
+                else:
+                    group_label = None
 
                 # Get the numerical axis label
                 value_label = vals.name
@@ -222,7 +227,10 @@ class _BoxPlotter(object):
 
                     # Get the order of the hue levels
                     if hue_order is None:
-                        hue_order = hue.unique()
+                        try:
+                            hue_order = hue.unique()
+                        except AttributeError:
+                            hue_order = pd.unique(hue)
                     hue_names = list(hue_order)
 
                     # Group the hue categories
@@ -472,11 +480,11 @@ class _ViolinPlotter(_BoxPlotter):
         if self.hue_names is None:
             support = []
             density = []
-            counts = np.zeros(len(self.group_names))
-            max_density = np.zeros(len(self.group_names))
+            counts = np.zeros(len(self.plot_data))
+            max_density = np.zeros(len(self.plot_data))
         else:
-            support = [[] for _ in self.group_names]
-            density = [[] for _ in self.group_names]
+            support = [[] for _ in self.plot_data]
+            density = [[] for _ in self.plot_data]
             size = len(self.group_names), len(self.hue_names)
             counts = np.zeros(size)
             max_density = np.zeros(size)

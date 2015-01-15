@@ -517,6 +517,92 @@ class TestViolinPlotter(object):
                        orient=None, linewidth=None,
                        color=None, palette=None, saturation=.75)
 
+    def test_split_error(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(x="h", y="y", hue="g", data=self.df, split=True))
+
+        with nt.assert_raises(ValueError):
+            dist._ViolinPlotter(**kws)
+
+    def test_no_observations(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        x = ["a", "a", "b"]
+        y = self.rs.randn(3)
+        y[-1] = np.nan
+        p.establish_variables(x, y)
+        p.estimate_densities("scott", 2, "area", True, 20)
+
+        nt.assert_equal(len(p.support[0]), 20)
+        nt.assert_equal(len(p.support[1]), 0)
+
+        nt.assert_equal(len(p.density[0]), 20)
+        nt.assert_equal(len(p.density[1]), 1)
+
+        nt.assert_equal(p.density[1].item(), 1)
+
+        p.estimate_densities("scott", 2, "count", True, 20)
+        nt.assert_equal(p.density[1].item(), 0)
+
+        x = ["a"] * 4 + ["b"] * 2
+        y = self.rs.randn(6)
+        h = ["m", "n"] * 2 + ["m"] * 2
+
+        p.establish_variables(x, y, h)
+        p.estimate_densities("scott", 2, "area", True, 20)
+
+        nt.assert_equal(len(p.support[1][0]), 20)
+        nt.assert_equal(len(p.support[1][1]), 0)
+
+        nt.assert_equal(len(p.density[1][0]), 20)
+        nt.assert_equal(len(p.density[1][1]), 1)
+
+        nt.assert_equal(p.density[1][1].item(), 1)
+
+        p.estimate_densities("scott", 2, "count", False, 20)
+        nt.assert_equal(p.density[1][1].item(), 0)
+
+    def test_single_observation(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        x = ["a", "a", "b"]
+        y = self.rs.randn(3)
+        p.establish_variables(x, y)
+        p.estimate_densities("scott", 2, "area", True, 20)
+
+        nt.assert_equal(len(p.support[0]), 20)
+        nt.assert_equal(len(p.support[1]), 1)
+
+        nt.assert_equal(len(p.density[0]), 20)
+        nt.assert_equal(len(p.density[1]), 1)
+
+        nt.assert_equal(p.density[1].item(), 1)
+
+        p.estimate_densities("scott", 2, "count", True, 20)
+        nt.assert_equal(p.density[1].item(), .5)
+
+        x = ["b"] * 4 + ["a"] * 3
+        y = self.rs.randn(7)
+        h = (["m", "n"] * 4)[:-1]
+
+        p.establish_variables(x, y, h)
+        p.estimate_densities("scott", 2, "area", True, 20)
+
+        nt.assert_equal(len(p.support[1][0]), 20)
+        nt.assert_equal(len(p.support[1][1]), 1)
+
+        nt.assert_equal(len(p.density[1][0]), 20)
+        nt.assert_equal(len(p.density[1][1]), 1)
+
+        nt.assert_equal(p.density[1][1].item(), 1)
+
+        p.estimate_densities("scott", 2, "count", False, 20)
+        nt.assert_equal(p.density[1][1].item(), .5)
+
+
     def test_dwidth(self):
 
         kws = self.default_kws.copy()
