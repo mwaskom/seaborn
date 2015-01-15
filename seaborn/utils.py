@@ -9,6 +9,9 @@ import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from distutils.version import LooseVersion
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
+
 
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
@@ -355,6 +358,26 @@ def load_dataset(name, **kws):
     df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
+
+    if not pandas_has_categoricals:
+        return df
+
+    # Set some columns as a categorical type with ordered levels
+
+    if name == "tips":
+        df["day"] = pd.Categorical(df["day"], ["Thur", "Fri", "Sat", "Sun"])
+        df["sex"] = pd.Categorical(df["sex"], ["Male", "Female"])
+        df["time"] = pd.Categorical(df["time"], ["Lunch", "Dinner"])
+        df["smoker"] = pd.Categorical(df["smoker"], ["Yes", "No"])
+
+    if name == "flights":
+        df["month"] = pd.Categorical(df["month"], df.month.unique())
+
+    if name == "exercise":
+        df["time"] = pd.Categorical(df["time"], ["1 min", "15 min", "30 min"])
+        df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
+        df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
+
     return df
 
 
