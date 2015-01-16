@@ -602,7 +602,6 @@ class TestViolinPlotter(object):
         p.estimate_densities("scott", 2, "count", False, 20)
         nt.assert_equal(p.density[1][1].item(), .5)
 
-
     def test_dwidth(self):
 
         kws = self.default_kws.copy()

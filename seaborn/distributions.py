@@ -464,8 +464,9 @@ class _ViolinPlotter(_BoxPlotter):
         self.establish_colors(color, palette, saturation)
         self.estimate_densities(bw, cut, scale, scale_hue, gridsize)
 
-        self.width = width
         self.gridsize = gridsize
+        self.width = width
+        self.inner = inner
         if split and self.hue_names is not None and len(self.hue_names) != 2:
             raise ValueError("Cannot use `split` with more than 2 hue levels.")
         self.split = split
@@ -685,20 +686,6 @@ class _ViolinPlotter(_BoxPlotter):
         else:
             return self.width / (2 * len(self.hue_names))
 
-    def draw_single_observation(self, ax, at_group, at_quant, density):
-        """Draw a line to mark a single observation."""
-        d_width = density * self.dwidth
-        if self.orient == "v":
-            ax.plot([at_group - d_width, at_group + d_width],
-                    [at_quant, at_quant],
-                    color=self.gray,
-                    linewidth=self.linewidth)
-        else:
-            ax.plot([at_quant, at_quant],
-                    [at_group - d_width, at_group + d_width],
-                    color=self.gray,
-                    linewidth=self.linewidth)
-
     def draw_violins(self, ax):
         """Draw the violins onto `ax`."""
         fill_func = ax.fill_betweenx if self.orient == "v" else ax.fill_between
@@ -731,6 +718,37 @@ class _ViolinPlotter(_BoxPlotter):
                           grid + density * self.dwidth,
                           color=self.colors[i],
                           **kws)
+
+                if self.inner is None:
+                    continue
+
+                group_data = remove_na(group_data)
+
+                if self.inner.startswith("box"):
+
+                    self.draw_box_lines(ax, group_data, support, density, i)
+
+                elif self.inner.startswith("quart"):
+
+                    self.draw_quartiles(ax, group_data, support, density, i)
+
+                elif self.inner.startswith("stick"):
+
+                    self.draw_stick_lines(ax, group_data, support, density, i)
+
+                elif self.inner.startswith("point"):
+                    kws = dict(s=np.square(self.linewidth * 2),
+                               c=self.gray,
+                               edgecolor=self.gray)
+
+                    if self.orient == "v":
+                        ax.scatter(np.ones(len(group_data)) * i,
+                                   group_data,
+                                   **kws)
+                    else:
+                        ax.scatter(group_data,
+                                   np.ones(len(group_data)) * i,
+                                   **kws)
 
             # Option 2: we have nested grouping by a hue variable
             # ---------------------------------------------------
@@ -788,6 +806,82 @@ class _ViolinPlotter(_BoxPlotter):
                                   grid - density * self.dwidth,
                                   grid + density * self.dwidth,
                                   **kws)
+
+    def draw_single_observation(self, ax, at_group, at_quant, density):
+        """Draw a line to mark a single observation."""
+        d_width = density * self.dwidth
+        if self.orient == "v":
+            ax.plot([at_group - d_width, at_group + d_width],
+                    [at_quant, at_quant],
+                    color=self.gray,
+                    linewidth=self.linewidth)
+        else:
+            ax.plot([at_quant, at_quant],
+                    [at_group - d_width, at_group + d_width],
+                    color=self.gray,
+                    linewidth=self.linewidth)
+
+    def draw_box_lines(self, ax, data, support, density, center):
+
+        q1, q2, q3 = np.percentile(data, [25, 50, 75])
+        h1, h2 = q1 - 1.5 * iqr(data), q3 + 1.5 * iqr(data)
+
+        if self.orient == "v":
+            ax.plot([center, center], [h1, h2],
+                    linewidth=self.linewidth,
+                    color=self.gray)
+            ax.plot([center, center], [q1, q3],
+                    linewidth=self.linewidth * 3,
+                    color=self.gray)
+            ax.scatter(center, q2,
+                       zorder=3,
+                       color="white",
+                       edgecolor=self.gray,
+                       s=np.square(self.linewidth * 2))
+        else:
+            ax.plot([h1, h2], [center, center],
+                    linewidth=self.linewidth,
+                    color=self.gray)
+            ax.plot([q1, q3], [center, center],
+                    linewidth=self.linewidth * 3,
+                    color=self.gray)
+            ax.scatter(q2, center,
+                       zorder=3,
+                       color="white",
+                       edgecolor=self.gray,
+                       s=np.square(self.linewidth * 2))
+
+    def draw_quartiles(self, ax, data, support, density, center):
+
+        q1, q2, q3 = np.percentile(data, [25, 50, 75])
+
+        self.draw_to_density(ax, center, q1, support, density,
+                             linewidth=self.linewidth,
+                             dashes=[self.linewidth * 1.5] * 2)
+        self.draw_to_density(ax, center, q2, support, density,
+                             linewidth=self.linewidth,
+                             dashes=[self.linewidth * 3] * 2)
+        self.draw_to_density(ax, center, q3, support, density,
+                             linewidth=self.linewidth,
+                             dashes=[self.linewidth * 1.5] * 2)
+
+    def draw_stick_lines(self, ax, data, support, density, center):
+
+        for val in data:
+            self.draw_to_density(ax, center, val, support, density,
+                                 linewidth=self.linewidth * .5)
+
+    def draw_to_density(self, ax, center, val, support, density, **kws):
+
+        idx = np.argmin(np.abs(support - val))
+        width = self.dwidth * density[idx] * .99
+
+        kws["color"] = self.gray
+
+        if self.orient == "v":
+            ax.plot([center - width, center + width], [val, val], **kws)
+        else:
+            ax.plot([val, val], [center - width, center + width], **kws)
 
     def plot(self, ax):
 
