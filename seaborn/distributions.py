@@ -373,7 +373,18 @@ class _BoxPlotter(object):
             ax.set_ylim(-.5, len(self.plot_data) - .5)
 
         if self.hue_names is not None:
-            ax.legend(loc="best")
+            leg = ax.legend(loc="best")
+            if self.hue_title is not None:
+                leg.set_title(self.hue_title)
+
+                # Set the title size a roundabout way to maintain
+                # compatability with matplotlib 1.1
+                try:
+                    title_size = mpl.rcParams["axes.labelsize"] * .85
+                except TypeError:  # labelsize is something like "large"
+                    title_size = mpl.rcParams["axes.labelsize"]
+                prop = mpl.font_manager.FontProperties(size=title_size)
+                leg._legend_title_box._text.set_font_properties(prop)
 
     def restyle_boxplot(self, artist_dict, color):
         """Take a drawn matplotlib boxplot and make it look nice."""
@@ -719,36 +730,28 @@ class _ViolinPlotter(_BoxPlotter):
                           color=self.colors[i],
                           **kws)
 
+                # Draw the interior representation of the data
                 if self.inner is None:
                     continue
 
-                group_data = remove_na(group_data)
+                # Get a nan-free vector of datapoints
+                violin_data = remove_na(group_data)
 
+                # Draw box and whisker information
                 if self.inner.startswith("box"):
+                    self.draw_box_lines(ax, violin_data, support, density, i)
 
-                    self.draw_box_lines(ax, group_data, support, density, i)
-
+                # Draw quartile lines
                 elif self.inner.startswith("quart"):
+                    self.draw_quartiles(ax, violin_data, support, density, i)
 
-                    self.draw_quartiles(ax, group_data, support, density, i)
-
+                # Draw stick observations
                 elif self.inner.startswith("stick"):
+                    self.draw_stick_lines(ax, violin_data, support, density, i)
 
-                    self.draw_stick_lines(ax, group_data, support, density, i)
-
+                # Draw point observations
                 elif self.inner.startswith("point"):
-                    kws = dict(s=np.square(self.linewidth * 2),
-                               c=self.gray,
-                               edgecolor=self.gray)
-
-                    if self.orient == "v":
-                        ax.scatter(np.ones(len(group_data)) * i,
-                                   group_data,
-                                   **kws)
-                    else:
-                        ax.scatter(group_data,
-                                   np.ones(len(group_data)) * i,
-                                   **kws)
+                    self.draw_points(ax, violin_data, i)
 
             # Option 2: we have nested grouping by a hue variable
             # ---------------------------------------------------
@@ -797,6 +800,43 @@ class _ViolinPlotter(_BoxPlotter):
                                       grid,
                                       **kws)
 
+                        # Draw the interior representation of the data
+                        if self.inner is None:
+                            continue
+
+                        # Get a nan-free vector of datapoints
+                        hue_mask = self.plot_hues[i] == hue_level
+                        violin_data = remove_na(group_data[hue_mask])
+
+                        # Draw quartile lines
+                        if self.inner.startswith("quart"):
+                            self.draw_quartiles(ax, violin_data,
+                                                support, density, i,
+                                                ["left", "right"][j])
+
+                        # Draw stick observations
+                        elif self.inner.startswith("stick"):
+                            self.draw_stick_lines(ax, violin_data,
+                                                  support, density, i,
+                                                  ["left", "right"][j])
+
+                        # The box and point interior plots are drawn for
+                        # all data at the group level, so we just do that once
+                        if not j:
+                            continue
+
+                        # Get the whole vector for this group level
+                        violin_data = remove_na(group_data)
+
+                        # Draw box and whisker information
+                        if self.inner.startswith("box"):
+                            self.draw_box_lines(ax, violin_data,
+                                                support, density, i)
+
+                        # Draw point observations
+                        elif self.inner.startswith("point"):
+                            self.draw_points(ax, violin_data, i)
+
                     # Option 2b: we are drawing full nested violins
                     # -----------------------------------------------
 
@@ -806,6 +846,36 @@ class _ViolinPlotter(_BoxPlotter):
                                   grid - density * self.dwidth,
                                   grid + density * self.dwidth,
                                   **kws)
+
+                        # Draw the interior representation
+                        if self.inner is None:
+                            continue
+
+                        # Get a nan-free vector of datapoints
+                        hue_mask = self.plot_hues[i] == hue_level
+                        violin_data = remove_na(group_data[hue_mask])
+
+                        # Draw box and whisker information
+                        if self.inner.startswith("box"):
+                            self.draw_box_lines(ax, violin_data,
+                                                support, density,
+                                                i + offsets[j])
+
+                        # Draw quartile lines
+                        elif self.inner.startswith("quart"):
+                            self.draw_quartiles(ax, violin_data,
+                                                support, density,
+                                                i + offsets[j])
+
+                        # Draw stick observations
+                        elif self.inner.startswith("stick"):
+                            self.draw_stick_lines(ax, violin_data,
+                                                  support, density,
+                                                  i + offsets[j])
+
+                        # Draw point observations
+                        elif self.inner.startswith("point"):
+                            self.draw_points(ax, violin_data, i + offsets[j])
 
     def draw_single_observation(self, ax, at_group, at_quant, density):
         """Draw a line to mark a single observation."""
@@ -822,10 +892,14 @@ class _ViolinPlotter(_BoxPlotter):
                     linewidth=self.linewidth)
 
     def draw_box_lines(self, ax, data, support, density, center):
-
+        """Draw boxplot information at center of the density."""
+        # Compute the boxplot statistics
         q1, q2, q3 = np.percentile(data, [25, 50, 75])
-        h1, h2 = q1 - 1.5 * iqr(data), q3 + 1.5 * iqr(data)
+        whisker_lim = 1.5 * iqr(data)
+        h1 = np.min(data[data >= (q1 - whisker_lim)])
+        h2 = np.max(data[data <= (q3 + whisker_lim)])
 
+        # Draw a boxplot using lines and a point
         if self.orient == "v":
             ax.plot([center, center], [h1, h2],
                     linewidth=self.linewidth,
@@ -851,40 +925,64 @@ class _ViolinPlotter(_BoxPlotter):
                        edgecolor=self.gray,
                        s=np.square(self.linewidth * 2))
 
-    def draw_quartiles(self, ax, data, support, density, center):
-
+    def draw_quartiles(self, ax, data, support, density, center, split=False):
+        """Draw the quartiles as lines at width of density."""
         q1, q2, q3 = np.percentile(data, [25, 50, 75])
 
-        self.draw_to_density(ax, center, q1, support, density,
+        self.draw_to_density(ax, center, q1, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 1.5] * 2)
-        self.draw_to_density(ax, center, q2, support, density,
+        self.draw_to_density(ax, center, q2, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 3] * 2)
-        self.draw_to_density(ax, center, q3, support, density,
+        self.draw_to_density(ax, center, q3, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 1.5] * 2)
 
-    def draw_stick_lines(self, ax, data, support, density, center):
+    def draw_points(self, ax, data, center):
+        """Draw individual observations as points at middle of the violin."""
+        kws = dict(s=np.square(self.linewidth * 2),
+                   c=self.gray,
+                   edgecolor=self.gray)
 
+        grid = np.ones(len(data)) * center
+
+        if self.orient == "v":
+            ax.scatter(grid, data, **kws)
+        else:
+            ax.scatter(data, grid, **kws)
+
+    def draw_stick_lines(self, ax, data, support, density,
+                         center, split=False):
+        """Draw individual observations as sticks at width of density."""
         for val in data:
-            self.draw_to_density(ax, center, val, support, density,
+            self.draw_to_density(ax, center, val, support, density, split,
                                  linewidth=self.linewidth * .5)
 
-    def draw_to_density(self, ax, center, val, support, density, **kws):
-
+    def draw_to_density(self, ax, center, val, support, density, split, **kws):
+        """Draw a line orthogonal to the value axis at width of density."""
         idx = np.argmin(np.abs(support - val))
         width = self.dwidth * density[idx] * .99
 
         kws["color"] = self.gray
 
         if self.orient == "v":
-            ax.plot([center - width, center + width], [val, val], **kws)
+            if split == "left":
+                ax.plot([center - width, center], [val, val], **kws)
+            elif split == "right":
+                ax.plot([center, center + width], [val, val], **kws)
+            else:
+                ax.plot([center - width, center + width], [val, val], **kws)
         else:
-            ax.plot([val, val], [center - width, center + width], **kws)
+            if split == "left":
+                ax.plot([val, val], [center - width, center], **kws)
+            elif split == "right":
+                ax.plot([val, val], [center, center + width], **kws)
+            else:
+                ax.plot([val, val], [center - width, center + width], **kws)
 
     def plot(self, ax):
-
+        """Make the violin plot."""
         self.draw_violins(ax)
         self.annotate_axes(ax)
 
