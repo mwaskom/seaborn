@@ -490,7 +490,7 @@ class TestBoxPlotter(object):
         ax = dist.boxplot("y", "g", data=self.df, orient="h")
         nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
-        nt.assert_equal(ax.get_ylim(), (-.5, 2.5))
+        nt.assert_equal(ax.get_ylim(), (2.5, -.5))
         npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
         npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
                                ["a", "b", "c"])
