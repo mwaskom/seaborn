@@ -462,6 +462,8 @@ class _BoxPlotter(object):
         """Make the plot."""
         self.draw_boxplot(ax, boxplot_kws)
         self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 class _ViolinPlotter(_BoxPlotter):
@@ -985,6 +987,8 @@ class _ViolinPlotter(_BoxPlotter):
         """Make the violin plot."""
         self.draw_violins(ax)
         self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 class _StripPlotter(_BoxPlotter):
@@ -1052,8 +1056,8 @@ class _StripPlotter(_BoxPlotter):
         """Make the plot."""
         self.draw_stripplot(ax, kws)
         self.annotate_axes(ax)
-
-# TODO The horizontal representation should go from top to bottom
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 class _SwarmPlotter(_BoxPlotter):
