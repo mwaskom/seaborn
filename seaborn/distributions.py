@@ -1013,6 +1013,9 @@ class _StripPlotter(_BoxPlotter):
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
+        # Set the default zorder to 2.1, so that the points
+        # will be drawn on top of line elements (like in a boxplot)
+        kws.setdefault("zorder", 2.1)
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None:
 
