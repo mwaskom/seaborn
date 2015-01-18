@@ -890,20 +890,20 @@ class _ViolinPlotter(_BoxPlotter):
     def draw_box_lines(self, ax, data, support, density, center):
         """Draw boxplot information at center of the density."""
         # Compute the boxplot statistics
-        q1, q2, q3 = np.percentile(data, [25, 50, 75])
+        q25, q50, q75 = np.percentile(data, [25, 50, 75])
         whisker_lim = 1.5 * iqr(data)
-        h1 = np.min(data[data >= (q1 - whisker_lim)])
-        h2 = np.max(data[data <= (q3 + whisker_lim)])
+        h1 = np.min(data[data >= (q25 - whisker_lim)])
+        h2 = np.max(data[data <= (q75 + whisker_lim)])
 
         # Draw a boxplot using lines and a point
         if self.orient == "v":
             ax.plot([center, center], [h1, h2],
                     linewidth=self.linewidth,
                     color=self.gray)
-            ax.plot([center, center], [q1, q3],
+            ax.plot([center, center], [q25, q75],
                     linewidth=self.linewidth * 3,
                     color=self.gray)
-            ax.scatter(center, q2,
+            ax.scatter(center, q50,
                        zorder=3,
                        color="white",
                        edgecolor=self.gray,
@@ -912,10 +912,10 @@ class _ViolinPlotter(_BoxPlotter):
             ax.plot([h1, h2], [center, center],
                     linewidth=self.linewidth,
                     color=self.gray)
-            ax.plot([q1, q3], [center, center],
+            ax.plot([q25, q75], [center, center],
                     linewidth=self.linewidth * 3,
                     color=self.gray)
-            ax.scatter(q2, center,
+            ax.scatter(q50, center,
                        zorder=3,
                        color="white",
                        edgecolor=self.gray,
@@ -923,15 +923,15 @@ class _ViolinPlotter(_BoxPlotter):
 
     def draw_quartiles(self, ax, data, support, density, center, split=False):
         """Draw the quartiles as lines at width of density."""
-        q1, q2, q3 = np.percentile(data, [25, 50, 75])
+        q25, q50, q75 = np.percentile(data, [25, 50, 75])
 
-        self.draw_to_density(ax, center, q1, support, density, split,
+        self.draw_to_density(ax, center, q25, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 1.5] * 2)
-        self.draw_to_density(ax, center, q2, support, density, split,
+        self.draw_to_density(ax, center, q50, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 3] * 2)
-        self.draw_to_density(ax, center, q3, support, density, split,
+        self.draw_to_density(ax, center, q75, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 1.5] * 2)
 

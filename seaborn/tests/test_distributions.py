@@ -803,25 +803,309 @@ class TestViolinPlotter(object):
         _, ax = plt.subplots()
         p.draw_to_density(ax, 0, .6, support, density, False)
         x, y = ax.lines[0].get_xydata().T
-        npt.assert_array_equal(y, [.99 * -.7, .99 * .7])
         npt.assert_array_equal(x, [.6, .6])
+        npt.assert_array_equal(y, [.99 * -.7, .99 * .7])
         plt.close("all")
 
         # Test left horizontal plot
         _, ax = plt.subplots()
         p.draw_to_density(ax, 0, .6, support, density, "left")
         x, y = ax.lines[0].get_xydata().T
-        npt.assert_array_equal(y, [.99 * -.7, 0])
         npt.assert_array_equal(x, [.6, .6])
+        npt.assert_array_equal(y, [.99 * -.7, 0])
         plt.close("all")
 
         # Test right horizontal plot
         _, ax = plt.subplots()
         p.draw_to_density(ax, 0, .6, support, density, "right")
         x, y = ax.lines[0].get_xydata().T
-        npt.assert_array_equal(y, [0, .99 * .7])
         npt.assert_array_equal(x, [.6, .6])
+        npt.assert_array_equal(y, [0, .99 * .7])
         plt.close("all")
+
+    def test_draw_single_observations(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+        p.width = 2
+
+        # Test vertical plot
+        _, ax = plt.subplots()
+        p.draw_single_observation(ax, 1, 1.5, 1)
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(x, [0, 2])
+        npt.assert_array_equal(y, [1.5, 1.5])
+        plt.close("all")
+
+        # Test horizontal plot
+        p.orient = "h"
+        _, ax = plt.subplots()
+        p.draw_single_observation(ax, 2, 2.2, .5)
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(x, [2.2, 2.2])
+        npt.assert_array_equal(y, [1.5, 2.5])
+        plt.close("all")
+
+    def test_draw_box_lines(self):
+
+        # Test vertical plot
+        kws = self.default_kws.copy()
+        kws.update(dict(y="y", data=self.df, inner=None))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_box_lines(ax, self.y, p.support[0], p.density[0], 0)
+        nt.assert_equal(len(ax.lines), 2)
+
+        q25, q50, q75 = np.percentile(self.y, [25, 50, 75])
+        _, y = ax.lines[1].get_xydata().T
+        npt.assert_array_equal(y, [q25, q75])
+
+        _, y = ax.collections[0].get_offsets().T
+        nt.assert_equal(y, q50)
+
+        plt.close("all")
+
+        # Test horizontal plot
+        kws = self.default_kws.copy()
+        kws.update(dict(x="y", data=self.df, inner=None))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_box_lines(ax, self.y, p.support[0], p.density[0], 0)
+        nt.assert_equal(len(ax.lines), 2)
+
+        q25, q50, q75 = np.percentile(self.y, [25, 50, 75])
+        x, _ = ax.lines[1].get_xydata().T
+        npt.assert_array_equal(x, [q25, q75])
+
+        x, _ = ax.collections[0].get_offsets().T
+        nt.assert_equal(x, q50)
+
+        plt.close("all")
+
+    def test_draw_quartiles(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(y="y", data=self.df, inner=None))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_quartiles(ax, self.y, p.support[0], p.density[0], 0)
+        for val, line in zip(np.percentile(self.y, [25, 50, 75]), ax.lines):
+            _, y = line.get_xydata().T
+            npt.assert_array_equal(y, [val, val])
+        plt.close("all")
+
+    def test_draw_points(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+
+        # Test vertical plot
+        _, ax = plt.subplots()
+        p.draw_points(ax, self.y, 0)
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, np.zeros_like(self.y))
+        npt.assert_array_equal(y, self.y)
+        plt.close("all")
+
+        # Test horizontal plot
+        p.orient = "h"
+        _, ax = plt.subplots()
+        p.draw_points(ax, self.y, 0)
+        x, y = ax.collections[0].get_offsets().T
+        npt.assert_array_equal(x, self.y)
+        npt.assert_array_equal(y, np.zeros_like(self.y))
+        plt.close("all")
+
+    def test_draw_sticks(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(y="y", data=self.df, inner=None))
+        p = dist._ViolinPlotter(**kws)
+
+        # Test vertical plot
+        _, ax = plt.subplots()
+        p.draw_stick_lines(ax, self.y, p.support[0], p.density[0], 0)
+        for val, line in zip(self.y, ax.lines):
+            _, y = line.get_xydata().T
+            npt.assert_array_equal(y, [val, val])
+        plt.close("all")
+
+        # Test horizontal plot
+        p.orient = "h"
+        _, ax = plt.subplots()
+        p.draw_stick_lines(ax, self.y, p.support[0], p.density[0], 0)
+        for val, line in zip(self.y, ax.lines):
+            x, _ = line.get_xydata().T
+            npt.assert_array_equal(x, [val, val])
+        plt.close("all")
+
+    def test_draw_violinplots(self):
+
+        kws = self.default_kws.copy()
+
+        # Test single vertical violin
+        kws.update(dict(y="y", data=self.df, inner=None,
+                        saturation=1, color=(1, 0, 0, 1)))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 1)
+        npt.assert_array_equal(ax.collections[0].get_facecolors(),
+                               [(1, 0, 0, 1)])
+        plt.close("all")
+
+        # Test single horizontal violin
+        kws.update(dict(x="y", y=None, color=(0, 1, 0, 1)))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 1)
+        npt.assert_array_equal(ax.collections[0].get_facecolors(),
+                               [(0, 1, 0, 1)])
+        plt.close("all")
+
+        # Test multiple vertical violins
+        kws.update(dict(x="g", y="y", color=None,))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 3)
+        for violin, color in zip(ax.collections, palettes.color_palette()):
+            npt.assert_array_equal(violin.get_facecolors()[0, :-1], color)
+        plt.close("all")
+
+        # Test multiple violins with hue nesting
+        kws.update(dict(hue="h"))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 6)
+        for violin, color in zip(ax.collections,
+                                 palettes.color_palette(n_colors=2) * 3):
+            npt.assert_array_equal(violin.get_facecolors()[0, :-1], color)
+        plt.close("all")
+
+        # Test multiple split violins
+        kws.update(dict(split=True, palette="muted"))
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 6)
+        for violin, color in zip(ax.collections,
+                                 palettes.color_palette("muted",
+                                                        n_colors=2) * 3):
+            npt.assert_array_equal(violin.get_facecolors()[0, :-1], color)
+        plt.close("all")
+
+    def test_draw_violinplots_no_observations(self):
+
+        kws = self.default_kws.copy()
+        kws["inner"] = None
+
+        # Test single layer of grouping
+        x = ["a", "a", "b"]
+        y = self.rs.randn(3)
+        y[-1] = np.nan
+        kws.update(x=x, y=y)
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 0)
+        plt.close("all")
+
+        # Test nested hue grouping
+        x = ["a"] * 4 + ["b"] * 2
+        y = self.rs.randn(6)
+        h = ["m", "n"] * 2 + ["m"] * 2
+        kws.update(x=x, y=y, hue=h)
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 3)
+        nt.assert_equal(len(ax.lines), 0)
+        plt.close("all")
+
+    def test_draw_violinplots_single_observations(self):
+
+        kws = self.default_kws.copy()
+        kws["inner"] = None
+
+        # Test single layer of grouping
+        x = ["a", "a", "b"]
+        y = self.rs.randn(3)
+        kws.update(x=x, y=y)
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), 1)
+        plt.close("all")
+
+        # Test nested hue grouping
+        x = ["b"] * 4 + ["a"] * 3
+        y = self.rs.randn(7)
+        h = (["m", "n"] * 4)[:-1]
+        kws.update(x=x, y=y, hue=h)
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 3)
+        nt.assert_equal(len(ax.lines), 1)
+        plt.close("all")
+
+        # Test nested hue grouping with split
+        kws["split"] = True
+        p = dist._ViolinPlotter(**kws)
+
+        _, ax = plt.subplots()
+        p.draw_violins(ax)
+        nt.assert_equal(len(ax.collections), 3)
+        nt.assert_equal(len(ax.lines), 1)
+        plt.close("all")
+
+    def test_violinplots(self):
+
+        # Smoke test the high level violinplot options
+
+        dist.violinplot("y", data=self.df)
+        plt.close("all")
+
+        dist.violinplot(y="y", data=self.df)
+        plt.close("all")
+
+        dist.violinplot("g", "y", data=self.df)
+        plt.close("all")
+
+        dist.violinplot("y", "g", data=self.df, orient="h")
+        plt.close("all")
+
+        dist.violinplot("g", "y", "h", data=self.df)
+        plt.close("all")
+
+        dist.violinplot("y", "g", "h", data=self.df, orient="h")
+        plt.close("all")
+
+        for inner in ["box", "quart", "point", "stick", None]:
+            dist.violinplot("g", "y", data=self.df, inner=inner)
+            plt.close("all")
+
+            dist.violinplot("g", "y", "h", data=self.df, inner=inner)
+            plt.close("all")
+
+            dist.violinplot("g", "y", "h", data=self.df,
+                            inner=inner, split=True)
+            plt.close("all")
 
 
 class TestStripPlotter(object):
