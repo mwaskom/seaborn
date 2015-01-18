@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import scipy
+from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -624,7 +626,9 @@ class TestViolinPlotter(object):
 
     def test_scale_area(self):
 
-        p = dist._ViolinPlotter(**self.default_kws)
+        kws = self.default_kws.copy()
+        kws["scale"] = "area"
+        p = dist._ViolinPlotter(**kws)
 
         # Test single layer of grouping
         p.hue_names = None
@@ -669,7 +673,9 @@ class TestViolinPlotter(object):
 
     def test_scale_width(self):
 
-        p = dist._ViolinPlotter(**self.default_kws)
+        kws = self.default_kws.copy()
+        kws["scale"] = "width"
+        p = dist._ViolinPlotter(**kws)
 
         # Test single layer of grouping
         p.hue_names = None
@@ -688,7 +694,10 @@ class TestViolinPlotter(object):
         npt.assert_array_equal(max_after, [[1, 1], [1, 1]])
 
     def test_scale_count(self):
-        p = dist._ViolinPlotter(**self.default_kws)
+
+        kws = self.default_kws.copy()
+        kws["scale"] = "count"
+        p = dist._ViolinPlotter(**kws)
 
         # Test single layer of grouping
         p.hue_names = None
@@ -717,6 +726,102 @@ class TestViolinPlotter(object):
         p.scale_count(density, counts, True)
         max_after = np.array([[r.max() for r in row] for row in density])
         npt.assert_array_equal(max_after, [[.125, 1], [1, .5]])
+
+    def test_bad_scale(self):
+
+        kws = self.default_kws.copy()
+        kws["scale"] = "not_a_scale_type"
+        with nt.assert_raises(ValueError):
+            dist._ViolinPlotter(**kws)
+
+    def test_kde_fit(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+        data = self.y
+        data_std = data.std(ddof=1)
+
+        # Bandwidth behavior depends on scipy version
+        if LooseVersion(scipy.__version__) < "0.12":
+            # Test ignoring custom bandwidth on old scipy
+            kde, bw = p.fit_kde(self.y, .2)
+            nt.assert_is_instance(kde, stats.gaussian_kde)
+            nt.assert_equal(kde.factor, kde.scotts_factor)
+
+        else:
+            # Test reference rule bandwidth
+            kde, bw = p.fit_kde(data, "scott")
+            nt.assert_is_instance(kde, stats.gaussian_kde)
+            nt.assert_equal(kde.factor, kde.scotts_factor())
+            nt.assert_equal(bw, kde.scotts_factor() * data_std)
+
+            # Test numeric scale factor
+            kde, bw = p.fit_kde(self.y, .2)
+            nt.assert_is_instance(kde, stats.gaussian_kde)
+            nt.assert_equal(kde.factor, .2)
+            nt.assert_equal(bw, .2 * data_std)
+
+    def test_draw_to_density(self):
+
+        p = dist._ViolinPlotter(**self.default_kws)
+        # p.dwidth will be 1 for easier testing
+        p.width = 2
+
+        # Test verical plots
+        support = np.array([.2, .6])
+        density = np.array([.1, .4])
+
+        # Test full vertical plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .5, support, density, False)
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(x, [.99 * -.4, .99 * .4])
+        npt.assert_array_equal(y, [.5, .5])
+        plt.close("all")
+
+        # Test left vertical plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .5, support, density, "left")
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(x, [.99 * -.4, 0])
+        npt.assert_array_equal(y, [.5, .5])
+        plt.close("all")
+
+        # Test right vertical plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .5, support, density, "right")
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(x, [0, .99 * .4])
+        npt.assert_array_equal(y, [.5, .5])
+        plt.close("all")
+
+        # Switch orientation to test horizontal plots
+        p.orient = "h"
+        support = np.array([.2, .5])
+        density = np.array([.3, .7])
+
+        # Test full horizontal plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .6, support, density, False)
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(y, [.99 * -.7, .99 * .7])
+        npt.assert_array_equal(x, [.6, .6])
+        plt.close("all")
+
+        # Test left horizontal plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .6, support, density, "left")
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(y, [.99 * -.7, 0])
+        npt.assert_array_equal(x, [.6, .6])
+        plt.close("all")
+
+        # Test right horizontal plot
+        _, ax = plt.subplots()
+        p.draw_to_density(ax, 0, .6, support, density, "right")
+        x, y = ax.lines[0].get_xydata().T
+        npt.assert_array_equal(y, [0, .99 * .7])
+        npt.assert_array_equal(x, [.6, .6])
+        plt.close("all")
 
 
 class TestStripPlotter(object):

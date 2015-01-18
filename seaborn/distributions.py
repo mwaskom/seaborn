@@ -521,8 +521,8 @@ class _ViolinPlotter(_BoxPlotter):
                     max_density[i] = 0
                     continue
 
-                # Handle special case of a single datapoint
-                elif kde_data.size == 1:
+                # Handle special case of a single unique datapoint
+                elif np.unique(kde_data).size == 1:
                     support.append(kde_data)
                     density.append(np.array([1.]))
                     counts[i] = 1
@@ -562,8 +562,8 @@ class _ViolinPlotter(_BoxPlotter):
                         max_density[i, j] = 0
                         continue
 
-                    # Handle special case of a single datapoint
-                    elif kde_data.size == 1:
+                    # Handle special case of a single unique datapoint
+                    elif np.unique(kde_data).size == 1:
                         support[i].append(kde_data)
                         density[i].append(np.array([1.]))
                         counts[i, j] = 1
@@ -607,12 +607,6 @@ class _ViolinPlotter(_BoxPlotter):
 
     def fit_kde(self, x, bw):
         """Estimate a KDE for a vector of data with flexible bandwidth."""
-        # Allow `bw` to be a callable function
-        try:
-            bw = bw(x)
-        except TypeError:
-            pass
-
         # Allow for the use of old scipy where `bw` is fixed
         try:
             kde = stats.gaussian_kde(x, bw)
@@ -624,15 +618,15 @@ class _ViolinPlotter(_BoxPlotter):
                 warnings.warn(msg, UserWarning)
 
         # Extract the numeric bandwidth from the KDE object
-        if isinstance(bw, str):
-            bw_name = "scotts" if bw == "scott" else bw
-            # This is a scale factor and not the actual bandwidth
-            bw = getattr(kde, "%s_factor" % bw_name)() * x.std(ddof=1)
-        else:
-            bw = bw * x.std(ddof=1)
+        bw_used = kde.factor
 
-        # At this point, `bw` should be a numeric kernel size
-        return kde, bw
+        # At this point, bw will be a numeric scale factor.
+        # To get the actual bandwidth of the kernel, we multiple by the
+        # unbiased standard deviation of the data, which we will use
+        # elsewhere to compute the range of the support.
+        bw_used = bw_used * x.std(ddof=1)
+
+        return kde, bw_used
 
     def kde_support(self, x, bw, cut, gridsize):
         """Define a grid of support for the violin."""
