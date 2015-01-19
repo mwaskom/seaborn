@@ -528,9 +528,6 @@ class TestDiscretePlotter(object):
         p = lm._DiscretePlotter("x", "y", data=self.df, kind="point")
         nt.assert_equal(p.kind, "point")
 
-        p = lm._DiscretePlotter("x", "y", data=self.df, kind="box")
-        nt.assert_equal(p.kind, "box")
-
         p = lm._DiscretePlotter("x", data=self.df, kind="auto")
         nt.assert_equal(p.kind, "bar")
 
@@ -548,10 +545,6 @@ class TestDiscretePlotter(object):
         npt.assert_array_equal(p.offset, [0])
 
         p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="bar")
-        npt.assert_array_equal(p.positions, [0, 1, 2])
-        npt.assert_array_equal(p.offset, [-.2, .2])
-
-        p = lm._DiscretePlotter("x", "y", "g", data=self.df, kind="box")
         npt.assert_array_equal(p.positions, [0, 1, 2])
         npt.assert_array_equal(p.offset, [-.2, .2])
 
@@ -754,18 +747,6 @@ class TestDiscretePlots(object):
         ax = g.axes[0, 0]
         nt.assert_equal(len(ax.collections), 2)
         nt.assert_equal(len(ax.lines), 8)
-
-        plt.close("all")
-
-    def test_factorplot_box(self):
-
-        g = lm.factorplot("x", "y", data=self.df, kind="box")
-        ax = g.axes[0, 0]
-        nt.assert_equal(len(ax.artists), 3)
-
-        g = lm.factorplot("x", "y", "g", data=self.df, kind="box")
-        ax = g.axes[0, 0]
-        nt.assert_equal(len(ax.artists), 6)
 
         plt.close("all")
 

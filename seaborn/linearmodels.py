@@ -212,7 +212,7 @@ class _DiscretePlotter(_LinearPlotter):
             else:
                 kind = "point"
             self.kind = kind
-        elif kind in ["bar", "point", "box"]:
+        elif kind in ["bar", "point"]:
             self.kind = kind
         else:
             raise ValueError("%s is not a valid kind of plot" % kind)
@@ -846,7 +846,7 @@ def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
     {x, hue, col, row}_order : list-like, optional
         Order of levels plotted on various dimensions of the figure. Default
         is to use sorted level values.
-    kind : {"auto", "point", "bar", "box"}, optional
+    kind : {"auto", "point", "bar"}, optional
         Visual representation of the plot. "auto" uses a few heuristics to
         guess whether "bar" or "point" is more appropriate.
     markers : list of strings, optional
