@@ -31,6 +31,7 @@ Distribution plots
     jointplot
     boxplot
     violinplot
+    stripplot
     distplot
     kdeplot
     rugplot

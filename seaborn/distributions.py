@@ -1,4 +1,4 @@
-"""Plottng functions for visualizing distributions."""
+"""Plotting functions for visualizing distributions."""
 from __future__ import division
 import inspect
 import colorsys
@@ -523,7 +523,7 @@ class _ViolinPlotter(_BoxPlotter):
 
                 # Handle special case of a single unique datapoint
                 elif np.unique(kde_data).size == 1:
-                    support.append(kde_data)
+                    support.append(np.unique(kde_data))
                     density.append(np.array([1.]))
                     counts[i] = 1
                     max_density[i] = 0
@@ -1148,6 +1148,8 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         median. There are several other parameters that can control how the
         notches are drawn; see the ``plt.boxplot`` help for more information
         on them.
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.boxplot`` at draw
         time.
@@ -1191,7 +1193,7 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         >>> ax = sns.boxplot("day", "total_bill", "smoker",
         ...                  data=tips, palette="Set3")
 
-    Draw a boxplot with nested grouping when some bins are empty.
+    Draw a boxplot with nested grouping when some bins are empty:
 
     .. plot::
         :context: close-figs
@@ -1199,7 +1201,7 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         >>> ax = sns.boxplot("day", "total_bill", "time",
         ...                  data=tips, linewidth=2.5)
 
-    Draw a boxplot for each numeric variable in a DataFrame.
+    Draw a boxplot for each numeric variable in a DataFrame:
 
     .. plot::
         :context: close-figs
@@ -1207,12 +1209,12 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         >>> iris = sns.load_dataset("iris")
         >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
 
-    Use :func:`stripplot` to show the datapoints on top of the boxes.
+    Use :func:`stripplot` to show the datapoints on top of the boxes:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.boxplot("day", "total_bill", data=tips)
+        >>> ax = sns.boxplot("day", "total_bill", data=tips)
         >>> ax = sns.stripplot("day", "total_bill", data=tips,
         ...                    size=4, jitter=True)
 
@@ -1235,6 +1237,171 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter.plot(ax)
 
     return ax
+
+violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimate.
+
+    A violin plot plays a similar role as a box and whisker plot. It shows the
+    distribution of quantitative data across several levels of one (or more)
+    categorical variables such that those distributions can be compared. Unlike
+    a boxplot, in which all of the plot components correspond to actual
+    datapoints, the violin plot features a kernel density estimation of the
+    underlying distribution.
+
+    This can be an effective and attractive way to show multiple distributions
+    of data at once, but keep in mind that the estimation procedure is
+    influenced by the sample size, and violins for relatively small samples
+    might look misleadingly smooth.
+
+    {boxplot_docs}
+    bw : {{'scott', 'silverman', float}}, optional
+        Either the name of a reference rule or the scale factor to use when
+        computing the kernel bandwidth. The actual kernel size will be
+        determined by multiplying the scale factor by the standard deviation of
+        the data within each bin.
+    cut : float, optional
+        Distance, in units of bandwidth size, to extend the density past the
+        extreme datapoints. Set to 0 to limit the violin range within the range
+        of the observed data (i.e., to have the same effect as ``trim=True`` in
+        ``ggplot``.
+    scale : {{"area", "count", "width"}}, optional
+        The method used to scale the width of each violin. If ``area``, each
+        violin will have the same area. If ``count``, the width of the violins
+        will be scaled by the number of observations in that bin. If ``width``,
+        each violin will have the same width.
+    scale_hue : bool, optional
+        When nesting violins using a ``hue`` variable, this parameter
+        determines whether the scaling is computed within each level of the
+        major grouping variable (``scale_hue=True``) or across all the violins
+        on the plot (``scale_hue=False``).
+    gridsize : int, optional
+        Number of points in the discrete grid used to compute the kernel
+        density estimate.
+    width : float, optional
+        Width of a full violin when not using hue nesting, or width of all the
+        violins for one level of the major grouping variable.
+    inner : {{"box", "quartile", "point", "stick", None}}, optional
+        Representation of the datapoints in the violin interior. If ``box``,
+        draw a miniature boxplot. If ``quartiles``, draw the quartiles of the
+        distribution.  If ``points`` or ``sticks``, show each underlying
+        datapoint. Using ``None`` will draw unadorned violins.
+    split : bool, optional
+        When using hue nesting with a variable that takes two levels, setting
+        ``split`` to True will draw half of a violin for each level. This can
+        make it easier to directly compare the distributions.
+    orient : {{"v", "h", None}}, optional
+        Orientation of the plot (vertical or horizontal). This can also be
+        inferred when using long-form data and Categorical data types.
+    linewidth : float, optional
+        Width of the gray lines that frame the violins. The size of the
+        ``inner`` components also derives from this value.
+    color : matplotlib color, optional
+        Color for all of the boxes, or seed for :func:`light_palette` when
+        using hue nesting.
+    palette : palette name, list, or dict, optional
+        Color palette that maps either the grouping variable or the hue
+        variable.
+    saturation : float, optional
+        Proportion of the original saturation to draw colors at. Large patches
+        often look better with slightly desaturated colors, but set this to
+        ``1`` if you want the plot colors to perfectly match the input color
+        spec.
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.
+
+    Returns
+    -------
+    ax : matplotlib Axes
+        Returns the Axes object with the violins drawn onto it.
+
+    See Also
+    --------
+    boxplot : A traditional box-and-whisker plot with a similar API.
+    stripplot : A scatterplot where one variable is categorical. Can be used
+                in conjunction with violinplot to show each observation.
+
+    Examples
+    --------
+
+    Draw a single horizontal violinplot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.violinplot(x=tips["total_bill"])
+
+    Draw a vertical violinplot grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", data=tips)
+
+    Draw a violinplot with nested grouping by two categorical variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "smoker",
+        ...                     data=tips, palette="Set1")
+
+    Draw split violins to compare the across the hue variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "smoker", data=tips,
+        ...                     palette="Set1", split=True)
+
+    Scale the violin width by the number of observations in each bin:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
+        ...                     palette="Set2", split=True, scale="count")
+
+    Show each observation with a stick inside the violin:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
+        ...                     palette="Set2", split=True, scale="count",
+        ...                     inner="stick")
+
+    Scale the density relative to the counts across all bins:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
+        ...                     palette="Set2", split=True, scale="count",
+        ...                     inner="stick", scale_hue=False)
+
+    Use a narrow bandwidth to reduce the amount of smoothing:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
+        ...                     palette="Set2", split=True, scale="count",
+        ...                     inner="stick", scale_hue=False, bw=.2)
+
+    Draw horizontal violins (if the grouping variable has a ``Categorical``
+    dtype, the ``orient`` argument can be omitted):
+
+    .. plot::
+        :context: close-figs
+
+        >>> planets = sns.load_dataset("planets")
+        >>> ax = sns.violinplot("orbital_period", "method",
+        ...                     data=planets[planets.orbital_period < 1000],
+        ...                     scale="width", orient="h", palette="Set3")
+
+    """.format(boxplot_docs=boxplot_docs)
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,

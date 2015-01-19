@@ -628,7 +628,9 @@ def render_figures(code, code_path, output_dir, output_base, context,
             images.append(img)
             for format, dpi in formats:
                 try:
-                    figman.canvas.figure.savefig(img.filename(format), dpi=dpi)
+                    figman.canvas.figure.savefig(img.filename(format),
+                                                 dpi=dpi,
+                                                 bbox_inches="tight")
                 except Exception as err:
                     raise PlotError(traceback.format_exc())
                 img.formats.append(format)
