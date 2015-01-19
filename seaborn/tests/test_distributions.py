@@ -1191,7 +1191,6 @@ class TestStripPlotter(object):
         df.g = df.g.astype("category")
 
         ax = dist.stripplot("y", "g", "h", data=df)
-        plt.savefig("/Users/mwaskom/Desktop/nose.png")
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 

@@ -1082,10 +1082,10 @@ _boxplot_docs = dict(
     It is also possible to pass vector data directly to ``x``, ``y``, or
     ``hue``, and thus avoid passing a dataframe to ``data``.
 
-    In all cases, it is possible to pass numpy or Python objects, but it is
-    preferrable to pass pandas objects because the associated names will be
-    used to annotate the axes. Additionally, you can use Categorical types for
-    the grouping variables to control the order of plot elements.\
+    In all cases, it is possible to use numpy or Python objects, but pandas
+    objects are preferable because the associated names will be used to
+    annotate the axes. Additionally, you can use Categorical types for the
+    grouping variables to control the order of plot elements.\
     """),
 
     # Shared function parameters
