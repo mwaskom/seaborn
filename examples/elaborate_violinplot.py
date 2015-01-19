@@ -20,7 +20,7 @@ corr_df.index = corr_df.index.astype(int)
 corr_df = corr_df.sort_index().T
 
 f, ax = plt.subplots(figsize=(11, 6))
-sns.violinplot(corr_df, color="Set3", bw=.2, cut=.6,
-               lw=.5, inner="points", inner_kws={"ms": 6})
+sns.violinplot(data=corr_df, palette="Set3", bw=.2, cut=1,
+               linewidth=.5, inner="points")
 ax.set(ylim=(-.7, 1.05))
 sns.despine(left=True, bottom=True)
