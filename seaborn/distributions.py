@@ -1269,9 +1269,9 @@ boxplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> g.map(sns.boxplot, "sex", "total_bill", "smoker")
-        >>> g.add_legend(title="smoker")
-        >>> g.despine(left=True)
+        >>> (g.map(sns.boxplot, "sex", "total_bill", "smoker")
+        ...   .despine(left=True)
+        ...   .add_legend(title="smoker"))
 
     """).format(**_boxplot_docs)
 
@@ -1460,9 +1460,9 @@ violinplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> g.map(sns.violinplot, "sex", "total_bill", "smoker", split=True)
-        >>> g.add_legend(title="smoker")
-        >>> g.despine(left=True)
+        >>> (g.map(sns.violinplot, "sex", "total_bill", "smoker", split=True)
+        ...   .despine(left=True)
+        ...   .add_legend(title="smoker"))
 
     """).format(**_boxplot_docs)
 

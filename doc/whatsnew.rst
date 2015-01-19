@@ -7,6 +7,8 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+.. include:: releases/v0.6.0.txt
+
 .. include:: releases/v0.5.1.txt
 
 .. include:: releases/v0.5.0.txt
