@@ -440,13 +440,11 @@ class TestBoxPlotter(object):
 
         ax = dist.boxplot("g", "y", data=self.df)
         nt.assert_equal(len(ax.artists), 3)
-        nt.assert_equal(len(ax.lines), 18)
 
         plt.close("all")
 
         ax = dist.boxplot("g", "y", "h", data=self.df)
         nt.assert_equal(len(ax.artists), 6)
-        nt.assert_equal(len(ax.lines), 36)
 
         plt.close("all")
 
