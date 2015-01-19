@@ -10,8 +10,8 @@ from numpy.testing.decorators import skipif
 from .. import distributions as dist
 
 try:
-    import statsmodels
-    assert statsmodels
+    import statsmodels.nonparametric.api
+    assert statsmodels.nonparametric.api
     _no_statsmodels = False
 except ImportError:
     _no_statsmodels = True
