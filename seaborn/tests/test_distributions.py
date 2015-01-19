@@ -741,11 +741,11 @@ class TestViolinPlotter(object):
         data_std = data.std(ddof=1)
 
         # Bandwidth behavior depends on scipy version
-        if LooseVersion(scipy.__version__) < "0.12":
+        if LooseVersion(scipy.__version__) < "0.11":
             # Test ignoring custom bandwidth on old scipy
             kde, bw = p.fit_kde(self.y, .2)
             nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, kde.scotts_factor)
+            nt.assert_equal(kde.factor, kde.scotts_factor())
 
         else:
             # Test reference rule bandwidth
