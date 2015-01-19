@@ -1260,7 +1260,18 @@ boxplot.__doc__ = dedent("""\
 
         >>> ax = sns.boxplot("day", "total_bill", data=tips)
         >>> ax = sns.stripplot("day", "total_bill", data=tips,
-        ...                    size=4, jitter=True)
+        ...                    size=4, jitter=True, edgecolor="gray")
+
+    Draw a box plot on to a :class:`FacetGrid` to group within an additional
+    categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
+        >>> g.map(sns.boxplot, "sex", "total_bill", "smoker")
+        >>> g.add_legend(title="smoker")
+        >>> g.despine(left=True)
 
     """).format(**_boxplot_docs)
 
@@ -1395,6 +1406,15 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
         ...                     palette="Set2", split=True, scale="count")
 
+    Draw the quartiles as horizontal lines instead of a mini-box:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
+        ...                     palette="Set2", split=True, scale="count",
+        ...                     inner="quartile")
+
     Show each observation with a stick inside the violin:
 
     .. plot::
@@ -1433,6 +1453,17 @@ violinplot.__doc__ = dedent("""\
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", orient="h", palette="Set3")
 
+    Draw a violin plot on to a :class:`FacetGrid` to group within an additional
+    categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
+        >>> g.map(sns.violinplot, "sex", "total_bill", "smoker", split=True)
+        >>> g.add_legend(title="smoker")
+        >>> g.despine(left=True)
+
     """).format(**_boxplot_docs)
 
 
@@ -1452,6 +1483,145 @@ def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter.plot(ax, kwargs)
 
     return ax
+
+
+stripplot.__doc__ = dedent("""\
+    Draw a scatterplot where one variable is categorical.
+
+    A strip plot can be drawn on its own, but it is also a good complement
+    to a box or violinplot in cases where you want to show all observations
+    along with some representation of the underlying distribution.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {main_api_params}
+    jitter : float, ``True``/``1`` is special-cased, optional
+        Amount of jitter (only along the categorical axis) to apply. This
+        can be useful when you have many points and they overlap, so that
+        it is easier to see the distribution. You can specify the amount
+        of jitter (half the width of the uniform random variable support),
+        or just use ``True`` for a good default.
+    split : bool, optional
+        When using ``hue`` nesting, setting this to ``True`` will separate
+        the strips for different hue levels along the categorical axis.
+        Otherwise, the points for each level will be plotted on top of
+        each other.
+    {orient}
+    {color}
+    {palette}
+    size : float, optional
+        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        to draw the points, the ``size`` argument here takes a "normal"
+        markersize and not size^2 like ``plt.scatter``.
+    edgecolor : matplotlib color, "gray" is special-cased, optional
+        Color of the lines around each point. If you pass ``"gray"``, the
+        brightness is determined by the color palette used for the body
+        of the points.
+    {linewidth}
+    {ax_in}
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {boxplot}
+    {violinplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal strip plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.stripplot(x=tips["total_bill"])
+
+    Group the strips by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("day", "total_bill", data=tips)
+
+    Add jitter to bring out the distribution of values:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("day", "total_bill", data=tips,
+        ...                    jitter=True, palette="Set1")
+
+    Use a smaller amount of jitter:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("day", "total_bill", data=tips,
+        ...                    jitter=0.05, palette="Set1")
+
+    Draw horizontal strips (if the grouping variable has a ``Categorical``
+    dtype, the ``orient`` argument can be omitted):
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("total_bill", "day", data=tips,
+        ...                    jitter=True, palette="Set1", orient="h")
+
+    Nest the strips within a second categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("sex", "total_bill", "day", data=tips,
+        ...                    jitter=True, palette="muted")
+
+    Draw each level of the ``hue`` variable at the same location on the
+    major categorical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot("sex", "total_bill", "day", data=tips,
+        ...                    jitter=True, palette="muted", split=False)
+
+    Draw strips with large points and different aesthetics:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax =  sns.stripplot("day", "total_bill", "smoker", data=tips,
+        ...                    palette="Set3", size=20,
+        ...                    edgecolor="gray", alpha=.25)
+
+    Draw strips of observations on top of a box plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot("day", "total_bill", data=tips, whis=np.inf)
+        >>> ax = sns.stripplot("day", "total_bill", data=tips,
+        ...                    jitter=True, color="white", edgecolor="gray")
+
+    Draw strips of observations on top of a violin plot
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot("total_bill", "day", data=tips,
+        ...                     orient="h", inner=None)
+        >>> ax = sns.stripplot("total_bill", "day", data=tips,
+        ...                    jitter=True, orient="h")
+
+    """).format(**_boxplot_docs)
 
 
 def _freedman_diaconis_bins(a):

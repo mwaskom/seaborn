@@ -2,6 +2,20 @@
 v0.6.0 (Unreleased)
 -------------------
 
+This is a major release from 0.5. The main objective of this release is to unify the API, which means there are some relatively large API changes in some of the older functions. See below for details of those changes, which will break code written for older versions of seaborn.
+
+- Updated and unified the API for :func:`boxplot` and :func:`violinplot`. This is probably the most disruptive API change. Both functions maintain backwards-compatibility in terms of the kind of data they can accept, but the syntax has changed. These functions are now invoked with ``x``, ``y`` parameters that are either vectors of data or names of variables in a long-form DataFrame passed to the new ``data`` parameter. You can still pass wide-form DataFrames or arrays to ``data``, but it is no longer the first positional argument. The upshot of this is that both functions now work seamlessly in the context of a :class:`FacetGrid`. Additionally, by using named variables and a ``data`` object, it's much easier to apply transformations to the data in the body of the seaborn call. See the `github pull request <https://github.com/mwaskom/seaborn/pull/410>`_ for more information on these changes and the logic behind them.
+
+- Added a ``hue`` argument to :func:`boxplot` and :func:`violinplot, which allows for nested grouping the plot elements by a third categorical variable. For :func:`violinplot`, this nesting can also be accomplished by splitting the violins when there are two levels of the ``hue`` variable. To make this functionality feasible, the ability to specify where the plots will be draw in data coordinates has been removed. These plots now are drawn at set positions, like (and identical to) :func:`barplot` and :func:`pointplot`.
+
+- Added a ``palette`` parameter to :func:`boxplot`/:func:`violinplot`. The ``color`` parameter still exists, but no longer does double-duty in accepting the name of a seaborn palette. ``palette`` supersedes ``color`` so that it can be used with a :class:`FacetGrid`.
+
+- Added the ``scale`` and ``scale_hue`` parameters to :func:`violinplot`. These control how the width of the violins are scaled. The default is ``area``, which is different from how the violins used to be drawn. Use ``scale='width'`` to get the old behavior.
+
+- Used a different style for the ``box`` kind of interior plot in :func:`violinplot`, which shows the whisker range in addition to the quartiles. Use ``inner='quartile'` to get the old style.
+
+- Added the :func:`stripplot` function, which draws a scatterplot where one of the variables is categorical. This plot has the same API as :func:`boxplot` and :func:`violinplot`. It is useful both on its own and when composed with one of these other plot kinds to show both the observations and underlying distribution.
+
 - Added the ``line_kws`` parameter to :func:`residplot` to change the style of the lowess line, when used.
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
