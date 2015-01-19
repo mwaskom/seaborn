@@ -1068,9 +1068,41 @@ class _SwarmPlotter(_BoxPlotter):
         pass
 
 
+# Write one common description of common categorical plot inputs
+boxplot_docs = """
+    Input data can be passed in a variety of formats, including:
+
+    - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
+    - A "wide-form" dataframe, such that each column will be plotted as
+      variable
+    - A "long-form" dataframe, in which case the ``x``, ``y``, and ``hue``
+      variables will determine how the data are plotted.
+
+    It is also possible to pass vector data directly to ``x``, ``y``, or
+    ``hue``, and thus avoid passing a dataframe to ``data``.
+
+    In all cases, it is possible to pass numpy or Python objects, but it is
+    preferrable to pass pandas objects because the associated names will be
+    used to annotate the axes. Additionally, you can use Categorical types for
+    the grouping variables to control the order of plot elements.
+
+    Parameters
+    ----------
+    x, y, hue : names of variable in ``data`` or vector data, optional
+        Variables for plotting long-form data. See examples for interpretation.
+    data : DataFrame, array, or list of arrays, optional
+        Dataset for plotting. If ``x`` and ``y`` are absent, this is
+        interpreted as wide-form. Otherwise it is expected to be long-form.
+    order, hue_order : lists of strings, optional
+        Order to plot the categorical levels in, otherwise the levels are
+        inferred from the data objects.
+    """
+
+
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
-            width=.8, fliersize=5, linewidth=None, ax=None, **kwargs):
+            width=.8, fliersize=5, linewidth=None, whis=1.5, notch=False,
+            ax=None, **kwargs):
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
@@ -1079,9 +1111,112 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     if ax is None:
         ax = plt.gca()
 
+    kwargs.update(dict(whis=whis, notch=notch))
     plotter.plot(ax, kwargs)
 
     return ax
+
+boxplot.__doc__ = """Draw a box-and-whisker plot.
+    {boxplot_docs}
+    orient : "v" | "h", optional
+        Orientation of the plot (vertical or horizontal). This can also be
+        inferred when using long-form data and Categorical data types.
+    color : matplotlib color, optional
+        Color for all of the boxes, or seed for :func:`light_palette` when
+        using hue nesting.
+    palette : palette name, list, or dict, optional
+        Color palette that maps either the grouping variable or the hue
+        variable.
+    saturation : float, optional
+        Proportion of the original saturation to draw colors at. Large patches
+        often look better with slightly desaturated colors, but set this to
+        ``1`` if you want the plot colors to perfectly match the input color
+        spec.
+    width : float, optional
+        Width of a full box when not using hue nesting, or width of all the
+        boxes for one level of the major grouping variable.
+    fliersize : float, optional
+        Size of the markers used to indicate outlier observations.
+    linewidth : float, optional
+        Width of the gray lines that frame the box.
+    whis : float, optional
+        Proportion of the IQR past the low and high quartiles to extend the
+        plot whiskers. Points outside this range will be identified as
+        outliers.
+    notch : boolean, optional
+        Whether to "notch" the box to indicate a confidence interval for the
+        median. There are several other parameters that can control how the
+        notches are drawn; see the ``plt.boxplot`` help for more information
+        on them.
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.boxplot`` at draw
+        time.
+
+    Returns
+    -------
+    ax : matplotlib Axes
+        Returns the Axes object with the boxplot drawn onto it.
+
+    See Also
+    --------
+    violinplot : A combination of boxplot and kernel density estimation.
+    stripplot : A scatterplot where one variable is categorical. Can be used
+                in conjunction with a boxplot to show each observation.
+
+    Examples
+    --------
+
+    Draw a single horizontal boxplot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.boxplot(x=tips["total_bill"])
+
+    Draw a vertical boxplot grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot("day", "total_bill", data=tips)
+
+    Draw a boxplot with nested grouping by two categorical variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot("day", "total_bill", "smoker",
+        ...                  data=tips, palette="Set3")
+
+    Draw a boxplot with nested grouping when some bins are empty.
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot("day", "total_bill", "time",
+        ...                  data=tips, linewidth=2.5)
+
+    Draw a boxplot for each numeric variable in a DataFrame.
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
+
+    Use :func:`stripplot` to show the datapoints on top of the boxes.
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.boxplot("day", "total_bill", data=tips)
+        >>> ax = sns.stripplot("day", "total_bill", data=tips,
+        ...                    size=4, jitter=True)
+
+    """.format(boxplot_docs=boxplot_docs)
 
 
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
