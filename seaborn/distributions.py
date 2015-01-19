@@ -564,7 +564,7 @@ class _ViolinPlotter(_BoxPlotter):
 
                     # Handle special case of a single unique datapoint
                     elif np.unique(kde_data).size == 1:
-                        support[i].append(kde_data)
+                        support[i].append(np.unique(kde_data))
                         density[i].append(np.array([1.]))
                         counts[i, j] = 1
                         max_density[i, j] = 0
