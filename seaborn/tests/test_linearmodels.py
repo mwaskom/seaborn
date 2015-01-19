@@ -10,7 +10,7 @@ from numpy.testing.decorators import skipif
 from nose import SkipTest
 
 try:
-    import statsmodels.api as sm
+    import statsmodels.regression.linear_model as smlm
     _no_statsmodels = False
 except ImportError:
     _no_statsmodels = True
@@ -163,7 +163,7 @@ class TestRegressionPlotter(object):
         yhat_fast, _ = p.fit_fast(self.grid)
 
         # Fit using the statsmodels function with an OLS model
-        yhat_smod, _ = p.fit_statsmodels(self.grid, sm.OLS)
+        yhat_smod, _ = p.fit_statsmodels(self.grid, smlm.OLS)
 
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_fast, yhat_smod)
@@ -177,7 +177,7 @@ class TestRegressionPlotter(object):
         yhat_poly, _ = p.fit_poly(self.grid, 1)
 
         # Fit using the statsmodels function with an OLS model
-        yhat_smod, _ = p.fit_statsmodels(self.grid, sm.OLS)
+        yhat_smod, _ = p.fit_statsmodels(self.grid, smlm.OLS)
 
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_poly, yhat_smod)
@@ -210,7 +210,7 @@ class TestRegressionPlotter(object):
         npt.assert_equal(boots_poly.shape, (self.n_boot, self.grid.size))
 
         # Slowest (statsmodels) version
-        _, boots_smod = p.fit_statsmodels(self.grid, sm.OLS)
+        _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         npt.assert_equal(boots_smod.shape, (self.n_boot, self.grid.size))
 
     @skipif(_no_statsmodels)
@@ -228,7 +228,7 @@ class TestRegressionPlotter(object):
         nt.assert_is(boots_poly, None)
 
         # Slowest (statsmodels) version
-        _, boots_smod = p.fit_statsmodels(self.grid, sm.OLS)
+        _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         nt.assert_is(boots_smod, None)
 
     def test_numeric_bins(self):

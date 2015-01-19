@@ -9,8 +9,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 try:
-    import statsmodels.api as sm
-    import statsmodels.formula.api as sf
+    import statsmodels
+    assert statsmodels
     _has_statsmodels = True
 except ImportError:
     _has_statsmodels = False
@@ -511,14 +511,15 @@ class _RegressionPlotter(_LinearPlotter):
         if self.order > 1:
             yhat, yhat_boots = self.fit_poly(grid, self.order)
         elif self.logistic:
-            from statsmodels.api import GLM, families
+            from statsmodels.genmod.generalized_linear_model import GLM
+            from statsmodels.genmod.families import Binomial
             yhat, yhat_boots = self.fit_statsmodels(grid, GLM,
-                                                    family=families.Binomial())
+                                                    family=Binomial())
         elif self.lowess:
             ci = None
             grid, yhat = self.fit_lowess()
         elif self.robust:
-            from statsmodels.api import RLM
+            from statsmodels.robust.robust_linear_model import RLM
             yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
         elif self.logx:
             yhat, yhat_boots = self.fit_logx(grid)
@@ -574,8 +575,8 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_lowess(self):
         """Fit a locally-weighted regression, which returns its own grid."""
-        from statsmodels.api import nonparametric
-        grid, yhat = nonparametric.lowess(self.y, self.x).T
+        from statsmodels.nonparametric.smoothers_lowess import lowess
+        grid, yhat = lowess(self.y, self.x).T
         return grid, yhat
 
     def fit_logx(self, grid):
@@ -1300,6 +1301,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
     """
     if not _has_statsmodels:
         raise ImportError("The `coefplot` function requires statsmodels")
+    import statsmodels.formula.api as sf
 
     alpha = 1 - ci / 100
     if groupby is None:
@@ -1393,6 +1395,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     """
     if not _has_statsmodels:
         raise ImportError("The `interactplot` function requires statsmodels")
+    from statsmodels.regression.linear_model import OLS
+    from statsmodels.genmod.generalized_linear_model import GLM
+    from statsmodels.genmod.families import Binomial
 
     # Handle the form of the data
     if data is not None:
@@ -1446,9 +1451,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     # Fit the model with an interaction
     X = np.c_[np.ones(x1.size), x1, x2, x1 * x2]
     if logistic:
-        lm = sm.GLM(y, X, family=sm.families.Binomial()).fit()
+        lm = GLM(y, X, family=Binomial()).fit()
     else:
-        lm = sm.OLS(y, X).fit()
+        lm = OLS(y, X).fit()
 
     # Evaluate the model on the grid
     eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))

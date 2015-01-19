@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import warnings
 
 try:
-    import statsmodels.api as sm
+    import statsmodels.nonparametric.api as smnp
     _has_statsmodels = True
 except ImportError:
     _has_statsmodels = False
@@ -689,7 +689,7 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
                                 cumulative=False):
     """Compute a univariate kernel density estimate using statsmodels."""
     fft = kernel == "gau"
-    kde = sm.nonparametric.KDEUnivariate(data)
+    kde = smnp.KDEUnivariate(data)
     kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
     if cumulative:
         grid, y = kde.support, kde.cdf
@@ -757,7 +757,7 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
     if isinstance(bw, str):
-        bw_func = getattr(sm.nonparametric.bandwidths, "bw_" + bw)
+        bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
         bw = [x_bw, y_bw]
@@ -769,7 +769,7 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     if isinstance(y, pd.Series):
         y = y.values
 
-    kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
+    kde = smnp.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
     xx, yy = np.meshgrid(x_support, y_support)
