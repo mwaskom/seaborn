@@ -1,6 +1,6 @@
 """Plotting functions for visualizing distributions."""
 from __future__ import division
-import inspect
+from textwrap import dedent
 import colorsys
 import numpy as np
 from scipy import stats
@@ -18,7 +18,7 @@ except ImportError:
 
 from .external.six.moves import range
 
-from .utils import set_hls_values, desaturate, percentiles, iqr, _kde_support
+from .utils import set_hls_values, desaturate, iqr, _kde_support
 from .palettes import color_palette, husl_palette, blend_palette, light_palette
 from .axisgrid import JointGrid
 
@@ -1068,15 +1068,16 @@ class _SwarmPlotter(_BoxPlotter):
         pass
 
 
-# Write one common description of common categorical plot inputs
-boxplot_docs = """
+_boxplot_docs = dict(
+
+    # Shared narrative docs
+    main_api_narrative=dedent("""\
     Input data can be passed in a variety of formats, including:
 
-    - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
-    - A "wide-form" dataframe, such that each column will be plotted as
-      variable
-    - A "long-form" dataframe, in which case the ``x``, ``y``, and ``hue``
+    - A "long-form" DataFrame, in which case the ``x``, ``y``, and ``hue``
       variables will determine how the data are plotted.
+    - A "wide-form" DatFrame, such that each numeric column will be plotted.
+    - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
 
     It is also possible to pass vector data directly to ``x``, ``y``, or
     ``hue``, and thus avoid passing a dataframe to ``data``.
@@ -1084,10 +1085,11 @@ boxplot_docs = """
     In all cases, it is possible to pass numpy or Python objects, but it is
     preferrable to pass pandas objects because the associated names will be
     used to annotate the axes. Additionally, you can use Categorical types for
-    the grouping variables to control the order of plot elements.
+    the grouping variables to control the order of plot elements.\
+    """),
 
-    Parameters
-    ----------
+    # Shared function parameters
+    main_api_params=dedent("""\
     x, y, hue : names of variable in ``data`` or vector data, optional
         Variables for plotting long-form data. See examples for interpretation.
     data : DataFrame, array, or list of arrays, optional
@@ -1095,8 +1097,60 @@ boxplot_docs = """
         interpreted as wide-form. Otherwise it is expected to be long-form.
     order, hue_order : lists of strings, optional
         Order to plot the categorical levels in, otherwise the levels are
-        inferred from the data objects.
-    """
+        inferred from the data objects.\
+        """),
+    orient=dedent("""\
+    orient : "v" | "h", optional
+        Orientation of the plot (vertical or horizontal). This can also be
+        inferred when using long-form data and Categorical data types.\
+    """),
+    color=dedent("""\
+    color : matplotlib color, optional
+        Color for all of the elements, or seed for :func:`light_palette` when
+        using hue nesting.\
+    """),
+    palette=dedent("""\
+    palette : palette name, list, or dict, optional
+        Color palette that maps either the grouping variable or the hue
+        variable.\
+    """),
+    saturation=dedent("""\
+    saturation : float, optional
+        Proportion of the original saturation to draw colors at. Large patches
+        often look better with slightly desaturated colors, but set this to
+        ``1`` if you want the plot colors to perfectly match the input color
+        spec.\
+    """),
+    width=dedent("""\
+    width : float, optional
+        Width of a full element when not using hue nesting, or width of all the
+        elements for one level of the major grouping variable.\
+    """),
+    linewidth=dedent("""\
+    linewidth : float, optional
+        Width of the gray lines that frame the plot elements.\
+    """),
+    ax_in=dedent("""\
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.\
+    """),
+    ax_out=dedent("""\
+    ax : matplotlib Axes
+        Returns the Axes object with the boxplot drawn onto it.\
+    """),
+
+    # Shared see also
+    boxplot=dedent("""\
+    boxplot : A traditional box-and-whisker plot with a similar API.\
+    """),
+    violinplot=dedent("""\
+    violinplot : A combination of boxplot and kernel density estimation.\
+    """),
+    stripplot=dedent("""\
+    stripplot : A scatterplot where one variable is categorical. Can be used
+                in conjunction with a boxplot to show each observation.\
+    """),
+    )
 
 
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
@@ -1116,29 +1170,22 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     return ax
 
-boxplot.__doc__ = """Draw a box-and-whisker plot.
-    {boxplot_docs}
-    orient : "v" | "h", optional
-        Orientation of the plot (vertical or horizontal). This can also be
-        inferred when using long-form data and Categorical data types.
-    color : matplotlib color, optional
-        Color for all of the boxes, or seed for :func:`light_palette` when
-        using hue nesting.
-    palette : palette name, list, or dict, optional
-        Color palette that maps either the grouping variable or the hue
-        variable.
-    saturation : float, optional
-        Proportion of the original saturation to draw colors at. Large patches
-        often look better with slightly desaturated colors, but set this to
-        ``1`` if you want the plot colors to perfectly match the input color
-        spec.
-    width : float, optional
-        Width of a full box when not using hue nesting, or width of all the
-        boxes for one level of the major grouping variable.
+boxplot.__doc__ = dedent("""\
+    Draw a box-and-whisker plot.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {main_api_params}
+    {orient}
+    {color}
+    {palette}
+    {saturation}
+    {width}
     fliersize : float, optional
         Size of the markers used to indicate outlier observations.
-    linewidth : float, optional
-        Width of the gray lines that frame the box.
+    {linewidth}
     whis : float, optional
         Proportion of the IQR past the low and high quartiles to extend the
         plot whiskers. Points outside this range will be identified as
@@ -1148,22 +1195,19 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         median. There are several other parameters that can control how the
         notches are drawn; see the ``plt.boxplot`` help for more information
         on them.
-    ax : matplotlib Axes, optional
-        Axes object to draw the plot onto, otherwise uses the current Axes.
+    {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.boxplot`` at draw
         time.
 
     Returns
     -------
-    ax : matplotlib Axes
-        Returns the Axes object with the boxplot drawn onto it.
+    {ax_out}
 
     See Also
     --------
-    violinplot : A combination of boxplot and kernel density estimation.
-    stripplot : A scatterplot where one variable is categorical. Can be used
-                in conjunction with a boxplot to show each observation.
+    {violinplot}
+    {stripplot}
 
     Examples
     --------
@@ -1218,7 +1262,7 @@ boxplot.__doc__ = """Draw a box-and-whisker plot.
         >>> ax = sns.stripplot("day", "total_bill", data=tips,
         ...                    size=4, jitter=True)
 
-    """.format(boxplot_docs=boxplot_docs)
+    """).format(**_boxplot_docs)
 
 
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
@@ -1238,7 +1282,8 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     return ax
 
-violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimate.
+violinplot.__doc__ = dedent("""\
+    Draw a combination of boxplot and kernel density estimate.
 
     A violin plot plays a similar role as a box and whisker plot. It shows the
     distribution of quantitative data across several levels of one (or more)
@@ -1252,7 +1297,11 @@ violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimat
     influenced by the sample size, and violins for relatively small samples
     might look misleadingly smooth.
 
-    {boxplot_docs}
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {main_api_params}
     bw : {{'scott', 'silverman', float}}, optional
         Either the name of a reference rule or the scale factor to use when
         computing the kernel bandwidth. The actual kernel size will be
@@ -1276,9 +1325,7 @@ violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimat
     gridsize : int, optional
         Number of points in the discrete grid used to compute the kernel
         density estimate.
-    width : float, optional
-        Width of a full violin when not using hue nesting, or width of all the
-        violins for one level of the major grouping variable.
+    {width}
     inner : {{"box", "quartile", "point", "stick", None}}, optional
         Representation of the datapoints in the violin interior. If ``box``,
         draw a miniature boxplot. If ``quartiles``, draw the quartiles of the
@@ -1288,36 +1335,21 @@ violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimat
         When using hue nesting with a variable that takes two levels, setting
         ``split`` to True will draw half of a violin for each level. This can
         make it easier to directly compare the distributions.
-    orient : {{"v", "h", None}}, optional
-        Orientation of the plot (vertical or horizontal). This can also be
-        inferred when using long-form data and Categorical data types.
-    linewidth : float, optional
-        Width of the gray lines that frame the violins. The size of the
-        ``inner`` components also derives from this value.
-    color : matplotlib color, optional
-        Color for all of the boxes, or seed for :func:`light_palette` when
-        using hue nesting.
-    palette : palette name, list, or dict, optional
-        Color palette that maps either the grouping variable or the hue
-        variable.
-    saturation : float, optional
-        Proportion of the original saturation to draw colors at. Large patches
-        often look better with slightly desaturated colors, but set this to
-        ``1`` if you want the plot colors to perfectly match the input color
-        spec.
-    ax : matplotlib Axes, optional
-        Axes object to draw the plot onto, otherwise uses the current Axes.
+    {orient}
+    {linewidth}
+    {color}
+    {palette}
+    {saturation}
+    {ax_in}
 
     Returns
     -------
-    ax : matplotlib Axes
-        Returns the Axes object with the violins drawn onto it.
+    {ax_out}
 
     See Also
     --------
-    boxplot : A traditional box-and-whisker plot with a similar API.
-    stripplot : A scatterplot where one variable is categorical. Can be used
-                in conjunction with violinplot to show each observation.
+    {boxplot}
+    {stripplot}
 
     Examples
     --------
@@ -1401,7 +1433,7 @@ violinplot.__doc__ = """Draw a combination of boxplot and kernel density estimat
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", orient="h", palette="Set3")
 
-    """.format(boxplot_docs=boxplot_docs)
+    """).format(**_boxplot_docs)
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
@@ -1414,6 +1446,8 @@ def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         ax = plt.gca()
 
     kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
+    if edgecolor == "gray":
+        kwargs["edgecolor"] = plotter.gray
 
     plotter.plot(ax, kwargs)
 
