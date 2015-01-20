@@ -8,6 +8,8 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
+import matplotlib.patches as Patches
+from matplotlib.collections import PatchCollection
 
 try:
     import statsmodels.nonparametric.api as smnp
@@ -456,6 +458,269 @@ def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
         ax.set_yticks(positions)
         ax.set_yticklabels(names)
         ax.set_ylim(positions[0] - .5, positions[-1] + .5)
+
+        if ylabel is not None:
+            ax.set_ylabel(xlabel)
+        if xlabel is not None:
+            ax.set_xlabel(ylabel)
+
+    ax.xaxis.grid(False)
+    return ax
+
+def _lv_box_ends(vals, k_depth='proportion', p=None):
+    """Get the number of data points and calculate "depth" of
+    letter-value plot."""
+    n = len(vals)
+    if not p:
+            p = 8./n
+    if k_depth == 'proportion':
+        k = int(np.log2(n)) - int(np.log2(n*p)) + 1
+    elif k_depth == 'tukey':
+        k = int(np.log2(n)) - 3
+    elif k_depth == 'trustworthy':
+        k = int(np.log2(n) - np.log2(2*stats.norm.ppf((1-p))**2)) + 1
+    if k < 1:
+        k = 1
+    upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
+    lower = [100*(0.5**(i+2)) for i in range(k, -1, -1)]
+    percentile_ends = [(i, j) for i, j in zip(lower, upper)]
+    box_ends = [np.percentile(vals, q) for q in percentile_ends]
+    return box_ends, k
+
+def _lv_outliers(vals, k):
+    """Find the outliers based on the letter value depth."""
+    perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
+    edges = np.percentile(vals, perc_ends)
+    lower_out = vals[np.where(vals < edges[0])[0]]
+    upper_out = vals[np.where(vals > edges[1])[0]]
+    return np.concatenate((lower_out, upper_out))
+
+def lettervalueplot(vals, groupby=None, inner="box", color=None, positions=None,
+               names=None, order=None, widths=.7, alpha=None,
+               saturation=.7, join_rm=False, inner_kws=None,
+               ax=None, vert=True, box_w='linear', p=None, k_depth='proportion',
+               **kwargs):
+
+    """Create a letter-value plot. See the Hadley Wickham paper for a thorough
+    explanation: http://vita.had.co.nz/papers/letter-value-plot.html
+
+    Parameters
+    ----------
+    vals : DataFrame, Series, 2D array, or list of vectors.
+        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
+        each column mapping to a box. Lists of data are assumed to have one
+        element per box.  Can also provide one long Series in conjunction with
+        a grouping element as the `groupy` parameter to reshape the data into
+        several letter value plots. Otherwise 1D data will produce a single
+        LV-plots.
+    groupby : grouping object
+        If `vals` is a Series, this is used to group into boxes by calling
+        pd.groupby(vals, groupby).
+    inner : {'box' | 'stick' | 'points'}
+        Plot quartiles or individual sample values inside LV-boxes.
+    color : a valid matplotlib color map or equivalent
+        Inner box colors
+    positions : number or sequence of numbers
+        Position of first violin or positions of each LV-box.
+    names : list of strings, optional
+        Names to plot on x axis; otherwise plots numbers. This will override
+        names inferred from Pandas inputs.
+    order : list of strings, optional
+        If vals is a Pandas object with name information, you can control the
+        order of the plot by providing the violin names in your preferred
+        order.
+    widths : float
+        Width of each LV-box at maximum density.
+    alpha : float, optional
+        Transparancy of LV-box fill.
+    saturation : float, 0-1
+        Saturation relative to the fully-saturated color. Large patches tend
+        to look better at lower saturations, so this dims the palette colors
+        a bit by default.
+    join_rm : boolean, optional
+        If True, positions in the input arrays are treated as repeated
+        measures and are joined with a line plot.
+    inner_kws : dict, optional
+        Keyword arugments for inner plot.
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise grab current axis.
+    vert : boolean, optional
+        If true (default), draw vertical plots; otherwise, draw horizontal
+        ones.
+    box_w : {'linear' | 'area' | 'exponential'}
+        Method for calculating width (not the quantile distance) of the quantile
+        boxes. Linear reduces the boxes by a constant factor for each level,
+        area modifes the width based on the proportion of data covered, and
+        exponential makes the width proportional to the proportion of data
+        excluded.
+    p : float, 0-1
+        The percentage of the data to consider as outliers. The default is to
+        set the number of outliers to 8 and calculate the percentage accordingly.
+    k_depth : {'proportion' | 'tukey' | 'trustworthy'}
+        The depth of the letter value plot. Corresponds to the number of
+        percentile boxes drawn.
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis with letter-value plot.
+
+    """
+
+    # If no axis is passed, grab the current one
+    if ax is None:
+        ax = plt.gca()
+
+    # Reshape and find labels for the plot
+    vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
+
+    # Sort out the plot colors
+    colors, gray = _box_colors(vals, color, saturation)
+
+    # Initialize the kwarg dict for the inner plot
+    if inner_kws is None:
+        inner_kws = {}
+    inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
+    inner_kws["alpha"] *= 1 if alpha is None else alpha
+    inner_kws.setdefault("color", gray)
+    inner_kws.setdefault("marker", "." if inner == "points" else "")
+    lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
+    inner_kws.setdefault("linewidth", lw)
+
+    # Find where the lv-plots are going
+    if positions is None:
+        positions = np.arange(1, len(vals) + 1)
+    elif not hasattr(positions, "__iter__"):
+        positions = np.arange(positions, len(vals) + positions)
+
+    # Set the default linewidth if not provided in kwargs
+    try:
+        lw = kwargs[({"lw", "linewidth"} & set(kwargs)).pop()]
+    except KeyError:
+        lw = 1.5
+
+    # Iterate over the variables
+    for j, a in enumerate(vals):
+
+        x = positions[j]
+        color = colors[j]
+
+        if len(a) == 1:
+            y = a[0]
+            if vert:
+                ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)
+            else:
+                ax.plot([y, y], [x - widths / 2, x + widths / 2], **inner_kws)
+            continue
+
+        # Get the number of data points and calculate "depth" of
+        # letter-value plot
+        box_ends, k = _lv_box_ends(a, k_depth, p)
+
+        # Dictionary of functions for computing the width of the boxes
+        width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
+                           'exponential' : lambda h, i, k: 2**(-k+i-1),
+                           'area' : lambda h, i, k: (1 - 2**(-k+i-2)) / h}
+
+        width = width_functions[box_w]
+        height = lambda b: b[1] - b[0]
+
+        def vert_perc_box(x, b, i, k, w):
+            rect = Patches.Rectangle((x - widths*w / 2, b[0]),
+                                       widths*w,
+                                       height(b), fill=True)
+            return rect
+
+        def horz_perc_box(x, b, i, k, w):
+            rect = Patches.Rectangle((b[0], x - widths*w / 2),
+                                       height(b), widths*w,
+                                       fill=True)
+            return rect
+
+        if vert:
+            if box_w is 'area':
+                w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
+                w_area = w_area / np.max(w_area)
+                boxes = [vert_perc_box(x, b[0], i, k, b[1])
+                                                for i, b in enumerate(zip(box_ends, w_area))]
+            else:
+                boxes = [vert_perc_box(x, b, i, k, width(height(b), i, k))
+                                                for i, b in enumerate(box_ends)]
+
+            # Plot the medians
+            y = np.median(a)
+            w = (widths + .1)
+            ax.plot([x -  w / 2, x + w / 2], [y, y], **inner_kws)
+
+            # Calculate the outliers and plot
+            outliers = _lv_outliers(a, k)
+
+            ax.scatter(np.repeat(x, len(outliers)), outliers,
+                       marker=r"$\ast$", c=color)
+        else:
+            if box_w is 'area':
+                w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
+                w_area = w_area / np.max(w_area)
+                boxes = [horz_perc_box(x, b[0], i, k, b[1])
+                                                for i, b in enumerate(zip(box_ends, w_area))]
+            else:
+                boxes = [horz_perc_box(x, b, i, k, width(height(b), i, k))
+                                                for i, b in enumerate(box_ends)]
+
+            # Plot the medians
+            y = np.median(a)
+            w = (widths + .1)
+            ax.plot([y, y], [x -  w / 2, x + w / 2], **inner_kws)
+
+            # Calculate the outliers and plot
+            outliers = _lv_outliers(a, k)
+
+            ax.scatter(outliers, np.repeat(x, len(outliers)),
+                       marker=r"$\ast$", c=color)
+
+        # Construct a color map from the input color
+        rgb = [[1, 1, 1], list(color)]
+        cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+        collection = PatchCollection(boxes, cmap=cmap)
+
+        # Set the color gradation
+        collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
+
+        # Plot the boxes
+        ax.add_collection(collection)
+
+    # Draw the repeated measure bridges
+    if join_rm:
+        ax.plot(range(1, len(vals) + 1), vals,
+                color=inner_kws["color"], alpha=2. / 3)
+
+    # Add in semantic labels
+    if names is not None:
+        if len(vals) != len(names):
+            raise ValueError("Length of names list must match nuber of bins")
+        names = list(names)
+
+    if vert:
+        # Add in semantic labels
+        ax.set_xticks(positions)
+        ax.set_xlim(positions[0] - .5, positions[-1] + .5)
+        ax.set_xticklabels(names)
+
+        # Set y-limits manually
+        ax.set_ylim(min(map(min, vals)) - 1, max(map(max, vals)) + 1)
+
+        if xlabel is not None:
+            ax.set_xlabel(xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
+    else:
+        # Add in semantic labels
+        ax.set_yticks(positions)
+        ax.set_yticklabels(names)
+        ax.set_ylim(positions[0] - .5, positions[-1] + .5)
+
+        # Set x-limits manually
+        ax.set_xlim(min(map(min, vals)) - 1, max(map(max, vals)) + 1)
 
         if ylabel is not None:
             ax.set_ylabel(xlabel)
