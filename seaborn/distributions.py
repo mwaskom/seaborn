@@ -1227,14 +1227,14 @@ boxplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot("day", "total_bill", data=tips)
+        >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
 
     Draw a boxplot with nested grouping by two categorical variables:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot("day", "total_bill", "smoker",
+        >>> ax = sns.boxplot(x="day", y="total_bill", hue="smoker",
         ...                  data=tips, palette="Set3")
 
     Draw a boxplot with nested grouping when some bins are empty:
@@ -1242,7 +1242,7 @@ boxplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot("day", "total_bill", "time",
+        >>> ax = sns.boxplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
     Draw a boxplot for each numeric variable in a DataFrame:
@@ -1258,8 +1258,8 @@ boxplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot("day", "total_bill", data=tips)
-        >>> ax = sns.stripplot("day", "total_bill", data=tips,
+        >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
         ...                    size=4, jitter=True, edgecolor="gray")
 
     Draw a box plot on to a :class:`FacetGrid` to group within an additional
@@ -1380,67 +1380,69 @@ violinplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", data=tips)
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips)
 
     Draw a violinplot with nested grouping by two categorical variables:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "smoker",
-        ...                     data=tips, palette="Set1")
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
+        ...                     data=tips, palette="muted")
 
     Draw split violins to compare the across the hue variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "smoker", data=tips,
-        ...                     palette="Set1", split=True)
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
+        ...                     data=tips, palette="muted", split=True)
 
     Scale the violin width by the number of observations in each bin:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
-        ...                     palette="Set2", split=True, scale="count")
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
+        ...                     data=tips, palette="Set2", split=True,
+        ...                     scale="count")
 
     Draw the quartiles as horizontal lines instead of a mini-box:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
-        ...                     palette="Set2", split=True, scale="count",
-        ...                     inner="quartile")
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
+        ...                     data=tips, palette="Set2", split=True,
+        ...                     scale="count", inner="quartile")
 
     Show each observation with a stick inside the violin:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
-        ...                     palette="Set2", split=True, scale="count",
-        ...                     inner="stick")
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
+        ...                     data=tips, palette="Set2", split=True,
+        ...                     scale="count", inner="stick")
 
     Scale the density relative to the counts across all bins:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
-        ...                     palette="Set2", split=True, scale="count",
-        ...                     inner="stick", scale_hue=False)
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
+        ...                     data=tips, palette="Set2", split=True,
+        ...                     scale="count", inner="stick", scale_hue=False)
 
     Use a narrow bandwidth to reduce the amount of smoothing:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("day", "total_bill", "sex", data=tips,
-        ...                     palette="Set2", split=True, scale="count",
-        ...                     inner="stick", scale_hue=False, bw=.2)
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="sex",
+        ...                     data=tips, palette="Set2", split=True,
+        ...                     scale="count", inner="stick",
+        ...                     scale_hue=False, bw=.2)
 
     Draw horizontal violins (if the grouping variable has a ``Categorical``
     dtype, the ``orient`` argument can be omitted):
@@ -1449,7 +1451,7 @@ violinplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> planets = sns.load_dataset("planets")
-        >>> ax = sns.violinplot("orbital_period", "method",
+        >>> ax = sns.violinplot(x="orbital_period", y="method",
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", orient="h", palette="Set3")
 
@@ -1549,23 +1551,21 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("day", "total_bill", data=tips)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
     Add jitter to bring out the distribution of values:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("day", "total_bill", data=tips,
-        ...                    jitter=True, palette="Set1")
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
     Use a smaller amount of jitter:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("day", "total_bill", data=tips,
-        ...                    jitter=0.05, palette="Set1")
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=0.05)
 
     Draw horizontal strips (if the grouping variable has a ``Categorical``
     dtype, the ``orient`` argument can be omitted):
@@ -1573,16 +1573,16 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("total_bill", "day", data=tips,
-        ...                    jitter=True, palette="Set1", orient="h")
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
+        ...                    jitter=True, orient="h")
 
     Nest the strips within a second categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("sex", "total_bill", "day", data=tips,
-        ...                    jitter=True, palette="muted")
+        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
+        ...                    data=tips, jitter=True)
 
     Draw each level of the ``hue`` variable at the same location on the
     major categorical axis:
@@ -1590,8 +1590,9 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot("sex", "total_bill", "day", data=tips,
-        ...                    jitter=True, palette="muted", split=False)
+        >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, jitter=True,
+        ...                    palette="Set2", split=False)
 
     Draw strips with large points and different aesthetics:
 
@@ -1599,7 +1600,7 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax =  sns.stripplot("day", "total_bill", "smoker", data=tips,
-        ...                    palette="Set3", size=20,
+        ...                    palette="Set2", size=20, marker="D",
         ...                    edgecolor="gray", alpha=.25)
 
     Draw strips of observations on top of a box plot:
@@ -1607,19 +1608,19 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot("day", "total_bill", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot("day", "total_bill", data=tips,
-        ...                    jitter=True, color="white", edgecolor="gray")
+        >>> ax = sns.boxplot(x="total_bill", y="day", data=tips,
+        ...                  orient="h", whis=np.inf)
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
+        ...                    jitter=True, orient="h")
 
     Draw strips of observations on top of a violin plot
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot("total_bill", "day", data=tips,
-        ...                     orient="h", inner=None)
-        >>> ax = sns.stripplot("total_bill", "day", data=tips,
-        ...                    jitter=True, orient="h")
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
+        ...                    jitter=True, color="white", edgecolor="gray")
 
     """).format(**_boxplot_docs)
 
