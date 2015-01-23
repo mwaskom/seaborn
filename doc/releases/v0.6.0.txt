@@ -20,3 +20,4 @@ This is a major release from 0.5. The main objective of this release is to unify
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
+- Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.
