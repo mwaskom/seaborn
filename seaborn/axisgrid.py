@@ -37,6 +37,7 @@ class Grid(object):
             else:
                 label_order = list(map(str, self.hue_names))
         handles = [legend_data[l] for l in label_order if l in legend_data]
+        labels = [l for l in label_order if l in legend_data]
         title = self._hue_var if title is None else title
         try:
             title_size = mpl.rcParams["axes.labelsize"] * .85
@@ -45,7 +46,7 @@ class Grid(object):
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, label_order, "center right",
+            figlegend = plt.figlegend(handles, labels, "center right",
                                       scatterpoints=1)
             self._legend = figlegend
             figlegend.set_title(title)
@@ -78,7 +79,7 @@ class Grid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
+            leg = self.axes.flat[0].legend(handles, labels, loc="best")
             leg.set_title(title)
 
             # Set the title size a roundabout way to maintain
