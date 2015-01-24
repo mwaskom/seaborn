@@ -18,6 +18,8 @@ This is a major release from 0.5. The main objective of this release is to unify
 
 - Added the ``line_kws`` parameter to :func:`residplot` to change the style of the lowess line, when used.
 
+- Added open-ended ``**kwargs`` to the ``add_legend`` method on :class:`FacetGrid` and :class:`PairGrid`, which will pass additional keyword arguments through when calling the legend function on the ``Figure`` or ``Axes``.
+
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.

@@ -27,10 +27,30 @@ class Grid(object):
         """Save the figure."""
         self.fig.savefig(*args, **kwargs)
 
-    # TODO use figure/axes legend methods
-    # TODO pass kwargs to legend functions
-    def add_legend(self, legend_data=None, title=None, label_order=None):
-        """Draw a legend, possibly resizing the figure."""
+    def add_legend(self, legend_data=None, title=None, label_order=None,
+                   **kwargs):
+        """Draw a legend, maybe placing it outside axes and resizing the figure.
+
+        Parameters
+        ----------
+        legend_data : dict, optional
+            Dictionary mapping label names to matplotlib artist handles. The
+            default reads from ``self._legend_data``.
+        title : string, optional
+            Title for the legend. The default reads from ``self._hue_var``.
+        label_order : list of labels, optional
+            The order that the legend entries should appear in. The default
+            reads from ``self.hue_names`` or sorts the keys in ``legend_data``.
+        kwargs : key, value pairings
+            Other keyword arguments are passed to the underlying legend methods
+            on the Figure or Axes object.
+
+        Returns
+        -------
+        self : Grid instance
+            Returns self for easy chaining.
+
+        """
         # Find the data for the legend
         legend_data = self._legend_data if legend_data is None else legend_data
         if label_order is None:
@@ -47,10 +67,13 @@ class Grid(object):
         except TypeError:  # labelsize is something like "large"
             title_size = mpl.rcParams["axes.labelsize"]
 
+        # Set default legend kwargs
+        kwargs.setdefault("scatterpoints", 1)
+
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, label_order, "center right",
-                                      scatterpoints=1)
+            figlegend = self.fig.legend(handles, label_order, "center right",
+                                        **kwargs)
             self._legend = figlegend
             figlegend.set_title(title)
 
@@ -82,13 +105,16 @@ class Grid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
+            ax = self.axes.flat[0]
+            leg = ax.legend(handles, label_order, loc="best", **kwargs)
             leg.set_title(title)
 
             # Set the title size a roundabout way to maintain
             # compatability with matplotlib 1.1
             prop = mpl.font_manager.FontProperties(size=title_size)
             leg._legend_title_box._text.set_font_properties(prop)
+
+        return self
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
