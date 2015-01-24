@@ -1271,7 +1271,8 @@ boxplot.__doc__ = dedent("""\
         >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
         >>> (g.map(sns.boxplot, "sex", "total_bill", "smoker")
         ...   .despine(left=True)
-        ...   .add_legend(title="smoker"))
+        ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
+        <seaborn.axisgrid.FacetGrid object at 0x...>
 
     """).format(**_boxplot_docs)
 
@@ -1464,7 +1465,8 @@ violinplot.__doc__ = dedent("""\
         >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
         >>> (g.map(sns.violinplot, "sex", "total_bill", "smoker", split=True)
         ...   .despine(left=True)
-        ...   .add_legend(title="smoker"))
+        ...   .add_legend(title="smoker"))  # doctest: +ELLIPSIS
+        <seaborn.axisgrid.FacetGrid object at 0x...>
 
     """).format(**_boxplot_docs)
 
