@@ -207,9 +207,9 @@ class TestFacetGrid(object):
             nt.assert_equal(line.get_color(), hue)
 
         labels = g1._legend.get_texts()
-        nt.assert_equal(len(labels), len(a_levels))
+        nt.assert_equal(len(labels), 4)
 
-        for label, level in zip(labels, a_levels):
+        for label, level in zip(labels, list("azbc")):
             nt.assert_equal(label.get_text(), level)
 
         plt.close("all")

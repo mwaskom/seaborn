@@ -27,6 +27,8 @@ class Grid(object):
         """Save the figure."""
         self.fig.savefig(*args, **kwargs)
 
+    # TODO use figure/axes legend methods
+    # TODO pass kwargs to legend functions
     def add_legend(self, legend_data=None, title=None, label_order=None):
         """Draw a legend, possibly resizing the figure."""
         # Find the data for the legend
@@ -36,8 +38,9 @@ class Grid(object):
                 label_order = np.sort(list(legend_data.keys()))
             else:
                 label_order = list(map(str, self.hue_names))
-        handles = [legend_data[l] for l in label_order if l in legend_data]
-        labels = [l for l in label_order if l in legend_data]
+
+        blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
+        handles = [legend_data.get(l, blank_handle) for l in label_order]
         title = self._hue_var if title is None else title
         try:
             title_size = mpl.rcParams["axes.labelsize"] * .85
@@ -46,7 +49,7 @@ class Grid(object):
 
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, labels, "center right",
+            figlegend = plt.figlegend(handles, label_order, "center right",
                                       scatterpoints=1)
             self._legend = figlegend
             figlegend.set_title(title)
@@ -79,7 +82,7 @@ class Grid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes.flat[0].legend(handles, labels, loc="best")
+            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
             leg.set_title(title)
 
             # Set the title size a roundabout way to maintain
