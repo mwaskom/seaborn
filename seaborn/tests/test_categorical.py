@@ -16,7 +16,7 @@ from .. import categorical as cat
 from .. import palettes
 
 
-class TestBoxPlotter(object):
+class TestCategoricalPlotter(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -28,15 +28,9 @@ class TestBoxPlotter(object):
     df = pd.DataFrame(dict(y=y, g=g, h=h))
     x_df["W"] = g
 
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       order=None, hue_order=None,
-                       orient=None, color=None, palette=None,
-                       saturation=.75, width=.8,
-                       fliersize=5, linewidth=None)
-
     def test_wide_df_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test basic wide DataFrame
         p.establish_variables(data=self.x_df)
@@ -61,7 +55,7 @@ class TestBoxPlotter(object):
 
     def test_1d_input_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test basic vector data
         x_1d_array = self.x.ravel()
@@ -91,7 +85,7 @@ class TestBoxPlotter(object):
 
     def test_2d_input_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         x = self.x[:, 0]
 
@@ -111,7 +105,7 @@ class TestBoxPlotter(object):
 
     def test_3d_input_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test that passing actually 3D data raises
         x = np.zeros((5, 5, 5))
@@ -120,7 +114,7 @@ class TestBoxPlotter(object):
 
     def test_list_of_array_input_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test 2D input in list form
         x_list = self.x.T.tolist()
@@ -135,7 +129,7 @@ class TestBoxPlotter(object):
 
     def test_wide_array_input_data(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test 2D input in array form
         p.establish_variables(data=self.x)
@@ -147,7 +141,7 @@ class TestBoxPlotter(object):
 
     def test_single_long_direct_inputs(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test passing a series to the x variable
         p.establish_variables(x=self.y)
@@ -172,7 +166,7 @@ class TestBoxPlotter(object):
 
     def test_single_long_indirect_inputs(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test referencing a DataFrame series in the x variable
         p.establish_variables(x="y", data=self.df)
@@ -190,7 +184,7 @@ class TestBoxPlotter(object):
 
     def test_longform_groupby(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test a vertically oriented grouped and nested plot
         p.establish_variables("g", "y", "h", data=self.df)
@@ -243,7 +237,7 @@ class TestBoxPlotter(object):
 
     def test_order(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test inferred order from a wide dataframe input
         p.establish_variables(data=self.x_df)
@@ -283,7 +277,7 @@ class TestBoxPlotter(object):
 
     def test_hue_order(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test inferred hue order
         p.establish_variables("g", "y", "h", data=self.df)
@@ -304,7 +298,7 @@ class TestBoxPlotter(object):
 
     def test_orient_inference(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         cat_series = pd.Series(["a", "b", "c"] * 10)
         num_series = pd.Series(self.rs.randn(30))
@@ -324,7 +318,7 @@ class TestBoxPlotter(object):
 
     def test_default_palettes(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test palette mapping the x position
         p.establish_variables("g", "y", data=self.df)
@@ -339,14 +333,14 @@ class TestBoxPlotter(object):
     def test_default_palette_with_many_levels(self):
 
         with palettes.color_palette(["blue", "red"], 2):
-            p = cat._BoxPlotter(**self.default_kws)
+            p = cat._CategoricalPlotter()
             p.establish_variables("g", "y", data=self.df)
             p.establish_colors(None, None, 1)
             npt.assert_array_equal(p.colors, palettes.husl_palette(3, l=.7))
 
     def test_specific_color(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test the same color for each x position
         p.establish_variables("g", "y", data=self.df)
@@ -363,7 +357,7 @@ class TestBoxPlotter(object):
 
     def test_specific_palette(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
 
         # Test palette mapping the x position
         p.establish_variables("g", "y", data=self.df)
@@ -376,14 +370,14 @@ class TestBoxPlotter(object):
         nt.assert_equal(p.colors, palettes.color_palette("muted", 2))
 
         # Test that specified palette overrides specified color
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
         p.establish_variables("g", "y", data=self.df)
         p.establish_colors("blue", "deep", 1)
         nt.assert_equal(p.colors, palettes.color_palette("deep", 3))
 
     def test_dict_as_palette(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
         p.establish_variables("g", "y", "h", data=self.df)
         pal = {"m": (0, 0, 1), "n": (1, 0, 0)}
         p.establish_colors(None, pal, 1)
@@ -391,7 +385,7 @@ class TestBoxPlotter(object):
 
     def test_palette_desaturation(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        p = cat._CategoricalPlotter()
         p.establish_variables("g", "y", data=self.df)
         p.establish_colors((0, 0, 1), None, .5)
         nt.assert_equal(p.colors, [(.25, .25, .75)] * 3)
@@ -400,6 +394,25 @@ class TestBoxPlotter(object):
         nt.assert_equal(p.colors, [(.25, .25, .75),
                                    (.75, .25, .25),
                                    (1, 1, 1)])
+
+
+class TestBoxPlotter(object):
+    """Test boxplot (also base class for things like violinplots)."""
+    rs = np.random.RandomState(30)
+    n_total = 60
+    x = rs.randn(n_total / 3, 3)
+    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
+    y = pd.Series(rs.randn(n_total), name="y_data")
+    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
+    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
+    df = pd.DataFrame(dict(y=y, g=g, h=h))
+    x_df["W"] = g
+
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       order=None, hue_order=None,
+                       orient=None, color=None, palette=None,
+                       saturation=.75, width=.8,
+                       fliersize=5, linewidth=None)
 
     def test_nested_width(self):
 

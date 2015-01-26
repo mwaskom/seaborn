@@ -15,21 +15,9 @@ from .utils import desaturate, iqr
 from .palettes import color_palette, husl_palette, light_palette
 
 
-class _BoxPlotter(object):
+class _CategoricalPlotter(object):
 
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 orient, color, palette, saturation,
-                 width, fliersize, linewidth):
-
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, saturation)
-
-        self.width = width
-        self.fliersize = fliersize
-
-        if linewidth is None:
-            linewidth = mpl.rcParams["lines.linewidth"]
-        self.linewidth = linewidth
+    width = .8
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None):
@@ -378,29 +366,6 @@ class _BoxPlotter(object):
                 prop = mpl.font_manager.FontProperties(size=title_size)
                 leg._legend_title_box._text.set_font_properties(prop)
 
-    def restyle_boxplot(self, artist_dict, color):
-        """Take a drawn matplotlib boxplot and make it look nice."""
-        for box in artist_dict["boxes"]:
-            box.set_color(color)
-            box.set_zorder(.9)
-            box.set_edgecolor(self.gray)
-            box.set_linewidth(self.linewidth)
-        for whisk in artist_dict["whiskers"]:
-            whisk.set_color(self.gray)
-            whisk.set_linewidth(self.linewidth)
-            whisk.set_linestyle("-")
-        for cap in artist_dict["caps"]:
-            cap.set_color(self.gray)
-            cap.set_linewidth(self.linewidth)
-        for med in artist_dict["medians"]:
-            med.set_color(self.gray)
-            med.set_linewidth(self.linewidth)
-        for fly in artist_dict["fliers"]:
-            fly.set_color(self.gray)
-            fly.set_marker("d")
-            fly.set_markeredgecolor(self.gray)
-            fly.set_markersize(self.fliersize)
-
     def add_legend_data(self, ax, x, y, color, label):
         """Add a dummy patch object so we can get legend data."""
         rect = plt.Rectangle([x, y], 0, 0,
@@ -409,6 +374,23 @@ class _BoxPlotter(object):
                              facecolor=color,
                              label=label, zorder=-1)
         ax.add_patch(rect)
+
+
+class _BoxPlotter(_CategoricalPlotter):
+
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 orient, color, palette, saturation,
+                 width, fliersize, linewidth):
+
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, saturation)
+
+        self.width = width
+        self.fliersize = fliersize
+
+        if linewidth is None:
+            linewidth = mpl.rcParams["lines.linewidth"]
+        self.linewidth = linewidth
 
     def draw_boxplot(self, ax, kws):
         """Use matplotlib to draw a boxplot on an Axes."""
@@ -450,6 +432,29 @@ class _BoxPlotter(object):
                                              np.median(box_data),
                                              color, hue_level)
 
+    def restyle_boxplot(self, artist_dict, color):
+        """Take a drawn matplotlib boxplot and make it look nice."""
+        for box in artist_dict["boxes"]:
+            box.set_color(color)
+            box.set_zorder(.9)
+            box.set_edgecolor(self.gray)
+            box.set_linewidth(self.linewidth)
+        for whisk in artist_dict["whiskers"]:
+            whisk.set_color(self.gray)
+            whisk.set_linewidth(self.linewidth)
+            whisk.set_linestyle("-")
+        for cap in artist_dict["caps"]:
+            cap.set_color(self.gray)
+            cap.set_linewidth(self.linewidth)
+        for med in artist_dict["medians"]:
+            med.set_color(self.gray)
+            med.set_linewidth(self.linewidth)
+        for fly in artist_dict["fliers"]:
+            fly.set_color(self.gray)
+            fly.set_marker("d")
+            fly.set_markeredgecolor(self.gray)
+            fly.set_markersize(self.fliersize)
+
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
         self.draw_boxplot(ax, boxplot_kws)
@@ -458,7 +463,7 @@ class _BoxPlotter(object):
             ax.invert_yaxis()
 
 
-class _ViolinPlotter(_BoxPlotter):
+class _ViolinPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  bw, cut, scale, scale_hue, gridsize,
@@ -977,7 +982,7 @@ class _ViolinPlotter(_BoxPlotter):
             ax.invert_yaxis()
 
 
-class _StripPlotter(_BoxPlotter):
+class _StripPlotter(_CategoricalPlotter):
     """1-d scatterplot with categorical organization."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  jitter, split, orient, color, palette):
