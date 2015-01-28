@@ -1341,7 +1341,7 @@ violinplot.__doc__ = dedent("""\
     inner : {{"box", "quartile", "point", "stick", None}}, optional
         Representation of the datapoints in the violin interior. If ``box``,
         draw a miniature boxplot. If ``quartiles``, draw the quartiles of the
-        distribution.  If ``points`` or ``sticks``, show each underlying
+        distribution.  If ``point`` or ``stick``, show each underlying
         datapoint. Using ``None`` will draw unadorned violins.
     split : bool, optional
         When using hue nesting with a variable that takes two levels, setting
