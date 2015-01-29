@@ -1072,7 +1072,8 @@ class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
 
     def __init__(self, x, y, data=None, hue=None, hue_order=None, size=6,
-                 ratio=5, space=.2, dropna=True, xlim=None, ylim=None):
+                 ratio=5, space=.2, dropna=True, xlim=None, ylim=None,
+                 inline_labels=False):
         """Set up the grid of subplots.
 
         Parameters
@@ -1112,6 +1113,7 @@ class JointGrid(object):
         self.ax_joint = ax_joint
         self.ax_marg_x = ax_marg_x
         self.ax_marg_y = ax_marg_y
+        self.inline_labels = inline_labels
 
         # Turn off tick visibility for the measure axis on the marginal plots
         plt.setp(ax_marg_x.get_xticklabels(), visible=False)
@@ -1247,17 +1249,27 @@ class JointGrid(object):
                 y = self.y
 
             thiscolor = self.palette[k]
-            patches.append(mpatches.Patch(color=thiscolor, label=hue))
 
             if colorkw == 'c':
                 kwargs['c'] = thiscolor
             elif colorkw == 'cmap':
                 kwargs['cmap'] = light_palette(
                     thiscolor, as_cmap=True)
-
             func(x, y, **kwargs)
 
-        if len(hue) > 1:
+            if hue is not None and self.inline_labels:
+                mu = (np.median(x), np.median(y))
+                self.ax_joint.annotate(
+                    hue, xy=(mu[0], mu[1]), xytext=(30, 20),
+                    textcoords='offset points', size=30, va='center',
+                    color='w',
+                    bbox=dict(boxstyle="round", fc=thiscolor, ec='none',
+                              alpha=0.7, color='w')
+                )
+            elif hue is not None and not self.inline_labels:
+                patches.append(mpatches.Patch(color=thiscolor, label=hue))
+
+        if len(patches) > 0:
             self.ax_joint.legend(handles=patches)
 
         return self
