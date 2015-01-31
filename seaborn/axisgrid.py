@@ -174,7 +174,8 @@ class FacetGrid(Grid):
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None):
+                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
+                 gridspec_kws=None):
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -250,6 +251,7 @@ class FacetGrid(Grid):
             margin_titles = False
 
         # Build the subplot keyword dictionary
+        gridspec_kws = {} if gridspec_kws is None else gridspec_kws.copy()
         subplot_kws = {} if subplot_kws is None else subplot_kws.copy()
         if xlim is not None:
             subplot_kws["xlim"] = xlim
@@ -261,7 +263,8 @@ class FacetGrid(Grid):
             fig, axes = plt.subplots(nrow, ncol, figsize=figsize,
                                      squeeze=False,
                                      sharex=sharex, sharey=sharey,
-                                     subplot_kw=subplot_kws)
+                                     subplot_kw=subplot_kws,
+                                     gridspec_kw=gridspec_kws)
             self.axes = axes
 
         else:
