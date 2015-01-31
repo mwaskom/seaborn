@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -259,6 +261,57 @@ class TestFacetGrid(object):
         for ax in g.axes.flat:
             nt.assert_equal(ax.get_axis_bgcolor(), "blue")
 
+    @skipif(old_matplotlib)
+    def test_gridspec_kws(self):
+        ratios = [3, 1, 2]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios, height_ratios=ratios)
+        g = ag.FacetGrid(self.df, col='c', row='a', gridspec_kws=gskws)
+
+        # clear out all ticks
+        for ax in g.axes.flat:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        g.fig.tight_layout()
+        widths, heights = np.meshgrid(sizes, sizes)
+        for n, ax in enumerate(g.axes.flat):
+            npt.assert_almost_equal(
+                ax.get_position().width,
+                widths.flatten()[n],
+                decimal=2
+            )
+            npt.assert_almost_equal(
+                ax.get_position().height,
+                heights.flatten()[n],
+                decimal=2
+            )
+
+    @skipif(old_matplotlib)
+    def test_gridspec_kws_col_wrap(self):
+        ratios = [3, 1, 2, 1, 1]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios)
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("always")
+            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='d',
+                             col_wrap=5, gridspec_kws=gskws)
+
+    @skipif(not old_matplotlib)
+    def test_gridsic_kws_old_mpl(self):
+        ratios = [3, 1, 2]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios, height_ratios=ratios)
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("always")
+            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='c',
+                             row='a', gridspec_kws=gskws)
+
     def test_data_generator(self):
 
         g = ag.FacetGrid(self.df, row="a")
@@ -432,7 +485,7 @@ class TestFacetGrid(object):
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
 
-    def test_subplot_kws(self):
+    def test_axis_lims(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b", xlim=(0, 4), ylim=(-2, 3))
         nt.assert_equal(g.axes[0, 0].get_xlim(), (0, 4))

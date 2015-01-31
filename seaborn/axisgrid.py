@@ -1,5 +1,8 @@
 from __future__ import division
 from itertools import product
+from distutils.version import LooseVersion
+import warnings
+
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -174,7 +177,8 @@ class FacetGrid(Grid):
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None):
+                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
+                 gridspec_kws=None):
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -185,7 +189,7 @@ class FacetGrid(Grid):
         row, col, hue : strings, optional
             Variable (column) names to subset the data for the facets.
         col_wrap : int, optional
-            Wrap the column variable at this width. Incompatible with `row`.
+            Wrap the column variable at this width. Incompatible with ``row``.
         share{x, y}: booleans, optional
             Lock the limits of the vertical andn horizontal axes across the
             facets.
@@ -215,7 +219,12 @@ class FacetGrid(Grid):
         {x, y}lim: tuples, optional
             Limits for each of the axes on each facet when share{x, y} is True.
         subplot_kws : dict, optional
-            Dictionary of keyword arguments.
+            Dictionary of keyword arguments passed to matplotlib subplot(s)
+            methods.
+        gridspec_kws : dict, optional
+            Dictionary of keyword arguments passed to matplotlib's ``gridspec``
+            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
+            ignored if ``col_wrap`` is not ``None``.
 
         Returns
         -------
@@ -229,6 +238,10 @@ class FacetGrid(Grid):
         factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
 
         """
+
+        MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
+        OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
+
         # Compute the grid shape
         ncol = 1 if col is None else len(data[col].unique())
         nrow = 1 if row is None else len(data[row].unique())
@@ -251,6 +264,7 @@ class FacetGrid(Grid):
 
         # Build the subplot keyword dictionary
         subplot_kws = {} if subplot_kws is None else subplot_kws.copy()
+        gridspec_kws = {} if gridspec_kws is None else gridspec_kws.copy()
         if xlim is not None:
             subplot_kws["xlim"] = xlim
         if ylim is not None:
@@ -258,14 +272,25 @@ class FacetGrid(Grid):
 
         # Initialize the subplot grid
         if col_wrap is None:
-            fig, axes = plt.subplots(nrow, ncol, figsize=figsize,
-                                     squeeze=False,
-                                     sharex=sharex, sharey=sharey,
-                                     subplot_kw=subplot_kws)
+            kwargs = dict(figsize=figsize, squeeze=False,
+                          sharex=sharex, sharey=sharey,
+                          subplot_kw=subplot_kws,
+                          gridspec_kw=gridspec_kws)
+
+            if OLD_MPL:
+                _ = kwargs.pop('gridspec_kw', None)
+                if gridspec_kws:
+                    msg = "gridspec module only available in mpl >= {}"
+                    warnings.warn(msg.format(MPL_GRIDSPEC_VERSION))
+
+            fig, axes = plt.subplots(nrow, ncol, **kwargs)
             self.axes = axes
 
         else:
             # If wrapping the col variable we need to make the grid ourselves
+            if gridspec_kws:
+                warnings.warn("`gridspec_kws` ignored when using `col_wrap`")
+
             n_axes = len(data[col].unique())
             fig = plt.figure(figsize=figsize)
             axes = np.empty(n_axes, object)
