@@ -11,7 +11,9 @@ import warnings
 
 from .external.six.moves import range
 
+from . import utils
 from .utils import desaturate, iqr
+from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette
 
 
@@ -1063,6 +1065,74 @@ class _SwarmPlotter(_BoxPlotter):
     def plot(self, ax):
 
         pass
+
+
+class _CategoricalStatPlotter(_CategoricalPlotter):
+
+    def estimate_statistic(self, estimator, ci, n_boot):
+
+        if self.hue_names is None:
+            statistic = []
+            confint = []
+        else:
+            statistic = [[] for _ in self.plot_data]
+            confint = [[] for _ in self.plot_data]
+
+        for i, group_data in enumerate(self.plot_data):
+
+            if self.plot_hues is None:
+
+                stat_data = remove_na(group_data)
+
+                if not stat_data.size:
+                    statistic.append(None)
+                else:
+                    statistic.append(estimator)
+
+    def old(self):
+
+        for i, hue in enumerate(self.hue_order):
+
+            # Build intermediate lists of the values for each drawing
+            pos = []
+            height = []
+            ci = []
+            for j, x in enumerate(self.x_order):
+
+                pos.append(self.positions[j] + self.offset[i])
+
+                # Focus on the data for this specific bar/point
+                current_data = (self.x == x) & (self.hue == hue)
+                y_data = self.y[current_data]
+                if self.units is None:
+                    unit_data = None
+                else:
+                    unit_data = self.units[current_data]
+
+                # This is where the main computation happens
+                height.append(self.estimator(y_data))
+
+                # Only bootstrap with multple values
+                if current_data.sum() < 2:
+                    ci.append((None, None))
+                    continue
+
+                # Get the confidence intervals
+                if self.ci is not None:
+                    boots = bootstrap(y_data, func=self.estimator,
+                                      n_boot=self.n_boot,
+                                      units=unit_data)
+                    ci.append(utils.ci(boots, self.ci))
+
+
+class _BarPlotter(_CategoricalStatPlotter):
+
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 estimator, ci, n_boot, units,
+                 orient, color, palette, saturation):
+
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, saturation)
 
 
 _boxplot_docs = dict(
