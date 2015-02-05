@@ -1082,15 +1082,13 @@ class PairGrid(Grid):
 
     def _find_numeric_cols(self, data):
         """Find which variables in a DataFrame are numeric."""
-        # This can't be the best way to do this, but  I do not
-        # know what the best way might be, so this seems ok
+        # This marks int, unsigned int, float and complex
+        # as numeric types. Booleans are not numeric anymore
         numeric_cols = []
         for col in data:
-            try:
-                data[col].astype(np.float)
+            if col.dtype.kind in "iufc":
                 numeric_cols.append(col)
-            except (ValueError, TypeError):
-                pass
+                
         return numeric_cols
 
 
