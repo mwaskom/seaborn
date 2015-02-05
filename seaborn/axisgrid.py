@@ -1085,9 +1085,9 @@ class PairGrid(Grid):
         # This marks int, unsigned int, float and complex
         # as numeric types. Booleans are not numeric anymore
         numeric_cols = []
-        for col in data:
-            if col.dtype.kind in "iufc":
-                numeric_cols.append(col)
+        for name,col_type in zip(data.columns, data.dtypes):
+            if col_type.kind in "iufc":
+                numeric_cols.append(name)
                 
         return numeric_cols
 
