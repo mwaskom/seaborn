@@ -44,6 +44,14 @@ def _convert_colors(colors):
         return [list(map(to_rgb, l)) for l in colors]
 
 
+def _convert_colors_frame(colors):
+    if isinstance(colors, pd.DataFrame):
+        converted = _convert_colors(colors.values)
+        return pd.DataFrame(colors, index=colors.index, columns=colors.columns)
+    else:
+        return _convert_colors(colors)
+
+
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
@@ -524,10 +532,10 @@ class ClusterGrid(Grid):
         self.fig = plt.figure(figsize=figsize)
 
         if row_colors is not None:
-            row_colors = _convert_colors(row_colors)
+            row_colors = _convert_colors_frame(row_colors)
         self.row_colors = row_colors
         if col_colors is not None:
-            col_colors = _convert_colors(col_colors)
+            col_colors = _convert_colors_frame(col_colors)
         self.col_colors = col_colors
 
         # Setup axes for current configuration.
@@ -762,7 +770,11 @@ class ClusterGrid(Grid):
         """
         # check for nested lists/color palettes.
         # Will fail if matplotlib color is list not tuple
-        if any(issubclass(type(x), list) for x in colors):
+        if isinstance(colors, pd.DataFrame):
+            colors = colors.values 
+            all_colors = set(itertools.chain(*colors))
+            n, m = colors.shape
+        elif any(issubclass(type(x), list) for x in colors):
             all_colors = set(itertools.chain(*colors))
             n = len(colors)
             m = len(colors[0])
@@ -830,6 +842,11 @@ class ClusterGrid(Grid):
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
                     xticklabels=False, yticklabels=False,
                     **kws)
+
+            if isinstance(self.row_colors, pd.DataFrame): 
+                self.ax_row_colors.xaxis.tick_top()
+                self.ax_row_colors.set_xticklabels(self.row_colors.index[::-1],
+                                                   rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
@@ -837,8 +854,11 @@ class ClusterGrid(Grid):
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
-                    xticklabels=False, yticklabels=False,
-                    **kws)
+                    xticklabels=False, yticklabels=False, **kws)
+
+            if isinstance(self.col_colors, pd.DataFrame): 
+                self.ax_col_colors.set_yticklabels(self.col_colors.index[::-1])
+                self.ax_col_colors.yaxis.tick_right()
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
