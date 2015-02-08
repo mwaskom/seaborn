@@ -643,6 +643,11 @@ class ClusterGrid(Grid):
                    row_colors, col_colors,
                    row_cluster, col_cluster, 
                    row_colors_ratio, col_colors_ratio):
+        """Setup the different axes that make up the ClusterGrid.
+           Axes that are not required under the passed arguments,
+           (missing side_colors or disabled dendrograms for example)
+           are ommitted and returned empty (as None).
+        """
         width_ratios = self.dim_ratios(row_colors, row_cluster,
                                        figsize=figsize, axis=1,
                                        side_colors_ratio=row_colors_ratio)
@@ -689,13 +694,16 @@ class ClusterGrid(Grid):
                ax_row_colors, ax_col_colors, ax_heatmap, ax_cbar
 
     def _ax_index_dendrogram(self, side_colors, cluster):
+        """Calculate index of dendrogram axis, depending on presence
+           of side_colors and/or dendrogram on the OTHER axis.
+        """
         index = 1 if cluster else 0
         if side_colors is not None:
             index += 1
         return index
 
     def dim_ratios(self, side_colors, dendrogram, axis, figsize, side_colors_ratio):
-        """Get the proportions of the figure taken up by each axes
+        """Get the proportions of the figure taken up by each axis
         """
 
         ratios = []
