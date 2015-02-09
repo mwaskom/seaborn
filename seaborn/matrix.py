@@ -761,7 +761,7 @@ class ClusterGrid(Grid):
         # check for nested lists/color palettes.
         # Will fail if matplotlib color is list not tuple
         if isinstance(colors, pd.DataFrame):
-            colors = colors.values
+            colors = colors.T.values
             all_colors = set(itertools.chain(*colors))
             n, m = colors.shape
         elif any(issubclass(type(x), list) for x in colors):
@@ -835,8 +835,8 @@ class ClusterGrid(Grid):
 
             if isinstance(self.row_colors, pd.DataFrame):
                 self.ax_row_colors.xaxis.tick_top()
-                self.ax_row_colors.set_xticklabels(self.row_colors.index[::-1],
-                                                   rotation=90)
+                self.ax_row_colors.set_xticklabels(
+                    self.row_colors.columns[::-1], rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
@@ -847,7 +847,8 @@ class ClusterGrid(Grid):
                     xticklabels=False, yticklabels=False, **kws)
 
             if isinstance(self.col_colors, pd.DataFrame):
-                self.ax_col_colors.set_yticklabels(self.col_colors.index[::-1])
+                self.ax_col_colors.set_yticklabels(
+                    self.col_colors.columns[::-1])
                 self.ax_col_colors.yaxis.tick_right()
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
@@ -926,6 +927,9 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together. Can
         use nested lists for multiple color levels of labeling.
+    {row,col}_colors_ratio: float, optional
+        A float value indicating the relative proportion of the axes that
+        should be used for plotting the {row,col}_colors.
     mask : boolean numpy.array, optional
         A boolean array indicating where to mask the data so it is not
         plotted on the heatmap. Only used for visualizing, not for calculating.
