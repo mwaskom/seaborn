@@ -923,10 +923,13 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     {row,col}_linkage : numpy.array, optional
         Precomputed linkage matrix for the rows or columns. See
         scipy.cluster.hierarchy.linkage for specific formats.
-    {row,col}_colors : list-like, optional
+    {row,col}_colors : list-like or DataFrame, optional
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together. Can
-        use nested lists for multiple color levels of labeling.
+        use nested lists for multiple color levels of labeling. Colors can
+        also be provided as a pandas DataFrame, of which each column specifies
+        an entry for the corresponding side color. The column labels of the
+        DataFrame are used to label the colors.
     {row,col}_colors_ratio: float, optional
         A float value indicating the relative proportion of the axes that
         should be used for plotting the {row,col}_colors.
