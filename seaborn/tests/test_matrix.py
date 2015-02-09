@@ -779,13 +779,9 @@ class TestClustermap(object):
         kws['col_cluster'] = False
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
 
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
+        nt.assert_is_none(cm.ax_row_dendrogram)
+        nt.assert_is_none(cm.ax_col_dendrogram)
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
         plt.close('all')
@@ -810,13 +806,9 @@ class TestClustermap(object):
         kws['col_colors'] = self.col_colors
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
-
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
+        nt.assert_is_none(cm.ax_row_dendrogram)
+        nt.assert_is_none(cm.ax_col_dendrogram)
+        
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
 
