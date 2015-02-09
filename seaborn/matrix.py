@@ -549,9 +549,6 @@ class ClusterGrid(Grid):
         self.ax_row_colors, self.ax_col_colors, \
         self.ax_heatmap, self.cax = axes
 
-        # colorbar for scale to left corner
-        # self.cax = self.fig.add_subplot(self.gs[0, 0])
-
         self.dendrogram_row = None
         self.dendrogram_col = None
 
@@ -733,13 +730,6 @@ class ClusterGrid(Grid):
         # Add the colorbar
         if axis == 1:
             ratios += [0.05, 0.02]
-
-        #colorbar_width = .8 * dendrogram
-        #colorbar_height = .2 * dendrogram
-        #if axis == 0:
-        #    ratios = [colorbar_width, colorbar_height]
-        #else:
-        #    ratios = [colorbar_height, colorbar_width]
 
         return ratios
 
