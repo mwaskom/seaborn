@@ -4,6 +4,7 @@ import tempfile
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import rgb2hex
 import pandas as pd
 from scipy.spatial import distance
 from scipy.cluster import hierarchy
@@ -795,6 +796,31 @@ class TestClustermap(object):
 
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
+
+        plt.close('all')
+
+    def test_row_col_colors_df(self):
+        kws = self.default_kws.copy()
+
+        kws['row_colors'] = pd.DataFrame(
+            [rgb2hex(c) for c in self.row_colors], columns=['row_label'])
+        kws['col_colors'] = pd.DataFrame(
+            [rgb2hex(c) for c in self.col_colors], columns=['col_label'])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(len(cm.ax_row_colors.collections), 1)
+        nt.assert_equal(len(cm.ax_col_colors.collections), 1)
+
+        # Test labels of row_colors.
+        tick_labels = cm.ax_row_colors.get_xticklabels()
+        nt.assert_equal(len(tick_labels), 1)
+        nt.assert_equal(tick_labels[0].get_text(), 'row_label')
+
+        # Test labels of col_colors.
+        tick_labels = cm.ax_col_colors.get_yticklabels()
+        nt.assert_equal(len(tick_labels), 1)
+        nt.assert_equal(tick_labels[0].get_text(), 'col_label')
 
         plt.close('all')
 
