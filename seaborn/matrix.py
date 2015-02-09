@@ -706,7 +706,8 @@ class ClusterGrid(Grid):
             index += 1
         return index
 
-    def dim_ratios(self, side_colors, dendrogram, axis, figsize, side_colors_ratio):
+    def dim_ratios(self, side_colors, dendrogram, axis,
+                   figsize, side_colors_ratio):
         """Get the proportions of the figure taken up by each axis
         """
 

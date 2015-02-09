@@ -808,7 +808,7 @@ class TestClustermap(object):
         cm = mat.clustermap(self.df_norm, **kws)
         nt.assert_is_none(cm.ax_row_dendrogram)
         nt.assert_is_none(cm.ax_col_dendrogram)
-        
+
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
 
