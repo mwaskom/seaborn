@@ -4,6 +4,7 @@ import tempfile
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import rgb2hex
 import pandas as pd
 from scipy.spatial import distance
 from scipy.cluster import hierarchy
@@ -779,13 +780,9 @@ class TestClustermap(object):
         kws['col_cluster'] = False
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
 
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
+        nt.assert_is_none(cm.ax_row_dendrogram)
+        nt.assert_is_none(cm.ax_col_dendrogram)
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
         plt.close('all')
@@ -802,6 +799,31 @@ class TestClustermap(object):
 
         plt.close('all')
 
+    def test_row_col_colors_df(self):
+        kws = self.default_kws.copy()
+
+        kws['row_colors'] = pd.DataFrame(
+            [rgb2hex(c) for c in self.row_colors], columns=['row_label'])
+        kws['col_colors'] = pd.DataFrame(
+            [rgb2hex(c) for c in self.col_colors], columns=['col_label'])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(len(cm.ax_row_colors.collections), 1)
+        nt.assert_equal(len(cm.ax_col_colors.collections), 1)
+
+        # Test labels of row_colors.
+        tick_labels = cm.ax_row_colors.get_xticklabels()
+        nt.assert_equal(len(tick_labels), 1)
+        nt.assert_equal(tick_labels[0].get_text(), 'row_label')
+
+        # Test labels of col_colors.
+        tick_labels = cm.ax_col_colors.get_yticklabels()
+        nt.assert_equal(len(tick_labels), 1)
+        nt.assert_equal(tick_labels[0].get_text(), 'col_label')
+
+        plt.close('all')
+
     def test_cluster_false_row_col_colors(self):
         kws = self.default_kws.copy()
         kws['row_cluster'] = False
@@ -810,13 +832,9 @@ class TestClustermap(object):
         kws['col_colors'] = self.col_colors
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
+        nt.assert_is_none(cm.ax_row_dendrogram)
+        nt.assert_is_none(cm.ax_col_dendrogram)
 
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
 
