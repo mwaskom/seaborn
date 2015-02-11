@@ -106,11 +106,16 @@ class _DiscretePlotter(_LinearPlotter):
         self.establish_variables(data, x=x, y=y, hue=hue, units=units)
 
         # Figure out the order of the variables on the x axis
-        x_sorted = np.sort(pd.unique(self.x))
-        self.x_order = x_sorted if x_order is None else x_order
+        self.x_order = x_order
+        if x_order is None:
+            self.x_order = np.sort(pd.unique(self.x))
+
+
         if self.hue is not None:
-            hue_sorted = np.sort(pd.unique(self.hue))
-            self.hue_order = hue_sorted if hue_order is None else hue_order
+            self.hue_order = hue_order
+            if hue_order is None:
+                self.hue_order = np.sort(pd.unique(self.hue))
+
         else:
             self.hue_order = [None]
 
