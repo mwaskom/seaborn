@@ -1113,7 +1113,26 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             else:
                 for j, hue_level in enumerate(self.hue_names):
 
-                    pass
+                    hue_mask = self.plot_hues[i] == hue_level
+
+                    stat_data = remove_na(group_data[hue_mask])
+
+                    # Estimate a statistic from the vector of data
+                    if not stat_data.size:
+                        statistic[i].append(None)
+                    else:
+                        statistic[i].append(estimator(stat_data))
+
+                    # Get a confidence interval for this estimate
+                    if stat_data.size < 2:
+                        confint[i].append((None, None))
+                        continue
+
+                    if ci is not None:
+                        boots = bootstrap(stat_data, func=estimator,
+                                          n_boot=n_boot,
+                                          units=unit_data)
+                        confint[i].append(utils.ci(boots, ci))
 
         self.statistic = statistic
         self.confint = confint
@@ -1142,6 +1161,25 @@ class _BarPlotter(_CategoricalStatPlotter):
                         color=self.colors, align="center", **kws)
 
                 self.draw_confints(ax, barpos, self.confint)
+
+            else:
+
+                for j, hue_level in enumerate(self.hue_names):
+
+                    statistic = [0 if y[j] is None else y[j]
+                                 for y in self.statistic]
+
+                    if i:
+                        kws["label"] = "_nolegend"
+                    else:
+                        kws["label"] = hue_level
+
+                    barpos = np.arange(len(statistic)) + self.hue_offsets[j]
+                    barfunc(barpos, statistic, self.nested_width,
+                            color=self.colors[j], align="center", **kws)
+
+                    confint = [c[j] for c in self.confint]
+                    self.draw_confints(ax, barpos, confint)
 
     def draw_confints(self, ax, at_group, confint):
 
