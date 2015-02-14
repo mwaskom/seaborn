@@ -255,6 +255,7 @@ class _DiscretePlotter(_LinearPlotter):
                                            units=unit_data)
                     ci.append(utils.ci(boots, self.ci))
 
+            yield pos, height, ci
 
     @property
     def binned_data(self):

@@ -1078,51 +1078,45 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             statistic = [[] for _ in self.plot_data]
             confint = [[] for _ in self.plot_data]
 
+        # TODO FIX
+        unit_data = None
+
         for i, group_data in enumerate(self.plot_data):
+
+            # Option 1: we have a single layer of grouping
+            # --------------------------------------------
 
             if self.plot_hues is None:
 
                 stat_data = remove_na(group_data)
 
+                # Estimate a statistic from the vector of data
                 if not stat_data.size:
                     statistic.append(None)
                 else:
-                    statistic.append(estimator)
+                    statistic.append(estimator(stat_data))
 
-    def old(self):
-
-        for i, hue in enumerate(self.hue_order):
-
-            # Build intermediate lists of the values for each drawing
-            pos = []
-            height = []
-            ci = []
-            for j, x in enumerate(self.x_order):
-
-                pos.append(self.positions[j] + self.offset[i])
-
-                # Focus on the data for this specific bar/point
-                current_data = (self.x == x) & (self.hue == hue)
-                y_data = self.y[current_data]
-                if self.units is None:
-                    unit_data = None
-                else:
-                    unit_data = self.units[current_data]
-
-                # This is where the main computation happens
-                height.append(self.estimator(y_data))
-
-                # Only bootstrap with multple values
-                if current_data.sum() < 2:
-                    ci.append((None, None))
+                # Get a confidence interval for this estimate
+                if stat_data.size < 2:
+                    confint.append((None, None))
                     continue
 
-                # Get the confidence intervals
-                if self.ci is not None:
-                    boots = bootstrap(y_data, func=self.estimator,
-                                      n_boot=self.n_boot,
+                if ci is not None:
+                    boots = bootstrap(stat_data, func=estimator,
+                                      n_boot=n_boot,
                                       units=unit_data)
-                    ci.append(utils.ci(boots, self.ci))
+                    confint.append(utils.ci(boots, ci))
+
+            # Option 2: we are grouping by a hue layer
+            # ----------------------------------------
+
+            else:
+                for j, hue_level in enumerate(self.hue_names):
+
+                    pass
+
+        self.statistic = statistic
+        self.confint = confint
 
 
 class _BarPlotter(_CategoricalStatPlotter):
@@ -1133,6 +1127,41 @@ class _BarPlotter(_CategoricalStatPlotter):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
+        self.estimate_statistic(estimator, ci, n_boot)
+
+    def draw_bars(self, ax, kws):
+
+        barfunc = ax.bar if self.orient == "v" else ax.barh
+        for i, group_data in enumerate(self.plot_data):
+
+            if self.plot_hues is None:
+
+                statistic = [0 if y is None else y for y in self.statistic]
+                barpos = np.arange(len(statistic))
+                barfunc(barpos, statistic, self.width,
+                        color=self.colors, align="center", **kws)
+
+                self.draw_confints(ax, barpos, self.confint)
+
+    def draw_confints(self, ax, at_group, confint):
+
+        kws = {"color": "#444444",
+               "linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
+
+        for at, (ci_low, ci_high) in zip(at_group, confint):
+            if ci_low is None:
+                continue
+            if self.orient == "v":
+                ax.plot([at, at], [ci_low, ci_high], **kws)
+            else:
+                ax.plot([ci_low, ci_high], [at, at], **kws)
+
+    def plot(self, ax, bar_kws):
+
+        self.draw_bars(ax, bar_kws)
+        self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 _boxplot_docs = dict(
