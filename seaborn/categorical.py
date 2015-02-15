@@ -184,8 +184,13 @@ class _CategoricalPlotter(object):
 
                 # Group the numeric data
                 grouped_vals = vals.groupby(groups)
-                plot_data = [grouped_vals.get_group(g) for g in order]
-                plot_data = [d.values for d in plot_data]
+                plot_data = []
+                for g in order:
+                    try:
+                        g_vals = grouped_vals.get_group(g).values
+                    except KeyError:
+                        g_vals = np.array([])
+                    plot_data.append(g_vals)
 
                 # Get the categorical axis label
                 if hasattr(groups, "name"):
@@ -217,8 +222,13 @@ class _CategoricalPlotter(object):
 
                     # Group the hue categories
                     grouped_hues = hue.groupby(groups)
-                    plot_hues = [grouped_hues.get_group(g) for g in order]
-                    plot_hues = [h.values for h in plot_hues]
+                    plot_hues = []
+                    for g in order:
+                        try:
+                            g_hues = np.asarray(grouped_hues.get_group(g))
+                        except KeyError:
+                            g_hues = np.array([])
+                        plot_hues.append(g_hues)
 
                     # Get the title for the hues (will title the legend)
                     hue_title = hue.name
@@ -1118,8 +1128,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             else:
                 for j, hue_level in enumerate(self.hue_names):
 
-                    hue_mask = self.plot_hues[i] == hue_level
+                    if not self.plot_hues[i].size:
+                        statistic[i].append(None)
+                        confint[i].append((None, None))
+                        continue
 
+                    hue_mask = self.plot_hues[i] == hue_level
                     stat_data = remove_na(group_data[hue_mask])
 
                     # Estimate a statistic from the vector of data
@@ -1171,7 +1185,6 @@ class _BarPlotter(_CategoricalStatPlotter):
 
                 statistic = [0 if y[j] is None else y[j]
                              for y in self.statistic]
-
 
                 barpos = np.arange(len(statistic)) + self.hue_offsets[j]
                 barfunc(barpos, statistic, self.nested_width,
