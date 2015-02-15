@@ -1107,13 +1107,13 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                 # Estimate a statistic from the vector of data
                 if not stat_data.size:
-                    statistic.append(None)
+                    statistic.append(np.nan)
                 else:
                     statistic.append(estimator(stat_data))
 
                 # Get a confidence interval for this estimate
                 if stat_data.size < 2:
-                    confint.append((None, None))
+                    confint.append([np.nan, np.nan])
                     continue
 
                 if ci is not None:
@@ -1129,8 +1129,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                 for j, hue_level in enumerate(self.hue_names):
 
                     if not self.plot_hues[i].size:
-                        statistic[i].append(None)
-                        confint[i].append((None, None))
+                        statistic[i].append(np.nan)
+                        confint[i].append((np.nan, np.nan))
                         continue
 
                     hue_mask = self.plot_hues[i] == hue_level
@@ -1138,13 +1138,13 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                     # Estimate a statistic from the vector of data
                     if not stat_data.size:
-                        statistic[i].append(None)
+                        statistic[i].append(np.nan)
                     else:
                         statistic[i].append(estimator(stat_data))
 
                     # Get a confidence interval for this estimate
                     if stat_data.size < 2:
-                        confint[i].append((None, None))
+                        confint[i].append([np.nan, np.nan])
                         continue
 
                     if ci is not None:
@@ -1153,8 +1153,24 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                                           units=unit_data)
                         confint[i].append(utils.ci(boots, ci))
 
-        self.statistic = statistic
-        self.confint = confint
+        # Save the resulting values for plotting
+        self.statistic = np.array(statistic)
+        self.confint = np.array(confint)
+
+        # Rename the value label to reflect the estimation
+        self.value_label = "{}({})".format(estimator.__name__,
+                                           self.value_label)
+
+    def draw_confints(self, ax, at_group, confint, color):
+
+        kws = {"color": color,
+               "linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
+
+        for at, (ci_low, ci_high) in zip(at_group, confint):
+            if self.orient == "v":
+                ax.plot([at, at], [ci_low, ci_high], **kws)
+            else:
+                ax.plot([ci_low, ci_high], [at, at], **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
@@ -1170,42 +1186,26 @@ class _BarPlotter(_CategoricalStatPlotter):
     def draw_bars(self, ax, kws):
 
         barfunc = ax.bar if self.orient == "v" else ax.barh
+        barpos = np.arange(len(self.statistic))
+
         if self.plot_hues is None:
 
-            statistic = [0 if y is None else y for y in self.statistic]
-            barpos = np.arange(len(statistic))
-            barfunc(barpos, statistic, self.width,
+            barfunc(barpos, self.statistic, self.width,
                     color=self.colors, align="center", **kws)
 
-            self.draw_confints(ax, barpos, self.confint)
+            self.draw_confints(ax, barpos, self.confint, "#444444")
 
         else:
 
             for j, hue_level in enumerate(self.hue_names):
 
-                statistic = [0 if y[j] is None else y[j]
-                             for y in self.statistic]
-
-                barpos = np.arange(len(statistic)) + self.hue_offsets[j]
-                barfunc(barpos, statistic, self.nested_width,
+                offpos = barpos + self.hue_offsets[j]
+                barfunc(offpos, self.statistic[:, j], self.nested_width,
                         color=self.colors[j], align="center",
                         label=hue_level, **kws)
 
-                confint = [c[j] for c in self.confint]
-                self.draw_confints(ax, barpos, confint)
-
-    def draw_confints(self, ax, at_group, confint):
-
-        kws = {"color": "#444444",
-               "linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
-
-        for at, (ci_low, ci_high) in zip(at_group, confint):
-            if ci_low is None:
-                continue
-            if self.orient == "v":
-                ax.plot([at, at], [ci_low, ci_high], **kws)
-            else:
-                ax.plot([ci_low, ci_high], [at, at], **kws)
+                confint = self.confint[:, j]
+                self.draw_confints(ax, offpos, confint, "#444444")
 
     def plot(self, ax, bar_kws):
 
@@ -1214,6 +1214,77 @@ class _BarPlotter(_CategoricalStatPlotter):
         if self.orient == "h":
             ax.invert_yaxis()
 
+
+class _PointPlotter(_CategoricalStatPlotter):
+
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 estimator, ci, n_boot, units,
+                 markers, linestyle, dodge, join,
+                 orient, color, palette):
+
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, 1)
+        self.estimate_statistic(estimator, ci, n_boot)
+
+        self.dodge = dodge
+        self.join = join
+
+    @property
+    def hue_offsets(self):
+
+        offset = np.linspace(0, self.dodge, len(self.hue_names))
+        offset -= offset.mean()
+        return offset
+
+    def draw_points(self, ax):
+
+        pointpos = np.arange(len(self.statistic))
+
+        if self.plot_hues is None:
+
+            if self.orient == "h":
+                ax.scatter(self.statistic, pointpos, 80, self.colors)
+            else:
+                ax.scatter(pointpos, self.statistic, 80, self.colors)
+
+            self.draw_confints(ax, pointpos, self.confint, "#444444")
+
+            if self.join:
+                if self.orient == "h":
+                    ax.plot(self.statistic, pointpos)
+                else:
+                    ax.plot(pointpos, self.statistic)
+
+        else:
+
+            offsets = self.hue_offsets
+            for j, hue_level in enumerate(self.hue_names):
+
+                offpos = pointpos + offsets[j]
+                statistic = self.statistic[:, j]
+                confint = self.confint[:, j]
+
+                if self.orient == "h":
+                    ax.scatter(statistic, offpos, 80,
+                               self.colors[j], label=hue_level)
+                else:
+                    ax.scatter(offpos, statistic, 80,
+                               self.colors[j], label=hue_level)
+
+                self.draw_confints(ax, offpos, confint, self.colors[j])
+
+                if self.join:
+                    if self.orient == "h":
+                        ax.plot(statistic, offpos)
+                    else:
+                        ax.plot(offpos, statistic)
+
+    def plot(self, ax):
+
+        self.draw_points(ax)
+        self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 _boxplot_docs = dict(
 
