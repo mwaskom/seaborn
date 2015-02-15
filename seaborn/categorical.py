@@ -1069,6 +1069,11 @@ class _SwarmPlotter(_BoxPlotter):
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
 
+    @property
+    def nested_width(self):
+        """A float with the width of plot elements when hue nesting is used."""
+        return self.width / len(self.hue_names)
+
     def estimate_statistic(self, estimator, ci, n_boot):
 
         if self.hue_names is None:
@@ -1151,35 +1156,30 @@ class _BarPlotter(_CategoricalStatPlotter):
     def draw_bars(self, ax, kws):
 
         barfunc = ax.bar if self.orient == "v" else ax.barh
-        for i, group_data in enumerate(self.plot_data):
+        if self.plot_hues is None:
 
-            if self.plot_hues is None:
+            statistic = [0 if y is None else y for y in self.statistic]
+            barpos = np.arange(len(statistic))
+            barfunc(barpos, statistic, self.width,
+                    color=self.colors, align="center", **kws)
 
-                statistic = [0 if y is None else y for y in self.statistic]
-                barpos = np.arange(len(statistic))
-                barfunc(barpos, statistic, self.width,
-                        color=self.colors, align="center", **kws)
+            self.draw_confints(ax, barpos, self.confint)
 
-                self.draw_confints(ax, barpos, self.confint)
+        else:
 
-            else:
+            for j, hue_level in enumerate(self.hue_names):
 
-                for j, hue_level in enumerate(self.hue_names):
+                statistic = [0 if y[j] is None else y[j]
+                             for y in self.statistic]
 
-                    statistic = [0 if y[j] is None else y[j]
-                                 for y in self.statistic]
 
-                    if i:
-                        kws["label"] = "_nolegend"
-                    else:
-                        kws["label"] = hue_level
+                barpos = np.arange(len(statistic)) + self.hue_offsets[j]
+                barfunc(barpos, statistic, self.nested_width,
+                        color=self.colors[j], align="center",
+                        label=hue_level, **kws)
 
-                    barpos = np.arange(len(statistic)) + self.hue_offsets[j]
-                    barfunc(barpos, statistic, self.nested_width,
-                            color=self.colors[j], align="center", **kws)
-
-                    confint = [c[j] for c in self.confint]
-                    self.draw_confints(ax, barpos, confint)
+                confint = [c[j] for c in self.confint]
+                self.draw_confints(ax, barpos, confint)
 
     def draw_confints(self, ax, at_group, confint):
 
