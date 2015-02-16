@@ -1161,16 +1161,17 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         self.value_label = "{}({})".format(estimator.__name__,
                                            self.value_label)
 
-    def draw_confints(self, ax, at_group, confint, color):
+    def draw_confints(self, ax, at_group, confint, colors):
 
-        kws = {"color": color,
-               "linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
+        kws = {"linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
 
-        for at, (ci_low, ci_high) in zip(at_group, confint):
+        for at, (ci_low, ci_high), color in zip(at_group,
+                                                confint,
+                                                colors):
             if self.orient == "v":
-                ax.plot([at, at], [ci_low, ci_high], **kws)
+                ax.plot([at, at], [ci_low, ci_high], c=color, **kws)
             else:
-                ax.plot([ci_low, ci_high], [at, at], **kws)
+                ax.plot([ci_low, ci_high], [at, at], c=color, **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
@@ -1193,7 +1194,8 @@ class _BarPlotter(_CategoricalStatPlotter):
             barfunc(barpos, self.statistic, self.width,
                     color=self.colors, align="center", **kws)
 
-            self.draw_confints(ax, barpos, self.confint, "#444444")
+            errcolors = ["#444444"] * len(barpos)
+            self.draw_confints(ax, barpos, self.confint, errcolors)
 
         else:
 
@@ -1205,7 +1207,8 @@ class _BarPlotter(_CategoricalStatPlotter):
                         label=hue_level, **kws)
 
                 confint = self.confint[:, j]
-                self.draw_confints(ax, offpos, confint, "#444444")
+                errcolors = ["#444444"] * len(offpos)
+                self.draw_confints(ax, offpos, confint, errcolors)
 
     def plot(self, ax, bar_kws):
 
@@ -1226,6 +1229,10 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.establish_colors(color, palette, 1)
         self.estimate_statistic(estimator, ci, n_boot)
 
+        # Override the default palette for single-color plots
+        if hue is None and palette is None:
+            self.colors = [color_palette()[0]] * len(self.colors)
+
         self.dodge = dodge
         self.join = join
 
@@ -1242,18 +1249,19 @@ class _PointPlotter(_CategoricalStatPlotter):
 
         if self.plot_hues is None:
 
+            if self.join:
+                color = self.colors[0]
+                if self.orient == "h":
+                    ax.plot(self.statistic, pointpos, c=color)
+                else:
+                    ax.plot(pointpos, self.statistic, c=color)
+
+            self.draw_confints(ax, pointpos, self.confint, self.colors)
+
             if self.orient == "h":
                 ax.scatter(self.statistic, pointpos, 80, self.colors)
             else:
                 ax.scatter(pointpos, self.statistic, 80, self.colors)
-
-            self.draw_confints(ax, pointpos, self.confint, "#444444")
-
-            if self.join:
-                if self.orient == "h":
-                    ax.plot(self.statistic, pointpos)
-                else:
-                    ax.plot(pointpos, self.statistic)
 
         else:
 
@@ -1264,20 +1272,22 @@ class _PointPlotter(_CategoricalStatPlotter):
                 statistic = self.statistic[:, j]
                 confint = self.confint[:, j]
 
+                if self.join:
+                    color = self.colors[j]
+                    if self.orient == "h":
+                        ax.plot(statistic, offpos, c=color)
+                    else:
+                        ax.plot(offpos, statistic, c=color)
+
+                errcolors = [self.colors[j]] * len(offpos)
+                self.draw_confints(ax, offpos, confint, errcolors)
+
                 if self.orient == "h":
                     ax.scatter(statistic, offpos, 80,
                                self.colors[j], label=hue_level)
                 else:
                     ax.scatter(offpos, statistic, 80,
                                self.colors[j], label=hue_level)
-
-                self.draw_confints(ax, offpos, confint, self.colors[j])
-
-                if self.join:
-                    if self.orient == "h":
-                        ax.plot(statistic, offpos)
-                    else:
-                        ax.plot(offpos, statistic)
 
     def plot(self, ax):
 
@@ -1294,7 +1304,7 @@ _boxplot_docs = dict(
 
     - A "long-form" DataFrame, in which case the ``x``, ``y``, and ``hue``
       variables will determine how the data are plotted.
-    - A "wide-form" DatFrame, such that each numeric column will be plotted.
+    - A "wide-form" DataFrame, such that each numeric column will be plotted.
     - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
 
     It is also possible to pass vector data directly to ``x``, ``y``, or
