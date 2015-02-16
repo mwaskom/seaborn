@@ -46,8 +46,8 @@ def _convert_colors(colors):
 
 def _convert_colors_frame(colors):
     if isinstance(colors, pd.DataFrame):
-        converted = _convert_colors(colors.values)
-        return pd.DataFrame(colors, index=colors.index, columns=colors.columns)
+        converted = {col: _convert_colors(colors[col]) for col in colors}
+        return pd.DataFrame(converted, index=colors.index)
     else:
         return _convert_colors(colors)
 
@@ -836,7 +836,7 @@ class ClusterGrid(Grid):
             if isinstance(self.row_colors, pd.DataFrame):
                 self.ax_row_colors.xaxis.tick_top()
                 self.ax_row_colors.set_xticklabels(
-                    self.row_colors.columns[::-1], rotation=90)
+                    self.row_colors.columns, rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
