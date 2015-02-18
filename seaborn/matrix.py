@@ -47,7 +47,8 @@ def _convert_colors(colors):
 def _convert_colors_frame(colors):
     if isinstance(colors, pd.DataFrame):
         converted = {col: _convert_colors(colors[col]) for col in colors}
-        return pd.DataFrame(converted, index=colors.index)
+        converted_frame = pd.DataFrame(converted, index=colors.index)
+        return converted_frame[colors.columns]
     else:
         return _convert_colors(colors)
 
