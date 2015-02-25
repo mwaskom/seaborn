@@ -11,7 +11,6 @@ from .external import husl
 from .external.six import string_types
 from .external.six.moves import range
 
-from .rcmod import axes_style
 from .utils import desaturate, set_hls_values
 from .xkcd_rgb import xkcd_rgb
 from .miscplot import palplot
@@ -530,6 +529,7 @@ def _update_lut(cmap, colors):
 
 def _show_cmap(cmap):
     """Show a continuous matplotlib colormap."""
+    from .rcmod import axes_style  # Avoid circular import
     with axes_style("white"):
         f, ax = plt.subplots(figsize=(8.25, .75))
     ax.set(xticks=[], yticks=[])
