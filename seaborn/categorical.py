@@ -22,7 +22,8 @@ class _CategoricalPlotter(object):
     width = .8
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
-                            orient=None, order=None, hue_order=None):
+                            orient=None, order=None, hue_order=None,
+                            units=None):
         """Convert input specification into a common representation."""
         # Option 1:
         # We are plotting a wide-form dataset
@@ -38,6 +39,9 @@ class _CategoricalPlotter(object):
             plot_hues = None
             hue_title = None
             hue_names = None
+
+            # No statistical units with wide inputs
+            plot_units = None
 
             # We also won't get a axes labels here
             value_label = None
@@ -125,11 +129,12 @@ class _CategoricalPlotter(object):
 
         else:
 
-            # See if we need to get `x` and `y` or `hue` from `data`
+            # See if we need to get variables from `data`
             if data is not None:
                 x = data.get(x, x)
                 y = data.get(y, y)
                 hue = data.get(hue, hue)
+                units = data.get(units, units)
 
             # Figure out the plotting orientation
             orient = self.infer_orient(x, y, orient)
@@ -158,6 +163,7 @@ class _CategoricalPlotter(object):
                 plot_hues = None
                 hue_names = None
                 hue_title = None
+                plot_units = None
 
             # Option 2b:
             # We are grouping the data values by another variable
@@ -170,36 +176,17 @@ class _CategoricalPlotter(object):
                 else:
                     vals, groups = x, y
 
-                # Make sure the groupby is going to work
-                if not isinstance(vals, pd.Series):
-                    vals = pd.Series(vals)
-
-                # Get the order of the box groups
-                if order is None:
-                    try:
-                        order = groups.unique()
-                    except AttributeError:
-                        order = pd.unique(groups)
-                group_names = list(order)
-
-                # Group the numeric data
-                grouped_vals = vals.groupby(groups)
-                plot_data = []
-                for g in order:
-                    try:
-                        g_vals = grouped_vals.get_group(g).values
-                    except KeyError:
-                        g_vals = np.array([])
-                    plot_data.append(g_vals)
-
                 # Get the categorical axis label
+                group_label = None
                 if hasattr(groups, "name"):
                     group_label = groups.name
-                else:
-                    group_label = None
 
-                # Get the numerical axis label
-                value_label = vals.name
+                # Get the order on the categorical axis
+                group_names = self._category_order(groups, order)
+
+                # Group the numeric data
+                plot_data, value_label = self._group_longform(vals, groups,
+                                                              group_names)
 
                 # Now handle the hue levels for nested ordering
                 if hue is None:
@@ -208,30 +195,19 @@ class _CategoricalPlotter(object):
                     hue_names = None
                 else:
 
-                    # Make sure the groupby is going to work
-                    if not isinstance(hue, pd.Series):
-                        hue = pd.Series(hue)
-
                     # Get the order of the hue levels
-                    if hue_order is None:
-                        try:
-                            hue_order = hue.unique()
-                        except AttributeError:
-                            hue_order = pd.unique(hue)
-                    hue_names = list(hue_order)
+                    hue_names = self._category_order(hue, hue_order)
 
-                    # Group the hue categories
-                    grouped_hues = hue.groupby(groups)
-                    plot_hues = []
-                    for g in order:
-                        try:
-                            g_hues = np.asarray(grouped_hues.get_group(g))
-                        except KeyError:
-                            g_hues = np.array([])
-                        plot_hues.append(g_hues)
+                    # Group the hue data
+                    plot_hues, hue_title = self._group_longform(hue, groups,
+                                                                group_names)
 
-                    # Get the title for the hues (will title the legend)
-                    hue_title = hue.name
+                # Now handle the units for nested observations
+                if units is None:
+                    plot_units = None
+                else:
+                    plot_units, _ = self._group_longform(units, groups,
+                                                         group_names)
 
         # Assign object attributes
         # ------------------------
@@ -243,6 +219,37 @@ class _CategoricalPlotter(object):
         self.plot_hues = plot_hues
         self.hue_title = hue_title
         self.hue_names = hue_names
+        self.plot_units = plot_units
+
+    def _category_order(self, data, order):
+        """Get the order of levels for a categorical variable."""
+        if order is None:
+            try:
+                order = data.unique()
+            except AttributeError:
+                order = pd.unique(data)
+        return list(order)
+
+    def _group_longform(self, vals, grouper, order):
+        """Group a long-form variable by another with correct order."""
+        # Ensure that the groupby will work
+        if not isinstance(vals, pd.Series):
+            vals = pd.Series(vals)
+
+        # Group the val data
+        grouped_vals = vals.groupby(grouper)
+        out_data = []
+        for g in order:
+            try:
+                g_vals = grouped_vals.get_group(g).values
+            except KeyError:
+                g_vals = np.array([])
+            out_data.append(g_vals)
+
+        # Get the vals axis label
+        label = vals.name
+
+        return out_data, label
 
     def establish_colors(self, color, palette, saturation):
         """Get a list of colors for the main component of the plots."""
@@ -1093,9 +1100,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             statistic = [[] for _ in self.plot_data]
             confint = [[] for _ in self.plot_data]
 
-        # TODO FIX
-        unit_data = None
-
         for i, group_data in enumerate(self.plot_data):
 
             # Option 1: we have a single layer of grouping
@@ -1103,7 +1107,14 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
             if self.plot_hues is None:
 
-                stat_data = remove_na(group_data)
+                if self.plot_units is None:
+                    stat_data = remove_na(group_data)
+                    unit_data = None
+                else:
+                    unit_data = self.plot_units[i]
+                    have = pd.notnull(np.c_[group_data, unit_data]).all(axis=1)
+                    stat_data = group_data[have]
+                    unit_data = unit_data[have]
 
                 # Estimate a statistic from the vector of data
                 if not stat_data.size:
@@ -1134,7 +1145,15 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         continue
 
                     hue_mask = self.plot_hues[i] == hue_level
-                    stat_data = remove_na(group_data[hue_mask])
+                    if self.plot_units is None:
+                        stat_data = remove_na(group_data[hue_mask])
+                    else:
+                        group_units = self.plot_units[i]
+                        have = pd.notnull(
+                            np.c_[group_data, group_units]
+                            ).all(axis=1)
+                        stat_data = group_data[hue_mask & have]
+                        unit_data = group_units[hue_mask & have]
 
                     # Estimate a statistic from the vector of data
                     if not stat_data.size:
@@ -1180,7 +1199,8 @@ class _BarPlotter(_CategoricalStatPlotter):
                  estimator, ci, n_boot, units,
                  orient, color, palette, saturation):
 
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_variables(x, y, hue, data, orient,
+                                 order, hue_order, units)
         self.establish_colors(color, palette, saturation)
         self.estimate_statistic(estimator, ci, n_boot)
 
@@ -1225,7 +1245,8 @@ class _PointPlotter(_CategoricalStatPlotter):
                  markers, linestyle, dodge, join,
                  orient, color, palette):
 
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_variables(x, y, hue, data, orient,
+                                 order, hue_order, units)
         self.establish_colors(color, palette, 1)
         self.estimate_statistic(estimator, ci, n_boot)
 

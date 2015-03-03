@@ -25,7 +25,8 @@ class TestCategoricalPlotter(object):
     y = pd.Series(rs.randn(n_total), name="y_data")
     g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
     h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    df = pd.DataFrame(dict(y=y, g=g, h=h))
+    u = pd.Series(np.tile(list("jkh"), n_total / 3))
+    df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
     x_df["W"] = g
 
     def test_wide_df_data(self):
@@ -295,6 +296,16 @@ class TestCategoricalPlotter(object):
             df.h = df.h.cat.reorder_categories(["n", "m"])
             p.establish_variables("g", "y", "h", data=df)
             nt.assert_equal(p.hue_names, ["n", "m"])
+
+    def test_plot_units(self):
+
+        p = cat._CategoricalPlotter()
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_is(p.plot_units, None)
+
+        p.establish_variables("g", "y", "h", data=self.df, units="u")
+        for group, units in zip(["a", "b", "c"], p.plot_units):
+            npt.assert_array_equal(units, self.u[self.g == group])
 
     def test_orient_inference(self):
 
