@@ -16,7 +16,7 @@ from .. import categorical as cat
 from .. import palettes
 
 
-class TestCategoricalPlotter(object):
+class CategoricalFixture(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -28,6 +28,9 @@ class TestCategoricalPlotter(object):
     u = pd.Series(np.tile(list("jkh"), n_total / 3))
     df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
     x_df["W"] = g
+
+
+class TestCategoricalPlotter(CategoricalFixture):
 
     def test_wide_df_data(self):
 
@@ -407,17 +410,100 @@ class TestCategoricalPlotter(object):
                                    (1, 1, 1)])
 
 
-class TestBoxPlotter(object):
-    """Test boxplot (also base class for things like violinplots)."""
-    rs = np.random.RandomState(30)
-    n_total = 60
-    x = rs.randn(n_total / 3, 3)
-    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
-    y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    df = pd.DataFrame(dict(y=y, g=g, h=h))
-    x_df["W"] = g
+class TestCategoricalStatPlotter(CategoricalFixture):
+
+    def test_no_bootstrappig(self):
+
+        p = cat._CategoricalStatPlotter()
+        p.establish_variables("g", "y", data=self.df)
+        p.estimate_statistic(np.mean, None, 100)
+        npt.assert_array_equal(p.confint, np.array([]))
+
+        p.establish_variables("g", "y", "h", data=self.df)
+        p.estimate_statistic(np.mean, None, 100)
+        npt.assert_array_equal(p.confint, np.array([[], [], []]))
+
+    def test_single_layer_stats(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y)
+        p.estimate_statistic(np.mean, 95, 10000)
+
+        nt.assert_equal(p.statistic.shape, (3,))
+        nt.assert_equal(p.confint.shape, (3, 2))
+
+        npt.assert_array_almost_equal(p.statistic,
+                                      y.groupby(g).mean())
+
+        for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
+            sem = stats.sem(grp_y)
+            mean = grp_y.mean()
+            ci_want = mean - 1.96 * sem, mean + 1.96 * sem
+            npt.assert_array_almost_equal(ci_want, ci, 2)
+
+    def test_single_layer_stats_with_units(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 90))
+        y = pd.Series(np.random.RandomState(0).randn(270))
+        u = pd.Series(np.repeat(np.tile(list("xyz"), 30), 3))
+        y[u == "x"] -= 3
+        y[u == "y"] += 3
+
+        p.establish_variables(g, y)
+        p.estimate_statistic(np.mean, 95, 10000)
+        stat1, ci1 = p.statistic, p.confint
+
+        p.establish_variables(g, y, units=u)
+        p.estimate_statistic(np.mean, 95, 10000)
+        stat2, ci2 = p.statistic, p.confint
+
+        npt.assert_array_equal(stat1, stat2)
+        ci1_size = ci1[:, 1] - ci1[:, 0]
+        ci2_size = ci2[:, 1] - ci2[:, 0]
+        npt.assert_array_less(ci1_size, ci2_size)
+
+    def test_single_layer_stats_with_missing_data(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y, order=list("abdc"))
+        p.estimate_statistic(np.mean, 95, 10000)
+
+        nt.assert_equal(p.statistic.shape, (4,))
+        nt.assert_equal(p.confint.shape, (4, 2))
+
+        mean = y[g == "b"].mean()
+        sem = stats.sem(y[g == "b"])
+        ci = mean - 1.96 * sem, mean + 1.96 * sem
+        npt.assert_equal(p.statistic[1], mean)
+        npt.assert_array_almost_equal(p.confint[1], ci, 2)
+
+        npt.assert_equal(p.statistic[2], np.nan)
+        npt.assert_array_equal(p.confint[2], (np.nan, np.nan))
+
+    def test_estimator_value_label(self):
+
+        p = cat._CategoricalStatPlotter()
+        p.establish_variables("g", "y", data=self.df)
+        p.estimate_statistic(np.mean, None, 100)
+        nt.assert_equal(p.value_label, "mean(y)")
+
+        p = cat._CategoricalStatPlotter()
+        p.establish_variables("g", "y", data=self.df)
+        p.estimate_statistic(np.median, None, 100)
+        nt.assert_equal(p.value_label, "median(y)")
+
+
+class TestBoxPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        order=None, hue_order=None,
@@ -515,17 +601,7 @@ class TestBoxPlotter(object):
         plt.close("all")
 
 
-class TestViolinPlotter(object):
-    """Test violinplots."""
-    rs = np.random.RandomState(30)
-    n_total = 60
-    x = rs.randn(n_total / 3, 3)
-    x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
-    y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    df = pd.DataFrame(dict(y=y, g=g, h=h))
-    x_df["W"] = g
+class TestViolinPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        order=None, hue_order=None,
@@ -1123,14 +1199,7 @@ class TestViolinPlotter(object):
             plt.close("all")
 
 
-class TestStripPlotter(object):
-    """Test boxplot (also base class for things like violinplots)."""
-    rs = np.random.RandomState(30)
-    n_total = 60
-    y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    df = pd.DataFrame(dict(y=y, g=g, h=h))
+class TestStripPlotter(CategoricalFixture):
 
     def test_stripplot_vertical(self):
 
