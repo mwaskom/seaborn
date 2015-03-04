@@ -241,7 +241,7 @@ class _CategoricalPlotter(object):
         out_data = []
         for g in order:
             try:
-                g_vals = grouped_vals.get_group(g).values
+                g_vals = np.asarray(grouped_vals.get_group(g))
             except KeyError:
                 g_vals = np.array([])
             out_data.append(g_vals)
@@ -1147,6 +1147,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                     hue_mask = self.plot_hues[i] == hue_level
                     if self.plot_units is None:
                         stat_data = remove_na(group_data[hue_mask])
+                        unit_data = None
                     else:
                         group_units = self.plot_units[i]
                         have = pd.notnull(
