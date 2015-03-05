@@ -490,6 +490,83 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         npt.assert_equal(p.statistic[2], np.nan)
         npt.assert_array_equal(p.confint[2], (np.nan, np.nan))
 
+    def test_nested_stats(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        h = pd.Series(np.tile(list("xy"), 150))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y, h)
+        p.estimate_statistic(np.mean, 95, 10000)
+
+        nt.assert_equal(p.statistic.shape, (3, 2))
+        nt.assert_equal(p.confint.shape, (3, 2, 2))
+
+        npt.assert_array_almost_equal(p.statistic,
+                                      y.groupby([g, h]).mean().unstack())
+
+        for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
+            for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
+                sem = stats.sem(hue_y)
+                mean = hue_y.mean()
+                ci_want = mean - 1.96 * sem, mean + 1.96 * sem
+                npt.assert_array_almost_equal(ci_want, ci, 2)
+
+    def test_nested_stats_with_units(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 90))
+        h = pd.Series(np.tile(list("xy"), 135))
+        u = pd.Series(np.repeat(list("ijkijk"), 45))
+        y = pd.Series(np.random.RandomState(0).randn(270))
+        y[u == "i"] -= 3
+        y[u == "k"] += 3
+
+        p.establish_variables(g, y, h)
+        p.estimate_statistic(np.mean, 95, 10000)
+        stat1, ci1 = p.statistic, p.confint
+
+        p.establish_variables(g, y, h, units=u)
+        p.estimate_statistic(np.mean, 95, 10000)
+        stat2, ci2 = p.statistic, p.confint
+
+        npt.assert_array_equal(stat1, stat2)
+        ci1_size = ci1[:, 0, 1] - ci1[:, 0, 0]
+        ci2_size = ci2[:, 0, 1] - ci2[:, 0, 0]
+        npt.assert_array_less(ci1_size, ci2_size)
+
+    def test_nested_stats_with_missing_data(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+        h = pd.Series(np.tile(list("xy"), 150))
+
+        p.establish_variables(g, y, h,
+                              order=list("abdc"),
+                              hue_order=list("zyx"))
+        p.estimate_statistic(np.mean, 95, 10000)
+
+        nt.assert_equal(p.statistic.shape, (4, 3))
+        nt.assert_equal(p.confint.shape, (4, 3, 2))
+
+        mean = y[(g == "b") & (h == "x")].mean()
+        sem = stats.sem(y[(g == "b") & (h == "x")])
+        ci = mean - 1.96 * sem, mean + 1.96 * sem
+        npt.assert_equal(p.statistic[1, 2], mean)
+        npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
+
+        npt.assert_array_equal(p.statistic[:, 0], [np.nan] * 4)
+        npt.assert_array_equal(p.statistic[2], [np.nan] * 3)
+        npt.assert_array_equal(p.confint[:, 0],
+                               np.zeros((4, 2)) * np.nan)
+        npt.assert_array_equal(p.confint[2],
+                               np.zeros((3, 2)) * np.nan)
+
     def test_estimator_value_label(self):
 
         p = cat._CategoricalStatPlotter()
