@@ -416,6 +416,10 @@ class _BoxPlotter(_CategoricalPlotter):
         vert = self.orient == "v"
 
         for i, group_data in enumerate(self.plot_data):
+
+            if not group_data.size:
+                continue
+
             if self.plot_hues is None:
                 # Draw a single box or a set of boxes
                 # with a single level of grouping

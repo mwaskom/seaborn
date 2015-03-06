@@ -644,6 +644,13 @@ class TestBoxPlotter(CategoricalFixture):
 
         plt.close("all")
 
+    def test_draw_missing_boxes(self):
+
+        ax = cat.boxplot("g", "y", data=self.df,
+                         order=["a", "b", "c", "d"])
+        nt.assert_equal(len(ax.artists), 3)
+        plt.close("all")
+
     def test_axes_annotation(self):
 
         ax = cat.boxplot("g", "y", data=self.df)
