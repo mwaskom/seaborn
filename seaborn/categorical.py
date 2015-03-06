@@ -1182,8 +1182,9 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         self.confint = np.array(confint)
 
         # Rename the value label to reflect the estimation
-        self.value_label = "{}({})".format(estimator.__name__,
-                                           self.value_label)
+        if self.value_label is not None:
+            self.value_label = "{}({})".format(estimator.__name__,
+                                               self.value_label)
 
     def draw_confints(self, ax, at_group, confint, colors):
 
@@ -1199,44 +1200,52 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
 
 class _BarPlotter(_CategoricalStatPlotter):
-
+    """Show a point estimate and confidence interval with bars."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation):
-
+                 orient, color, palette, saturation,
+                 errcolor):
+        """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, saturation)
         self.estimate_statistic(estimator, ci, n_boot)
 
-    def draw_bars(self, ax, kws):
+        self.errcolor = errcolor
 
+    def draw_bars(self, ax, kws):
+        """Draw the bars onto `ax`."""
+        # Get the right matplotlib function depending on the orientation
         barfunc = ax.bar if self.orient == "v" else ax.barh
         barpos = np.arange(len(self.statistic))
 
         if self.plot_hues is None:
 
+            # Draw the bars
             barfunc(barpos, self.statistic, self.width,
                     color=self.colors, align="center", **kws)
 
-            errcolors = ["#444444"] * len(barpos)
+            # Draw the confidence intervals
+            errcolors = [self.errcolor] * len(barpos)
             self.draw_confints(ax, barpos, self.confint, errcolors)
 
         else:
 
             for j, hue_level in enumerate(self.hue_names):
 
+                # Draw the bars
                 offpos = barpos + self.hue_offsets[j]
                 barfunc(offpos, self.statistic[:, j], self.nested_width,
                         color=self.colors[j], align="center",
                         label=hue_level, **kws)
 
+                # Draw the confidence intervals
                 confint = self.confint[:, j]
-                errcolors = ["#444444"] * len(offpos)
+                errcolors = [self.errcolor] * len(offpos)
                 self.draw_confints(ax, offpos, confint, errcolors)
 
     def plot(self, ax, bar_kws):
-
+        """Make the plot."""
         self.draw_bars(ax, bar_kws)
         self.annotate_axes(ax)
         if self.orient == "h":
@@ -1322,7 +1331,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         if self.orient == "h":
             ax.invert_yaxis()
 
-_boxplot_docs = dict(
+_categorical_docs = dict(
 
     # Shared narrative docs
     main_api_narrative=dedent("""\
@@ -1353,6 +1362,18 @@ _boxplot_docs = dict(
         Order to plot the categorical levels in, otherwise the levels are
         inferred from the data objects.\
         """),
+    stat_api_params=dedent("""\
+    estimator : callable that maps vector -> scalar, optional
+        Statistical function to estimate within each categorical bin.
+    ci : float, optional
+        Size of confidence intervals to draw around estimated values.
+    n_boot : int, optional
+        Number of bootstrap iterations to use when computing confidence
+        intervals.
+    units : names of variable in ``data`` or vector data, optional
+        Identifier of sampling units, which will be used to perform a
+        multilevel bootstrap and account for repeated measures design.\
+    """),
     orient=dedent("""\
     orient : "v" | "h", optional
         Orientation of the plot (vertical or horizontal). This can also be
@@ -1403,6 +1424,10 @@ _boxplot_docs = dict(
     stripplot=dedent("""\
     stripplot : A scatterplot where one variable is categorical. Can be used
                 in conjunction with a boxplot to show each observation.\
+    """),
+    pointplot=dedent("""\
+    pointplot : Show point estimates and confidence intervals using scatterplot
+                glyphs.\
     """),
     )
 
@@ -1528,7 +1553,7 @@ boxplot.__doc__ = dedent("""\
         ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
         <seaborn.axisgrid.FacetGrid object at 0x...>
 
-    """).format(**_boxplot_docs)
+    """).format(**_categorical_docs)
 
 
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
@@ -1722,7 +1747,7 @@ violinplot.__doc__ = dedent("""\
         ...   .add_legend(title="smoker"))  # doctest: +ELLIPSIS
         <seaborn.axisgrid.FacetGrid object at 0x...>
 
-    """).format(**_boxplot_docs)
+    """).format(**_categorical_docs)
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
@@ -1869,7 +1894,7 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
         ...                    jitter=True, orient="h")
 
-    Draw strips of observations on top of a violin plot
+    Draw strips of observations on top of a violin plot:
 
     .. plot::
         :context: close-figs
@@ -1878,4 +1903,64 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
         ...                    jitter=True, color="white", edgecolor="gray")
 
-    """).format(**_boxplot_docs)
+    """).format(**_categorical_docs)
+
+
+def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+            estimator=np.mean, ci=95, n_boot=1000, units=None,
+            orient=None, color=None, palette=None, saturation=.75,
+            errcolor=".26", ax=None, **kwargs):
+
+    plotter = _BarPlotter(x, y, hue, data, order, hue_order,
+                          estimator, ci, n_boot, units,
+                          orient, color, palette, saturation,
+                          errcolor)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+
+
+barplot.__doc__ = dedent("""\
+    Show point estimates and confidence intervals as a bar plot.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {main_api_params}
+    {stat_api_params}
+    {orient}
+    {color}
+    {palette}
+    {saturation}
+    errcolor : matplotlib color
+        Color for the lines that represent the confidence interval.
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.bar`` at draw
+        time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {pointplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal bar plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.barplot(x=tips["total_bill"])
+
+    """).format(**_categorical_docs)
