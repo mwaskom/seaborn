@@ -442,7 +442,9 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
             sem = stats.sem(grp_y)
             mean = grp_y.mean()
-            ci_want = mean - 1.96 * sem, mean + 1.96 * sem
+            stats.norm.ppf(.975)
+            half_ci = stats.norm.ppf(.975) * sem
+            ci_want = mean - half_ci, mean + half_ci
             npt.assert_array_almost_equal(ci_want, ci, 2)
 
     def test_single_layer_stats_with_units(self):
@@ -483,7 +485,8 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         mean = y[g == "b"].mean()
         sem = stats.sem(y[g == "b"])
-        ci = mean - 1.96 * sem, mean + 1.96 * sem
+        half_ci = stats.norm.ppf(.975) * sem
+        ci = mean - half_ci, mean + half_ci
         npt.assert_equal(p.statistic[1], mean)
         npt.assert_array_almost_equal(p.confint[1], ci, 2)
 
@@ -511,7 +514,8 @@ class TestCategoricalStatPlotter(CategoricalFixture):
             for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
                 sem = stats.sem(hue_y)
                 mean = hue_y.mean()
-                ci_want = mean - 1.96 * sem, mean + 1.96 * sem
+                half_ci = stats.norm.ppf(.975) * sem
+                ci_want = mean - half_ci, mean + half_ci
                 npt.assert_array_almost_equal(ci_want, ci, 2)
 
     def test_nested_stats_with_units(self):
@@ -556,7 +560,8 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         mean = y[(g == "b") & (h == "x")].mean()
         sem = stats.sem(y[(g == "b") & (h == "x")])
-        ci = mean - 1.96 * sem, mean + 1.96 * sem
+        half_ci = stats.norm.ppf(.975) * sem
+        ci = mean - half_ci, mean + half_ci
         npt.assert_equal(p.statistic[1, 2], mean)
         npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
 
@@ -1404,3 +1409,64 @@ class TestStripPlotter(CategoricalFixture):
                 npt.assert_array_equal(y, np.ones(len(x)) * i)
 
         plt.close("all")
+
+
+class TestBarPlotter(CategoricalFixture):
+
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       estimator=np.mean, ci=95, n_boot=1000, units=None,
+                       order=None, hue_order=None,
+                       orient=None, color=None, palette=None,
+                       saturation=.75, errcolor=".26")
+
+    def test_nested_width(self):
+
+        kws = self.default_kws.copy()
+
+        p = cat._BarPlotter(**kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_equal(p.nested_width, .8 / 2)
+
+        p = cat._BarPlotter(**kws)
+        p.establish_variables("h", "y", "g", data=self.df)
+        nt.assert_equal(p.nested_width, .8 / 3)
+
+
+class TestPointPlotter(CategoricalFixture):
+
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       estimator=np.mean, ci=95, n_boot=1000, units=None,
+                       order=None, hue_order=None,
+                       markers="o", linestyle="-", dodge=0, join=True,
+                       orient=None, color=None, palette=None)
+
+    def test_different_defualt_colors(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(x="g", y="y", data=self.df))
+        p = cat._PointPlotter(**kws)
+        color = palettes.color_palette()[0]
+        npt.assert_array_equal(p.colors, [color, color, color])
+
+    def test_hue_offsets(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(x="g", y="y", hue="h", data=self.df))
+
+        p = cat._PointPlotter(**kws)
+        npt.assert_array_equal(p.hue_offsets, [0, 0])
+
+        kws.update(dict(dodge=.5))
+
+        p = cat._PointPlotter(**kws)
+        npt.assert_array_equal(p.hue_offsets, [-.25, .25])
+
+        kws.update(dict(x="h", hue="g", dodge=0))
+
+        p = cat._PointPlotter(**kws)
+        npt.assert_array_equal(p.hue_offsets, [0, 0, 0])
+
+        kws.update(dict(dodge=.3))
+
+        p = cat._PointPlotter(**kws)
+        npt.assert_array_equal(p.hue_offsets, [-.15, 0, .15])
