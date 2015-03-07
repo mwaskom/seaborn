@@ -137,6 +137,12 @@ class _CategoricalPlotter(object):
                 hue = data.get(hue, hue)
                 units = data.get(units, units)
 
+            # Validate the inputs
+            for input in [x, y, hue, units]:
+                if isinstance(input, string_types):
+                    err = "Could not interperet input '{}'".format(input)
+                    raise ValueError(err)
+
             # Figure out the plotting orientation
             orient = self.infer_orient(x, y, orient)
 

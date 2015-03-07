@@ -239,6 +239,17 @@ class TestCategoricalPlotter(CategoricalFixture):
             for group, hues in zip(["a", "b", "c"], p.plot_hues):
                 npt.assert_array_equal(hues, self.h[self.g == group])
 
+    def test_input_validation(self):
+
+        p = cat._CategoricalPlotter()
+
+        kws = dict(x="g", y="y", hue="h", units="u", data=self.df)
+        for input in ["x", "y", "hue", "units"]:
+            input_kws = kws.copy()
+            input_kws[input] = "bad_input"
+            with nt.assert_raises(ValueError):
+                p.establish_variables(**input_kws)
+
     def test_order(self):
 
         p = cat._CategoricalPlotter()
