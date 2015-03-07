@@ -502,7 +502,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 50000)
 
         nt.assert_equal(p.statistic.shape, (3, 2))
         nt.assert_equal(p.confint.shape, (3, 2, 2))
@@ -1437,7 +1437,8 @@ class TestPointPlotter(CategoricalFixture):
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        estimator=np.mean, ci=95, n_boot=1000, units=None,
                        order=None, hue_order=None,
-                       markers="o", linestyle="-", dodge=0, join=True,
+                       markers="o", linestyles="-", dodge=0,
+                       join=True, scale=1,
                        orient=None, color=None, palette=None)
 
     def test_different_defualt_colors(self):

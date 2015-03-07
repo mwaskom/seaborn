@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
 
+from .external.six import string_types
 from .external.six.moves import range
 
 from . import utils
@@ -1186,9 +1187,9 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             self.value_label = "{}({})".format(estimator.__name__,
                                                self.value_label)
 
-    def draw_confints(self, ax, at_group, confint, colors):
+    def draw_confints(self, ax, at_group, confint, colors, **kws):
 
-        kws = {"linewidth": mpl.rcParams["lines.linewidth"] * 1.8}
+        kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
 
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
@@ -1200,11 +1201,10 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
 
 class _BarPlotter(_CategoricalStatPlotter):
-    """Show a point estimate and confidence interval with bars."""
+    """Show point estimates and confidence intervals with bars."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation,
-                 errcolor):
+                 orient, color, palette, saturation, errcolor):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1253,12 +1253,12 @@ class _BarPlotter(_CategoricalStatPlotter):
 
 
 class _PointPlotter(_CategoricalStatPlotter):
-
+    """Show point estimates and confidence intervals with (joined) points."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 markers, linestyle, dodge, join,
+                 markers, linestyles, dodge, join, scale,
                  orient, color, palette):
-
+        """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, 1)
@@ -1268,64 +1268,115 @@ class _PointPlotter(_CategoricalStatPlotter):
         if hue is None and palette is None:
             self.colors = [color_palette()[0]] * len(self.colors)
 
+        # Don't join single-layer plots with different colors
+        if hue is None and palette is not None:
+            join = False
+
+        # Use a good default for `dodge=True`
+        if dodge is True and self.hue_names is not None:
+            dodge = .05 * len(self.hue_names)
+
+        # Make sure we have a marker for each hue level
+        if isinstance(markers, string_types):
+            markers = [markers] * len(self.colors)
+        self.markers = markers
+
+        # Make sure we have a line style for each hue level
+        if isinstance(linestyles, string_types):
+            linestyles = [linestyles] * len(self.colors)
+        self.linestyles = linestyles
+
+        # Set the other plot components
         self.dodge = dodge
         self.join = join
+        self.scale = scale
 
     @property
     def hue_offsets(self):
-
+        """Offsets relative to the center position for each hue level."""
         offset = np.linspace(0, self.dodge, len(self.hue_names))
         offset -= offset.mean()
         return offset
 
     def draw_points(self, ax):
-
+        """Draw the main data components of the plot."""
+        # Get the center positions on the categorical axis
         pointpos = np.arange(len(self.statistic))
+
+        # Get the size of the plot elements
+        lw = mpl.rcParams["lines.linewidth"] * 1.8 * self.scale
+        mew = lw * .75
+        markersize = np.pi * np.square(lw) * 2
 
         if self.plot_hues is None:
 
+            # Draw lines joining each estimate point
             if self.join:
                 color = self.colors[0]
+                ls = self.linestyles[0]
                 if self.orient == "h":
-                    ax.plot(self.statistic, pointpos, c=color)
+                    ax.plot(self.statistic, pointpos, c=color, ls=ls, lw=lw)
                 else:
-                    ax.plot(pointpos, self.statistic, c=color)
+                    ax.plot(pointpos, self.statistic, c=color, ls=ls, lw=lw)
 
-            self.draw_confints(ax, pointpos, self.confint, self.colors)
+            # Draw the confidence intervals
+            self.draw_confints(ax, pointpos, self.confint, self.colors, lw=lw)
 
+            # Draw the estimate points
+            marker = self.markers[0]
             if self.orient == "h":
-                ax.scatter(self.statistic, pointpos, 80, self.colors)
+                ax.scatter(self.statistic, pointpos,
+                           linewidth=mew, marker=marker, s=markersize,
+                           c=self.colors, edgecolor=self.colors)
             else:
-                ax.scatter(pointpos, self.statistic, 80, self.colors)
+                ax.scatter(pointpos, self.statistic,
+                           linewidth=mew, marker=marker, s=markersize,
+                           c=self.colors, edgecolor=self.colors)
 
         else:
 
             offsets = self.hue_offsets
             for j, hue_level in enumerate(self.hue_names):
 
-                offpos = pointpos + offsets[j]
+                # Determine the values to plot for this level
                 statistic = self.statistic[:, j]
                 confint = self.confint[:, j]
 
+                # Determine the position on the categorical and z axes
+                offpos = pointpos + offsets[j]
+                z = j + 1
+
+                # Draw lines joining each estimate point
                 if self.join:
                     color = self.colors[j]
+                    ls = self.linestyles[j]
                     if self.orient == "h":
-                        ax.plot(statistic, offpos, c=color)
+                        ax.plot(statistic, offpos, c=color,
+                                zorder=z, ls=ls, lw=lw)
                     else:
-                        ax.plot(offpos, statistic, c=color)
+                        ax.plot(offpos, statistic, c=color,
+                                zorder=z, ls=ls, lw=lw)
 
+                # Draw the confidence intervals
                 errcolors = [self.colors[j]] * len(offpos)
-                self.draw_confints(ax, offpos, confint, errcolors)
+                self.draw_confints(ax, offpos, confint, errcolors,
+                                   zorder=z, lw=lw)
 
+                # Draw the estimate points
+                marker = self.markers[j]
                 if self.orient == "h":
-                    ax.scatter(statistic, offpos, 80,
-                               self.colors[j], label=hue_level)
+                    ax.scatter(statistic, offpos,
+                               c=self.colors[j], label=hue_level,
+                               linewidth=mew, marker=marker, s=markersize,
+                               edgecolor=self.colors[j], zorder=z)
                 else:
-                    ax.scatter(offpos, statistic, 80,
-                               self.colors[j], label=hue_level)
+                    ax.scatter(offpos, statistic,
+                               c=self.colors[j], label=hue_level,
+                               linewidth=mew, marker=marker, s=markersize,
+                               edgecolor=self.colors[j], zorder=z)
 
     def plot(self, ax):
-
+        """Make the plot."""
         self.draw_points(ax)
         self.annotate_axes(ax)
         if self.orient == "h":
@@ -1425,9 +1476,15 @@ _categorical_docs = dict(
     stripplot : A scatterplot where one variable is categorical. Can be used
                 in conjunction with a boxplot to show each observation.\
     """),
+    barplot=dedent("""\
+    barplot : Show point estimates and confidence intervals using bars.\
+    """),
     pointplot=dedent("""\
     pointplot : Show point estimates and confidence intervals using scatterplot
                 glyphs.\
+    """),
+    factorplot=dedent("""\
+    factorplot : Combine categorical plots and a class:`FacetGrid`.\
     """),
     )
 
@@ -1443,10 +1500,9 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     if ax is None:
         ax = plt.gca()
-
     kwargs.update(dict(whis=whis, notch=notch))
-    plotter.plot(ax, kwargs)
 
+    plotter.plot(ax, kwargs)
     return ax
 
 boxplot.__doc__ = dedent("""\
@@ -1570,7 +1626,6 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         ax = plt.gca()
 
     plotter.plot(ax)
-
     return ax
 
 violinplot.__doc__ = dedent("""\
@@ -1764,7 +1819,6 @@ def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         kwargs["edgecolor"] = plotter.gray
 
     plotter.plot(ax, kwargs)
-
     return ax
 
 
@@ -1920,6 +1974,7 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         ax = plt.gca()
 
     plotter.plot(ax, kwargs)
+    return ax
 
 
 barplot.__doc__ = dedent("""\
@@ -1949,6 +2004,7 @@ barplot.__doc__ = dedent("""\
     See Also
     --------
     {pointplot}
+    {factorplot}
 
     Examples
     --------
@@ -1963,4 +2019,61 @@ barplot.__doc__ = dedent("""\
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.barplot(x=tips["total_bill"])
 
+    """).format(**_categorical_docs)
+
+
+def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              estimator=np.mean, ci=95, n_boot=1000, units=None,
+              markers="o", linestyles="-", dodge=False, join=True, scale=1,
+              orient=None, color=None, palette=None, ax=None):
+
+    plotter = _PointPlotter(x, y, hue, data, order, hue_order,
+                            estimator, ci, n_boot, units,
+                            markers, linestyles, dodge, join, scale,
+                            orient, color, palette)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax)
+    return ax
+
+
+pointplot.__doc__ = dedent("""\
+    Show point estimates and confidence intervals using scatterplot glyphs.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {main_api_params}
+    {stat_api_params}
+    markers : string or list of strings, optional
+        Markers to use for each of the ``hue`` levels.
+    linestyles : string or list of strings, optional
+        Line styles to use for each of the ``hue`` levels.
+    dodge : bool or float, optional
+        Amount to separate the points for each level of the ``hue`` variable
+        along the categorical axis.
+    join : bool, optional
+        If ``True``, lines will be drawn between point estimates at the same
+        ``hue`` level.
+    scale : float, optional
+        Scale factor for the plot elements.
+    {orient}
+    {color}
+    {palette}
+    {ax_in}
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {barplot}
+    {factorplot}
+
+    Examples
+    --------
     """).format(**_categorical_docs)
