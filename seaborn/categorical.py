@@ -1240,9 +1240,10 @@ class _BarPlotter(_CategoricalStatPlotter):
                         label=hue_level, **kws)
 
                 # Draw the confidence intervals
-                confint = self.confint[:, j]
-                errcolors = [self.errcolor] * len(offpos)
-                self.draw_confints(ax, offpos, confint, errcolors)
+                if self.confint.size:
+                    confint = self.confint[:, j]
+                    errcolors = [self.errcolor] * len(offpos)
+                    self.draw_confints(ax, offpos, confint, errcolors)
 
     def plot(self, ax, bar_kws):
         """Make the plot."""
@@ -1265,7 +1266,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot)
 
         # Override the default palette for single-color plots
-        if hue is None and palette is None:
+        if hue is None and color is None and palette is None:
             self.colors = [color_palette()[0]] * len(self.colors)
 
         # Don't join single-layer plots with different colors
@@ -1340,7 +1341,6 @@ class _PointPlotter(_CategoricalStatPlotter):
 
                 # Determine the values to plot for this level
                 statistic = self.statistic[:, j]
-                confint = self.confint[:, j]
 
                 # Determine the position on the categorical and z axes
                 offpos = pointpos + offsets[j]
@@ -1358,20 +1358,22 @@ class _PointPlotter(_CategoricalStatPlotter):
                                 zorder=z, ls=ls, lw=lw)
 
                 # Draw the confidence intervals
-                errcolors = [self.colors[j]] * len(offpos)
-                self.draw_confints(ax, offpos, confint, errcolors,
-                                   zorder=z, lw=lw)
+                if self.confint.size:
+                    confint = self.confint[:, j]
+                    errcolors = [self.colors[j]] * len(offpos)
+                    self.draw_confints(ax, offpos, confint, errcolors,
+                                       zorder=z, lw=lw)
 
                 # Draw the estimate points
                 marker = self.markers[j]
                 if self.orient == "h":
-                    ax.scatter(statistic, offpos,
-                               c=self.colors[j], label=hue_level,
+                    ax.scatter(statistic, offpos, label=hue_level,
+                               c=[self.colors[j]] * len(offpos),
                                linewidth=mew, marker=marker, s=markersize,
                                edgecolor=self.colors[j], zorder=z)
                 else:
-                    ax.scatter(offpos, statistic,
-                               c=self.colors[j], label=hue_level,
+                    ax.scatter(offpos, statistic, label=hue_level,
+                               c=[self.colors[j]] * len(offpos),
                                linewidth=mew, marker=marker, s=markersize,
                                edgecolor=self.colors[j], zorder=z)
 

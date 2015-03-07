@@ -584,6 +584,50 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.estimate_statistic(np.median, None, 100)
         nt.assert_equal(p.value_label, "median(y)")
 
+    def test_draw_cis(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        # Test vertical CIs
+        p.orient = "v"
+
+        f, ax = plt.subplots()
+        at_group = [0, 1]
+        confints = [(.5, 1.5), (.25, .8)]
+        colors = [".2", ".3"]
+        p.draw_confints(ax, at_group, confints, colors)
+
+        lines = ax.lines
+        for line, at, ci, c in zip(lines, at_group, confints, colors):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, [at, at])
+            npt.assert_array_equal(y, ci)
+            nt.assert_equal(line.get_color(), c)
+
+        plt.close("all")
+
+        # Test horizontal CIs
+        p.orient = "h"
+
+        f, ax = plt.subplots()
+        p.draw_confints(ax, at_group, confints, colors)
+
+        lines = ax.lines
+        for line, at, ci, c in zip(lines, at_group, confints, colors):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, ci)
+            npt.assert_array_equal(y, [at, at])
+            nt.assert_equal(line.get_color(), c)
+
+        plt.close("all")
+
+        # Test extra keyword arguments
+        f, ax = plt.subplots()
+        p.draw_confints(ax, at_group, confints, colors, lw=4)
+        line = ax.lines[0]
+        nt.assert_equal(line.get_linewidth(), 4)
+        plt.close("all")
+
 
 class TestBoxPlotter(CategoricalFixture):
 
@@ -1414,7 +1458,7 @@ class TestStripPlotter(CategoricalFixture):
 class TestBarPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
-                       estimator=np.mean, ci=95, n_boot=1000, units=None,
+                       estimator=np.mean, ci=95, n_boot=100, units=None,
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
                        saturation=.75, errcolor=".26")
@@ -1431,11 +1475,222 @@ class TestBarPlotter(CategoricalFixture):
         p.establish_variables("h", "y", "g", data=self.df)
         nt.assert_equal(p.nested_width, .8 / 3)
 
+    def test_draw_vertical_bars(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        nt.assert_equal(len(ax.patches), len(p.plot_data))
+        nt.assert_equal(len(ax.lines), len(p.plot_data))
+
+        for bar, color in zip(ax.patches, p.colors):
+            nt.assert_equal(bar.get_facecolor()[:-1], color)
+
+        positions = np.arange(len(p.plot_data)) - p.width / 2
+        for bar, pos, stat in zip(ax.patches, positions, p.statistic):
+            nt.assert_equal(bar.get_x(), pos)
+            nt.assert_equal(bar.get_y(), min(0, stat))
+            nt.assert_equal(bar.get_height(), abs(stat))
+            nt.assert_equal(bar.get_width(), p.width)
+
+        plt.close("all")
+
+    def test_draw_horizontal_bars(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="y", y="g", orient="h", data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        nt.assert_equal(len(ax.patches), len(p.plot_data))
+        nt.assert_equal(len(ax.lines), len(p.plot_data))
+
+        for bar, color in zip(ax.patches, p.colors):
+            nt.assert_equal(bar.get_facecolor()[:-1], color)
+
+        positions = np.arange(len(p.plot_data)) - p.width / 2
+        for bar, pos, stat in zip(ax.patches, positions, p.statistic):
+            nt.assert_equal(bar.get_x(), min(0, stat))
+            nt.assert_equal(bar.get_y(), pos)
+            nt.assert_equal(bar.get_height(), p.width)
+            nt.assert_equal(bar.get_width(), abs(stat))
+
+        plt.close("all")
+
+    def test_draw_nested_vertical_bars(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", hue="h", data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        n_groups, n_hues = len(p.plot_data), len(p.hue_names)
+        nt.assert_equal(len(ax.patches), n_groups * n_hues)
+        nt.assert_equal(len(ax.lines), n_groups * n_hues)
+
+        for bar in ax.patches[:n_groups]:
+            nt.assert_equal(bar.get_facecolor()[:-1], p.colors[0])
+        for bar in ax.patches[n_groups:]:
+            nt.assert_equal(bar.get_facecolor()[:-1], p.colors[1])
+
+        for bar, stat in zip(ax.patches, p.statistic.T.flat):
+            nt.assert_almost_equal(bar.get_y(), min(0, stat))
+            nt.assert_almost_equal(bar.get_height(), abs(stat))
+
+        positions = np.arange(len(p.plot_data))
+        for bar, pos in zip(ax.patches[:n_groups], positions):
+            nt.assert_almost_equal(bar.get_x(), pos - p.width / 2)
+            nt.assert_almost_equal(bar.get_width(), p.nested_width)
+
+        plt.close("all")
+
+    def test_draw_nested_horizontal_bars(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="y", y="g", hue="h", orient="h", data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        n_groups, n_hues = len(p.plot_data), len(p.hue_names)
+        nt.assert_equal(len(ax.patches), n_groups * n_hues)
+        nt.assert_equal(len(ax.lines), n_groups * n_hues)
+
+        for bar in ax.patches[:n_groups]:
+            nt.assert_equal(bar.get_facecolor()[:-1], p.colors[0])
+        for bar in ax.patches[n_groups:]:
+            nt.assert_equal(bar.get_facecolor()[:-1], p.colors[1])
+
+        positions = np.arange(len(p.plot_data))
+        for bar, pos in zip(ax.patches[:n_groups], positions):
+            nt.assert_almost_equal(bar.get_y(), pos - p.width / 2)
+            nt.assert_almost_equal(bar.get_height(), p.nested_width)
+
+        for bar, stat in zip(ax.patches, p.statistic.T.flat):
+            nt.assert_almost_equal(bar.get_x(), min(0, stat))
+            nt.assert_almost_equal(bar.get_width(), abs(stat))
+
+        plt.close("all")
+
+    def test_draw_missing_bars(self):
+
+        kws = self.default_kws.copy()
+
+        order = list("abcd")
+        kws.update(x="g", y="y", order=order, data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        nt.assert_equal(len(ax.patches), len(order))
+        nt.assert_equal(len(ax.lines), len(order))
+
+        plt.close("all")
+
+        hue_order = list("mno")
+        kws.update(x="g", y="y", hue="h", hue_order=hue_order, data=self.df)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        nt.assert_equal(len(ax.patches), len(p.plot_data) * len(hue_order))
+        nt.assert_equal(len(ax.lines),  len(p.plot_data) * len(hue_order))
+
+        plt.close("all")
+
+    def test_barplot_colors(self):
+
+        # Test unnested palette colors
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", data=self.df,
+                   saturation=1, palette="muted")
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        palette = palettes.color_palette("muted", len(self.g.unique()))
+        for patch, pal_color in zip(ax.patches, palette):
+            nt.assert_equal(patch.get_facecolor()[:-1], pal_color)
+
+        plt.close("all")
+
+        # Test single color
+        color = (.2, .2, .3, 1)
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", data=self.df,
+                   saturation=1, color=color)
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        for patch in ax.patches:
+            nt.assert_equal(patch.get_facecolor(), color)
+
+        plt.close("all")
+
+        # Test nested palette colors
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", hue="h", data=self.df,
+                   saturation=1, palette="Set2")
+        p = cat._BarPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_bars(ax, {})
+
+        palette = palettes.color_palette("Set2", len(self.h.unique()))
+        for patch in ax.patches[:len(self.g.unique())]:
+            nt.assert_equal(patch.get_facecolor()[:-1], palette[0])
+        for patch in ax.patches[len(self.g.unique()):]:
+            nt.assert_equal(patch.get_facecolor()[:-1], palette[1])
+
+        plt.close("all")
+
+    def test_simple_barplots(self):
+
+        ax = cat.barplot("g", "y", data=self.df)
+        nt.assert_equal(len(ax.patches), len(self.g.unique()))
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        plt.close("all")
+
+        ax = cat.barplot("y", "g", orient="h", data=self.df)
+        nt.assert_equal(len(ax.patches), len(self.g.unique()))
+        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        plt.close("all")
+
+        ax = cat.barplot("g", "y", "h", data=self.df)
+        nt.assert_equal(len(ax.patches),
+                        len(self.g.unique()) * len(self.h.unique()))
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        plt.close("all")
+
+        ax = cat.barplot("y", "g", "h", orient="h", data=self.df)
+        nt.assert_equal(len(ax.patches),
+                        len(self.g.unique()) * len(self.h.unique()))
+        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        plt.close("all")
+
 
 class TestPointPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
-                       estimator=np.mean, ci=95, n_boot=1000, units=None,
+                       estimator=np.mean, ci=95, n_boot=100, units=None,
                        order=None, hue_order=None,
                        markers="o", linestyles="-", dodge=0,
                        join=True, scale=1,
@@ -1471,3 +1726,200 @@ class TestPointPlotter(CategoricalFixture):
 
         p = cat._PointPlotter(**kws)
         npt.assert_array_equal(p.hue_offsets, [-.15, 0, .15])
+
+    def test_draw_vertical_points(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", data=self.df)
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), len(p.plot_data) + 1)
+        points = ax.collections[0]
+        nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
+
+        x, y = points.get_offsets().T
+        npt.assert_array_equal(x, np.arange(len(p.plot_data)))
+        npt.assert_array_equal(y, p.statistic)
+
+        for got_color, want_color in zip(points.get_facecolors(),
+                                         p.colors):
+            npt.assert_array_equal(got_color[:-1], want_color)
+
+        plt.close("all")
+
+    def test_draw_horizontal_points(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="y", y="g", orient="h", data=self.df)
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), len(p.plot_data) + 1)
+        points = ax.collections[0]
+        nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
+
+        x, y = points.get_offsets().T
+        npt.assert_array_equal(x, p.statistic)
+        npt.assert_array_equal(y, np.arange(len(p.plot_data)))
+
+        for got_color, want_color in zip(points.get_facecolors(),
+                                         p.colors):
+            npt.assert_array_equal(got_color[:-1], want_color)
+
+        plt.close("all")
+
+    def test_draw_vertical_nested_points(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", hue="h", data=self.df)
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        nt.assert_equal(len(ax.collections), 2)
+        nt.assert_equal(len(ax.lines),
+                        len(p.plot_data) * len(p.hue_names) + len(p.hue_names))
+
+        for points, stats, color in zip(ax.collections,
+                                        p.statistic.T,
+                                        p.colors):
+
+            nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
+
+            x, y = points.get_offsets().T
+            npt.assert_array_equal(x, np.arange(len(p.plot_data)))
+            npt.assert_array_equal(y, stats)
+
+            for got_color in points.get_facecolors():
+                npt.assert_array_equal(got_color[:-1], color)
+
+        plt.close("all")
+
+    def test_draw_horizontal_nested_points(self):
+
+        kws = self.default_kws.copy()
+        kws.update(x="y", y="g", hue="h", orient="h", data=self.df)
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        nt.assert_equal(len(ax.collections), 2)
+        nt.assert_equal(len(ax.lines),
+                        len(p.plot_data) * len(p.hue_names) + len(p.hue_names))
+
+        for points, stats, color in zip(ax.collections,
+                                        p.statistic.T,
+                                        p.colors):
+
+            nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
+
+            x, y = points.get_offsets().T
+            npt.assert_array_equal(x, stats)
+            npt.assert_array_equal(y, np.arange(len(p.plot_data)))
+
+            for got_color in points.get_facecolors():
+                npt.assert_array_equal(got_color[:-1], color)
+
+        plt.close("all")
+
+    def test_pointplot_colors(self):
+
+        # Test a single-color unnested plot
+        color = (.2, .2, .3, 1)
+        kws = self.default_kws.copy()
+        kws.update(x="g", y="y", data=self.df, color=color)
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        for line in ax.lines:
+            nt.assert_equal(line.get_color(), color[:-1])
+
+        for got_color in ax.collections[0].get_facecolors():
+            npt.assert_array_equal(got_color, color)
+
+        plt.close("all")
+
+        # Test a multi-color unnested plot
+        palette = palettes.color_palette("Set1", 3)
+        kws.update(x="g", y="y", data=self.df, palette="Set1")
+        p = cat._PointPlotter(**kws)
+
+        nt.assert_true(not p.join)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        for line, pal_color in zip(ax.lines, palette):
+            npt.assert_array_equal(line.get_color(), pal_color)
+
+        for point_color, pal_color in zip(ax.collections[0].get_facecolors(),
+                                          palette):
+            npt.assert_array_equal(point_color[:-1], pal_color)
+
+        plt.close("all")
+
+        # Test a multi-colored nested plot
+        palette = palettes.color_palette("dark", 2)
+        kws.update(x="g", y="y", hue="h", data=self.df, palette="dark")
+        p = cat._PointPlotter(**kws)
+
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        for line in ax.lines[:(len(p.plot_data) + 1)]:
+            nt.assert_equal(line.get_color(), palette[0])
+        for line in ax.lines[(len(p.plot_data) + 1):]:
+            nt.assert_equal(line.get_color(), palette[1])
+
+        for i, pal_color in enumerate(palette):
+            for point_color in ax.collections[i].get_facecolors():
+                npt.assert_array_equal(point_color[:-1], pal_color)
+
+        plt.close("all")
+
+    def test_simple_pointplots(self):
+
+        ax = cat.pointplot("g", "y", data=self.df)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), len(self.g.unique()) + 1)
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        plt.close("all")
+
+        ax = cat.pointplot("y", "g", orient="h", data=self.df)
+        nt.assert_equal(len(ax.collections), 1)
+        nt.assert_equal(len(ax.lines), len(self.g.unique()) + 1)
+        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        plt.close("all")
+
+        ax = cat.pointplot("g", "y", "h", data=self.df)
+        nt.assert_equal(len(ax.collections), len(self.h.unique()))
+        nt.assert_equal(len(ax.lines),
+                        (len(self.g.unique())
+                         * len(self.h.unique())
+                         + len(self.h.unique())))
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        plt.close("all")
+
+        ax = cat.pointplot("y", "g", "h", orient="h", data=self.df)
+        nt.assert_equal(len(ax.collections), len(self.h.unique()))
+        nt.assert_equal(len(ax.lines),
+                        (len(self.g.unique())
+                         * len(self.h.unique())
+                         + len(self.h.unique())))
+        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        plt.close("all")
