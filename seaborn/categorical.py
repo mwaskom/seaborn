@@ -1516,6 +1516,37 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             width=.8, fliersize=5, linewidth=None, whis=1.5, notch=False,
             ax=None, **kwargs):
 
+    # Try to handle broken backwards-compatability
+    # This should help with the lack of a smooth deprecation,
+    # but won't catch everything
+    warn = False
+    if "groupby" in kwargs:
+        y = x
+        x = kwargs.pop("groupby")
+        warn = True
+
+    if "vert" in kwargs:
+        vert = kwargs.pop("vert", True)
+        if not vert:
+            x, y = y, x
+        orient = "v" if vert else "h"
+        warn = True
+
+    if "names" in kwargs:
+        kwargs.pop("names")
+        warn = True
+
+    if "join_rm" in kwargs:
+        kwargs.pop("join_rm")
+        warn = True
+
+    msg = ("The boxplot API has been changed. Attempting to adjust your "
+           "arguments for the new API (which might not work). Please update "
+           "your code. See the version 0.6 release notes for more info.")
+
+    if warn:
+        warnings.warn(msg, UserWarning)
+
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
                           width, fliersize, linewidth)
@@ -1637,7 +1668,29 @@ boxplot.__doc__ = dedent("""\
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
                width=.8, inner="box", split=False, orient=None, linewidth=None,
-               color=None, palette=None, saturation=.75, ax=None):
+               color=None, palette=None, saturation=.75, ax=None, **kwargs):
+
+    # Try to handle broken backwards-compatability
+    # This should help with the lack of a smooth deprecation,
+    # but won't catch everything
+    warn = False
+    if "groupby" in kwargs:
+        y = x
+        x = kwargs.pop("groupby")
+        warn = True
+
+    if "vert" in kwargs:
+        vert = kwargs.pop("vert", True)
+        if not vert:
+            x, y = y, x
+        orient = "v" if vert else "h"
+        warn = True
+
+    msg = ("The violinplot API has been changed. Attempting to adjust your "
+           "arguments for the new API (which might not work). Please update "
+           "your code. See the version 0.6 release notes for more info.")
+    if warn:
+        warnings.warn(msg, UserWarning)
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
@@ -1987,6 +2040,30 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
             errcolor=".26", ax=None, **kwargs):
 
+    # Handle some deprecated arguments
+    warn = False
+    if "hline" in kwargs:
+        kwargs.pop("hline")
+        warn = True
+
+    if "dropna" in kwargs:
+        kwargs.pop("dropna")
+        warn = True
+
+    if "label" in kwargs:
+        kwargs.pop("label")
+        warn = True
+
+    if "x_order" in kwargs:
+        order = kwargs.pop("x_order")
+        warn = True
+
+    msg = ("The barplot API has been changed. Attempting to adjust your "
+           "arguments for the new API (which might not work). Please update "
+           "your code. See the version 0.6 release notes for more info.")
+    if warn:
+        warnings.warn(msg, UserWarning)
+
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
@@ -2047,7 +2124,31 @@ barplot.__doc__ = dedent("""\
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, ax=None):
+              orient=None, color=None, palette=None, ax=None, **kwargs):
+
+    # Handle some deprecated arguments
+    warn = False
+    if "hline" in kwargs:
+        kwargs.pop("hline")
+        warn = True
+
+    if "dropna" in kwargs:
+        kwargs.pop("dropna")
+        warn = True
+
+    if "label" in kwargs:
+        kwargs.pop("label")
+        warn = True
+
+    if "x_order" in kwargs:
+        order = kwargs.pop("x_order")
+        warn = True
+
+    msg = ("The barplot API has been changed. Attempting to adjust your "
+           "arguments for the new API (which might not work). Please update "
+           "your code. See the version 0.6 release notes for more info.")
+    if warn:
+        warnings.warn(msg, UserWarning)
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
