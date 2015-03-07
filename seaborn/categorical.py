@@ -1134,11 +1134,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                     statistic.append(estimator(stat_data))
 
                 # Get a confidence interval for this estimate
-                if stat_data.size < 2:
-                    confint.append([np.nan, np.nan])
-                    continue
-
                 if ci is not None:
+
+                    if stat_data.size < 2:
+                        confint.append([np.nan, np.nan])
+                        continue
+
                     boots = bootstrap(stat_data, func=estimator,
                                       n_boot=n_boot,
                                       units=unit_data)
@@ -1174,11 +1175,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         statistic[i].append(estimator(stat_data))
 
                     # Get a confidence interval for this estimate
-                    if stat_data.size < 2:
-                        confint[i].append([np.nan, np.nan])
-                        continue
-
                     if ci is not None:
+
+                        if stat_data.size < 2:
+                            confint[i].append([np.nan, np.nan])
+                            continue
+
                         boots = bootstrap(stat_data, func=estimator,
                                           n_boot=n_boot,
                                           units=unit_data)
