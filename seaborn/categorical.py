@@ -392,13 +392,13 @@ class _CategoricalPlotter(object):
                 prop = mpl.font_manager.FontProperties(size=title_size)
                 leg._legend_title_box._text.set_font_properties(prop)
 
-    def add_legend_data(self, ax, x, y, color, label):
+    def add_legend_data(self, ax, color, label):
         """Add a dummy patch object so we can get legend data."""
-        rect = plt.Rectangle([x, y], 0, 0,
+        rect = plt.Rectangle([0, 0], 0, 0,
                              linewidth=self.linewidth / 2,
                              edgecolor=self.gray,
                              facecolor=color,
-                             label=label, zorder=-1)
+                             label=label)
         ax.add_patch(rect)
 
 
@@ -424,10 +424,12 @@ class _BoxPlotter(_CategoricalPlotter):
 
         for i, group_data in enumerate(self.plot_data):
 
-            if not group_data.size:
-                continue
-
             if self.plot_hues is None:
+
+                # Handle case where there is no data to plot
+                if not group_data.size:
+                    continue
+
                 # Draw a single box or a set of boxes
                 # with a single level of grouping
                 box_data = remove_na(group_data)
@@ -444,8 +446,15 @@ class _BoxPlotter(_CategoricalPlotter):
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    if not hue_mask.any():
+
+                    # Add a legend for this hue level
+                    if not i:
+                        self.add_legend_data(ax, self.colors[j], hue_level)
+
+                    # Handle case where there is no data to plot
+                    if not group_data.size or not hue_mask.any():
                         continue
+
                     box_data = remove_na(group_data[hue_mask])
                     center = i + offsets[j]
                     artist_dict = ax.boxplot(box_data,
@@ -454,13 +463,8 @@ class _BoxPlotter(_CategoricalPlotter):
                                              positions=[center],
                                              widths=self.nested_width,
                                              **kws)
-                    color = self.colors[j]
-                    self.restyle_boxplot(artist_dict, color)
+                    self.restyle_boxplot(artist_dict, self.colors[j])
                     # Add legend data, but just for one set of boxes
-                    if not i:
-                        self.add_legend_data(ax, center,
-                                             np.median(box_data),
-                                             color, hue_level)
 
     def restyle_boxplot(self, artist_dict, color):
         """Take a drawn matplotlib boxplot and make it look nice."""
@@ -574,6 +578,14 @@ class _ViolinPlotter(_CategoricalPlotter):
 
             else:
                 for j, hue_level in enumerate(self.hue_names):
+
+                    # Handle special case of no data at this category level
+                    if not group_data.size:
+                        support[i].append(np.array([]))
+                        density[i].append(np.array([1.]))
+                        counts[i, j] = 0
+                        max_density[i, j] = 0
+                        continue
 
                     # Select out the observations for this hue level
                     hue_mask = self.plot_hues[i] == hue_level
@@ -788,9 +800,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                     # Add legend data, but just for one set of violins
                     if not i:
-                        self.add_legend_data(ax, support[0], 0,
-                                             self.colors[j],
-                                             hue_level)
+                        self.add_legend_data(ax, self.colors[j], hue_level)
 
                     # Handle the special case where we have no observations
                     if support.size == 0:

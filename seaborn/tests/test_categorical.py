@@ -712,6 +712,34 @@ class TestBoxPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.artists), 3)
         plt.close("all")
 
+    def test_boxplots(self):
+
+        # Smoke test the high level boxplot options
+
+        cat.boxplot("y", data=self.df)
+        plt.close("all")
+
+        cat.boxplot(y="y", data=self.df)
+        plt.close("all")
+
+        cat.boxplot("g", "y", data=self.df)
+        plt.close("all")
+
+        cat.boxplot("y", "g", data=self.df, orient="h")
+        plt.close("all")
+
+        cat.boxplot("g", "y", "h", data=self.df)
+        plt.close("all")
+
+        cat.boxplot("g", "y", "h", order=list("nabc"), data=self.df)
+        plt.close("all")
+
+        cat.boxplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        plt.close("all")
+
+        cat.boxplot("y", "g", "h", data=self.df, orient="h")
+        plt.close("all")
+
     def test_axes_annotation(self):
 
         ax = cat.boxplot("g", "y", data=self.df)
@@ -1327,6 +1355,12 @@ class TestViolinPlotter(CategoricalFixture):
         plt.close("all")
 
         cat.violinplot("g", "y", "h", data=self.df)
+        plt.close("all")
+
+        cat.violinplot("g", "y", "h", order=list("nabc"), data=self.df)
+        plt.close("all")
+
+        cat.violinplot("g", "y", "h", hue_order=list("omn"), data=self.df)
         plt.close("all")
 
         cat.violinplot("y", "g", "h", data=self.df, orient="h")
