@@ -553,7 +553,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.establish_variables(g, y, h,
                               order=list("abdc"),
                               hue_order=list("zyx"))
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 50000)
 
         nt.assert_equal(p.statistic.shape, (4, 3))
         nt.assert_equal(p.confint.shape, (4, 3, 2))
