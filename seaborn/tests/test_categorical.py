@@ -626,6 +626,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.draw_confints(ax, at_group, confints, colors, lw=4)
         line = ax.lines[0]
         nt.assert_equal(line.get_linewidth(), 4)
+
         plt.close("all")
 
 

@@ -1195,9 +1195,9 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                                                 confint,
                                                 colors):
             if self.orient == "v":
-                ax.plot([at, at], [ci_low, ci_high], c=color, **kws)
+                ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
             else:
-                ax.plot([ci_low, ci_high], [at, at], c=color, **kws)
+                ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
@@ -1316,9 +1316,11 @@ class _PointPlotter(_CategoricalStatPlotter):
                 color = self.colors[0]
                 ls = self.linestyles[0]
                 if self.orient == "h":
-                    ax.plot(self.statistic, pointpos, c=color, ls=ls, lw=lw)
+                    ax.plot(self.statistic, pointpos,
+                            color=color, ls=ls, lw=lw)
                 else:
-                    ax.plot(pointpos, self.statistic, c=color, ls=ls, lw=lw)
+                    ax.plot(pointpos, self.statistic,
+                            color=color, ls=ls, lw=lw)
 
             # Draw the confidence intervals
             self.draw_confints(ax, pointpos, self.confint, self.colors, lw=lw)
@@ -1351,10 +1353,10 @@ class _PointPlotter(_CategoricalStatPlotter):
                     color = self.colors[j]
                     ls = self.linestyles[j]
                     if self.orient == "h":
-                        ax.plot(statistic, offpos, c=color,
+                        ax.plot(statistic, offpos, color=color,
                                 zorder=z, ls=ls, lw=lw)
                     else:
-                        ax.plot(offpos, statistic, c=color,
+                        ax.plot(offpos, statistic, color=color,
                                 zorder=z, ls=ls, lw=lw)
 
                 # Draw the confidence intervals
@@ -1476,7 +1478,7 @@ _categorical_docs = dict(
     """),
     stripplot=dedent("""\
     stripplot : A scatterplot where one variable is categorical. Can be used
-                in conjunction with a boxplot to show each observation.\
+                in conjunction with a other plots to show each observation.\
     """),
     barplot=dedent("""\
     barplot : Show point estimates and confidence intervals using bars.\
