@@ -378,6 +378,10 @@ def load_dataset(name, **kws):
         df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
         df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
 
+    if name == "titanic":
+        df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
+        df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
     return df
 
 
