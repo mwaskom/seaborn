@@ -1513,6 +1513,11 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     # This should help with the lack of a smooth deprecation,
     # but won't catch everything
     warn = False
+    if isinstance(x, pd.DataFrame):
+        data = x
+        x = None
+        warn = True
+
     if "vals" in kwargs:
         x = kwargs.pop("vals")
         warn = True
@@ -1671,6 +1676,11 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     # This should help with the lack of a smooth deprecation,
     # but won't catch everything
     warn = False
+    if isinstance(x, pd.DataFrame):
+        data = x
+        x = None
+        warn = True
+
     if "vals" in kwargs:
         x = kwargs.pop("vals")
         warn = True
