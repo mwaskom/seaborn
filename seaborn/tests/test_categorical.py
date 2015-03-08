@@ -1979,3 +1979,118 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_xlabel(), "mean(y)")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
+
+
+class TestFactorPlot(CategoricalFixture):
+
+    def test_facet_organization(self):
+
+        g = cat.factorplot("g", "y", data=self.df)
+        nt.assert_equal(g.axes.shape, (1, 1))
+
+        g = cat.factorplot("g", "y", col="h", data=self.df)
+        nt.assert_equal(g.axes.shape, (1, 2))
+
+        g = cat.factorplot("g", "y", row="h", data=self.df)
+        nt.assert_equal(g.axes.shape, (2, 1))
+
+        g = cat.factorplot("g", "y", col="u", row="h", data=self.df)
+        nt.assert_equal(g.axes.shape, (2, 3))
+
+        plt.close("all")
+
+    def test_plot_elements(self):
+
+        g = cat.factorplot("g", "y", data=self.df)
+        nt.assert_equal(len(g.ax.collections), 1)
+        want_lines = self.g.unique().size + 1
+        nt.assert_equal(len(g.ax.lines), want_lines)
+
+        g = cat.factorplot("g", "y", "h", data=self.df)
+        want_collections = self.h.unique().size
+        nt.assert_equal(len(g.ax.collections), want_collections)
+        want_lines = (self.g.unique().size + 1) * self.h.unique().size
+        nt.assert_equal(len(g.ax.lines), want_lines)
+
+        g = cat.factorplot("g", "y", data=self.df, kind="bar")
+        want_elements = self.g.unique().size
+        nt.assert_equal(len(g.ax.patches), want_elements)
+        nt.assert_equal(len(g.ax.lines), want_elements)
+
+        g = cat.factorplot("g", "y", "h", data=self.df, kind="bar")
+        want_elements = self.g.unique().size * self.h.unique().size
+        nt.assert_equal(len(g.ax.patches), want_elements)
+        nt.assert_equal(len(g.ax.lines), want_elements)
+
+        g = cat.factorplot("g", "y", data=self.df, kind="box")
+        want_artists = self.g.unique().size
+        nt.assert_equal(len(g.ax.artists), want_artists)
+
+        g = cat.factorplot("g", "y", "h", data=self.df, kind="box")
+        want_artists = self.g.unique().size * self.h.unique().size
+        nt.assert_equal(len(g.ax.artists), want_artists)
+
+        g = cat.factorplot("g", "y", data=self.df,
+                           kind="violin", inner=None)
+        want_elements = self.g.unique().size
+        nt.assert_equal(len(g.ax.collections), want_elements)
+
+        g = cat.factorplot("g", "y", "h", data=self.df,
+                           kind="violin", inner=None)
+        want_elements = self.g.unique().size * self.h.unique().size
+        nt.assert_equal(len(g.ax.collections), want_elements)
+
+        g = cat.factorplot("g", "y", data=self.df, kind="strip")
+        want_elements = self.g.unique().size
+        nt.assert_equal(len(g.ax.collections), want_elements)
+
+        g = cat.factorplot("g", "y", "h", data=self.df, kind="strip")
+        want_elements = self.g.unique().size * self.h.unique().size
+        nt.assert_equal(len(g.ax.collections), want_elements)
+
+        plt.close("all")
+
+    def test_bad_plot_kind_error(self):
+
+        with nt.assert_raises(ValueError):
+            cat.factorplot("g", "y", data=self.df, kind="not_a_kind")
+
+    def test_plot_colors(self):
+
+        ax = cat.barplot("g", "y", data=self.df)
+        g = cat.factorplot("g", "y", data=self.df, kind="bar")
+        for p1, p2 in zip(ax.patches, g.ax.patches):
+            nt.assert_equal(p1.get_facecolor(), p2.get_facecolor())
+        plt.close("all")
+
+        ax = cat.barplot("g", "y", data=self.df, color="purple")
+        g = cat.factorplot("g", "y", data=self.df,
+                           kind="bar", color="purple")
+        for p1, p2 in zip(ax.patches, g.ax.patches):
+            nt.assert_equal(p1.get_facecolor(), p2.get_facecolor())
+        plt.close("all")
+
+        ax = cat.barplot("g", "y", data=self.df, palette="Set2")
+        g = cat.factorplot("g", "y", data=self.df,
+                           kind="bar", palette="Set2")
+        for p1, p2 in zip(ax.patches, g.ax.patches):
+            nt.assert_equal(p1.get_facecolor(), p2.get_facecolor())
+        plt.close("all")
+
+        ax = cat.pointplot("g", "y", data=self.df)
+        g = cat.factorplot("g", "y", data=self.df)
+        for l1, l2 in zip(ax.lines, g.ax.lines):
+            nt.assert_equal(l1.get_color(), l2.get_color())
+        plt.close("all")
+
+        ax = cat.pointplot("g", "y", data=self.df, color="purple")
+        g = cat.factorplot("g", "y", data=self.df, color="purple")
+        for l1, l2 in zip(ax.lines, g.ax.lines):
+            nt.assert_equal(l1.get_color(), l2.get_color())
+        plt.close("all")
+
+        ax = cat.pointplot("g", "y", data=self.df, palette="Set2")
+        g = cat.factorplot("g", "y", data=self.df, palette="Set2")
+        for l1, l2 in zip(ax.lines, g.ax.lines):
+            nt.assert_equal(l1.get_color(), l2.get_color())
+        plt.close("all")

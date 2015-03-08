@@ -1155,7 +1155,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                     if not self.plot_hues[i].size:
                         statistic[i].append(np.nan)
-                        confint[i].append((np.nan, np.nan))
+                        if ci is not None:
+                            confint[i].append((np.nan, np.nan))
                         continue
 
                     hue_mask = self.plot_hues[i] == hue_level
@@ -1512,6 +1513,10 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     # This should help with the lack of a smooth deprecation,
     # but won't catch everything
     warn = False
+    if "vals" in kwargs:
+        x = kwargs.pop("vals")
+        warn = True
+
     if "groupby" in kwargs:
         y = x
         x = kwargs.pop("groupby")
@@ -1666,6 +1671,10 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     # This should help with the lack of a smooth deprecation,
     # but won't catch everything
     warn = False
+    if "vals" in kwargs:
+        x = kwargs.pop("vals")
+        warn = True
+
     if "groupby" in kwargs:
         y = x
         x = kwargs.pop("groupby")
@@ -2033,24 +2042,18 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             errcolor=".26", ax=None, **kwargs):
 
     # Handle some deprecated arguments
-    warn = False
     if "hline" in kwargs:
         kwargs.pop("hline")
-        warn = True
+        warnings.warn("The `hline` parameter has been removed", UserWarning)
 
     if "dropna" in kwargs:
         kwargs.pop("dropna")
-        warn = True
+        warnings.warn("The `dropna` parameter has been removed", UserWarning)
 
     if "x_order" in kwargs:
         order = kwargs.pop("x_order")
-        warn = True
-
-    msg = ("The barplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-    if warn:
-        warnings.warn(msg, UserWarning)
+        warnings.warn("The `x_order` parameter has been renamed `order`",
+                      UserWarning)
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
@@ -2115,28 +2118,18 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               orient=None, color=None, palette=None, ax=None, **kwargs):
 
     # Handle some deprecated arguments
-    warn = False
     if "hline" in kwargs:
         kwargs.pop("hline")
-        warn = True
+        warnings.warn("The `hline` parameter has been removed", UserWarning)
 
     if "dropna" in kwargs:
         kwargs.pop("dropna")
-        warn = True
-
-    if "label" in kwargs:
-        kwargs.pop("label")
-        warn = True
+        warnings.warn("The `dropna` parameter has been removed", UserWarning)
 
     if "x_order" in kwargs:
         order = kwargs.pop("x_order")
-        warn = True
-
-    msg = ("The barplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-    if warn:
-        warnings.warn(msg, UserWarning)
+        warnings.warn("The `x_order` parameter has been renamed `order`",
+                      UserWarning)
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
@@ -2196,8 +2189,7 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                col_order=None, kind="point", size=5, aspect=1,
                orient=None, color=None, palette=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
-               margin_titles=False, plot_kws=None, facet_kws=None,
-               **kwargs):
+               margin_titles=False, facet_kws=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2210,9 +2202,32 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
     if "x_order" in kwargs:
         order = kwargs.pop("x_order")
-        warnings.warn("The `order` parameter has been renamed `order`",
+        warnings.warn("The `x_order` parameter has been renamed `order`",
                       UserWarning)
 
+    # Determine the plotting function
+    try:
+        plot_func = globals()[kind + "plot"]
+    except KeyError:
+        err = "Plot kind '{}' is not recognized".format(kind)
+        raise ValueError(err)
+
+    # Determine the order for the whole dataset, which will be used in all
+    # facets to ensure representation of all data in the final plot
+    p = _CategoricalPlotter()
+    p.establish_variables(x, y, hue, data, orient, order, hue_order)
+    order = p.group_names
+    hue_order = p.hue_names
+
+    # Determine the palette to use
+    # (FacetGrid will pass a value for ``color`` to the plotting function
+    # so we need to define ``palette`` to get default behavior for the
+    # categorical functions
+    p.establish_colors(color, palette, 1)
+    if kind != "point" or hue is not None:
+        palette = p.colors
+
+    # Determine keyword arguments for the facets
     facet_kws = {} if facet_kws is None else facet_kws
     facet_kws.update(
         data=data, row=row, col=col,
@@ -2222,46 +2237,25 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
         legend_out=legend_out, margin_titles=margin_titles,
         )
 
-    # Determine the order for the whole dataset, which will be used in all
-    # facets to ensure representation of all data in the final plot
-    p = _CategoricalPlotter()
-    p.establish_variables(x, y, hue, data, orient, order, hue_order)
-    order = p.group_names
-    hue_order = p.hue_names
-
-    g = FacetGrid(**facet_kws)
-
-    main_plot_kws = dict(
+    # Determine keyword arguments for the plotting function
+    plot_kws = dict(
         order=order, hue_order=hue_order,
         orient=orient, color=color, palette=palette,
         )
-    main_plot_kws.update(kwargs)
+    plot_kws.update(kwargs)
 
-    stat_plot_kws = dict(
-        estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-        )
+    if kind in ["bar", "point"]:
+        plot_kws.update(
+            estimator=estimator, ci=ci, n_boot=n_boot, units=units,
+            )
 
-    if isinstance(kind, string_types):
-        plot_kinds = [kind]
-        if plot_kws is None:
-            plot_kws = [{}]
-        elif isinstance(plot_kws, dict):
-            plot_kws = [plot_kws]
-    else:
-        plot_kinds = kind
-        if plot_kws is None:
-            plot_kws = [{} for _ in plot_kinds]
-        elif isinstance(plot_kws, dict):
-            err = "Must pass a list of specific plot keyword arguments."
-            raise ValueError(err)
+    # Initialize the facets
+    g = FacetGrid(**facet_kws)
 
-    for kind, kws in zip(plot_kinds, plot_kws):
-        func = globals()[kind + "plot"]
-        this_plot_kws = main_plot_kws.copy()
-        this_plot_kws.update(kws)
-        if kind in ["bar", "violin"]:
-            this_plot_kws.update(stat_plot_kws)
-        g.map_dataframe(func, x, y, hue, **this_plot_kws)
+    # Draw the plot onto the facets
+    g.map_dataframe(plot_func, x, y, hue, **plot_kws)
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
         g.add_legend(title=hue, label_order=hue_order)
+
+    return g
