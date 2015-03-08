@@ -290,6 +290,11 @@ class TestCategoricalPlotter(CategoricalFixture):
             for group, vals in zip(["c", "b", "a"], p.plot_data):
                 npt.assert_array_equal(vals, self.y[self.g == group])
 
+            df.g = (df.g.cat.add_categories("d")
+                        .cat.reorder_categories(["c", "b", "d", "a"]))
+            p.establish_variables("g", "y", data=df)
+            nt.assert_equal(p.group_names, ["c", "b", "d", "a"])
+
     def test_hue_order(self):
 
         p = cat._CategoricalPlotter()
@@ -310,6 +315,11 @@ class TestCategoricalPlotter(CategoricalFixture):
             df.h = df.h.cat.reorder_categories(["n", "m"])
             p.establish_variables("g", "y", "h", data=df)
             nt.assert_equal(p.hue_names, ["n", "m"])
+
+            df.h = (df.h.cat.add_categories("o")
+                        .cat.reorder_categories(["o", "m", "n"]))
+            p.establish_variables("g", "y", "h", data=df)
+            nt.assert_equal(p.hue_names, ["o", "m", "n"])
 
     def test_plot_units(self):
 

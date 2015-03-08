@@ -13,9 +13,10 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from . import utils
-from .utils import desaturate, iqr
+from .utils import desaturate, iqr, categorical_order
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette
+from .axisgrid import FacetGrid
 
 
 class _CategoricalPlotter(object):
@@ -189,7 +190,7 @@ class _CategoricalPlotter(object):
                     group_label = groups.name
 
                 # Get the order on the categorical axis
-                group_names = self._category_order(groups, order)
+                group_names = categorical_order(groups, order)
 
                 # Group the numeric data
                 plot_data, value_label = self._group_longform(vals, groups,
@@ -203,7 +204,7 @@ class _CategoricalPlotter(object):
                 else:
 
                     # Get the order of the hue levels
-                    hue_names = self._category_order(hue, hue_order)
+                    hue_names = categorical_order(hue, hue_order)
 
                     # Group the hue data
                     plot_hues, hue_title = self._group_longform(hue, groups,
@@ -227,15 +228,6 @@ class _CategoricalPlotter(object):
         self.hue_title = hue_title
         self.hue_names = hue_names
         self.plot_units = plot_units
-
-    def _category_order(self, data, order):
-        """Get the order of levels for a categorical variable."""
-        if order is None:
-            try:
-                order = data.unique()
-            except AttributeError:
-                order = pd.unique(data)
-        return list(order)
 
     def _group_longform(self, vals, grouper, order):
         """Group a long-form variable by another with correct order."""
@@ -2048,10 +2040,6 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     if "dropna" in kwargs:
         kwargs.pop("dropna")
-        warn = True
-
-    if "label" in kwargs:
-        kwargs.pop("label")
         warn = True
 
     if "x_order" in kwargs:

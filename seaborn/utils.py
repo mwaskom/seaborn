@@ -414,3 +414,21 @@ def axes_ticklabels_overlap(ax):
     """
     return (axis_ticklabels_overlap(ax.get_xticklabels()),
             axis_ticklabels_overlap(ax.get_yticklabels()))
+
+
+def categorical_order(values, order=None):
+    """Return a list of unique data values.
+
+    """
+    if order is None:
+        if hasattr(values, "cat"):
+            order = values.cat.categories
+        elif hasattr(values, "categories"):
+            order = values.categories
+        else:
+            try:
+                order = values.unique()
+            except AttributeError:
+                order = pd.unique(values)
+
+    return list(order)
