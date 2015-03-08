@@ -2188,3 +2188,80 @@ pointplot.__doc__ = dedent("""\
     Examples
     --------
     """).format(**_categorical_docs)
+
+
+def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
+               col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
+               units=None, order=None, hue_order=None, row_order=None,
+               col_order=None, kind="point", size=5, aspect=1,
+               orient=None, color=None, palette=None,
+               legend=True, legend_out=True, sharex=True, sharey=True,
+               margin_titles=False, plot_kws=None, facet_kws=None,
+               **kwargs):
+
+    # Handle some deprecated arguments
+    if "hline" in kwargs:
+        kwargs.pop("hline")
+        warnings.warn("The `hline` parameter has been removed", UserWarning)
+
+    if "dropna" in kwargs:
+        kwargs.pop("dropna")
+        warnings.warn("The `dropna` parameter has been removed", UserWarning)
+
+    if "x_order" in kwargs:
+        order = kwargs.pop("x_order")
+        warnings.warn("The `order` parameter has been renamed `order`",
+                      UserWarning)
+
+    facet_kws = {} if facet_kws is None else facet_kws
+    facet_kws.update(
+        data=data, row=row, col=col,
+        row_order=row_order, col_order=col_order,
+        col_wrap=col_wrap, size=size, aspect=aspect,
+        sharex=sharex, sharey=sharey,
+        legend_out=legend_out, margin_titles=margin_titles,
+        )
+
+    # Determine the order for the whole dataset, which will be used in all
+    # facets to ensure representation of all data in the final plot
+    p = _CategoricalPlotter()
+    p.establish_variables(x, y, hue, data, orient, order, hue_order)
+    order = p.group_names
+    hue_order = p.hue_names
+
+    g = FacetGrid(**facet_kws)
+
+    main_plot_kws = dict(
+        order=order, hue_order=hue_order,
+        orient=orient, color=color, palette=palette,
+        )
+    main_plot_kws.update(kwargs)
+
+    stat_plot_kws = dict(
+        estimator=estimator, ci=ci, n_boot=n_boot, units=units,
+        )
+
+    if isinstance(kind, string_types):
+        plot_kinds = [kind]
+        if plot_kws is None:
+            plot_kws = [{}]
+        elif isinstance(plot_kws, dict):
+            plot_kws = [plot_kws]
+    else:
+        plot_kinds = kind
+        if plot_kws is None:
+            plot_kws = [{} for _ in plot_kinds]
+        elif isinstance(plot_kws, dict):
+            err = "Must pass a list of specific plot keyword arguments."
+            raise ValueError(err)
+
+    for kind, kws in zip(plot_kinds, plot_kws):
+        func = globals()[kind + "plot"]
+        this_plot_kws = main_plot_kws.copy()
+        this_plot_kws.update(kws)
+        if kind in ["bar", "violin"]:
+            this_plot_kws.update(stat_plot_kws)
+        g.map_dataframe(func, x, y, hue, **this_plot_kws)
+
+    if legend and (hue is not None) and (hue not in [x, row, col]):
+        g.add_legend(title=hue, label_order=hue_order)
