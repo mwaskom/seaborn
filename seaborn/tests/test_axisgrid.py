@@ -74,6 +74,23 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
+    def test_single_axes(self):
+
+        g1 = ag.FacetGrid(self.df)
+        nt.assert_is_instance(g1.ax, plt.Axes)
+
+        g2 = ag.FacetGrid(self.df, row="a")
+        with nt.assert_raises(AttributeError):
+            g2.ax
+
+        g3 = ag.FacetGrid(self.df, col="a")
+        with nt.assert_raises(AttributeError):
+            g3.ax
+
+        g4 = ag.FacetGrid(self.df, col="a", row="b")
+        with nt.assert_raises(AttributeError):
+            g4.ax
+
     def test_col_wrap(self):
 
         g = ag.FacetGrid(self.df, col="d")

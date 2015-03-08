@@ -739,6 +739,14 @@ class FacetGrid(Grid):
         return self
 
     @property
+    def ax(self):
+        """Easy access to single axes."""
+        if self.axes.shape == (1, 1):
+            return self.axes[0, 0]
+        else:
+            raise AttributeError
+
+    @property
     def _inner_axes(self):
         """Return a flat array of the inner axes."""
         if self._col_wrap is None:
