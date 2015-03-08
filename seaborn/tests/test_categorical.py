@@ -1981,6 +1981,41 @@ class TestPointPlotter(CategoricalFixture):
         plt.close("all")
 
 
+class TestCountPlot(CategoricalFixture):
+
+    def test_plot_elements(self):
+
+        ax = cat.countplot("g", data=self.df)
+        nt.assert_equal(ax.patches, self.g.unique().size)
+        for p in ax.patches:
+            nt.assert_equal(p.get_y(), 0)
+            nt.assert_equal(p.get_height(),
+                            self.g.size() / self.g.unique().size)
+
+        ax = cat.countplot(y="g", data=self.df)
+        nt.assert_equal(ax.patches, self.g.unique().size)
+        for p in ax.patches:
+            nt.assert_equal(p.get_x(), 0)
+            nt.assert_equal(p.get_width(),
+                            self.g.size() / self.g.unique().size)
+
+        ax = cat.countplot("g", hue="h", data=self.df)
+        nt.assert_equal(ax.patches,
+                        self.g.unique().size * self.h.unique().size)
+
+        ax = cat.countplot(y="g", hue="h", data=self.df)
+        nt.assert_equal(ax.patches,
+                        self.g.unique().size * self.h.unique().size)
+
+    def test_input_error(self):
+
+        with nt.assert_raises(TypeError):
+            cat.countplot()
+
+        with nt.assert_raises(TypeError):
+            cat.countplot(x="g", y="h", data=self.df)
+
+
 class TestFactorPlot(CategoricalFixture):
 
     def test_facet_organization(self):
@@ -2021,6 +2056,16 @@ class TestFactorPlot(CategoricalFixture):
         want_elements = self.g.unique().size * self.h.unique().size
         nt.assert_equal(len(g.ax.patches), want_elements)
         nt.assert_equal(len(g.ax.lines), want_elements)
+
+        g = cat.factorplot("g", data=self.df, kind="count")
+        want_elements = self.g.unique().size
+        nt.assert_equal(len(g.ax.patches), want_elements)
+        nt.assert_equal(len(g.ax.lines), 0)
+
+        g = cat.factorplot("g", hue="h", data=self.df, kind="count")
+        want_elements = self.g.unique().size * self.h.unique().size
+        nt.assert_equal(len(g.ax.patches), want_elements)
+        nt.assert_equal(len(g.ax.lines), 0)
 
         g = cat.factorplot("g", "y", data=self.df, kind="box")
         want_artists = self.g.unique().size

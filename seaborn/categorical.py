@@ -2193,6 +2193,42 @@ pointplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              orient=None, color=None, palette=None, saturation=.75,
+              ax=None, **kwargs):
+
+    estimator = len
+    ci = None
+    n_boot = 0
+    units = None
+    errcolor = None
+
+    if orient is None and y is None:
+        orient = "v"
+
+    if x is None and y is not None:
+        x = y
+    elif y is None and x is not None:
+        y = x
+    elif x is not None and y is not None:
+        raise TypeError("Cannot pass values for both `x` and `y`")
+    else:
+        raise TypeError("Must pass valus for either `x` or `y`")
+
+    plotter = _BarPlotter(x, y, hue, data, order, hue_order,
+                          estimator, ci, n_boot, units,
+                          orient, color, palette, saturation,
+                          errcolor)
+
+    plotter.value_label = "count"
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+    return ax
+
+
 def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
                units=None, order=None, hue_order=None, row_order=None,
@@ -2222,10 +2258,20 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
         err = "Plot kind '{}' is not recognized".format(kind)
         raise ValueError(err)
 
+    # Alias the input variables to determine categorical order and palette
+    # correctly in the case of a count plot
+    if kind == "count":
+        if x is None and y is not None:
+            x_, y_ = y, y
+        elif y is None and x is not None:
+            x_, y_ = x, x
+    else:
+        x_, y_ = x, y
+
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
     p = _CategoricalPlotter()
-    p.establish_variables(x, y, hue, data, orient, order, hue_order)
+    p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     order = p.group_names
     hue_order = p.hue_names
 
