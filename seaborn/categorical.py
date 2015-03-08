@@ -1418,12 +1418,25 @@ _categorical_docs = dict(
     """),
 
     # Shared function parameters
-    main_api_params=dedent("""\
-    x, y, hue : names of variable in ``data`` or vector data, optional
-        Variables for plotting long-form data. See examples for interpretation.
+    input_params=dedent("""\
+    x, y, hue : names of variables in ``data`` or vector data, optional
+        Inputs for plotting long-form data. See examples for interpretation.\
+        """),
+    string_input_params=dedent("""\
+    x, y, hue : names of variables in ``data``, optional
+        Inputs for plotting long-form data. See examples for interpretation.\
+        """),
+    data=dedent("""\
     data : DataFrame, array, or list of arrays, optional
         Dataset for plotting. If ``x`` and ``y`` are absent, this is
-        interpreted as wide-form. Otherwise it is expected to be long-form.
+        interpreted as wide-form. Otherwise it is expected to be long-form.\
+    """),
+    long_form_data=dedent("""\
+    data : DataFrame
+        Long-form (tidy) dataset for plotting. Each column should correspond
+        to a variable, and each row should correspond to an observation.\
+    """),
+    order_vars=dedent("""\
     order, hue_order : lists of strings, optional
         Order to plot the categorical levels in, otherwise the levels are
         inferred from the data objects.\
@@ -1436,7 +1449,7 @@ _categorical_docs = dict(
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals.
-    units : names of variable in ``data`` or vector data, optional
+    units : name of variable in ``data`` or vector data, optional
         Identifier of sampling units, which will be used to perform a
         multilevel bootstrap and account for repeated measures design.\
     """),
@@ -1493,6 +1506,9 @@ _categorical_docs = dict(
     """),
     barplot=dedent("""\
     barplot : Show point estimates and confidence intervals using bars.\
+    """),
+    countplot=dedent("""\
+    countplot : Show the counts of observations in each categorical bin.\
     """),
     pointplot=dedent("""\
     pointplot : Show point estimates and confidence intervals using scatterplot
@@ -1567,7 +1583,9 @@ boxplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {main_api_params}
+    {input_params}
+    {data}
+    {order_vars}
     {orient}
     {color}
     {palette}
@@ -1733,7 +1751,9 @@ violinplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {main_api_params}
+    {input_params}
+    {data}
+    {order_vars}
     bw : {{'scott', 'silverman', float}}, optional
         Either the name of a reference rule or the scale factor to use when
         computing the kernel bandwidth. The actual kernel size will be
@@ -1919,7 +1939,9 @@ stripplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {main_api_params}
+    {input_params}
+    {data}
+    {order_vars}
     jitter : float, ``True``/``1`` is special-cased, optional
         Amount of jitter (only along the categorical axis) to apply. This
         can be useful when you have many points and they overlap, so that
@@ -2084,7 +2106,9 @@ barplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {main_api_params}
+    {input_params}
+    {data}
+    {order_vars}
     {stat_api_params}
     {orient}
     {color}
@@ -2103,6 +2127,7 @@ barplot.__doc__ = dedent("""\
 
     See Also
     --------
+    {countplot}
     {pointplot}
     {factorplot}
 
@@ -2160,7 +2185,9 @@ pointplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {main_api_params}
+    {input_params}
+    {data}
+    {order_vars}
     {stat_api_params}
     markers : string or list of strings, optional
         Markers to use for each of the ``hue`` levels.
@@ -2227,6 +2254,39 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter.plot(ax, kwargs)
     return ax
+
+
+countplot.__doc__ = dedent("""\
+    Show the counts of observations in each categorical bin using bars.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {input_params}
+    {data}
+    {order_vars}
+    {orient}
+    {color}
+    {palette}
+    {saturation}
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed to :func:`countplot`.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {barplot}
+    {factorplot}
+
+    Examples
+    --------
+
+    """).format(**_categorical_docs)
 
 
 def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
@@ -2311,7 +2371,19 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     # Draw the plot onto the facets
     g.map_dataframe(plot_func, x, y, hue, **plot_kws)
 
+    # Special case axis labels for a count type plot
+    if kind == "count":
+        if x is None:
+            g.set_axis_labels(x_var="count")
+        if y is None:
+            g.set_axis_labels(y_var="count")
+
     if legend and (hue is not None) and (hue not in [x, row, col]):
         g.add_legend(title=hue, label_order=hue_order)
 
     return g
+
+
+factorplot.__doc__ = dedent("""\
+
+    """).format(**_categorical_docs)
