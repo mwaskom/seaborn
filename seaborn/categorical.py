@@ -2689,7 +2689,7 @@ factorplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
         ...                    col="diet", data=exercise)
 
-    Use a different size and aspect ratio for each facet:
+    Use a different size and aspect ratio for the facets:
 
     .. plot::
         :context: close-figs
@@ -2713,10 +2713,11 @@ factorplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> sns.factorplot(x="age", y="embark_town", hue="sex", row="class",
-        ...                data=titanic[titanic.embark_town.notnull()],
-        ...                orient="h", size=2, aspect=3.5, palette="Set3",
-        ...                kind="violin", split=True, cut=0, bw=.2)
+        >>> g = sns.factorplot(x="age", y="embark_town",
+        ...                    hue="sex", row="class",
+        ...                    data=titanic[titanic.embark_town.notnull()],
+        ...                    orient="h", size=2, aspect=3.5, palette="Set3",
+        ...                    kind="violin", split=True, cut=0, bw=.2)
 
     Use methods on the returned :class:`FacetGrid` to tweak the presentation:
 

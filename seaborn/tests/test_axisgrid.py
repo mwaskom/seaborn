@@ -16,7 +16,8 @@ from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
-from ..linearmodels import pointplot, pairplot
+from ..categorical import pointplot
+from ..linearmodels import pairplot
 
 rs = np.random.RandomState(0)
 
