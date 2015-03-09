@@ -1991,6 +1991,7 @@ class TestCountPlot(CategoricalFixture):
             nt.assert_equal(p.get_y(), 0)
             nt.assert_equal(p.get_height(),
                             self.g.size / self.g.unique().size)
+        plt.close("all")
 
         ax = cat.countplot(y="g", data=self.df)
         nt.assert_equal(len(ax.patches), self.g.unique().size)
@@ -1998,14 +1999,17 @@ class TestCountPlot(CategoricalFixture):
             nt.assert_equal(p.get_x(), 0)
             nt.assert_equal(p.get_width(),
                             self.g.size / self.g.unique().size)
+        plt.close("all")
 
         ax = cat.countplot("g", hue="h", data=self.df)
         nt.assert_equal(len(ax.patches),
                         self.g.unique().size * self.h.unique().size)
+        plt.close("all")
 
         ax = cat.countplot(y="g", hue="h", data=self.df)
         nt.assert_equal(len(ax.patches),
                         self.g.unique().size * self.h.unique().size)
+        plt.close("all")
 
     def test_input_error(self):
 
