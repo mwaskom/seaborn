@@ -1423,7 +1423,7 @@ _categorical_docs = dict(
         Inputs for plotting long-form data. See examples for interpretation.\
         """),
     string_input_params=dedent("""\
-    x, y, hue : names of variables in ``data``, optional
+    x, y, hue : names of variables in ``data``
         Inputs for plotting long-form data. See examples for interpretation.\
         """),
     data=dedent("""\
@@ -2230,12 +2230,11 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     units = None
     errcolor = None
 
-    if orient is None and y is None:
-        orient = "v"
-
     if x is None and y is not None:
+        orient = "h"
         x = y
     elif y is None and x is not None:
+        orient = "v"
         y = x
     elif x is not None and y is not None:
         raise TypeError("Cannot pass values for both `x` and `y`")
@@ -2385,5 +2384,63 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
 
 factorplot.__doc__ = dedent("""\
+    Draw a categorical plot onto a FacetGrid.
+
+    The default plot that is shown is a point plot, but other seaborn
+    categorical plots can be choosen with the ``kind`` parameter, including
+    box plots, violin plots, bar plots, or strip plots.
+
+    After plotting, the :class:`FacetGrid` with the plot is returned and can
+    be used directly to tweak supporting plot details or add other layers.
+
+    Parameters
+    ----------
+    {string_input_params}
+    {long_form_data}
+    row, col : names of variables in ``data``, optional
+    col_wrap : int, optional
+        "Wrap" the column facets at this nnumber so that they occupy multiple
+        rows. Can be useful when using a variable with a large number of
+        levels. Cannot be used with a ``row`` variable.
+    {stat_api_params}
+    {order_vars}
+    row_order, col_order : lists of strings, optional
+        Order to organize the rows and/or columns of the grid in, otherwise the
+        orders are inferred from the data objects.
+    kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``}}
+        The kind of plot to draw.
+    size : float, optional
+        The size (height) of each facet, in inches.
+    aspect : float, optional
+        The aspect ratio of the plot, ``size * aspect`` gives the width of each
+        facet, in inches.
+    {orient}
+    {color}
+    {palette}
+    legend : bool, optional
+        If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
+    legend_out : bool, optional
+        If ``True``, draw the plot outside of the plot axes.
+    sharex, sharey : bool, optional
+        If ``True``, the axeas are shared across the rows and columns of the
+        grid.
+    margin_titles : bool, optional
+        If ``True``, the titles for the row variable are drawn to the right of
+        the last column. This option is experimental and may not work in all
+        cases.
+    facet_kws : dict, optional
+        Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
+    kwargs : key, value pairings
+        Other keyword arguments are passed through to the underlying plotting
+        function.
+
+    Returns
+    -------
+    g : FacetGrid
+        Returns the :class:`FacetGrid` object with the plot on it for further
+        tweaking.
+
+    Examples
+    --------
 
     """).format(**_categorical_docs)

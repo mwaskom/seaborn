@@ -234,8 +234,8 @@ class FacetGrid(Grid):
         See Also
         --------
         PairGrid : Subplot grid for plotting pairwise relationships.
-        lmplot : Combines regplot and a FacetGrid
-        factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
+        lmplot : Combines a regression plot and a FacetGrid.
+        factorplot : Combines a categorical plot and a FacetGrid.
 
         """
 
