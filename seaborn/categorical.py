@@ -2165,7 +2165,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="tip", y="day", hue="time", data=tips)
+        >>> ax = sns.barplot(x="tip", y="day", data=tips, orient="h")
 
     Use median as the estimate of central tendency:
 
@@ -2197,6 +2197,15 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
         ...                  color="salmon", saturation=.5)
+
+    Use ``plt.bar`` keyword arguments to further change the aesthetic:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot("day", "total_bill", data=tips,
+        ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
+        ...                  errcolor=".2", edgecolor=".2")
 
     """).format(**_categorical_docs)
 
@@ -2318,14 +2327,15 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips)
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips, orient="h")
 
     Don't draw a line connecting each point:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips,
+        ...                    orient="h", join=False)
 
     Use median as the estimate of central tendency:
 
