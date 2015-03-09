@@ -1467,7 +1467,8 @@ _categorical_docs = dict(
     palette=dedent("""\
     palette : palette name, list, or dict, optional
         Color palette that maps either the grouping variable or the hue
-        variable.\
+        variable. If the palette is a dictionary, keys should be names of
+        levels and values should be matplotlib colors.\
     """),
     saturation=dedent("""\
     saturation : float, optional
@@ -2482,6 +2483,47 @@ countplot.__doc__ = dedent("""\
 
     Examples
     --------
+
+    Show value counts for a single categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set(style="darkgrid")
+        >>> titanic = sns.load_dataset("titanic")
+        >>> ax = sns.countplot(x="class", data=titanic)
+
+    Show value counts for two categorical variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.countplot(x="class", hue="who", data=titanic)
+
+    Plot the bars horizontally:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.countplot(y="class", hue="who", data=titanic)
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.countplot(x="who", data=titanic, palette="Set3")
+
+    Use ``plt.bar`` keyword arguments for a different look:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.countplot(x="who", data=titanic,
+        ...                    facecolor=(0, 0, 0, 0),
+        ...                    linewidth=5,
+        ...                    edgecolor=sns.color_palette("dark", 3))
 
     """).format(**_categorical_docs)
 
