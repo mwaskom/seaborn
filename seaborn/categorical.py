@@ -1403,15 +1403,14 @@ _categorical_docs = dict(
     main_api_narrative=dedent("""\
     Input data can be passed in a variety of formats, including:
 
+    - Vectors of data represented as lists, numpy arrays, or pandas Series
+      objects passed directly to the ``x``, ``y``, and/or ``hue`` parameters.
     - A "long-form" DataFrame, in which case the ``x``, ``y``, and ``hue``
       variables will determine how the data are plotted.
     - A "wide-form" DataFrame, such that each numeric column will be plotted.
     - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
 
-    It is also possible to pass vector data directly to ``x``, ``y``, or
-    ``hue``, and thus avoid passing a dataframe to ``data``.
-
-    In all cases, it is possible to use numpy or Python objects, but pandas
+    In most cases, it is possible to use numpy or Python objects, but pandas
     objects are preferable because the associated names will be used to
     annotate the axes. Additionally, you can use Categorical types for the
     grouping variables to control the order of plot elements.\
@@ -1444,8 +1443,10 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float, optional
-        Size of confidence intervals to draw around estimated values.
+    ci : float or None, optional
+        Size of confidence intervals to draw around estimated values. If
+        ``None``, no bootstrapping will be performed, and error bars will
+        not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals.
@@ -2144,6 +2145,59 @@ barplot.__doc__ = dedent("""\
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.barplot(x=tips["total_bill"])
 
+    Draw a set of vertical bar plots grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="day", y="total_bill", data=tips)
+
+    Draw a set of vertical bars with nested grouping by a two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="day", y="total_bill", hue="sex", data=tips)
+
+    Draw a set of horizontal bars (if the ``y`` variable is a pandas
+    categorical, the ``orient`` parameter can be omitted):
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="tip", y="day", hue="time", data=tips)
+
+    Use median as the estimate of central tendency:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import median
+        >>> ax = sns.barplot(x="day", y="tip", data=tips, estimator=median)
+
+    Show the standard error of the mean with the error bars:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci=68)
+
+    Use a different color palette for the bars:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        ...                  palette="Blues_d")
+
+    Plot all bars in a single color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        ...                  color="salmon", saturation=.5)
+
     """).format(**_categorical_docs)
 
 
@@ -2217,6 +2271,93 @@ pointplot.__doc__ = dedent("""\
 
     Examples
     --------
+
+    Draw a single horizontal point plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.pointplot(x=tips["total_bill"])
+
+    Draw a set of vertical point plots grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="total_bill", data=tips)
+
+    Draw a set of vertical points with nested grouping by a two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex", data=tips)
+
+    Separate the points for different hue levels along the categorical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex",
+        ...                    data=tips, dodge=True)
+
+    Use a different marker and line style for the hue levels:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex", data=tips,
+        ...                    markers=["o", "x"], linestyles=["-", "--"])
+
+    Draw a set of horizontal points (if the ``y`` variable is a pandas
+    categorical, the ``orient`` parameter can be omitted):
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips)
+
+    Don't draw a line connecting each point:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
+
+    Use median as the estimate of central tendency:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import median
+        >>> ax = sns.pointplot(x="day", y="tip", data=tips, estimator=median)
+
+    Show the standard error of the mean with the error bars:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
+
+    Use a different color palette for the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
+        ...                    palette="Blues_d")
+
+    Plot all points in a single color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
+        ...                    color="salmon", saturation=.5)
+
     """).format(**_categorical_docs)
 
 
@@ -2392,6 +2533,16 @@ factorplot.__doc__ = dedent("""\
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.
+
+    Note that, unlike when using the underlying plotting functions directly,
+    data must be passed in a long-form dataframe with variables specified by
+    passing strings to ``x``, ``y``, ``hue``, and other parameters.
+
+    As in the case with the underlying plot functions, if variables have a
+    ``categorical`` data type, the correct orientation of the plot elements,
+    the levels of the categorical variables, and their order will be inferred
+    from the objects. Otherwise you may have to use the function parameters
+    (``orient``, ``order``, ``hue_order``, etc.) to set up the plot correctly.
 
     Parameters
     ----------
