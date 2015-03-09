@@ -5,22 +5,33 @@
 API reference
 =============
 
-Linear model plots
-------------------
+Regression plots
+----------------
 
 .. autosummary::
     :toctree: generated/
 
     lmplot
-    factorplot
-    pairplot
     regplot
+    pairplot
     interactplot
     residplot
-    pointplot
-    barplot
     coefplot
     corrplot
+
+Categorical plots
+-----------------
+
+.. autosummary::
+    :toctree: generated/
+
+    factorplot
+    pointplot
+    barplot
+    countplot
+    boxplot
+    violinplot
+    stripplot
 
 Distribution plots
 ------------------
@@ -29,9 +40,6 @@ Distribution plots
     :toctree: generated/
 
     jointplot
-    boxplot
-    violinplot
-    stripplot
     distplot
     kdeplot
     rugplot
