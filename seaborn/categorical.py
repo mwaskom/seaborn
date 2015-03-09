@@ -1578,7 +1578,14 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     return ax
 
 boxplot.__doc__ = dedent("""\
-    Draw a box-and-whisker plot.
+    Draw a box plot to show distributions with respect to categories.
+
+    A box plot (or box-and-whisker plot) shows the distribution of quantitative
+    data in a way that facilitates comparisons between variables or across
+    levels of a categorical variable. The box shows the quartiles of the
+    dataset while the whiskers extend to show the rest of the distribution,
+    except for points that are determined to be "outliers" using a method
+    that is a function of the inter-quartile range.
 
     {main_api_narrative}
 
@@ -1739,7 +1746,7 @@ violinplot.__doc__ = dedent("""\
     A violin plot plays a similar role as a box and whisker plot. It shows the
     distribution of quantitative data across several levels of one (or more)
     categorical variables such that those distributions can be compared. Unlike
-    a boxplot, in which all of the plot components correspond to actual
+    a box plot, in which all of the plot components correspond to actual
     datapoints, the violin plot features a kernel density estimation of the
     underlying distribution.
 
@@ -1933,7 +1940,7 @@ stripplot.__doc__ = dedent("""\
     Draw a scatterplot where one variable is categorical.
 
     A strip plot can be drawn on its own, but it is also a good complement
-    to a box or violinplot in cases where you want to show all observations
+    to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
     {main_api_narrative}
@@ -2101,7 +2108,24 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
 
 barplot.__doc__ = dedent("""\
-    Show point estimates and confidence intervals as a bar plot.
+    Show point estimates and confidence intervals as rectangular bars.
+
+    A bar plot represents an estimate of central tendency for a numeric
+    variable with the height of each rectangle and provides some indication of
+    the uncertainty around that estimate using error bars. Bar plots include 0
+    in the quantitative axis range, and they are a good choice when 0 is a
+    meaningful value for the quantitative variable, and you want to make
+    comparisons against it.
+
+    For datasets where 0 is not a meaningful value, a point plot will allow you
+    to focus on differences between levels of one or more categorical
+    variables.
+
+    It is also important to keep in mind that a bar plot shows only the mean
+    (or other estimator) value, but in many cases it may be more informative to
+    show the distribution of values at each level of the categorical variables.
+    In that case, other approaches such as a box or violin plot may be more
+    appropriate.
 
     {main_api_narrative}
 
@@ -2242,7 +2266,26 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
 
 pointplot.__doc__ = dedent("""\
-    Show point estimates and confidence intervals using scatterplot glyphs.
+    Show point estimates and confidence intervals using scatter plot glyphs.
+
+    A point plot represents an estimate of central tendency for a numeric
+    variable by the position of scatter plot points and provides some
+    indication of the uncertainty around that estimate using error bars.
+
+    Point plots can be more useful than bar plots for focusing comparisons
+    between different levels of one or more categorical variables. They are
+    particularly adept at showing interactions: how the relationship between
+    levels of one categorical variable change across levels of a second
+    categorical variable. The lines that join each point from the same ``hue``
+    level allow interactions to be judged by differences in slope, which is
+    easier for the eyes than comparing the heights of several groups of points
+    or bars.
+
+    It is important to keep in mind that a point plot shows only the mean (or
+    other estimator) value, but in many cases it may be more informative to
+    show the distribution of values at each level of the categorical variables.
+    In that case, other approaches such as a box or violin plot may be more
+    appropriate.
 
     {main_api_narrative}
 
@@ -2287,7 +2330,7 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set_style("whitegrid")
+        >>> sns.set_style("darkgrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.pointplot(x=tips["total_bill"])
 
@@ -2409,6 +2452,10 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 countplot.__doc__ = dedent("""\
     Show the counts of observations in each categorical bin using bars.
 
+    A count plot can be thought of as a histogram across a categorical, instead
+    of quantitative, variable. The basic API and options are identical to those
+    for :func:`barplot`, so you can compare counts across nested variables.
+
     {main_api_narrative}
 
     Parameters
@@ -2422,7 +2469,7 @@ countplot.__doc__ = dedent("""\
     {saturation}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed to :func:`countplot`.
+        Other keyword arguments are passed to ``plt.bar``.
 
     Returns
     -------
@@ -2442,7 +2489,7 @@ countplot.__doc__ = dedent("""\
 def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
                units=None, order=None, hue_order=None, row_order=None,
-               col_order=None, kind="point", size=5, aspect=1,
+               col_order=None, kind="point", size=4, aspect=1,
                orient=None, color=None, palette=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
                margin_titles=False, facet_kws=None, **kwargs):
@@ -2501,6 +2548,7 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
         col_wrap=col_wrap, size=size, aspect=aspect,
         sharex=sharex, sharey=sharey,
         legend_out=legend_out, margin_titles=margin_titles,
+        dropna=False,
         )
 
     # Determine keyword arguments for the plotting function
@@ -2538,14 +2586,24 @@ factorplot.__doc__ = dedent("""\
     Draw a categorical plot onto a FacetGrid.
 
     The default plot that is shown is a point plot, but other seaborn
-    categorical plots can be choosen with the ``kind`` parameter, including
+    categorical plots can be chosen with the ``kind`` parameter, including
     box plots, violin plots, bar plots, or strip plots.
+
+    It is important to choose how variables get mapped to the plot structure
+    such that the most important comparisons are easiest to make. As a general
+    rule, it is easier to compare positions that are closer together, so the
+    ``hue`` variable should be used for the most important comparisons. For
+    secondary comparisons, try to share the quantitative axis (so, use ``col``
+    for vertical plots and ``row`` for horizontal plots). Note that, although
+    it is possible to make rather complex plots using this function, in many
+    cases you may be better served by created several smaller and more focused
+    plots than by trying to stuff many comparisons into one figure.
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.
 
     Note that, unlike when using the underlying plotting functions directly,
-    data must be passed in a long-form dataframe with variables specified by
+    data must be passed in a long-form DataFrame with variables specified by
     passing strings to ``x``, ``y``, ``hue``, and other parameters.
 
     As in the case with the underlying plot functions, if variables have a
@@ -2559,8 +2617,9 @@ factorplot.__doc__ = dedent("""\
     {string_input_params}
     {long_form_data}
     row, col : names of variables in ``data``, optional
+        Categorical variables that will determine the faceting of the grid.
     col_wrap : int, optional
-        "Wrap" the column facets at this nnumber so that they occupy multiple
+        "Wrap" the column facets at this number so that they occupy multiple
         rows. Can be useful when using a variable with a large number of
         levels. Cannot be used with a ``row`` variable.
     {stat_api_params}
@@ -2603,5 +2662,75 @@ factorplot.__doc__ = dedent("""\
 
     Examples
     --------
+
+    Draw a single facet to use the :class:`FacetGrid` legend placement:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set(style="ticks")
+        >>> exercise = sns.load_dataset("exercise")
+        >>> g = sns.factorplot(x="time", y="pulse", hue="kind", data=exercise)
+
+    Use a different plot kind to visualize the same data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
+        ...                    data=exercise, kind="violin")
+
+    Facet along the columns to show a third categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
+        ...                    col="diet", data=exercise)
+
+    Use a different size and aspect ratio for each facet:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
+        ...                    col="diet", data=exercise,
+        ...                    size=5, aspect=.8)
+
+    Make many column facets and wrap them into the rows of the grid:
+
+    .. plot::
+        :context: close-figs
+
+        >>> titanic = sns.load_dataset("titanic")
+        >>> g = sns.factorplot("alive", col="deck", col_wrap=4,
+        ...                    data=titanic[titanic.deck.notnull()],
+        ...                    kind="count", size=2.5, aspect=.8)
+
+    Plot horizontally and pass other keyword arguments to the plot function:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.factorplot(x="age", y="embark_town", hue="sex", row="class",
+        ...                data=titanic[titanic.embark_town.notnull()],
+        ...                orient="h", size=2, aspect=3.5, palette="Set3",
+        ...                kind="violin", split=True, cut=0, bw=.2)
+
+    Use methods on the returned :class:`FacetGrid` to tweak the presentation:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="who", y="survived", col="class",
+        ...                    data=titanic, saturation=.5,
+        ...                    kind="bar", ci=None, aspect=.6)
+        >>> (g.set_axis_labels("", "Survival Rate")
+        ...   .set_xticklabels(["Men", "Women", "Children"])
+        ...   .set_titles("{{col_name}} {{col_var}}")
+        ...   .set(ylim=(0, 1))
+        ...   .despine(left=True))  #doctest: +ELLIPSIS
+        <seaborn.axisgrid.FacetGrid object at 0x...>
 
     """).format(**_categorical_docs)
