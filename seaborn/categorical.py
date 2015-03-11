@@ -1681,6 +1681,21 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
+    Control box order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control box order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot(x="size", y="tip", data=tips,
+        ...                  order=np.arange(1, 7), palette="Blues_d")
+
     Draw a boxplot for each numeric variable in a DataFrame:
 
     .. plot::
@@ -1866,6 +1881,21 @@ violinplot.__doc__ = dedent("""\
 
         >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
         ...                     data=tips, palette="muted", split=True)
+
+    Control violin order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control violin order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="size", y="tip", data=tips,
+        ...                     order=np.arange(1, 7), palette="Blues_d")
 
     Scale the violin width by the number of observations in each bin:
 
@@ -2063,6 +2093,21 @@ stripplot.__doc__ = dedent("""\
         ...                    data=tips, jitter=True,
         ...                    palette="Set2", split=False)
 
+    Control strip order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control strip order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot(x="size", y="tip", data=tips,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
+
     Draw strips with large points and different aesthetics:
 
     .. plot::
@@ -2205,6 +2250,21 @@ barplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.barplot(x="tip", y="day", data=tips)
+
+    Control bar order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control bar order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="size", y="tip", data=tips,
+        ...                  order=np.arange(1, 7), palette="Blues_d")
 
     Use median as the estimate of central tendency:
 
@@ -2392,6 +2452,21 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
+
+    Control point order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control point order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="size", y="tip", data=tips,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
 
     Use median as the estimate of central tendency:
 
