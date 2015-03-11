@@ -316,6 +316,15 @@ class _CategoricalPlotter(object):
                 # Also works, but feels hackier
                 return str(s.dtype) == "categorical"
 
+        def is_not_numeric(s):
+            try:
+                np.asarray(s, dtype=np.float)
+            except ValueError:
+                return True
+            return False
+
+        no_numeric = "Neither the `x` nor `y` variable appears to be numeric."
+
         if orient.startswith("v"):
             return "v"
         elif orient.startswith("h"):
@@ -325,7 +334,15 @@ class _CategoricalPlotter(object):
         elif y is None:
             return "h"
         elif is_categorical(y):
-            return "h"
+            if is_categorical(x):
+                raise ValueError(no_numeric)
+            else:
+                return "h"
+        elif is_not_numeric(y):
+            if is_not_numeric(x):
+                raise ValueError(no_numeric)
+            else:
+                return "h"
         else:
             return "v"
 
@@ -1456,8 +1473,10 @@ _categorical_docs = dict(
     """),
     orient=dedent("""\
     orient : "v" | "h", optional
-        Orientation of the plot (vertical or horizontal). This can also be
-        inferred when using long-form data and Categorical data types.\
+        Orientation of the plot (vertical or horizontal). This is usually
+        inferred from the dtype of the input variables, but can be used to
+        specify when the "categorical" variable is a numeric or when plotting
+        wide-form data.\
     """),
     color=dedent("""\
     color : matplotlib color, optional
@@ -1894,8 +1913,7 @@ violinplot.__doc__ = dedent("""\
         ...                     scale="count", inner="stick",
         ...                     scale_hue=False, bw=.2)
 
-    Draw horizontal violins (if the grouping variable has a ``Categorical``
-    dtype, the ``orient`` argument can be omitted):
+    Draw horizontal violins:
 
     .. plot::
         :context: close-figs
@@ -1903,7 +1921,7 @@ violinplot.__doc__ = dedent("""\
         >>> planets = sns.load_dataset("planets")
         >>> ax = sns.violinplot(x="orbital_period", y="method",
         ...                     data=planets[planets.orbital_period < 1000],
-        ...                     scale="width", orient="h", palette="Set3")
+        ...                     scale="width", palette="Set3")
 
     Draw a violin plot on to a :class:`FacetGrid` to group within an additional
     categorical variable:
@@ -2019,14 +2037,13 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=0.05)
 
-    Draw horizontal strips (if the grouping variable has a ``Categorical``
-    dtype, the ``orient`` argument can be omitted):
+    Draw horizontal strips:
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True, orient="h")
+        ...                    jitter=True)
 
     Nest the strips within a second categorical variable:
 
@@ -2060,10 +2077,8 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot(x="total_bill", y="day", data=tips,
-        ...                  orient="h", whis=np.inf)
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True, orient="h")
+        >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips, jitter=True)
 
     Draw strips of observations on top of a violin plot:
 
@@ -2184,13 +2199,12 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot(x="day", y="total_bill", hue="sex", data=tips)
 
-    Draw a set of horizontal bars (if the ``y`` variable is a pandas
-    categorical, the ``orient`` parameter can be omitted):
+    Draw a set of horizontal bars:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="tip", y="day", data=tips, orient="h")
+        >>> ax = sns.barplot(x="tip", y="day", data=tips)
 
     Use median as the estimate of central tendency:
 
@@ -2365,21 +2379,19 @@ pointplot.__doc__ = dedent("""\
         >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex", data=tips,
         ...                    markers=["o", "x"], linestyles=["-", "--"])
 
-    Draw a set of horizontal points (if the ``y`` variable is a pandas
-    categorical, the ``orient`` parameter can be omitted):
+    Draw a set of horizontal points:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips, orient="h")
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips)
 
     Don't draw a line connecting each point:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="tip", y="day", data=tips,
-        ...                    orient="h", join=False)
+        >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
 
     Use median as the estimate of central tendency:
 
@@ -2561,9 +2573,9 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     # correctly in the case of a count plot
     if kind == "count":
         if x is None and y is not None:
-            x_, y_ = y, y
+            x_, y_, orient = y, y, "h"
         elif y is None and x is not None:
-            x_, y_ = x, x
+            x_, y_, orient = x, x, "v"
     else:
         x_, y_ = x, y
 

@@ -331,25 +331,30 @@ class TestCategoricalPlotter(CategoricalFixture):
         for group, units in zip(["a", "b", "c"], p.plot_units):
             npt.assert_array_equal(units, self.u[self.g == group])
 
-    def test_orient_inference(self):
+    def test_infer_orient(self):
 
         p = cat._CategoricalPlotter()
 
-        cat_series = pd.Series(["a", "b", "c"] * 10)
-        num_series = pd.Series(self.rs.randn(30))
+        cats = pd.Series(["a", "b", "c"] * 10)
+        nums = pd.Series(self.rs.randn(30))
 
-        x, y = cat_series, num_series
+        nt.assert_equal(p.infer_orient(cats, nums), "v")
+        nt.assert_equal(p.infer_orient(nums, cats), "h")
+        nt.assert_equal(p.infer_orient(nums, None), "h")
+        nt.assert_equal(p.infer_orient(None, nums), "v")
+        nt.assert_equal(p.infer_orient(nums, nums, "vert"), "v")
+        nt.assert_equal(p.infer_orient(nums, nums, "hori"), "h")
 
-        nt.assert_equal(p.infer_orient(x, y, "horiz"), "h")
-        nt.assert_equal(p.infer_orient(x, y, "vert"), "v")
-        nt.assert_equal(p.infer_orient(x, None), "h")
-        nt.assert_equal(p.infer_orient(None, y), "v")
-        nt.assert_equal(p.infer_orient(x, y), "v")
+        with nt.assert_raises(ValueError):
+            p.infer_orient(cats, cats)
 
         if pandas_has_categoricals:
-            cat_series = cat_series.astype("category")
-            y, x = cat_series, num_series
-            nt.assert_equal(p.infer_orient(x, y), "h")
+            cats = pd.Series([0, 1, 2] * 10, dtype="category")
+            nt.assert_equal(p.infer_orient(cats, nums), "v")
+            nt.assert_equal(p.infer_orient(nums, cats), "h")
+
+            with nt.assert_raises(ValueError):
+                p.infer_orient(cats, cats)
 
     def test_default_palettes(self):
 
