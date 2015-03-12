@@ -2220,7 +2220,7 @@ barplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal bar plot:
+    Draw a set of vertical bar plots grouped by a categorical variable:
 
     .. plot::
         :context: close-figs
@@ -2228,13 +2228,6 @@ barplot.__doc__ = dedent("""\
         >>> import seaborn as sns
         >>> sns.set_style("whitegrid")
         >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.barplot(x=tips["total_bill"])
-
-    Draw a set of vertical bar plots grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
         >>> ax = sns.barplot(x="day", y="total_bill", data=tips)
 
     Draw a set of vertical bars with nested grouping by a two variables:
@@ -2350,7 +2343,7 @@ pointplot.__doc__ = dedent("""\
     Point plots can be more useful than bar plots for focusing comparisons
     between different levels of one or more categorical variables. They are
     particularly adept at showing interactions: how the relationship between
-    levels of one categorical variable change across levels of a second
+    levels of one categorical variable changes across levels of a second
     categorical variable. The lines that join each point from the same ``hue``
     level allow interactions to be judged by differences in slope, which is
     easier for the eyes than comparing the heights of several groups of points
@@ -2399,7 +2392,7 @@ pointplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal point plot:
+    Draw a set of vertical point plots grouped by a categorical variable:
 
     .. plot::
         :context: close-figs
@@ -2407,28 +2400,22 @@ pointplot.__doc__ = dedent("""\
         >>> import seaborn as sns
         >>> sns.set_style("darkgrid")
         >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.pointplot(x=tips["total_bill"])
-
-    Draw a set of vertical point plots grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.pointplot(x="time", y="total_bill", data=tips)
 
     Draw a set of vertical points with nested grouping by a two variables:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex", data=tips)
+        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
+        ...                    data=tips)
 
     Separate the points for different hue levels along the categorical axis:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex",
+        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, dodge=True)
 
     Use a different marker and line style for the hue levels:
@@ -2436,8 +2423,10 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="day", y="total_bill", hue="sex", data=tips,
-        ...                    markers=["o", "x"], linestyles=["-", "--"])
+        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
+        ...                    data=tips,
+        ...                    markers=["o", "x"],
+        ...                    linestyles=["-", "--"])
 
     Draw a set of horizontal points:
 
@@ -2452,6 +2441,22 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
+
+    Use a different color palette for the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set2")
+
+    Plot all points in a single color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
+        ...                    color=sns.xkcd_rgb["dull red"])
 
     Control point order by sorting the input data:
 
@@ -2482,22 +2487,6 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
-
-    Use a different color palette for the points:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
-        ...                    palette="Blues_d")
-
-    Plot all points in a single color:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
-        ...                    color="salmon", saturation=.5)
 
     """).format(**_categorical_docs)
 
