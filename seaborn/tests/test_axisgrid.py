@@ -104,6 +104,9 @@ class TestFacetGrid(object):
         nt.assert_equal(g_wrap._ncol, 4)
         nt.assert_equal(g_wrap._nrow, 3)
 
+        with nt.assert_raises(ValueError):
+            g = ag.FacetGrid(self.df, row="b", col="d", col_wrap=4)
+
         plt.close("all")
 
     def test_normal_axes(self):

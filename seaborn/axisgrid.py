@@ -249,6 +249,9 @@ class FacetGrid(Grid):
 
         self._col_wrap = col_wrap
         if col_wrap is not None:
+            if row is not None:
+                err = "Cannot use `row` and `col_wrap` together."
+                raise ValueError(err)
             ncol = col_wrap
             nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
         self._ncol = ncol
