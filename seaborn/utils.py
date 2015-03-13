@@ -378,6 +378,10 @@ def load_dataset(name, **kws):
         df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
         df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
 
+    if name == "titanic":
+        df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
+        df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
     return df
 
 
@@ -414,3 +418,37 @@ def axes_ticklabels_overlap(ax):
     """
     return (axis_ticklabels_overlap(ax.get_xticklabels()),
             axis_ticklabels_overlap(ax.get_yticklabels()))
+
+
+def categorical_order(values, order=None):
+    """Return a list of unique data values.
+
+    Determine an ordered list of levels in ``values``.
+
+    Parameters
+    ----------
+    values : list, array, Categorical, or Series
+        Vector of "categorical" values
+    order : list-like, optional
+        Desired order of category levels to override the order determined
+        from the ``values`` object.
+
+    Returns
+    -------
+    order : list
+        Ordered list of category levels
+
+    """
+    if order is None:
+        if hasattr(values, "categories"):
+            order = values.categories
+        else:
+            try:
+                order = values.cat.categories
+            except (TypeError, AttributeError):
+                try:
+                    order = values.unique()
+                except AttributeError:
+                    order = pd.unique(values)
+
+    return list(order)

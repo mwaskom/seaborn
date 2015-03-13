@@ -234,8 +234,8 @@ class FacetGrid(Grid):
         See Also
         --------
         PairGrid : Subplot grid for plotting pairwise relationships.
-        lmplot : Combines regplot and a FacetGrid
-        factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
+        lmplot : Combines a regression plot and a FacetGrid.
+        factorplot : Combines a categorical plot and a FacetGrid.
 
         """
 
@@ -737,6 +737,14 @@ class FacetGrid(Grid):
                 # Index the flat array so col_wrap works
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
+
+    @property
+    def ax(self):
+        """Easy access to single axes."""
+        if self.axes.shape == (1, 1):
+            return self.axes[0, 0]
+        else:
+            raise AttributeError
 
     @property
     def _inner_axes(self):

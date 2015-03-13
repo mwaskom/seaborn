@@ -2,19 +2,46 @@
 v0.6.0 (Unreleased)
 -------------------
 
-This is a major release from 0.5. The main objective of this release is to unify the API, which means there are some relatively large API changes in some of the older functions. See below for details of those changes, which will break code written for older versions of seaborn.
+This is a major release from 0.5. The main objective of this release is to unify the API for categorical plots, which means that there are some relatively large API changes in some of the older functions. See below for details of those changes, which may break code written for older versions of seaborn. There are also some new functions (:func:`stripplot`,  and :func:`countplot`), enhancements to existing functions, and bug fixes.
 
-- Updated and unified the API for :func:`boxplot` and :func:`violinplot`. This is probably the most disruptive API change. Both functions maintain backwards-compatibility in terms of the kind of data they can accept, but the syntax has changed. These functions are now invoked with ``x``, ``y`` parameters that are either vectors of data or names of variables in a long-form DataFrame passed to the new ``data`` parameter. You can still pass wide-form DataFrames or arrays to ``data``, but it is no longer the first positional argument. The upshot of this is that both functions now work seamlessly in the context of a :class:`FacetGrid`. Additionally, by using named variables and a ``data`` object, it's much easier to apply transformations to the data in the body of the seaborn call. See the `github pull request <https://github.com/mwaskom/seaborn/pull/410>`_ for more information on these changes and the logic behind them.
+Additionally, the structure of the docs is changing in version 0.6. The API docs page for each function will have numerous examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, as the tutorial pages are going to be streamlined to provide a higher-level introduction. Currently there are examples for all the categorical plot functions, it's unclear whether they will be completed for the rest of the package by release.
 
-- Added a ``hue`` argument to :func:`boxplot` and :func:`violinplot`, which allows for nested grouping the plot elements by a third categorical variable. For :func:`violinplot`, this nesting can also be accomplished by splitting the violins when there are two levels of the ``hue`` variable. To make this functionality feasible, the ability to specify where the plots will be draw in data coordinates has been removed. These plots now are drawn at set positions, like (and identical to) :func:`barplot` and :func:`pointplot`.
+Changes and updates to categorical plots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In version 0.6, the "categorical" plots have been unified with a common API. This new category of functions groups together plots that show the relationship between one numeric variable and one or two categorical variables. This includes plots that show distribution of the numeric variable in each bin (:func:`barplot`, :func:`pointplot`, and :func:`stripplot`) and plots that apply a statistical estimation within each bin (:func:`pointplot` and :func:`barplot`).
+
+These functions now each accept the same formats of input data and can be invoked in the same way. The can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
+
+With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, :func:`factorplot` can also now create faceted verisons of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly.. By default, :func:`factorplot` draws a point plot, but this is controlled by the ``kind`` parameter.
+
+Here are details on what has changed in the process of unifying these APIs:
+
+- Changes to :func:`boxplot` and :func:`violinplot` will probably be the most disruptive. Both functions maintain backwards-compatibility in terms of the kind of data they can accept, but the syntax has changed to be more similar to other seaborn functions. These functions are now invoked with ``x`` and/or ``y`` parameters that are either vectors of data or names of variables in a long-form DataFrame passed to the new ``data`` parameter. You can still pass wide-form DataFrames or arrays to ``data``, but it is no longer the first positional argument. See the `github pull request <https://github.com/mwaskom/seaborn/pull/410>`_ for more information on these changes and the logic behind them.
+
+- As :func:`pointplot` and :func:`barplot` can now plot with the major categorical variable on the y axis, the ``x_order`` parameter has been renamed to ``order``.
+
+- Added a ``hue`` argument to :func:`boxplot` and :func:`violinplot`, which allows for nested grouping the plot elements by a third categorical variable. For :func:`violinplot`, this nesting can also be accomplished by splitting the violins when there are two levels of the ``hue`` variable (using ``split=True``). To make this functionality feasible, the ability to specify where the plots will be draw in data coordinates has been removed. These plots now are drawn at set positions, like (and identical to) :func:`barplot` and :func:`pointplot`.
 
 - Added a ``palette`` parameter to :func:`boxplot`/:func:`violinplot`. The ``color`` parameter still exists, but no longer does double-duty in accepting the name of a seaborn palette. ``palette`` supersedes ``color`` so that it can be used with a :class:`FacetGrid`.
+
+Along with these API changes, the following changes/enhancements were made to the plotting functions:
+
+- The default rules for ordering the categories has changed. Instead of automatically sorting the category levels, the plots now show the levels in the order the appear in the input data (i.e., the order given by ``Series.unique()``). Order can be specified when plotting with the ``order`` and ``hue_order`` parameters. Additionally, when variables are pandas objects with a "categorical" dtype, the category order is inferred from the data object.
 
 - Added the ``scale`` and ``scale_hue`` parameters to :func:`violinplot`. These control how the width of the violins are scaled. The default is ``area``, which is different from how the violins used to be drawn. Use ``scale='width'`` to get the old behavior.
 
 - Used a different style for the ``box`` kind of interior plot in :func:`violinplot`, which shows the whisker range in addition to the quartiles. Use ``inner='quartile'`` to get the old style.
 
+New plotting functions
+~~~~~~~~~~~~~~~~~~~~~~
+
 - Added the :func:`stripplot` function, which draws a scatterplot where one of the variables is categorical. This plot has the same API as :func:`boxplot` and :func:`violinplot`. It is useful both on its own and when composed with one of these other plot kinds to show both the observations and underlying distribution.
+
+- Added the :func:`countplot` function, which uses a bar plot representation to show counts of variables in one or more categorical bins. This replaces the old approach of calling :func:`barplot` without a numeric variable.
+
+Other additions
+~~~~~~~~~~~~~~~
 
 - Added the ``line_kws`` parameter to :func:`residplot` to change the style of the lowess line, when used.
 
@@ -25,5 +52,8 @@ This is a major release from 0.5. The main objective of this release is to unify
 - The interactive palette widgets now show a continuous colorbar, rather than a discrete palette, when `as_cmap` is True.
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
+
+Bug fixes
+~~~~~~~~~
 
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.

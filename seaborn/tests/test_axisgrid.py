@@ -16,7 +16,8 @@ from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
-from ..linearmodels import pointplot, pairplot
+from ..categorical import pointplot
+from ..linearmodels import pairplot
 
 rs = np.random.RandomState(0)
 
@@ -73,6 +74,23 @@ class TestFacetGrid(object):
             nt.assert_is_instance(ax, plt.Axes)
 
         plt.close("all")
+
+    def test_single_axes(self):
+
+        g1 = ag.FacetGrid(self.df)
+        nt.assert_is_instance(g1.ax, plt.Axes)
+
+        g2 = ag.FacetGrid(self.df, row="a")
+        with nt.assert_raises(AttributeError):
+            g2.ax
+
+        g3 = ag.FacetGrid(self.df, col="a")
+        with nt.assert_raises(AttributeError):
+            g3.ax
+
+        g4 = ag.FacetGrid(self.df, col="a", row="b")
+        with nt.assert_raises(AttributeError):
+            g4.ax
 
     def test_col_wrap(self):
 
