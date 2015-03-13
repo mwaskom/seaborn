@@ -1303,7 +1303,7 @@ class _PointPlotter(_CategoricalStatPlotter):
 
         # Use a good default for `dodge=True`
         if dodge is True and self.hue_names is not None:
-            dodge = .05 * len(self.hue_names)
+            dodge = .025 * len(self.hue_names)
 
         # Make sure we have a marker for each hue level
         if isinstance(markers, string_types):
@@ -2442,6 +2442,14 @@ pointplot.__doc__ = dedent("""\
 
         >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
 
+    Use a different color for a single-layer plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot("time", y="total_bill", data=tips,
+        ...                    color=sns.xkcd_rgb["dull red"])
+
     Use a different color palette for the points:
 
     .. plot::
@@ -2449,14 +2457,6 @@ pointplot.__doc__ = dedent("""\
 
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2")
-
-    Plot all points in a single color:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot("size", y="total_bill", data=tips.sort("size"),
-        ...                    color=sns.xkcd_rgb["dull red"])
 
     Control point order by sorting the input data:
 
