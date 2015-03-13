@@ -489,6 +489,18 @@ class TestFacetGrid(object):
         got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
         npt.assert_array_equal(x[::2], got_x)
 
+        g = ag.FacetGrid(self.df, col="d", col_wrap=5)
+        g.map(plt.plot, "x", "y")
+        g.set_xticklabels(rotation=45)
+        g.set_yticklabels(rotation=75)
+        for ax in g._bottom_axes:
+            for l in ax.get_xticklabels():
+                nt.assert_equal(l.get_rotation(), 45)
+        for ax in g._left_axes:
+            for l in ax.get_yticklabels():
+                nt.assert_equal(l.get_rotation(), 75)
+        plt.close("all")
+
     def test_set_axis_labels(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
@@ -502,6 +514,7 @@ class TestFacetGrid(object):
         got_y = [ax.get_ylabel() for ax in g.axes[:, 0]]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
+        plt.close("all")
 
     def test_axis_lims(self):
 

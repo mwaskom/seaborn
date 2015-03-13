@@ -639,7 +639,7 @@ class FacetGrid(Grid):
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):
         """Set x axis tick labels on the bottom row of the grid."""
-        for ax in self.axes[-1, :]:
+        for ax in self._bottom_axes:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_xticklabels()]
                 if step is not None:
@@ -651,7 +651,7 @@ class FacetGrid(Grid):
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
-        for ax in self.axes[-1, :]:
+        for ax in self._left_axes:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_yticklabels()]
             ax.set_yticklabels(labels, **kwargs)
