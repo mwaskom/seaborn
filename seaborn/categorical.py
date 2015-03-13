@@ -2448,7 +2448,7 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot("time", y="total_bill", data=tips,
-        ...                    color=sns.xkcd_rgb["dull red"])
+        ...                    color="#bb3f3f")
 
     Use a different color palette for the points:
 
