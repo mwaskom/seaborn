@@ -1,7 +1,5 @@
-"""Plottng functions for visualizing distributions."""
+"""Plotting functions for visualizing distributions."""
 from __future__ import division
-import inspect
-import colorsys
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -10,460 +8,14 @@ import matplotlib.pyplot as plt
 import warnings
 
 try:
-    import statsmodels.api as sm
+    import statsmodels.nonparametric.api as smnp
     _has_statsmodels = True
 except ImportError:
     _has_statsmodels = False
 
-from .external.six.moves import range
-
-from .utils import set_hls_values, desaturate, percentiles, iqr, _kde_support
-from .palettes import color_palette, husl_palette, blend_palette
+from .utils import set_hls_values, iqr, _kde_support
+from .palettes import color_palette, blend_palette
 from .axisgrid import JointGrid
-
-
-def _box_reshape(vals, groupby, names, order):
-    """Reshape the box/violinplot input options and find plot labels."""
-
-    # Set up default label outputs
-    xlabel, ylabel = None, None
-
-    # If order is provided, make sure it was used correctly
-    if order is not None:
-        # Assure that order is the same length as names, if provided
-        if names is not None:
-            if len(order) != len(names):
-                raise ValueError("`order` must have same length as `names`")
-        # Assure that order is only used with the right inputs
-        is_pd = isinstance(vals, pd.Series) or isinstance(vals, pd.DataFrame)
-        if not is_pd:
-            raise ValueError("`vals` must be a Pandas object to use `order`.")
-
-    # Handle case where data is a wide DataFrame
-    if isinstance(vals, pd.DataFrame):
-        if order is not None:
-            vals = vals[order]
-        if names is None:
-            names = vals.columns.tolist()
-        if vals.columns.name is not None:
-            xlabel = vals.columns.name
-        vals = vals.values.T
-
-    # Handle case where data is a long Series and there is a grouping object
-    elif isinstance(vals, pd.Series) and groupby is not None:
-        groups = pd.groupby(vals, groupby).groups
-        order = sorted(groups) if order is None else order
-        if hasattr(groupby, "name"):
-            if groupby.name is not None:
-                xlabel = groupby.name
-        if vals.name is not None:
-            ylabel = vals.name
-        vals = [vals.reindex(groups[name]) for name in order]
-        if names is None:
-            names = order
-
-    else:
-
-        # Handle case where the input data is an array or there was no groupby
-        if hasattr(vals, 'shape'):
-            if len(vals.shape) == 1:
-                if np.isscalar(vals[0]):
-                    vals = [vals]
-                else:
-                    vals = list(vals)
-            elif len(vals.shape) == 2:
-                nr, nc = vals.shape
-                if nr == 1:
-                    vals = [vals]
-                elif nc == 1:
-                    vals = [vals.ravel()]
-                else:
-                    vals = [vals[:, i] for i in range(nc)]
-            else:
-                error = "Input `vals` can have no more than 2 dimensions"
-                raise ValueError(error)
-
-        # This should catch things like flat lists
-        elif np.isscalar(vals[0]):
-            vals = [vals]
-
-        # By default, just use the plot positions as names
-        if names is None:
-            names = list(range(1, len(vals) + 1))
-        elif hasattr(names, "name"):
-            if names.name is not None:
-                xlabel = names.name
-
-    # Now convert vals to a common representation
-    # The plotting functions will work with a list of arrays
-    # The list allows each array to possibly be of a different length
-    vals = [np.asarray(a, np.float) for a in vals]
-
-    return vals, xlabel, ylabel, names
-
-
-def _box_colors(vals, color, sat):
-    """Find colors to use for boxplots or violinplots."""
-    if color is None:
-        # Default uses either the current palette or husl
-        current_palette = mpl.rcParams["axes.color_cycle"]
-        if len(vals) <= len(current_palette):
-            colors = color_palette(n_colors=len(vals))
-        else:
-            colors = husl_palette(len(vals), l=.7)
-    else:
-        try:
-            color = mpl.colors.colorConverter.to_rgb(color)
-            colors = [color for _ in vals]
-        except ValueError:
-                colors = color_palette(color, len(vals))
-
-    # Desaturate a bit because these are patches
-    colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-    colors = [desaturate(c, sat) for c in colors]
-
-    # Determine the gray color for the lines
-    light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
-    l = min(light_vals) * .6
-    gray = (l, l, l)
-
-    return colors, gray
-
-
-def boxplot(vals, groupby=None, names=None, join_rm=False, order=None,
-            color=None, alpha=None, fliersize=3, linewidth=1.5, widths=.8,
-            saturation=.7, label=None, ax=None, **kwargs):
-    """Wrapper for matplotlib boxplot with better aesthetics and functionality.
-
-    Parameters
-    ----------
-    vals : DataFrame, Series, 2D array, list of vectors, or vector.
-        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
-        each column mapping to a box. Lists of data are assumed to have one
-        element per box.  Can also provide one long Series in conjunction with
-        a grouping element as the `groupy` parameter to reshape the data into
-        several boxes. Otherwise 1D data will produce a single box.
-    groupby : grouping object
-        If `vals` is a Series, this is used to group into boxes by calling
-        pd.groupby(vals, groupby).
-    names : list of strings, optional
-        Names to plot on x axis; otherwise plots numbers. This will override
-        names inferred from Pandas inputs.
-    order : list of strings, optional
-        If vals is a Pandas object with name information, you can control the
-        order of the boxes by providing the box names in your preferred order.
-    join_rm : boolean, optional
-        If True, positions in the input arrays are treated as repeated
-        measures and are joined with a line plot.
-    color : mpl color, sequence of colors, or seaborn palette name
-        Inner box color.
-    alpha : float
-        Transparancy of the inner box color.
-    fliersize : float, optional
-        Markersize for the fliers.
-    linewidth : float, optional
-        Width for the box outlines and whiskers.
-    saturation : float, 0-1
-        Saturation relative to the fully-saturated color. Large patches tend
-        to look better at lower saturations, so this dims the palette colors
-        a bit by default.
-    ax : matplotlib axis, optional
-        Existing axis to plot into, otherwise grab current axis.
-    kwargs : additional keyword arguments to boxplot
-
-    Returns
-    -------
-    ax : matplotlib axis
-        Axis where boxplot is plotted.
-
-    """
-    if ax is None:
-        ax = plt.gca()
-
-    # Reshape and find labels for the plot
-    vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
-
-    # Find plot colors
-    colors, gray = _box_colors(vals, color, saturation)
-
-    # Make a flierprops dict and set symbol to override buggy default behavior
-    # on matplotlib 1.4.0
-    kwargs["sym"] = "d"
-
-    # Later versions of matplotlib only (but those are the one with the bug)
-    if "flierprops" in inspect.getargspec(ax.boxplot).args:
-        kwargs["flierprops"] = {"markerfacecolor": gray,
-                                "markeredgecolor": gray,
-                                "markersize": fliersize}
-
-    # Draw the boxplot using matplotlib
-    boxes = ax.boxplot(vals, patch_artist=True, widths=widths, **kwargs)
-
-    # Set the new aesthetics
-    for i, box in enumerate(boxes["boxes"]):
-        box.set_color(colors[i])
-        if alpha is not None:
-            box.set_alpha(alpha)
-        box.set_edgecolor(gray)
-        box.set_linewidth(linewidth)
-    for i, whisk in enumerate(boxes["whiskers"]):
-        whisk.set_color(gray)
-        whisk.set_linewidth(linewidth)
-        whisk.set_linestyle("-")
-    for i, cap in enumerate(boxes["caps"]):
-        cap.set_color(gray)
-        cap.set_linewidth(linewidth)
-    for i, med in enumerate(boxes["medians"]):
-        med.set_color(gray)
-        med.set_linewidth(linewidth)
-
-    # As of matplotlib 1.4.0 there is a bug where these values are being
-    # ignored, so this is redundant with what's above but I am keeping it
-    for i, fly in enumerate(boxes["fliers"]):
-        fly.set_color(gray)
-        fly.set_marker("d")
-        fly.set_markeredgecolor(gray)
-        fly.set_markersize(fliersize)
-
-    # This is a hack to get labels to work
-    # It's unclear whether this is actually broken in matplotlib or just not
-    # implemented, either way it's annoying.
-    if label is not None:
-        pos = kwargs.get("positions", [1])[0]
-        med = np.median(vals[0])
-        color = colors[0]
-        ax.add_patch(plt.Rectangle([pos, med], 0, 0, color=color, label=label))
-
-    # Is this a vertical plot?
-    vertical = kwargs.get("vert", True)
-
-    # Draw the joined repeated measures
-    if join_rm:
-        x, y = np.arange(1, len(vals) + 1), vals
-        if not vertical:
-            x, y = y, x
-        ax.plot(x, y, color=gray, alpha=2. / 3)
-
-    # Label the axes and ticks
-    if vertical:
-        ax.set_xticklabels(list(names))
-    else:
-        ax.set_yticklabels(list(names))
-        xlabel, ylabel = ylabel, xlabel
-    if xlabel is not None:
-        ax.set_xlabel(xlabel)
-    if ylabel is not None:
-        ax.set_ylabel(ylabel)
-
-    # Turn off the grid parallel to the boxes
-    if vertical:
-        ax.xaxis.grid(False)
-    else:
-        ax.yaxis.grid(False)
-
-    return ax
-
-
-def violinplot(vals, groupby=None, inner="box", color=None, positions=None,
-               names=None, order=None, bw="scott", widths=.8, alpha=None,
-               saturation=.7, join_rm=False, gridsize=100, cut=3,
-               inner_kws=None, ax=None, vert=True, **kwargs):
-
-    """Create a violin plot (a combination of boxplot and kernel density plot).
-
-    Parameters
-    ----------
-    vals : DataFrame, Series, 2D array, or list of vectors.
-        Data for plot. DataFrames and 2D arrays are assumed to be "wide" with
-        each column mapping to a box. Lists of data are assumed to have one
-        element per box.  Can also provide one long Series in conjunction with
-        a grouping element as the `groupy` parameter to reshape the data into
-        several violins. Otherwise 1D data will produce a single violins.
-    groupby : grouping object
-        If `vals` is a Series, this is used to group into boxes by calling
-        pd.groupby(vals, groupby).
-    inner : {'box' | 'stick' | 'points'}
-        Plot quartiles or individual sample values inside violin.
-    color : mpl color, sequence of colors, or seaborn palette name
-        Inner violin colors
-    positions : number or sequence of numbers
-        Position of first violin or positions of each violin.
-    names : list of strings, optional
-        Names to plot on x axis; otherwise plots numbers. This will override
-        names inferred from Pandas inputs.
-    order : list of strings, optional
-        If vals is a Pandas object with name information, you can control the
-        order of the plot by providing the violin names in your preferred
-        order.
-    bw : {'scott' | 'silverman' | scalar}
-        Name of reference method to determine kernel size, or size as a
-        scalar.
-    widths : float
-        Width of each violin at maximum density.
-    alpha : float, optional
-        Transparancy of violin fill.
-    saturation : float, 0-1
-        Saturation relative to the fully-saturated color. Large patches tend
-        to look better at lower saturations, so this dims the palette colors
-        a bit by default.
-    join_rm : boolean, optional
-        If True, positions in the input arrays are treated as repeated
-        measures and are joined with a line plot.
-    gridsize : int
-        Number of discrete gridpoints to evaluate the density on.
-    cut : scalar
-        Draw the estimate to cut * bw from the extreme data points.
-    inner_kws : dict, optional
-        Keyword arugments for inner plot.
-    ax : matplotlib axis, optional
-        Axis to plot on, otherwise grab current axis.
-    vert : boolean, optional
-        If true (default), draw vertical plots; otherwise, draw horizontal
-        ones.
-    kwargs : additional parameters to fill_betweenx
-
-    Returns
-    -------
-    ax : matplotlib axis
-        Axis with violin plot.
-
-    """
-
-    if ax is None:
-        ax = plt.gca()
-
-    # Reshape and find labels for the plot
-    vals, xlabel, ylabel, names = _box_reshape(vals, groupby, names, order)
-
-    # Sort out the plot colors
-    colors, gray = _box_colors(vals, color, saturation)
-
-    # Initialize the kwarg dict for the inner plot
-    if inner_kws is None:
-        inner_kws = {}
-    inner_kws.setdefault("alpha", .6 if inner == "points" else 1)
-    inner_kws["alpha"] *= 1 if alpha is None else alpha
-    inner_kws.setdefault("color", gray)
-    inner_kws.setdefault("marker", "." if inner == "points" else "")
-    lw = inner_kws.pop("lw", 1.5 if inner == "box" else .8)
-    inner_kws.setdefault("linewidth", lw)
-
-    # Find where the violins are going
-    if positions is None:
-        positions = np.arange(1, len(vals) + 1)
-    elif not hasattr(positions, "__iter__"):
-        positions = np.arange(positions, len(vals) + positions)
-
-    # Set the default linewidth if not provided in kwargs
-    try:
-        lw = kwargs[({"lw", "linewidth"} & set(kwargs)).pop()]
-    except KeyError:
-        lw = 1.5
-
-    # Iterate over the variables
-    for i, a in enumerate(vals):
-
-        x = positions[i]
-
-        # If we only have a single value, plot a horizontal line
-        if len(np.unique(a)) == 1:
-            y = a[0]
-            if vert:
-                ax.plot([x - widths / 2, x + widths / 2], [y, y], **inner_kws)
-            else:
-                ax.plot([y, y], [x - widths / 2, x + widths / 2], **inner_kws)
-            continue
-
-        # Fit the KDE
-        try:
-            kde = stats.gaussian_kde(a, bw)
-        except TypeError:
-            kde = stats.gaussian_kde(a)
-            if bw != "scott":  # scipy default
-                msg = ("Ignoring bandwidth choice, "
-                       "please upgrade scipy to use a different bandwidth.")
-                warnings.warn(msg, UserWarning)
-
-        # Determine the support region
-        if isinstance(bw, str):
-            bw_name = "scotts" if bw == "scott" else bw
-            _bw = getattr(kde, "%s_factor" % bw_name)() * a.std(ddof=1)
-        else:
-            _bw = bw
-        y = _kde_support(a, _bw, gridsize, cut, (-np.inf, np.inf))
-        dens = kde.evaluate(y)
-        scl = 1 / (dens.max() / (widths / 2))
-        dens *= scl
-
-        # Draw the violin. If vert (default), we will use ``ax.plot`` in the
-        # standard way; otherwise, we invert x,y.
-        # For this, define a simple wrapper ``ax_plot``
-        color = colors[i]
-        if vert:
-            ax.fill_betweenx(y, x - dens, x + dens, alpha=alpha, color=color)
-
-            def ax_plot(x, y, *args, **kwargs):
-                ax.plot(x, y, *args, **kwargs)
-
-        else:
-            ax.fill_between(y, x - dens, x + dens, alpha=alpha, color=color)
-
-            def ax_plot(x, y, *args, **kwargs):
-                ax.plot(y, x, *args, **kwargs)
-
-        if inner == "box":
-            for quant in percentiles(a, [25, 75]):
-                q_x = kde.evaluate(quant) * scl
-                q_x = [x - q_x, x + q_x]
-                ax_plot(q_x, [quant, quant], linestyle=":",  **inner_kws)
-            med = np.median(a)
-            m_x = kde.evaluate(med) * scl
-            m_x = [x - m_x, x + m_x]
-            ax_plot(m_x, [med, med], linestyle="--", **inner_kws)
-        elif inner == "stick":
-            x_vals = kde.evaluate(a) * scl
-            x_vals = [x - x_vals, x + x_vals]
-            ax_plot(x_vals, [a, a], linestyle="-", **inner_kws)
-        elif inner == "points":
-            x_vals = [x for _ in a]
-            ax_plot(x_vals, a, mew=0, linestyle="", **inner_kws)
-        for side in [-1, 1]:
-            ax_plot((side * dens) + x, y, c=gray, lw=lw)
-
-    # Draw the repeated measure bridges
-    if join_rm:
-        ax.plot(range(1, len(vals) + 1), vals,
-                color=inner_kws["color"], alpha=2. / 3)
-
-    # Add in semantic labels
-    if names is not None:
-        if len(vals) != len(names):
-            raise ValueError("Length of names list must match nuber of bins")
-        names = list(names)
-
-    if vert:
-        # Add in semantic labels
-        ax.set_xticks(positions)
-        ax.set_xlim(positions[0] - .5, positions[-1] + .5)
-        ax.set_xticklabels(names)
-
-        if xlabel is not None:
-            ax.set_xlabel(xlabel)
-        if ylabel is not None:
-            ax.set_ylabel(ylabel)
-    else:
-        # Add in semantic labels
-        ax.set_yticks(positions)
-        ax.set_yticklabels(names)
-        ax.set_ylim(positions[0] - .5, positions[-1] + .5)
-
-        if ylabel is not None:
-            ax.set_ylabel(xlabel)
-        if xlabel is not None:
-            ax.set_xlabel(ylabel)
-
-    ax.xaxis.grid(False)
-    return ax
 
 
 def _freedman_diaconis_bins(a):
@@ -471,7 +23,11 @@ def _freedman_diaconis_bins(a):
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
     h = 2 * iqr(a) / (len(a) ** (1 / 3))
-    return np.ceil((a.max() - a.min()) / h)
+    # fall back to 10 bins if iqr is 0
+    if h == 0:
+        return 10.
+    else:
+        return np.ceil((a.max() - a.min()) / h)
 
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
@@ -685,7 +241,7 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
                                 cumulative=False):
     """Compute a univariate kernel density estimate using statsmodels."""
     fft = kernel == "gau"
-    kde = sm.nonparametric.KDEUnivariate(data)
+    kde = smnp.KDEUnivariate(data)
     kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
     if cumulative:
         grid, y = kde.support, kde.cdf
@@ -753,7 +309,7 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
     if isinstance(bw, str):
-        bw_func = getattr(sm.nonparametric.bandwidths, "bw_" + bw)
+        bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
         bw = [x_bw, y_bw]
@@ -765,7 +321,7 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     if isinstance(y, pd.Series):
         y = y.values
 
-    kde = sm.nonparametric.KDEMultivariate([x, y], "cc", bw)
+    kde = smnp.KDEMultivariate([x, y], "cc", bw)
     x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
     y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
     xx, yy = np.meshgrid(x_support, y_support)

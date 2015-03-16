@@ -9,6 +9,9 @@ import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from distutils.version import LooseVersion
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
+
 
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
@@ -355,6 +358,30 @@ def load_dataset(name, **kws):
     df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
+
+    if not pandas_has_categoricals:
+        return df
+
+    # Set some columns as a categorical type with ordered levels
+
+    if name == "tips":
+        df["day"] = pd.Categorical(df["day"], ["Thur", "Fri", "Sat", "Sun"])
+        df["sex"] = pd.Categorical(df["sex"], ["Male", "Female"])
+        df["time"] = pd.Categorical(df["time"], ["Lunch", "Dinner"])
+        df["smoker"] = pd.Categorical(df["smoker"], ["Yes", "No"])
+
+    if name == "flights":
+        df["month"] = pd.Categorical(df["month"], df.month.unique())
+
+    if name == "exercise":
+        df["time"] = pd.Categorical(df["time"], ["1 min", "15 min", "30 min"])
+        df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
+        df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
+
+    if name == "titanic":
+        df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
+        df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
     return df
 
 
@@ -391,3 +418,37 @@ def axes_ticklabels_overlap(ax):
     """
     return (axis_ticklabels_overlap(ax.get_xticklabels()),
             axis_ticklabels_overlap(ax.get_yticklabels()))
+
+
+def categorical_order(values, order=None):
+    """Return a list of unique data values.
+
+    Determine an ordered list of levels in ``values``.
+
+    Parameters
+    ----------
+    values : list, array, Categorical, or Series
+        Vector of "categorical" values
+    order : list-like, optional
+        Desired order of category levels to override the order determined
+        from the ``values`` object.
+
+    Returns
+    -------
+    order : list
+        Ordered list of category levels
+
+    """
+    if order is None:
+        if hasattr(values, "categories"):
+            order = values.categories
+        else:
+            try:
+                order = values.cat.categories
+            except (TypeError, AttributeError):
+                try:
+                    order = values.unique()
+                except AttributeError:
+                    order = pd.unique(values)
+
+    return list(order)

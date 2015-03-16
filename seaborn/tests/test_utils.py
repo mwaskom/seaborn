@@ -2,11 +2,15 @@
 import warnings
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from numpy.testing import assert_array_equal
 import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
+
+from distutils.version import LooseVersion
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 from .. import utils, rcmod
 
@@ -244,3 +248,36 @@ def test_ticklabels_overlap():
     x, y = utils.axes_ticklabels_overlap(ax)
     assert x
     assert not y
+
+
+def test_category_order():
+
+    x = ["a", "c", "c", "b", "a", "d"]
+    order = ["a", "b", "c", "d"]
+
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, ["a", "c", "b", "d"])
+
+    out = utils.categorical_order(x, order)
+    nt.assert_equal(out, order)
+
+    out = utils.categorical_order(x, ["b", "a"])
+    nt.assert_equal(out, ["b", "a"])
+
+    out = utils.categorical_order(np.array(x))
+    nt.assert_equal(out, ["a", "c", "b", "d"])
+
+    out = utils.categorical_order(pd.Series(x))
+    nt.assert_equal(out, ["a", "c", "b", "d"])
+
+    if pandas_has_categoricals:
+        x = pd.Categorical(x, order)
+        out = utils.categorical_order(x)
+        nt.assert_equal(out, list(x.categories))
+
+        x = pd.Series(x)
+        out = utils.categorical_order(x)
+        nt.assert_equal(out, list(x.cat.categories))
+
+        out = utils.categorical_order(x, ["b", "a"])
+        nt.assert_equal(out, ["b", "a"])

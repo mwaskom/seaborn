@@ -1,5 +1,8 @@
 from __future__ import division
 from itertools import product
+from distutils.version import LooseVersion
+import warnings
+
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -28,8 +31,30 @@ class Grid(object):
         """Save the figure."""
         self.fig.savefig(*args, **kwargs)
 
-    def add_legend(self, legend_data=None, title=None, label_order=None):
-        """Draw a legend, possibly resizing the figure."""
+    def add_legend(self, legend_data=None, title=None, label_order=None,
+                   **kwargs):
+        """Draw a legend, maybe placing it outside axes and resizing the figure.
+
+        Parameters
+        ----------
+        legend_data : dict, optional
+            Dictionary mapping label names to matplotlib artist handles. The
+            default reads from ``self._legend_data``.
+        title : string, optional
+            Title for the legend. The default reads from ``self._hue_var``.
+        label_order : list of labels, optional
+            The order that the legend entries should appear in. The default
+            reads from ``self.hue_names`` or sorts the keys in ``legend_data``.
+        kwargs : key, value pairings
+            Other keyword arguments are passed to the underlying legend methods
+            on the Figure or Axes object.
+
+        Returns
+        -------
+        self : Grid instance
+            Returns self for easy chaining.
+
+        """
         # Find the data for the legend
         legend_data = self._legend_data if legend_data is None else legend_data
         if label_order is None:
@@ -37,17 +62,22 @@ class Grid(object):
                 label_order = np.sort(list(legend_data.keys()))
             else:
                 label_order = list(map(str, self.hue_names))
-        handles = [legend_data[l] for l in label_order if l in legend_data]
+
+        blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
+        handles = [legend_data.get(l, blank_handle) for l in label_order]
         title = self._hue_var if title is None else title
         try:
             title_size = mpl.rcParams["axes.labelsize"] * .85
         except TypeError:  # labelsize is something like "large"
             title_size = mpl.rcParams["axes.labelsize"]
 
+        # Set default legend kwargs
+        kwargs.setdefault("scatterpoints", 1)
+
         if self._legend_out:
             # Draw a full-figure legend outside the grid
-            figlegend = plt.figlegend(handles, label_order, "center right",
-                                      scatterpoints=1)
+            figlegend = self.fig.legend(handles, label_order, "center right",
+                                        **kwargs)
             self._legend = figlegend
             figlegend.set_title(title)
 
@@ -79,13 +109,16 @@ class Grid(object):
 
         else:
             # Draw a legend in the first axis
-            leg = self.axes.flat[0].legend(handles, label_order, loc="best")
+            ax = self.axes.flat[0]
+            leg = ax.legend(handles, label_order, loc="best", **kwargs)
             leg.set_title(title)
 
             # Set the title size a roundabout way to maintain
             # compatability with matplotlib 1.1
             prop = mpl.font_manager.FontProperties(size=title_size)
             leg._legend_title_box._text.set_font_properties(prop)
+
+        return self
 
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
@@ -146,7 +179,8 @@ class FacetGrid(Grid):
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None):
+                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
+                 gridspec_kws=None):
         """Initialize the plot figure and FacetGrid object.
 
         Parameters
@@ -157,7 +191,7 @@ class FacetGrid(Grid):
         row, col, hue : strings, optional
             Variable (column) names to subset the data for the facets.
         col_wrap : int, optional
-            Wrap the column variable at this width. Incompatible with `row`.
+            Wrap the column variable at this width. Incompatible with ``row``.
         share{x, y}: booleans, optional
             Lock the limits of the vertical andn horizontal axes across the
             facets.
@@ -187,7 +221,12 @@ class FacetGrid(Grid):
         {x, y}lim: tuples, optional
             Limits for each of the axes on each facet when share{x, y} is True.
         subplot_kws : dict, optional
-            Dictionary of keyword arguments.
+            Dictionary of keyword arguments passed to matplotlib subplot(s)
+            methods.
+        gridspec_kws : dict, optional
+            Dictionary of keyword arguments passed to matplotlib's ``gridspec``
+            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
+            ignored if ``col_wrap`` is not ``None``.
 
         Returns
         -------
@@ -197,10 +236,14 @@ class FacetGrid(Grid):
         See Also
         --------
         PairGrid : Subplot grid for plotting pairwise relationships.
-        lmplot : Combines regplot and a FacetGrid
-        factorplot : Combines pointplot, barplot, or boxplot and a FacetGrid
+        lmplot : Combines a regression plot and a FacetGrid.
+        factorplot : Combines a categorical plot and a FacetGrid.
 
         """
+
+        MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
+        OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
+
         # Compute the grid shape
         ncol = 1 if col is None else len(data[col].unique())
         nrow = 1 if row is None else len(data[row].unique())
@@ -208,6 +251,9 @@ class FacetGrid(Grid):
 
         self._col_wrap = col_wrap
         if col_wrap is not None:
+            if row is not None:
+                err = "Cannot use `row` and `col_wrap` together."
+                raise ValueError(err)
             ncol = col_wrap
             nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
         self._ncol = ncol
@@ -223,6 +269,7 @@ class FacetGrid(Grid):
 
         # Build the subplot keyword dictionary
         subplot_kws = {} if subplot_kws is None else subplot_kws.copy()
+        gridspec_kws = {} if gridspec_kws is None else gridspec_kws.copy()
         if xlim is not None:
             subplot_kws["xlim"] = xlim
         if ylim is not None:
@@ -230,14 +277,25 @@ class FacetGrid(Grid):
 
         # Initialize the subplot grid
         if col_wrap is None:
-            fig, axes = plt.subplots(nrow, ncol, figsize=figsize,
-                                     squeeze=False,
-                                     sharex=sharex, sharey=sharey,
-                                     subplot_kw=subplot_kws)
+            kwargs = dict(figsize=figsize, squeeze=False,
+                          sharex=sharex, sharey=sharey,
+                          subplot_kw=subplot_kws,
+                          gridspec_kw=gridspec_kws)
+
+            if OLD_MPL:
+                _ = kwargs.pop('gridspec_kw', None)
+                if gridspec_kws:
+                    msg = "gridspec module only available in mpl >= {}"
+                    warnings.warn(msg.format(MPL_GRIDSPEC_VERSION))
+
+            fig, axes = plt.subplots(nrow, ncol, **kwargs)
             self.axes = axes
 
         else:
             # If wrapping the col variable we need to make the grid ourselves
+            if gridspec_kws:
+                warnings.warn("`gridspec_kws` ignored when using `col_wrap`")
+
             n_axes = len(data[col].unique())
             fig = plt.figure(figsize=figsize)
             axes = np.empty(n_axes, object)
@@ -586,7 +644,7 @@ class FacetGrid(Grid):
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):
         """Set x axis tick labels on the bottom row of the grid."""
-        for ax in self.axes[-1, :]:
+        for ax in self._bottom_axes:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_xticklabels()]
                 if step is not None:
@@ -598,7 +656,7 @@ class FacetGrid(Grid):
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
-        for ax in self.axes[-1, :]:
+        for ax in self._left_axes:
             if labels is None:
                 labels = [l.get_text() for l in ax.get_yticklabels()]
             ax.set_yticklabels(labels, **kwargs)
@@ -684,6 +742,14 @@ class FacetGrid(Grid):
                 # Index the flat array so col_wrap works
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
+
+    @property
+    def ax(self):
+        """Easy access to single axes."""
+        if self.axes.shape == (1, 1):
+            return self.axes[0, 0]
+        else:
+            raise AttributeError
 
     @property
     def _inner_axes(self):

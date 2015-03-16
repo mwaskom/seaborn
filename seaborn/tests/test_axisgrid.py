@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -14,7 +16,8 @@ from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
-from ..linearmodels import pointplot, pairplot
+from ..categorical import pointplot
+from ..linearmodels import pairplot
 
 rs = np.random.RandomState(0)
 
@@ -72,6 +75,23 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
+    def test_single_axes(self):
+
+        g1 = ag.FacetGrid(self.df)
+        nt.assert_is_instance(g1.ax, plt.Axes)
+
+        g2 = ag.FacetGrid(self.df, row="a")
+        with nt.assert_raises(AttributeError):
+            g2.ax
+
+        g3 = ag.FacetGrid(self.df, col="a")
+        with nt.assert_raises(AttributeError):
+            g3.ax
+
+        g4 = ag.FacetGrid(self.df, col="a", row="b")
+        with nt.assert_raises(AttributeError):
+            g4.ax
+
     def test_col_wrap(self):
 
         g = ag.FacetGrid(self.df, col="d")
@@ -83,6 +103,9 @@ class TestFacetGrid(object):
         nt.assert_is(g_wrap.facet_axis(0, 8), g_wrap.axes[8])
         nt.assert_equal(g_wrap._ncol, 4)
         nt.assert_equal(g_wrap._nrow, 3)
+
+        with nt.assert_raises(ValueError):
+            g = ag.FacetGrid(self.df, row="b", col="d", col_wrap=4)
 
         plt.close("all")
 
@@ -187,6 +210,33 @@ class TestFacetGrid(object):
 
         plt.close("all")
 
+    def test_legend_data_missing_level(self):
+
+        g1 = ag.FacetGrid(self.df, hue="a", hue_order=list("azbc"))
+        g1.map(plt.plot, "x", "y")
+        g1.add_legend()
+
+        b, g, r, p = color_palette(n_colors=4)
+        palette = [b, r, p]
+
+        nt.assert_equal(g1._legend.get_title().get_text(), "a")
+
+        a_levels = sorted(self.df.a.unique())
+
+        lines = g1._legend.get_lines()
+        nt.assert_equal(len(lines), len(a_levels))
+
+        for line, hue in zip(lines, palette):
+            nt.assert_equal(line.get_color(), hue)
+
+        labels = g1._legend.get_texts()
+        nt.assert_equal(len(labels), 4)
+
+        for label, level in zip(labels, list("azbc")):
+            nt.assert_equal(label.get_text(), level)
+
+        plt.close("all")
+
     def test_get_boolean_legend_data(self):
 
         self.df["b_bool"] = self.df.b == "m"
@@ -231,6 +281,57 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(self.df, subplot_kws=dict(axisbg="blue"))
         for ax in g.axes.flat:
             nt.assert_equal(ax.get_axis_bgcolor(), "blue")
+
+    @skipif(old_matplotlib)
+    def test_gridspec_kws(self):
+        ratios = [3, 1, 2]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios, height_ratios=ratios)
+        g = ag.FacetGrid(self.df, col='c', row='a', gridspec_kws=gskws)
+
+        # clear out all ticks
+        for ax in g.axes.flat:
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+        g.fig.tight_layout()
+        widths, heights = np.meshgrid(sizes, sizes)
+        for n, ax in enumerate(g.axes.flat):
+            npt.assert_almost_equal(
+                ax.get_position().width,
+                widths.flatten()[n],
+                decimal=2
+            )
+            npt.assert_almost_equal(
+                ax.get_position().height,
+                heights.flatten()[n],
+                decimal=2
+            )
+
+    @skipif(old_matplotlib)
+    def test_gridspec_kws_col_wrap(self):
+        ratios = [3, 1, 2, 1, 1]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios)
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("always")
+            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='d',
+                             col_wrap=5, gridspec_kws=gskws)
+
+    @skipif(not old_matplotlib)
+    def test_gridsic_kws_old_mpl(self):
+        ratios = [3, 1, 2]
+        sizes = [0.46, 0.15, 0.31]
+
+        gskws = dict(width_ratios=ratios, height_ratios=ratios)
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("always")
+            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='c',
+                             row='a', gridspec_kws=gskws)
 
     def test_data_generator(self):
 
@@ -391,6 +492,18 @@ class TestFacetGrid(object):
         got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
         npt.assert_array_equal(x[::2], got_x)
 
+        g = ag.FacetGrid(self.df, col="d", col_wrap=5)
+        g.map(plt.plot, "x", "y")
+        g.set_xticklabels(rotation=45)
+        g.set_yticklabels(rotation=75)
+        for ax in g._bottom_axes:
+            for l in ax.get_xticklabels():
+                nt.assert_equal(l.get_rotation(), 45)
+        for ax in g._left_axes:
+            for l in ax.get_yticklabels():
+                nt.assert_equal(l.get_rotation(), 75)
+        plt.close("all")
+
     def test_set_axis_labels(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
@@ -404,8 +517,9 @@ class TestFacetGrid(object):
         got_y = [ax.get_ylabel() for ax in g.axes[:, 0]]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
+        plt.close("all")
 
-    def test_subplot_kws(self):
+    def test_axis_lims(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b", xlim=(0, 4), ylim=(-2, 3))
         nt.assert_equal(g.axes[0, 0].get_xlim(), (0, 4))

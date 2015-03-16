@@ -771,6 +771,10 @@ class ClusterGrid(Grid):
         kws = kws.copy()
         kws.pop('cmap', None)
         kws.pop('center', None)
+        kws.pop('vmin', None)
+        kws.pop('vmax', None)
+        kws.pop('xticklabels', None)
+        kws.pop('yticklabels', None)
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)

@@ -15,4 +15,4 @@ d = rs.normal(0, 1, (n, p))
 d += np.log(np.arange(1, p + 1)) * -5 + 10
 
 pal = sns.cubehelix_palette(p, rot=-.5, dark=.3)
-sns.violinplot(d, color=pal)
+sns.violinplot(data=d, palette=pal)
