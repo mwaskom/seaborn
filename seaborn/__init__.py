@@ -9,6 +9,7 @@ from .matrix import *
 from .miscplot import *
 from .axisgrid import *
 from .xkcd_rgb import xkcd_rgb
+from .crayons import crayons
 set()
 
 __version__ = "0.6.dev"
