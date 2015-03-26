@@ -481,7 +481,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         Data or names of variables in `data`.
     data : DataFrame, optional
         DataFrame when `x` and `y` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" | "gauss" }, optional
         Kind of plot to draw.
     stat_func : callable or None
         Function used to calculate a statistic about the relationship and
@@ -592,8 +592,20 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
                  **marginal_kws)
         stat_func = None
+    elif kind.startswith("gauss"):
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(plt.scatter, **joint_kws)
+
+        x, y = grid.ax_joint.collections[0].get_offsets().T
+        marginal_kws.setdefault("color", color)
+        marginal_kws.setdefault("kde", False)
+        distplot(x, ax=grid.ax_marg_x, fit=stats.norm, **marginal_kws)
+        distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
+                 **marginal_kws)
+        stat_func = None
     else:
-        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
+        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', 'gauss', or 'hex'"
         raise ValueError(msg)
 
     if stat_func is not None:
