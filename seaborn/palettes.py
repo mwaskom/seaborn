@@ -13,6 +13,7 @@ from .external.six.moves import range
 
 from .utils import desaturate, set_hls_values
 from .xkcd_rgb import xkcd_rgb
+from .crayons import crayons
 from .miscplot import palplot
 
 
@@ -439,6 +440,19 @@ def xkcd_palette(colors):
 
     """
     palette = [xkcd_rgb[name] for name in colors]
+    return color_palette(palette, len(palette))
+
+
+def crayon_palette(colors):
+    """Make a palette with color names from Crayola crayons.
+
+    Colors are taken from here:
+    http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors
+
+    This is just a simple wrapper around the seaborn.crayons dictionary.
+
+    """
+    palette = [crayons[name] for name in colors]
     return color_palette(palette, len(palette))
 
 

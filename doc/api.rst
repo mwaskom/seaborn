@@ -109,6 +109,7 @@ Color palettes
     diverging_palette
     blend_palette
     xkcd_palette
+    crayon_palette
     mpl_palette
 
 Palette widgets

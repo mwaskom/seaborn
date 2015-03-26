@@ -43,6 +43,8 @@ New plotting functions
 Other additions
 ~~~~~~~~~~~~~~~
 
+- Added the ``seaborn.crayons`` dictionary and the :func:`crayon_palette` function to define colors from the 120 box (!) of `Crayola crayons <http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors>`_.
+
 - Added the ``line_kws`` parameter to :func:`residplot` to change the style of the lowess line, when used.
 
 - Added open-ended ``**kwargs`` to the ``add_legend`` method on :class:`FacetGrid` and :class:`PairGrid`, which will pass additional keyword arguments through when calling the legend function on the ``Figure`` or ``Axes``.
