@@ -12,7 +12,7 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap
+from .utils import despine, axis_ticklabels_overlap, mouseover_factory
 from .external.six.moves import range
 
 
@@ -171,6 +171,23 @@ class _HeatMapper(object):
         ax.set(xticks=np.arange(nx) + .5, yticks=np.arange(ny) + .5)
         xtl = ax.set_xticklabels(self.xticklabels)
         ytl = ax.set_yticklabels(self.yticklabels, rotation="vertical")
+        _xfun = mouseover_factory(self.xticklabels)
+        _yfun = mouseover_factory(self.yticklabels)
+
+        def _zfun(x, y):
+            shp = self.plot_data.shape
+            if 0 < x < shp[1] and 0 < y < shp[0]:
+                return str(self.plot_data[int(y), int(x)])
+            else:
+                return ''
+
+        def mouse_over(x, y):
+            x_str = _xfun(x)
+            y_str = _yfun(y)
+            z_str = _zfun(x, y)
+            return "x={} y={} z={}".format(x_str, y_str, z_str)
+
+        ax.format_coord = mouse_over
 
         # Possibly rotate them if they overlap
         plt.draw()
