@@ -452,3 +452,13 @@ def categorical_order(values, order=None):
                     order = pd.unique(values)
 
     return list(order)
+
+
+def mouseover_factory(label_list, offset=0):
+    def inner(cord):
+        cord = cord - offset
+        if cord >= 0 and cord < len(label_list):
+            return str(label_list[int(cord)])
+        else:
+            return ''
+    return inner
