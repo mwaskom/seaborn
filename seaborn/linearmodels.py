@@ -23,6 +23,7 @@ from . import algorithms as algo
 from .palettes import color_palette
 from .axisgrid import FacetGrid, PairGrid
 from .distributions import kdeplot
+from .utils import mouseover_factory
 
 
 class _LinearPlotter(object):
@@ -1049,6 +1050,27 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
         ax.set_xticklabels(xnames, rotation=90)
         ynames = names if annot else names[1:]
         ax.set_yticklabels(ynames)
+
+        _xfun = mouseover_factory(xnames)
+        _yfun = mouseover_factory(ynames)
+
+        def _zfun(x, y):
+            shp = mat.shape
+            x, y = x+.5, y+.5
+            if 0 < x < shp[1]-.5 and 0 < y < shp[0]:
+                return str(mat[int(y), int(x)])
+            else:
+                return ''
+
+        def mouse_over(x, y):
+            if y < x:
+                return ''
+            x_str = _xfun(x)
+            y_str = _yfun(y)
+            z_str = _zfun(x, y)
+            return "x={} y={} z={}".format(x_str, y_str, z_str)
+
+        ax.format_coord = mouse_over
 
     minor_ticks = np.linspace(-.5, nvars - 1.5, nvars)
     ax.set_xticks(minor_ticks, True)
