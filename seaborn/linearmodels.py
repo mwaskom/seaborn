@@ -1056,8 +1056,9 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
 
     def _zfun(x, y):
         shp = mat.shape
-        if 0 < x < shp[1] and 0 < y < shp[0]:
-            return str(mat[int(y+.5), int(x+.5)])
+        x, y = x+.5, y+.5
+        if 0 < x < shp[1]-.5 and 0 < y < shp[0]:
+            return str(mat[int(y), int(x)])
         else:
             return ''
 
