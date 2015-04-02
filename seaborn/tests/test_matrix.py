@@ -215,7 +215,6 @@ class TestHeatmap(object):
                                 'c': [3, 3, np.nan]})
         mask = np.isnan(df.values)
         df_masked = np.ma.masked_where(mask, df)
-    
         ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
         nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
         for val, text in zip(df_masked[::-1].compressed(), ax.texts):
