@@ -148,7 +148,7 @@ class _HeatMapper(object):
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
-            if not val is np.ma.masked:
+            if val is not np.ma.masked:
                 _, l, _ = colorsys.rgb_to_hls(*color[:3])
                 text_color = ".15" if l > .5 else "w"
                 val = ("{:" + self.fmt + "}").format(val)
