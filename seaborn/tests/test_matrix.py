@@ -207,6 +207,7 @@ class TestHeatmap(object):
         for val, text in zip(self.x_norm[::-1].flat, ax.texts):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
             nt.assert_equal(text.get_fontsize(), 14)
+        plt.close("all")
 
     def test_heatmap_annotation_with_mask(self):
 
