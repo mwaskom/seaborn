@@ -148,11 +148,12 @@ class _HeatMapper(object):
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
-            _, l, _ = colorsys.rgb_to_hls(*color[:3])
-            text_color = ".15" if l > .5 else "w"
-            val = ("{:" + self.fmt + "}").format(val)
-            ax.text(x, y, val, color=text_color,
-                    ha="center", va="center", **self.annot_kws)
+            if val is not np.ma.masked:
+                _, l, _ = colorsys.rgb_to_hls(*color[:3])
+                text_color = ".15" if l > .5 else "w"
+                val = ("{:" + self.fmt + "}").format(val)
+                ax.text(x, y, val, color=text_color,
+                        ha="center", va="center", **self.annot_kws)
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""

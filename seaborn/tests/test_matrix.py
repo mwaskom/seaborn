@@ -207,6 +207,20 @@ class TestHeatmap(object):
         for val, text in zip(self.x_norm[::-1].flat, ax.texts):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
             nt.assert_equal(text.get_fontsize(), 14)
+        plt.close("all")
+
+    def test_heatmap_annotation_with_mask(self):
+
+        df = pd.DataFrame(data={'a': [1, 1, 1],
+                                'b': [2, np.nan, 2],
+                                'c': [3, 3, np.nan]})
+        mask = np.isnan(df.values)
+        df_masked = np.ma.masked_where(mask, df)
+        ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
+        nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
+        for val, text in zip(df_masked[::-1].compressed(), ax.texts):
+            nt.assert_equal("{:.1f}".format(val), text.get_text())
+        plt.close("all")
 
     def test_heatmap_cbar(self):
 
