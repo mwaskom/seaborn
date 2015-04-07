@@ -256,7 +256,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes, optional
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
-    xtickabels : list-like or bool, optional
+    xticklabels : list-like or bool, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
         xticklabels
