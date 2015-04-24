@@ -1286,6 +1286,7 @@ class JointGrid(object):
             Returns `self`.
 
         """
+        kwargs["vertical"] = False
         plt.sca(self.ax_marg_x)
         func(self.x, **kwargs)
 
