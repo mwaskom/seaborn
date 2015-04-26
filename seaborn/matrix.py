@@ -795,8 +795,9 @@ class ClusterGrid(Grid):
             despine(self.ax_col_colors, left=True, bottom=True)
 
     def plot_matrix(self, colorbar_kws, mask, xind, yind, **kws):
-        self.data2d = self.data2d.iloc[yind, xind]
-        heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
+        data2d = self.data2d.iloc[yind, xind]
+        mask = np.asarray(mask, np.bool)[yind][:, xind]
+        heatmap(data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=mask, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
