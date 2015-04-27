@@ -796,7 +796,8 @@ class ClusterGrid(Grid):
 
     def plot_matrix(self, colorbar_kws, mask, xind, yind, **kws):
         data2d = self.data2d.iloc[yind, xind]
-        mask = np.asarray(mask, np.bool)[yind][:, xind]
+        if mask is not None:
+            mask = np.asarray(mask, np.bool)[yind][:, xind]
         heatmap(data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=mask, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
