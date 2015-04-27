@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
+from .external.six.moves.urllib.request import urlopen
+
 
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
@@ -351,8 +353,28 @@ def iqr(a):
     return q3 - q1
 
 
+def get_dataset_names():
+    # delayed import to not demand bs4 unless this function is actually used
+    from bs4 import BeautifulSoup
+    gh_list = BeautifulSoup(urlopen('https://github.com/mwaskom/seaborn-data/'))
+
+    return [l.text.replace('.csv', '')
+            for l in gh_list.find_all("a", {"class": "js-directory-link"})
+            if l.text.endswith('.csv')]
+
+
 def load_dataset(name, **kws):
-    """Load a dataset from the online repository (requires internet)."""
+    """Load a dataset from the online repository (requires internet).
+
+    Parameters
+    ----------
+    name : str
+        Name of the dataset (`name`.csv on
+        https://github.com/mwaskom/seaborn-data).  You can obtain list of
+        available datasets using :func:`get_dataset_names`
+    kws : dict, optional
+        Passed to pandas.read_csv
+    """
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
     df = pd.read_csv(full_path, **kws)
