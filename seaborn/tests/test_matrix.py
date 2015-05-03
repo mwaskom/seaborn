@@ -868,13 +868,13 @@ class TestClustermap(object):
         kws["mask"] = self.df_norm > 0
 
         g = mat.clustermap(self.df_norm, **kws)
-        pdt.assert_index_equal(g.data2d.index, g.mask.index)
-        pdt.assert_index_equal(g.data2d.columns, g.mask.columns)
+        npt.assert_array_equal(g.data2d.index, g.mask.index)
+        npt.assert_array_equal(g.data2d.columns, g.mask.columns)
 
-        pdt.assert_index_equal(g.mask.index,
+        npt.assert_array_equal(g.mask.index,
                                self.df_norm.index[
                                    g.dendrogram_row.reordered_ind])
-        pdt.assert_index_equal(g.mask.columns,
+        npt.assert_array_equal(g.mask.columns,
                                self.df_norm.columns[
                                    g.dendrogram_col.reordered_ind])
 
