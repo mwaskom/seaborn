@@ -76,7 +76,7 @@ def _matrix_mask(data, mask):
     # Add any cells with missing data to the mask
     # This works around an issue where `plt.pcolormesh` doesn't represent
     # missing data properly
-    mask = mask | data.isnull()
+    mask = mask | pd.isnull(data)
 
     return mask
 
