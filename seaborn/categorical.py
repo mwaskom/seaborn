@@ -449,7 +449,7 @@ class _BoxPlotter(_CategoricalPlotter):
                                          widths=self.width,
                                          **kws)
                 color = self.colors[i]
-                self.restyle_boxplot(artist_dict, color)
+                self.restyle_boxplot(artist_dict, color, kws)
             else:
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
@@ -472,31 +472,36 @@ class _BoxPlotter(_CategoricalPlotter):
                                              positions=[center],
                                              widths=self.nested_width,
                                              **kws)
-                    self.restyle_boxplot(artist_dict, self.colors[j])
+                    self.restyle_boxplot(artist_dict, self.colors[j], kws)
                     # Add legend data, but just for one set of boxes
 
-    def restyle_boxplot(self, artist_dict, color):
+    def restyle_boxplot(self, artist_dict, color, kws):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
             box.set_color(color)
             box.set_zorder(.9)
             box.set_edgecolor(self.gray)
             box.set_linewidth(self.linewidth)
+            if 'boxprops' in kws: box.update(kws['boxprops'])
         for whisk in artist_dict["whiskers"]:
             whisk.set_color(self.gray)
             whisk.set_linewidth(self.linewidth)
             whisk.set_linestyle("-")
+            if 'whiskerprops' in kws: whisk.update(kws['whiskerprops'])
         for cap in artist_dict["caps"]:
             cap.set_color(self.gray)
             cap.set_linewidth(self.linewidth)
+            if 'capprops' in kws: cap.update(kws['capprops'])
         for med in artist_dict["medians"]:
             med.set_color(self.gray)
             med.set_linewidth(self.linewidth)
+            if 'medianprops' in kws: med.update(kws['medianprops'])
         for fly in artist_dict["fliers"]:
             fly.set_color(self.gray)
             fly.set_marker("d")
             fly.set_markeredgecolor(self.gray)
             fly.set_markersize(self.fliersize)
+            if 'flierprops' in kws: fly.update(kws['flierprops'])
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
