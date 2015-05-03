@@ -55,8 +55,12 @@ Other additions
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
+- :func:`heatmap` and :func:`clustermap` now automatically use a mask for missing values, which previously were shown with the "under" value of the colormap per default `plt.pcolormesh` behavior.
+
 Bug fixes
 ~~~~~~~~~
+
+- Fixed a bug in :func:`clustermap` where the mask was not being reorganized using the dendrograms.
 
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.
 
