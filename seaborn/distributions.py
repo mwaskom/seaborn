@@ -123,7 +123,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     if hist:
         if bins is None:
-            bins = _freedman_diaconis_bins(a)
+            bins = min(_freedman_diaconis_bins(a), 50)
         hist_kws.setdefault("alpha", 0.4)
         hist_kws.setdefault("normed", norm_hist)
         orientation = "horizontal" if vertical else "vertical"
