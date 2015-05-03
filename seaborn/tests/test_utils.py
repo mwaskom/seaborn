@@ -291,28 +291,28 @@ def test_category_order():
         nt.assert_equal(out, ["b", "a"])
 
 
-@network(url="https://github.com/mwaskom/seaborn-data")
-def test_get_dataset_names():
-    if not BeautifulSoup:
-        raise nose.SkipTest("No BeautifulSoup available for parsing html")
-    names = get_dataset_names()
-    assert(len(names) > 0)
-    assert(u"titanic" in names)
+if LooseVersion(pd.__version__) >= "0.15":
 
+    def check_load_dataset(name):
+        ds = load_dataset(name)
+        assert(isinstance(ds, pd.DataFrame))
 
-def check_load_dataset(name):
-    ds = load_dataset(name)
-    assert(isinstance(ds, pd.DataFrame))
+    @network(url="https://github.com/mwaskom/seaborn-data")
+    def test_get_dataset_names():
+        if not BeautifulSoup:
+            raise nose.SkipTest("No BeautifulSoup available for parsing html")
+        names = get_dataset_names()
+        assert(len(names) > 0)
+        assert(u"titanic" in names)
 
+    @network(url="https://github.com/mwaskom/seaborn-data")
+    def test_load_datasets():
+        if not BeautifulSoup:
+            raise nose.SkipTest("No BeautifulSoup available for parsing html")
 
-@network(url="https://github.com/mwaskom/seaborn-data")
-def test_load_datasets():
-    if not BeautifulSoup:
-        raise nose.SkipTest("No BeautifulSoup available for parsing html")
-
-    # Heavy test to verify that we can load all available datasets
-    for name in get_dataset_names():
-        # unfortunately @network somehow obscures this generator so it does not
-        # get in effect, so we need to call explicitly
-        # yield check_load_dataset, name
-        check_load_dataset(name)
+        # Heavy test to verify that we can load all available datasets
+        for name in get_dataset_names():
+            # unfortunately @network somehow obscures this generator so it
+            # does not get in effect, so we need to call explicitly
+            # yield check_load_dataset, name
+            check_load_dataset(name)
