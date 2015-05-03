@@ -482,26 +482,31 @@ class _BoxPlotter(_CategoricalPlotter):
             box.set_zorder(.9)
             box.set_edgecolor(self.gray)
             box.set_linewidth(self.linewidth)
-            if 'boxprops' in kws: box.update(kws['boxprops'])
+            if 'boxprops' in kws: 
+                box.update(kws['boxprops'])
         for whisk in artist_dict["whiskers"]:
             whisk.set_color(self.gray)
             whisk.set_linewidth(self.linewidth)
             whisk.set_linestyle("-")
-            if 'whiskerprops' in kws: whisk.update(kws['whiskerprops'])
+            if 'whiskerprops' in kws: 
+                whisk.update(kws['whiskerprops'])
         for cap in artist_dict["caps"]:
             cap.set_color(self.gray)
             cap.set_linewidth(self.linewidth)
-            if 'capprops' in kws: cap.update(kws['capprops'])
+            if 'capprops' in kws: 
+                cap.update(kws['capprops'])
         for med in artist_dict["medians"]:
             med.set_color(self.gray)
             med.set_linewidth(self.linewidth)
-            if 'medianprops' in kws: med.update(kws['medianprops'])
+            if 'medianprops' in kws:
+                med.update(kws['medianprops'])
         for fly in artist_dict["fliers"]:
             fly.set_color(self.gray)
             fly.set_marker("d")
             fly.set_markeredgecolor(self.gray)
             fly.set_markersize(self.fliersize)
-            if 'flierprops' in kws: fly.update(kws['flierprops'])
+            if 'flierprops' in kws:
+                fly.update(kws['flierprops'])
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
