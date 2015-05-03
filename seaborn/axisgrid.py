@@ -999,8 +999,6 @@ class PairGrid(Grid):
                 diag_ax.set_axis_off()
                 diag_axes.append(diag_ax)
             self.diag_axes = np.array(diag_axes, np.object)
-        else:
-            self.diag_axes = None
 
         # Plot on each of the diagonal axes
         for i, var in enumerate(self.x_vars):
