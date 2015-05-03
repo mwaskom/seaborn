@@ -44,6 +44,43 @@ def _convert_colors(colors):
         return [list(map(to_rgb, l)) for l in colors]
 
 
+def _matrix_mask(data, mask):
+    """Ensure that data and mask are compatabile and add missing values.
+
+    Values will be plotted for cells where ``mask`` is ``False``.
+
+    ``data`` is expected to be a DataFrame; ``mask`` can be an array or
+    a DataFrame.
+
+    """
+    if mask is None:
+        mask = np.zeros(data.shape, np.bool)
+
+    if isinstance(mask, np.ndarray):
+        # For array masks, ensure that shape matches data then convert
+        if mask.shape != data.shape:
+            raise ValueError("Mask must have the same shape as data.")
+
+        mask = pd.DataFrame(mask,
+                            index=data.index,
+                            columns=data.columns,
+                            dtype=np.bool)
+
+    elif isinstance(mask, pd.DataFrame):
+        # For DataFrame masks, ensure that semantic labels match data
+        if (mask.index != data.index).any() \
+           or (mask.columns != data.columns).any():
+            err = "Mask must have the same index and columns as data."
+            raise ValueError(err)
+
+    # Add any cells with missing data to the mask
+    # This works around an issue where `plt.pcolormesh` doesn't represent
+    # missing data properly
+    mask = mask | pd.isnull(data)
+
+    return mask
+
+
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
@@ -59,16 +96,15 @@ class _HeatMapper(object):
             plot_data = np.asarray(data)
             data = pd.DataFrame(plot_data)
 
+        # Validate the mask and convet to DataFrame
+        mask = _matrix_mask(data, mask)
+
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
         data = data.ix[::-1]
-        if mask is not None:
-            try:
-                mask = mask.ix[::-1]
-            except AttributeError:
-                mask = mask[::-1]
+        mask = mask.ix[::-1]
 
-        plot_data = np.ma.masked_where(mask, plot_data)
+        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         # Get good names for the rows and columns
         if isinstance(xticklabels, bool) and xticklabels:
@@ -264,9 +300,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         If True, plot the row names of the dataframe. If False, don't plot
         the row names. If list-like, plot these alternate labels as the
         yticklabels
-    mask : boolean numpy.array, optional
-        A boolean array indicating where to mask the data so it is not
-        plotted on the heatmap. Only used for visualizing, not for calculating.
+    mask : boolean array or DataFrame, optional
+        If passed, data will not be shown in cells where ``mask`` is True.
+        Cells with missing values are automatically masked.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
@@ -506,7 +542,7 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 
 class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
-                 figsize=None, row_colors=None, col_colors=None):
+                 figsize=None, row_colors=None, col_colors=None, mask=None):
         """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
@@ -516,6 +552,8 @@ class ClusterGrid(Grid):
 
         self.data2d = self.format_data(self.data, pivot_kws, z_score,
                                        standard_scale)
+
+        self.mask = _matrix_mask(self.data2d, mask)
 
         if figsize is None:
             width, height = 10, 10
@@ -794,15 +832,16 @@ class ClusterGrid(Grid):
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
-    def plot_matrix(self, colorbar_kws, mask, xind, yind, **kws):
+    def plot_matrix(self, colorbar_kws, xind, yind, **kws):
         self.data2d = self.data2d.iloc[yind, xind]
+        self.mask = self.mask.iloc[yind, xind]
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
-                cbar_kws=colorbar_kws, mask=mask, **kws)
+                cbar_kws=colorbar_kws, mask=self.mask, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
-             row_linkage, col_linkage, mask, **kws):
+             row_linkage, col_linkage, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
@@ -816,7 +855,7 @@ class ClusterGrid(Grid):
             yind = np.arange(self.data2d.shape[0])
 
         self.plot_colors(xind, yind, **kws)
-        self.plot_matrix(colorbar_kws, mask, xind, yind, **kws)
+        self.plot_matrix(colorbar_kws, xind, yind, **kws)
         return self
 
 
@@ -866,9 +905,10 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together. Can
         use nested lists for multiple color levels of labeling.
-    mask : boolean numpy.array, optional
-        A boolean array indicating where to mask the data so it is not
-        plotted on the heatmap. Only used for visualizing, not for calculating.
+    mask : boolean array or DataFrame, optional
+        If passed, data will not be shown in cells where ``mask`` is True.
+        Cells with missing values are automatically masked. Only used for
+        visualizing, not for calculating.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``sns.heatmap``
 
@@ -891,11 +931,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
-                          z_score=z_score, standard_scale=standard_scale)
+                          z_score=z_score, standard_scale=standard_scale,
+                          mask=mask)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=cbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        mask=mask,
                         **kwargs)

@@ -300,6 +300,31 @@ class TestHeatmap(object):
         nt.assert_equal(ax.get_aspect(), "equal")
         plt.close("all")
 
+    def test_mask_validation(self):
+
+        mask = mat._matrix_mask(self.df_norm, None)
+        nt.assert_equal(mask.shape, self.df_norm.shape)
+        nt.assert_equal(mask.values.sum(), 0)
+
+        with nt.assert_raises(ValueError):
+            bad_array_mask = self.rs.randn(3, 6) > 0
+            mat._matrix_mask(self.df_norm, bad_array_mask)
+
+        with nt.assert_raises(ValueError):
+            bad_df_mask = pd.DataFrame(self.rs.randn(4, 8) > 0)
+            mat._matrix_mask(self.df_norm, bad_df_mask)
+
+    def test_missing_data_mask(self):
+
+        data = pd.DataFrame(np.arange(4, dtype=np.float).reshape(2, 2))
+        data.loc[0, 0] = np.nan
+        mask = mat._matrix_mask(data, None)
+        npt.assert_array_equal(mask, [[True, False], [False, False]])
+
+        mask_in = np.array([[False, True], [False, False]])
+        mask_out = mat._matrix_mask(data, mask_in)
+        npt.assert_array_equal(mask_out, [[True, True], [False, False]])
+
 
 class TestDendrogram(object):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
@@ -573,7 +598,7 @@ class TestClustermap(object):
     default_plot_kws = dict(metric='euclidean', method='average',
                             colorbar_kws=None,
                             row_cluster=True, col_cluster=True,
-                            row_linkage=None, col_linkage=None, mask=None)
+                            row_linkage=None, col_linkage=None)
 
     row_colors = color_palette('Set2', df_norm.shape[0])
     col_colors = color_palette('Dark2', df_norm.shape[1])
@@ -836,3 +861,21 @@ class TestClustermap(object):
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
         plt.close('all')
+
+    def test_mask_reorganization(self):
+
+        kws = self.default_kws.copy()
+        kws["mask"] = self.df_norm > 0
+
+        g = mat.clustermap(self.df_norm, **kws)
+        npt.assert_array_equal(g.data2d.index, g.mask.index)
+        npt.assert_array_equal(g.data2d.columns, g.mask.columns)
+
+        npt.assert_array_equal(g.mask.index,
+                               self.df_norm.index[
+                                   g.dendrogram_row.reordered_ind])
+        npt.assert_array_equal(g.mask.columns,
+                               self.df_norm.columns[
+                                   g.dendrogram_col.reordered_ind])
+
+        plt.close("all")
