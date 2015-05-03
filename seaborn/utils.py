@@ -354,9 +354,11 @@ def iqr(a):
 
 
 def get_dataset_names():
+    """Report available example datasets, useful for reporting issues."""
     # delayed import to not demand bs4 unless this function is actually used
     from bs4 import BeautifulSoup
-    gh_list = BeautifulSoup(urlopen('https://github.com/mwaskom/seaborn-data/'))
+    http = urlopen('https://github.com/mwaskom/seaborn-data/')
+    gh_list = BeautifulSoup(http)
 
     return [l.text.replace('.csv', '')
             for l in gh_list.find_all("a", {"class": "js-directory-link"})
@@ -374,6 +376,7 @@ def load_dataset(name, **kws):
         available datasets using :func:`get_dataset_names`
     kws : dict, optional
         Passed to pandas.read_csv
+
     """
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
