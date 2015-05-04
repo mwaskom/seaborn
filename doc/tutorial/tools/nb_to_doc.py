@@ -3,15 +3,22 @@
 Convert empty IPython notebook to a sphinx doc page.
 
 """
-import os
 import sys
+from subprocess import check_call as sh
 
 
 def convert_nb(nbname):
 
-    os.system("runipy --o %s.ipynb --matplotlib --quiet" % nbname)
-    os.system("ipython nbconvert --to rst %s.ipynb" % nbname)
-    os.system("tools/nbstripout %s.ipynb" % nbname)
+    # Execute the notebook
+    sh(["ipython", "nbconvert", "--to", "notebook",
+        "--execute", "--inplace", nbname + ".ipynb"])
+
+    # Convert to .rst for Sphinx
+    sh(["ipython", "nbconvert", "--to", "rst", nbname + ".ipynb"])
+    
+    # Clear notebook output
+    sh(["ipython", "nbconvert", "--to", "notebook", "--inplace",
+        "--ClearOutputPreprocessor.enabled=True", nbname + ".ipynb"])
 
 
 if __name__ == "__main__":
