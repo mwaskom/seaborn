@@ -61,6 +61,8 @@ Other additions
 
 - Added a ceiling (50) to the default number of bins used for :func:`distplot` histograms. This will help avoid confusing errors with certain kinds of datasets that heavily violate the assumptions of the reference rule used to get a default number of bins. The ceiling is not applied when passing a specific number of bins.
 
+- Added a ``savefig`` method to :class:`JointGrid` that defaults to a tight bounding box to make it easier to save figures using this class.
+
 Bug fixes
 ~~~~~~~~~
 

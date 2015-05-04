@@ -1373,3 +1373,8 @@ class JointGrid(object):
         self.ax_joint.set_xlabel(xlabel, **kwargs)
         self.ax_joint.set_ylabel(ylabel, **kwargs)
         return self
+
+    def savefig(self, *args, **kwargs):
+        """Wrap figure.savefig defaulting to tight bounding box."""
+        kwargs.setdefault("bbox_inches", "tight")
+        self.fig.savefig(*args, **kwargs)
