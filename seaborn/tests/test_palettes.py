@@ -7,6 +7,7 @@ import numpy.testing as npt
 
 from .. import palettes, utils, rcmod, husl
 from ..xkcd_rgb import xkcd_rgb
+from ..crayons import crayons
 
 
 class TestColorPalettes(object):
@@ -252,3 +253,11 @@ class TestColorPalettes(object):
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
             nt.assert_equal(as_hex, xkcd_rgb[name])
+
+    def test_crayon_palette(self):
+
+        names = list(crayons.keys())[10:15]
+        colors = palettes.crayon_palette(names)
+        for name, color in zip(names, colors):
+            as_hex = mpl.colors.rgb2hex(color)
+            nt.assert_equal(as_hex, crayons[name].lower())

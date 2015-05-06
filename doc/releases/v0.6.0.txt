@@ -43,6 +43,8 @@ New plotting functions
 Other additions
 ~~~~~~~~~~~~~~~
 
+- Added the ``seaborn.crayons`` dictionary and the :func:`crayon_palette` function to define colors from the 120 box (!) of `Crayola crayons <http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors>`_.
+
 - Added the ``line_kws`` parameter to :func:`residplot` to change the style of the lowess line, when used.
 
 - Added open-ended ``**kwargs`` to the ``add_legend`` method on :class:`FacetGrid` and :class:`PairGrid`, which will pass additional keyword arguments through when calling the legend function on the ``Figure`` or ``Axes``.
@@ -53,8 +55,18 @@ Other additions
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use 10 bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
+- :func:`heatmap` and :func:`clustermap` now automatically use a mask for missing values, which previously were shown with the "under" value of the colormap per default `plt.pcolormesh` behavior.
+
+- The various property dictionaries that can be passed to ``plt.boxplot`` are now applied after the seaborn restyling to allow for full customizability.
+
+- Added a ceiling (50) to the default number of bins used for :func:`distplot` histograms. This will help avoid confusing errors with certain kinds of datasets that heavily violate the assumptions of the reference rule used to get a default number of bins. The ceiling is not applied when passing a specific number of bins.
+
+- Added a ``savefig`` method to :class:`JointGrid` that defaults to a tight bounding box to make it easier to save figures using this class.
+
 Bug fixes
 ~~~~~~~~~
+
+- Fixed a bug in :func:`clustermap` where the mask was not being reorganized using the dendrograms.
 
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.
 

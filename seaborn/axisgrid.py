@@ -1002,8 +1002,6 @@ class PairGrid(Grid):
                 diag_ax.set_axis_off()
                 diag_axes.append(diag_ax)
             self.diag_axes = np.array(diag_axes, np.object)
-        else:
-            self.diag_axes = None
 
         # Plot on each of the diagonal axes
         for i, var in enumerate(self.x_vars):
@@ -1359,7 +1357,7 @@ class JointGrid(object):
             Returns `self`.
 
         """
-
+        kwargs["vertical"] = False
         plt.sca(self.ax_marg_x)
 
         for k, hue in enumerate(self.hue_names):
@@ -1472,3 +1470,8 @@ class JointGrid(object):
         self.ax_joint.set_xlabel(xlabel, **kwargs)
         self.ax_joint.set_ylabel(ylabel, **kwargs)
         return self
+
+    def savefig(self, *args, **kwargs):
+        """Wrap figure.savefig defaulting to tight bounding box."""
+        kwargs.setdefault("bbox_inches", "tight")
+        self.fig.savefig(*args, **kwargs)
