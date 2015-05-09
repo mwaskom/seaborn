@@ -71,3 +71,5 @@ Bug fixes
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.
 
 - Fixed a bug in :meth:`FacetGrid.set_xticklabels` or :meth:`FacetGrid.set_yticklabels` when ``col_wrap`` is being used.
+
+- Fixed a bug in :class:`PairGrid` where the ``hue_order`` parameter was ignored.

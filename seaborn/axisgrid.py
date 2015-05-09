@@ -915,14 +915,11 @@ class PairGrid(Grid):
         # Sort out the hue variable
         self._hue_var = hue
         if hue is None:
-            self.hue_names = None
+            self.hue_names = ["_nolegend_"]
             self.hue_vals = pd.Series(["_nolegend_"] * len(data),
                                       index=data.index)
         else:
-            if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
-            else:
-                hue_names = hue_order
+            hue_names = utils.categorical_order(data[hue], hue_order)
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
@@ -954,7 +951,14 @@ class PairGrid(Grid):
         for i, y_var in enumerate(self.y_vars):
             for j, x_var in enumerate(self.x_vars):
                 hue_grouped = self.data.groupby(self.hue_vals)
-                for k, (label_k, data_k) in enumerate(hue_grouped):
+                for k, label_k in enumerate(self.hue_names):
+
+                    # Attempt to get data for this level, allowing for empty
+                    try:
+                        data_k = hue_grouped.get_group(label_k)
+                    except KeyError:
+                        data_k = np.array([])
+
                     ax = self.axes[i, j]
                     plt.sca(ax)
 
@@ -1008,11 +1012,22 @@ class PairGrid(Grid):
             # Special-case plt.hist with stacked bars
             if func is plt.hist:
                 plt.sca(ax)
-                vals = [v.values for g, v in hue_grouped]
+                vals = []
+                for label in self.hue_names:
+                    # Attempt to get data for this level, allowing for empty
+                    try:
+                        vals.append(hue_grouped.get_group(label))
+                    except KeyError:
+                        vals.append(np.array([]))
                 func(vals, color=self.palette, histtype="barstacked",
                      **kwargs)
             else:
-                for k, (label_k, data_k) in enumerate(hue_grouped):
+                for k, label_k in enumerate(self.hue_names):
+                    # Attempt to get data for this level, allowing for empty
+                    try:
+                        data_k = hue_grouped.get_group(label_k)
+                    except KeyError:
+                        data_k = np.array([])
                     plt.sca(ax)
                     func(data_k, label=label_k,
                          color=self.palette[k], **kwargs)
@@ -1034,7 +1049,13 @@ class PairGrid(Grid):
         kw_color = kwargs.pop("color", None)
         for i, j in zip(*np.tril_indices_from(self.axes, -1)):
             hue_grouped = self.data.groupby(self.hue_vals)
-            for k, (label_k, data_k) in enumerate(hue_grouped):
+            for k, label_k in enumerate(self.hue_names):
+
+                # Attempt to get data for this level, allowing for empty
+                try:
+                    data_k = hue_grouped.get_group(label_k)
+                except KeyError:
+                    data_k = np.array([])
 
                 ax = self.axes[i, j]
                 plt.sca(ax)
@@ -1071,7 +1092,14 @@ class PairGrid(Grid):
         for i, j in zip(*np.triu_indices_from(self.axes, 1)):
 
             hue_grouped = self.data.groupby(self.hue_vals)
-            for k, (label_k, data_k) in enumerate(hue_grouped):
+
+            for k, label_k in enumerate(self.hue_names):
+
+                # Attempt to get data for this level, allowing for empty
+                try:
+                    data_k = hue_grouped.get_group(label_k)
+                except KeyError:
+                    data_k = np.array([])
 
                 ax = self.axes[i, j]
                 plt.sca(ax)
