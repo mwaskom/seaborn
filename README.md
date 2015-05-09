@@ -32,6 +32,8 @@ Documentation
 
 Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/).
 
+There are docs for the development version [here](http://stanford.edu/~mwaskom/software/seaborn-dev/). These should more or less correspond with the github master branch, but they're not currently built automatically and thus may fall out of sync at times. Also, note that the API docs should always stay up to date, but the tutorials may lag behind.
+
 Examples
 --------
 
