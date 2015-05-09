@@ -900,6 +900,7 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
     def test_hue_order(self):
 
         order = list("dcab")
