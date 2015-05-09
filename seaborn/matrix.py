@@ -925,7 +925,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     Notes
     -----
     The returned ``clustergrid`` object has a ``savefig`` method that should be
-    used if you want to save the figure object without clipping the dendrograms.
+    used to save the figure without clipping the dendrograms.
 
     To access the reordered row indices, use:
     ``clustergrid.dendrogram_row.reordered_ind``
