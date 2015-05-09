@@ -137,3 +137,4 @@ Utility functions
     set_hls_values
     ci_to_errsize
     axlabel
+    load_dataset

@@ -4,11 +4,12 @@ Installing and getting started
 ------------------------------
 
 To install the released version of seaborn, you can use ``pip`` (i.e. ``pip install seaborn``). 
-Alternatively, you can use ``pip`` to install the development version, with the command ``pip install
-git+git://github.com/mwaskom/seaborn.git#egg=seaborn``. Another option would be
-to to clone the `github repository <https://github.com/mwaskom/seaborn>`_ and
-install with ``pip install .`` from the source directory. Seaborn itself is pure
-Python, so installation should be reasonably straightforward.
+
+Alternatively, you can use ``pip`` to install the development version, with the command ``pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn``.
+
+Another option would be to to clone the `github repository <https://github.com/mwaskom/seaborn>`_ and install with ``pip install .`` from the source directory. Seaborn itself is pure Python, so installation should be reasonably straightforward.
+
+When using the development version, you may want to refer to the `development docs <http://stanford.edu/~mwaskom/software/seaborn-dev/>`_. Note that these are not built automatically and may at times fall out of sync with the actual master branch on github.
 
 Dependencies 
 ~~~~~~~~~~~~
@@ -32,8 +33,6 @@ Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  `statsmodels <http://statsmodels.sourceforge.net/>`__
-
--  `patsy <http://patsy.readthedocs.org/en/latest/>`__
 
 Version-wise, we make an attempt to keep seaborn working on the stable Debian
 channels. There may be cases where some more advanced features only work with
@@ -60,6 +59,6 @@ Bugs
 
 Please report any bugs you encounter through the github `issue tracker
 <https://github.com/mwaskom/seaborn/issues/new>`_. It will be most helpful to
-upload an IPython notebook that can reproduce the error in a `gist
-<http://gist.github.com>`_ and link to that gist in the bug report.
-
+include a reproducible example on one of the example datasets (accessed through
+:func:`load_dataset`) and to include the version of matplotlib that you are
+using when you encounter the error.

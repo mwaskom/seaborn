@@ -311,6 +311,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes
         Axes object with the heatmap.
 
+    Notes
+    -----
+    There is an issue with the matplotlib MacOSX backend that will interferes
+    with the ability to automatically rotate overlapping tick labels.
+
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
@@ -918,15 +923,18 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         A ClusterGrid instance.
 
     Notes
-    ----
-    The returned object has a ``savefig`` method that should be used if you
-    want to save the figure object without clipping the dendrograms.
+    -----
+    The returned ``clustergrid`` object has a ``savefig`` method that should be
+    used if you want to save the figure object without clipping the dendrograms.
 
     To access the reordered row indices, use:
     ``clustergrid.dendrogram_row.reordered_ind``
 
     Column indices, use:
     ``clustergrid.dendrogram_col.reordered_ind``
+
+    There is an issue with the matplotlib MacOSX backend that will interferes
+    with the ability to automatically rotate overlapping tick labels.
 
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
