@@ -290,7 +290,7 @@ def test_categorical_order():
         out = utils.categorical_order(x, ["b", "a"])
         nt.assert_equal(out, ["b", "a"])
 
-    x = x.tolist() + [np.nan]
+    x = ["a", np.nan, "c", "c", "b", "a", "d"]
     out = utils.categorical_order(x)
     nt.assert_equal(out, ["a", "c", "b", "d"])
 
