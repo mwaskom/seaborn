@@ -132,20 +132,13 @@ class Grid(object):
         data = {l: h for h, l in zip(handles, labels)}
         self._legend_data.update(data)
 
-    def _get_palette(self, data, hue, hue_order, palette, dropna):
+    def _get_palette(self, data, hue, hue_order, palette):
         """Get a list of colors for the hue variable."""
         if hue is None:
             palette = color_palette(n_colors=1)
 
         else:
-            if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
-            else:
-                hue_names = hue_order
-            if dropna:
-                # Filter NA from the list of unique hue names
-                hue_names = list(filter(pd.notnull, hue_names))
-
+            hue_names = utils.categorical_order(data[hue], hue_order)
             n_colors = len(hue_names)
 
             # By default use either the current color palette or HUSL
@@ -202,7 +195,8 @@ class FacetGrid(Grid):
             should be values  in the `hue` variable.
         {row, col, hue}_order: sequence of strings
             Order to plot the values in the faceting variables in, otherwise
-            sorts the unique values.
+            infer from the input data using pandas Category order or the
+            order of appearance.
         hue_kws : dictionary of param -> list of values mapping
             Other keyword arguments to insert into the plotting call to let
             other plot attributes vary across levels of the hue variable (e.g.
@@ -323,15 +317,9 @@ class FacetGrid(Grid):
         if hue is None:
             hue_names = None
         else:
-            if hue_order is None:
-                hue_names = np.unique(np.sort(data[hue]))
-            else:
-                hue_names = hue_order
-            if dropna:
-                # Filter NA from the list of unique hue names
-                hue_names = list(filter(pd.notnull, hue_names))
+            hue_names = utils.categorical_order(data[hue], hue_order)
 
-        colors = self._get_palette(data, hue, hue_order, palette, dropna)
+        colors = self._get_palette(data, hue, hue_order, palette)
 
         # Additional dict of kwarg -> list of values for mapping the hue var
         hue_kws = hue_kws if hue_kws is not None else {}
@@ -350,21 +338,13 @@ class FacetGrid(Grid):
         # Set up the lists of names for the row and column facet variables
         if row is None:
             row_names = []
-        elif row_order is None:
-            row_names = np.unique(np.sort(data[row]))
         else:
-            row_names = row_order
-        if dropna:
-            row_names = list(filter(pd.notnull, row_names))
+            row_names = utils.categorical_order(data[row], row_order)
 
         if col is None:
             col_names = []
-        elif col_order is None:
-            col_names = np.unique(np.sort(data[col]))
         else:
-            col_names = col_order
-        if dropna:
-            col_names = list(filter(pd.notnull, col_names))
+            col_names = utils.categorical_order(data[col], col_order)
 
         # Set up the class attributes
         # ---------------------------
@@ -929,7 +909,7 @@ class PairGrid(Grid):
         # Additional dict of kwarg -> list of values for mapping the hue var
         self.hue_kws = hue_kws if hue_kws is not None else {}
 
-        self.palette = self._get_palette(data, hue, hue_order, palette, dropna)
+        self.palette = self._get_palette(data, hue, hue_order, palette)
         self._legend_data = {}
 
         # Make the plot look nice

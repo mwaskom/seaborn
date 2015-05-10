@@ -247,7 +247,7 @@ class TestFacetGrid(object):
 
         nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
 
-        b_levels = sorted(map(str, self.df.b_bool.unique()))
+        b_levels = list(map(str, self.df.b_bool.unique()))
 
         lines = g1._legend.get_lines()
         nt.assert_equal(len(lines), len(b_levels))
