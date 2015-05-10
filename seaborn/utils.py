@@ -461,7 +461,7 @@ def categorical_order(values, order=None):
     Returns
     -------
     order : list
-        Ordered list of category levels
+        Ordered list of category levels not including null values.
 
     """
     if order is None:
@@ -475,5 +475,5 @@ def categorical_order(values, order=None):
                     order = values.unique()
                 except AttributeError:
                     order = pd.unique(values)
-
+        order = filter(pd.notnull, order)
     return list(order)

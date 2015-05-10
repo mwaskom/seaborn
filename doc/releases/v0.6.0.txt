@@ -27,7 +27,7 @@ Here are details on what has changed in the process of unifying these APIs:
 
 Along with these API changes, the following changes/enhancements were made to the plotting functions:
 
-- The default rules for ordering the categories has changed. Instead of automatically sorting the category levels, the plots now show the levels in the order the appear in the input data (i.e., the order given by ``Series.unique()``). Order can be specified when plotting with the ``order`` and ``hue_order`` parameters. Additionally, when variables are pandas objects with a "categorical" dtype, the category order is inferred from the data object.
+- The default rules for ordering the categories has changed. Instead of automatically sorting the category levels, the plots now show the levels in the order the appear in the input data (i.e., the order given by ``Series.unique()``). Order can be specified when plotting with the ``order`` and ``hue_order`` parameters. Additionally, when variables are pandas objects with a "categorical" dtype, the category order is inferred from the data object. This change also affects :class:`FacetGrid` and :class:`PairGrid`.
 
 - Added the ``scale`` and ``scale_hue`` parameters to :func:`violinplot`. These control how the width of the violins are scaled. The default is ``area``, which is different from how the violins used to be drawn. Use ``scale='width'`` to get the old behavior.
 

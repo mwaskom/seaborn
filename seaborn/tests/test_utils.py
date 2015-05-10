@@ -258,7 +258,7 @@ def test_ticklabels_overlap():
     assert not y
 
 
-def test_category_order():
+def test_categorical_order():
 
     x = ["a", "c", "c", "b", "a", "d"]
     order = ["a", "b", "c", "d"]
@@ -289,6 +289,10 @@ def test_category_order():
 
         out = utils.categorical_order(x, ["b", "a"])
         nt.assert_equal(out, ["b", "a"])
+
+    x = ["a", np.nan, "c", "c", "b", "a", "d"]
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, ["a", "c", "b", "d"])
 
 
 if LooseVersion(pd.__version__) >= "0.15":
