@@ -107,25 +107,38 @@ class _HeatMapper(object):
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         # Get good names for the rows and columns
-        if isinstance(xticklabels, bool) and xticklabels:
-            self.xticklabels = _index_to_ticklabels(data.columns)
+        xtickevery = 1
+        if isinstance(xticklabels, int) and xticklabels > 1:
+            xtickevery = xticklabels
+            xticklabels = _index_to_ticklabels(data.columns)
+        elif isinstance(xticklabels, bool) and xticklabels:
+            xticklabels = _index_to_ticklabels(data.columns)
         elif isinstance(xticklabels, bool) and not xticklabels:
-            self.xticklabels = ['' for _ in range(data.shape[1])]
-        else:
-            self.xticklabels = xticklabels
+            xticklabels = ['' for _ in range(data.shape[1])]
 
-        xlabel = _index_to_label(data.columns)
-
-        if isinstance(yticklabels, bool) and yticklabels:
-            self.yticklabels = _index_to_ticklabels(data.index)
+        ytickevery = 1
+        if isinstance(yticklabels, int) and yticklabels > 1:
+            ytickevery = yticklabels
+            yticklabels = _index_to_ticklabels(data.index)
+        elif isinstance(yticklabels, bool) and yticklabels:
+            yticklabels = _index_to_ticklabels(data.index)
         elif isinstance(yticklabels, bool) and not yticklabels:
-            self.yticklabels = ['' for _ in range(data.shape[0])]
+            yticklabels = ['' for _ in range(data.shape[0])]
         else:
-            self.yticklabels = yticklabels[::-1]
+            yticklabels = yticklabels[::-1]
 
-        ylabel = _index_to_label(data.index)
+        # Get the positions and used label for the ticks
+        nx, ny = data.T.shape
+        xstart, xend, xstep = 0, nx, xtickevery
+        self.xticks = np.arange(xstart, xend, xstep) + .5
+        self.xticklabels = xticklabels[xstart:xend:xstep]
+        ystart, yend, ystep = (ny - 1) % ytickevery, ny, ytickevery
+        self.yticks = np.arange(ystart, yend, ystep) + .5
+        self.yticklabels = yticklabels[ystart:yend:ystep]
 
         # Get good names for the axis labels
+        xlabel = _index_to_label(data.columns)
+        ylabel = _index_to_label(data.index)
         self.xlabel = xlabel if xlabel is not None else ""
         self.ylabel = ylabel if ylabel is not None else ""
 
@@ -204,8 +217,7 @@ class _HeatMapper(object):
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
 
         # Add row and column labels
-        nx, ny = self.data.T.shape
-        ax.set(xticks=np.arange(nx) + .5, yticks=np.arange(ny) + .5)
+        ax.set(xticks=self.xticks, yticks=self.yticks)
         xtl = ax.set_xticklabels(self.xticklabels)
         ytl = ax.set_yticklabels(self.yticklabels, rotation="vertical")
 
@@ -233,7 +245,7 @@ class _HeatMapper(object):
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=False, fmt=".2g", annot_kws=None,
-            linewidths=.5, linecolor="white",
+            linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
             mask=None,
@@ -276,9 +288,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     annot_kws : dict of key, value mappings, optional
         Keyword arguments for ``ax.text`` when ``annot`` is True.
     linewidths : float, optional
-        Width of the lines that divide each cell.
+        Width of the lines that will divide each cell.
     linecolor : color, optional
-        Color of the lines that divide each cell.
+        Color of the lines that will divide each cell.
     cbar : boolean, optional
         Whether to draw a colorbar.
     cbar_kws : dict of key, value mappings, optional
@@ -292,14 +304,16 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes, optional
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
-    xticklabels : list-like or bool, optional
+    xticklabels : list-like, int, or bool, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
-        xticklabels
-    yticklabels : list-like or bool, optional
+        xticklabels. If an integer, use the column names but plot only every
+        n label.
+    yticklabels : list-like, int, or bool, optional
         If True, plot the row names of the dataframe. If False, don't plot
         the row names. If list-like, plot these alternate labels as the
-        yticklabels
+        yticklabels. If an integer, use the index names but plot only every
+        n label.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
@@ -835,8 +849,22 @@ class ClusterGrid(Grid):
     def plot_matrix(self, colorbar_kws, xind, yind, **kws):
         self.data2d = self.data2d.iloc[yind, xind]
         self.mask = self.mask.iloc[yind, xind]
+
+        # Try to reorganize specified tick labels, if provided
+        xtl = kws.pop("xticklabels", True)
+        try:
+            xtl = np.asarray(xtl)[xind]
+        except (TypeError, IndexError):
+            pass
+        ytl = kws.pop("yticklabels", True)
+        try:
+            ytl = np.asarray(ytl)[yind]
+        except (TypeError, IndexError):
+            pass
+
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
-                cbar_kws=colorbar_kws, mask=self.mask, **kws)
+                cbar_kws=colorbar_kws, mask=self.mask,
+                xticklabels=xtl, yticklabels=ytl, **kws)
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
 

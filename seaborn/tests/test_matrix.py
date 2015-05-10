@@ -200,6 +200,22 @@ class TestHeatmap(object):
         nt.assert_equal(p.xticklabels, xticklabels)
         nt.assert_equal(p.yticklabels, yticklabels[::-1])
 
+    def test_custom_ticklabel_interval(self):
+
+        kws = self.default_kws.copy()
+        kws['xticklabels'] = 2
+        kws['yticklabels'] = 3
+        p = mat._HeatMapper(self.df_norm, **kws)
+
+        nx, ny = self.df_norm.T.shape
+        ystart = (ny - 1) % 3
+        npt.assert_array_equal(p.xticks, np.arange(0, nx, 2) + .5)
+        npt.assert_array_equal(p.yticks, np.arange(ystart, ny, 3) + .5)
+        npt.assert_array_equal(p.xticklabels,
+                               self.df_norm.columns[::2])
+        npt.assert_array_equal(p.yticklabels,
+                               self.df_norm.index[::-1][ystart:ny:3])
+
     def test_heatmap_annotation(self):
 
         ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
@@ -877,5 +893,26 @@ class TestClustermap(object):
         npt.assert_array_equal(g.mask.columns,
                                self.df_norm.columns[
                                    g.dendrogram_col.reordered_ind])
+
+        plt.close("all")
+
+    def test_ticklabel_reorganization(self):
+
+        kws = self.default_kws.copy()
+        xtl = np.arange(self.df_norm.shape[1])
+        kws["xticklabels"] = list(xtl)
+        ytl = self.letters.ix[:self.df_norm.shape[0]]
+        kws["yticklabels"] = ytl
+
+        g = mat.clustermap(self.df_norm, **kws)
+
+        xtl_actual = [t.get_text() for t in g.ax_heatmap.get_xticklabels()]
+        ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
+
+        xtl_want = xtl[g.dendrogram_col.reordered_ind].astype("<U1")
+        ytl_want = ytl[g.dendrogram_row.reordered_ind].astype("<U1")[::-1]
+
+        npt.assert_array_equal(xtl_actual, xtl_want)
+        npt.assert_array_equal(ytl_actual, ytl_want)
 
         plt.close("all")
