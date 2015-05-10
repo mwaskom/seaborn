@@ -63,10 +63,14 @@ Other additions
 
 - Added a ``savefig`` method to :class:`JointGrid` that defaults to a tight bounding box to make it easier to save figures using this class.
 
+- Changed the default ``linewidths`` in :func:`heatmap` and :`clustermap` to 0 so that larger matrices plot correctly. This parameter still exists and can be used to get the old effect of lines demarcating each cell in the heatmap (the old default ``linewidths`` was 0.5).
+
+- You can now pass an integer to the ``xticklabels`` and ``yticklabels`` parameter of :func:`heatmap` (and, by extension, :func:`clustermap`). This will make the plot use the ticklabels inferred from the data, but only plot every ``n`` label, where ``n`` is the number you pass. This can help when visualizing larger matrices with some sensible ordering to the rows or columns of the dataframe.
+
 Bug fixes
 ~~~~~~~~~
 
-- Fixed a bug in :func:`clustermap` where the mask was not being reorganized using the dendrograms.
+- Fixed bugs in :func:`clustermap` where the mask and specified ticklabels were not being reorganized using the dendrograms.
 
 - Fixed a bug in :class:`FacetGrid` and :class:`PairGrid` that lead to incorrect legend labels when levels of the ``hue`` variable appeared in ``hue_order`` but not in the data.
 
