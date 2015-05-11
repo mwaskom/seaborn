@@ -67,6 +67,8 @@ Other additions
 
 - You can now pass an integer to the ``xticklabels`` and ``yticklabels`` parameter of :func:`heatmap` (and, by extension, :func:`clustermap`). This will make the plot use the ticklabels inferred from the data, but only plot every ``n`` label, where ``n`` is the number you pass. This can help when visualizing larger matrices with some sensible ordering to the rows or columns of the dataframe.
 
+- Added the :func:`set_color_codes` function and the ``color_codes`` argument to :func:`set` and :func:`set_palette`. This changes the interpretation of shorthand color codes (i.e. "b", "g", k", etc.) within matplotlib to use the values from one of the named seaborn palettes (i.e. "deep", "muted", etc.). That makes it easier to have a more uniform look when using matplotlib functions directly with seaborn imported. This could be disruptive to existing plots, so it does not happen by default. It is possible this could change in the future.
+
 - Added the ``as_hex`` method to color palette objects, to return a list of hex codes rather than rgb tuples.
 
 Bug fixes
