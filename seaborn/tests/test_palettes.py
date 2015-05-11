@@ -31,7 +31,7 @@ class TestColorPalettes(object):
 
     def test_big_palette_context(self):
 
-        default_pal = palettes.color_palette()
+        default_pal = palettes.color_palette(n_colors=8)
         context_pal = palettes.color_palette("husl", 10)
 
         with palettes.color_palette(context_pal, 10):
@@ -277,3 +277,9 @@ class TestColorPalettes(object):
         pal = palettes.color_palette("deep")
         for rgb, hex in zip(pal, pal.as_hex()):
             nt.assert_equal(mpl.colors.rgb2hex(rgb), hex)
+
+    def test_preserved_palette_length(self):
+
+        pal_in = palettes.color_palette("Set1", 10)
+        pal_out = palettes.color_palette(pal_in)
+        nt.assert_equal(pal_in, pal_out)

@@ -76,7 +76,8 @@ def color_palette(name=None, n_colors=6, desat=None):
         desaturated.
     n_colors : int
         Number of colors in the palette. If larger than the number of
-        colors in the palette, they will cycle.
+        colors in the palette, they will cycle. This is ignored when
+        `name` is `None` or is list-like.
     desat : float
         Value to desaturate each color by.
 
@@ -137,11 +138,22 @@ def color_palette(name=None, n_colors=6, desat=None):
         >>> with sns.color_palette("husl", 8):
         ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
 
+    Convert to hex representation:
+
+    .. plot::
+        :context: close-figs
+
+        >>> pal = sns.color_palette("muted", 3)
+        >>> pal.as_hex()
+        [u'#4878cf', u'#6acc65', u'#d65f5f', u'#b47cc7']
+
     """
     if name is None:
         palette = mpl.rcParams["axes.color_cycle"]
+        n_colors = len(palette)
     elif not isinstance(name, string_types):
         palette = name
+        n_colors = len(palette)
     elif name == "hls":
         palette = hls_palette(n_colors)
     elif name == "husl":
@@ -202,7 +214,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     hues %= 1
     hues -= hues.astype(int)
     palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
-    return palette
+    return _ColorPalette(palette)
 
 
 def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
@@ -235,7 +247,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
     s *= 99
     l *= 99
     palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
-    return palette
+    return _ColorPalette(palette)
 
 
 def mpl_palette(name, n_colors=6):
@@ -278,7 +290,7 @@ def mpl_palette(name, n_colors=6):
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
 
-    return palette
+    return _ColorPalette(palette)
 
 
 def _color_to_rgb(color, input):
@@ -466,7 +478,7 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     name = "blend"
     pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
     if not as_cmap:
-        pal = pal(np.linspace(0, 1, n_colors))
+        pal = _ColorPalette(pal(np.linspace(0, 1, n_colors)))
     return pal
 
 
@@ -562,7 +574,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         cmap = mpl.colors.ListedColormap(pal_256)
         return cmap
     else:
-        return pal
+        return _ColorPalette(pal)
 
 
 def set_color_codes(palette="deep"):
