@@ -391,7 +391,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         # Test a color-based blend for the hue mapping
         p.establish_variables("g", "y", "h", data=self.df)
         p.establish_colors("#ff0022", None, 1)
-        rgba_array = palettes.light_palette("#ff0022", 2)
+        rgba_array = np.array(palettes.light_palette("#ff0022", 2))
         npt.assert_array_almost_equal(p.colors,
                                       rgba_array[:, :3])
 
