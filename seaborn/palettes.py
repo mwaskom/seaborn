@@ -80,24 +80,57 @@ def color_palette(name=None, n_colors=6, desat=None):
     palette : list of RGB tuples.
         Color palette.
 
-    Examples
-    --------
-    >>> p = color_palette("muted")
-
-    >>> p = color_palette("Blues_d", 10)
-
-    >>> p = color_palette("Set1", desat=.7)
-
-    >>> import matplotlib.pyplot as plt
-    >>> with color_palette("husl", 8):
-    ...     f, ax = plt.subplots()
-    ...     ax.plot(x, y)                  # doctest: +SKIP
-
     See Also
     --------
     set_palette : set the default color cycle for all plots.
     axes_style : define parameters to set the style of plots
     plotting_context : define parameters to scale plot elements
+
+    Examples
+    --------
+
+    Show one of the "seaborn palettes", which have the same basic order of hues
+    as the default matplotlib color cycle but more attractive colors.
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.color_palette("muted"))
+
+    Use discrete values from one of the built-in matplotlib colormaps.
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("RdBu", n_colors=7))
+
+    Make a "dark" matplotlib sequential palette variant. (This can be good
+    when coloring multiple lines or points that correspond to an ordered
+    variable, where you don't want the lightest lines to be invisible).
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("Blues_d"))
+
+    Use a categorical matplotlib palette, add some desaturation. (This can be
+    good when making plots with large patches, which look best with dimmer
+    colors).
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.7))
+
+    Use as a context manager:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np, matplotlib.pyplot as plt
+        >>> with sns.color_palette("husl", 8):
+        ...    plt.plot(np.c_[np.zeros(8), np.arange(8)].T);
 
     """
     if name is None:
@@ -527,7 +560,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return pal
 
 
-def set_color_shorthands(palette="deep"):
+def set_color_codes(palette="deep"):
     """Change how matplotlib color shorthands are interpreted.
 
     Calling this will change how shorthand codes like "b" or "g"
@@ -535,15 +568,48 @@ def set_color_shorthands(palette="deep"):
 
     Parameters
     ----------
-    palette : string
+    palette : {deep, muted, pastel, dark, bright, colorblind}
         Named seaborn palette to use as the source of colors.
 
+    See Also
+    --------
+    set : Color codes can be set through the high-level seaborn style
+          manager.
+    set_palette : Color codes can also be set through the function that
+                  sets the matplotlib color cycle.
+
+    Examples
+    --------
+
+    Map matplotlib color codes to the default seaborn palette.
+
+    .. plot::
+        :context: close-figs
+
+        >>> import matplotlib.pyplot as plt
+        >>> import seaborn as sns; sns.set()
+        >>> sns.set_color_codes()
+        >>> plt.plot([0, 1, 2], [0, 2, 1], color="r")
+
+    Use a different seaborn palette.
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.set_color_codes("dark")
+        >>> plt.plot([0, 1, 2], [0, 2, 1], color="k")
+        >>> plt.plot([0, 1, 2], [1, 0, 2], color="m")
+
     """
-    colors = SEABORN_PALETTES[palette]
-    for code, color in zip("bgrmyc", colors):
+    if palette == "reset":
+        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
+                  (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
+    else:
+        colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
+    for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
         mpl.colors.colorConverter.colors[code] = rgb
-    mpl.colors.colorConverter.colors["k"] = (.1, .1, .1)
+        mpl.colors.colorConverter.cache[code] = rgb
 
 
 def _init_mutable_colormap():

@@ -261,3 +261,13 @@ class TestColorPalettes(object):
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
             nt.assert_equal(as_hex, crayons[name].lower())
+
+    def test_color_codes(self):
+
+        palettes.set_color_codes("deep")
+        colors = palettes.color_palette("deep") + [".1"]
+        for code, color in zip("bgrmyck", colors):
+            rgb_want = mpl.colors.colorConverter.to_rgb(color)
+            rgb_got = mpl.colors.colorConverter.to_rgb(code)
+            nt.assert_equal(rgb_want, rgb_got)
+        palettes.set_color_codes("reset")

@@ -90,6 +90,7 @@ Style frontend
     set_style
     plotting_context
     set_context
+    set_color_codes
     reset_defaults
     reset_orig
 
