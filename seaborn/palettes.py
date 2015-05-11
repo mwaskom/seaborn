@@ -150,7 +150,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     .. plot::
         :context: close-figs
 
-        >>> pal = sns.color_palette("muted", 3)
+        >>> pal = sns.color_palette("muted", 4)
         >>> pal.as_hex()
         [u'#4878cf', u'#6acc65', u'#d65f5f', u'#b47cc7']
 
