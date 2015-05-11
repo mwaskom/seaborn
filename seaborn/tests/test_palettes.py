@@ -31,13 +31,17 @@ class TestColorPalettes(object):
 
     def test_big_palette_context(self):
 
-        default_pal = palettes.color_palette(n_colors=8)
+        original_pal = palettes.color_palette("deep", n_colors=8)
         context_pal = palettes.color_palette("husl", 10)
 
+        rcmod.set_palette(original_pal)
         with palettes.color_palette(context_pal, 10):
             nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
 
-        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], original_pal)
+
+        # Reset default
+        rcmod.set()
 
     def test_seaborn_palettes(self):
 

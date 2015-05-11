@@ -39,13 +39,13 @@ class _ColorPalette(list):
         """Open the context."""
         from .rcmod import set_palette
         self._orig_palette = color_palette()
-        set_palette(self, len(self))
+        set_palette(self)
         return self
 
     def __exit__(self, *args):
         """Close the context."""
         from .rcmod import set_palette
-        set_palette(self._orig_palette, len(self._orig_palette))
+        set_palette(self._orig_palette)
 
     def as_hex(self):
         """Return a color palette with hex codes instead of RGB values."""
@@ -53,44 +53,51 @@ class _ColorPalette(list):
         return _ColorPalette(hex)
 
 
-def color_palette(name=None, n_colors=6, desat=None):
+def color_palette(palette=None, n_colors=None, desat=None):
     """Return a list of colors defining a color palette.
 
     Availible seaborn palette names:
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
-        hls, husl, any matplotlib palette
+        hls, husl, any named matplotlib palette, list of colors
+
+    Calling this function with ``palette=None`` will return the current
+    matplotlib color cycle.
 
     Matplotlib paletes can be specified as reversed palettes by appending
     "_r" to the name or as dark palettes by appending "_d" to the name.
+    (These options are mutually exclusive, but the resulting list of colors
+    can also be reversed).
 
     This function can also be used in a ``with`` statement to temporarily
     set the color cycle for a plot or set of plots.
 
     Parameters
     ----------
-    name: None, string, or sequence
-        Name of palette or None to return current palette. If a
-        sequence, input colors are used but possibly cycled and
-        desaturated.
-    n_colors : int
-        Number of colors in the palette. If larger than the number of
-        colors in the palette, they will cycle. This is ignored when
-        `name` is `None` or is list-like.
-    desat : float
-        Value to desaturate each color by.
+    palette: None, string, or sequence, optional
+        Name of palette or None to return current palette. If a sequence, input
+        colors are used but possibly cycled and desaturated.
+    n_colors : int, optional
+        Number of colors in the palette. If ``None``, the default will depend
+        on how ``palette`` is specified. Named palettes default to 6 colors,
+        but grabbing the current palette or passing in a list of colors will
+        not change the number of colors unless this is specified. Asking for
+        more colors than exist in the palette will cause it to cycle.
+    desat : float, optional
+        Proportion to desaturate each color by.
 
     Returns
     -------
     palette : list of RGB tuples.
-        Color palette.
+        Color palette. Behaves like a list, but can be used as a context
+        manager and posses an ``as_hex`` method to convert to hex color codes.
 
     See Also
     --------
-    set_palette : set the default color cycle for all plots.
-    axes_style : define parameters to set the style of plots
-    plotting_context : define parameters to scale plot elements
+    set_palette : Set the default color cycle for all plots.
+    set_color_codes : Reassign color codes like ``"b"``, ``"g"``, etc. to
+                      colors from one of the seaborn palettes.
 
     Examples
     --------
@@ -127,7 +134,7 @@ def color_palette(name=None, n_colors=6, desat=None):
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.7))
+        >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.5))
 
     Use as a context manager:
 
@@ -148,26 +155,34 @@ def color_palette(name=None, n_colors=6, desat=None):
         [u'#4878cf', u'#6acc65', u'#d65f5f', u'#b47cc7']
 
     """
-    if name is None:
+    if palette is None:
         palette = mpl.rcParams["axes.color_cycle"]
-        n_colors = len(palette)
-    elif not isinstance(name, string_types):
-        palette = name
-        n_colors = len(palette)
-    elif name == "hls":
-        palette = hls_palette(n_colors)
-    elif name == "husl":
-        palette = husl_palette(n_colors)
-    elif name.lower() == "jet":
-        raise ValueError("No.")
-    elif name in SEABORN_PALETTES:
-        palette = SEABORN_PALETTES[name]
-    elif name in dir(mpl.cm):
-        palette = mpl_palette(name, n_colors)
-    elif name[:-2] in dir(mpl.cm):
-        palette = mpl_palette(name, n_colors)
+        if n_colors is None:
+            n_colors = len(palette)
+
+    elif not isinstance(palette, string_types):
+        palette = palette
+        if n_colors is None:
+            n_colors = len(palette)
     else:
-        raise ValueError("%s is not a valid palette name" % name)
+
+        if n_colors is None:
+            n_colors = 6
+
+        if palette == "hls":
+            palette = hls_palette(n_colors)
+        elif palette == "husl":
+            palette = husl_palette(n_colors)
+        elif palette.lower() == "jet":
+            raise ValueError("No.")
+        elif palette in SEABORN_PALETTES:
+            palette = SEABORN_PALETTES[palette]
+        elif palette in dir(mpl.cm):
+            palette = mpl_palette(palette, n_colors)
+        elif palette[:-2] in dir(mpl.cm):
+            palette = mpl_palette(palette, n_colors)
+        else:
+            raise ValueError("%s is not a valid palette name" % palette)
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
@@ -181,7 +196,7 @@ def color_palette(name=None, n_colors=6, desat=None):
         palette = map(mpl.colors.colorConverter.to_rgb, palette)
         palette = _ColorPalette(palette)
     except ValueError:
-        raise ValueError("Could not generate a palette for %s" % str(name))
+        raise ValueError("Could not generate a palette for %s" % str(palette))
 
     return palette
 
