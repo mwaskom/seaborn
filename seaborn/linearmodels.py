@@ -195,8 +195,7 @@ class _RegressionPlotter(_LinearPlotter):
             yhat, yhat_boots = self.fit_statsmodels(grid, GLM,
                                                     family=Binomial())
         elif self.lowess:
-            ci = None
-            grid, yhat = self.fit_lowess()
+            grid, yhat, yhat_boots = self.fit_lowess()
         elif self.robust:
             from statsmodels.robust.robust_linear_model import RLM
             yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
@@ -255,8 +254,20 @@ class _RegressionPlotter(_LinearPlotter):
     def fit_lowess(self):
         """Fit a locally-weighted regression, which returns its own grid."""
         from statsmodels.nonparametric.smoothers_lowess import lowess
-        grid, yhat = lowess(self.y, self.x).T
-        return grid, yhat
+
+        def _wrap_lowess(X, y, return_grid=False):
+            grid, yhat = lowess(y, X).T
+            if not return_grid:
+                return yhat
+            else:
+                return grid, yhat
+
+        grid, yhat = _wrap_lowess(self.x, self.y, True)
+
+        yhat_boots = algo.bootstrap(self.x, self.y, func=_wrap_lowess,
+                                    n_boot=self.n_boot, units=self.units)
+
+        return grid, yhat, yhat_boots
 
     def fit_logx(self, grid):
         """Fit the model in log-space."""

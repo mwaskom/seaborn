@@ -213,6 +213,10 @@ class TestRegressionPlotter(object):
         _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         npt.assert_equal(boots_smod.shape, (self.n_boot, self.grid.size))
 
+        # Lowess
+        grid, _, boots_lowess = p.fit_lowess()
+        npt.assert_equal(boots_lowess.shape, (self.n_boot, grid.size))
+
     @skipif(_no_statsmodels)
     def test_regress_without_bootstrap(self):
 
@@ -368,7 +372,6 @@ class TestRegressionPlotter(object):
         grid, yhat, err_bands = p.fit_regression(x_range=(-3, 3))
 
         nt.assert_equal(len(grid), len(yhat))
-        nt.assert_is(err_bands, None)
 
     def test_regression_options(self):
 
