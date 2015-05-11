@@ -135,7 +135,7 @@ def color_palette(name=None, n_colors=6, desat=None):
 
         >>> import numpy as np, matplotlib.pyplot as plt
         >>> with sns.color_palette("husl", 8):
-        ...    plt.plot(np.c_[np.zeros(8), np.arange(8)].T);
+        ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
 
     """
     if name is None:
@@ -594,7 +594,7 @@ def set_color_codes(palette="deep"):
         >>> import matplotlib.pyplot as plt
         >>> import seaborn as sns; sns.set()
         >>> sns.set_color_codes()
-        >>> plt.plot([0, 1, 2], [0, 2, 1], color="r")
+        >>> _ = plt.plot([0, 1, 2], [0, 2, 1], color="r")
 
     Use a different seaborn palette.
 
@@ -602,8 +602,8 @@ def set_color_codes(palette="deep"):
         :context: close-figs
 
         >>> sns.set_color_codes("dark")
-        >>> plt.plot([0, 1, 2], [0, 2, 1], color="k")
-        >>> plt.plot([0, 1, 2], [1, 0, 2], color="m")
+        >>> _ = plt.plot([0, 1, 2], [0, 2, 1], color="k")
+        >>> _ = plt.plot([0, 1, 2], [1, 0, 2], color="m")
 
     """
     if palette == "reset":
