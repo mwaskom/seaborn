@@ -67,6 +67,8 @@ Other additions
 
 - You can now pass an integer to the ``xticklabels`` and ``yticklabels`` parameter of :func:`heatmap` (and, by extension, :func:`clustermap`). This will make the plot use the ticklabels inferred from the data, but only plot every ``n`` label, where ``n`` is the number you pass. This can help when visualizing larger matrices with some sensible ordering to the rows or columns of the dataframe.
 
+- Added the ``as_hex`` method to color palette objects, to return a list of hex codes rather than rgb tuples.
+
 Bug fixes
 ~~~~~~~~~
 

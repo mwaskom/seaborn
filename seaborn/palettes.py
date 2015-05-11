@@ -47,6 +47,11 @@ class _ColorPalette(list):
         from .rcmod import set_palette
         set_palette(self._orig_palette, len(self._orig_palette))
 
+    def as_hex(self):
+        """Return a color palette with hex codes instead of RGB values."""
+        hex = [mpl.colors.rgb2hex(rgb) for rgb in self]
+        return _ColorPalette(hex)
+
 
 def color_palette(name=None, n_colors=6, desat=None):
     """Return a list of colors defining a color palette.

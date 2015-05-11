@@ -271,3 +271,9 @@ class TestColorPalettes(object):
             rgb_got = mpl.colors.colorConverter.to_rgb(code)
             nt.assert_equal(rgb_want, rgb_got)
         palettes.set_color_codes("reset")
+
+    def test_as_hex(self):
+
+        pal = palettes.color_palette("deep")
+        for rgb, hex in zip(pal, pal.as_hex()):
+            nt.assert_equal(mpl.colors.rgb2hex(rgb), hex)
