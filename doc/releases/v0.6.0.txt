@@ -71,6 +71,8 @@ Other additions
 
 - Added the ``as_hex`` method to color palette objects, to return a list of hex codes rather than rgb tuples.
 
+- The :func:`color_palette` function no longer trims palettes that are longer than 6 colors when passed into it.
+
 Bug fixes
 ~~~~~~~~~
 
