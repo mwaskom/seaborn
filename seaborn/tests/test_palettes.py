@@ -31,13 +31,17 @@ class TestColorPalettes(object):
 
     def test_big_palette_context(self):
 
-        default_pal = palettes.color_palette()
+        original_pal = palettes.color_palette("deep", n_colors=8)
         context_pal = palettes.color_palette("husl", 10)
 
+        rcmod.set_palette(original_pal)
         with palettes.color_palette(context_pal, 10):
             nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
 
-        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], original_pal)
+
+        # Reset default
+        rcmod.set()
 
     def test_seaborn_palettes(self):
 
@@ -261,3 +265,25 @@ class TestColorPalettes(object):
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
             nt.assert_equal(as_hex, crayons[name].lower())
+
+    def test_color_codes(self):
+
+        palettes.set_color_codes("deep")
+        colors = palettes.color_palette("deep") + [".1"]
+        for code, color in zip("bgrmyck", colors):
+            rgb_want = mpl.colors.colorConverter.to_rgb(color)
+            rgb_got = mpl.colors.colorConverter.to_rgb(code)
+            nt.assert_equal(rgb_want, rgb_got)
+        palettes.set_color_codes("reset")
+
+    def test_as_hex(self):
+
+        pal = palettes.color_palette("deep")
+        for rgb, hex in zip(pal, pal.as_hex()):
+            nt.assert_equal(mpl.colors.rgb2hex(rgb), hex)
+
+    def test_preserved_palette_length(self):
+
+        pal_in = palettes.color_palette("Set1", 10)
+        pal_out = palettes.color_palette(pal_in)
+        nt.assert_equal(pal_in, pal_out)
