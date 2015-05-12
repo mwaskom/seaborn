@@ -91,7 +91,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
     -------
     palette : list of RGB tuples.
         Color palette. Behaves like a list, but can be used as a context
-        manager and posses an ``as_hex`` method to convert to hex color codes.
+        manager and possesses an ``as_hex`` method to convert to hex color
+        codes.
 
     See Also
     --------
@@ -144,15 +145,6 @@ def color_palette(palette=None, n_colors=None, desat=None):
         >>> import numpy as np, matplotlib.pyplot as plt
         >>> with sns.color_palette("husl", 8):
         ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
-
-    Convert to hex representation:
-
-    .. plot::
-        :context: close-figs
-
-        >>> pal = sns.color_palette("muted", 4)
-        >>> pal.as_hex()
-        [u'#4878cf', u'#6acc65', u'#d65f5f', u'#b47cc7']
 
     """
     if palette is None:
