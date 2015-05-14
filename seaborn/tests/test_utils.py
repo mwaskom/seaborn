@@ -195,6 +195,20 @@ class TestSpineUtils(object):
 
         plt.close("all")
 
+    def test_despine_trim_inverted(self):
+
+        f, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 2, 3])
+        ax.set_ylim(.85, 3.15)
+        ax.invert_yaxis()
+
+        utils.despine(trim=True)
+        for side in self.inner_sides:
+            bounds = ax.spines[side].get_bounds()
+            nt.assert_equal(bounds, (1, 3))
+
+        plt.close("all")
+
     def test_offset_spines_warns(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning)

@@ -208,8 +208,8 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         if trim:
             # clip off the parts of the spines that extend past major ticks
             xticks = ax_i.get_xticks()
-            firsttick = np.compress(xticks >= ax_i.get_xlim()[0], xticks)[0]
-            lasttick = np.compress(xticks <= ax_i.get_xlim()[-1], xticks)[-1]
+            firsttick = np.compress(xticks >= min(ax_i.get_xlim()), xticks)[0]
+            lasttick = np.compress(xticks <= max(ax_i.get_xlim()), xticks)[-1]
             ax_i.spines['bottom'].set_bounds(firsttick, lasttick)
             ax_i.spines['top'].set_bounds(firsttick, lasttick)
             newticks = xticks.compress(xticks <= lasttick)
@@ -217,8 +217,8 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
             ax_i.set_xticks(newticks)
 
             yticks = ax_i.get_yticks()
-            firsttick = np.compress(yticks >= ax_i.get_ylim()[0], yticks)[0]
-            lasttick = np.compress(yticks <= ax_i.get_ylim()[-1], yticks)[-1]
+            firsttick = np.compress(yticks >= min(ax_i.get_ylim()), yticks)[0]
+            lasttick = np.compress(yticks <= max(ax_i.get_ylim()), yticks)[-1]
             ax_i.spines['left'].set_bounds(firsttick, lasttick)
             ax_i.spines['right'].set_bounds(firsttick, lasttick)
             newticks = yticks.compress(yticks <= lasttick)
