@@ -63,15 +63,22 @@ Seaborn: statistical data visualization
     <br>
     
 
-Seaborn is a Python visualization library based on matplotlib. It provides a high-level interface for drawing attractive statistical graphics.
+Seaborn is a Python visualization library based on matplotlib. It provides a
+high-level interface for drawing attractive statistical graphics.
 
-For a brief introduction to the ideas behind the package, you can read the :ref:`introductory notes <introduction>`.
+For a brief introduction to the ideas behind the package, you can read the
+:ref:`introductory notes <introduction>`. More practical information is on the
+:ref:`installation page <installing>`. You may also want to browse the
+:ref:`example gallery <example_gallery>` to get a sense for what kind of tools
+that are available.
 
-Much more detail can be found in the seaborn :ref:`tutorial <tutorial>`. You can also browse the :ref:`example gallery <example_gallery>` or :ref:`API reference <api_ref>` to see the kind of tools that are available.
+Much more detail can be found in the :ref:`API reference <api_ref>`, which
+includes documentation for all the functions along with short examples of how
+to use them. For a higher-level perspective, you can read through the seaborn
+:ref:`tutorial <tutorial>`. 
 
-To check out the code, report a bug, or contribute a new feature, please visit
-the `github repository <https://github.com/mwaskom/seaborn>`_. You can also get
-in touch on `twitter <https://twitter.com/michaelwaskom>`_.
+To check out the code or report a bug please visit the `github repository
+<https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `StackOverflow <http://stackoverflow.com/>`_, where there is a seaborn tag.
    
 
 .. raw:: html
