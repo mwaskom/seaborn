@@ -209,6 +209,14 @@ class TestSpineUtils(object):
 
         plt.close("all")
 
+    def test_despine_trim_noticks(self):
+
+        f, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 2, 3])
+        ax.set_yticks([])
+        utils.despine(trim=True)
+        nt.assert_equal(ax.get_yticks().size, 0)
+
     def test_offset_spines_warns(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning)
