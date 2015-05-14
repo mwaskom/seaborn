@@ -18,5 +18,4 @@ d += np.log(np.arange(1, p + 1)) * -5 + 10
 pal = sns.cubehelix_palette(p, rot=-.5, dark=.3)
 
 # Show each distribution with both violins and points
-sns.violinplot(data=d, palette=pal, inner=None)
-sns.stripplot(data=d, palette=pal, jitter=True)
+sns.violinplot(data=d, palette=pal, inner="points")
