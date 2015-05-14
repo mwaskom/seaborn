@@ -1,5 +1,6 @@
 """
 Scatterplot with categorical variables
+======================================
 
 """
 import pandas as pd
