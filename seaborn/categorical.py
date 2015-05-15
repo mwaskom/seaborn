@@ -435,13 +435,18 @@ class _BoxPlotter(_CategoricalPlotter):
 
             if self.plot_hues is None:
 
-                # Handle case where there is no data to plot
-                if not group_data.size:
+                # Handle case where there is data at this level
+                if group_data.size == 0:
                     continue
 
                 # Draw a single box or a set of boxes
                 # with a single level of grouping
                 box_data = remove_na(group_data)
+
+                # Handle case where there is no non-null data
+                if box_data.size == 0:
+                    continue
+
                 artist_dict = ax.boxplot(box_data,
                                          vert=vert,
                                          patch_artist=True,
@@ -460,11 +465,16 @@ class _BoxPlotter(_CategoricalPlotter):
                     if not i:
                         self.add_legend_data(ax, self.colors[j], hue_level)
 
-                    # Handle case where there is no data to plot
-                    if not group_data.size or not hue_mask.any():
+                    # Handle case where there is data at this level
+                    if group_data.size == 0:
                         continue
 
                     box_data = remove_na(group_data[hue_mask])
+
+                    # Handle case where there is no non-null data
+                    if box_data.size == 0:
+                        continue
+
                     center = i + offsets[j]
                     artist_dict = ax.boxplot(box_data,
                                              vert=vert,

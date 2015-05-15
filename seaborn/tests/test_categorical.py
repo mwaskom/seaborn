@@ -727,6 +727,24 @@ class TestBoxPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.artists), 3)
         plt.close("all")
 
+    def test_missing_data(self):
+
+        x = ["a", "a", "b", "b", "c", "c", "d", "d"]
+        h = ["x", "y", "x", "y", "x", "y", "x", "y"]
+        y = self.rs.randn(8)
+        y[-2:] = np.nan
+
+        ax = cat.boxplot(x, y)
+        nt.assert_equal(len(ax.artists), 3)
+
+        plt.close("all")
+
+        y[-1] = 0
+        ax = cat.boxplot(x, y, h)
+        nt.assert_equal(len(ax.artists), 7)
+
+        plt.close("all")
+
     def test_boxplots(self):
 
         # Smoke test the high level boxplot options
