@@ -33,9 +33,9 @@ Seaborn: statistical data visualization
             <img src="_static/anscombes_quartet_thumb.png">
           </div>
         </a>
-        <a href="examples/scatterplot_matrix.html">
+        <a href="examples/many_pairwise_correlations.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/scatterplot_matrix_thumb.png">
+            <img src="_static/many_pairwise_correlations_thumb.png">
           </div>
         </a>
         <a href="examples/many_facets.html">
@@ -43,19 +43,19 @@ Seaborn: statistical data visualization
             <img src="_static/many_facets_thumb.png">
           </div>
         </a>
-        <a href="examples/network_correlations.html">
+        <a href="examples/scatterplot_matrix.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/network_correlations_thumb.png">
+            <img src="_static/scatterplot_matrix_thumb.png">
           </div>
         </a>
-        <a href="examples/elaborate_violinplot.html">
+        <a href="examples/hexbin_marginals.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/elaborate_violinplot_thumb.png">
+            <img src="_static/hexbin_marginals_thumb.png">
           </div>
         </a>
-        <a href="examples/regression_marginals.html">
+        <a href="examples/grouped_violinplots.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/regression_marginals_thumb.png">
+            <img src="_static/grouped_violinplots_thumb.png">
           </div>
         </a>
       </div>
@@ -69,16 +69,17 @@ high-level interface for drawing attractive statistical graphics.
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the
 :ref:`installation page <installing>`. You may also want to browse the
-:ref:`example gallery <example_gallery>` to get a sense for what kind of tools
-that are available.
+:ref:`example gallery <example_gallery>` to get a sense for what kind of plots
+you can make with seaborn.
 
-Much more detail can be found in the :ref:`API reference <api_ref>`, which
-includes documentation for all the functions along with short examples of how
-to use them. For a higher-level perspective, you can read through the seaborn
-:ref:`tutorial <tutorial>`. 
+For a higher-level perspective on the various tools that are included in the
+library, you can read through the :ref:`tutorial <tutorial>`. Much more detail
+about individual tools can be found in the :ref:`API reference <api_ref>`,
+which includes documentation for all the functions along with short examples of
+how to use them.
 
-To check out the code or report a bug please visit the `github repository
-<https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `StackOverflow <http://stackoverflow.com/>`_, where there is a seaborn tag.
+To check out the code or report a bug, please visit the `github repository
+<https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `stackoverflow <http://stackoverflow.com/>`_, where there is a seaborn tag.
    
 
 .. raw:: html

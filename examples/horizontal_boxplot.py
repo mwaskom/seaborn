@@ -1,8 +1,8 @@
 """
-Horizontal boxplot with log axis
-================================
+Horizontal boxplot with observations
+====================================
 
-_thumb: .6, .5
+_thumb: .7, .45
 """
 import numpy as np
 import seaborn as sns
@@ -12,9 +12,14 @@ sns.set(style="ticks", palette="muted", color_codes=True)
 planets = sns.load_dataset("planets")
 
 # Plot the orbital period with horizontal boxes
-ax = sns.boxplot(x="orbital_period", y="method", data=planets,
+ax = sns.boxplot(x="distance", y="method", data=planets,
                  whis=np.inf, color="c")
+
+# Add in points to show each observation
+sns.stripplot(x="distance", y="method", data=planets,
+              jitter=True, size=3, color=".3", linewidth=0)
+
 
 # Make the quantitative axis logarithmic
 ax.set_xscale("log")
-sns.despine(left=True)
+sns.despine(trim=True)
