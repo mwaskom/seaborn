@@ -34,13 +34,19 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, norm_hist=False, axlabel=None,
              label=None, ax=None):
-    """Flexibly plot a distribution of observations.
+    """Flexibly plot a univariate distribution of observations.
+
+    This function combines the matplotlib ``hist`` function (with automatic
+    calculation of a good default bin size) with the seaborn :func:`kdeplot`
+    and :func:`rugplot` functions. It can also fit ``scipy.stats``
+    distributions and plot the estimated PDF over the data.
 
     Parameters
     ----------
 
-    a : (squeezable to) 1d array
-        Observed data.
+    a : Series, 1d-array, or list.
+        Observed data. If this is a Series object with a ``name`` attribute,
+        the name will be used to label the data axis.
     bins : argument for matplotlib hist(), or None, optional
         Specification of hist bins, or None to use Freedman-Diaconis rule.
     hist : bool, optional
@@ -73,6 +79,77 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     Returns
     -------
     ax : matplotlib axis
+
+    See Also
+    --------
+    kdeplot : Show a univariate or bivariate distribution with a kernel
+              density estimate.
+    rugplot : Draw small vertical lines to show each observation in a
+              distribution.
+
+    Examples
+    --------
+
+    Show a default plot with a kernel density estimate and histogram with bin
+    size determined automatically with a reference rule:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns, numpy as np
+        >>> sns.set(rc={"figure.figsize": (8, 4)}); np.random.seed(0)
+        >>> x = np.random.randn(100)
+        >>> ax = sns.distplot(x)
+
+    Use Pandas objects to get an informative axis label:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import pandas as pd
+        >>> x = pd.Series(x, name="x variable")
+        >>> ax = sns.distplot(x)
+
+    Plot the distribution with a kenel density estimate and rug plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.distplot(x, rug=True, hist=False)
+
+    Plot the distribution with a histogram and maximum likelihood gaussian
+    distribution fit:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from scipy.stats import norm
+        >>> ax = sns.distplot(x, fit=norm, kde=False)
+
+    Plot the distribution on the vertical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.distplot(x, vertical=True)
+
+    Change the color of all the plot elements:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.set_color_codes()
+        >>> ax = sns.distplot(x, color="y")
+
+    Pass specific parameters to the underlying plot functions:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
+        ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
+        ...                   hist_kws={"histtype": "step", "linewidth": 3,
+        ...                             "alpha": 1, "color": "g"})
 
     """
     if ax is None:
