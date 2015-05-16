@@ -212,8 +212,45 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
 
     Returns
     -------
-    palette : list of tuples
-        color palette
+    palette : seaborn color palette
+        List-like object of colors as RGB tuples.
+
+    See Also
+    --------
+    husl_palette : Make a palette using evently spaced circular hues in the
+                   HUSL system.
+
+    Examples
+    --------
+
+    Create a palette of 10 colors with the default parameters:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.hls_palette(10))
+
+    Create a palette of 10 colors that begins at a different hue value:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.hls_palette(10, h=.5))
+
+    Create a palette of 10 colors that are darker than the default:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.hls_palette(10, l=.4))
+
+    Create a palette of 10 colors that are less saturated than the default:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.hls_palette(10, s=.4))
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
@@ -243,8 +280,45 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
 
     Returns
     -------
-    palette : list of tuples
-        color palette
+    palette : seaborn color palette
+        List-like object of colors as RGB tuples.
+
+    See Also
+    --------
+    hls_palette : Make a palette using evently spaced circular hues in the
+                  HSL system.
+
+    Examples
+    --------
+
+    Create a palette of 10 colors with the default parameters:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.husl_palette(10))
+
+    Create a palette of 10 colors that begins at a different hue value:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.husl_palette(10, h=.5))
+
+    Create a palette of 10 colors that are darker than the default:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.husl_palette(10, l=.4))
+
+    Create a palette of 10 colors that are less saturated than the default:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.husl_palette(10, s=.4))
 
     """
     hues = np.linspace(0, 1, n_colors + 1)[:-1]
@@ -262,8 +336,10 @@ def mpl_palette(name, n_colors=6):
 
     Note that this handles the qualitative colorbrewer palettes
     properly, although if you ask for more colors than a particular
-    qualitative palette can provide you will fewer than you are
-    expecting.
+    qualitative palette can provide you will get fewer than you are
+    expecting. In contrast, asking for qualitative color brewer palettes
+    using :func:`color_palette` will return the expected number of colors,
+    but they will cycle.
 
     If you are using the IPython notebook, you can also use the function
     :func:`choose_colorbrewer_palette` to interactively select palettes.
@@ -271,14 +347,48 @@ def mpl_palette(name, n_colors=6):
     Parameters
     ----------
     name : string
-        name of the palette
+        Name of the palette. This should be a named matplotlib colormap.
     n_colors : int
-        number of colors in the palette
+        Number of discrete colors in the palette.
 
     Returns
     -------
-    palette : list of tuples
-        palette colors in r, g, b format
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
+
+    Examples
+    --------
+
+    Create a qualitative colorbrewer palette with 8 colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.mpl_palette("Set2", 8))
+
+    Create a sequential colorbrewer palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.mpl_palette("Blues"))
+
+    Create a diverging palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.mpl_palette("seismic", 8))
+
+    Create a "dark" sequential palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.mpl_palette("GnBu_d"))
 
     """
     brewer_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
@@ -341,11 +451,50 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
     Returns
     -------
-    palette : list or colormap
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
 
     See Also
     --------
     light_palette : Create a sequential palette with bright low values.
+    diverging_palette : Create a diverging palette with two colors.
+
+    Examples
+    --------
+
+    Generate a palette from an HTML color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.dark_palette("purple"))
+
+    Generate a palette that decreases in lightness:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.dark_palette("seagreen", reverse=True))
+
+    Generate a palette from an HUSL-space seed:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.dark_palette((260, 75, 60), input="husl"))
+
+    Generate a colormap object:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import arange
+        >>> x = arange(25).reshape(5, 5)
+        >>> cmap = sns.dark_palette("#2ecc71", as_cmap=True)
+        >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
     color = _color_to_rgb(color, input)
@@ -385,11 +534,50 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
     Returns
     -------
-    palette : list or colormap
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
 
     See Also
     --------
     dark_palette : Create a sequential palette with dark low values.
+    diverging_palette : Create a diverging palette with two colors.
+
+    Examples
+    --------
+
+    Generate a palette from an HTML color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.light_palette("purple"))
+
+    Generate a palette that increases in lightness:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.light_palette("seagreen", reverse=True))
+
+    Generate a palette from an HUSL-space seed:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.light_palette((260, 75, 60), input="husl"))
+
+    Generate a colormap object:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import arange
+        >>> x = arange(25).reshape(5, 5)
+        >>> cmap = sns.light_palette("#2ecc71", as_cmap=True)
+        >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
     color = _color_to_rgb(color, input)
@@ -450,10 +638,53 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
 
     Returns
     -------
-    palette : array of r, g, b colors or colormap
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
+
+    See Also
+    --------
+    dark_palette : Create a sequential palette with dark values.
+    light_palette : Create a sequential palette with light values.
+
+    Examples
+    --------
+
+    Generate a blue-white-red palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.diverging_palette(240, 10, n=9))
+
+    Generate a brighter green-white-purple palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.diverging_palette(150, 275, s=80, l=55, n=9))
+
+    Generate a blue-black-red palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.diverging_palette(250, 15, s=75, l=40,
+        ...                                   n=9, center="dark"))
+
+    Generate a colormap object:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import arange
+        >>> x = arange(25).reshape(5, 5)
+        >>> cmap = sns.diverging_palette(220, 20, sep=20, as_cmap=True)
+        >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-
     palfunc = dark_palette if center == "dark" else light_palette
     neg = palfunc((h_neg, s, l), 128 - (sep / 2), reverse=True, input="husl")
     pos = palfunc((h_pos, s, l), 128 - (sep / 2), input="husl")
@@ -469,16 +700,19 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
 
     Parameters
     ----------
-    colors : sequence of matplotlib colors
-        hex, rgb-tuple, or html color name
+    colors : sequence of colors in various formats interpreted by ``input``
+        hex code, html color name, or tuple in ``input`` space.
     n_colors : int, optional
-        number of colors in the palette
+        Number of colors in the palette.
     as_cmap : bool, optional
-        if True, return as a matplotlib colormap instead of list
+        If True, return as a matplotlib colormap instead of list.
 
     Returns
     -------
-    palette : list or colormap
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
 
     """
     colors = [_color_to_rgb(color, input) for color in colors]
@@ -492,9 +726,24 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
 def xkcd_palette(colors):
     """Make a palette with color names from the xkcd color survey.
 
-    This is just a simple wrapper around the seaborn.xkcd_rbg dictionary.
-
     See xkcd for the full list of colors: http://xkcd.com/color/rgb/
+
+    This is just a simple wrapper around the ``seaborn.xkcd_rgb`` dictionary.
+
+    Parameters
+    ----------
+    colors : list of strings
+        List of keys in the ``seaborn.xkcd_rgb`` dictionary.
+
+    Returns
+    -------
+    palette : seaborn color palette
+        Returns the list of colors as RGB tuples in an object that behaves like
+        other seaborn color palettes.
+
+    See Also
+    --------
+    crayon_palette : Make a palette with Crayola crayon colors.
 
     """
     palette = [xkcd_rgb[name] for name in colors]
@@ -507,7 +756,22 @@ def crayon_palette(colors):
     Colors are taken from here:
     http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors
 
-    This is just a simple wrapper around the seaborn.crayons dictionary.
+    This is just a simple wrapper around the ``seaborn.crayons`` dictionary.
+
+    Parameters
+    ----------
+    colors : list of strings
+        List of keys in the ``seaborn.crayons`` dictionary.
+
+    Returns
+    -------
+    palette : seaborn color palette
+        Returns the list of colors as rgb tuples in an object that behaves like
+        other seaborn color palettes.
+
+    See Also
+    --------
+    xkcd_palette : Make a palette with named colors from the XKCD color survey.
 
     """
     palette = [crayons[name] for name in colors]
@@ -549,7 +813,10 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
     Returns
     -------
-    palette : list or colormap
+    palette or cmap : seaborn color palette or matplotlib colormap
+        List-like object of colors as RGB tuples, or colormap object that
+        can map continuous values to colors, depending on the value of the
+        ``as_cmap`` parameter.
 
     See Also
     --------
@@ -563,6 +830,56 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     Green, D. A. (2011). "A colour scheme for the display of astronomical
     intensity images". Bulletin of the Astromical Society of India, Vol. 39,
     p. 289-295.
+
+    Examples
+    --------
+
+    Generate the default palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.cubehelix_palette())
+
+    Rotate backwards from the same starting location:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.cubehelix_palette(rot=-.4))
+
+    Use a different starting point and shorter rotation:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.cubehelix_palette(start=2.8, rot=.1))
+
+    Reverse the direction of the lightness ramp:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.cubehelix_palette(reverse=True))
+
+    Generate a colormap object:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from numpy import arange
+        >>> x = arange(25).reshape(5, 5)
+        >>> cmap = sns.cubehelix_palette(as_cmap=True)
+        >>> ax = sns.heatmap(x, cmap=cmap)
+
+    Use the full lightness range:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=0, light=1, as_cmap=True)
+        >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
     cdict = mpl._cm.cubehelix(gamma, start, rot, hue)
@@ -613,7 +930,7 @@ def set_color_codes(palette="deep"):
         >>> import matplotlib.pyplot as plt
         >>> import seaborn as sns; sns.set()
         >>> sns.set_color_codes()
-        >>> _ = plt.plot([0, 1, 2], [0, 2, 1], color="r")
+        >>> _ = plt.plot([0, 1], color="r")
 
     Use a different seaborn palette.
 
@@ -621,8 +938,8 @@ def set_color_codes(palette="deep"):
         :context: close-figs
 
         >>> sns.set_color_codes("dark")
-        >>> _ = plt.plot([0, 1, 2], [0, 2, 1], color="k")
-        >>> _ = plt.plot([0, 1, 2], [1, 0, 2], color="m")
+        >>> _ = plt.plot([0, 1], color="g")
+        >>> _ = plt.plot([0, 2], color="m")
 
     """
     if palette == "reset":
