@@ -4,7 +4,9 @@ Plotting a diagonal correlation matrix
 
 _thumb: .3, .6
 """
+from string import letters
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -12,10 +14,11 @@ sns.set(style="white")
 
 # Generate a large random dataset
 rs = np.random.RandomState(33)
-d = rs.normal(size=(30, 100))
+d = pd.DataFrame(data=rs.normal(size=(100, 26)),
+                 columns=list(letters[:26]))
 
 # Compute the correlation matrix
-corr = np.corrcoef(d)
+corr = d.corr()
 
 # Generate a mask for the upper triangle
 mask = np.zeros_like(corr, dtype=np.bool)
