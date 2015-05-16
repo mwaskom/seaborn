@@ -49,10 +49,10 @@ I recommend using seaborn with the `Anaconda distribution
 <https://store.continuum.io/cshop/anaconda/>`_, as this makes it easy to manage
 the main dependencies, which otherwise can be difficult to install. 
 
-I attempt to keep seaborn working on the versions available through the stable
-Debian channels.  There may be cases where some more advanced features only
-work with newer versions of these dependencies, although these should be
-relatively rare.
+I attempt to keep seaborn importable and generally functional on the versions
+available through the stable Debian channels.  There may be cases where some
+more advanced features only work with newer versions of these dependencies,
+although these should be relatively rare.
 
 There are also some known bugs on older versions of matplotlib, so you should
 in general try to use a modern version. For many use cases, though, older
@@ -77,6 +77,7 @@ default aesthetics.
 
 By convention, ``seaborn`` is abbreviated to ``sns`` on import.
 
+
 Testing
 ~~~~~~~
 
@@ -87,6 +88,7 @@ notebooks to smoke-test a broader and more realistic range of example usage.
 
 The full set of tests requires an internet connection to download the example
 datasets, but the unit tests should be able to run offline.
+
 
 Bugs
 ~~~~
@@ -99,16 +101,25 @@ versions of seaborn and matplotlib you are using, as well as what matplotlib
 backend you are using to draw the plots, so please include those in your bug
 report.
 
+
 Known issues
 ~~~~~~~~~~~~
 
 There is a `bug <https://github.com/matplotlib/matplotlib/issues/2654>`_ in the
 matplotlib OSX backend that causes unavoidable problems with some of the
-seaborn functions. If you encounter this, you will want to try a `different
-backend <http://matplotlib.org/api/matplotlib_configuration_api.html>`_.
+seaborn functions (particularly those that draw multi-panel figures). If you
+encounter this, you will want to try a `different backend
+<http://matplotlib.org/api/matplotlib_configuration_api.html>`_.
 
 An unfortunate consequence of how the matplotlib marker styles work is that
 line-art markers (e.g. ``"+"``) or markers with ``facecolor`` set to ``"none"``
 will be invisible when the default seaborn style is in effect. This can be
 changed by using a different ``markeredgewidth`` (aliased to ``mew``) either in
 the function call or globally in the `rcParams`.
+
+Some changes to the inline plotting backend in IPython 3.0 interfere with the
+seaborn style (you'll see plots that appear to have a white axes background and
+invisible spines). The solution to this is to call ``%matplotlib inline`` in a
+cell *before* importing seaborn, and not to call ``%matplotlib inline`` after
+seaborn is imported. I believe these changes have been reverted, so this should
+stop being a problem with the release of IPython 3.2.
