@@ -7,6 +7,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
 
+from six import string_types
+
 try:
     import statsmodels.nonparametric.api as smnp
     _has_statsmodels = True
@@ -338,7 +340,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
             msg = ("Ignoring bandwidth choice, "
                    "please upgrade scipy to use a different bandwidth.")
             warnings.warn(msg, UserWarning)
-    if isinstance(bw, str):
+    if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)()
     grid = _kde_support(data, bw, gridsize, cut, clip)
@@ -349,7 +351,6 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
 def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
                        ax, **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
-
     # Determine the clipping
     if clip is None:
         clip = [(-np.inf, np.inf), (-np.inf, np.inf)]
@@ -365,11 +366,14 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
     cmap = kwargs.get("cmap", "BuGn" if filled else "BuGn_d")
-    if isinstance(cmap, str):
+    if isinstance(cmap, string_types):
         if cmap.endswith("_d"):
             pal = ["#333333"]
             pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
             cmap = blend_palette(pal, as_cmap=True)
+        else:
+            cmap = mpl.cm.get_cmap(cmap)
+
     kwargs["cmap"] = cmap
     contour_func = ax.contourf if filled else ax.contour
     contour_func(xx, yy, z, n_levels, **kwargs)
@@ -386,7 +390,7 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
-    if isinstance(bw, str):
+    if isinstance(bw, string_types):
         bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
@@ -412,7 +416,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     data = np.c_[x, y]
     kde = stats.gaussian_kde(data.T)
     data_std = data.std(axis=0, ddof=1)
-    if isinstance(bw, str):
+    if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
         bw_x = getattr(kde, "%s_factor" % bw)() * data_std[0]
         bw_y = getattr(kde, "%s_factor" % bw)() * data_std[1]
@@ -507,12 +511,12 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
         >>> ax = sns.kdeplot(x, y)
 
-    Use filled contours with a specified colormap:
+    Use filled contours:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, y, shade=True, cmap="PuBuGn")
+        >>> ax = sns.kdeplot(x, y, shade=True)
 
     Use more contour levels and a different color palette:
 
