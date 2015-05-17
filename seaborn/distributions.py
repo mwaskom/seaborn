@@ -25,9 +25,9 @@ def _freedman_diaconis_bins(a):
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
     h = 2 * iqr(a) / (len(a) ** (1 / 3))
-    # fall back to 10 bins if iqr is 0
+    # fall back to sqrt(a) bins if iqr is 0
     if h == 0:
-        return 10.
+        return np.sqrt(a.size)
     else:
         return np.ceil((a.max() - a.min()) / h)
 
