@@ -2789,7 +2789,7 @@ factorplot.__doc__ = dedent("""\
 
     Returns
     -------
-    g : FacetGrid
+    g : :class:`FacetGrid`
         Returns the :class:`FacetGrid` object with the plot on it for further
         tweaking.
 

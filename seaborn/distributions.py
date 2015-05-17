@@ -78,7 +78,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     Returns
     -------
-    ax : matplotlib axis
+    ax : matplotlib Axes
+        Returns the Axes object with the plot for further tweaking.
 
     See Also
     --------
@@ -429,18 +430,16 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
-            bw="scott", gridsize=100, cut=3, clip=None, legend=True, ax=None,
-            cumulative=False, **kwargs):
-    """Fit and plot a univariate or bivarate kernel density estimate.
+            bw="scott", gridsize=100, cut=3, clip=None, legend=True,
+            cumulative=False, ax=None, **kwargs):
+    """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
     ----------
-    data : 1d or 2d array-like
-        Input data. If two-dimensional, assumed to be shaped (n_unit x n_var),
-        and a bivariate contour plot will be drawn.
+    data : 1d array-like
+        Input data.
     data2: 1d array-like
-        Second input data. If provided `data` must be one-dimensional, and
-        a bivariate plot is produced.
+        Second input data. If present, a bivariate KDE will be estimated.
     shade : bool, optional
         If true, shade in the area under the KDE curve (or draw with filled
         contours when data is bivariate).
@@ -461,16 +460,87 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         a pair of (low, high) bounds for bivariate plots.
     legend : bool, optoinal
         If True, add a legend or label the axes when possible.
-    ax : matplotlib axis, optional
-        Axis to plot on, otherwise uses current axis.
     cumulative : bool
         If draw, draw the cumulative distribution estimated by the kde.
-    kwargs : other keyword arguments for plot()
+    ax : matplotlib axis, optional
+        Axis to plot on, otherwise uses current axis.
+    kwargs : key, value pairings
+        Other keyword arguments are passed to ``plt.plot()`` or
+        ``plt.contour{f}`` depending on whether a univariate or bivariate
+        plot is being drawn.
 
     Returns
     -------
-    ax : matplotlib axis
-        Axis with plot.
+    ax : matplotlib axes
+        Axes with plot.
+
+    See Also
+    --------
+    distplot: Flexibly plot a univariate distribution of observations.
+    jointplot: Plot a joint dataset with bivariate and marginal distributions.
+
+    Examples
+    --------
+
+    Plot a basic univariate density:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(10)
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> mean, cov = [0, 2], [(1, .5), (.5, 1)]
+        >>> x, y = np.random.multivariate_normal(mean, cov, size=50).T
+        >>> ax = sns.kdeplot(x)
+
+    Shade under the density curve and use a different color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, shade=True, color="r")
+
+    Plot a bivariate density:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, y)
+
+    Use filled contours with a specified colormap:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, y, shade=True, cmap="PuBuGn")
+
+    Use more contour levels and a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, y, n_levels=30, cmap="Purples_d")
+
+    Use a narrower bandwith:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, bw=.15)
+
+    Plot the density on the vertical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(y, vertical=True)
+
+    Limit the density curve within the range of the data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, cut=0)
 
     """
     if ax is None:
@@ -552,12 +622,17 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
               joint_kws=None, marginal_kws=None, annot_kws=None):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
+    This function provides a convenient interface to the :class:`JointGrid`
+    class, with several canned plot kinds. This is intended to be a fairly
+    lightweight wrapper; if you need more flexibility, you should use
+    :class:`JointGrid` directly.
+
     Parameters
     ----------
     x, y : strings or vectors
-        Data or names of variables in `data`.
+        Data or names of variables in ``data``.
     data : DataFrame, optional
-        DataFrame when `x` and `y` are variable names.
+        DataFrame when ``x`` and ``y`` are variable names.
     kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
         Kind of plot to draw.
     stat_func : callable or None
@@ -574,7 +649,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     space : numeric, optional
         Space between the joint and marginal axes
     dropna : bool, optional
-        If True, remove observations that are missing from `x` and `y`.
+        If True, remove observations that are missing from ``x`` and ``y``.
     {x, y}lim : two-tuples, optional
         Axis limits to set before plotting.
     {joint, marginal, annot}_kws : dicts
@@ -582,13 +657,95 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
     Returns
     -------
-    grid : JointGrid
-        JointGrid object with the plot on it.
+    grid : :class:`JointGrid`
+        :class:`JointGrid` object with the plot on it.
 
     See Also
     --------
     JointGrid : The Grid class used for drawing this plot. Use it directly if
                 you need more flexibility.
+
+    Examples
+    --------
+
+    Draw a scatterplot with marginal histograms:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np, pandas as pd; np.random.seed(0)
+        >>> import seaborn as sns; sns.set(style="white", color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips)
+
+    Add regression and kernel density fits:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="reg")
+
+    Replace the scatterplot with a joint histogram using hexagonal bins:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="hex")
+
+    Replace the scatterplots and histograms with density estimates and align
+    the marginal Axes tightly with the joint Axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> g = sns.jointplot("sepal_width", "petal_length", data=iris,
+        ...                   kind="kde", space=0, color="g")
+
+    Use a different statistic for the annotation:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from scipy.stats import spearmanr
+        >>> g = sns.jointplot("size", "total_bill", data=tips,
+        ...                   stat_func=spearmanr, color="m")
+
+    Draw a scatterplot, then add a joint density estimate:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = (sns.jointplot("sepal_length", "sepal_width",
+        ...                    data=iris, color="k")
+        ...         .plot_joint(sns.kdeplot, zorder=0, n_levels=6))
+
+    Pass vectors in directly without using Pandas, then name the axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> x, y = np.random.randn(2, 300)
+        >>> g = (sns.jointplot(x, y, kind="hex", stat_func=None)
+        ...         .set_axis_labels("x", "y"))
+
+    Draw a smaller figure with more space devoted to the marginal plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips,
+        ...                   size=5, ratio=3, color="g")
+
+    Pass keyword arguments down to the underlying plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("petal_length", "sepal_length", data=iris,
+        ...                   joint_kws=dict(s=40, edgecolor="w", linewidth=1),
+        ...                   marginal_kws=dict(bins=15),
+        ...                   annot_kws=dict(stat="r"))
 
     """
     # Set up empty default kwarg dicts
