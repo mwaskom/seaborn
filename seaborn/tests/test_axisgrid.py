@@ -533,6 +533,7 @@ class TestFacetGrid(object):
         nt.assert_equal(g.row_names, list("abc"))
         nt.assert_equal(g.col_names, list("mn"))
         nt.assert_equal(g.hue_names, list("tuv"))
+        nt.assert_equal(g.axes.shape, (3, 2))
 
         g = ag.FacetGrid(self.df, row="a", col="b", hue="c",
                          row_order=list("bca"),
@@ -542,6 +543,18 @@ class TestFacetGrid(object):
         nt.assert_equal(g.row_names, list("bca"))
         nt.assert_equal(g.col_names, list("nm"))
         nt.assert_equal(g.hue_names, list("vtu"))
+        nt.assert_equal(g.axes.shape, (3, 2))
+
+        g = ag.FacetGrid(self.df, row="a", col="b", hue="c",
+                         row_order=list("bcda"),
+                         col_order=list("nom"),
+                         hue_order=list("qvtu"))
+
+        nt.assert_equal(g.row_names, list("bcda"))
+        nt.assert_equal(g.col_names, list("nom"))
+        nt.assert_equal(g.hue_names, list("qvtu"))
+        nt.assert_equal(g.axes.shape, (4, 3))
+
         plt.close("all")
 
     def test_palette(self):
