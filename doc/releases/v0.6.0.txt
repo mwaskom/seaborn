@@ -43,6 +43,7 @@ New plotting functions
 Other additions and changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- The :func:`corrplot` and underlying :func:`symmatplot` have been deprecated in favor of :func:`heatmap`, which is much more flexible and robust. These two functions are still available in version 0.6, but they will be removed in a future version.
 
 - Added the :func:`set_color_codes` function and the ``color_codes`` argument to :func:`set` and :func:`set_palette`. This changes the interpretation of shorthand color codes (i.e. "b", "g", k", etc.) within matplotlib to use the values from one of the named seaborn palettes (i.e. "deep", "muted", etc.). That makes it easier to have a more uniform look when using matplotlib functions directly with seaborn imported. This could be disruptive to existing plots, so it does not happen by default. It is possible this could change in the future.
 
