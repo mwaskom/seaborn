@@ -2,11 +2,14 @@
 from __future__ import division
 import copy
 import itertools
+from textwrap import dedent
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+import warnings
 
 try:
     import statsmodels
@@ -21,7 +24,7 @@ from .external.six.moves import range
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
-from .axisgrid import FacetGrid, PairGrid
+from .axisgrid import FacetGrid, PairGrid, _facet_docs
 from .distributions import kdeplot
 
 
@@ -382,6 +385,139 @@ class _RegressionPlotter(_LinearPlotter):
         ax.set_xlim(*xlim)
 
 
+_regression_docs = dict(
+
+    model_api=dedent("""\
+    There are a number of mutually exclusive options for estimating the
+    regression model: ``order``, ``logistic``, ``lowess``, ``robust``, and
+    ``logx``. See the parameter docs for more information on these options.\
+    """),
+
+    regplot_vs_lmplot=dedent("""\
+    Understanding the difference between :func:`regplot` and :func:`lmplot` can
+    be a bit tricky. In fact, they are closely related, as :func:`lmplot` uses
+    :func:`regplot` internally and takes most of its parameters. However,
+    :func:`regplot` is an axes-level function, so it draws directly onto an
+    axes (either the currently active axes or the one provided by the ``ax``
+    parameter), while :func:`lmplot` is a figure-level function and creates its
+    own figure, which is managed through a :class:`FacetGrid`. This has a few
+    consequences, namely that :func:`regplot` can happily coexist in a figure
+    with other kinds of plots and will follow the global matplotlib color
+    cycle. In contrast, :func:`lmplot` needs to occupy an entire figure, and
+    the size and color cycle are controlled through function parameters,
+    ignoring the global defaults.\
+    """),
+
+    x_estimator=dedent("""\
+    x_estimator : callable that maps vector -> scalar, optional
+        Apply this function to each unique value of ``x`` and plot the
+        resulting estimate. This is useful when ``x`` is a discrete variable.
+        If ``x_ci`` is not ``None``, this estimate will be bootstrapped and a
+        confidence interval will be drawn.\
+    """),
+    x_bins=dedent("""\
+    x_bins : int or vector, optional
+        Bin the ``x`` variable into discrete bins and then estimate the central
+        tendency and a confidence interval. This binning only influences how
+        the scatterplot is drawn; the regression is still fit to the original
+        data.  This parameter is interpreted either as the number of
+        evenly-sized (not necessary spaced) bins or the positions of the bin
+        centers. When this parameter is used, it implies that the default of
+        ``x_estimator`` is ``numpy.mean``.\
+    """),
+    x_ci=dedent("""\
+    x_ci : "ci", int in [0, 100] or None, optional
+        Size of the confidence interval used when plotting a central tendency
+        for discrete values of ``x``. If "ci", defer to the value of the``ci``
+        parameter.\
+    """),
+    scatter=dedent("""\
+    scatter : bool, optional
+        If ``True``, draw a scatterplot with the underlying observations (or
+        the ``x_estimator`` values).\
+    """),
+    fit_reg=dedent("""\
+    fit_reg : bool, optional
+        If ``True``, estimate and plot a regression model relating the ``x``
+        and ``y`` variables.\
+    """),
+    ci=dedent("""\
+    ci : int in [0, 100] or None, optional
+        Size of the confidence interval for the regression estimate. This will
+        be drawn using translucent bands around the regression line. The
+        confidence interval is estimated using a bootstrap; for large
+        datasets, it may be advisable to avoid that computation by setting
+        this parameter to None.\
+    """),
+    n_boot=dedent("""\
+    n_boot : int, optional
+        Number of bootstrap resamples used to estimate the ``ci``. The default
+        value attempts to balance time and stability; you may want to increase
+        this value for "final" versions of plots.\
+    """),
+    units=dedent("""\
+    units : variable name in ``data``, optional
+        If the ``x`` and ``y`` observations are nested within sampling units,
+        those can be specified here. This will be taken into account when
+        computing the confidence intervals by performing a multilevel bootstrap
+        that resamples both units and observations (within unit). This does not
+        otherwise influence how the regression is estimated or drawn.\
+    """),
+    order=dedent("""\
+    order : int, optional
+        If ``order`` is greater than 1, use ``numpy.polyfit`` to estimate a
+        polynomial regression.\
+    """),
+    logistic=dedent("""\
+    logistic : bool, optional
+        If ``True``, assume that ``y`` is a binary variable and use
+        ``statsmodels`` to estimate a logistic regression model. Note that this
+        is substantially more computationally intensive than linear regression,
+        so you may wish to decrease the number of bootstrap resamples
+        (``n_boot``) or set ``ci`` to None.\
+    """),
+    lowess=dedent("""\
+    lowess : bool, optional
+        If ``True``, use ``statsmodels`` to estimate a nonparametric lowess
+        model (locally weighted linear regression). Note that confidence
+        intervals cannot currently be drawn for this kind of model.\
+    """),
+    robust=dedent("""\
+    robust : bool, optional
+        If ``True``, use ``statsmodels`` to estimate a robust regression. This
+        will de-weight outliers. Note that this is substantially more
+        computationally intensive than standard linear regression, so you may
+        wish to decrease the number of bootstrap resamples (``n_boot``) or set
+        ``ci`` to None.\
+    """),
+    logx=dedent("""\
+    logx : bool, optional
+        If ``True``, estimate a linear regression of the form y ~ log(x), but
+        plot the scatterplot and regression model in the input space. Note that
+        ``x`` must be positive for this to work.\
+    """),
+    xy_partial=dedent("""\
+    {x,y}_partial : strings in ``data`` or matrices
+        Confounding variables to regress out of the ``x`` or ``y`` variables
+        before plotting.\
+    """),
+    truncate=dedent("""\
+    truncate : bool, optional
+        By default, the regression line is drawn to fill the x axis limits
+        after the scatterplot is drawn. If ``truncate`` is ``True``, it will
+        instead by bounded by the data limits.\
+    """),
+    xy_jitter=dedent("""\
+    {x,y}_jitter : floats, optional
+        Add uniform random noise of this size to either the ``x`` or ``y``
+        variables. The noise is added to a copy of the data after fitting the
+        regression, and only influences the look of the scatterplot. This can
+        be helpful when plotting variables that take discrete values.\
+    """),
+    )
+_regression_docs.update(_facet_docs)
+
+
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
@@ -486,107 +622,14 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     return facets
 
 
-def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
+def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
             scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
             logx=False, x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
-            xlabel=None, ylabel=None, label=None,
-            color=None, marker="o", scatter_kws=None, line_kws=None,
-            ax=None):
-    """Draw a scatter plot between x and y with a regression line.
+            label=None, color=None, marker="o",
+            scatter_kws=None, line_kws=None, ax=None):
 
-    Parameters
-    ----------
-    x : vector or string
-        Data or column name in `data` for the predictor variable.
-    y : vector or string
-        Data or column name in `data` for the response variable.
-    data : DataFrame, optional
-        DataFrame to use if `x` and `y` are column names.
-    x_estimator : function that aggregates a vector into one value, optional
-        When `x` is a discrete variable, apply this estimator to the data
-        at each value and plot the data as a series of point estimates and
-        confidence intervals rather than a scatter plot.
-    x_bins : int or vector, optional
-        When `x` is a continuous variable, use the values in this vector (or
-        a vector of evenly spaced values with this length) to discretize the
-        data by assigning each point to the closest bin value. This applies
-        only to the plot; the regression is fit to the original data. This
-        implies that `x_estimator` is numpy.mean if not otherwise provided.
-    x_ci: int between 0 and 100, optional
-        Confidence interval to compute and draw around the point estimates
-        when `x` is treated as a discrete variable.
-    scatter : boolean, optional
-        Draw the scatter plot or point estimates with CIs representing the
-        observed data.
-    fit_reg : boolean, optional
-        If False, don't fit a regression; just draw the scatterplot.
-    ci : int between 0 and 100 or None, optional
-        Confidence interval to compute for regression estimate, which is drawn
-        as translucent bands around the regression line.
-    n_boot : int, optional
-        Number of bootstrap resamples used to compute the confidence intervals.
-    units : vector or string
-        Data or column name in `data` with ids for sampling units, so that the
-        bootstrap is performed by resampling units and then observations within
-        units for more accurate confidence intervals when data have repeated
-        measures.
-    order : int, optional
-        Order of the polynomial to fit. Use order > 1 to explore higher-order
-        trends in the relationship.
-    logistic : boolean, optional
-        Fit a logistic regression model. This requires `y` to be dichotomous
-        with values of either 0 or 1.
-    lowess : boolean, optional
-        Plot a lowess model (locally weighted nonparametric regression).
-    robust : boolean, optional
-        Fit a robust linear regression, which may be useful when the data
-        appear to have outliers.
-    logx : boolean, optional
-        Fit the regression in log(x) space.
-    {x, y}_partial : matrix or string(s) , optional
-        Matrix with same first dimension as `x`, or column name(s) in `data`.
-        These variables are treated as confounding and are removed from
-        the `x` or `y` variables before plotting.
-    truncate : boolean, optional
-        If True, truncate the regression estimate at the minimum and maximum
-        values of the `x` variable.
-    dropna : boolean, optional
-        Remove observations that are NA in at least one of the variables.
-    {x, y}_jitter : floats, optional
-        Add uniform random noise from within this range (in data coordinates)
-        to each datapoint in the x and/or y direction. This can be helpful when
-        plotting discrete values.
-    label : string, optional
-        Label to use for the regression line, or for the scatterplot if not
-        fitting a regression.
-    color : matplotlib color, optional
-        Color to use for all elements of the plot. Can set the scatter and
-        regression colors separately using the `kws` dictionaries. If not
-        provided, the current color in the axis cycle is used.
-    marker : matplotlib marker code, optional
-        Marker to use for the scatterplot points.
-    {scatter, line}_kws : dictionaries, optional
-        Additional keyword arguments passed to scatter() and plot() for drawing
-        the components of the plot.
-    ax : matplotlib axis, optional
-        Plot into this axis, otherwise grab the current axis or make a new
-        one if not existing.
-
-    Returns
-    -------
-    ax: matplotlib axes
-        Axes with the regression plot.
-
-    See Also
-    --------
-    lmplot : Combine regplot and a FacetGrid.
-    residplot : Calculate and plot the residuals of a linear model.
-    jointplot (with kind="reg"): Draw a regplot with univariate marginal
-                                 distrbutions.
-
-    """
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units,
                                  order, logistic, lowess, robust, logx,
@@ -601,6 +644,174 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
     line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
+
+regplot.__doc__ = dedent("""\
+    Plot data and a linear regression model fit.
+
+    {model_api}
+
+    Parameters
+    ----------
+    x, y: string, series, or vector array
+        Input variables. If strings, these should correspond with column names
+        in ``data``. When pandas objects are used, axes will be labeled with
+        the series name.
+    {data}
+    {x_estimator}
+    {x_bins}
+    {x_ci}
+    {scatter}
+    {fit_reg}
+    {ci}
+    {n_boot}
+    {units}
+    {order}
+    {logistic}
+    {lowess}
+    {robust}
+    {logx}
+    {xy_partial}
+    {truncate}
+    {xy_jitter}
+    label : string
+        Label to apply to ether the scatterplot or regression line (if
+        ``scatter`` is ``False``) for use in a legend.
+    color : matplotlib color
+        Color to apply to all plot elements; will be superseded by colors
+        passed in ``scatter_kws`` or ``line_kws``.
+    marker : matplotlib marker code
+        Marker to use for the scatterplot glyphs.
+    {{scatter,line}}_kws : dictionaries
+        Additional keyword arguments to pass to ``plt.scatter`` and
+        ``plt.plot``.
+    ax : matplotlib Axes
+        The Axes object containing the plot.
+
+    Returns
+    -------
+
+    See Also
+    --------
+    lmplot : Combine :func:`regplot` and :class:`FacetGrid` to plot multiple
+             linear relationships in a dataset.
+    jointplot : Combine :func:`regplot` and :class:`JointGrid` (when used with
+                ``kind="reg"``).
+    pairplot : Combine :func:`pairplot` and :class:`PairGrid` (when used with
+               ``kind="reg"``).
+    residplot : Plot the residuals of a linear regression model.
+    interactplot : Plot a two-way interaction between continuous variables
+
+    Notes
+    -----
+
+    {regplot_vs_lmplot}
+
+
+    It's also easy to combine combine :func:`regplot` and :class:`JointGrid` or
+    :class:`PairGrid` through the :func:`jointplot` and :func:`pairplot`
+    functions, although these do not directly accept all of :func:`regplot`'s
+    parameters.
+
+    Examples
+    --------
+
+    Plot the relationship between two variables in a DataFrame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.regplot(x="total_bill", y="tip", data=tips)
+
+    Plot with two variables defined as numpy arrays; use a different color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(8)
+        >>> mean, cov = [4, 6], [(1.5, .7), (.7, 1)]
+        >>> x, y = np.random.multivariate_normal(mean, cov, 80).T
+        >>> ax = sns.regplot(x=x, y=y, color="g")
+
+    Plot with two variables defined as pandas Series; use a different marker:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import pandas as pd
+        >>> x, y = pd.Series(x, name="x_var"), pd.Series(y, name="y_var")
+        >>> ax = sns.regplot(x=x, y=y, marker="+")
+
+    Use a 68% confidence interval, which corresponds with the standard error
+    of the estimate:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x=x, y=y, ci=68)
+
+    Plot with a discrete ``x`` variable and add some jitter:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips, x_jitter=.1)
+
+    Plot with a discrete ``x`` variable showing means and confidence intervals
+    for unique values:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
+        ...                  x_estimator=np.mean)
+
+    Plot with a continuous variable divided into discrete bins:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x=x, y=y, x_bins=4)
+
+    Fit a higher-order polynomial regression and truncate the model prediction:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ans = sns.load_dataset("anscombe")
+        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "II"],
+        ...                  scatter_kws={{"s": 80}},
+        ...                  order=2, ci=None, truncate=True)
+
+    Fit a robust regression and don't plot a confidence interval:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "III"],
+        ...                  scatter_kws={{"s": 80}},
+        ...                  robust=True, ci=None)
+
+    Fit a logistic regression; jitter the y variable and use fewer bootstrap
+    iterations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["big_tip"] = (tips.tip / tips.total_bill) > .175
+        >>> ax = sns.regplot(x="total_bill", y="big_tip", data=tips,
+        ...                  logistic=True, n_boot=500, y_jitter=.03)
+
+    Fit the regression model using log(x) and truncate the model prediction:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
+        ...                  x_estimator=np.mean, logx=True, truncate=True)
+
+    """).format(**_regression_docs)
 
 
 def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
@@ -903,6 +1114,9 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
              diag_names=True, method=None, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
+    NOTE: This function is deprecated in favor of :func:`heatmap` and will
+    be removed in a forthcoming release.
+
     Parameters
     ----------
     data : Dataframe or nobs x nvars array
@@ -939,6 +1153,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         Axis object with plot.
 
     """
+    warnings.warn(("The `corrplot` function has been deprecated in favor "
+                   "of `heatmap` and will be removed in a forthcoming "
+                   "release. Please update your code."))
+
     if not isinstance(data, pd.DataFrame):
         if names is None:
             names = ["var_%d" % i for i in range(data.shape[1])]
@@ -995,7 +1213,16 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
 
 def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
                cbar=True, annot=True, diag_names=True, ax=None, **kwargs):
-    """Plot a symmetric matrix with colormap and statistic values."""
+    """Plot a symmetric matrix with colormap and statistic values.
+
+    NOTE: This function is deprecated in favor of :func:`heatmap` and will
+    be removed in a forthcoming release.
+
+    """
+    warnings.warn(("The `symmatplot` function has been deprecated in favor "
+                   "of `heatmap` and will be removed in a forthcoming "
+                   "release. Please update your code."))
+
     if ax is None:
         ax = plt.gca()
 

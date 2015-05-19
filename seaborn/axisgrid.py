@@ -2,6 +2,7 @@ from __future__ import division
 from itertools import product
 from distutils.version import LooseVersion
 import warnings
+from textwrap import dedent
 
 import numpy as np
 import pandas as pd
@@ -161,6 +162,17 @@ class Grid(object):
             palette = color_palette(colors, n_colors)
 
         return palette
+
+
+_facet_docs = dict(
+
+    data=dedent("""\
+    data : DataFrame
+        Tidy ("long-form") dataframe where each column is a variable and each
+        row is an observation.\
+    """),
+
+    )
 
 
 class FacetGrid(Grid):

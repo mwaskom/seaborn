@@ -3,6 +3,10 @@ blockquote p {
     font-size: 14px !important;
 }
 
+blockquote {
+    margin: 0 0 4px !important;
+}
+
 code {
     color: #49759c !important;
     background-color: #f3f5f9 !important;

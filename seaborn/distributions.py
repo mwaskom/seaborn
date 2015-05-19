@@ -475,7 +475,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
     Returns
     -------
-    ax : matplotlib axes
+    ax : matplotlib Axes
         Axes with plot.
 
     See Also
@@ -748,7 +748,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
         >>> g = sns.jointplot("petal_length", "sepal_length", data=iris,
         ...                   joint_kws=dict(s=40, edgecolor="w", linewidth=1),
-        ...                   marginal_kws=dict(bins=15),
+        ...                   marginal_kws=dict(bins=15, rug=True),
         ...                   annot_kws=dict(stat="r"))
 
     """

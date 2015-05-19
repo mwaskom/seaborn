@@ -17,7 +17,6 @@ Regression plots
     interactplot
     residplot
     coefplot
-    corrplot
 
 Categorical plots
 -----------------
