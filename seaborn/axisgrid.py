@@ -937,7 +937,8 @@ class PairGrid(Grid):
                     try:
                         data_k = hue_grouped.get_group(label_k)
                     except KeyError:
-                        data_k = np.array([])
+                        data_k = pd.DataFrame(columns=self.data.columns,
+                                              dtype=np.float)
 
                     ax = self.axes[i, j]
                     plt.sca(ax)
@@ -996,7 +997,7 @@ class PairGrid(Grid):
                 for label in self.hue_names:
                     # Attempt to get data for this level, allowing for empty
                     try:
-                        vals.append(hue_grouped.get_group(label))
+                        vals.append(np.asarray(hue_grouped.get_group(label)))
                     except KeyError:
                         vals.append(np.array([]))
                 func(vals, color=self.palette, histtype="barstacked",
@@ -1035,7 +1036,8 @@ class PairGrid(Grid):
                 try:
                     data_k = hue_grouped.get_group(label_k)
                 except KeyError:
-                    data_k = np.array([])
+                    data_k = pd.DataFrame(columns=self.data.columns,
+                                          dtype=np.float)
 
                 ax = self.axes[i, j]
                 plt.sca(ax)
@@ -1079,7 +1081,8 @@ class PairGrid(Grid):
                 try:
                     data_k = hue_grouped.get_group(label_k)
                 except KeyError:
-                    data_k = np.array([])
+                    data_k = pd.DataFrame(columns=self.data.columns,
+                                          dtype=np.float)
 
                 ax = self.axes[i, j]
                 plt.sca(ax)
