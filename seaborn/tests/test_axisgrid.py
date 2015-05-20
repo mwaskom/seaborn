@@ -944,6 +944,50 @@ class TestPairGrid(object):
 
         plt.close("all")
 
+    @skipif(old_matplotlib)
+    def test_hue_order_missing_level(self):
+
+        order = list("dcaeb")
+        g = ag.PairGrid(self.df, hue="a", hue_order=order)
+        g.map(plt.plot)
+
+        for line, level in zip(g.axes[1, 0].lines, order):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, self.df.loc[self.df.a == level, "x"])
+            npt.assert_array_equal(y, self.df.loc[self.df.a == level, "y"])
+
+        plt.close("all")
+
+        g = ag.PairGrid(self.df, hue="a", hue_order=order)
+        g.map_diag(plt.plot)
+
+        for line, level in zip(g.axes[0, 0].lines, order):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, self.df.loc[self.df.a == level, "x"])
+            npt.assert_array_equal(y, self.df.loc[self.df.a == level, "x"])
+
+        plt.close("all")
+
+        g = ag.PairGrid(self.df, hue="a", hue_order=order)
+        g.map_lower(plt.plot)
+
+        for line, level in zip(g.axes[1, 0].lines, order):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, self.df.loc[self.df.a == level, "x"])
+            npt.assert_array_equal(y, self.df.loc[self.df.a == level, "y"])
+
+        plt.close("all")
+
+        g = ag.PairGrid(self.df, hue="a", hue_order=order)
+        g.map_upper(plt.plot)
+
+        for line, level in zip(g.axes[0, 1].lines, order):
+            x, y = line.get_xydata().T
+            npt.assert_array_equal(x, self.df.loc[self.df.a == level, "y"])
+            npt.assert_array_equal(y, self.df.loc[self.df.a == level, "x"])
+
+        plt.close("all")
+
     def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")
