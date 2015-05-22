@@ -445,7 +445,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     data2: 1d array-like
         Second input data. If present, a bivariate KDE will be estimated.
     shade : bool, optional
-        If true, shade in the area under the KDE curve (or draw with filled
+        If True, shade in the area under the KDE curve (or draw with filled
         contours when data is bivariate).
     vertical : bool
         If True, density is on x-axis.
@@ -462,10 +462,10 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     clip : pair of scalars, or pair of pair of scalars, optional
         Lower and upper bounds for datapoints used to fit KDE. Can provide
         a pair of (low, high) bounds for bivariate plots.
-    legend : bool, optoinal
+    legend : bool, optinal
         If True, add a legend or label the axes when possible.
     cumulative : bool
-        If draw, draw the cumulative distribution estimated by the kde.
+        If True, draw the cumulative distribution estimated by the kde.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
     kwargs : key, value pairings
