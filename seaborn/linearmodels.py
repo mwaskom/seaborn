@@ -69,12 +69,7 @@ class _RegressionPlotter(_LinearPlotter):
     """Plotter for numeric independent variables with regression model.
 
     This does the computations and drawing for the `regplot` function, and
-    is thus also used indirectly by `lmplot`. It is generally similar to
-    the `_DiscretePlotter`, but it's intended for use when the independent
-    variable is numeric (continuous or discrete), and its primary advantage
-    is that a regression model can be fit to the data and visualized, allowing
-    extrapolations beyond the observed datapoints.
-
+    is thus also used indirectly by `lmplot`.
     """
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
@@ -514,6 +509,11 @@ _regression_docs = dict(
         regression, and only influences the look of the scatterplot. This can
         be helpful when plotting variables that take discrete values.\
     """),
+    scatter_line_kws=dedent("""\
+    {scatter,line}_kws : dictionaries
+        Additional keyword arguments to pass to ``plt.scatter`` and
+        ``plt.plot``.\
+    """),
     )
 _regression_docs.update(_facet_docs)
 
@@ -521,66 +521,13 @@ _regression_docs.update(_facet_docs)
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
-           dropna=True, legend=True, legend_out=True, **kwargs):
-    """Plot a data and a regression model fit onto a FacetGrid.
+           legend=True, legend_out=True, x_estimator=None, x_bins=None,
+           x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
+           units=None, order=1, logistic=False, lowess=False, robust=False,
+           logx=False, x_partial=None, y_partial=None, truncate=False,
+           x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None):
 
-    Parameters
-    ----------
-    x, y : strings
-        Column names in ``data``.
-    data : DataFrame
-        Long-form (tidy) dataframe with variables in columns and observations
-        in rows.
-    hue, col, row : strings, optional
-        Variable names to facet on the hue, col, or row dimensions (see
-        :class:`FacetGrid` docs for more information).
-    palette : seaborn palette or dict, optional
-        Color palette if using a `hue` facet. Should be something that
-        seaborn.color_palette can read, or a dictionary mapping values of the
-        hue variable to matplotlib colors.
-    col_wrap : int, optional
-        Wrap the column variable at this width. Incompatible with `row`.
-    size : scalar, optional
-        Height (in inches) of each facet.
-    aspect : scalar, optional
-        Aspect * size gives the width (in inches) of each facet.
-    markers : single matplotlib marker code or list, optional
-        Either the marker to use for all datapoints or a list of markers with
-        a length the same as the number of levels in the hue variable so that
-        differently colored points will also have different scatterplot
-        markers.
-    share{x, y}: booleans, optional
-        Lock the limits of the vertical and horizontal axes across the
-        facets.
-    {hue, col, row}_order: sequence of strings, optional
-        Order to plot the values in the faceting variables in, otherwise
-        sorts the unique values.
-    dropna : boolean, optional
-        Drop missing values from the data before plotting.
-    legend : boolean, optional
-        Draw a legend for the data when using a `hue` variable.
-    legend_out: boolean, optional
-        Draw the legend outside the grid of plots.
-    kwargs : key, value pairs
-        Other keyword arguments are pasted to :func:`regplot`
-
-    Returns
-    -------
-    facets : FacetGrid
-        Returns the :class:`FacetGrid` instance with the plot on it
-        for further tweaking.
-
-    See Also
-    --------
-    regplot : Axes-level function for plotting linear regressions.
-
-    """
     # Reduce the dataframe to only needed columns
-    # Otherwise when dropna is True we could lose data because it is missing
-    # in a column that isn't relevant to this plot
-    units = kwargs.get("units", None)
-    x_partial = kwargs.get("x_partial", None)
-    y_partial = kwargs.get("y_partial", None)
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
     cols = np.unique([a for a in need_cols if a is not None]).tolist()
     data = data[cols]
@@ -588,9 +535,9 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette,
                        row_order=row_order, col_order=col_order,
-                       hue_order=hue_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap,
-                       sharex=sharex, sharey=sharey, legend_out=legend_out)
+                       hue_order=hue_order, size=size, aspect=aspect,
+                       col_wrap=col_wrap, sharex=sharex, sharey=sharey,
+                       legend_out=legend_out)
 
     # Add the markers here as FacetGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
@@ -614,12 +561,190 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
             scatter.remove()
 
     # Draw the regression plot on each facet
-    facets.map_dataframe(regplot, x, y, **kwargs)
+    regplot_kws = dict(
+        x_estimator=x_estimator, x_bins=x_bins, x_ci=x_ci,
+        scatter=scatter, fit_reg=fit_reg, ci=ci, n_boot=n_boot, units=units,
+        order=order, logistic=logistic, lowess=lowess, robust=robust,
+        logx=logx, x_partial=x_partial, y_partial=y_partial, truncate=truncate,
+        x_jitter=x_jitter, y_jitter=y_jitter,
+        scatter_kws=scatter_kws, line_kws=line_kws,
+        )
+    facets.map_dataframe(regplot, x, y, **regplot_kws)
 
     # Add a legend
     if legend and (hue is not None) and (hue not in [col, row]):
         facets.add_legend()
     return facets
+
+
+lmplot.__doc__ = dedent("""\
+    Plot data and regression model fits across a FacetGrid.
+
+    This function combines :func:`regplot` and :class:`FacetGrid`. It is
+    intended as a convenient interface to fit regression models across
+    conditional subsets of a dataset.
+
+    When thinking about how to assign variables to different facets, a general
+    rule is that it makes sense to use ``hue`` for the most important
+    comparison, followed by ``col`` and ``row``. However, always think about
+    your particular dataset and the goals of the visualization you are
+    creating.
+
+    {model_api}
+
+    The parameters to this function span most of the options in
+    :class:`FacetGrid`, although there may be occasional cases where you will
+    want to use that class and :func:`regplot` directly.
+
+    Parameters
+    ----------
+    x, y : strings, optional
+        Input variables; these should be column names in ``data``.
+    {data}
+    hue, col, row : strings
+        Variables that define subsets of the data, which will be drawn on
+        separate facets in the grid. See the ``*_order`` parameters to control
+        the order of levels of this variable.
+    {palette}
+    {col_wrap}
+    {size}
+    {aspect}
+    markers : matplotlib marker code or list of marker codes, optional
+        Markers for the scatterplot. If a list, each marker in the list will be
+        used for each level of the ``hue`` variable.
+    {share_xy}
+    {{hue,col,row}}_order : lists, optional
+        Order for the levels of the faceting variables. By default, this will
+        be the order that the levels appear in ``data`` or, if the variables
+        are pandas categoricals, the category order.
+    legend : bool, optional
+        If ``True`` and there is a ``hue`` variable, add a legend.
+    {legend_out}
+    {x_estimator}
+    {x_bins}
+    {x_ci}
+    {scatter}
+    {fit_reg}
+    {ci}
+    {n_boot}
+    {units}
+    {order}
+    {logistic}
+    {lowess}
+    {robust}
+    {logx}
+    {xy_partial}
+    {truncate}
+    {xy_jitter}
+    {scatter_line_kws}
+
+    See Also
+    --------
+    regplot : Plot data and a conditional model fit.
+    FacetGrid : Subplot grid for plotting conditional relationships.
+    pairplot : Combine :func:`regplot` and :class:`PairGrid` (when used with
+               ``kind="reg"``).
+
+    Notes
+    -----
+
+    {regplot_vs_lmplot}
+
+    Examples
+    --------
+
+    These examples focus on basic regression model plots to exhibit the
+    various faceting options; see the :func:`regplot` docs for demonstrations
+    of the other options for fitting the models.
+
+    Plot a simple linear relationship between two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.lmplot(x="total_bill", y="tip", data=tips)
+
+    Condition on a third variable and plot the levels in different colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips)
+
+    Use different markers as well as colors so the plot will reproduce to
+    black-and-white more easily:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                markers=["o", "x"])
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                palette="Set1")
+
+    Map ``hue`` levels to colors with a dictionary:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                palette=dict(Yes="g", No="m"))
+
+    Plot the levels of the third variable across different columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", col="smoker", data=tips)
+
+    Change the size and aspect ratio of the facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="size", y="total_bill", hue="day", col="day",
+        ...                data=tips, aspect=.4, x_jitter=.1)
+
+    Wrap the levels of the column variable into multiple rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", col="day", hue="day",
+        ...                data=tips, col_wrap=2, size=3)
+
+    Condition on two variables to make a full grid:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
+        ...                data=tips, size=3)
+
+    Use methods on the returned :class:`FacetGrid` instance to further tweak
+    the plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
+        ...                data=tips, size=3)
+        >>> g = (g.set_axis_labels("Total bill (US Dollars)", "Tip")
+        ...       .set(xlim=(0, 60), ylim=(0, 12),
+        ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
+        ...       .fig.subplots_adjust(wspace=.02))
+
+
+
+    """).format(**_regression_docs)
 
 
 def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
@@ -681,14 +806,14 @@ regplot.__doc__ = dedent("""\
         passed in ``scatter_kws`` or ``line_kws``.
     marker : matplotlib marker code
         Marker to use for the scatterplot glyphs.
-    {{scatter,line}}_kws : dictionaries
-        Additional keyword arguments to pass to ``plt.scatter`` and
-        ``plt.plot``.
-    ax : matplotlib Axes
-        The Axes object containing the plot.
+    {scatter_line_kws}
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.
 
     Returns
     -------
+    ax : matplotlib Axes
+        The Axes object containing the plot.
 
     See Also
     --------
@@ -696,7 +821,7 @@ regplot.__doc__ = dedent("""\
              linear relationships in a dataset.
     jointplot : Combine :func:`regplot` and :class:`JointGrid` (when used with
                 ``kind="reg"``).
-    pairplot : Combine :func:`pairplot` and :class:`PairGrid` (when used with
+    pairplot : Combine :func:`regplot` and :class:`PairGrid` (when used with
                ``kind="reg"``).
     residplot : Plot the residuals of a linear regression model.
     interactplot : Plot a two-way interaction between continuous variables

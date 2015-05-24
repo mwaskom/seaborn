@@ -16,7 +16,7 @@ from . import utils
 from .utils import desaturate, iqr, categorical_order
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette
-from .axisgrid import FacetGrid
+from .axisgrid import FacetGrid, _facet_docs
 
 
 class _CategoricalPlotter(object):
@@ -1555,6 +1555,8 @@ _categorical_docs = dict(
     """),
     )
 
+_categorical_docs.update(_facet_docs)
+
 
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
@@ -2751,10 +2753,7 @@ factorplot.__doc__ = dedent("""\
     {long_form_data}
     row, col : names of variables in ``data``, optional
         Categorical variables that will determine the faceting of the grid.
-    col_wrap : int, optional
-        "Wrap" the column facets at this number so that they occupy multiple
-        rows. Can be useful when using a variable with a large number of
-        levels. Cannot be used with a ``row`` variable.
+    {col_wrap}
     {stat_api_params}
     {order_vars}
     row_order, col_order : lists of strings, optional
@@ -2762,25 +2761,16 @@ factorplot.__doc__ = dedent("""\
         orders are inferred from the data objects.
     kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``}}
         The kind of plot to draw.
-    size : float, optional
-        The size (height) of each facet, in inches.
-    aspect : float, optional
-        The aspect ratio of the plot, ``size * aspect`` gives the width of each
-        facet, in inches.
+    {size}
+    {aspect}
     {orient}
     {color}
     {palette}
     legend : bool, optional
         If ``True`` and there is a ``hue`` variable, draw a legend on the plot.
-    legend_out : bool, optional
-        If ``True``, draw the plot outside of the plot axes.
-    sharex, sharey : bool, optional
-        If ``True``, the axeas are shared across the rows and columns of the
-        grid.
-    margin_titles : bool, optional
-        If ``True``, the titles for the row variable are drawn to the right of
-        the last column. This option is experimental and may not work in all
-        cases.
+    {legend_out}
+    {share_xy}
+    {margin_titles}
     facet_kws : dict, optional
         Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
     kwargs : key, value pairings

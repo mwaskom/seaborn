@@ -171,12 +171,47 @@ _facet_docs = dict(
         Tidy ("long-form") dataframe where each column is a variable and each
         row is an observation.\
     """),
-
+    col_wrap=dedent("""\
+    col_wrap : int, optional
+        "Wrap" the column variable at this width, so that the column facets
+        span multiple rows. Incompatible with a ``row`` facet.\
+    """),
+    share_xy=dedent("""\
+    share_{x,y} : bool, optional
+        If true, the facets will share y axes across columns and/or x axes
+        across rows.\
+    """),
+    size=dedent("""\
+    size : scalar, optional
+        Height (in inches) of each facet. See also: ``aspect``.\
+    """),
+    aspect=dedent("""\
+    aspect : scalar, optional
+        Aspect ratio of each facet, so that ``aspect * size`` gives the width
+        of each facet in inches.\
+    """),
+    palette=dedent("""\
+    palette : seaborn color palette or dict, optional
+        Colors to use for the different levels of the ``hue`` variable. Should
+        be something that can be interpreted by :func:`color_palette`, or a
+        dictionary mapping hue levels to matplotlib colors.\
+    """),
+    legend_out=dedent("""\
+    legend_out : bool, optional
+        If ``True``, the figure size will be extended, and the legend will be
+        drawn outside the plot on the center right.\
+    """),
+    margin_titles=dedent("""\
+    margin_titles : bool, optional
+        If ``True``, the titles for the row variable are drawn to the right of
+        the last column. This option is experimental and may not work in all
+        cases.\
+    """),
     )
 
 
 class FacetGrid(Grid):
-    """Subplot grid for plotting conditional relationships in a dataset."""
+    """Subplot grid for plotting conditional relationships."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, size=3, aspect=1, palette=None,
