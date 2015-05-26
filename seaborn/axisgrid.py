@@ -219,66 +219,6 @@ class FacetGrid(Grid):
                  dropna=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
                  gridspec_kws=None):
-        """Initialize the plot figure and FacetGrid object.
-
-        Parameters
-        ----------
-        data : DataFrame
-            Tidy (long-form) dataframe where each column is a variable and
-            each row is an observation.
-        row, col, hue : strings, optional
-            Variable (column) names to subset the data for the facets.
-        col_wrap : int, optional
-            Wrap the column variable at this width. Incompatible with ``row``.
-        share{x, y}: booleans, optional
-            Lock the limits of the vertical andn horizontal axes across the
-            facets.
-        size : scalar, optional
-            Height (in inches) of each facet.
-        aspect : scalar, optional
-            Aspect * size gives the width (in inches) of each facet.
-        palette : dict or seaborn color palette
-            Set of colors for mapping the `hue` variable. If a dict, keys
-            should be values  in the `hue` variable.
-        {row, col, hue}_order: sequence of strings
-            Order to plot the values in the faceting variables in, otherwise
-            infer from the input data using pandas Category order or the
-            order of appearance.
-        hue_kws : dictionary of param -> list of values mapping
-            Other keyword arguments to insert into the plotting call to let
-            other plot attributes vary across levels of the hue variable (e.g.
-            the markers in a scatterplot).
-        dropna : boolean, optional
-            Drop missing values from the data before plotting.
-        legend_out: boolean, optional
-            Draw the legend outside the grid of plots.
-        despine : boolean, optional
-            Remove the top and right spines from the plots.
-        margin_titles : boolean, optional
-            Write the column and row variable labels on the margins of the
-            grid rather than above each plot.
-        {x, y}lim: tuples, optional
-            Limits for each of the axes on each facet when share{x, y} is True.
-        subplot_kws : dict, optional
-            Dictionary of keyword arguments passed to matplotlib subplot(s)
-            methods.
-        gridspec_kws : dict, optional
-            Dictionary of keyword arguments passed to matplotlib's ``gridspec``
-            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
-            ignored if ``col_wrap`` is not ``None``.
-
-        Returns
-        -------
-        self : FacetGrid
-            Returns self for plotting onto the grid.
-
-        See Also
-        --------
-        PairGrid : Subplot grid for plotting pairwise relationships.
-        lmplot : Combines a regression plot and a FacetGrid.
-        factorplot : Combines a categorical plot and a FacetGrid.
-
-        """
 
         MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
         OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
@@ -429,6 +369,259 @@ class FacetGrid(Grid):
         if despine:
             self.despine()
 
+    __init__.__doc__ = dedent("""\
+        Initialize the matplotlib figure and FacetGrid object.
+
+        The :class:`FacetGrid` is an object that links a Pandas DataFrame to
+        a matplotlib figure with a particular structure.
+
+        In particular, :class:`FacetGrid` is used to draw plots with multiple
+        Axes where each Axes shows the same relationship conditioned on
+        different levels of some variable. It's possible to condition on up to
+        three variables by assigning variables to the rows and columns of the
+        grid and using different colors for the plot elements.
+
+        The general approach to plotting here is called "small multiples",
+        where the same kind of plot is repeated multiple times, and the
+        specific use of small multiples to display the same relationship
+        conditioned on one ore more other variables is often called a "trellis
+        plot".
+
+        The basic workflow is to initialize the :class:`FacetGrid` object with
+        the dataset and the variables that are used to structure the grid. Then
+        one or more plotting functions can be applied to each subset by calling
+        :meth:`FacetGrid.map` or :meth:`FacetGrid.map_dataframe`. Finally, the
+        plot can be tweaked with other methods to do things like change the
+        axis labels, use different ticks, or add a legend. See the detailed
+        code examples below for more information.
+
+        Parameters
+        ----------
+        {data}
+        row, col, hue : strings
+            Variables that define subsets of the data, which will be drawn on
+            separate facets in the grid. See the ``*_order`` parameters to
+            control the order of levels of this variable.
+        {col_wrap}
+        {share_xy}
+        {size}
+        {aspect}
+        {palette}
+        {{row,col,hue}}_order : lists, optional
+            Order for the levels of the faceting variables. By default, this
+            will be the order that the levels appear in ``data`` or, if the
+            variables are pandas categoricals, the category order.
+        hue_kws : dictionary of param -> list of values mapping
+            Other keyword arguments to insert into the plotting call to let
+            other plot attributes vary across levels of the hue variable (e.g.
+            the markers in a scatterplot).
+        {legend_out}
+        despine : boolean, optional
+            Remove the top and right spines from the plots.
+        {margin_titles}
+        {{x, y}}lim: tuples, optional
+            Limits for each of the axes on each facet (only relevant when
+            share{{x, y}} is True.
+        subplot_kws : dict, optional
+            Dictionary of keyword arguments passed to matplotlib subplot(s)
+            methods.
+        gridspec_kws : dict, optional
+            Dictionary of keyword arguments passed to matplotlib's ``gridspec``
+            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
+            ignored if ``col_wrap`` is not ``None``.
+
+        See Also
+        --------
+        PairGrid : Subplot grid for plotting pairwise relationships.
+        lmplot : Combine a regression plot and a :class:`FacetGrid`.
+        factorplot : Combine a categorical plot and a :class:`FacetGrid`.
+
+        Examples
+        --------
+
+        Initialize a 2x2 grid of facets using the tips dataset:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import numpy as np
+            >>> import matplotlib.pyplot as plt
+            >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
+            >>> tips = sns.load_dataset("tips")
+            >>> g = sns.FacetGrid(tips, col="time", row="smoker")
+
+        Draw a univariate plot on each facet:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
+            >>> g = g.map(plt.hist, "total_bill")
+
+        (Note that it's not necessary to re-catch the returned variable; it's
+        the same object, but doing so in the examples makes dealing with the
+        doctests somewhat less annoying).
+
+        Pass additional keyword arguments to the mapped function:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
+            >>> bins = np.arange(0, 65, 5)
+            >>> g = g.map(plt.hist, "total_bill", bins=bins, color="r")
+
+        Plot a bivariate function on each facet:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
+            >>> g = g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+
+        Assign one of the variables to the color of the plot elements:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="time",  hue="smoker")
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+            ...       .add_legend())
+
+        Change the size and aspect ratio of each facet:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="day", size=4, aspect=.5)
+            >>> g = g.map(sns.boxplot, "time", "total_bill")
+
+        Specify the order for plot elements:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="smoker", col_order=["Yes", "No"])
+            >>> g = g.map(plt.hist, "total_bill", bins=bins, color="m")
+
+        Use a different color palette:
+
+        .. plot::
+            :context: close-figs
+
+            >>> kws = dict(s=50, linewidth=.5, edgecolor="w")
+            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette="Set1",
+            ...                   hue_order=["Dinner", "Lunch"])
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            ...      .add_legend())
+
+        Use a dictionary mapping hue levels to colors:
+
+        .. plot::
+            :context: close-figs
+
+            >>> pal = dict(Lunch="seagreen", Dinner="gray")
+            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
+            ...                   hue_order=["Dinner", "Lunch"])
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            ...      .add_legend())
+
+        Additionally use a different marker for the hue levels:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
+            ...                   hue_order=["Dinner", "Lunch"],
+            ...                   hue_kws=dict(marker=["^", "v"]))
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            ...      .add_legend())
+
+        "Wrap" a column variable with many levels into the rows:
+
+        .. plot::
+            :context: close-figs
+
+            >>> attend = sns.load_dataset("attention")
+            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5,
+            ...                   size=1.5, ylim=(0, 10))
+            >>> g = g.map(sns.pointplot, "solutions", "score", scale=.7)
+
+        Define a custom bivariate function to map onto the grid:
+
+        .. plot::
+            :context: close-figs
+
+            >>> from scipy import stats
+            >>> def qqplot(x, y, **kwargs):
+            ...     _, xr = stats.probplot(x, fit=False)
+            ...     _, yr = stats.probplot(y, fit=False)
+            ...     plt.scatter(xr, yr, **kwargs)
+            >>> g = sns.FacetGrid(tips, col="smoker", hue="sex")
+            >>> g = (g.map(qqplot, "total_bill", "tip", **kws)
+            ...       .add_legend())
+
+        Define a custom function that uses a ``DataFrame`` object and accepts
+        column names as positional variables:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import pandas as pd
+            >>> df = pd.DataFrame(
+            ...         data=np.random.randn(90, 4),
+            ...         columns=pd.Series(list("ABCD"), name="walk"),
+            ...         index=pd.date_range("Jan 1", "March 31", name="date"))
+            >>> df = df.cumsum(axis=0).stack().reset_index(name="val")
+            >>> def dateplot(x, y, **kwargs):
+            ...     ax = plt.gca()
+            ...     data = kwargs.pop("data")
+            ...     data.plot(x=x, y=y, ax=ax)
+            >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, size=3.5)
+            >>> g.map_dataframe(dateplot, "date", "val")
+
+        Use different axes labels after plotting:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="g", **kws)
+            ...       .set_axis_labels("Total bill (US Dollars)", "Tip"))
+
+        Set other attributes that are shared across the facetes:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="r", **kws)
+            ...       .set(xlim=(0, 60), ylim=(0, 12),
+            ...            xticks=[10, 30, 50], yticks=[2, 6, 10]))
+
+        Use a different template for the facet titles:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips.sort("size"), col="size", col_wrap=3)
+            >>> g = (g.map(plt.hist, "tip", bins=np.arange(0, 13), color="c")
+            ...       .set_titles("{{col_name}} diners"))
+
+        Tighten the facets:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.FacetGrid(tips, col="smoker", row="sex",
+            ...                   margin_titles=True)
+            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="m", **kws)
+            ...       .set(xlim=(0, 60), ylim=(0, 12),
+            ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
+            ...       .fig.subplots_adjust(wspace=.05, hspace=.05))
+
+        """).format(**_facet_docs)
+
     def facet_data(self):
         """Generator for name indices and data subsets for each facet.
 
@@ -523,8 +716,9 @@ class FacetGrid(Grid):
             plot_args = [v for k, v in plot_data.iteritems()]
 
             # Some matplotlib functions don't handle pandas objects correctly
-            if func.__module__.startswith("matplotlib"):
-                plot_args = [v.values for v in plot_args]
+            if func.__module__ is not None:
+                if func.__module__.startswith("matplotlib"):
+                    plot_args = [v.values for v in plot_args]
 
             # Draw the plot
             self._facet_plot(func, ax, plot_args, kwargs)
