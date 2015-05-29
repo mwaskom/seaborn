@@ -444,8 +444,6 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> import numpy as np
-            >>> import matplotlib.pyplot as plt
             >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
             >>> tips = sns.load_dataset("tips")
             >>> g = sns.FacetGrid(tips, col="time", row="smoker")
@@ -455,6 +453,7 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
+            >>> import matplotlib.pyplot as plt
             >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
             >>> g = g.map(plt.hist, "total_bill")
 
@@ -467,8 +466,9 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
+            >>> import numpy as np
             >>> bins = np.arange(0, 65, 5)
+            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
             >>> g = g.map(plt.hist, "total_bill", bins=bins, color="r")
 
         Plot a bivariate function on each facet:
@@ -569,14 +569,14 @@ class FacetGrid(Grid):
 
             >>> import pandas as pd
             >>> df = pd.DataFrame(
-            ...         data=np.random.randn(90, 4),
-            ...         columns=pd.Series(list("ABCD"), name="walk"),
-            ...         index=pd.date_range("Jan 1", "March 31", name="date"))
+            ...     data=np.random.randn(90, 4),
+            ...     columns=pd.Series(list("ABCD"), name="walk"),
+            ...     index=pd.date_range("Jan 1", "March 31", name="date"))
             >>> df = df.cumsum(axis=0).stack().reset_index(name="val")
             >>> def dateplot(x, y, **kwargs):
             ...     ax = plt.gca()
             ...     data = kwargs.pop("data")
-            ...     data.plot(x=x, y=y, ax=ax)
+            ...     data.plot(x=x, y=y, ax=ax, grid=False, **kwargs)
             >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, size=3.5)
             >>> g.map_dataframe(dateplot, "date", "val")
 
@@ -1382,6 +1382,7 @@ class PairGrid(Grid):
 
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
+
     def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
                  dropna=True, xlim=None, ylim=None):
         """Set up the grid of subplots.
@@ -1389,11 +1390,11 @@ class JointGrid(object):
         Parameters
         ----------
         x, y : strings or vectors
-            Data or names of variables in `data`.
+            Data or names of variables in ``data``.
         data : DataFrame, optional
-            DataFrame when `x` and `y` are variable names.
+            DataFrame when ``x`` and ``y`` are variable names.
         size : numeric
-            Size of the figure (it will be square).
+            Size of each side of the figure in inches (it will be square).
         ratio : numeric
             Ratio of joint axes size to marginal axes height.
         space : numeric, optional
@@ -1405,8 +1406,106 @@ class JointGrid(object):
 
         See Also
         --------
-        jointplot : Inteface for drawing bivariate plots with several different
-                    default plot kinds.
+        jointplot : High-level interface for drawing bivariate plots with
+                    several different default plot kinds.
+
+        Examples
+        --------
+
+        Initialize the figure but don't draw any plots onto it:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
+            >>> tips = sns.load_dataset("tips")
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+
+        Add plots using default parameters:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+            >>> g.plot(sns.regplot, sns.distplot)
+
+        Draw the join and marginal plots separately, which allows finer-level
+        control other parameters:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import matplotlib.pyplot as plt
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+            >>> g.plot_joint(plt.scatter, color=".5", edgecolor="white")
+            >>> g.plot_marginals(sns.distplot, kde=False, color=".5")
+
+        Draw the two marginal plots separately:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import numpy as np
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+            >>> g.plot_joint(plt.scatter, color="m", edgecolor="white")
+            >>> g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
+            ...                  bins=np.arange(0, 60, 5))
+            >>> g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
+            ...                  orientation="horizontal",
+            ...                  bins=np.arange(0, 12, 1))
+
+        Add an annotation with a statistic summarizing the bivariate
+        relationship:
+
+        .. plot::
+            :context: close-figs
+
+            >>> from scipy import stats
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+            >>> g.plot_joint(plt.scatter, color="g", s=40, edgecolor="white")
+            >>> g.plot_marginals(sns.distplot, kde=False, color="g")
+            >>> g.annotate(stats.pearsonr)
+
+        Use a custom function and formatting for the annotation
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
+            >>> g.plot_joint(plt.scatter, color="g", s=40, edgecolor="white")
+            >>> g.plot_marginals(sns.distplot, kde=False, color="g")
+            >>> rsquare = lambda a, b: stats.pearsonr(a, b)[0] ** 2
+            >>> g.annotate(rsquare, template="{stat}: {val:.2f}",
+            ...            stat="$R^2$", loc="upper left", fontsize=12)
+
+        Remove the space between the joint and marginal axes:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
+            >>> g.plot_joint(sns.kdeplot, cmap="Blues_d")
+            >>> g.plot_marginals(sns.kdeplot, shade=True)
+
+        Draw a smaller plot with relatively larger marginal axes:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
+            ...                   size=5, ratio=2)
+            >>> g.plot_joint(sns.kdeplot, cmap="Reds_d")
+            >>> g.plot_marginals(sns.kdeplot, color="r", shade=True)
+
+        Set limits on the axes:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
+            ...                   xlim=(0, 50), ylim=(0, 8))
+            >>> g.plot_joint(sns.kdeplot, cmap="Purples_d")
+            >>> g.plot_marginals(sns.kdeplot, color="m", shade=True)
 
         """
         # Set up the subplot grid
