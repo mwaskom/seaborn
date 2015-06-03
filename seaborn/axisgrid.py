@@ -1046,7 +1046,7 @@ class PairGrid(Grid):
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 diag_sharey=True, size=3, aspect=1,
+                 diag_sharey=True, size=2.5, aspect=1,
                  despine=True, dropna=True):
         """Initialize the plot figure and PairGrid object.
 
@@ -1081,15 +1081,84 @@ class PairGrid(Grid):
         dropna : boolean, optional
             Drop missing values from the data before plotting.
 
-        Returns
-        -------
-        self : PairGrid
-            Returns self for plotting onto the grid.
-
         See Also
         --------
+        pairplot : Easily drawing common uses of :class:`PairGrid`.
         FacetGrid : Subplot grid for plotting conditional relationships.
-        pairplot : Function for easily drawing common uses of PairGrid.
+
+        Examples
+        --------
+
+        Draw a scatterplot for each pairwise relationship:
+
+        .. plot::
+            :context: close-figs
+
+            >>> import matplotlib.pyplot as plt
+            >>> import seaborn as sns; sns.set(color_codes=True)
+            >>> iris = sns.load_dataset("iris")
+            >>> g = sns.PairGrid(iris)
+            >>> g = g.map(plt.scatter)
+
+        Show a univariate distribution on the diagonal:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris)
+            >>> g = g.map_diag(plt.hist)
+            >>> g = g.map_offdiag(plt.scatter)
+
+        (It's not actually necessary to catch the return value every time,
+        as it is the same object, but it makes it easier to deal with the
+        doc tests).
+
+        Color the points using a categorical variable:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris, hue="species")
+            >>> g = g.map(plt.scatter)
+            >>> g = g.add_legend()
+
+        Plot a subset of variables
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris, vars=["sepal_length", "sepal_width"])
+            >>> g = g.map(plt.scatter)
+
+        Use different variables for the rows and columns:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris,
+            ...                  x_vars=["sepal_length", "sepal_width"],
+            ...                  y_vars=["petal_length", "petal_width"])
+            >>> g = g.map(plt.scatter)
+
+        Use different functions on the upper and lower triangles:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris)
+            >>> g.map_upper(plt.scatter)
+            >>> g.map_lower(sns.kdeplot, cmap="Blues_d")
+            >>> g.map_diag(sns.kdeplot, lw=3, legend=False)
+
+        Use different colors and markers for each categorical level:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
+            ...                  hue_kws={"marker": ["o", "s", "D"]})
+            >>> g = g.map(plt.scatter, linewidths=1, edgecolor="w", s=40)
+            >>> g = g.add_legend()
 
         """
 
@@ -1199,6 +1268,8 @@ class PairGrid(Grid):
             kwargs["color"] = kw_color
         self._add_axis_labels()
 
+        return self
+
     def map_diag(self, func, **kwargs):
         """Plot with a univariate function on each diagonal subplot.
 
@@ -1258,6 +1329,8 @@ class PairGrid(Grid):
 
         self._add_axis_labels()
 
+        return self
+
     def map_lower(self, func, **kwargs):
         """Plot with a bivariate function on the lower diagonal subplots.
 
@@ -1300,6 +1373,8 @@ class PairGrid(Grid):
         if kw_color is not None:
             kwargs["color"] = kw_color
         self._add_axis_labels()
+
+        return self
 
     def map_upper(self, func, **kwargs):
         """Plot with a bivariate function on the upper diagonal subplots.
@@ -1345,6 +1420,8 @@ class PairGrid(Grid):
         if kw_color is not None:
             kwargs["color"] = kw_color
 
+        return self
+
     def map_offdiag(self, func, **kwargs):
         """Plot with a bivariate function on the off-diagonal subplots.
 
@@ -1358,6 +1435,7 @@ class PairGrid(Grid):
 
         self.map_lower(func, **kwargs)
         self.map_upper(func, **kwargs)
+        return self
 
     def _add_axis_labels(self):
         """Add labels to the left and bottom Axes."""
