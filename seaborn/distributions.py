@@ -623,7 +623,7 @@ def rugplot(a, height=None, axis="x", ax=None, **kwargs):
 def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
               color=None, size=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
-              joint_kws=None, marginal_kws=None, annot_kws=None):
+              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
     This function provides a convenient interface to the :class:`JointGrid`
@@ -658,6 +658,10 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         Axis limits to set before plotting.
     {joint, marginal, annot}_kws : dicts
         Additional keyword arguments for the plot components.
+    kwargs : key, value pairs
+        Additional keyword arguments are passed to the function used to
+        draw the plot on the joint Axes, superseding items in the
+        ``joint_kws`` dictionary.
 
     Returns
     -------
@@ -747,14 +751,15 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         :context: close-figs
 
         >>> g = sns.jointplot("petal_length", "sepal_length", data=iris,
-        ...                   joint_kws=dict(s=40, edgecolor="w", linewidth=1),
         ...                   marginal_kws=dict(bins=15, rug=True),
-        ...                   annot_kws=dict(stat="r"))
+        ...                   annot_kws=dict(stat="r"),
+        ...                   s=40, edgecolor="w", linewidth=1)
 
     """
     # Set up empty default kwarg dicts
     if joint_kws is None:
         joint_kws = {}
+    joint_kws.update(kwargs)
     if marginal_kws is None:
         marginal_kws = {}
     if annot_kws is None:

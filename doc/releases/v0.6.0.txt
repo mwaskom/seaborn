@@ -51,6 +51,8 @@ Other additions and changes
 
 - Added the ``as_hex`` method to color palette objects, to return a list of hex codes rather than rgb tuples.
 
+- :func:`jointplot` now passes additional keyword arguments to the function used to draw the plot on the joint axes.
+
 - Changed the default ``linewidths`` in :func:`heatmap` and :`clustermap` to 0 so that larger matrices plot correctly. This parameter still exists and can be used to get the old effect of lines demarcating each cell in the heatmap (the old default ``linewidths`` was 0.5).
 
 - :func:`heatmap` and :func:`clustermap` now automatically use a mask for missing values, which previously were shown with the "under" value of the colormap per default `plt.pcolormesh` behavior.
