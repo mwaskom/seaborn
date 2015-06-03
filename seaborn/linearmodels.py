@@ -1421,9 +1421,22 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
              kind="scatter", diag_kind="hist", markers=None,
-             size=3, aspect=1, dropna=True,
+             size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
+
+    By default, this function will create a grid of Axes such that each
+    variable in ``data`` will by shared in the y-axis across a single row and
+    in the x-axis across a single column. The diagonal Axes are treated
+    differently, drawing a plot to show the univariate distribution of the data
+    for the variable in that column.
+
+    It is also possible to show a subset of variables or plot different
+    variables on the rows and columns.
+
+    This is a high-level interface for :class:`PairGrid` that is intended to
+    make it easy to draw a few common styles. You should use :class`PairGrid`
+    directly if you need more flexibility.
 
     Parameters
     ----------
@@ -1470,6 +1483,88 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     --------
     PairGrid : Subplot grid for more flexible plotting of pairwise
                relationships.
+
+    Examples
+    --------
+
+    Draw scatterplots for joint relationships and histograms for univariate
+    distributions:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
+        >>> iris = sns.load_dataset("iris")
+        >>> sns.pairplot(iris)
+
+    Show different levels of a categorical variable by the color of plot
+    elements:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, hue="species")
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, hue="species", palette="husl")
+
+    Use different markers for each level of the hue variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
+
+    Plot a subset of variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
+
+    Draw larger plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, size=3, vars=["sepal_width", "sepal_length"])
+
+    Plot different variables in the rows and columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris,
+        ...              x_vars=["sepal_width", "sepal_length"],
+        ...              y_vars=["petal_width", "petal_length"])
+
+    Use kernel density estimates for univariate plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, diag_kind="kde")
+
+    Fit linear regression models to the scatter plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, kind="reg")
+
+    Pass keyword arguments down to the underlying functions (it may be easier
+    to use :class:`PairGrid` directly):
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.pairplot(iris, diag_kind="kde", markers="+",
+        ...              plot_kws=dict(s=50, edgecolor="b", linewidth=1),
+        ...              diag_kws=dict(shade=True))
 
     """
     if plot_kws is None:

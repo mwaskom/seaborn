@@ -1095,7 +1095,7 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> import matplotlib.pyplot as plt
-            >>> import seaborn as sns; sns.set(color_codes=True)
+            >>> import seaborn as sns; sns.set()
             >>> iris = sns.load_dataset("iris")
             >>> g = sns.PairGrid(iris)
             >>> g = g.map(plt.scatter)
@@ -1111,7 +1111,7 @@ class PairGrid(Grid):
 
         (It's not actually necessary to catch the return value every time,
         as it is the same object, but it makes it easier to deal with the
-        doc tests).
+        doctests).
 
         Color the points using a categorical variable:
 
@@ -1129,6 +1129,15 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, vars=["sepal_length", "sepal_width"])
             >>> g = g.map(plt.scatter)
+
+        Pass additional keyword arguments to the functions
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris)
+            >>> g = g.map_diag(plt.hist, edgecolor="w")
+            >>> g = g.map_offdiag(plt.scatter, edgecolor="w", s=40)
 
         Use different variables for the rows and columns:
 

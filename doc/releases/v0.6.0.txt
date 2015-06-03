@@ -67,6 +67,8 @@ Other additions and changes
 
 - The interactive palette widgets now show a continuous colorbar, rather than a discrete palette, when `as_cmap` is True.
 
+- The default Axes size for :func:`pairplot` and :class:`PairGrid` is now slightly smaller.
+
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use sqrt(n) bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
 - Added a ceiling (50) to the default number of bins used for :func:`distplot` histograms. This will help avoid confusing errors with certain kinds of datasets that heavily violate the assumptions of the reference rule used to get a default number of bins. The ceiling is not applied when passing a specific number of bins.
