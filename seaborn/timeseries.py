@@ -79,6 +79,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     err_kws : dict, optional
         Keyword argument dictionary passed through to matplotlib function
         generating the error plot,
+    legend : bool, optional
+        If ``True`` and there is a ``condition`` variable, add a legend to
+        the plot.
     ax : axis object, optional
         Plot in given axis; if None creates a new figure
     kwargs :
