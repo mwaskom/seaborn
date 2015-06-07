@@ -205,7 +205,9 @@ _facet_docs = dict(
     margin_titles : bool, optional
         If ``True``, the titles for the row variable are drawn to the right of
         the last column. This option is experimental and may not work in all
-        cases.\
+        cases. If you call ``map`` multiple times when using this option, the
+        titles will stack; to avoid this, remove figure texts before the final
+        call to ``map``. See ``set_titles`` for more information.\
     """),
     )
 
@@ -902,6 +904,15 @@ class FacetGrid(Grid):
         -------
         self: object
             Returns self.
+
+        Note
+        ----
+
+        When using margin titles for the row facets, calling this directly
+        will add titles on top of the existing titles (because the margin
+        titles aren't really "titles", just figure texts). To avoid that,
+        you should remove the existing titles first by doing, e.g.,
+        ``plt.setp(fig.texts, text="")``.
 
         """
         args = dict(row_var=self._row_var, col_var=self._col_var)
