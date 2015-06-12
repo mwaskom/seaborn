@@ -2,14 +2,13 @@
 from __future__ import print_function, division
 import colorsys
 import warnings
+import os
 
 import numpy as np
 from scipy import stats
 import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
-
-import os
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
@@ -393,7 +392,7 @@ def get_data_home(data_home=None):
     return data_home
 
 
-def load_dataset(name, cache=False, data_home=None, **kws):
+def load_dataset(name, cache=True, data_home=None, **kws):
     """Load a dataset from the online repository (requires internet).
 
     Parameters
