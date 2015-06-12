@@ -31,7 +31,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Data for the plot. Should either be a "long form" dataframe or an
         array with dimensions (unit, time, condition). In both cases, the
         condition field/dimension is optional. The type of this argument
-        determines the interpretation of the next few parameters.
+        determines the interpretation of the next few parameters. When
+        using a DataFrame, the index has to be sequential.
     time : string or series-like
         Either the name of the field corresponding to time in the data
         DataFrame or x values for a plot when data is an array. If a Series,
