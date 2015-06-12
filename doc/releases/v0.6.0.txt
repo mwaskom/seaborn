@@ -73,6 +73,8 @@ Other additions
 
 - The :func:`color_palette` function no longer trims palettes that are longer than 6 colors when passed into it.
 
+- The :func:`load_dataset` function now caches datasets locally after downloading them, and uses the local copy on subsequent calls.
+
 Bug fixes
 ~~~~~~~~~
 
