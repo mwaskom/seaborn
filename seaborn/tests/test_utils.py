@@ -1,5 +1,7 @@
 """Tests for plotting utilities."""
 import warnings
+import tempfile
+import shutil
 
 import numpy as np
 import pandas as pd
@@ -320,8 +322,24 @@ def test_categorical_order():
 if LooseVersion(pd.__version__) >= "0.15":
 
     def check_load_dataset(name):
-        ds = load_dataset(name)
+        ds = load_dataset(name, cache=False)
         assert(isinstance(ds, pd.DataFrame))
+
+    def check_load_cached_dataset(name):
+        # Test the cacheing using a temporary file.
+        # With Python 3.2+, we could use the tempfile.TemporaryDirectory()
+        # context manager instead of this try...finally statement
+        tmpdir = tempfile.mkdtemp()
+        try:
+            # download and cache
+            ds = load_dataset(name, cache=True, data_home=tmpdir)
+
+            # use cached version
+            ds2 = load_dataset(name, cache=True, data_home=tmpdir)
+            assert_array_equal(ds, ds2)
+
+        finally:
+            shutil.rmtree(tmpdir)
 
     @network(url="https://github.com/mwaskom/seaborn-data")
     def test_get_dataset_names():
@@ -342,3 +360,15 @@ if LooseVersion(pd.__version__) >= "0.15":
             # does not get in effect, so we need to call explicitly
             # yield check_load_dataset, name
             check_load_dataset(name)
+
+    @network(url="https://github.com/mwaskom/seaborn-data")
+    def test_load_cached_datasets():
+        if not BeautifulSoup:
+            raise nose.SkipTest("No BeautifulSoup available for parsing html")
+
+        # Heavy test to verify that we can load all available datasets
+        for name in get_dataset_names():
+            # unfortunately @network somehow obscures this generator so it
+            # does not get in effect, so we need to call explicitly
+            # yield check_load_dataset, name
+            check_load_cached_dataset(name)
