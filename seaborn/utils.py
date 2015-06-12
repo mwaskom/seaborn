@@ -386,14 +386,14 @@ def get_data_home(data_home=None):
     """
     if data_home is None:
         data_home = os.environ.get('SEABORN_DATA',
-                                   os.path.join('~', 'seaborn_data'))
+                                   os.path.join('~', 'seaborn-data'))
     data_home = os.path.expanduser(data_home)
     if not os.path.exists(data_home):
         os.makedirs(data_home)
     return data_home
 
 
-def load_dataset(name, cache=False, data_home=None, quiet=True, **kws):
+def load_dataset(name, cache=False, data_home=None, **kws):
     """Load a dataset from the online repository (requires internet).
 
     Parameters
@@ -406,8 +406,6 @@ def load_dataset(name, cache=False, data_home=None, quiet=True, **kws):
         If True, then cache data locally and use the cache on subsequent calls
     data_home : string, optional
         The directory in which to cache data. By default, uses ~/seaborn_data/
-    quiet : boolean, default
-        If False, then print info about file download
     kws : dict, optional
         Passed to pandas.read_csv
 
@@ -415,23 +413,14 @@ def load_dataset(name, cache=False, data_home=None, quiet=True, **kws):
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
 
-    def quietprint(*args, **kwargs):
-        if not quiet:
-            print(*args, **kwargs)
-
-    if not cache:
-        quietprint("reading file from {0}".format(full_path))
-        df = pd.read_csv(full_path, **kws)
-    else:
+    if cache:
         cache_path = os.path.join(get_data_home(data_home),
                                   os.path.basename(full_path))
         if not os.path.exists(cache_path):
-            quietprint("downloading file from {0}".format(full_path))
             urlretrieve(full_path, cache_path)
+        full_path = cache_path
 
-        quietprint("reading file from {0}".format(cache_path))
-        df = pd.read_csv(cache_path, **kws)
-
+    df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
 
