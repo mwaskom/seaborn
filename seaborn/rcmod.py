@@ -360,6 +360,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
         # Set up dictionary of default parameters
         base_context = {
 
+            "font.size": 12,
             "figure.figsize": np.array([8, 5.5]),
             "axes.labelsize": 11,
             "axes.titlesize": 12,
@@ -387,7 +388,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
         context_dict = {k: v * scaling for k, v in base_context.items()}
 
         # Now independently scale the fonts
-        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
+        font_keys = ["font.size", "axes.labelsize", "axes.titlesize", "legend.fontsize",
                      "xtick.labelsize", "ytick.labelsize"]
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)

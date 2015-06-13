@@ -16,7 +16,8 @@ from .palettes import color_palette
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
            err_style="ci_band", ci=68, interpolate=True, color=None,
-           estimator=np.mean, n_boot=5000, err_palette=None, err_kws=None,
+           estimator=np.mean, err_estimator=utils.ci, n_boot=5000,
+           err_palette=None, err_kws=None,
            legend=True, ax=None, **kwargs):
     """Plot one or more timeseries with flexible representation of uncertainty.
 
@@ -72,8 +73,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     estimator : callable
         Function to determine central tendency and to pass to bootstrap
         must take an ``axis`` argument.
+    err_estimator : callable
+        Function to determine confidence intervals
+        must take an ``axis`` argument.
     n_boot : int
-        Number of bootstrap iterations.
+        Number of bootstrap iterations. If this is zero,
+        no bootstrapping is applied. Instead, the unit traces itself are used.
     err_palette: seaborn palette
         Palette name or list of colors used when plotting data for each unit.
     err_kws : dict, optional
@@ -203,10 +208,16 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         df_c = df_c.pivot(unit, time, value)
         x = df_c.columns.values.astype(np.float)
 
-        # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
-                                   axis=0, func=estimator)
-        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
+        # Bootstrap the data for confidence intervals or use unit traces
+        if n_boot > 0:
+            boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
+                                       axis=0, func=estimator)
+            error_data = boot_data
+        else:
+            boot_data = None
+            error_data = df_c.values
+
+        cis = [err_estimator(error_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
 
         # Get the color for this condition
