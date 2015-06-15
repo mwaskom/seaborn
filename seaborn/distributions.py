@@ -581,42 +581,37 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     return ax
 
 
-def rugplot(a, height=None, axis="x", ax=None, **kwargs):
+def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     """Plot datapoints in an array as sticks on an axis.
 
     Parameters
     ----------
     a : vector
-        1D array of datapoints.
+        1D array of observations.
     height : scalar, optional
-        Height of ticks, if None draw at 5% of axis range.
+        Height of ticks as proportion of the axis.
     axis : {'x' | 'y'}, optional
         Axis to draw rugplot on.
-    ax : matplotlib axis
-        Axis to draw plot into; otherwise grabs current axis.
-    kwargs : other keyword arguments for plt.plot()
+    ax : matplotlib axes
+        Axes to draw plot into; otherwise grabs current axes.
+    kwargs : key, value mappings
+        Other keyword arguments are passed to ``axvline`` or ``axhline``.
 
     Returns
     -------
-    ax : matplotlib axis
-        Axis with rugplot.
+    ax : matplotlib axes
+        The Axes object with the plot on it.
 
     """
     if ax is None:
         ax = plt.gca()
     a = np.asarray(a)
-    vertical = kwargs.pop("vertical", None)
-    if vertical is not None:
-        axis = "y" if vertical else "x"
-    other_axis = dict(x="y", y="x")[axis]
-    min, max = getattr(ax, "get_%slim" % other_axis)()
-    if height is None:
-        range = max - min
-        height = range * .05
-    if axis == "x":
-        ax.plot([a, a], [min, min + height], **kwargs)
-    else:
-        ax.plot([min, min + height], [a, a], **kwargs)
+    vertical = kwargs.pop("vertical", axis == "y")
+    func = ax.axhline if vertical else ax.axvline
+    kwargs.setdefault("linewidth", 1)
+    for pt in a:
+        func(pt, 0, height, **kwargs)
+
     return ax
 
 

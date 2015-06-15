@@ -4,7 +4,7 @@ v0.6.0 (Unreleased)
 
 This is a major release from 0.5. The main objective of this release is to unify the API for categorical plots, which means that there are some relatively large API changes in some of the older functions. See below for details of those changes, which may break code written for older versions of seaborn. There are also some new functions (:func:`stripplot`,  and :func:`countplot`), enhancements to existing functions, and bug fixes.
 
-Additionally, the structure of the docs is changing in version 0.6. The API docs page for each function will have numerous examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, as the tutorial pages are going to be streamlined to provide a higher-level introduction. Currently there are examples for all the categorical plot functions, it's unclear whether they will be completed for the rest of the package by release.
+Additionally, the structure of the docs is changing in version 0.6. The API docs page for each function will have numerous examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, as the tutorial pages are going to be streamlined to provide a higher-level introduction.
 
 Changes and updates to categorical plots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,7 +13,7 @@ In version 0.6, the "categorical" plots have been unified with a common API. Thi
 
 These functions now each accept the same formats of input data and can be invoked in the same way. They can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
 
-With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, :func:`factorplot` can also now create faceted verisons of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly.. By default, :func:`factorplot` draws a point plot, but this is controlled by the ``kind`` parameter.
+With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, :func:`factorplot` can also now create faceted verisons of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly. By default, :func:`factorplot` draws a point plot, but this is controlled by the ``kind`` parameter.
 
 Here are details on what has changed in the process of unifying these APIs:
 
@@ -68,6 +68,8 @@ Other additions and changes
 - The interactive palette widgets now show a continuous colorbar, rather than a discrete palette, when `as_cmap` is True.
 
 - The default Axes size for :func:`pairplot` and :class:`PairGrid` is now slightly smaller.
+
+- The ``height`` parameter of :func:`rugplot` is now interpreted as a function of the axis size and is invariant to changes in the data scale on that axis. The rug lines are also slightly narrower by default.
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use sqrt(n) bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.
 
