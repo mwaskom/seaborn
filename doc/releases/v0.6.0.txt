@@ -69,6 +69,8 @@ Other additions and changes
 
 - The default Axes size for :func:`pairplot` and :class:`PairGrid` is now slightly smaller.
 
+- Added the ``shade_lowest`` parameter to :func:`kdeplot` which will set the alpha for the lowest contour level to 0, making it easier to plot multiple bivariate distributions on the same axes.
+
 - The ``height`` parameter of :func:`rugplot` is now interpreted as a function of the axis size and is invariant to changes in the data scale on that axis. The rug lines are also slightly narrower by default.
 
 - Added a catch in :func:`distplot` when calculating a default number of bins. For highly skewed data it will now use sqrt(n) bins, where previously the reference rule would return "infinite" bins and cause an exception in matplotlib.

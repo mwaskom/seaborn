@@ -533,19 +533,6 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
         >>> ax = sns.kdeplot(x, y, n_levels=30, cmap="Purples_d")
 
-    Plot two shaded bivariate densities:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> setosa = iris.loc[iris.species == "setosa"]
-        >>> virginica = iris.loc[iris.species == "virginica"]
-        >>> ax = sns.kdeplot(setosa.sepal_width, setosa.sepal_length,
-        ...                  cmap="Reds", shade=True, shade_lowest=False)
-        >>> ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
-        ...                  cmap="Blues", shade=True, shade_lowest=False)
-
     Use a narrower bandwith:
 
     .. plot::
@@ -566,6 +553,19 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         :context: close-figs
 
         >>> ax = sns.kdeplot(x, cut=0)
+
+    Plot two shaded bivariate densities:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> setosa = iris.loc[iris.species == "setosa"]
+        >>> virginica = iris.loc[iris.species == "virginica"]
+        >>> ax = sns.kdeplot(setosa.sepal_width, setosa.sepal_length,
+        ...                  cmap="Reds", shade=True, shade_lowest=False)
+        >>> ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
+        ...                  cmap="Blues", shade=True, shade_lowest=False)
 
     """
     if ax is None:
