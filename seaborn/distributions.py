@@ -348,8 +348,9 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
     return grid, y
 
 
-def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
-                       ax, **kwargs):
+def _bivariate_kdeplot(x, y, filled, fill_lowest,
+                       kernel, bw, gridsize, cut, clip,
+                       axlabel, ax, **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
     # Determine the clipping
     if clip is None:
@@ -376,7 +377,9 @@ def _bivariate_kdeplot(x, y, filled, kernel, bw, gridsize, cut, clip, axlabel,
 
     kwargs["cmap"] = cmap
     contour_func = ax.contourf if filled else ax.contour
-    contour_func(xx, yy, z, n_levels, **kwargs)
+    cset = contour_func(xx, yy, z, n_levels, **kwargs)
+    if filled and not fill_lowest:
+        cset.collections[0].set_alpha(0)
     kwargs["n_levels"] = n_levels
 
     # Label the axes
@@ -435,7 +438,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-            cumulative=False, ax=None, **kwargs):
+            cumulative=False, shade_lowest=True, ax=None, **kwargs):
     """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
@@ -466,6 +469,11 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         If True, add a legend or label the axes when possible.
     cumulative : bool
         If True, draw the cumulative distribution estimated by the kde.
+    shade_lowest : bool
+        If True, shade the lowest contour of a bivariate KDE plot. Not
+        relevant when drawing a univariate plot or when ``shade=False``.
+        Setting this to ``False`` can be useful when you want multiple
+        densities on the same Axes.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
     kwargs : key, value pairings
@@ -525,6 +533,19 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
         >>> ax = sns.kdeplot(x, y, n_levels=30, cmap="Purples_d")
 
+    Plot two shaded bivariate densities:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> setosa = iris.loc[iris.species == "setosa"]
+        >>> virginica = iris.loc[iris.species == "virginica"]
+        >>> ax = sns.kdeplot(setosa.sepal_width, setosa.sepal_length,
+        ...                  cmap="Reds", shade=True, shade_lowest=False)
+        >>> ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
+        ...                  cmap="Blues", shade=True, shade_lowest=False)
+
     Use a narrower bandwith:
 
     .. plot::
@@ -571,8 +592,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         raise TypeError("Cumulative distribution plots are not"
                         "supported for bivariate distributions.")
     if bivariate:
-        ax = _bivariate_kdeplot(x, y, shade, kernel, bw, gridsize,
-                                cut, clip, legend, ax, **kwargs)
+        ax = _bivariate_kdeplot(x, y, shade, shade_lowest,
+                                kernel, bw, gridsize, cut, clip, legend,
+                                ax, **kwargs)
     else:
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
                                  gridsize, cut, clip, legend, ax,

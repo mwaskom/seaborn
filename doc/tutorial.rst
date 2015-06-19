@@ -18,11 +18,10 @@ Plotting functions
 .. toctree::
    :maxdepth: 2
 
-   tutorial/plotting_distributions
+   tutorial/distributions
    tutorial/quantitative_linear_models
    tutorial/categorical_linear_models
    tutorial/dataset_exploration
-   tutorial/timeseries_plots
 
 Structured grids
 ----------------
