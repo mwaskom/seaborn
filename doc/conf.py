@@ -127,7 +127,8 @@ html_theme_options = {
     'bootswatch_theme': "flatly",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
-    'navbar_links': [("Tutorial", "tutorial"),
+    'navbar_links': [("API", "api"),
+                     ("Tutorial", "tutorial"),
                      ("Gallery", "examples/index")],
 
     }
