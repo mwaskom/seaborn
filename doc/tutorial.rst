@@ -19,9 +19,8 @@ Plotting functions
    :maxdepth: 2
 
    tutorial/distributions
-   tutorial/quantitative_linear_models
-   tutorial/categorical_linear_models
-   tutorial/dataset_exploration
+   tutorial/regression
+   tutorial/categorical
 
 Structured grids
 ----------------

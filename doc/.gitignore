@@ -6,8 +6,8 @@ example_thumbs/
 aesthetics.rst
 color_palettes.rst
 distributions.rst
-quantitative_linear_models.rst
-categorical_linear_models.rst
+regression.rst
+categorical.rst
 plotting_distributions.rst
 dataset_exploration.rst
 timeseries_plots.rst

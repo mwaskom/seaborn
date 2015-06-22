@@ -9,7 +9,7 @@ Additionally, the structure of the docs is changing in version 0.6. The API docs
 Changes and updates to categorical plots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In version 0.6, the "categorical" plots have been unified with a common API. This new category of functions groups together plots that show the relationship between one numeric variable and one or two categorical variables. This includes plots that show distribution of the numeric variable in each bin (:func:`barplot`, :func:`pointplot`, and :func:`stripplot`) and plots that apply a statistical estimation within each bin (:func:`pointplot`, :func:`barplot`, and :func:`countplot`).
+In version 0.6, the "categorical" plots have been unified with a common API. This new category of functions groups together plots that show the relationship between one numeric variable and one or two categorical variables. This includes plots that show distribution of the numeric variable in each bin (:func:`boxplot`, :func:`violinplot`, and :func:`stripplot`) and plots that apply a statistical estimation within each bin (:func:`pointplot`, :func:`barplot`, and :func:`countplot`).
 
 These functions now each accept the same formats of input data and can be invoked in the same way. They can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
 
