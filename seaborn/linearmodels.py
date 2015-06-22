@@ -1495,7 +1495,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
 
         >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
         >>> iris = sns.load_dataset("iris")
-        >>> sns.pairplot(iris)
+        >>> g = sns.pairplot(iris)
 
     Show different levels of a categorical variable by the color of plot
     elements:
@@ -1503,58 +1503,59 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, hue="species")
+        >>> g = sns.pairplot(iris, hue="species")
 
     Use a different color palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, hue="species", palette="husl")
+        >>> g = sns.pairplot(iris, hue="species", palette="husl")
 
     Use different markers for each level of the hue variable:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
+        >>> g = sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
 
     Plot a subset of variables:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
+        >>> g = sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
 
     Draw larger plots:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, size=3, vars=["sepal_width", "sepal_length"])
+        >>> g = sns.pairplot(iris, size=3,
+        ...                  vars=["sepal_width", "sepal_length"])
 
     Plot different variables in the rows and columns:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris,
-        ...              x_vars=["sepal_width", "sepal_length"],
-        ...              y_vars=["petal_width", "petal_length"])
+        >>> g = sns.pairplot(iris,
+        ...                  x_vars=["sepal_width", "sepal_length"],
+        ...                  y_vars=["petal_width", "petal_length"])
 
     Use kernel density estimates for univariate plots:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, diag_kind="kde")
+        >>> g = sns.pairplot(iris, diag_kind="kde")
 
     Fit linear regression models to the scatter plots:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, kind="reg")
+        >>> g = sns.pairplot(iris, kind="reg")
 
     Pass keyword arguments down to the underlying functions (it may be easier
     to use :class:`PairGrid` directly):
@@ -1562,9 +1563,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     .. plot::
         :context: close-figs
 
-        >>> sns.pairplot(iris, diag_kind="kde", markers="+",
-        ...              plot_kws=dict(s=50, edgecolor="b", linewidth=1),
-        ...              diag_kws=dict(shade=True))
+        >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
+        ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
+        ...                  diag_kws=dict(shade=True))
 
     """
     if plot_kws is None:

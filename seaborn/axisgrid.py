@@ -580,7 +580,7 @@ class FacetGrid(Grid):
             ...     data = kwargs.pop("data")
             ...     data.plot(x=x, y=y, ax=ax, grid=False, **kwargs)
             >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, size=3.5)
-            >>> g.map_dataframe(dateplot, "date", "val")
+            >>> g = g.map_dataframe(dateplot, "date", "val")
 
         Use different axes labels after plotting:
 
@@ -1166,9 +1166,9 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris)
-            >>> g.map_upper(plt.scatter)
-            >>> g.map_lower(sns.kdeplot, cmap="Blues_d")
-            >>> g.map_diag(sns.kdeplot, lw=3, legend=False)
+            >>> g = g.map_upper(plt.scatter)
+            >>> g = g.map_lower(sns.kdeplot, cmap="Blues_d")
+            >>> g = g.map_diag(sns.kdeplot, lw=3, legend=False)
 
         Use different colors and markers for each categorical level:
 
@@ -1525,7 +1525,7 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g.plot(sns.regplot, sns.distplot)
+            >>> g = g.plot(sns.regplot, sns.distplot)
 
         Draw the join and marginal plots separately, which allows finer-level
         control other parameters:
@@ -1535,8 +1535,8 @@ class JointGrid(object):
 
             >>> import matplotlib.pyplot as plt
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g.plot_joint(plt.scatter, color=".5", edgecolor="white")
-            >>> g.plot_marginals(sns.distplot, kde=False, color=".5")
+            >>> g = g.plot_joint(plt.scatter, color=".5", edgecolor="white")
+            >>> g = g.plot_marginals(sns.distplot, kde=False, color=".5")
 
         Draw the two marginal plots separately:
 
@@ -1545,12 +1545,12 @@ class JointGrid(object):
 
             >>> import numpy as np
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g.plot_joint(plt.scatter, color="m", edgecolor="white")
-            >>> g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
-            ...                  bins=np.arange(0, 60, 5))
-            >>> g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
-            ...                  orientation="horizontal",
-            ...                  bins=np.arange(0, 12, 1))
+            >>> g = g.plot_joint(plt.scatter, color="m", edgecolor="white")
+            >>> _ = g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
+            ...                      bins=np.arange(0, 60, 5))
+            >>> _ = g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
+            ...                      orientation="horizontal",
+            ...                      bins=np.arange(0, 12, 1))
 
         Add an annotation with a statistic summarizing the bivariate
         relationship:
@@ -1560,9 +1560,10 @@ class JointGrid(object):
 
             >>> from scipy import stats
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g.plot_joint(plt.scatter, color="g", s=40, edgecolor="white")
-            >>> g.plot_marginals(sns.distplot, kde=False, color="g")
-            >>> g.annotate(stats.pearsonr)
+            >>> g = g.plot_joint(plt.scatter,
+            ...                  color="g", s=40, edgecolor="white")
+            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
+            >>> g = g.annotate(stats.pearsonr)
 
         Use a custom function and formatting for the annotation
 
@@ -1570,11 +1571,12 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g.plot_joint(plt.scatter, color="g", s=40, edgecolor="white")
-            >>> g.plot_marginals(sns.distplot, kde=False, color="g")
+            >>> g = g.plot_joint(plt.scatter,
+            ...                  color="g", s=40, edgecolor="white")
+            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
             >>> rsquare = lambda a, b: stats.pearsonr(a, b)[0] ** 2
-            >>> g.annotate(rsquare, template="{stat}: {val:.2f}",
-            ...            stat="$R^2$", loc="upper left", fontsize=12)
+            >>> g = g.annotate(rsquare, template="{stat}: {val:.2f}",
+            ...                stat="$R^2$", loc="upper left", fontsize=12)
 
         Remove the space between the joint and marginal axes:
 
@@ -1582,8 +1584,8 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
-            >>> g.plot_joint(sns.kdeplot, cmap="Blues_d")
-            >>> g.plot_marginals(sns.kdeplot, shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, cmap="Blues_d")
+            >>> g = g.plot_marginals(sns.kdeplot, shade=True)
 
         Draw a smaller plot with relatively larger marginal axes:
 
@@ -1592,8 +1594,8 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   size=5, ratio=2)
-            >>> g.plot_joint(sns.kdeplot, cmap="Reds_d")
-            >>> g.plot_marginals(sns.kdeplot, color="r", shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, cmap="Reds_d")
+            >>> g = g.plot_marginals(sns.kdeplot, color="r", shade=True)
 
         Set limits on the axes:
 
@@ -1602,8 +1604,8 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   xlim=(0, 50), ylim=(0, 8))
-            >>> g.plot_joint(sns.kdeplot, cmap="Purples_d")
-            >>> g.plot_marginals(sns.kdeplot, color="m", shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, cmap="Purples_d")
+            >>> g = g.plot_marginals(sns.kdeplot, color="m", shade=True)
 
         """
         # Set up the subplot grid
