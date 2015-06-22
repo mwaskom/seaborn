@@ -1239,24 +1239,49 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             self.value_label = "{}({})".format(estimator.__name__,
                                                self.value_label)
 
-    def draw_confints(self, ax, at_group, confint, colors, **kws):
+    def draw_confints(self,
+                      ax,
+                      at_group,
+                      confint,
+                      colors,
+                      draw_perp=False,
+                      thickness=1.8,
+                      **kws):
 
-        kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
+        kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * thickness)
 
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
                                                 colors):
             if self.orient == "v":
                 ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
+                if draw_perp:
+                    ax.plot([at - 0.05, at + 0.05],
+                            [ci_low, ci_low],
+                            color=color,
+                            **kws)
+                    ax.plot([at - 0.05, at + 0.05],
+                            [ci_high, ci_high],
+                            color=color,
+                            **kws)
             else:
                 ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
+                if draw_perp:
+                    ax.plot([ci_low, ci_low],
+                            [at - 0.05, at + 0.05],
+                            color=color,
+                            **kws)
+                    ax.plot([ci_high, ci_high],
+                            [at - 0.05, at + 0.05],
+                            color=color,
+                            **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
     """Show point estimates and confidence intervals with bars."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation, errcolor):
+                 orient, color, palette, saturation, errcolor, draw_perp):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1264,6 +1289,7 @@ class _BarPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot)
 
         self.errcolor = errcolor
+        self.draw_perp = draw_perp
 
     def draw_bars(self, ax, kws):
         """Draw the bars onto `ax`."""
@@ -1279,7 +1305,10 @@ class _BarPlotter(_CategoricalStatPlotter):
 
             # Draw the confidence intervals
             errcolors = [self.errcolor] * len(barpos)
-            self.draw_confints(ax, barpos, self.confint, errcolors)
+            self.draw_confints(ax, barpos,
+                               self.confint,
+                               errcolors,
+                               draw_perp=self.draw_perp)
 
         else:
 
@@ -1295,7 +1324,10 @@ class _BarPlotter(_CategoricalStatPlotter):
                 if self.confint.size:
                     confint = self.confint[:, j]
                     errcolors = [self.errcolor] * len(offpos)
-                    self.draw_confints(ax, offpos, confint, errcolors)
+                    self.draw_confints(ax, offpos,
+                                       confint,
+                                       errcolors,
+                                       draw_perp=self.draw_perp)
 
     def plot(self, ax, bar_kws):
         """Make the plot."""
@@ -1519,6 +1551,11 @@ _categorical_docs = dict(
         often look better with slightly desaturated colors, but set this to
         ``1`` if you want the plot colors to perfectly match the input color
         spec.\
+    """),
+    draw_perp=dedent("""\
+    draw_perp : boolean, optional
+        Whether or not to draw perpendicular lines on the confidence
+        intervals for a barplot. Also known as endcaps on error bars.\
     """),
     width=dedent("""\
     width : float, optional
@@ -2166,7 +2203,7 @@ stripplot.__doc__ = dedent("""\
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             estimator=np.mean, ci=95, n_boot=1000, units=None,
             orient=None, color=None, palette=None, saturation=.75,
-            errcolor=".26", ax=None, **kwargs):
+            errcolor=".26", ax=None, draw_perp=False, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2185,7 +2222,7 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor)
+                          errcolor, draw_perp)
 
     if ax is None:
         ax = plt.gca()
@@ -2229,6 +2266,7 @@ barplot.__doc__ = dedent("""\
     errcolor : matplotlib color
         Color for the lines that represent the confidence interval.
     {ax_in}
+    {draw_perp}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.bar`` at draw
         time.
