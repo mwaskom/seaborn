@@ -20,10 +20,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
            legend=True, ax=None, **kwargs):
     """Plot one or more timeseries with flexible representation of uncertainty.
 
-    This function can take data specified either as a long-form (tidy)
-    DataFrame or as an ndarray with dimensions for sampling unit, time, and
-    (optionally) condition. The interpretation of some of the other parameters
-    changes depending on the type of object passed as data.
+    This function is intended to be used with data where observations are
+    nested within sampling units that were measured at multiple timepoints.
+
+    It can take data specified either as a long-form (tidy) DataFrame or as an
+    ndarray with dimensions (unit, time) The interpretation of some of the
+    other parameters changes depending on the type of object passed as data.
 
     Parameters
     ----------
@@ -75,7 +77,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         must take an ``axis`` argument.
     n_boot : int
         Number of bootstrap iterations.
-    err_palette: seaborn palette
+    err_palette : seaborn palette
         Palette name or list of colors used when plotting data for each unit.
     err_kws : dict, optional
         Keyword argument dictionary passed through to matplotlib function
@@ -92,6 +94,74 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     -------
     ax : matplotlib axis
         axis with plot data
+
+    Examples
+    --------
+
+    Plot a trace with translucent confidence bands:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(22)
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> x = np.linspace(0, 15, 31)
+        >>> data = np.sin(x) + np.random.rand(10, 31) + np.random.randn(10, 1)
+        >>> ax = sns.tsplot(data=data)
+
+    Plot a long-form dataframe with several conditions:
+
+    .. plot::
+        :context: close-figs
+
+        >>> gammas = sns.load_dataset("gammas")
+        >>> ax = sns.tsplot(time="timepoint", value="BOLD signal",
+        ...                 unit="subject", condition="ROI",
+        ...                 data=gammas)
+
+    Use error bars at the positions of the observations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, err_style="ci_bars", color="g")
+
+    Don't interpolate between the observations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import matplotlib.pyplot as plt
+        >>> ax = sns.tsplot(data=data, err_style="ci_bars", interpolate=False)
+
+    Show multiple confidence bands:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, ci=[68, 95], color="m")
+
+    Use a different estimator:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, estimator=np.median)
+
+    Show each bootstrap resample:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, err_style="boot_traces", n_boot=500)
+
+    Show the trace from each sampling unit:
+
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, err_style="unit_traces")
 
     """
     # Sort out default values for the parameters
