@@ -325,6 +325,109 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes
         Axes object with the heatmap.
 
+    Examples
+    --------
+
+    Plot a heatmap for a numpy array:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(0)
+        >>> import seaborn as sns; sns.set()
+        >>> uniform_data = np.random.rand(10, 12)
+        >>> ax = sns.heatmap(uniform_data)
+
+    Change the limits of the colormap:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(uniform_data, vmin=0, vmax=1)
+
+    Plot a heatmap for data centered on 0:
+
+    .. plot::
+        :context: close-figs
+
+        >>> normal_data = np.random.randn(10, 12)
+        >>> ax = sns.heatmap(normal_data)
+
+    Plot a dataframe with meaningful row and column labels:
+
+    .. plot::
+        :context: close-figs
+
+        >>> flights = sns.load_dataset("flights")
+        >>> flights = flights.pivot("month", "year", "passengers")
+        >>> ax = sns.heatmap(flights)
+
+    Annotate each cell with the numeric value using integer formatting:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(flights, annot=True, fmt="d")
+
+    Add lines between each cell:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(flights, linewidths=.5)
+
+    Use a different colormap:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(flights, cmap="YlGnBu")
+
+    Center the colormap at a specific value:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(flights, center=flights.loc["January", 1955])
+
+    Plot every other column label and don't plot row labels:
+
+    .. plot::
+        :context: close-figs
+
+        >>> data = np.random.randn(50, 20)
+        >>> ax = sns.heatmap(data, xticklabels=2, yticklabels=False)
+
+    Don't draw a colorbar:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.heatmap(flights, cbar=False)
+
+    Use different axes for the colorbar:
+
+    .. plot::
+        :context: close-figs
+
+        >>> grid_kws = {"height_ratios": (.9, .05), "hspace": .3}
+        >>> f, (ax, cbar_ax) = plt.subplots(2, gridspec_kw=grid_kws)
+        >>> ax = sns.heatmap(flights, ax=ax,
+        ...                  cbar_ax=cbar_ax,
+        ...                  cbar_kws={"orientation": "horizontal"})
+
+    Use a mask to plot only part of a matrix
+
+    .. plot::
+        :context: close-figs
+
+        >>> corr = np.corrcoef(np.random.randn(10, 200))
+        >>> mask = np.zeros_like(corr)
+        >>> mask[np.triu_indices_from(mask)] = True
+        >>> with sns.axes_style("white"):
+        ...     ax = sns.heatmap(corr, mask=mask, vmax=.3, square=True)
+
+
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
@@ -946,7 +1049,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         A ClusterGrid instance.
 
     Notes
-    ----
+    -----
     The returned object has a ``savefig`` method that should be used if you
     want to save the figure object without clipping the dendrograms.
 

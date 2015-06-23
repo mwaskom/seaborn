@@ -115,21 +115,9 @@ To check out the code or report a bug, please visit the `github repository
 
    tutorial/aesthetics
    tutorial/color_palettes
-   tutorial/plotting_distributions
-   tutorial/quantitative_linear_models
-
-.. raw:: html
-
-   </div>
-   <div class="col-md-4">
-
-.. toctree::
-   :maxdepth: 1
-
-   tutorial/categorical_linear_models
-   tutorial/dataset_exploration
-   tutorial/timeseries_plots
-   tutorial/axis_grids
+   tutorial/distributions
+   tutorial/regression
+   tutorial/categorical
 
 .. raw:: html
 
