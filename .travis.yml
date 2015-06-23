@@ -44,4 +44,7 @@ before_script:
   #  fi
 
 script:
-  - nosetests --with-doctest
+  - if [ $DEPS == 'modern' ];
+    then nosetests --with-doctest;
+    else nosetests;
+    fi
