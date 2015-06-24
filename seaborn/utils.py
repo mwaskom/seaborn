@@ -462,6 +462,8 @@ def axis_ticklabels_overlap(labels):
         True if any of the labels overlap.
 
     """
+    if not labels:
+        return False
     bboxes = [l.get_window_extent() for l in labels]
     overlaps = [b.count_overlaps(bboxes) for b in bboxes]
     return max(overlaps) > 1
