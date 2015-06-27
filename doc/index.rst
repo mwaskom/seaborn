@@ -61,7 +61,11 @@ Seaborn: statistical data visualization
       </div>
     </div>
     <br>
-    
+
+   <div class="container-fluid">
+   <div class="row">
+   <div class="col-md-6">
+   <br>
 
 Seaborn is a Python visualization library based on matplotlib. It provides a
 high-level interface for drawing attractive statistical graphics.
@@ -69,32 +73,17 @@ high-level interface for drawing attractive statistical graphics.
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the
 :ref:`installation page <installing>`. You may also want to browse the
-:ref:`example gallery <example_gallery>` to get a sense for what kind of plots
-you can make with seaborn.
+:ref:`example gallery <example_gallery>` to get a sense for what you can do with seaborn and then check out the :ref:`tutorial <tutorial>` and :ref:`API reference <api_ref>` to find out how.
 
-For a higher-level perspective on the various tools that are included in the
-library, you can read through the :ref:`tutorial <tutorial>`. Much more detail
-about individual tools can be found in the :ref:`API reference <api_ref>`,
-which includes documentation for all the functions along with short examples of
-how to use them.
-
-To check out the code or report a bug, please visit the `github repository
+To see the code or report a bug, please visit the `github repository
 <https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `stackoverflow <http://stackoverflow.com/>`_, where there is a seaborn tag.
    
 
 .. raw:: html
 
-   <div class="container-fluid">
-   <div class="row">
-   <div class="col-md-4">
+   </div>
+   <div class="col-md-3">
    <h2>Documentation</h2>
-   </div>
-   <div class="col-md-4">
-   <h2>Tutorial</h2>
-   </div>
-   </div>
-   <div class="row">
-   <div class="col-md-4">
 
 .. toctree::
    :maxdepth: 1
@@ -104,21 +93,21 @@ To check out the code or report a bug, please visit the `github repository
    installing
    examples/index
    api
+   tutorial
 
 .. raw:: html
 
    </div>
-   <div class="col-md-4">
+   <div class="col-md-3">
+   <h2>Features</h2>
 
-.. toctree::
-   :maxdepth: 1
-
-   tutorial/aesthetics
-   tutorial/color_palettes
-   tutorial/distributions
-   tutorial/regression
-   tutorial/categorical
-
+* Style functions: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
+* Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
+* Distribution plots: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
+* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
+* Categorical plots: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
+* Axis grid objects: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
+ 
 .. raw:: html
 
    </div>
