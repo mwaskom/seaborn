@@ -4,7 +4,6 @@ test:
 
 	cp testing/matplotlibrc .
 	nosetests --with-doctest
-	python ipnbdoctest.py examples/*.ipynb
 	rm matplotlibrc
 
 
