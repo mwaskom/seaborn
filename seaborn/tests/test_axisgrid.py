@@ -107,6 +107,14 @@ class TestFacetGrid(object):
         with nt.assert_raises(ValueError):
             g = ag.FacetGrid(self.df, row="b", col="d", col_wrap=4)
 
+        df = self.df.copy()
+        df.loc[df.d == "j"] = np.nan
+        g_missing = ag.FacetGrid(df, col="d")
+        nt.assert_equal(g_missing.axes.shape, (1, 9))
+
+        g_missing_wrap = ag.FacetGrid(df, col="d", col_wrap=4)
+        nt.assert_equal(g_missing_wrap.axes.shape, (9,))
+
         plt.close("all")
 
     def test_normal_axes(self):
