@@ -205,9 +205,7 @@ _facet_docs = dict(
     margin_titles : bool, optional
         If ``True``, the titles for the row variable are drawn to the right of
         the last column. This option is experimental and may not work in all
-        cases. If you call ``map`` multiple times when using this option, the
-        titles will stack; to avoid this, remove figure texts before the final
-        call to ``map``. See ``set_titles`` for more information.\
+        cases.\
     """),
     )
 
@@ -905,15 +903,6 @@ class FacetGrid(Grid):
         self: object
             Returns self.
 
-        Note
-        ----
-
-        When using margin titles for the row facets, calling this directly
-        will add titles on top of the existing titles (because the margin
-        titles aren't really "titles", just figure texts). To avoid that,
-        you should remove the existing titles first by doing, e.g.,
-        ``plt.setp(fig.texts, text="")``.
-
         """
         args = dict(row_var=self._row_var, col_var=self._col_var)
         kwargs["size"] = kwargs.pop("size", mpl.rcParams["axes.labelsize"])
@@ -938,12 +927,11 @@ class FacetGrid(Grid):
                     ax = self.axes[i, -1]
                     args.update(dict(row_name=row_name))
                     title = row_template.format(**args)
-                    trans = self.fig.transFigure.inverted()
-                    bbox = ax.bbox.transformed(trans)
-                    x = bbox.xmax + 0.01
-                    y = bbox.ymax - (bbox.height / 2)
-                    self.fig.text(x, y, title, rotation=270,
-                                  ha="left", va="center", **kwargs)
+                    bgcolor = self.fig.get_facecolor()
+                    ax.annotate(title, xy=(1.02, .5), xycoords="axes fraction",
+                                rotation=270, ha="left", va="center",
+                                backgroundcolor=bgcolor, **kwargs)
+
             if self.col_names is not None:
                 # Draw the column titles  as normal titles
                 for j, col_name in enumerate(self.col_names):
