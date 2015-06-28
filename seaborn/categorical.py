@@ -2721,6 +2721,7 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
             g.set_axis_labels(y_var="count")
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
+        hue_order = list(map(str, hue_order))
         g.add_legend(title=hue, label_order=hue_order)
 
     return g
