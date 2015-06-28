@@ -29,6 +29,8 @@ class Grid(object):
 
     def savefig(self, *args, **kwargs):
         """Save the figure."""
+        kwargs = kwargs.copy()
+        kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
