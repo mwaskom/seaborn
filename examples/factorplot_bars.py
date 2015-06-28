@@ -2,15 +2,16 @@
 Grouped barplots
 ================
 
-_thumb: .5, .4
+_thumb: .45, .5
 """
 import seaborn as sns
 sns.set(style="whitegrid")
 
+# Load the example Titanic dataset
 titanic = sns.load_dataset("titanic")
 
-g = sns.factorplot("class", "survived", "sex",
-                    data=titanic, kind="bar",
-                    size=6, palette="muted")
+# Draw a nested barplot to show survival for class and sex
+g = sns.factorplot(x="class", y="survived", hue="sex", data=titanic,
+                   size=6, kind="bar", palette="muted")
 g.despine(left=True)
 g.set_ylabels("survival probability")

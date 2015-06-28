@@ -1,56 +1,38 @@
-Contributing code
-=================
+Contributing to seaborn
+=======================
 
-To contribute code to seaborn, it's best to follow the usual github workflow:
+General support
+---------------
 
-- Fork the [main seaborn repository](https://github.com/mwaskom/seaborn)
-- Create a feature branch with `git checkout -b <feature_name>`
-- Add some new code
-- Push to your fork with `git push origin <feature_name>`
-- Open a pull-request on the main repository
+General support questions are most at home on [StackOverflow](http://stackoverflow.com/), where they will be seen by more people and are more easily searchable. StackOverflow has a `seaborn` tag, which will bring the question to the attention of people who might be able to answer.
 
-Here are some further notes on specific aspects of seaborn development that are good to know about.
+Reporting bugs
+--------------
 
-#### Getting in touch
+If you think you have encountered a bug in seaborn, please report it on the [Github issue tracker](https://github.com/mwaskom/seaborn/issues/new). It will be most helpful to include a reproducible script with one of the example datasets (accessed through `load_dataset()`) or using some randomly-generated data.
 
-In general, it can't hurt to get in touch by opening an issue before you start your work. Because seaborn is relatively young, there are a lot of things that I have partially-formed thoughts on, but haven't gotten a chance to fully implement yet. I very much appreciate help, but I'll be more likely to merge in changes that fit into my plans for the package (which might only exist inside my head). So, giving me a heads up about what you have in mind will save time for everyone.
+It is difficult debug any issues without knowing the versions of seaborn and matplotlib you are using, as well as what matplotlib backend you are using to draw the plots, so please include those in your bug report.
 
-#### Where to branch
+Fixing bugs
+-----------
 
-For any new features, or enhancements to existing features, you should branch off `master`. The main repo also has branches corresponding to each point release (e.g. `v0.2`). If you are fixing a bug, it might be better to branch from there so the fix can be included in an incremental release. This will probably get sorted out in the issue reporting the bug.
+If you know how to fix a bug you have encountered or see on the issue tracker, that is very appreciated. Please submit a [pull request](https://help.github.com/articles/using-pull-requests/) on the main seaborn repository with the fix. The presence of a bug implies a lack of coverage in the tests, so when fixing a bug, it is best to add a test that fails before the fix and passes after to make sure it does not reappear. See the section on testing below. But if there is an obvious fix and you're not sure how to write a test, don't let that stop you.
 
-#### Working on a Pull Request
+Documentation issues
+--------------------
 
-Since seaborn is a plotting package, it's most useful to be able to see the new feature or the consequences of changes your contribution will make. When you open the pull request, including a link to an example notebook (through [nbviewer](http://nbviewer.ipython.org/)) or at least a static screenshot is very helpful.
+If you see something wrong or confusing in the documentation, please report it with an issue or fix it and open a pull request.
 
-#### Testing and documentation
+New features
+------------
 
-Currently, seaborn uses the notebooks in `examples/` for both documentation and testing. This is proving to be a somewhat problematic solution, and I am worried about many incremental changes to these notebooks producing a large and unwieldy repository. Please try to hold off committing changes to the notebooks until the feature is ready to go. In the meantime, it might be useful to discuss changes in the context of the example notebooks, but please edit them without committing and share via nbviewer from a gist/dropbox link/etc.
+If you'd like to add a new feature to seaborn, it's best to open an issue to discuss it first. Given the nature of seaborn's goals and approach, it can be hard to write a substantial contribution that is consistent with the rest of the package, and I often lack the bandwidth to help. Also, every new feature represents a new commitment for support. For these reasons, I'm somewhat averse to large feature contributions. Smaller or well-targeted enhancements can be helpful and should be submitted through the normal pull-request workflow. Please include tests for any new features and make sure your changes don't break any existing tests.
 
-The formal unit-test coverage of the package is quite poor, as the focus has been on using the example notebooks for testing. Going forward, this should change. Please include unit-tests that at least touch the various branches through the functions to ward off errors; in cases where it's possible to programmatically check the outputs of the functions, please do so.
+Testing seaborn
+---------------
 
-Once you're ready to update the docs, it's good to add a little narrative information about what a feature does and what kind of visualization problems it can be useful for. Then, provide an example or two showing the function in action. The existing docs should be a good guide here.
+Seaborn is primarily tested through a `nose` unit-test suite that interacts with the private objects that actually draw the plots behind the function interface. The basic approach here is to test the numeric information going into and coming out of the matplotlib functions. Currently, there is a general assumption that matplotlib is drawing things properly, and tests are run against the data that ends up in the matplotlib objects but not against the images themselves. See the existing tests for examples of how this works.
 
-If you're unsure where in the documentation your feature should be discussed, please feel free to ask.
+To execute the test suite and doctests, run `make test` in the root source directory. You can also build a test coverage report with `make coverage`. 
 
-After adding your changes but before committing, please perform the following to steps:
-
-- Restart the notebook kernel and "run all" cells so you can be certain the notebook executes and the cell numbers are in the right order
-
-- Run `make hexstrip` to remove the random hex memory identifiers that are stored in the notebook, for a cleaner commit
-
-- Use `git diff` to make sure your changes didn't result in a cascading change to lots of figures
-
-Useful commands to know about for testing:
-
-- `make test` runs the full test suite (unit-tests and notebooks)
-
-- `nosetests` runs the unit-test suite in isolation
-
-- `python examples/ipnbdoctest.py examples/<notebook>.ipynb` can be used to test a specific notebook
-
-- `make coverage` will run the unit-test suite and produce a coverage report
-
-- `make lint` will run `pep8` and `pyflakes` over the codebase. Doing so requires [this](https://github.com/dcramer/pyflakes) fork of pyflakes, which can be installed with `pip install https://github.com/dcramer/pyflakes/tarball/master`
-
-Functions should be documented with the [numpy](https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt) standard. Current functions usually don't have examples, but it would be more useful if they did.
+The `make lint` command will run `pep8` and `pyflakes` over the codebase to check for style issues. Doing so requires [this](https://github.com/dcramer/pyflakes) fork of pyflakes, which can be installed with `pip install https://github.com/dcramer/pyflakes/tarball/master`. Is also currently requires `pep8` 1.5 or older, as the rules got stricter and the codebase has not been updated. This is part of the Travis build, and the build will fail if there are issues, so please do this before submitting a pull request.

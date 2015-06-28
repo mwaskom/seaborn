@@ -44,11 +44,7 @@ before_script:
   #  fi
 
 script:
-  - nosetests --with-doctest
-  # Notebook tests are failing on old matplotlib
-  # because the figures have every so slightly a
-  # different size. Skip until I understand why.
-  - if [ ${DEPS} == modern ] && [ ${PYTHON} != 3.4 ]; then
-    python ipnbdoctest.py examples/*.ipynb;
+  - if [ $DEPS == 'modern' ];
+    then nosetests --with-doctest;
+    else nosetests;
     fi
-

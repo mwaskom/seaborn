@@ -7,8 +7,10 @@ _thumb: .42, .5
 import seaborn as sns
 sns.set(style="whitegrid")
 
+# Load the example exercise dataset
 df = sns.load_dataset("exercise")
 
-sns.factorplot("time", "pulse", hue="kind", col="diet", data=df,
-               hue_order=["rest", "walking", "running"],
-               palette="YlGnBu_d", aspect=.75).despine(left=True)
+# Draw a pointplot to show pulse as a function of three categorical factors
+g = sns.factorplot(x="time", y="pulse", hue="kind", col="diet", data=df,
+                   palette="YlGnBu_d", size=6, aspect=.75)
+g.despine(left=True)
