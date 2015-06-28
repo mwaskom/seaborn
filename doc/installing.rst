@@ -68,7 +68,7 @@ Seaborn will apply its default style parameters to the global matplotlib style
 dictionary when you import it. This will change the look of all plots,
 including those created by using matplotlib functions directly. To avoid this
 behavior and use the default matplotlib aesthetics (along with any
-customization in your `matplotlibrc`), you can import the `seaborn.apionly`
+customization in your ``matplotlibrc``), you can import the ``seaborn.apionly``
 namespace.
 
 Seaborn has several other pre-packaged styles along with high-level :ref:`tools
