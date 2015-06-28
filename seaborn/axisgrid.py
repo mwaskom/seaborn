@@ -311,7 +311,7 @@ class FacetGrid(Grid):
             if gridspec_kws:
                 warnings.warn("`gridspec_kws` ignored when using `col_wrap`")
 
-            n_axes = len(data[col].unique())
+            n_axes = len(col_names)
             fig = plt.figure(figsize=figsize)
             axes = np.empty(n_axes, object)
             axes[0] = fig.add_subplot(nrow, ncol, 1, **subplot_kws)
