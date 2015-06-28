@@ -44,6 +44,7 @@ clean:
 	-rm -rf example_thumbs/*
 	-rm -rf tutorial/*_files/
 	-rm -rf tutorial/*.rst
+	-rm -rf generated/*
 
 notebooks:
 
