@@ -79,7 +79,7 @@ Other additions and changes
 
 - The various property dictionaries that can be passed to ``plt.boxplot`` are now applied after the seaborn restyling to allow for full customizability.
 
-- Added a ``savefig`` method to :class:`JointGrid` that defaults to a tight bounding box to make it easier to save figures using this class.
+- Added a ``savefig`` method to :class:`JointGrid` that defaults to a tight bounding box to make it easier to save figures using this class, and set a tight bbox as the default for the ``savefig`` method on other Grid objects.
 
 - You can now pass an integer to the ``xticklabels`` and ``yticklabels`` parameter of :func:`heatmap` (and, by extension, :func:`clustermap`). This will make the plot use the ticklabels inferred from the data, but only plot every ``n`` label, where ``n`` is the number you pass. This can help when visualizing larger matrices with some sensible ordering to the rows or columns of the dataframe.
 
@@ -97,3 +97,5 @@ Bug fixes
 - Fixed a bug in :class:`PairGrid` where the ``hue_order`` parameter was ignored.
 
 - Fixed two bugs in :func:`despine` that caused errors when trying to trim the spines on plots that had inverted axes or no ticks.
+
+- Improved support for the ``margin_titles`` option in :class:`FacetGrid`, which can now be used with a legend.
