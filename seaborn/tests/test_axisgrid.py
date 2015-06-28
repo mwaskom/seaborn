@@ -462,6 +462,10 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[0, 1].get_title(), "b = n")
         nt.assert_equal(g.axes[1, 0].get_title(), "")
 
+        # Test the row "titles"
+        nt.assert_equal(g.axes[0, 1].texts[0].get_text(), "a = a")
+        nt.assert_equal(g.axes[1, 1].texts[0].get_text(), "a = b")
+
         # Test a provided title
         g.set_titles(col_template="{col_var} == {col_name}")
         nt.assert_equal(g.axes[0, 0].get_title(), "b == m")
