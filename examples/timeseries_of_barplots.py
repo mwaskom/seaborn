@@ -15,6 +15,6 @@ planets = sns.load_dataset("planets")
 years = np.arange(2000, 2015)
 
 # Draw a count plot to show the number of planets discovered each year
-g = sns.factorplot(x="year", data=planets, palette="BuPu", kind="count",
-                   size=6, aspect=1.5, x_order=years)
+g = sns.factorplot(x="year", data=planets, kind="count",
+                   palette="BuPu", size=6, aspect=1.5, order=years)
 g.set_xticklabels(step=2)
