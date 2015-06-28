@@ -534,7 +534,16 @@ class _ViolinPlotter(_CategoricalPlotter):
 
         self.gridsize = gridsize
         self.width = width
+
+        if inner is not None:
+            if not any([inner.startswith("quart"),
+                        inner.startswith("box"),
+                        inner.startswith("stick"),
+                        inner.startswith("point")]):
+                err = "Inner style '{}' not recognized".format(inner)
+                raise ValueError(err)
         self.inner = inner
+
         if split and self.hue_names is not None and len(self.hue_names) != 2:
             raise ValueError("Cannot use `split` with more than 2 hue levels.")
         self.split = split
