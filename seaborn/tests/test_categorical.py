@@ -1237,6 +1237,13 @@ class TestViolinPlotter(CategoricalFixture):
             npt.assert_array_equal(x, [val, val])
         plt.close("all")
 
+    def test_validate_inner(self):
+
+        kws = self.default_kws.copy()
+        kws.update(dict(inner="bad_inner"))
+        with nt.assert_raises(ValueError):
+            cat._ViolinPlotter(**kws)
+
     def test_draw_violinplots(self):
 
         kws = self.default_kws.copy()
