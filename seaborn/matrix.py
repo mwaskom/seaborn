@@ -1059,6 +1059,73 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     Column indices, use:
     ``clustergrid.dendrogram_col.reordered_ind``
 
+    Examples
+    --------
+
+    Plot a clustered heatmap:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> flights = sns.load_dataset("flights")
+        >>> flights = flights.pivot("month", "year", "passengers")
+        >>> g = sns.clustermap(flights)
+
+    Don't cluster one of the axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(flights, col_cluster=False)
+
+    Use a different colormap and add lines to separate the cells:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(as_cmap=True, rot=-.3, light=1)
+        >>> g = sns.clustermap(flights, cmap=cmap, linewidths=.5)
+
+    Use a different figure size:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(flights, cmap=cmap, figsize=(7, 5))
+
+    Standardize the data across the columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(flights, standard_scale=1)
+
+    Normalize the data across the rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(flights, z_score=0)
+
+    Use a different clustering method:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(flights, method="single", metric="cosine")
+
+    Add colored labels on one of the axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> season_colors = (sns.color_palette("BuPu", 3) +
+        ...                  sns.color_palette("RdPu", 3) +
+        ...                  sns.color_palette("YlGn", 3) +
+        ...                  sns.color_palette("OrRd", 3))
+        >>> g = sns.clustermap(flights, row_colors=season_colors)
+
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
