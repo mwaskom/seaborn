@@ -109,17 +109,10 @@ There is a `bug <https://github.com/matplotlib/matplotlib/issues/2654>`_ in the
 matplotlib OSX backend that causes unavoidable problems with some of the
 seaborn functions (particularly those that draw multi-panel figures). If you
 encounter this, you will want to try a `different backend
-<http://matplotlib.org/api/matplotlib_configuration_api.html>`_.
+<http://matplotlib.org/api/matplotlib_configuration_api.html>`_. In particular, this bug affects any multi-panel figure that internally calls the matplotlib ``tight_layout`` function.
 
 An unfortunate consequence of how the matplotlib marker styles work is that
 line-art markers (e.g. ``"+"``) or markers with ``facecolor`` set to ``"none"``
 will be invisible when the default seaborn style is in effect. This can be
 changed by using a different ``markeredgewidth`` (aliased to ``mew``) either in
 the function call or globally in the `rcParams`.
-
-Some changes to the inline plotting backend in IPython 3.0 interfere with the
-seaborn style (you'll see plots that appear to have a white axes background and
-invisible spines). The solution to this is to call ``%matplotlib inline`` in a
-cell *before* importing seaborn, and not to call ``%matplotlib inline`` after
-seaborn is imported. I believe these changes have been reverted, so this should
-stop being a problem with the release of IPython 3.2.
