@@ -1249,25 +1249,28 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                       **kws):
 
         kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * conf_lw)
+        kws.pop('lw')
 
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
                                                 colors):
             if self.orient == "v":
-                ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
+                ax.plot([at, at], [ci_low, ci_high], color=color,
+                        lw=conf_lw, **kws)
                 ax.plot([at - capsize / 2, at + capsize / 2],
-                        [ci_low, ci_low], color=color, **kws)
+                        [ci_low, ci_low], color=color, lw=conf_lw, **kws)
                 ax.plot([at - capsize / 2, at + capsize / 2],
-                        [ci_high, ci_high], color=color, **kws)
+                        [ci_high, ci_high], color=color, lw=conf_lw, **kws)
 
             else:
-                ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
+                ax.plot([ci_low, ci_high], [at, at], color=color,
+                        lw=conf_lw, **kws)
                 ax.plot([ci_low, ci_low],
                         [at - capsize / 2, at + capsize / 2],
-                        color=color, **kws)
+                        color=color, lw=conf_lw, **kws)
                 ax.plot([ci_high, ci_high],
                         [at - capsize / 2, at + capsize / 2],
-                        color=color, **kws)
+                        color=color, lw=conf_lw, **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
@@ -1339,7 +1342,7 @@ class _PointPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  markers, linestyles, dodge, join, scale,
-                 orient, color, palette):
+                 orient, color, palette, conf_lw, capsize):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1372,6 +1375,8 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.dodge = dodge
         self.join = join
         self.scale = scale
+        self.conf_lw = conf_lw
+        self.capsize = capsize
 
     @property
     def hue_offsets(self):
@@ -1404,7 +1409,8 @@ class _PointPlotter(_CategoricalStatPlotter):
                             color=color, ls=ls, lw=lw)
 
             # Draw the confidence intervals
-            self.draw_confints(ax, pointpos, self.confint, self.colors, lw=lw)
+            self.draw_confints(ax, pointpos, self.confint, self.colors,
+                               self.conf_lw, self.capsize, lw=lw)
 
             # Draw the estimate points
             marker = self.markers[0]
@@ -1445,6 +1451,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                     confint = self.confint[:, j]
                     errcolors = [self.colors[j]] * len(offpos)
                     self.draw_confints(ax, offpos, confint, errcolors,
+                                       self.conf_lw, self.capsize,
                                        zorder=z, lw=lw)
 
                 # Draw the estimate points
@@ -2373,7 +2380,8 @@ barplot.__doc__ = dedent("""\
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, ax=None, **kwargs):
+              orient=None, color=None, palette=None, conf_lw=1.8,
+              capsize=0, ax=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2392,7 +2400,7 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
                             markers, linestyles, dodge, join, scale,
-                            orient, color, palette)
+                            orient, color, palette, conf_lw, capsize)
 
     if ax is None:
         ax = plt.gca()
@@ -2578,12 +2586,12 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     elif x is not None and y is not None:
         raise TypeError("Cannot pass values for both `x` and `y`")
     else:
-        raise TypeError("Must pass valus for either `x` or `y`")
+        raise TypeError("Must pass values for either `x` or `y`")
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor)
+                          errcolor, None, None)
 
     plotter.value_label = "count"
 
