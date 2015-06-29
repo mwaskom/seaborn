@@ -6,10 +6,11 @@ import shutil
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from numpy.testing import assert_array_equal
 import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
+import numpy.testing as npt
+import pandas.util.testing as pdt
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
@@ -71,7 +72,7 @@ def test_ci_to_errsize():
                                [.25, 0]])
 
     test_errsize = utils.ci_to_errsize(cis, heights)
-    assert_array_equal(actual_errsize, test_errsize)
+    npt.assert_array_equal(actual_errsize, test_errsize)
 
 
 def test_desaturate():
@@ -336,7 +337,7 @@ if LooseVersion(pd.__version__) >= "0.15":
 
             # use cached version
             ds2 = load_dataset(name, cache=True, data_home=tmpdir)
-            assert_array_equal(ds, ds2)
+            pdt.assert_frame_equal(ds, ds2)
 
         finally:
             shutil.rmtree(tmpdir)
