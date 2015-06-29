@@ -83,6 +83,8 @@ Other additions and changes
 
 - You can now pass an integer to the ``xticklabels`` and ``yticklabels`` parameter of :func:`heatmap` (and, by extension, :func:`clustermap`). This will make the plot use the ticklabels inferred from the data, but only plot every ``n`` label, where ``n`` is the number you pass. This can help when visualizing larger matrices with some sensible ordering to the rows or columns of the dataframe.
 
+- Added `"figure.facecolor"` to the style parameters and set the default to white.
+
 - The :func:`load_dataset` function now caches datasets locally after downloading them, and uses the local copy on subsequent calls.
 
 Bug fixes

@@ -6,12 +6,15 @@ from . import palettes
 
 
 _style_keys = (
+
     "axes.facecolor",
     "axes.edgecolor",
     "axes.grid",
     "axes.axisbelow",
     "axes.linewidth",
     "axes.labelcolor",
+
+    "figure.facecolor",
 
     "grid.color",
     "grid.linestyle",
@@ -188,6 +191,7 @@ def axes_style(style=None, rc=None):
 
         # Common parameters
         style_dict = {
+            "figure.facecolor": "white",
             "text.color": dark_gray,
             "axes.labelcolor": dark_gray,
             "legend.frameon": False,
