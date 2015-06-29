@@ -42,8 +42,7 @@ The documentation has an [example gallery](http://stanford.edu/~mwaskom/software
 Citing
 ------
 
-Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/doi/10.5072/zenodo.12710.png)](http://dx.doi.org/10.5072/zenodo.12710)
-
+Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.19108.svg)](http://dx.doi.org/10.5281/zenodo.19108)
 
 Dependencies
 ------------
