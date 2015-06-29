@@ -1,17 +1,17 @@
 
-v0.6.0 (Unreleased)
--------------------
+v0.6.0 (June 2015)
+------------------
 
-This is a major release from 0.5. The main objective of this release is to unify the API for categorical plots, which means that there are some relatively large API changes in some of the older functions. See below for details of those changes, which may break code written for older versions of seaborn. There are also some new functions (:func:`stripplot`,  and :func:`countplot`), enhancements to existing functions, and bug fixes.
+This is a major release from 0.5. The main objective of this release was to unify the API for categorical plots, which means that there are some relatively large API changes in some of the older functions. See below for details of those changes, which may break code written for older versions of seaborn. There are also some new functions (:func:`stripplot`,  and :func:`countplot`), numerous enhancements to existing functions, and bug fixes.
 
-Additionally, the structure of the docs is changing in version 0.6. The API docs page for each function will have numerous examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, as the tutorial pages are going to be streamlined to provide a higher-level introduction.
+Additionally, the documentation has been completely revamped and expanded for the 0.6 release. Now, the API docs page for each function has multiple examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, and the tutorial pages are now streamlined and oriented towards a higher-level overview of the various features.
 
 Changes and updates to categorical plots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In version 0.6, the "categorical" plots have been unified with a common API. This new category of functions groups together plots that show the relationship between one numeric variable and one or two categorical variables. This includes plots that show distribution of the numeric variable in each bin (:func:`boxplot`, :func:`violinplot`, and :func:`stripplot`) and plots that apply a statistical estimation within each bin (:func:`pointplot`, :func:`barplot`, and :func:`countplot`).
+In version 0.6, the "categorical" plots have been unified with a common API. This new category of functions groups together plots that show the relationship between one numeric variable and one or two categorical variables. This includes plots that show distribution of the numeric variable in each bin (:func:`boxplot`, :func:`violinplot`, and :func:`stripplot`) and plots that apply a statistical estimation within each bin (:func:`pointplot`, :func:`barplot`, and :func:`countplot`). There is a new :ref:`tutorial chapter <categorical_tutorial>` that introduces these functions.
 
-These functions now each accept the same formats of input data and can be invoked in the same way. They can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
+The categorical functions now each accept the same formats of input data and can be invoked in the same way. They can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
 
 With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, :func:`factorplot` can also now create faceted verisons of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly. By default, :func:`factorplot` draws a point plot, but this is controlled by the ``kind`` parameter.
 
@@ -43,7 +43,7 @@ New plotting functions
 Other additions and changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- The :func:`corrplot` and underlying :func:`symmatplot` have been deprecated in favor of :func:`heatmap`, which is much more flexible and robust. These two functions are still available in version 0.6, but they will be removed in a future version.
+- The :func:`corrplot` and underlying :func:`symmatplot` functions have been deprecated in favor of :func:`heatmap`, which is much more flexible and robust. These two functions are still available in version 0.6, but they will be removed in a future version.
 
 - Added the :func:`set_color_codes` function and the ``color_codes`` argument to :func:`set` and :func:`set_palette`. This changes the interpretation of shorthand color codes (i.e. "b", "g", k", etc.) within matplotlib to use the values from one of the named seaborn palettes (i.e. "deep", "muted", etc.). That makes it easier to have a more uniform look when using matplotlib functions directly with seaborn imported. This could be disruptive to existing plots, so it does not happen by default. It is possible this could change in the future.
 
