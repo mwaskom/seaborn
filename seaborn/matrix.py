@@ -86,7 +86,7 @@ class _HeatMapper(object):
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
                  annot_kws, cbar, cbar_kws,
-                 xticklabels=True, yticklabels=True, mask=None):
+                 xticklabels=True, yticklabels=True, mask=None, as_factors=None):
         """Initialize the plotting object."""
         # We always want to have a DataFrame with semantic information
         # and an ndarray to pass to matplotlib
@@ -144,7 +144,7 @@ class _HeatMapper(object):
 
         # Determine good default values for the colormapping
         self._determine_cmap_params(plot_data, vmin, vmax,
-                                    cmap, center, robust)
+                                    cmap, center, robust, as_factors)
 
         # Save other attributes to the object
         self.data = data
@@ -155,9 +155,12 @@ class _HeatMapper(object):
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws
 
+
     def _determine_cmap_params(self, plot_data, vmin, vmax,
-                               cmap, center, robust):
+                               cmap, center, robust, as_factors):
         """Use some heuristics to set good defaults for colorbar and range."""
+
+        self.as_factors = as_factors
         calc_data = plot_data.data[~np.isnan(plot_data.data)]
         if vmin is None:
             vmin = np.percentile(calc_data, 2) if robust else calc_data.min()

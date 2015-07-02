@@ -36,6 +36,18 @@ class TestHeatmap(object):
     x_unif = rs.rand(20, 13)
     df_unif = pd.DataFrame(x_unif)
 
+    x_string = np.array([['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A'],  # 5 unique values
+                         ['C', 'T', 'O', 'R', 'F', 'A', 'C', 'T'],
+                         ['O', 'R', 'F', 'A', 'C', 'T', 'O', 'R'],
+                         ['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A']], dtype=str)
+    df_string = pd.DataFrame(x_string, index=letters)
+
+    x_bool = x_norm > 0.5
+    df_bool = pd.DataFrame(x_bool, index=letters)
+
+    x_int = np.array(x_norm, dtype=int)
+    df_int = pd.DataFrame(x_int, index=letters)
+
     default_kws = dict(vmin=None, vmax=None, cmap=None, center=None,
                        robust=False, annot=False, fmt=".2f", annot_kws=None,
                        cbar=True, cbar_kws=None, mask=None)
@@ -107,6 +119,20 @@ class TestHeatmap(object):
         nt.assert_equal(p.vmin, -vlim)
         nt.assert_equal(p.vmax, vlim)
         nt.assert_true(p.divergent)
+
+    def test_default_asfactor_vlims(self):
+
+        factor_datasets = [self.df_bool, self.df_int, self.df_string,
+                           self.x_bool, self.x_int, self.x_string]
+        for dataset in factor_datasets:
+            print '{!r}'.format(dataset)
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            vmax = len(pd.Series(np.ravel(dataset)).unique()) - 1
+            nt.assert_equal(p.vmin, 0)
+            nt.assert_equal(p.vmax, vmax)
+            nt.assert_true(p.as_factors)
 
     def test_robust_sequential_vlims(self):
 
