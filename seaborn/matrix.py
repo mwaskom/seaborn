@@ -279,7 +279,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
-            mask=None,
+            mask=None, as_factors=None,
             **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
@@ -348,6 +348,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
+    as_factors: boolean, optional
+        If passed, data in cells will be treated as discrete factors
+        (rather than numeric values)
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
@@ -463,7 +466,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
                           annot_kws, cbar, cbar_kws, xticklabels, yticklabels,
-                          mask)
+                          mask, as_factors)
 
     # Add the pcolormesh kwargs here
     kwargs["linewidths"] = linewidths
