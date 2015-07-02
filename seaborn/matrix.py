@@ -161,30 +161,54 @@ class _HeatMapper(object):
         """Use some heuristics to set good defaults for colorbar and range."""
 
         self.as_factors = as_factors
-        calc_data = plot_data.data[~np.isnan(plot_data.data)]
-        if vmin is None:
-            vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
-        if vmax is None:
-            vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
 
-        # Simple heuristics for whether these data should  have a divergent map
-        divergent = ((vmin < 0) and (vmax > 0)) or center is not None
+        try:
+            non_nan_mask = ~np.isnan(plot_data.data)
+        except TypeError:
+            if as_factors:
+                # Some factor types (i.e. strings) return this:
+                # TypeError: ufunc 'isnan' not supported for the input types,
+                # and the inputs could not be safely coerced to any supported types
+                # according to the casting rule ''safe''
+                # TODO: add some type checking maybe?
+                non_nan_mask = None
+            else:
+                raise
 
-        # Now set center to 0 so math below makes sense
-        if center is None:
-            center = 0
+        if non_nan_mask is not None:
+            calc_data = plot_data.data[non_nan_mask]
+        else:
+            calc_data = plot_data.data
 
-        # A divergent map should be symmetric around the center value
-        if divergent:
-            vlim = max(abs(vmin - center), abs(vmax - center))
-            vmin, vmax = -vlim, vlim
+        if as_factors:
+            unique_values = pd.Series(np.ravel(calc_data)).unique()
+            self.vmin, self.vmax = 0, len(unique_values) - 1
+            divergent = False
+        else:
+            if vmin is None:
+                vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
+            if vmax is None:
+                vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
+
+            # Simple heuristics for whether these data should  have a divergent map
+            divergent = ((vmin < 0) and (vmax > 0)) or center is not None
+
+            # Now set center to 0 so math below makes sense
+            if center is None:
+                center = 0
+
+            # A divergent map should be symmetric around the center value
+            if divergent:
+                vlim = max(abs(vmin - center), abs(vmax - center))
+                vmin, vmax = -vlim, vlim
+
+            # Now add in the centering value and set the limits
+            vmin += center
+            vmax += center
+            self.vmin = vmin
+            self.vmax = vmax
+
         self.divergent = divergent
-
-        # Now add in the centering value and set the limits
-        vmin += center
-        vmax += center
-        self.vmin = vmin
-        self.vmax = vmax
 
         # Choose default colormaps if not provided
         if cmap is None:
