@@ -4,6 +4,7 @@ import itertools
 import colorsys
 import matplotlib as mpl
 from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
@@ -247,7 +248,10 @@ class _HeatMapper(object):
         self.cmap = cmap
         # -- cbar ----------
         if self.cbar:
-            self.cbar_ticks = mpl.ticker.MaxNLocator(6)
+            if not as_factors:
+                self.cbar_ticks = mpl.ticker.MaxNLocator(6)
+            else:
+                self.cbar_ticks = self.unique_values
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
@@ -296,10 +300,23 @@ class _HeatMapper(object):
         # Possibly add a colorbar
         if self.cbar:
             ticker = self.cbar_ticks
-            cb = ax.figure.colorbar(mesh, cax, ax,
-                                    ticks=ticker, **self.cbar_kws)
-            cb.outline.set_linewidth(0)
+            if not self.as_factors:
+                cb = ax.figure.colorbar(mesh, cax, ax,
+                                        ticks=ticker, **self.cbar_kws)
+                cb.outline.set_linewidth(0)
+            else:
+                # Draw a legend, rather than colorbar for factors
+                patches = [Patch(color=self.cmap(i), label=value)
+                           for i, value in enumerate(ticker)]
+                if cax is not None:
+                    cax.legend(patches, ticker, **self.cbar_kws)
+                else:
+                    cbar_kwargs = self.cbar_kws.copy()
+                    _loc = cbar_kwargs.pop('loc', 'center left')
+                    _bbox_to_anchor = cbar_kwargs.pop('bbox_to_anchor', (1, 0.5))
 
+                    ax.legend(patches, ticker, loc=_loc,
+                              bbox_to_anchor=_bbox_to_anchor, **cbar_kwargs)
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=False, fmt=None, annot_kws=None,
