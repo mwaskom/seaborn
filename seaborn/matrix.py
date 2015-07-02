@@ -522,8 +522,7 @@ class _DendrogramPlotter(object):
             UserWarning('This will be slow... (gentle suggestion: '
                         '"pip install fastcluster")')
 
-        pairwise_dists = distance.squareform(
-            distance.pdist(self.array, metric=self.metric))
+        pairwise_dists = distance.pdist(self.array, metric=self.metric)
         linkage = hierarchy.linkage(pairwise_dists, method=self.method)
         del pairwise_dists
         return linkage
