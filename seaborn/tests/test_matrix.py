@@ -1,5 +1,6 @@
 import itertools
 import tempfile
+from matplotlib.colors import ListedColormap
 
 import numpy as np
 import matplotlib as mpl
@@ -188,6 +189,21 @@ class TestHeatmap(object):
 
         npt.assert_array_equal(np.isnan(m.plot_data.data),
                                m.plot_data.mask)
+
+    def test_default_as_factors_cmap(self):
+        p = mat._HeatMapper(self.df_unif,
+                            as_factors=True,
+                            **self.default_kws)
+
+        factor_datasets = [self.df_bool, self.df_int, self.df_string,
+                           self.x_bool, self.x_int, self.x_string]
+        for dataset in factor_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            expected_N = len(pd.Series(np.ravel(dataset)).unique())
+            nt.assert_is_instance(p.cmap, ListedColormap)
+            nt.assert_equals(p.cmap.N, expected_N)
 
     def test_custom_cmap(self):
 
