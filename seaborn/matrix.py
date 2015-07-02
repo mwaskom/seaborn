@@ -89,23 +89,9 @@ class _HeatMapper(object):
                  annot_kws, cbar, cbar_kws,
                  xticklabels=True, yticklabels=True, mask=None, as_factors=None):
         """Initialize the plotting object."""
-        # We always want to have a DataFrame with semantic information
-        # and an ndarray to pass to matplotlib
-        if isinstance(data, pd.DataFrame):
-            plot_data = data.values
-        else:
-            plot_data = np.asarray(data)
-            data = pd.DataFrame(plot_data)
+        self._prepare_data(data, mask, as_factors)
 
-        # Validate the mask and convet to DataFrame
-        mask = _matrix_mask(data, mask)
-
-        # Reverse the rows so the plot looks like the matrix
-        plot_data = plot_data[::-1]
-        data = data.ix[::-1]
-        mask = mask.ix[::-1]
-
-        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
+        data = self.data
 
         # Get good names for the rows and columns
         xtickevery = 1
@@ -143,56 +129,78 @@ class _HeatMapper(object):
         self.xlabel = xlabel if xlabel is not None else ""
         self.ylabel = ylabel if ylabel is not None else ""
 
-        # Determine good default values for the colormapping
-        self._determine_cmap_params(plot_data, vmin, vmax,
-                                    cmap, center, robust, as_factors)
-
         # Save other attributes to the object
-        self.data = data
-        self.plot_data = plot_data
         self.annot = annot
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws
 
+        # Determine good default values for the colormapping,
+        # change data appropriately if needed
+        self._prepare_drawing_parameters(vmin, vmax,
+                                         cmap, center, robust, as_factors)
 
-    def _determine_cmap_params(self, plot_data, vmin, vmax,
-                               cmap, center, robust, as_factors):
-        """Use some heuristics to set good defaults for colorbar and range."""
+    def _prepare_data(self, data, mask, as_factors):
 
-        self.as_factors = as_factors
-
-        try:
-            non_nan_mask = ~np.isnan(plot_data.data)
-        except TypeError:
-            if as_factors:
-                # Some factor types (i.e. strings) return this:
-                # TypeError: ufunc 'isnan' not supported for the input types,
-                # and the inputs could not be safely coerced to any supported types
-                # according to the casting rule ''safe''
-                # TODO: add some type checking maybe?
-                non_nan_mask = None
-            else:
-                raise
-
-        if non_nan_mask is not None:
-            calc_data = plot_data.data[non_nan_mask]
+        # We always want to have a DataFrame with semantic information
+        # and an ndarray to pass to matplotlib
+        if isinstance(data, pd.DataFrame):
+            plot_data = data.values
         else:
-            calc_data = plot_data.data
+            plot_data = np.asarray(data)
+            data = pd.DataFrame(plot_data)
+
+        # Validate the mask and convet to DataFrame
+        mask = _matrix_mask(data, mask)
+
+        # Reverse the rows so the plot looks like the matrix
+        plot_data = plot_data[::-1]
+        data = data.ix[::-1]
+        mask = mask.ix[::-1]
 
         if as_factors:
-            unique_values = pd.Series(np.ravel(calc_data)).unique()
-            self.vmin, self.vmax = 0, len(unique_values) - 1
+            unique_values = sorted(pd.Series(np.ravel(plot_data)).unique())
+            # Transform data into numeric one by mapping each unique value to an int
+            unique_values_map = {val: i for i, val in enumerate(unique_values)}
+            vector_get = np.vectorize(unique_values_map.get)
+            plot_data = vector_get(plot_data)
+            self.unique_values = unique_values
+        else:
+            self.unique_values = None
 
-            if cmap is None:
-                cmap = ListedColormap(color_palette(n_colors=len(unique_values)))
-            self.cmap = cmap
+        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
+
+        self.plot_data = plot_data
+        self.data = data
+        self.mask = mask
+
+    def _prepare_drawing_parameters(self, vmin, vmax,
+                               cmap, center, robust, as_factors):
+        """Heuristic defaults for good colorbar parameters,
+           choices of colormap, and ticks"""
+
+        self.as_factors = as_factors
+        plot_data = self.plot_data
+
+        calc_data = plot_data.data[~np.isnan(plot_data.data)]
+
+        # -- vmin/vmax
+        if as_factors:
+            vmin = 0
+            vmax = len(self.unique_values) - 1
         else:
             if vmin is None:
-                vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
+                if robust:
+                    vmin = np.percentile(calc_data, 2)
+                else:
+                    vmin = calc_data.min()
+
             if vmax is None:
-                vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
+                if robust:
+                    vmax = np.percentile(calc_data, 98)
+                else:
+                    vmax = calc_data.max()
 
             # Simple heuristics for whether these data should  have a divergent map
             divergent = ((vmin < 0) and (vmax > 0)) or center is not None
@@ -209,6 +217,16 @@ class _HeatMapper(object):
             # Now add in the centering value and set the limits
             vmin += center
             vmax += center
+
+        self.vmin = vmin
+        self.vmax = vmax
+
+        # -- cmap
+        if as_factors:
+            if cmap is None:
+                cmap = ListedColormap(color_palette(n_colors=len(self.unique_values)))
+
+        else:
             self.vmin = vmin
             self.vmax = vmax
 
@@ -217,11 +235,16 @@ class _HeatMapper(object):
             # Choose default colormaps if not provided
             if cmap is None:
                 if divergent:
-                    self.cmap = "RdBu_r"
+                    cmap = "RdBu_r"
                 else:
-                    self.cmap = cubehelix_palette(light=.95, as_cmap=True)
+                    cmap = cubehelix_palette(light=.95, as_cmap=True)
             else:
-                self.cmap = cmap
+                cmap = cmap
+
+        self.cmap = cmap
+        # -- cbar ----------
+        if self.cbar:
+            self.cbar_ticks = mpl.ticker.MaxNLocator(6)
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
@@ -268,7 +291,7 @@ class _HeatMapper(object):
 
         # Possibly add a colorbar
         if self.cbar:
-            ticker = mpl.ticker.MaxNLocator(6)
+            ticker = self.cbar_ticks
             cb = ax.figure.colorbar(mesh, cax, ax,
                                     ticks=ticker, **self.cbar_kws)
             cb.outline.set_linewidth(0)

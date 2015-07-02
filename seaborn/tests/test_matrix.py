@@ -130,10 +130,26 @@ class TestHeatmap(object):
             p = mat._HeatMapper(dataset,
                                 as_factors=True,
                                 **self.default_kws)
-            vmax = len(pd.Series(np.ravel(dataset)).unique()) - 1
+            unique_values = sorted(pd.Series(np.ravel(dataset)).unique())
+            vmax = len(unique_values) - 1
+            nt.assert_equal(p.unique_values, unique_values)
             nt.assert_equal(p.vmin, 0)
             nt.assert_equal(p.vmax, vmax)
             nt.assert_true(p.as_factors)
+
+    def test_asfactor_converts_plot_data_to_ints(self):
+
+        small_dataset = np.array([['a', 'b', 'c'],
+                                  ['c', 'a', 'b']], dtype='str')
+
+        p = mat._HeatMapper(small_dataset,
+                            as_factors=True,
+                            **self.default_kws)
+
+        expected_plot_data = np.array([[0, 1, 2],
+                                       [2, 0, 1]])
+        expected_plot_data = expected_plot_data[::-1] # reverse
+        npt.assert_array_equal(expected_plot_data, p.plot_data)
 
     def test_robust_sequential_vlims(self):
 
