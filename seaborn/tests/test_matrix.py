@@ -271,26 +271,37 @@ class TestHeatmap(object):
                                self.df_norm.index[::-1][ystart:ny:3])
 
     def test_heatmap_annotation(self):
-
-        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
-                         annot_kws={"fontsize": 14})
-        for val, text in zip(self.x_norm[::-1].flat, ax.texts):
-            nt.assert_equal(text.get_text(), "{:.1f}".format(val))
-            nt.assert_equal(text.get_fontsize(), 14)
-        plt.close("all")
+        try:
+            ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
+                             annot_kws={"fontsize": 14})
+            for val, text in zip(self.x_norm[::-1].flat, ax.texts):
+                nt.assert_equal(text.get_text(), "{:.1f}".format(val))
+                nt.assert_equal(text.get_fontsize(), 14)
+        finally:
+            plt.close("all")
 
     def test_heatmap_annotation_with_mask(self):
-
         df = pd.DataFrame(data={'a': [1, 1, 1],
                                 'b': [2, np.nan, 2],
                                 'c': [3, 3, np.nan]})
         mask = np.isnan(df.values)
         df_masked = np.ma.masked_where(mask, df)
         ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
-        nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
-        for val, text in zip(df_masked[::-1].compressed(), ax.texts):
-            nt.assert_equal("{:.1f}".format(val), text.get_text())
-        plt.close("all")
+        try:
+            nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
+            for val, text in zip(df_masked[::-1].compressed(), ax.texts):
+                nt.assert_equal("{:.1f}".format(val), text.get_text())
+        finally:
+            plt.close("all")
+
+    def test_heatmap_annotation_from_string_factor(self):
+
+        ax = mat.heatmap(self.df_string, annot=True, as_factors=True)
+        try:
+            for val, text in zip(self.x_string[::-1].flat, ax.texts):
+                nt.assert_equal(text.get_text(), "{:}".format(val))
+        finally:
+            plt.close("all")
 
     def test_heatmap_cbar(self):
 

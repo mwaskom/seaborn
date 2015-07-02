@@ -131,6 +131,8 @@ class _HeatMapper(object):
 
         # Save other attributes to the object
         self.annot = annot
+        if fmt is None:
+            fmt = ".2g" if not self.as_factors else ''
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
@@ -139,7 +141,7 @@ class _HeatMapper(object):
         # Determine good default values for the colormapping,
         # change data appropriately if needed
         self._prepare_drawing_parameters(vmin, vmax,
-                                         cmap, center, robust, as_factors)
+                                         cmap, center, robust)
 
     def _prepare_data(self, data, mask, as_factors):
 
@@ -174,13 +176,14 @@ class _HeatMapper(object):
         self.plot_data = plot_data
         self.data = data
         self.mask = mask
+        self.as_factors = as_factors
 
     def _prepare_drawing_parameters(self, vmin, vmax,
-                               cmap, center, robust, as_factors):
+                               cmap, center, robust):
         """Heuristic defaults for good colorbar parameters,
            choices of colormap, and ticks"""
 
-        self.as_factors = as_factors
+        as_factors = self.as_factors
         plot_data = self.plot_data
 
         calc_data = plot_data.data[~np.isnan(plot_data.data)]
@@ -298,7 +301,7 @@ class _HeatMapper(object):
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=False, fmt=".2g", annot_kws=None,
+            annot=False, fmt=None, annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
