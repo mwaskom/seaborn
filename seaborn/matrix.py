@@ -252,13 +252,14 @@ class _HeatMapper(object):
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
-        for x, y, val, color in zip(xpos.flat, ypos.flat,
-                                    mesh.get_array(), mesh.get_facecolors()):
-            if val is not np.ma.masked:
+        for x, y, plot_val, data_val, color in zip(xpos.flat, ypos.flat,
+                                                   mesh.get_array(), self.data.values.flat,
+                                                   mesh.get_facecolors()):
+            if plot_val is not np.ma.masked:
                 _, l, _ = colorsys.rgb_to_hls(*color[:3])
                 text_color = ".15" if l > .5 else "w"
-                val = ("{:" + self.fmt + "}").format(val)
-                ax.text(x, y, val, color=text_color,
+                text = ("{:" + self.fmt + "}").format(data_val)
+                ax.text(x, y, text, color=text_color,
                         ha="center", va="center", **self.annot_kws)
 
     def plot(self, ax, cax, kws):
