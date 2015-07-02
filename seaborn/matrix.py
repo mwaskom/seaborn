@@ -163,23 +163,42 @@ class _HeatMapper(object):
         data = data.ix[::-1]
         mask = mask.ix[::-1]
 
+        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
+
         if as_factors is None:
-            if data.values.dtype in [np.dtype(bool), np.dtype(str), np.dtype(object)]:
+            print data.values.dtype
+
+            if data.values.dtype in [np.dtype(bool), np.dtype(object)] \
+                    or np.issubdtype(data.values.dtype, str):
                 as_factors = True
             else:
                 as_factors = False
+            print as_factors
 
         if as_factors:
-            unique_values = sorted(pd.Series(np.ravel(plot_data)).unique())
+            unique_values = sorted(pd.Series(np.ravel(plot_data)).dropna().unique())
             # Transform data into numeric one by mapping each unique value to an int
             unique_values_map = {val: i for i, val in enumerate(unique_values)}
-            vector_get = np.vectorize(unique_values_map.get)
+
+            def _get_func(x):
+                try:
+                    return unique_values_map[x]
+                except KeyError as e:
+                    nan = x is None
+                    try:
+                        nan |= np.isnan(x)
+                    except TypeError:
+                        pass
+                    if nan:
+                        return np.nan
+                    else:
+                        raise e
+
+            vector_get = np.vectorize(_get_func, otypes=[float])
             plot_data = vector_get(plot_data)
             self.unique_values = unique_values
         else:
             self.unique_values = None
-
-        plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         self.plot_data = plot_data
         self.data = data
@@ -200,6 +219,12 @@ class _HeatMapper(object):
         if as_factors:
             vmin = 0
             vmax = len(self.unique_values) - 1
+            # Choose divergent color scheme for boolean data
+            if self.unique_values == [False, True] or self.unique_values == [0, 1]:
+                divergent = True
+            else:
+                # Choose qualitative for all others
+                divergent = False
         else:
             if vmin is None:
                 if robust:
@@ -235,13 +260,6 @@ class _HeatMapper(object):
         # -- cmap
         if as_factors:
             if cmap is None:
-                # Choose divergent color scheme for boolean data
-                if self.unique_values == [False, True] or self.unique_values == [0, 1]:
-                    divergent = True
-                else:
-                    # Choose qualitative for all others
-                    divergent = False
-
                 if divergent:
                     cmap = ListedColormap(color_palette(self.DIVERGENT_COLOR_PALETTE, n_colors=len(self.unique_values)))
                 else:

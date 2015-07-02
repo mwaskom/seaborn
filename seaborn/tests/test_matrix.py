@@ -214,6 +214,18 @@ class TestHeatmap(object):
                                 **self.default_kws)
             nt.assert_true(p.as_factors)
 
+    def test_nones_are_ignored_from_unique_values(self):
+        bool_datasets = [self.df_bool.copy(), self.x_bool.copy()]
+
+        bool_datasets[0][0:3] = None
+        bool_datasets[1][0:3] = None
+
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            npt.assert_array_equal([False, True], p.unique_values)
+
     def test_string_datasets_default_to_factor(self):
         bool_datasets = [self.df_string, self.x_string]
         for dataset in bool_datasets:
