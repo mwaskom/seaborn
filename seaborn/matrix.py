@@ -17,7 +17,6 @@ from .palettes import cubehelix_palette, color_palette
 from .utils import despine, axis_ticklabels_overlap
 from .external.six.moves import range
 
-
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label."""
     if isinstance(index, pd.MultiIndex):
@@ -85,6 +84,8 @@ def _matrix_mask(data, mask):
 
 class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
+
+    DIVERGENT_COLOR_PALETTE = "RdBu_r"
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
                  annot_kws, cbar, cbar_kws,
@@ -154,13 +155,19 @@ class _HeatMapper(object):
             plot_data = np.asarray(data)
             data = pd.DataFrame(plot_data)
 
-        # Validate the mask and convet to DataFrame
+        # Validate the mask and convert to DataFrame
         mask = _matrix_mask(data, mask)
 
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
         data = data.ix[::-1]
         mask = mask.ix[::-1]
+
+        if as_factors is None:
+            if data.values.dtype in [np.dtype(bool), np.dtype(str), np.dtype(object)]:
+                as_factors = True
+            else:
+                as_factors = False
 
         if as_factors:
             unique_values = sorted(pd.Series(np.ravel(plot_data)).unique())
@@ -228,23 +235,31 @@ class _HeatMapper(object):
         # -- cmap
         if as_factors:
             if cmap is None:
-                cmap = ListedColormap(color_palette(n_colors=len(self.unique_values)))
+                # Choose divergent color scheme for boolean data
+                if self.unique_values == [False, True] or self.unique_values == [0, 1]:
+                    divergent = True
+                else:
+                    # Choose qualitative for all others
+                    divergent = False
+
+                if divergent:
+                    cmap = ListedColormap(color_palette(self.DIVERGENT_COLOR_PALETTE, n_colors=len(self.unique_values)))
+                else:
+                    cmap = ListedColormap(color_palette(n_colors=len(self.unique_values)))
 
         else:
             self.vmin = vmin
             self.vmax = vmax
 
-            self.divergent = divergent
-
             # Choose default colormaps if not provided
             if cmap is None:
                 if divergent:
-                    cmap = "RdBu_r"
+                    cmap = self.DIVERGENT_COLOR_PALETTE
                 else:
                     cmap = cubehelix_palette(light=.95, as_cmap=True)
             else:
                 cmap = cmap
-
+        self.divergent = divergent
         self.cmap = cmap
         # -- cbar ----------
         if self.cbar:

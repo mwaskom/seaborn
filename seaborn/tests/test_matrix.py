@@ -206,6 +206,22 @@ class TestHeatmap(object):
         npt.assert_array_equal(np.isnan(m.plot_data.data),
                                m.plot_data.mask)
 
+    def test_bool_datasets_default_to_factor(self):
+        bool_datasets = [self.df_bool, self.x_bool]
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=None,
+                                **self.default_kws)
+            nt.assert_true(p.as_factors)
+
+    def test_string_datasets_default_to_factor(self):
+        bool_datasets = [self.df_string, self.x_string]
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=None,
+                                **self.default_kws)
+            nt.assert_true(p.as_factors)
+
     def test_default_as_factors_cmap(self):
         factor_datasets = [self.df_bool, self.df_int, self.df_string,
                            self.x_bool, self.x_int, self.x_string]
