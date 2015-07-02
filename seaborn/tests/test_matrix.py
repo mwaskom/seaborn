@@ -191,10 +191,6 @@ class TestHeatmap(object):
                                m.plot_data.mask)
 
     def test_default_as_factors_cmap(self):
-        p = mat._HeatMapper(self.df_unif,
-                            as_factors=True,
-                            **self.default_kws)
-
         factor_datasets = [self.df_bool, self.df_int, self.df_string,
                            self.x_bool, self.x_int, self.x_string]
         for dataset in factor_datasets:
