@@ -3,6 +3,7 @@ import itertools
 
 import colorsys
 import matplotlib as mpl
+from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
@@ -11,7 +12,7 @@ from scipy.spatial import distance
 from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
-from .palettes import cubehelix_palette
+from .palettes import cubehelix_palette, color_palette
 from .utils import despine, axis_ticklabels_overlap
 from .external.six.moves import range
 
@@ -183,7 +184,10 @@ class _HeatMapper(object):
         if as_factors:
             unique_values = pd.Series(np.ravel(calc_data)).unique()
             self.vmin, self.vmax = 0, len(unique_values) - 1
-            divergent = False
+
+            if cmap is None:
+                cmap = ListedColormap(color_palette(n_colors=len(unique_values)))
+            self.cmap = cmap
         else:
             if vmin is None:
                 vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
@@ -208,16 +212,16 @@ class _HeatMapper(object):
             self.vmin = vmin
             self.vmax = vmax
 
-        self.divergent = divergent
+            self.divergent = divergent
 
-        # Choose default colormaps if not provided
-        if cmap is None:
-            if divergent:
-                self.cmap = "RdBu_r"
+            # Choose default colormaps if not provided
+            if cmap is None:
+                if divergent:
+                    self.cmap = "RdBu_r"
+                else:
+                    self.cmap = cubehelix_palette(light=.95, as_cmap=True)
             else:
-                self.cmap = cubehelix_palette(light=.95, as_cmap=True)
-        else:
-            self.cmap = cmap
+                self.cmap = cmap
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
