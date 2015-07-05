@@ -18,6 +18,7 @@ from ..palettes import color_palette
 from ..distributions import kdeplot
 from ..categorical import pointplot
 from ..linearmodels import pairplot
+from ..utils import categorical_order
 
 rs = np.random.RandomState(0)
 
@@ -255,7 +256,7 @@ class TestFacetGrid(object):
 
         nt.assert_equal(g1._legend.get_title().get_text(), "b_bool")
 
-        b_levels = list(map(str, self.df.b_bool.unique()))
+        b_levels = list(map(str, categorical_order(self.df.b_bool)))
 
         lines = g1._legend.get_lines()
         nt.assert_equal(len(lines), len(b_levels))
