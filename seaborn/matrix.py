@@ -401,10 +401,12 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         Values to anchor the colormap, otherwise they are inferred from the
         data and other keyword arguments. When a diverging dataset is inferred,
         one of these values may be ignored.
-    cmap : matplotlib colormap name or object, optional
+    cmap : matplotlib colormap name or object, or list, optional
         The mapping from data values to color space. If not provided, this
         will be either a cubehelix map (if the function infers a sequential
         dataset) or ``RdBu_r`` (if the function infers a diverging dataset).
+        If list is passed and ``as_factors=True`, the colors in thel ist
+        will be used as the legend colors for the factors
     center : float, optional
         The value at which to center the colormap. Passing this value implies
         use of a diverging colormap.
@@ -447,9 +449,10 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
-    as_factors: boolean, optional
+    as_factors: boolean, or list, optional
         If passed, data in cells will be treated as discrete factors
-        (rather than numeric values)
+        (rather than numeric values). If a list is passed, the factors
+         will be ordered in the order provided.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
