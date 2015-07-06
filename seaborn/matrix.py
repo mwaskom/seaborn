@@ -219,12 +219,7 @@ class _HeatMapper(object):
         if as_factors:
             vmin = 0
             vmax = len(self.unique_values) - 1
-            # Choose divergent color scheme for boolean data
-            if self.unique_values == [False, True] or self.unique_values == [0, 1]:
-                divergent = True
-            else:
-                # Choose qualitative for all others
-                divergent = False
+            divergent = False
         else:
             if vmin is None:
                 if robust:
@@ -260,8 +255,12 @@ class _HeatMapper(object):
         # -- cmap
         if as_factors:
             if cmap is None:
-                if divergent:
-                    cmap = ListedColormap(color_palette(self.DIVERGENT_COLOR_PALETTE, n_colors=len(self.unique_values)))
+                # Choose divergent color scheme for boolean data
+                if self.unique_values == [False, True] or self.unique_values == [0, 1] \
+                        or self.unique_values == [0.0, 1.0]:
+                    # Choose a color palette that assigns light square to False
+                    # and dark square to True -- otherwise it just looks horrible
+                    cmap = ListedColormap(cubehelix_palette(light=.95, n_colors=len(self.unique_values)))
                 else:
                     cmap = ListedColormap(color_palette(n_colors=len(self.unique_values)))
 
@@ -275,10 +274,10 @@ class _HeatMapper(object):
                     cmap = self.DIVERGENT_COLOR_PALETTE
                 else:
                     cmap = cubehelix_palette(light=.95, as_cmap=True)
-            else:
-                cmap = cmap
+
         self.divergent = divergent
         self.cmap = cmap
+        
         # -- cbar ----------
         if self.cbar:
             if not as_factors:
