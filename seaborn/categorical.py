@@ -141,7 +141,7 @@ class _CategoricalPlotter(object):
             # Validate the inputs
             for input in [x, y, hue, units]:
                 if isinstance(input, string_types):
-                    err = "Could not interperet input '{}'".format(input)
+                    err = "Could not interpret input '{}'".format(input)
                     raise ValueError(err)
 
             # Figure out the plotting orientation
