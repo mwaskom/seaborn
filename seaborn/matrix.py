@@ -560,6 +560,35 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         >>> with sns.axes_style("white"):
         ...     ax = sns.heatmap(corr, mask=mask, vmax=.3, square=True)
 
+    Use `as_factors` to treat values as factors (as opposed to numeric):
+
+    .. plot::
+        :context: close-figs
+
+        >>> integer_data = np.round(uniform_data * 2)
+        >>> ax = sns.heatmap(integer_data, as_factors=True)
+
+    One can specify the ordering of factors in the legend, as well as their
+    colors by providing a list as `as_factors` parameter, as well as
+    a list of colors as `cmap`:
+
+    .. plot::
+        :context: close-figs
+
+        >>> integer_data = np.round(uniform_data * 2)
+        >>> ordered_factors = [2, 0, 1]
+        >>> factor_colors = ['#66c2a5', '#fa8e63', '#8da0cb']
+        >>> ax = sns.heatmap(integer_data, as_factors=ordered_factors, cmap=factor_colors)
+
+    Factor heatmaps also accept non-numeric inputs, for instance string matrices:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import string
+        >>> _to_letters = np.vectorize(lambda x: string.uppercase[int(x)])
+        >>> data_as_letters = _to_letters(np.round(uniform_data * 2))
+        >>> seaborn.heatmap(data_as_letters, as_factors=True, annot=True)
 
     """
     # Initialize the plotter object
