@@ -591,7 +591,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         >>> import string
         >>> _to_letters = np.vectorize(lambda x: string.uppercase[int(x)])
         >>> data_as_letters = _to_letters(np.round(uniform_data * 2))
-        >>> seaborn.heatmap(data_as_letters, as_factors=True, annot=True)
+        >>> sns.heatmap(data_as_letters, as_factors=True, annot=True)
 
     """
     # Initialize the plotter object
