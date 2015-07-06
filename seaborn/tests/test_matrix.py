@@ -331,6 +331,14 @@ class TestHeatmap(object):
         finally:
             plt.close("all")
 
+    def test_factor_heatmap_does_not_crash_when_string_cmap_provided(self):
+        # The legend plotting fails if the string cmap is not converted to a colormap
+        # object properly
+        try:
+            ax = mat.heatmap(self.df_string, as_factors=True, cmap='PuOr_r')
+        finally:
+            plt.close('all')
+
     def test_heatmap_cbar(self):
 
         f = plt.figure()
