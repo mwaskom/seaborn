@@ -513,7 +513,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         sem = stats.sem(y[g == "b"])
         half_ci = stats.norm.ppf(.975) * sem
         ci = mean - half_ci, mean + half_ci
-        npt.assert_equal(p.statistic[1], mean)
+        npt.assert_almost_equal(p.statistic[1], mean)
         npt.assert_array_almost_equal(p.confint[1], ci, 2)
 
         npt.assert_equal(p.statistic[2], np.nan)
@@ -588,7 +588,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         sem = stats.sem(y[(g == "b") & (h == "x")])
         half_ci = stats.norm.ppf(.975) * sem
         ci = mean - half_ci, mean + half_ci
-        npt.assert_equal(p.statistic[1, 2], mean)
+        npt.assert_almost_equal(p.statistic[1, 2], mean)
         npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
 
         npt.assert_array_equal(p.statistic[:, 0], [np.nan] * 4)
