@@ -2666,6 +2666,8 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
             x_, y_, orient = y, y, "h"
         elif y is None and x is not None:
             x_, y_, orient = x, x, "v"
+        else:
+            raise ValueError("Either `x` or `y` must be None for count plots")
     else:
         x_, y_ = x, y
 
