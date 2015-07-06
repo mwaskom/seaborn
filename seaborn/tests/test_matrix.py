@@ -1,5 +1,6 @@
 import itertools
 import tempfile
+from matplotlib.cm import get_cmap
 from matplotlib.colors import ListedColormap
 
 import numpy as np
@@ -250,7 +251,7 @@ class TestHeatmap(object):
         kws = self.default_kws.copy()
         kws["cmap"] = "BuGn"
         p = mat._HeatMapper(self.df_unif, **kws)
-        nt.assert_equal(p.cmap, "BuGn")
+        nt.assert_equal(p.cmap, get_cmap("BuGn"))
 
     def test_centered_vlims(self):
 
@@ -338,6 +339,26 @@ class TestHeatmap(object):
             ax = mat.heatmap(self.df_string, as_factors=True, cmap='PuOr_r')
         finally:
             plt.close('all')
+
+    def test_heatmap_can_be_initialised_with_list_of_colors_for_factor_data(self):
+        colors = ['red', 'blue']
+        kws = self.default_kws.copy()
+        kws["cmap"] = colors
+        kws['as_factors'] = True
+        p = mat._HeatMapper(self.df_bool, **kws)
+
+        nt.assert_is_instance(p.cmap, ListedColormap)
+        nt.assert_equal(p.cmap.colors, colors)
+
+    def test_number_of_colors_in_factor_data_should_be_equal_to_number_of_factors(self):
+        kws = self.default_kws.copy()
+        kws["cmap"] = ['red', 'blue', 'green']
+        kws['as_factors'] = True
+        # Too many colors
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+        # Too few colors
+        kws['cmap'] = ['red']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
 
     def test_heatmap_cbar(self):
 

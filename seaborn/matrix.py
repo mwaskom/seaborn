@@ -3,7 +3,8 @@ import itertools
 
 import colorsys
 import matplotlib as mpl
-from matplotlib.colors import ListedColormap
+from matplotlib.cm import get_cmap
+from matplotlib.colors import ListedColormap, Colormap
 from matplotlib.patches import Patch
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -276,8 +277,22 @@ class _HeatMapper(object):
                     cmap = cubehelix_palette(light=.95, as_cmap=True)
 
         self.divergent = divergent
+
+        if isinstance(cmap, basestring):
+            if as_factors:
+                cmap = ListedColormap(color_palette(cmap, n_colors=len(self.unique_values)))
+            else:
+                cmap = get_cmap(cmap)
+        elif isinstance(cmap, list):
+            if not as_factors:
+                raise ValueError('Using list of colors as cmap supported only when `as_factors` is True')
+            else:
+                if len(cmap) != len(self.unique_values):
+                    raise ValueError('{} colors specified, while {} unique values exist'.format(len(cmap), len(self.unique_values)))
+                cmap = ListedColormap(cmap)
+
         self.cmap = cmap
-        
+
         # -- cbar ----------
         if self.cbar:
             if not as_factors:
