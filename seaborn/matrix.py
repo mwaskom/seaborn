@@ -167,14 +167,11 @@ class _HeatMapper(object):
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         if as_factors is None:
-            print data.values.dtype
-
             if data.values.dtype in [np.dtype(bool), np.dtype(object)] \
                     or np.issubdtype(data.values.dtype, str):
                 as_factors = True
             else:
                 as_factors = False
-            print as_factors
 
         if as_factors:
             unique_values = sorted(pd.Series(np.ravel(plot_data)).dropna().unique())
