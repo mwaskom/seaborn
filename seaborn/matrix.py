@@ -175,6 +175,17 @@ class _HeatMapper(object):
 
         if as_factors:
             unique_values = sorted(pd.Series(np.ravel(plot_data)).dropna().unique())
+
+            if isinstance(as_factors, list):
+                user_provided_factors = as_factors
+                as_factors = True
+                if set(user_provided_factors) != set(unique_values):
+                    raise ValueError('The set of provided factors {!r} '
+                                     'does not match actual factors'
+                                     ' in the data: {!r}'.format(user_provided_factors, unique_values))
+                # Reorder unique values as provided by user
+                unique_values = user_provided_factors
+
             # Transform data into numeric one by mapping each unique value to an int
             unique_values_map = {val: i for i, val in enumerate(unique_values)}
 

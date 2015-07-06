@@ -350,6 +350,31 @@ class TestHeatmap(object):
         nt.assert_is_instance(p.cmap, ListedColormap)
         nt.assert_equal(p.cmap.colors, colors)
 
+    def test_heatmap_initialisation_when_a_list_of_factors_provided(self):
+        factors = [True, False]
+        kws = self.default_kws.copy()
+        kws['as_factors'] = factors
+        p = mat._HeatMapper(self.df_bool, **kws)
+
+        nt.assert_true(p.as_factors)
+        # Important -> unique_values should preserve the order of factors specified
+        nt.assert_list_equal(p.unique_values, factors)
+
+    def test_heatmap_initialisation_when_a_list_of_factors_provided_is_wrong(self):
+        kws = self.default_kws.copy()
+
+        # Too many parameters
+        kws['as_factors'] = [True, False, 'FileNotFound']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
+        # Too few parameters
+        kws['as_factors'] = [True]
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
+        # Correct number of parameters, but parameters are wrong
+        kws['as_factors'] = [True, 'more True']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
     def test_number_of_colors_in_factor_data_should_be_equal_to_number_of_factors(self):
         kws = self.default_kws.copy()
         kws["cmap"] = ['red', 'blue', 'green']
