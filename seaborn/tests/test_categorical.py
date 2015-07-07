@@ -2134,6 +2134,11 @@ class TestFactorPlot(CategoricalFixture):
         with nt.assert_raises(ValueError):
             cat.factorplot("g", "y", data=self.df, kind="not_a_kind")
 
+    def test_count_x_and_y(self):
+
+        with nt.assert_raises(ValueError):
+            cat.factorplot("g", "y", data=self.df, kind="count")
+
     def test_plot_colors(self):
 
         ax = cat.barplot("g", "y", data=self.df)
