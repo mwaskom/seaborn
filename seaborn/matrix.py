@@ -90,7 +90,8 @@ class _HeatMapper(object):
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
                  annot_kws, cbar, cbar_kws,
-                 xticklabels=True, yticklabels=True, mask=None, as_factors=None):
+                 xticklabels=True, yticklabels=True, mask=None,
+                 as_factors=None):
         """Initialize the plotting object."""
         self._prepare_data(data, mask, as_factors)
 
@@ -174,7 +175,8 @@ class _HeatMapper(object):
                 as_factors = False
 
         if as_factors:
-            unique_values = sorted(pd.Series(np.ravel(plot_data)).dropna().unique())
+            unique_values = pd.Series(np.ravel(plot_data)).dropna().unique()
+            unique_values = sorted(unique_values)
 
             if isinstance(as_factors, list):
                 user_provided_factors = as_factors
@@ -182,11 +184,13 @@ class _HeatMapper(object):
                 if set(user_provided_factors) != set(unique_values):
                     raise ValueError('The set of provided factors {!r} '
                                      'does not match actual factors'
-                                     ' in the data: {!r}'.format(user_provided_factors, unique_values))
+                                     ' in the data: {!r}'
+                                     .format(user_provided_factors,
+                                             unique_values))
                 # Reorder unique values as provided by user
                 unique_values = user_provided_factors
 
-            # Transform data into numeric one by mapping each unique value to an int
+            # Transform data into numeric by mapping each unique value to an int
             unique_values_map = {val: i for i, val in enumerate(unique_values)}
 
             def _get_func(x):
@@ -215,7 +219,7 @@ class _HeatMapper(object):
         self.as_factors = as_factors
 
     def _prepare_drawing_parameters(self, vmin, vmax,
-                               cmap, center, robust):
+                                    cmap, center, robust):
         """Heuristic defaults for good colorbar parameters,
            choices of colormap, and ticks"""
 
@@ -242,7 +246,8 @@ class _HeatMapper(object):
                 else:
                     vmax = calc_data.max()
 
-            # Simple heuristics for whether these data should  have a divergent map
+            # Simple heuristics for whether these data should have
+            # a divergent color scheme
             divergent = ((vmin < 0) and (vmax > 0)) or center is not None
 
             # Now set center to 0 so math below makes sense
@@ -261,42 +266,49 @@ class _HeatMapper(object):
         self.vmin = vmin
         self.vmax = vmax
 
+        self.divergent = divergent
+
         # -- cmap
-        if as_factors:
-            if cmap is None:
+        if cmap is None:
+            # Choose default colormaps if not provided
+            if as_factors:
+                n_colors = len(self.unique_values)
                 # Choose divergent color scheme for boolean data
-                if self.unique_values == [False, True] or self.unique_values == [0, 1] \
+                if self.unique_values == [False, True] \
+                        or self.unique_values == [0, 1] \
                         or self.unique_values == [0.0, 1.0]:
                     # Choose a color palette that assigns light square to False
-                    # and dark square to True -- otherwise it just looks horrible
-                    cmap = ListedColormap(cubehelix_palette(light=.95, n_colors=len(self.unique_values)))
+                    # and dark square to True
+                    # otherwise it just looks horrible
+
+                    cmap_base = cubehelix_palette(light=.95,
+                                                  n_colors=n_colors)
                 else:
-                    cmap = ListedColormap(color_palette(n_colors=len(self.unique_values)))
+                    cmap_base = color_palette(n_colors=n_colors)
+                cmap = ListedColormap(cmap_base)
+            else:
 
-        else:
-            self.vmin = vmin
-            self.vmax = vmax
-
-            # Choose default colormaps if not provided
-            if cmap is None:
                 if divergent:
                     cmap = self.DIVERGENT_COLOR_PALETTE
                 else:
                     cmap = cubehelix_palette(light=.95, as_cmap=True)
-
-        self.divergent = divergent
-
-        if isinstance(cmap, basestring):
+        elif isinstance(cmap, basestring):
             if as_factors:
-                cmap = ListedColormap(color_palette(cmap, n_colors=len(self.unique_values)))
+                cmap = ListedColormap(color_palette(cmap,
+                                                    n_colors=len(
+                                                        self.unique_values)))
             else:
                 cmap = get_cmap(cmap)
         elif isinstance(cmap, list):
             if not as_factors:
-                raise ValueError('Using list of colors as cmap supported only when `as_factors` is True')
+                raise ValueError('Using list of colors as cmap supported '
+                                 'only when `as_factors` is True')
             else:
                 if len(cmap) != len(self.unique_values):
-                    raise ValueError('{} colors specified, while {} unique values exist'.format(len(cmap), len(self.unique_values)))
+                    raise ValueError('{} colors specified, while {}'
+                                     ' unique values exist'
+                                     .format(len(cmap),
+                                             len(self.unique_values)))
                 cmap = ListedColormap(cmap)
 
         self.cmap = cmap
@@ -312,7 +324,8 @@ class _HeatMapper(object):
         """Add textual labels with the value in each cell."""
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, plot_val, data_val, color in zip(xpos.flat, ypos.flat,
-                                                   mesh.get_array(), self.data.values.flat,
+                                                   mesh.get_array(),
+                                                   self.data.values.flat,
                                                    mesh.get_facecolors()):
             if plot_val is not np.ma.masked:
                 _, l, _ = colorsys.rgb_to_hls(*color[:3])
@@ -368,7 +381,8 @@ class _HeatMapper(object):
                 else:
                     cbar_kwargs = self.cbar_kws.copy()
                     _loc = cbar_kwargs.pop('loc', 'center left')
-                    _bbox_to_anchor = cbar_kwargs.pop('bbox_to_anchor', (1, 0.5))
+                    _bbox_to_anchor = cbar_kwargs.pop('bbox_to_anchor',
+                                                      (1, 0.5))
 
                     ax.legend(patches, ticker, loc=_loc,
                               bbox_to_anchor=_bbox_to_anchor, **cbar_kwargs)
@@ -581,9 +595,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         >>> integer_data = np.round(uniform_data * 2)
         >>> ordered_factors = [2, 0, 1]
         >>> factor_colors = ['#66c2a5', '#fa8e63', '#8da0cb']
-        >>> ax = sns.heatmap(integer_data, as_factors=ordered_factors, cmap=factor_colors)
+        >>> ax = sns.heatmap(integer_data, as_factors=ordered_factors,
+        ...                  cmap=factor_colors)
 
-    Factor heatmaps also accept non-numeric inputs, for instance string matrices:
+    Factor heatmaps also accept non-numeric inputs,
+    for instance string matrices:
 
     .. plot::
         :context: close-figs

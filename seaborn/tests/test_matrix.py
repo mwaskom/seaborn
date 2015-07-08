@@ -38,7 +38,8 @@ class TestHeatmap(object):
     x_unif = rs.rand(20, 13)
     df_unif = pd.DataFrame(x_unif)
 
-    x_string = np.array([['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A'],  # 5 unique values
+    # 5 unique values
+    x_string = np.array([['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A'],
                          ['C', 'T', 'O', 'R', 'F', 'A', 'C', 'T'],
                          ['O', 'R', 'F', 'A', 'C', 'T', 'O', 'R'],
                          ['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A']], dtype=str)
@@ -149,7 +150,7 @@ class TestHeatmap(object):
 
         expected_plot_data = np.array([[0, 1, 2],
                                        [2, 0, 1]])
-        expected_plot_data = expected_plot_data[::-1] # reverse
+        expected_plot_data = expected_plot_data[::-1]  # reverse
         npt.assert_array_equal(expected_plot_data, p.plot_data)
 
     def test_robust_sequential_vlims(self):
@@ -333,8 +334,8 @@ class TestHeatmap(object):
             plt.close("all")
 
     def test_factor_heatmap_does_not_crash_when_string_cmap_provided(self):
-        # The legend plotting fails if the string cmap is not converted to a colormap
-        # object properly
+        # The legend plotting fails if the string cmap
+        # is not converted to a colormap object properly
         try:
             ax = mat.heatmap(self.df_string, as_factors=True, cmap='PuOr_r')
         finally:
@@ -357,10 +358,11 @@ class TestHeatmap(object):
         p = mat._HeatMapper(self.df_bool, **kws)
 
         nt.assert_true(p.as_factors)
-        # Important -> unique_values should preserve the order of factors specified
+        # Important:
+        # unique_values should preserve the order of factors specified
         nt.assert_list_equal(p.unique_values, factors)
 
-    def test_heatmap_initialisation_when_a_list_of_factors_provided_is_wrong(self):
+    def test_heatmap_initialisation_with_wrong_list_of_factors(self):
         kws = self.default_kws.copy()
 
         # Too many parameters
@@ -375,7 +377,7 @@ class TestHeatmap(object):
         kws['as_factors'] = [True, 'more True']
         nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
 
-    def test_number_of_colors_in_factor_data_should_be_equal_to_number_of_factors(self):
+    def test_no_of_colors_checks_for_factor_data(self):
         kws = self.default_kws.copy()
         kws["cmap"] = ['red', 'blue', 'green']
         kws['as_factors'] = True
