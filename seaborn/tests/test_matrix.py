@@ -341,7 +341,7 @@ class TestHeatmap(object):
         finally:
             plt.close('all')
 
-    def test_heatmap_can_be_initialised_with_list_of_colors_for_factor_data(self):
+    def test_heatmap_initialisation_with_list_of_colors_for_factor_data(self):
         colors = ['red', 'blue']
         kws = self.default_kws.copy()
         kws["cmap"] = colors

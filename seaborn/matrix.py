@@ -18,6 +18,7 @@ from .palettes import cubehelix_palette, color_palette
 from .utils import despine, axis_ticklabels_overlap
 from .external.six.moves import range
 
+
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label."""
     if isinstance(index, pd.MultiIndex):
@@ -190,7 +191,7 @@ class _HeatMapper(object):
                 # Reorder unique values as provided by user
                 unique_values = user_provided_factors
 
-            # Transform data into numeric by mapping each unique value to an int
+            # Transform data into numeric by mapping unique values to ints
             unique_values_map = {val: i for i, val in enumerate(unique_values)}
 
             def _get_func(x):
@@ -386,6 +387,7 @@ class _HeatMapper(object):
 
                     ax.legend(patches, ticker, loc=_loc,
                               bbox_to_anchor=_bbox_to_anchor, **cbar_kwargs)
+
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=False, fmt=None, annot_kws=None,
