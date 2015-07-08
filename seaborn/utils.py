@@ -520,5 +520,10 @@ def categorical_order(values, order=None):
                     order = values.unique()
                 except AttributeError:
                     order = pd.unique(values)
+                try:
+                    np.asarray(values).astype(np.float)
+                    order = np.sort(order)
+                except (ValueError, TypeError):
+                    order = order
         order = filter(pd.notnull, order)
     return list(order)
