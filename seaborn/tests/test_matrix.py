@@ -498,7 +498,8 @@ class TestDendrogram(object):
         from scipy.spatial import distance
         from scipy.cluster import hierarchy
 
-        dists = distance.pdist(self.x_norm.T, metric=self.default_kws['metric'])
+        dists = distance.pdist(self.x_norm.T,
+                               metric=self.default_kws['metric'])
         linkage = hierarchy.linkage(dists, method=self.default_kws['method'])
 
         npt.assert_array_equal(scipy_linkage, linkage)
