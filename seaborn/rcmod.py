@@ -44,6 +44,7 @@ _style_keys = (
 _context_keys = (
     "figure.figsize",
 
+    "font.size",
     "axes.labelsize",
     "axes.titlesize",
     "xtick.labelsize",
