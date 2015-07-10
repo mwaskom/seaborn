@@ -4,3 +4,4 @@ v0.6.1 (Unreleased)
 
 - Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overriden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` dtype will still follow the category order even if the levels are strictly numerical.
 
+- Fixed a bug in :func:`clustermap` when ``fastcluster`` is not installed.
