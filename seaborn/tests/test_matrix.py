@@ -333,6 +333,21 @@ class TestHeatmap(object):
         finally:
             plt.close("all")
 
+    def test_factor_heatmap_disables_axes_for_colorbar(self):
+        try:
+            fig = plt.figure()
+            ax = plt.subplot(121)
+            cax = plt.subplot(122)
+
+            mat.heatmap(self.df_string, as_factors=True,
+                        ax=ax, cbar_ax=cax)
+            # Disable the default axes for colorbar legend
+            # otherwise clustermap plots look odd
+            nt.assert_false(cax.axison)
+        finally:
+            plt.close('all')
+
+
     def test_factor_heatmap_does_not_crash_when_string_cmap_provided(self):
         # The legend plotting fails if the string cmap
         # is not converted to a colormap object properly

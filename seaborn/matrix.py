@@ -379,6 +379,7 @@ class _HeatMapper(object):
                            for i, value in enumerate(ticker)]
                 if cax is not None:
                     cax.legend(patches, ticker, **self.cbar_kws)
+                    cax.axison = False
                 else:
                     cbar_kwargs = self.cbar_kws.copy()
                     _loc = cbar_kwargs.pop('loc', 'center left')
