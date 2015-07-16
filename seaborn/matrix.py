@@ -763,7 +763,7 @@ class ClusterGrid(Grid):
         else:
             z_scored = data2d.T
 
-        z_scored = (z_scored - z_scored.mean()) / z_scored.var()
+        z_scored = (z_scored - z_scored.mean()) / z_scored.std()
 
         if axis == 1:
             return z_scored

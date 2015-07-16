@@ -697,7 +697,7 @@ class TestClustermap(object):
 
     def test_z_score(self):
         df = self.df_norm.copy()
-        df = (df - df.mean()) / df.var()
+        df = (df - df.mean()) / df.std()
         kws = self.default_kws.copy()
         kws['z_score'] = 1
 
@@ -709,7 +709,7 @@ class TestClustermap(object):
     def test_z_score_axis0(self):
         df = self.df_norm.copy()
         df = df.T
-        df = (df - df.mean()) / df.var()
+        df = (df - df.mean()) / df.std()
         df = df.T
         kws = self.default_kws.copy()
         kws['z_score'] = 0
