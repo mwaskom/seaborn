@@ -7,3 +7,5 @@ v0.6.1 (Unreleased)
 - Added ``font.size`` to the plotting context definition so that the default output from ``plt.text`` will be scaled appropriately. 
 
 - Fixed a bug in :func:`clustermap` when ``fastcluster`` is not installed.
+
+- Fixed a bug in the zscore calculation in :func:`clustermap`.
