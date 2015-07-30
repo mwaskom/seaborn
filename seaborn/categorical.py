@@ -3137,7 +3137,7 @@ def lettervalueplot(x=None, y=None, hue=None, data=None, order=None, hue_order=N
         kwargs.pop("join_rm")
         warn = True
 
-    msg = ("The boxplot API has been changed. Attempting to adjust your "
+    msg = ("The Seaborn categorical API has been changed. Attempting to adjust your "
            "arguments for the new API (which might not work). Please update "
            "your code. See the version 0.6 release notes for more info.")
 
@@ -3210,7 +3210,7 @@ lettervalueplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal boxplot:
+    Draw a single horizontal letter value plot:
 
     .. plot::
         :context: close-figs
