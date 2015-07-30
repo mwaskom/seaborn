@@ -1788,7 +1788,7 @@ _categorical_docs = dict(
     factorplot : Combine categorical plots and a class:`FacetGrid`.\
     """),
     lettervalueplot=dedent("""\
-    lv
+    lettervalueplot : An extension of the boxplot for long-tailed and large data sets.
     """),
     )
 
