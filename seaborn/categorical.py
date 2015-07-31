@@ -1573,7 +1573,7 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([x -  widths / 2, x + widths / 2], [y, y], c='k', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker=r"$\ast$", c=color)
+                           marker='d', c=color)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                             for i, b in enumerate(zip(box_ends, w_area))]
@@ -1582,7 +1582,7 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([y, y], [x -  widths / 2, x + widths / 2], c='k', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker=r"$\ast$", c=color)
+                           marker='d', c=color)
 
             # Construct a color map from the input color
             rgb = [[1, 1, 1], list(color)]
