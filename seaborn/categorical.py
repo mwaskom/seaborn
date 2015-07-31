@@ -1561,7 +1561,6 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Calculate the medians
             y = np.median(box_data)
-            w = (widths + .1)
 
             # Calculate the outliers and plot
             outliers = self._lv_outliers(box_data, k)
@@ -1571,7 +1570,7 @@ class _LVPlotter(_CategoricalPlotter):
                             for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
-                ax.plot([x -  w / 2, x + w / 2], [y, y], c='k', alpha=.45, **kws)
+                ax.plot([x -  widths / 2, x + widths / 2], [y, y], c='k', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
                            marker=r"$\ast$", c=color)
@@ -1580,7 +1579,7 @@ class _LVPlotter(_CategoricalPlotter):
                             for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
-                ax.plot([y, y], [x -  w / 2, x + w / 2], c='k', alpha=.45, **kws)
+                ax.plot([y, y], [x -  widths / 2, x + widths / 2], c='k', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
                            marker=r"$\ast$", c=color)
