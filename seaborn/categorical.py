@@ -1507,10 +1507,17 @@ class _LVPlotter(_CategoricalPlotter):
         upper_out = vals[np.where(vals > edges[1])[0]]
         return np.concatenate((lower_out, upper_out))
 
+    def _width_functions(width_func):
+        # Dictionary of functions for computing the width of the boxes
+        width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
+                           'exponential' : lambda h, i, k: 2**(-k+i-1),
+                           'area' : lambda h, i, k: (1 - 2**(-k+i-2)) / h}
+        return width_functions[width_func]
+
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
                 vert='v', widths=1, k_depth='proportion',
-                ax=None, p=None, box_widths='linear',
+                ax=None, p=None, box_widths='exponential',
                 **kws):
 
         x = positions[0]
@@ -1530,14 +1537,9 @@ class _LVPlotter(_CategoricalPlotter):
             # letter-value plot
             box_ends, k = self._lv_box_ends(box_data, k_depth=k_depth, p=p)
 
-            # Dictionary of functions for computing the width of the boxes
-            width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
-                               'exponential' : lambda h, i, k: 2**(-k+i-1),
-                               'area' : lambda h, i, k: (1 - 2**(-k+i-2)) / h}
-
             # Anonymous functions for calculating the width and height
             # of the letter value boxes
-            width = width_functions[box_widths]
+            width = self._width_functions(box_widths)
             height = lambda b: b[1] - b[0]
 
             # Functions to construct the letter value boxes
@@ -1623,6 +1625,7 @@ class _LVPlotter(_CategoricalPlotter):
                                           widths=self.width,
                                           k_depth=self.k_depth,
                                           ax=ax,
+                                          box_widths=self.box_widths,
                                           **kws)
 
             else:
@@ -1654,6 +1657,7 @@ class _LVPlotter(_CategoricalPlotter):
                                               widths=self.nested_width,
                                               k_depth=self.k_depth,
                                               ax=ax,
+                                              box_widths=self.box_widths,
                                               **kws)
 
     def plot(self, ax, boxplot_kws):
