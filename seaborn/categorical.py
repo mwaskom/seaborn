@@ -1797,8 +1797,8 @@ _categorical_docs = dict(
     factorplot=dedent("""\
     factorplot : Combine categorical plots and a class:`FacetGrid`.\
     """),
-    lettervalueplot=dedent("""\
-    lettervalueplot : An extension of the boxplot for long-tailed and large data sets.
+    lvplot=dedent("""\
+    lvplot : An extension of the boxplot for long-tailed and large data sets.
     """),
     )
 
@@ -3109,7 +3109,7 @@ factorplot.__doc__ = dedent("""\
 
     """).format(**_categorical_docs)
 
-def lettervalueplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=None,
             width=None, k_depth=None, linewidth=None, scale=None,
             outlier_prop=None, ax=None, **kwargs):
@@ -3124,7 +3124,7 @@ def lettervalueplot(x=None, y=None, hue=None, data=None, order=None, hue_order=N
     plotter.plot(ax, kwargs)
     return ax
 
-lettervalueplot.__doc__ = dedent("""\
+lvplot.__doc__ = dedent("""\
     Create a letter value plot
 
     Letter value (LV) plots are non-parametric estimates of the distribution of
@@ -3188,21 +3188,21 @@ lettervalueplot.__doc__ = dedent("""\
         >>> import seaborn as sns
         >>> sns.set_style("whitegrid")
         >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.lettervalueplot(x=tips["total_bill"])
+        >>> ax = sns.lvplot(x=tips["total_bill"])
 
     Draw a vertical letter value plot grouped by a categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
 
     Draw a letter value plot with nested grouping by two categorical variables:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="day", y="total_bill", hue="smoker",
+        >>> ax = sns.lvplot(x="day", y="total_bill", hue="smoker",
         ...                  data=tips, palette="Set3")
 
     Draw a letter value plot with nested grouping when some bins are empty:
@@ -3210,7 +3210,7 @@ lettervalueplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="day", y="total_bill", hue="time",
+        >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
     Control box order by sorting the input data:
@@ -3218,14 +3218,14 @@ lettervalueplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort("size"))
 
     Control box order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="size", y="tip", data=tips,
+        >>> ax = sns.lvplot(x="size", y="tip", data=tips,
         ...                  order=np.arange(1, 7), palette="Blues_d")
 
     Draw a letter value plot for each numeric variable in a DataFrame:
@@ -3234,14 +3234,14 @@ lettervalueplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> iris = sns.load_dataset("iris")
-        >>> ax = sns.lettervalueplot(data=iris, orient="h", palette="Set2")
+        >>> ax = sns.lvplot(data=iris, orient="h", palette="Set2")
 
     Use :func:`stripplot` to show the datapoints on top of the boxes:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lettervalueplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
         ...                    size=4, jitter=True, edgecolor="gray")
 
@@ -3252,7 +3252,7 @@ lettervalueplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> (g.map(sns.lettervalueplot, "sex", "total_bill", "smoker")
+        >>> (g.map(sns.lvplot, "sex", "total_bill", "smoker")
         ...   .despine(left=True)
         ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
         <seaborn.axisgrid.FacetGrid object at 0x...>
