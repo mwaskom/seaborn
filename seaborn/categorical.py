@@ -1440,6 +1440,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         if self.orient == "h":
             ax.invert_yaxis()
 
+
 class _LVPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
@@ -1447,7 +1448,7 @@ class _LVPlotter(_CategoricalPlotter):
                  width, k_depth, linewidth, scale, outlier_prop):
 
         if width is None:
-            width=.8
+            width = .8
         self.width = width
 
         if saturation is None:
@@ -1485,7 +1486,8 @@ class _LVPlotter(_CategoricalPlotter):
         # Select the depth, i.e. number of boxes to draw, based on the method
         k_dict = {'proportion': (np.log2(n)) - int(np.log2(n*p)) + 1,
                   'tukey': (np.log2(n)) - 3,
-                  'trustworthy': (np.log2(n) - np.log2(2*stats.norm.ppf((1-p))**2)) + 1}
+                  'trustworthy': (np.log2(n) -
+                                  np.log2(2*stats.norm.ppf((1-p))**2)) + 1}
         k = k_dict[k_depth]
         try:
             k = int(k)
@@ -1513,9 +1515,9 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _width_functions(self, width_func):
         # Dictionary of functions for computing the width of the boxes
-        width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
-                           'exponential' : lambda h, i, k: 2**(-k+i-1),
-                           'area' : lambda h, i, k: (1 - 2**(-k+i-2)) / h}
+        width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
+                           'exponential': lambda h, i, k: 2**(-k+i-1),
+                           'area': lambda h, i, k: (1 - 2**(-k+i-2)) / h}
         return width_functions[width_func]
 
     def _lvplot(self, box_data, positions,
@@ -1545,23 +1547,27 @@ class _LVPlotter(_CategoricalPlotter):
             # Anonymous functions for calculating the width and height
             # of the letter value boxes
             width = self._width_functions(scale)
-            height = lambda b: b[1] - b[0]
+
+            # Function to find height of boxes
+            def height(b):
+                return b[1] - b[0]
 
             # Functions to construct the letter value boxes
             def vert_perc_box(x, b, i, k, w):
                 rect = Patches.Rectangle((x - widths*w / 2, b[0]),
-                                           widths*w,
-                                           height(b), fill=True)
+                                         widths*w,
+                                         height(b), fill=True)
                 return rect
 
             def horz_perc_box(x, b, i, k, w):
                 rect = Patches.Rectangle((b[0], x - widths*w / 2),
-                                           height(b), widths*w,
-                                           fill=True)
+                                         height(b), widths*w,
+                                         fill=True)
                 return rect
 
             # Scale the width of the boxes so the biggest starts at 1
-            w_area = np.array([width(height(b), i, k) for i, b in enumerate(box_ends)])
+            w_area = np.array([width(height(b), i, k)
+                               for i, b in enumerate(box_ends)])
             w_area = w_area / np.max(w_area)
 
             # Calculate the medians
@@ -1572,19 +1578,21 @@ class _LVPlotter(_CategoricalPlotter):
 
             if vert:
                 boxes = [vert_perc_box(x, b[0], i, k, b[1])
-                            for i, b in enumerate(zip(box_ends, w_area))]
+                         for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
-                ax.plot([x -  widths / 2, x + widths / 2], [y, y], c='k', alpha=.45, **kws)
+                ax.plot([x - widths / 2, x + widths / 2], [y, y],
+                        c='k', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
                            marker='d', c=color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
-                            for i, b in enumerate(zip(box_ends, w_area))]
+                         for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
-                ax.plot([y, y], [x -  widths / 2, x + widths / 2], c='k', alpha=.45, **kws)
+                ax.plot([y, y], [x - widths / 2, x + widths / 2],
+                        c='k', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
                            marker='d', c=color, **kws)
@@ -1623,15 +1631,15 @@ class _LVPlotter(_CategoricalPlotter):
                 color = self.colors[i]
 
                 artist_dict = self._lvplot(box_data,
-                                          positions=[i],
-                                          color=color,
-                                          vert=vert,
-                                          widths=self.width,
-                                          k_depth=self.k_depth,
-                                          ax=ax,
-                                          scale=self.scale,
-                                          outlier_prop=self.outlier_prop,
-                                          **kws)
+                                           positions=[i],
+                                           color=color,
+                                           vert=vert,
+                                           widths=self.width,
+                                           k_depth=self.k_depth,
+                                           ax=ax,
+                                           scale=self.scale,
+                                           outlier_prop=self.outlier_prop,
+                                           **kws)
 
             else:
                 # Draw nested groups of boxes
@@ -1655,16 +1663,17 @@ class _LVPlotter(_CategoricalPlotter):
 
                     color = self.colors[j]
                     center = i + offsets[j]
+
                     artist_dict = self._lvplot(box_data,
-                                              positions=[center],
-                                              color=color,
-                                              vert=vert,
-                                              widths=self.nested_width,
-                                              k_depth=self.k_depth,
-                                              ax=ax,
-                                              scale=self.scale,
-                                              outlier_prop=self.outlier_prop,
-                                              **kws)
+                                               positions=[center],
+                                               color=color,
+                                               vert=vert,
+                                               widths=self.nested_width,
+                                               k_depth=self.k_depth,
+                                               ax=ax,
+                                               scale=self.scale,
+                                               outlier_prop=self.outlier_prop,
+                                               **kws)
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
@@ -3109,14 +3118,15 @@ factorplot.__doc__ = dedent("""\
 
     """).format(**_categorical_docs)
 
+
 def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            orient=None, color=None, palette=None, saturation=None,
-            width=None, k_depth=None, linewidth=None, scale=None,
-            outlier_prop=None, ax=None, **kwargs):
+           orient=None, color=None, palette=None, saturation=None,
+           width=None, k_depth=None, linewidth=None, scale=None,
+           outlier_prop=None, ax=None, **kwargs):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
-                          orient, color, palette, saturation,
-                          width, k_depth, linewidth, scale, outlier_prop)
+                         orient, color, palette, saturation,
+                         width, k_depth, linewidth, scale, outlier_prop)
 
     if ax is None:
         ax = plt.gca()
@@ -3129,10 +3139,11 @@ lvplot.__doc__ = dedent("""\
 
     Letter value (LV) plots are non-parametric estimates of the distribution of
     a dataset, similar to boxplots. LV plots are also similar to violin plots
-    but without the need to fit a kernel density estimate. Thus, LV plots are fast
-    to generate, directly interpretable in terms of the distribution of data, and
-    easy to understand. For a more extensive explanation of letter value plots
-    and their properties, see Hadley Wickham's excellent paper on the topic:
+    but without the need to fit a kernel density estimate. Thus, LV plots are
+    fast to generate, directly interpretable in terms of the distribution of
+    data, and easy to understand. For a more extensive explanation of letter
+    value plots and their properties, see Hadley Wickham's excellent paper on
+    the topic:
 
     http://vita.had.co.nz/papers/letter-value-plot.html
 
@@ -3156,9 +3167,9 @@ lvplot.__doc__ = dedent("""\
     {linewidth}
     scale : "linear" | "exonential" | "area"
         Method to use for the width of the letter value boxes. All give similar
-        results visually. "linear" reduces the width by a constant linear factor,
-        "exponential" uses the proportion of data not covered, "area" is
-        proportional to the percentage of data covered.
+        results visually. "linear" reduces the width by a constant linear
+        factor, "exponential" uses the proportion of data not covered, "area"
+        is proportional to the percentage of data covered.
     outlier_prop : float, optional
         Proportion of data believed to be outliers. Is used in conjuction with
         k_depth to determine the number of percentiles to draw. Defaults to 8
@@ -3245,8 +3256,8 @@ lvplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
         ...                    size=4, jitter=True, edgecolor="gray")
 
-    Draw a letter value plot on to a :class:`FacetGrid` to group within an additional
-    categorical variable:
+    Draw a letter value plot on to a :class:`FacetGrid` to group within an
+    additional categorical variable:
 
     .. plot::
         :context: close-figs
