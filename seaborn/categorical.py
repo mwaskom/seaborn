@@ -1494,8 +1494,8 @@ class _LVPlotter(_CategoricalPlotter):
         except ValueError:
             k = 1
         # If the number happens to be less than 0, set k to 0
-        if k < 0.:
-            k = 0
+        if k < 1.:
+            k = 1
         # Calculate the upper box ends
         upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
         # Calculate the lower box ends
