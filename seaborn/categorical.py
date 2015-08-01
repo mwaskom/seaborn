@@ -1444,7 +1444,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
-                 width, k_depth, linewidth, box_widths):
+                 width, k_depth, linewidth, scale, outlier_prop):
 
         if width is None:
             width=.8
@@ -1462,22 +1462,26 @@ class _LVPlotter(_CategoricalPlotter):
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
 
-        if box_widths is None:
-            box_widths = 'linear'
-        self.box_widths = box_widths
+        if scale is None:
+            scale = 'linear'
+        self.scale = scale
+
+        self.outlier_prop = outlier_prop
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
 
-    def _lv_box_ends(self, vals, k_depth='proportion', p=None):
+    def _lv_box_ends(self, vals, k_depth='proportion', outlier_prop=None):
         """Get the number of data points and calculate `depth` of
         letter-value plot."""
         vals = np.asarray(vals)
         vals = vals[np.isfinite(vals)]
         n = len(vals)
         # If p is not set, calculate it so that 8 points are outliers
-        if not p:
-                p = 8./n
+        if not outlier_prop:
+            p = 8./n
+        else:
+            p = outlier_prop
         # Select the depth, i.e. number of boxes to draw, based on the method
         k_dict = {'proportion': (np.log2(n)) - int(np.log2(n*p)) + 1,
                   'tukey': (np.log2(n)) - 3,
@@ -1487,9 +1491,9 @@ class _LVPlotter(_CategoricalPlotter):
             k = int(k)
         except ValueError:
             k = 1
-        # If the number happens to be less than 1, set k to 1
-        if k < 1.:
-            k = 1
+        # If the number happens to be less than 0, set k to 0
+        if k < 0.:
+            k = 0
         # Calculate the upper box ends
         upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
         # Calculate the lower box ends
@@ -1507,7 +1511,7 @@ class _LVPlotter(_CategoricalPlotter):
         upper_out = vals[np.where(vals > edges[1])[0]]
         return np.concatenate((lower_out, upper_out))
 
-    def _width_functions(width_func):
+    def _width_functions(self, width_func):
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear' : lambda h, i, k: (i + 1.) / k,
                            'exponential' : lambda h, i, k: 2**(-k+i-1),
@@ -1517,7 +1521,7 @@ class _LVPlotter(_CategoricalPlotter):
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
                 vert='v', widths=1, k_depth='proportion',
-                ax=None, p=None, box_widths='exponential',
+                ax=None, outlier_prop=None, scale='exponential',
                 **kws):
 
         x = positions[0]
@@ -1535,11 +1539,12 @@ class _LVPlotter(_CategoricalPlotter):
         else:
             # Get the number of data points and calculate "depth" of
             # letter-value plot
-            box_ends, k = self._lv_box_ends(box_data, k_depth=k_depth, p=p)
+            box_ends, k = self._lv_box_ends(box_data, k_depth=k_depth,
+                                            outlier_prop=outlier_prop)
 
             # Anonymous functions for calculating the width and height
             # of the letter value boxes
-            width = self._width_functions(box_widths)
+            width = self._width_functions(scale)
             height = lambda b: b[1] - b[0]
 
             # Functions to construct the letter value boxes
@@ -1573,7 +1578,7 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([x -  widths / 2, x + widths / 2], [y, y], c='k', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=color)
+                           marker='d', c=color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                             for i, b in enumerate(zip(box_ends, w_area))]
@@ -1582,7 +1587,7 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([y, y], [x -  widths / 2, x + widths / 2], c='k', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=color)
+                           marker='d', c=color, **kws)
 
             # Construct a color map from the input color
             rgb = [[1, 1, 1], list(color)]
@@ -1624,7 +1629,8 @@ class _LVPlotter(_CategoricalPlotter):
                                           widths=self.width,
                                           k_depth=self.k_depth,
                                           ax=ax,
-                                          box_widths=self.box_widths,
+                                          scale=self.scale,
+                                          outlier_prop=self.outlier_prop,
                                           **kws)
 
             else:
@@ -1656,7 +1662,8 @@ class _LVPlotter(_CategoricalPlotter):
                                               widths=self.nested_width,
                                               k_depth=self.k_depth,
                                               ax=ax,
-                                              box_widths=self.box_widths,
+                                              scale=self.scale,
+                                              outlier_prop=self.outlier_prop,
                                               **kws)
 
     def plot(self, ax, boxplot_kws):
@@ -3104,52 +3111,12 @@ factorplot.__doc__ = dedent("""\
 
 def lettervalueplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=None,
-            width=None, k_depth=None, linewidth=None, box_widths=None,
-            ax=None, **kwargs):
-
-    # Try to handle broken backwards-compatability
-    # This should help with the lack of a smooth deprecation,
-    # but won't catch everything
-    warn = False
-    if isinstance(x, pd.DataFrame):
-        data = x
-        x = None
-        warn = True
-
-    if "vals" in kwargs:
-        x = kwargs.pop("vals")
-        warn = True
-
-    if "groupby" in kwargs:
-        y = x
-        x = kwargs.pop("groupby")
-        warn = True
-
-    if "vert" in kwargs:
-        vert = kwargs.pop("vert", True)
-        if not vert:
-            x, y = y, x
-        orient = "v" if vert else "h"
-        warn = True
-
-    if "names" in kwargs:
-        kwargs.pop("names")
-        warn = True
-
-    if "join_rm" in kwargs:
-        kwargs.pop("join_rm")
-        warn = True
-
-    msg = ("The Seaborn categorical API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-
-    if warn:
-        warnings.warn(msg, UserWarning)
+            width=None, k_depth=None, linewidth=None, scale=None,
+            outlier_prop=None, ax=None, **kwargs):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
-                          width, k_depth, linewidth, box_widths)
+                          width, k_depth, linewidth, scale, outlier_prop)
 
     if ax is None:
         ax = plt.gca()
@@ -3187,19 +3154,19 @@ lettervalueplot.__doc__ = dedent("""\
         assumptions about the number of outliers and leverages different
         statistical properties.
     {linewidth}
-    box_widths : "linear" | "exponential" | "area"
+    scale : "linear" | "exonential" | "area"
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear factor,
         "exponential" uses the proportion of data not covered, "area" is
         proportional to the percentage of data covered.
-    p : float, optional
+    outlier_prop : float, optional
         Proportion of data believed to be outliers. Is used in conjuction with
         k_depth to determine the number of percentiles to draw. Defaults to 8
         outliers.
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.boxplot`` at draw
-        time.
+        Other keyword arguments are passed through to ``plt.plot`` and
+        ``plt.scatter`` at draw time.
 
     Returns
     -------
