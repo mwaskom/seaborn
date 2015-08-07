@@ -8,4 +8,4 @@ import seaborn as sns
 sns.set()
 
 df = sns.load_dataset("iris")
-sns.pairplot(df, hue="species", size=2.5)
+sns.pairplot(df, hue="species")

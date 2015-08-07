@@ -30,21 +30,19 @@ Seaborn is a Python visualization library based on matplotlib. It provides a hig
 Documentation
 -------------
 
-Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/).
+Online documentation is available [here](http://stanford.edu/~mwaskom/software/seaborn/). It includes a high-level tutorial, detailed API documentation, and other useful info.
+
+There are docs for the development version [here](http://stanford.edu/~mwaskom/software/seaborn-dev/). These should more or less correspond with the github master branch, but they're not built automatically and thus may fall out of sync at times.
 
 Examples
 --------
 
-The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package. You can also check out the example notebooks:
+The documentation has an [example gallery](http://stanford.edu/~mwaskom/software/seaborn/examples/index.html) with short scripts showing how to use different parts of the package.
 
-- [Controlling figure aesthetics in seaborn](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/aesthetics.ipynb)
+Citing
+------
 
-- [Graphical representations of linear models](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/linear_models.ipynb)
-
-- [Visualizing distributions of data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/plotting_distributions.ipynb)
-
-- [Plotting statistical timeseries data](http://nbviewer.ipython.org/github/mwaskom/seaborn/blob/master/examples/timeseries_plots.ipynb)
-
+Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.19108.svg)](http://dx.doi.org/10.5281/zenodo.19108)
 
 Dependencies
 ------------
@@ -65,8 +63,6 @@ Dependencies
 
 - [statsmodels](http://statsmodels.sourceforge.net/)
 
-- [patsy](http://patsy.readthedocs.org/en/latest/)
-
 
 Installation
 ------------
@@ -86,9 +82,7 @@ Testing
 [![Build Status](https://travis-ci.org/mwaskom/seaborn.png?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 
 To test seaborn, run `make test` in the source directory. This will run the
-unit-test suite (using `nose`). It will also execute the example notebooks and
-compare the outputs of each cell to the data in the stored versions. 
-
+unit-test and doctest suite (using `nose`).
 
 Development
 -----------

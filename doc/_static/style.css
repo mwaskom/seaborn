@@ -1,0 +1,29 @@
+
+blockquote p {
+    font-size: 14px !important;
+}
+
+blockquote {
+    margin: 0 0 4px !important;
+}
+
+code {
+    color: #49759c !important;
+    background-color: #f3f5f9 !important;
+}
+
+.alert-info {
+    background-color: #adb8cb !important;
+    border-color: #adb8cb !important;
+    color: #2c3e50 !important;
+}
+
+.headerlink:before {
+
+  display: block;
+  context: " ";
+  height: 200px; /*same height as header*/
+  margin-top: -200px; /*same height as header*/
+  visibility: hidden;
+
+}

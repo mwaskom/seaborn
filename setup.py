@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 #
 # Copyright (C) 2012-2014 Michael Waskom <mwaskom@stanford.edu>
+import os
+# temporarily redirect config directory to prevent matplotlib importing
+# testing that for writeable directory which results in sandbox error in
+# certain easy_install versions
+os.environ["MPLCONFIGDIR"] = "."
 
 DESCRIPTION = "Seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
@@ -12,6 +17,7 @@ Some of the features that seaborn offers are
 - Tools for choosing color palettes to make beautiful plots that reveal patterns in your data
 - Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data
 - Tools that fit and visualize linear regression models for different kinds of independent and dependent variables
+- Functions that visualize matrices of data and use clustering algorithms to discover structure in those matrices
 - A function to plot statistical timeseries data with flexible estimation and representation of uncertainty around the estimate
 - High-level abstractions for structuring grids of plots that let you easily build complex visualizations
 """
@@ -22,7 +28,7 @@ MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.5.dev'
+VERSION = '0.7.0.dev'
 
 try:
     from setuptools import setup
@@ -56,10 +62,6 @@ def check_dependencies():
     return install_requires
 
 if __name__ == "__main__":
-
-    import os
-    if os.path.exists('MANIFEST'):
-        os.remove('MANIFEST')
 
     install_requires = check_dependencies()
 

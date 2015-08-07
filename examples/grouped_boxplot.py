@@ -6,10 +6,9 @@ Grouped boxplots
 import seaborn as sns
 sns.set(style="ticks")
 
+# Load the example tips dataset
 tips = sns.load_dataset("tips")
-days = ["Thur", "Fri", "Sat", "Sun"]
 
-g = sns.factorplot("day", "total_bill", "sex", tips, kind="box",
-                   palette="PRGn", aspect=1.25, x_order=days)
-g.despine(offset=10, trim=True)
-g.set_axis_labels("Day", "Total Bill")
+# Draw a nested boxplot to show bills by day and sex
+sns.boxplot(x="day", y="total_bill", hue="sex", data=tips, palette="PRGn")
+sns.despine(offset=10, trim=True)

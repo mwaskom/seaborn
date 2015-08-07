@@ -6,12 +6,15 @@ from . import palettes
 
 
 _style_keys = (
+
     "axes.facecolor",
     "axes.edgecolor",
     "axes.grid",
     "axes.axisbelow",
     "axes.linewidth",
     "axes.labelcolor",
+
+    "figure.facecolor",
 
     "grid.color",
     "grid.linestyle",
@@ -35,13 +38,13 @@ _style_keys = (
 
     "image.cmap",
     "font.family",
-    "pdf.fonttype",
     "font.sans-serif",
     )
 
 _context_keys = (
     "figure.figsize",
 
+    "font.size",
     "axes.labelsize",
     "axes.titlesize",
     "xtick.labelsize",
@@ -65,7 +68,7 @@ _context_keys = (
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, rc=None):
+        font="sans-serif", font_scale=1, color_codes=False, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -84,13 +87,16 @@ def set(context="notebook", style="darkgrid", palette="deep",
     font_scale : float, optional
         Separate scaling factor to independently scale the size of the
         font elements.
+    color_codes : bool
+        If ``True`` and ``palette`` is a seaborn palette, remap the shorthand
+        color codes (e.g. "b", "g", "r", etc.) to the colors from this palette.
     rc : dict or None
         Dictionary of rc parameter mappings to override the above.
 
     """
     set_context(context, font_scale)
     set_style(style, rc={"font.family": font})
-    set_palette(palette)
+    set_palette(palette, color_codes=color_codes)
     if rc is not None:
         mpl.rcParams.update(rc)
 
@@ -186,6 +192,7 @@ def axes_style(style=None, rc=None):
 
         # Common parameters
         style_dict = {
+            "figure.facecolor": "white",
             "text.color": dark_gray,
             "axes.labelcolor": dark_gray,
             "legend.frameon": False,
@@ -197,12 +204,11 @@ def axes_style(style=None, rc=None):
             "ytick.color": dark_gray,
             "axes.axisbelow": True,
             "image.cmap": "Greys",
-            "font.family": "sans-serif",
+            "font.family": ["sans-serif"],
             "font.sans-serif": ["Arial", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
-            "pdf.fonttype": 42,
             }
 
         # Set grid on or off
@@ -360,6 +366,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
         base_context = {
 
             "figure.figsize": np.array([8, 5.5]),
+            "font.size": 12,
             "axes.labelsize": 11,
             "axes.titlesize": 12,
             "xtick.labelsize": 10,
@@ -387,9 +394,16 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
         # Now independently scale the fonts
         font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
-                     "xtick.labelsize", "ytick.labelsize"]
+                     "xtick.labelsize", "ytick.labelsize", "font.size"]
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)
+
+    # Implement hack workaround for matplotlib bug
+    # See https://github.com/mwaskom/seaborn/issues/344
+    # There is a bug in matplotlib 1.4.2 that makes points invisible when
+    # they don't have an edgewidth. It will supposedly be fixed in 1.4.3.
+    if mpl.__version__ == "1.4.2":
+        context_dict["lines.markeredgewidth"] = 0.01
 
     # Override these settings with the provided rc dictionary
     if rc is not None:
@@ -443,18 +457,23 @@ def set_context(context=None, font_scale=1, rc=None):
     mpl.rcParams.update(context_object)
 
 
-def set_palette(name, n_colors=6, desat=None):
+def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     """Set the matplotlib color cycle using a seaborn palette.
 
     Parameters
     ----------
-    name : hls | husl | matplotlib colormap | seaborn color palette
+    palette : hls | husl | matplotlib colormap | seaborn color palette
         Palette definition. Should be something that :func:`color_palette`
         can process.
     n_colors : int
-        Number of colors in the cycle.
+        Number of colors in the cycle. The default number of colors will depend
+        on the format of ``palette``, see the :func:`color_palette`
+        documentation for more information.
     desat : float
-        Factor to desaturate each color by.
+        Proportion to desaturate each color by.
+    color_codes : bool
+        If ``True`` and ``palette`` is a seaborn palette, remap the shorthand
+        color codes (e.g. "b", "g", "r", etc.) to the colors from this palette.
 
     Examples
     --------
@@ -470,6 +489,8 @@ def set_palette(name, n_colors=6, desat=None):
     set_style : set the default parameters for figure style
 
     """
-    colors = palettes.color_palette(name, n_colors, desat)
+    colors = palettes.color_palette(palette, n_colors, desat)
     mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
+    if color_codes:
+        palettes.set_color_codes(palette)

@@ -2,15 +2,18 @@
 from __future__ import division
 import copy
 import itertools
+from textwrap import dedent
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import warnings
+
 try:
-    import statsmodels.api as sm
-    import statsmodels.formula.api as sf
+    import statsmodels
+    assert statsmodels
     _has_statsmodels = True
 except ImportError:
     _has_statsmodels = False
@@ -21,7 +24,7 @@ from .external.six.moves import range
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
-from .axisgrid import FacetGrid, PairGrid
+from .axisgrid import FacetGrid, PairGrid, _facet_docs
 from .distributions import kdeplot
 
 
@@ -62,337 +65,11 @@ class _LinearPlotter(object):
         raise NotImplementedError
 
 
-class _DiscretePlotter(_LinearPlotter):
-    """Plotter for data with discrete independent variable(s).
-
-    This will be used by the `barplot` and `pointplot` functions, and
-    thus indirectly by the `factorplot` function. It can produce plots
-    where some statistic for a dependent measure is estimated within
-    subsets of the data, which can be hierarchically structured at up to two
-    levels (`x` and `hue`). The plots can be drawn with a few different
-    visual representations of the same underlying data (`bar`, and `point`,
-    with `box` doing something similar but skipping the estimation).
-
-    """
-    def __init__(self, x, y=None, hue=None, data=None, units=None,
-                 x_order=None, hue_order=None, color=None, palette=None,
-                 kind="auto", markers=None, linestyles=None, dodge=0,
-                 join=True, hline=None, estimator=np.mean, ci=95,
-                 n_boot=1000, dropna=True):
-
-        # This implies we have a single bar/point for each level of `x`
-        # but that the different levels should be mapped with a palette
-        self.x_palette = hue is None and palette is not None
-
-        # Set class attributes based on inputs
-        self.estimator = len if y is None else estimator
-        self.ci = None if y is None else ci
-        self.join = join
-        self.n_boot = n_boot
-        self.hline = hline
-
-        # Other attributes that are hardcoded for now
-        self.bar_widths = .8
-        self.err_color = "#444444"
-        self.lw = mpl.rcParams["lines.linewidth"] * 1.8
-
-        # Once we've set the above values, if `y` is None we want the actual
-        # y values to be the x values so we can count them
-        self.y_count = y is None
-        if y is None:
-            y = x
-
-        # Ascertain which values will be associated with what values
-        self.establish_variables(data, x=x, y=y, hue=hue, units=units)
-
-        # Figure out the order of the variables on the x axis
-        x_sorted = np.sort(pd.unique(self.x))
-        self.x_order = x_sorted if x_order is None else x_order
-        if self.hue is not None:
-            hue_sorted = np.sort(pd.unique(self.hue))
-            self.hue_order = hue_sorted if hue_order is None else hue_order
-        else:
-            self.hue_order = [None]
-
-        # Handle the other hue-mapped attributes
-        if markers is None:
-            self.markers = ["o"] * len(self.hue_order)
-        else:
-            if len(markers) != len(self.hue_order):
-                raise ValueError("Length of marker list must equal "
-                                 "number of hue levels")
-            self.markers = markers
-        if linestyles is None:
-            self.linestyles = ["-"] * len(self.hue_order)
-        else:
-            if len(linestyles) != len(self.hue_order):
-                raise ValueError("Length of linestyle list must equal "
-                                 "number of hue levels")
-            self.linestyles = linestyles
-
-        # Drop null observations
-        if dropna:
-            self.dropna("x", "y", "hue", "units")
-
-        # Settle whe kind of plot this is going to be
-        self.establish_plot_kind(kind)
-
-        # Determine the color palette
-        self.establish_palette(color, palette)
-
-        # Figure out where the data should be drawn
-        self.establish_positions(dodge)
-
-    def establish_palette(self, color, palette):
-        """Set a list of colors for each plot element."""
-        n_hues = len(self.x_order) if self.x_palette else len(self.hue_order)
-        hue_names = self.x_order if self.x_palette else self.hue_order
-        if self.hue is None and not self.x_palette:
-            if color is None:
-                color = color_palette()[0]
-            palette = [color for _ in self.x_order]
-        elif palette is None:
-            current_palette = mpl.rcParams["axes.color_cycle"]
-            if len(current_palette) <= n_hues:
-                palette = color_palette("husl", n_hues)
-            else:
-                palette = color_palette(n_colors=n_hues)
-        elif isinstance(palette, dict):
-            palette = [palette[k] for k in hue_names]
-            palette = color_palette(palette, n_hues)
-        else:
-            palette = color_palette(palette, n_hues)
-        self.palette = palette
-
-        if self.kind == "point":
-            self.err_palette = palette
-        else:
-            # TODO make this smarter
-            self.err_palette = [self.err_color] * len(palette)
-
-    def establish_positions(self, dodge):
-        """Make list of center values for each x and offset for each hue."""
-        self.positions = np.arange(len(self.x_order))
-
-        # If there's no hue variable kind is irrelevant
-        if self.hue is None:
-            n_hues = 1
-            width = self.bar_widths
-            offset = np.zeros(n_hues)
-        else:
-            n_hues = len(self.hue_order)
-
-            # Bar offset is set by hardcoded bar width
-            if self.kind in ["bar", "box"]:
-                width = self.bar_widths / n_hues
-                offset = np.linspace(0, self.bar_widths - width, n_hues)
-                if self.kind == "box":
-                    width *= .95
-                self.bar_widths = width
-
-            # Point offset is set by `dodge` parameter
-            elif self.kind == "point":
-                offset = np.linspace(0, dodge, n_hues)
-            offset -= offset.mean()
-
-        self.offset = offset
-
-    def establish_plot_kind(self, kind):
-        """Use specified kind of apply heuristics to decide automatically."""
-        if kind == "auto":
-            y = self.y
-
-            # Walk through some heuristics to automatically assign a kind
-            if self.y_count:
-                kind = "bar"
-            elif y.max() <= 1:
-                kind = "point"
-            elif (y.mean() / y.std()) < 2.5:
-                kind = "bar"
-            else:
-                kind = "point"
-            self.kind = kind
-        elif kind in ["bar", "point", "box"]:
-            self.kind = kind
-        else:
-            raise ValueError("%s is not a valid kind of plot" % kind)
-
-    @property
-    def estimate_data(self):
-        """Generator to yield x, y, and ci data for each hue subset."""
-        # First iterate through the hues, as plots are drawn for all
-        # positions of a given hue at the same time
-        for i, hue in enumerate(self.hue_order):
-
-            # Build intermediate lists of the values for each drawing
-            pos = []
-            height = []
-            ci = []
-            for j, x in enumerate(self.x_order):
-
-                pos.append(self.positions[j] + self.offset[i])
-
-                # Focus on the data for this specific bar/point
-                current_data = (self.x == x) & (self.hue == hue)
-                y_data = self.y[current_data]
-                if self.units is None:
-                    unit_data = None
-                else:
-                    unit_data = self.units[current_data]
-
-                # This is where the main computation happens
-                height.append(self.estimator(y_data))
-
-                # Only bootstrap with multple values
-                if current_data.sum() < 2:
-                    ci.append((None, None))
-                    continue
-
-                # Get the confidence intervals
-                if self.ci is not None:
-                    boots = algo.bootstrap(y_data, func=self.estimator,
-                                           n_boot=self.n_boot,
-                                           units=unit_data)
-                    ci.append(utils.ci(boots, self.ci))
-
-            yield pos, height, ci
-
-    @property
-    def binned_data(self):
-        """Generator to yield entire subsets of data for each bin."""
-        # First iterate through the hues, as plots are drawn for all
-        # positions of a given hue at the same time
-        for i, hue in enumerate(self.hue_order):
-
-            # Build intermediate lists of the values for each drawing
-            pos = []
-            data = []
-            for j, x in enumerate(self.x_order):
-
-                pos.append(self.positions[j] + self.offset[i])
-                current_data = (self.x == x) & (self.hue == hue)
-                data.append(self.y[current_data])
-
-            yield pos, data
-
-    def plot(self, ax):
-        """Plot based on the stored value for kind of plot."""
-        plotter = getattr(self, self.kind + "plot")
-        plotter(ax)
-
-        # Set the plot attributes (these are shared across plot kinds
-        if self.hue is not None:
-            leg = ax.legend(loc="best", scatterpoints=1)
-            if hasattr(self.hue, "name"):
-                leg.set_title(self.hue.name),
-
-                # Set the title size a roundabout way to maintain
-                # compatability with matplotlib 1.1
-                titlesize = mpl.rcParams["axes.labelsize"]
-                prop = mpl.font_manager.FontProperties(size=titlesize)
-                leg._legend_title_box._text.set_font_properties(prop)
-
-        ax.xaxis.grid(False)
-        ax.set_xticks(self.positions)
-        ax.set_xticklabels(self.x_order)
-        if hasattr(self.x, "name"):
-            ax.set_xlabel(self.x.name)
-        if self.y_count:
-            ax.set_ylabel("count")
-        else:
-            if hasattr(self.y, "name"):
-                ax.set_ylabel(self.y.name)
-
-        if self.hline is not None:
-            ymin, ymax = ax.get_ylim()
-            if self.hline > ymin and self.hline < ymax:
-                ax.axhline(self.hline, c="#666666")
-
-    def barplot(self, ax):
-        """Draw the plot with a bar representation."""
-        for i, (pos, height, ci) in enumerate(self.estimate_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            ecolor = self.err_palette[i]
-            label = self.hue_order[i]
-
-            # The main plot
-            ax.bar(pos, height, self.bar_widths, color=color,
-                   label=label, align="center")
-
-            # The error bars
-            for x, (low, high) in zip(pos, ci):
-                if low is None:
-                    continue
-                ax.plot([x, x], [low, high], linewidth=self.lw, color=ecolor)
-
-        # Set the x limits
-        offset = .5
-        xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
-
-    def boxplot(self, ax):
-        """Draw the plot with a bar representation."""
-        from .distributions import boxplot
-        for i, (pos, data) in enumerate(self.binned_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            label = self.hue_order[i]
-
-            # The main plot
-            boxplot(data, widths=self.bar_widths, color=color,
-                    positions=pos, label=label, ax=ax)
-
-        # Set the x limits
-        offset = .5
-        xlim = self.positions.min() - offset, self.positions.max() + offset
-        ax.set_xlim(xlim)
-
-    def pointplot(self, ax):
-        """Draw the plot with a point representation."""
-        for i, (pos, height, ci) in enumerate(self.estimate_data):
-
-            color = self.palette if self.x_palette else self.palette[i]
-            err_palette = self.err_palette
-            label = self.hue_order[i]
-            marker = self.markers[i]
-            markersize = np.pi * np.square(self.lw) * 2
-            linestyle = self.linestyles[i]
-            z = i + 1
-
-            # The error bars
-            for j, (x, (low, high)) in enumerate(zip(pos, ci)):
-                if low is None:
-                    continue
-                ecolor = err_palette[j] if self.x_palette else err_palette[i]
-                ax.plot([x, x], [low, high], linewidth=self.lw,
-                        color=ecolor, zorder=z)
-
-            # The main plot
-            ax.scatter(pos, height, s=markersize, color=color, label=label,
-                       marker=marker, zorder=z)
-
-            # The join line
-            if self.join:
-                ax.plot(pos, height, color=color,
-                        linewidth=self.lw, linestyle=linestyle, zorder=z)
-
-        # Set the x limits
-        xlim = (self.positions.min() + self.offset.min() - .3,
-                self.positions.max() + self.offset.max() + .3)
-        ax.set_xlim(xlim)
-
-
 class _RegressionPlotter(_LinearPlotter):
     """Plotter for numeric independent variables with regression model.
 
     This does the computations and drawing for the `regplot` function, and
-    is thus also used indirectly by `lmplot`. It is generally similar to
-    the `_DiscretePlotter`, but it's intended for use when the independent
-    variable is numeric (continuous or discrete), and its primary advantage
-    is that a regression model can be fit to the data and visualized, allowing
-    extrapolations beyond the observed datapoints.
-
+    is thus also used indirectly by `lmplot`.
     """
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
@@ -511,14 +188,15 @@ class _RegressionPlotter(_LinearPlotter):
         if self.order > 1:
             yhat, yhat_boots = self.fit_poly(grid, self.order)
         elif self.logistic:
-            from statsmodels.api import GLM, families
+            from statsmodels.genmod.generalized_linear_model import GLM
+            from statsmodels.genmod.families import Binomial
             yhat, yhat_boots = self.fit_statsmodels(grid, GLM,
-                                                    family=families.Binomial())
+                                                    family=Binomial())
         elif self.lowess:
             ci = None
             grid, yhat = self.fit_lowess()
         elif self.robust:
-            from statsmodels.api import RLM
+            from statsmodels.robust.robust_linear_model import RLM
             yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
         elif self.logx:
             yhat, yhat_boots = self.fit_logx(grid)
@@ -574,8 +252,8 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_lowess(self):
         """Fit a locally-weighted regression, which returns its own grid."""
-        from statsmodels.api import nonparametric
-        grid, yhat = nonparametric.lowess(self.y, self.x).T
+        from statsmodels.nonparametric.smoothers_lowess import lowess
+        grid, yhat = lowess(self.y, self.x).T
         return grid, yhat
 
     def fit_logx(self, grid):
@@ -622,10 +300,10 @@ class _RegressionPlotter(_LinearPlotter):
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
         # Insert the plot label into the correct set of keyword arguments
-        if self.fit_reg:
-            line_kws["label"] = self.label
-        else:
+        if self.scatter:
             scatter_kws["label"] = self.label
+        else:
+            line_kws["label"] = self.label
 
         # Use the current color cycle state as a default
         if self.color is None:
@@ -653,9 +331,22 @@ class _RegressionPlotter(_LinearPlotter):
 
     def scatterplot(self, ax, kws):
         """Draw the data."""
+        # Treat the line-based markers specially, explicitly setting larger
+        # linewidth than is provided by the seaborn style defaults.
+        # This would ideally be handled better in matplotlib (i.e., distinguish
+        # between edgewidth for solid glyphs and linewidth for line glyphs
+        # but this should do for now.
+        line_markers = ["1", "2", "3", "4", "+", "x", "|", "_"]
         if self.x_estimator is None:
+            if "marker" in kws and kws["marker"] in line_markers:
+                lw = mpl.rcParams["lines.linewidth"]
+            else:
+                lw = mpl.rcParams["lines.markeredgewidth"]
+            kws.setdefault("linewidths", lw)
+
             if not hasattr(kws['color'], 'shape') or kws['color'].shape[1] < 4:
                 kws.setdefault("alpha", .8)
+
             x, y = self.scatter_data
             ax.scatter(x, y, **kws)
         else:
@@ -689,64 +380,154 @@ class _RegressionPlotter(_LinearPlotter):
         ax.set_xlim(*xlim)
 
 
+_regression_docs = dict(
+
+    model_api=dedent("""\
+    There are a number of mutually exclusive options for estimating the
+    regression model: ``order``, ``logistic``, ``lowess``, ``robust``, and
+    ``logx``. See the parameter docs for more information on these options.\
+    """),
+
+    regplot_vs_lmplot=dedent("""\
+    Understanding the difference between :func:`regplot` and :func:`lmplot` can
+    be a bit tricky. In fact, they are closely related, as :func:`lmplot` uses
+    :func:`regplot` internally and takes most of its parameters. However,
+    :func:`regplot` is an axes-level function, so it draws directly onto an
+    axes (either the currently active axes or the one provided by the ``ax``
+    parameter), while :func:`lmplot` is a figure-level function and creates its
+    own figure, which is managed through a :class:`FacetGrid`. This has a few
+    consequences, namely that :func:`regplot` can happily coexist in a figure
+    with other kinds of plots and will follow the global matplotlib color
+    cycle. In contrast, :func:`lmplot` needs to occupy an entire figure, and
+    the size and color cycle are controlled through function parameters,
+    ignoring the global defaults.\
+    """),
+
+    x_estimator=dedent("""\
+    x_estimator : callable that maps vector -> scalar, optional
+        Apply this function to each unique value of ``x`` and plot the
+        resulting estimate. This is useful when ``x`` is a discrete variable.
+        If ``x_ci`` is not ``None``, this estimate will be bootstrapped and a
+        confidence interval will be drawn.\
+    """),
+    x_bins=dedent("""\
+    x_bins : int or vector, optional
+        Bin the ``x`` variable into discrete bins and then estimate the central
+        tendency and a confidence interval. This binning only influences how
+        the scatterplot is drawn; the regression is still fit to the original
+        data.  This parameter is interpreted either as the number of
+        evenly-sized (not necessary spaced) bins or the positions of the bin
+        centers. When this parameter is used, it implies that the default of
+        ``x_estimator`` is ``numpy.mean``.\
+    """),
+    x_ci=dedent("""\
+    x_ci : "ci", int in [0, 100] or None, optional
+        Size of the confidence interval used when plotting a central tendency
+        for discrete values of ``x``. If "ci", defer to the value of the``ci``
+        parameter.\
+    """),
+    scatter=dedent("""\
+    scatter : bool, optional
+        If ``True``, draw a scatterplot with the underlying observations (or
+        the ``x_estimator`` values).\
+    """),
+    fit_reg=dedent("""\
+    fit_reg : bool, optional
+        If ``True``, estimate and plot a regression model relating the ``x``
+        and ``y`` variables.\
+    """),
+    ci=dedent("""\
+    ci : int in [0, 100] or None, optional
+        Size of the confidence interval for the regression estimate. This will
+        be drawn using translucent bands around the regression line. The
+        confidence interval is estimated using a bootstrap; for large
+        datasets, it may be advisable to avoid that computation by setting
+        this parameter to None.\
+    """),
+    n_boot=dedent("""\
+    n_boot : int, optional
+        Number of bootstrap resamples used to estimate the ``ci``. The default
+        value attempts to balance time and stability; you may want to increase
+        this value for "final" versions of plots.\
+    """),
+    units=dedent("""\
+    units : variable name in ``data``, optional
+        If the ``x`` and ``y`` observations are nested within sampling units,
+        those can be specified here. This will be taken into account when
+        computing the confidence intervals by performing a multilevel bootstrap
+        that resamples both units and observations (within unit). This does not
+        otherwise influence how the regression is estimated or drawn.\
+    """),
+    order=dedent("""\
+    order : int, optional
+        If ``order`` is greater than 1, use ``numpy.polyfit`` to estimate a
+        polynomial regression.\
+    """),
+    logistic=dedent("""\
+    logistic : bool, optional
+        If ``True``, assume that ``y`` is a binary variable and use
+        ``statsmodels`` to estimate a logistic regression model. Note that this
+        is substantially more computationally intensive than linear regression,
+        so you may wish to decrease the number of bootstrap resamples
+        (``n_boot``) or set ``ci`` to None.\
+    """),
+    lowess=dedent("""\
+    lowess : bool, optional
+        If ``True``, use ``statsmodels`` to estimate a nonparametric lowess
+        model (locally weighted linear regression). Note that confidence
+        intervals cannot currently be drawn for this kind of model.\
+    """),
+    robust=dedent("""\
+    robust : bool, optional
+        If ``True``, use ``statsmodels`` to estimate a robust regression. This
+        will de-weight outliers. Note that this is substantially more
+        computationally intensive than standard linear regression, so you may
+        wish to decrease the number of bootstrap resamples (``n_boot``) or set
+        ``ci`` to None.\
+    """),
+    logx=dedent("""\
+    logx : bool, optional
+        If ``True``, estimate a linear regression of the form y ~ log(x), but
+        plot the scatterplot and regression model in the input space. Note that
+        ``x`` must be positive for this to work.\
+    """),
+    xy_partial=dedent("""\
+    {x,y}_partial : strings in ``data`` or matrices
+        Confounding variables to regress out of the ``x`` or ``y`` variables
+        before plotting.\
+    """),
+    truncate=dedent("""\
+    truncate : bool, optional
+        By default, the regression line is drawn to fill the x axis limits
+        after the scatterplot is drawn. If ``truncate`` is ``True``, it will
+        instead by bounded by the data limits.\
+    """),
+    xy_jitter=dedent("""\
+    {x,y}_jitter : floats, optional
+        Add uniform random noise of this size to either the ``x`` or ``y``
+        variables. The noise is added to a copy of the data after fitting the
+        regression, and only influences the look of the scatterplot. This can
+        be helpful when plotting variables that take discrete values.\
+    """),
+    scatter_line_kws=dedent("""\
+    {scatter,line}_kws : dictionaries
+        Additional keyword arguments to pass to ``plt.scatter`` and
+        ``plt.plot``.\
+    """),
+    )
+_regression_docs.update(_facet_docs)
+
+
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, size=5, aspect=1, sharex=True, sharey=True,
-           hue_order=None, col_order=None, row_order=None, dropna=True,
-           legend=True, legend_out=True, **kwargs):
-    """Plot a linear regression model and data onto a FacetGrid.
+           col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
+           sharey=True, hue_order=None, col_order=None, row_order=None,
+           legend=True, legend_out=True, x_estimator=None, x_bins=None,
+           x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
+           units=None, order=1, logistic=False, lowess=False, robust=False,
+           logx=False, x_partial=None, y_partial=None, truncate=False,
+           x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None):
 
-    Parameters
-    ----------
-    x, y : strings
-        Column names in ``data``.
-    data : DataFrame
-        Long-form (tidy) dataframe with variables in columns and observations
-        in rows.
-    hue, col, row : strings, optional
-        Variable names to facet on the hue, col, or row dimensions (see
-        :class:`FacetGrid` docs for more information).
-    palette : seaborn palette or dict, optional
-        Color palette if using a `hue` facet. Should be something that
-        seaborn.color_palette can read, or a dictionary mapping values of the
-        hue variable to matplotlib colors.
-    col_wrap : int, optional
-        Wrap the column variable at this width. Incompatible with `row`.
-    size : scalar, optional
-        Height (in inches) of each facet.
-    aspect : scalar, optional
-        Aspect * size gives the width (in inches) of each facet.
-    share{x, y}: booleans, optional
-        Lock the limits of the vertical and horizontal axes across the
-        facets.
-    {hue, col, row}_order: sequence of strings
-        Order to plot the values in the faceting variables in, otherwise
-        sorts the unique values.
-    dropna : boolean, optional
-        Drop missing values from the data before plotting.
-    legend : boolean, optional
-        Draw a legend for the data when using a `hue` variable.
-    legend_out: boolean, optional
-        Draw the legend outside the grid of plots.
-    kwargs : key, value pairs
-        Other keyword arguments are pasted to :func:`regplot`
-
-    Returns
-    -------
-    facets : FacetGrid
-        Returns the :class:`FacetGrid` instance with the plot on it
-        for further tweaking.
-
-    See Also
-    --------
-    regplot : Axes-level function for plotting linear regressions.
-
-    """
     # Reduce the dataframe to only needed columns
-    # Otherwise when dropna is True we could lose data because it is missing
-    # in a column that isn't relevant to this plot
-    units = kwargs.get("units", None)
-    x_partial = kwargs.get("x_partial", None)
-    y_partial = kwargs.get("y_partial", None)
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
     cols = np.unique([a for a in need_cols if a is not None]).tolist()
     data = data[cols]
@@ -754,10 +535,22 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette,
                        row_order=row_order, col_order=col_order,
-                       hue_order=hue_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap,
-                       sharex=sharex, sharey=sharey,
-                       legend=legend, legend_out=legend_out)
+                       hue_order=hue_order, size=size, aspect=aspect,
+                       col_wrap=col_wrap, sharex=sharex, sharey=sharey,
+                       legend_out=legend_out)
+
+    # Add the markers here as FacetGrid has figured out how many levels of the
+    # hue variable are needed and we don't want to duplicate that process
+    if facets.hue_names is None:
+        n_markers = 1
+    else:
+        n_markers = len(facets.hue_names)
+    if not isinstance(markers, list):
+        markers = [markers] * n_markers
+    if len(markers) != n_markers:
+        raise ValueError(("markers must be a singeton or a list of markers "
+                          "for each level of the hue variable"))
+    facets.hue_kws = {"marker": markers}
 
     # Hack to set the x limits properly, which needs to happen here
     # because the extent of the regression estimate is determined
@@ -768,7 +561,15 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
             scatter.remove()
 
     # Draw the regression plot on each facet
-    facets.map_dataframe(regplot, x, y, **kwargs)
+    regplot_kws = dict(
+        x_estimator=x_estimator, x_bins=x_bins, x_ci=x_ci,
+        scatter=scatter, fit_reg=fit_reg, ci=ci, n_boot=n_boot, units=units,
+        order=order, logistic=logistic, lowess=lowess, robust=robust,
+        logx=logx, x_partial=x_partial, y_partial=y_partial, truncate=truncate,
+        x_jitter=x_jitter, y_jitter=y_jitter,
+        scatter_kws=scatter_kws, line_kws=line_kws,
+        )
+    facets.map_dataframe(regplot, x, y, **regplot_kws)
 
     # Add a legend
     if legend and (hue is not None) and (hue not in [col, row]):
@@ -776,376 +577,186 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     return facets
 
 
-def factorplot(x, y=None, hue=None, data=None, row=None, col=None,
-               col_wrap=None,  estimator=np.mean, ci=95, n_boot=1000,
-               units=None, x_order=None, hue_order=None, col_order=None,
-               row_order=None, kind="auto", markers=None, linestyles=None,
-               dodge=0, join=True, hline=None, size=5, aspect=1, palette=None,
-               legend=True, legend_out=True, dropna=True, sharex=True,
-               sharey=True, margin_titles=False):
-    """Plot a variable estimate and error sorted by categorical factors.
+lmplot.__doc__ = dedent("""\
+    Plot data and regression model fits across a FacetGrid.
+
+    This function combines :func:`regplot` and :class:`FacetGrid`. It is
+    intended as a convenient interface to fit regression models across
+    conditional subsets of a dataset.
+
+    When thinking about how to assign variables to different facets, a general
+    rule is that it makes sense to use ``hue`` for the most important
+    comparison, followed by ``col`` and ``row``. However, always think about
+    your particular dataset and the goals of the visualization you are
+    creating.
+
+    {model_api}
+
+    The parameters to this function span most of the options in
+    :class:`FacetGrid`, although there may be occasional cases where you will
+    want to use that class and :func:`regplot` directly.
 
     Parameters
     ----------
-    x : string
-        Variable name in `data` for splitting the plot on the x axis.
-    y : string, optional
-        Variable name in `data` for the dependent variable. If omitted, the
-        counts within each bin are plotted (without confidence intervals).
-    data : DataFrame
-        Long-form (tidy) dataframe with variables in columns and observations
-        in rows.
-    hue : string, optional
-        Variable name in `data` for splitting the plot by color. In the case
-        of `kind="bar"`, this also influences the placement on the x axis.
-    row, col : strings, optional
-        Variable name(s) in `data` for splitting the plot into a facet grid
-        along row and columns.
-    col_wrap : int or None, optional
-        Wrap the column variable at this width (incompatible with `row`).
-    estimator : vector -> scalar function, optional
-        Function to aggregate `y` values at each level of the factors.
-    ci : int in {0, 100}, optional
-        Size of confidene interval to draw around the aggregated value.
-    n_boot : int, optional
-        Number of bootstrap resamples used to compute confidence interval.
-    units : vector, optional
-        Vector with ids for sampling units; bootstrap will be performed over
-        these units and then within them.
-    kind : {"auto", "point", "bar", "box"}, optional
-        Visual representation of the plot. "auto" uses a few heuristics to
-        guess whether "bar" or "point" is more appropriate.
-    markers : list of strings, optional
-        Marker codes to map the `hue` variable with. Only relevant when kind
-        is "point".
-    linestyles : list of strings, optional
-        Linestyle codes to map the `hue` variable with. Only relevant when
-        kind is "point".
-    dodge : positive scalar, optional
-        Horizontal offset applies to different `hue` levels. Only relevant
-        when kind is "point".
-    join : boolean, optional
-        Whether points from the same level of `hue` should be joined. Only
-        relevant when kind is "point".
-    size : positive scalar, optional
-        Height (in inches) of each facet.
-    aspect : positive scalar, optional
-        Ratio of facet width to facet height.
-    palette : seaborn color palette, optional
-        Palette to map `hue` variable with (or `x` variable when `hue` is
-        None).
-    legend : boolean, optional
-        Draw a legend, only if `hue` is used and does not overlap with other
-        variables.
-    legend_out : boolean, optional
-        Draw the legend outside the grid; otherwise it is placed within the
-        first facet.
-    dropna : boolean, optional
-        Remove observations that are NA within any variables used to make
-        the plot.
-    share{x, y} : booleans, optional
-        Lock the limits of the vertical and/or horizontal axes across the
-        facets.
-    margin_titles : bool, optional
-        If True and there is a `row` variable, draw the titles on the right
-        margin of the grid (experimental).
-
-    Returns
-    -------
-    facet : FacetGrid
-        Returns the :class:`FacetGrid` instance with the plot on it
-        for further tweaking.
-
+    x, y : strings, optional
+        Input variables; these should be column names in ``data``.
+    {data}
+    hue, col, row : strings
+        Variables that define subsets of the data, which will be drawn on
+        separate facets in the grid. See the ``*_order`` parameters to control
+        the order of levels of this variable.
+    {palette}
+    {col_wrap}
+    {size}
+    {aspect}
+    markers : matplotlib marker code or list of marker codes, optional
+        Markers for the scatterplot. If a list, each marker in the list will be
+        used for each level of the ``hue`` variable.
+    {share_xy}
+    {{hue,col,row}}_order : lists, optional
+        Order for the levels of the faceting variables. By default, this will
+        be the order that the levels appear in ``data`` or, if the variables
+        are pandas categoricals, the category order.
+    legend : bool, optional
+        If ``True`` and there is a ``hue`` variable, add a legend.
+    {legend_out}
+    {x_estimator}
+    {x_bins}
+    {x_ci}
+    {scatter}
+    {fit_reg}
+    {ci}
+    {n_boot}
+    {units}
+    {order}
+    {logistic}
+    {lowess}
+    {robust}
+    {logx}
+    {xy_partial}
+    {truncate}
+    {xy_jitter}
+    {scatter_line_kws}
 
     See Also
     --------
-    pointplot : Axes-level function for drawing a point plot
-    barplot : Axes-level function for drawing a bar plot
-    boxplot : Axes-level function for drawing a box plot
+    regplot : Plot data and a conditional model fit.
+    FacetGrid : Subplot grid for plotting conditional relationships.
+    pairplot : Combine :func:`regplot` and :class:`PairGrid` (when used with
+               ``kind="reg"``).
 
-    """
-    cols = [a for a in [x, y, hue, col, row, units] if a is not None]
-    cols = pd.unique(cols).tolist()
-    data = data[cols]
+    Notes
+    -----
 
-    facet_hue = hue if hue in [row, col] else None
-    facet_palette = palette if hue in [row, col] else None
+    {regplot_vs_lmplot}
 
-    # Initialize the grid
-    facets = FacetGrid(data, row, col, facet_hue, palette=facet_palette,
-                       row_order=row_order, col_order=col_order, dropna=dropna,
-                       size=size, aspect=aspect, col_wrap=col_wrap,
-                       legend=legend, legend_out=legend_out,
-                       sharex=sharex, sharey=sharey,
-                       margin_titles=margin_titles)
-
-    if kind == "auto":
-        if y is None:
-            kind = "bar"
-        elif (data[y] <= 1).all():
-            kind = "point"
-        elif (data[y].mean() / data[y].std()) < 2.5:
-            kind = "bar"
-        else:
-            kind = "point"
-
-    # Always use an x_order so that the plot is drawn properly when
-    # not all of the x variables are represented in each facet
-    if x_order is None:
-        x_order = np.sort(pd.unique(data[x]))
-
-    # Draw the plot on each facet
-    kwargs = dict(estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-                  x_order=x_order, hue_order=hue_order, hline=hline)
-
-    # Delegate the hue variable to the plotter not the FacetGrid
-    if hue is not None and hue in [row, col]:
-        hue = None
-    else:
-        kwargs["palette"] = palette
-
-    # Plot by mapping a plot function across the facets
-    if kind == "bar":
-        facets.map_dataframe(barplot, x, y, hue, **kwargs)
-    elif kind == "box":
-        def _boxplot(x, y, hue, data=None, **kwargs):
-            p = _DiscretePlotter(x, y, hue, data, kind="box", **kwargs)
-            ax = plt.gca()
-            p.plot(ax)
-        facets.map_dataframe(_boxplot, x, y, hue, **kwargs)
-    elif kind == "point":
-        kwargs.update(dict(dodge=dodge, join=join,
-                           markers=markers, linestyles=linestyles))
-        facets.map_dataframe(pointplot, x, y, hue, **kwargs)
-
-    # Draw legends and labels
-    if y is None:
-        facets.set_axis_labels(x, "count")
-        facets.fig.tight_layout()
-
-    if legend and (hue is not None) and (hue not in [x, row, col]):
-        facets.add_legend(title=hue, label_order=hue_order)
-
-    return facets
-
-
-def barplot(x, y=None, hue=None, data=None, estimator=np.mean, hline=None,
-            ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-            dropna=True, color=None, palette=None, label=None, ax=None):
-    """Estimate data in categorical bins with a bar representation.
-
-    Parameters
-    ----------
-    x : Vector or string
-        Data or variable name in `data` for splitting the plot on the x axis.
-    y : Vector or string, optional
-        Data or variable name in `data` for the dependent variable. If omitted,
-        the counts within each bin are plotted (without confidence intervals).
-    data : DataFrame, optional
-        Long-form (tidy) dataframe with variables in columns and observations
-        in rows.
-    estimator : vector -> scalar function, optional
-        Function to aggregate `y` values at each level of the factors.
-    ci : int in {0, 100}, optional
-        Size of confidene interval to draw around the aggregated value.
-    n_boot : int, optional
-        Number of bootstrap resamples used to compute confidence interval.
-    units : vector, optional
-        Vector with ids for sampling units; bootstrap will be performed over
-        these units and then within them.
-    palette : seaborn color palette, optional
-        Palette to map `hue` variable with (or `x` variable when `hue` is
-        None).
-    dropna : boolean, optional
-        Remove observations that are NA within any variables used to make
-        the plot.
-
-    Returns
-    -------
-    ax : Axes
-        Returns the matplotlib Axes with the plot on it for further tweaking.
-
-
-    See Also
+    Examples
     --------
-    factorplot : Combine barplot and FacetGrid
-    pointplot : Axes-level function for drawing a point plot
 
-    """
-    plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
-                               color, palette, "bar", None, None, 0, False,
-                               hline, estimator, ci, n_boot, dropna)
+    These examples focus on basic regression model plots to exhibit the
+    various faceting options; see the :func:`regplot` docs for demonstrations
+    of the other options for plotting the data and models. There are also
+    other examples for how to manipulate plot using the returned object on
+    the :class:`FacetGrid` docs.
 
-    if ax is None:
-        ax = plt.gca()
-    plotter.plot(ax)
-    return ax
+    Plot a simple linear relationship between two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.lmplot(x="total_bill", y="tip", data=tips)
+
+    Condition on a third variable and plot the levels in different colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips)
+
+    Use different markers as well as colors so the plot will reproduce to
+    black-and-white more easily:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                markers=["o", "x"])
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                palette="Set1")
+
+    Map ``hue`` levels to colors with a dictionary:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", hue="smoker", data=tips,
+        ...                palette=dict(Yes="g", No="m"))
+
+    Plot the levels of the third variable across different columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", col="smoker", data=tips)
+
+    Change the size and aspect ratio of the facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="size", y="total_bill", hue="day", col="day",
+        ...                data=tips, aspect=.4, x_jitter=.1)
+
+    Wrap the levels of the column variable into multiple rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", col="day", hue="day",
+        ...                data=tips, col_wrap=2, size=3)
+
+    Condition on two variables to make a full grid:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
+        ...                data=tips, size=3)
+
+    Use methods on the returned :class:`FacetGrid` instance to further tweak
+    the plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
+        ...                data=tips, size=3)
+        >>> g = (g.set_axis_labels("Total bill (US Dollars)", "Tip")
+        ...       .set(xlim=(0, 60), ylim=(0, 12),
+        ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
+        ...       .fig.subplots_adjust(wspace=.02))
 
 
-def pointplot(x, y, hue=None, data=None, estimator=np.mean, hline=None,
-              ci=95, n_boot=1000, units=None, x_order=None, hue_order=None,
-              markers=None, linestyles=None, dodge=0, dropna=True, color=None,
-              palette=None, join=True, label=None, ax=None):
-    """Estimate data in categorical bins with a point representation.
 
-    Parameters
-    ----------
-    x : Vector or string
-        Data or variable name in `data` for splitting the plot on the x axis.
-    y : Vector or string, optional
-        Data or variable name in `data` for the dependent variable. If omitted,
-        the counts within each bin are plotted (without confidence intervals).
-    data : DataFrame, optional
-        Long-form (tidy) dataframe with variables in columns and observations
-        in rows.
-    estimator : vector -> scalar function, optional
-        Function to aggregate `y` values at each level of the factors.
-    ci : int in {0, 100}, optional
-        Size of confidene interval to draw around the aggregated value.
-    n_boot : int, optional
-        Number of bootstrap resamples used to compute confidence interval.
-    units : vector, optional
-        Vector with ids for sampling units; bootstrap will be performed over
-        these units and then within them.
-    markers : list of strings, optional
-        Marker codes to map the `hue` variable with.
-    linestyles : list of strings, optional
-        Linestyle codes to map the `hue` variable with.
-    dodge : positive scalar, optional
-        Horizontal offset applies to different `hue` levels. Only relevant
-        when kind is "point".
-    join : boolean, optional
-        Whether points from the same level of `hue` should be joined. Only
-        relevant when kind is "point".
-    palette : seaborn color palette, optional
-        Palette to map `hue` variable with (or `x` variable when `hue` is
-        None).
-    dropna : boolean, optional
-        Remove observations that are NA within any variables used to make
-        the plot.
-
-    Returns
-    -------
-    ax : Axes
-        Returns the matplotlib Axes with the plot on it for further tweaking.
+    """).format(**_regression_docs)
 
 
-    See Also
-    --------
-    factorplot : Combine pointplot and FacetGrid
-    barplot : Axes-level function for drawing a bar plot
-
-    """
-    plotter = _DiscretePlotter(x, y, hue, data, units, x_order, hue_order,
-                               color, palette, "point", markers, linestyles,
-                               dodge, join, hline, estimator, ci, n_boot,
-                               dropna)
-
-    if ax is None:
-        ax = plt.gca()
-    plotter.plot(ax)
-    return ax
-
-
-def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
+def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
             scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
             logx=False, x_partial=None, y_partial=None,
             truncate=False, dropna=True, x_jitter=None, y_jitter=None,
-            xlabel=None, ylabel=None, label=None,
-            color=None, scatter_kws=None, line_kws=None,
-            ax=None):
-    """Draw a scatter plot between x and y with a regression line.
+            label=None, color=None, marker="o",
+            scatter_kws=None, line_kws=None, ax=None):
 
-    Parameters
-    ----------
-    x : vector or string
-        Data or column name in `data` for the predictor variable.
-    y : vector or string
-        Data or column name in `data` for the response variable.
-    data : DataFrame, optional
-        DataFrame to use if `x` and `y` are column names.
-    x_estimator : function that aggregates a vector into one value, optional
-        When `x` is a discrete variable, apply this estimator to the data
-        at each value and plot the data as a series of point estimates and
-        confidence intervals rather than a scatter plot.
-    x_bins : int or vector, optional
-        When `x` is a continuous variable, use the values in this vector (or
-        a vector of evenly spaced values with this length) to discretize the
-        data by assigning each point to the closest bin value. This applies
-        only to the plot; the regression is fit to the original data. This
-        implies that `x_estimator` is numpy.mean if not otherwise provided.
-    x_ci: int between 0 and 100, optional
-        Confidence interval to compute and draw around the point estimates
-        when `x` is treated as a discrete variable.
-    scatter : boolean, optional
-        Draw the scatter plot or point estimates with CIs representing the
-        observed data.
-    fit_reg : boolean, optional
-        If False, don't fit a regression; just draw the scatterplot.
-    ci : int between 0 and 100 or None, optional
-        Confidence interval to compute for regression estimate, which is drawn
-        as translucent bands around the regression line.
-    n_boot : int, optional
-        Number of bootstrap resamples used to compute the confidence intervals.
-    units : vector or string
-        Data or column name in `data` with ids for sampling units, so that the
-        bootstrap is performed by resampling units and then observations within
-        units for more accurate confidence intervals when data have repeated
-        measures.
-    order : int, optional
-        Order of the polynomial to fit. Use order > 1 to explore higher-order
-        trends in the relationship.
-    logistic : boolean, optional
-        Fit a logistic regression model. This requires `y` to be dichotomous
-        with values of either 0 or 1.
-    lowess : boolean, optional
-        Plot a lowess model (locally weighted nonparametric regression).
-    robust : boolean, optional
-        Fit a robust linear regression, which may be useful when the data
-        appear to have outliers.
-    logx : boolean, optional
-        Fit the regression in log(x) space.
-    {x, y}_partial : matrix or string(s) , optional
-        Matrix with same first dimension as `x`, or column name(s) in `data`.
-        These variables are treated as confounding and are removed from
-        the `x` or `y` variables before plotting.
-    truncate : boolean, optional
-        If True, truncate the regression estimate at the minimum and maximum
-        values of the `x` variable.
-    dropna : boolean, optional
-        Remove observations that are NA in at least one of the variables.
-    {x, y}_jitter : floats, optional
-        Add uniform random noise from within this range (in data coordinates)
-        to each datapoint in the x and/or y direction. This can be helpful when
-        plotting discrete values.
-    label : string, optional
-        Label to use for the regression line, or for the scatterplot if not
-        fitting a regression.
-    color : matplotlib color, optional
-        Color to use for all elements of the plot. Can set the scatter and
-        regression colors separately using the `kws` dictionaries. If not
-        provided, the current color in the axis cycle is used.
-    {scatter, line}_kws : dictionaries, optional
-        Additional keyword arguments passed to scatter() and plot() for drawing
-        the components of the plot.
-    ax : matplotlib axis, optional
-        Plot into this axis, otherwise grab the current axis or make a new
-        one if not existing.
-
-    Returns
-    -------
-    ax: matplotlib axes
-        Axes with the regression plot.
-
-    See Also
-    --------
-    lmplot : Combine regplot and a FacetGrid.
-    residplot : Calculate and plot the residuals of a linear model.
-    jointplot (with kind="reg"): Draw a regplot with univariate marginal
-                                 distrbutions.
-
-    """
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units,
                                  order, logistic, lowess, robust, logx,
@@ -1156,14 +767,183 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci=95,
         ax = plt.gca()
 
     scatter_kws = {} if scatter_kws is None else copy.copy(scatter_kws)
+    scatter_kws["marker"] = marker
     line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
+regplot.__doc__ = dedent("""\
+    Plot data and a linear regression model fit.
+
+    {model_api}
+
+    Parameters
+    ----------
+    x, y: string, series, or vector array
+        Input variables. If strings, these should correspond with column names
+        in ``data``. When pandas objects are used, axes will be labeled with
+        the series name.
+    {data}
+    {x_estimator}
+    {x_bins}
+    {x_ci}
+    {scatter}
+    {fit_reg}
+    {ci}
+    {n_boot}
+    {units}
+    {order}
+    {logistic}
+    {lowess}
+    {robust}
+    {logx}
+    {xy_partial}
+    {truncate}
+    {xy_jitter}
+    label : string
+        Label to apply to ether the scatterplot or regression line (if
+        ``scatter`` is ``False``) for use in a legend.
+    color : matplotlib color
+        Color to apply to all plot elements; will be superseded by colors
+        passed in ``scatter_kws`` or ``line_kws``.
+    marker : matplotlib marker code
+        Marker to use for the scatterplot glyphs.
+    {scatter_line_kws}
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.
+
+    Returns
+    -------
+    ax : matplotlib Axes
+        The Axes object containing the plot.
+
+    See Also
+    --------
+    lmplot : Combine :func:`regplot` and :class:`FacetGrid` to plot multiple
+             linear relationships in a dataset.
+    jointplot : Combine :func:`regplot` and :class:`JointGrid` (when used with
+                ``kind="reg"``).
+    pairplot : Combine :func:`regplot` and :class:`PairGrid` (when used with
+               ``kind="reg"``).
+    residplot : Plot the residuals of a linear regression model.
+    interactplot : Plot a two-way interaction between continuous variables
+
+    Notes
+    -----
+
+    {regplot_vs_lmplot}
+
+
+    It's also easy to combine combine :func:`regplot` and :class:`JointGrid` or
+    :class:`PairGrid` through the :func:`jointplot` and :func:`pairplot`
+    functions, although these do not directly accept all of :func:`regplot`'s
+    parameters.
+
+    Examples
+    --------
+
+    Plot the relationship between two variables in a DataFrame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.regplot(x="total_bill", y="tip", data=tips)
+
+    Plot with two variables defined as numpy arrays; use a different color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(8)
+        >>> mean, cov = [4, 6], [(1.5, .7), (.7, 1)]
+        >>> x, y = np.random.multivariate_normal(mean, cov, 80).T
+        >>> ax = sns.regplot(x=x, y=y, color="g")
+
+    Plot with two variables defined as pandas Series; use a different marker:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import pandas as pd
+        >>> x, y = pd.Series(x, name="x_var"), pd.Series(y, name="y_var")
+        >>> ax = sns.regplot(x=x, y=y, marker="+")
+
+    Use a 68% confidence interval, which corresponds with the standard error
+    of the estimate:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x=x, y=y, ci=68)
+
+    Plot with a discrete ``x`` variable and add some jitter:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips, x_jitter=.1)
+
+    Plot with a discrete ``x`` variable showing means and confidence intervals
+    for unique values:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
+        ...                  x_estimator=np.mean)
+
+    Plot with a continuous variable divided into discrete bins:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x=x, y=y, x_bins=4)
+
+    Fit a higher-order polynomial regression and truncate the model prediction:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ans = sns.load_dataset("anscombe")
+        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "II"],
+        ...                  scatter_kws={{"s": 80}},
+        ...                  order=2, ci=None, truncate=True)
+
+    Fit a robust regression and don't plot a confidence interval:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "III"],
+        ...                  scatter_kws={{"s": 80}},
+        ...                  robust=True, ci=None)
+
+    Fit a logistic regression; jitter the y variable and use fewer bootstrap
+    iterations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["big_tip"] = (tips.tip / tips.total_bill) > .175
+        >>> ax = sns.regplot(x="total_bill", y="big_tip", data=tips,
+        ...                  logistic=True, n_boot=500, y_jitter=.03)
+
+    Fit the regression model using log(x) and truncate the model prediction:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
+        ...                  x_estimator=np.mean, logx=True, truncate=True)
+
+    """).format(**_regression_docs)
+
 
 def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
               order=1, robust=False, dropna=True, label=None, color=None,
-              scatter_kws=None, ax=None):
+              scatter_kws=None, line_kws=None, ax=None):
     """Plot the residuals of a linear regression.
 
     This function will regress y on x (possibly as a robust or polynomial
@@ -1196,8 +976,9 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
         Label that will be used in any plot legends.
     color : matplotlib color, optional
         Color to use for all elements of the plot.
-    scatter_kws : dictionaries, optional
-        Additional keyword arguments passed to scatter() for drawing.
+    {scatter, line}_kws : dictionaries, optional
+        Additional keyword arguments passed to scatter() and plot() for drawing
+        the components of the plot.
     ax : matplotlib axis, optional
         Plot into this axis, otherwise grab the current axis or make a new
         one if not existing.
@@ -1237,7 +1018,8 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
 
     # Draw the scatterplot
     scatter_kws = {} if scatter_kws is None else scatter_kws
-    plotter.plot(ax, scatter_kws, {})
+    line_kws = {} if line_kws is None else line_kws
+    plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
 
@@ -1263,6 +1045,7 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
     """
     if not _has_statsmodels:
         raise ImportError("The `coefplot` function requires statsmodels")
+    import statsmodels.formula.api as sf
 
     alpha = 1 - ci / 100
     if groupby is None:
@@ -1356,6 +1139,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     """
     if not _has_statsmodels:
         raise ImportError("The `interactplot` function requires statsmodels")
+    from statsmodels.regression.linear_model import OLS
+    from statsmodels.genmod.generalized_linear_model import GLM
+    from statsmodels.genmod.families import Binomial
 
     # Handle the form of the data
     if data is not None:
@@ -1409,9 +1195,9 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     # Fit the model with an interaction
     X = np.c_[np.ones(x1.size), x1, x2, x1 * x2]
     if logistic:
-        lm = sm.GLM(y, X, family=sm.families.Binomial()).fit()
+        lm = GLM(y, X, family=Binomial()).fit()
     else:
-        lm = sm.OLS(y, X).fit()
+        lm = OLS(y, X).fit()
 
     # Evaluate the model on the grid
     eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
@@ -1455,6 +1241,9 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
              diag_names=True, method=None, ax=None, **kwargs):
     """Plot a correlation matrix with colormap and r values.
 
+    NOTE: This function is deprecated in favor of :func:`heatmap` and will
+    be removed in a forthcoming release.
+
     Parameters
     ----------
     data : Dataframe or nobs x nvars array
@@ -1476,8 +1265,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         full range (-1, 1), or specify (min, max) values for the colormap.
     cbar : bool
         If true, plot the colorbar legend.
-    method: pearson | kendall | spearman
-        Correlation method to compute pairwise correlations.
+    method: None (pearson) | kendall | spearman
+        Correlation method to compute pairwise correlations. Methods other
+        than the default pearson correlation will not have a significance
+        computed.
     ax : matplotlib axis
         Axis to draw plot in.
     kwargs : other keyword arguments
@@ -1489,6 +1280,10 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
         Axis object with plot.
 
     """
+    warnings.warn(("The `corrplot` function has been deprecated in favor "
+                   "of `heatmap` and will be removed in a forthcoming "
+                   "release. Please update your code."))
+
     if not isinstance(data, pd.DataFrame):
         if names is None:
             names = ["var_%d" % i for i in range(data.shape[1])]
@@ -1505,7 +1300,7 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
     data = data[names]
 
     # Get p values with a permutation test
-    if annot and sig_stars:
+    if annot and sig_stars and method is None:
         p_mat = algo.randomize_corrmat(data.values.T, sig_tail, sig_corr)
     else:
         p_mat = None
@@ -1545,7 +1340,16 @@ def corrplot(data, names=None, annot=True, sig_stars=True, sig_tail="both",
 
 def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
                cbar=True, annot=True, diag_names=True, ax=None, **kwargs):
-    """Plot a symmetric matrix with colormap and statistic values."""
+    """Plot a symmetric matrix with colormap and statistic values.
+
+    NOTE: This function is deprecated in favor of :func:`heatmap` and will
+    be removed in a forthcoming release.
+
+    """
+    warnings.warn(("The `symmatplot` function has been deprecated in favor "
+                   "of `heatmap` and will be removed in a forthcoming "
+                   "release. Please update your code."))
+
     if ax is None:
         ax = plt.gca()
 
@@ -1616,10 +1420,23 @@ def symmatplot(mat, p_mat=None, names=None, cmap="Greys", cmap_range=None,
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist",
-             size=3, aspect=1, dropna=True,
+             kind="scatter", diag_kind="hist", markers=None,
+             size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
+
+    By default, this function will create a grid of Axes such that each
+    variable in ``data`` will by shared in the y-axis across a single row and
+    in the x-axis across a single column. The diagonal Axes are treated
+    differently, drawing a plot to show the univariate distribution of the data
+    for the variable in that column.
+
+    It is also possible to show a subset of variables or plot different
+    variables on the rows and columns.
+
+    This is a high-level interface for :class:`PairGrid` that is intended to
+    make it easy to draw a few common styles. You should use :class`PairGrid`
+    directly if you need more flexibility.
 
     Parameters
     ----------
@@ -1643,6 +1460,11 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         Kind of plot for the non-identity relationships.
     diag_kind : {'hist', 'kde'}, optional
         Kind of plot for the diagonal subplots.
+    markers : single matplotlib marker code or list, optional
+        Either the marker to use for all datapoints or a list of markers with
+        a length the same as the number of levels in the hue variable so that
+        differently colored points will also have different scatterplot
+        markers.
     size : scalar, optional
         Height (in inches) of each facet.
     aspect : scalar, optional
@@ -1662,6 +1484,89 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     PairGrid : Subplot grid for more flexible plotting of pairwise
                relationships.
 
+    Examples
+    --------
+
+    Draw scatterplots for joint relationships and histograms for univariate
+    distributions:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
+        >>> iris = sns.load_dataset("iris")
+        >>> g = sns.pairplot(iris)
+
+    Show different levels of a categorical variable by the color of plot
+    elements:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species")
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species", palette="husl")
+
+    Use different markers for each level of the hue variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
+
+    Plot a subset of variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
+
+    Draw larger plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, size=3,
+        ...                  vars=["sepal_width", "sepal_length"])
+
+    Plot different variables in the rows and columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris,
+        ...                  x_vars=["sepal_width", "sepal_length"],
+        ...                  y_vars=["petal_width", "petal_length"])
+
+    Use kernel density estimates for univariate plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, diag_kind="kde")
+
+    Fit linear regression models to the scatter plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, kind="reg")
+
+    Pass keyword arguments down to the underlying functions (it may be easier
+    to use :class:`PairGrid` directly):
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
+        ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
+        ...                  diag_kws=dict(shade=True))
+
     """
     if plot_kws is None:
         plot_kws = {}
@@ -1676,6 +1581,20 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
                     hue_order=hue_order, palette=palette,
                     diag_sharey=diag_sharey,
                     size=size, aspect=aspect, dropna=dropna, **grid_kws)
+
+    # Add the markers here as PairGrid has figured out how many levels of the
+    # hue variable are needed and we don't want to duplicate that process
+    if markers is not None:
+        if grid.hue_names is None:
+            n_markers = 1
+        else:
+            n_markers = len(grid.hue_names)
+        if not isinstance(markers, list):
+            markers = [markers] * n_markers
+        if len(markers) != n_markers:
+            raise ValueError(("markers must be a singeton or a list of markers"
+                              " for each level of the hue variable"))
+        grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
     if grid.square_grid:

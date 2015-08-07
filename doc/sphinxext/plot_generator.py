@@ -6,6 +6,7 @@ Lightly modified from the mpld3 project.
 """
 from __future__ import division
 import os
+import os.path as op
 import re
 import glob
 import token
@@ -118,7 +119,7 @@ Example gallery
 def create_thumbnail(infile, thumbfile,
                      width=300, height=300,
                      cx=0.5, cy=0.5, border=4):
-    baseout, extout = os.path.splitext(thumbfile)
+    baseout, extout = op.splitext(thumbfile)
 
     im = image.imread(infile)
     rows, cols = im.shape[:2]
@@ -153,21 +154,32 @@ class ExampleGenerator(object):
         self.target_dir = target_dir
         self.thumbloc = .5, .5
         self.extract_docstring()
-        self.exec_file()
         with open(filename, "r") as fid:
             self.filetext = fid.read()
 
+        outfilename = op.join(target_dir, self.rstfilename)
+
+        # Only actually run it if the output RST file doesn't
+        # exist or it was modified less recently than the example
+        if (not op.exists(outfilename)
+            or (op.getmtime(outfilename) < op.getmtime(filename))):
+
+            self.exec_file()
+        else:
+
+            print("skipping {0}".format(self.filename))
+
     @property
     def dirname(self):
-        return os.path.split(self.filename)[0]
+        return op.split(self.filename)[0]
 
     @property
     def fname(self):
-        return os.path.split(self.filename)[1]
+        return op.split(self.filename)[1]
 
     @property
     def modulename(self):
-        return os.path.splitext(self.fname)[0]
+        return op.splitext(self.fname)[0]
 
     @property
     def pyfilename(self):
@@ -202,6 +214,9 @@ class ExampleGenerator(object):
     @property
     def plotfunc(self):
         match = re.search(r"sns\.(.+plot)\(", self.filetext)
+        if match:
+            return match.group(1)
+        match = re.search(r"sns\.(.+map)\(", self.filetext)
         if match:
             return match.group(1)
         match = re.search(r"sns\.(.+Grid)\(", self.filetext)
@@ -261,18 +276,16 @@ class ExampleGenerator(object):
 
         fig = plt.gcf()
         fig.canvas.draw()
-        pngfile = os.path.join(self.target_dir,
-                               self.pngfilename)
-        thumbfile = os.path.join("example_thumbs",
-                                 self.thumbfilename)
+        pngfile = op.join(self.target_dir, self.pngfilename)
+        thumbfile = op.join("example_thumbs", self.thumbfilename)
         self.html = "<img src=../%s>" % self.pngfilename
-        fig.savefig(pngfile, dpi=75)
+        fig.savefig(pngfile, dpi=75, bbox_inches="tight")
 
         cx, cy = self.thumbloc
         create_thumbnail(pngfile, thumbfile, cx=cx, cy=cy)
 
     def toctree_entry(self):
-        return "   ./%s\n\n" % os.path.splitext(self.htmlfilename)[0]
+        return "   ./%s\n\n" % op.splitext(self.htmlfilename)[0]
 
     def contents_entry(self):
         return (".. raw:: html\n\n"
@@ -291,25 +304,25 @@ class ExampleGenerator(object):
 
 
 def main(app):
-    static_dir = os.path.join(app.builder.srcdir, '_static')
-    target_dir = os.path.join(app.builder.srcdir, 'examples')
-    image_dir = os.path.join(app.builder.srcdir, 'examples/_images')
-    thumb_dir = os.path.join(app.builder.srcdir, "example_thumbs")
-    source_dir = os.path.abspath(os.path.join(app.builder.srcdir,
+    static_dir = op.join(app.builder.srcdir, '_static')
+    target_dir = op.join(app.builder.srcdir, 'examples')
+    image_dir = op.join(app.builder.srcdir, 'examples/_images')
+    thumb_dir = op.join(app.builder.srcdir, "example_thumbs")
+    source_dir = op.abspath(op.join(app.builder.srcdir,
                                               '..', 'examples'))
-    if not os.path.exists(static_dir):
+    if not op.exists(static_dir):
         os.makedirs(static_dir)
 
-    if not os.path.exists(target_dir):
+    if not op.exists(target_dir):
         os.makedirs(target_dir)
 
-    if not os.path.exists(image_dir):
+    if not op.exists(image_dir):
         os.makedirs(image_dir)
 
-    if not os.path.exists(thumb_dir):
+    if not op.exists(thumb_dir):
         os.makedirs(thumb_dir)
 
-    if not os.path.exists(source_dir):
+    if not op.exists(source_dir):
         os.makedirs(source_dir)
 
     banner_data = []
@@ -320,19 +333,20 @@ def main(app):
     contents = "\n\n"
 
     # Write individual example files
-    for filename in glob.glob(os.path.join(source_dir, "*.py")):
+    for filename in glob.glob(op.join(source_dir, "*.py")):
+
         ex = ExampleGenerator(filename, target_dir)
 
         banner_data.append({"title": ex.pagetitle,
-                            "url": os.path.join('examples', ex.htmlfilename),
-                            "thumb": os.path.join(ex.thumbfilename)})
-        shutil.copyfile(filename, os.path.join(target_dir, ex.pyfilename))
+                            "url": op.join('examples', ex.htmlfilename),
+                            "thumb": op.join(ex.thumbfilename)})
+        shutil.copyfile(filename, op.join(target_dir, ex.pyfilename))
         output = RST_TEMPLATE.format(sphinx_tag=ex.sphinxtag,
                                      docstring=ex.docstring,
                                      end_line=ex.end_line,
                                      fname=ex.pyfilename,
                                      img_file=ex.pngfilename)
-        with open(os.path.join(target_dir, ex.rstfilename), 'w') as f:
+        with open(op.join(target_dir, ex.rstfilename), 'w') as f:
             f.write(output)
 
         toctree += ex.toctree_entry()
@@ -342,7 +356,7 @@ def main(app):
         banner_data = (4 * banner_data)[:10]
 
     # write index file
-    index_file = os.path.join(target_dir, 'index.rst')
+    index_file = op.join(target_dir, 'index.rst')
     with open(index_file, 'w') as index:
         index.write(INDEX_TEMPLATE.format(sphinx_tag="example_gallery",
                                           toctree=toctree,

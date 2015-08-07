@@ -35,6 +35,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.mathjax',
               'sphinx.ext.autosummary',
               'plot_generator',
+              'plot_directive',
               'numpydoc',
               'ipython_directive',
               'ipython_console_highlighting',
@@ -43,6 +44,12 @@ extensions = ['sphinx.ext.autodoc',
 # Generate the API documentation when building
 autosummary_generate = True
 numpydoc_show_class_members = False
+
+# Include the example source for plots in API docs
+plot_include_source = True
+plot_formats = [("png", 90)]
+plot_html_show_formats = False
+plot_html_show_source_link = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -58,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'seaborn'
-copyright = u'2012-2014, Michael Waskom'
+copyright = u'2012-2015, Michael Waskom'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -120,7 +127,8 @@ html_theme_options = {
     'bootswatch_theme': "flatly",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
-    'navbar_links': [("Tutorial", "tutorial"),
+    'navbar_links': [("API", "api"),
+                     ("Tutorial", "tutorial"),
                      ("Gallery", "examples/index")],
 
     }
@@ -267,3 +275,9 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+# Add the 'copybutton' javascript, to hide/show the prompt in code
+# examples, originally taken from scikit-learn's doc/conf.py
+def setup(app):
+    app.add_javascript('copybutton.js')
+    app.add_stylesheet('style.css')

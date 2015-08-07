@@ -1,13 +1,19 @@
 """Small plotting-related utility functions."""
-from __future__ import division
+from __future__ import print_function, division
 import colorsys
 import warnings
+import os
 
 import numpy as np
 from scipy import stats
 import pandas as pd
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+
+from distutils.version import LooseVersion
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
+
+from .external.six.moves.urllib.request import urlopen, urlretrieve
 
 
 def ci_to_errsize(cis, heights):
@@ -203,22 +209,28 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         if trim:
             # clip off the parts of the spines that extend past major ticks
             xticks = ax_i.get_xticks()
-            firsttick = np.compress(xticks >= ax_i.get_xlim()[0], xticks)[0]
-            lasttick = np.compress(xticks <= ax_i.get_xlim()[-1], xticks)[-1]
-            ax_i.spines['bottom'].set_bounds(firsttick, lasttick)
-            ax_i.spines['top'].set_bounds(firsttick, lasttick)
-            newticks = xticks.compress(xticks <= lasttick)
-            newticks = newticks.compress(newticks >= firsttick)
-            ax_i.set_xticks(newticks)
+            if xticks.size:
+                firsttick = np.compress(xticks >= min(ax_i.get_xlim()),
+                                        xticks)[0]
+                lasttick = np.compress(xticks <= max(ax_i.get_xlim()),
+                                       xticks)[-1]
+                ax_i.spines['bottom'].set_bounds(firsttick, lasttick)
+                ax_i.spines['top'].set_bounds(firsttick, lasttick)
+                newticks = xticks.compress(xticks <= lasttick)
+                newticks = newticks.compress(newticks >= firsttick)
+                ax_i.set_xticks(newticks)
 
             yticks = ax_i.get_yticks()
-            firsttick = np.compress(yticks >= ax_i.get_ylim()[0], yticks)[0]
-            lasttick = np.compress(yticks <= ax_i.get_ylim()[-1], yticks)[-1]
-            ax_i.spines['left'].set_bounds(firsttick, lasttick)
-            ax_i.spines['right'].set_bounds(firsttick, lasttick)
-            newticks = yticks.compress(yticks <= lasttick)
-            newticks = newticks.compress(newticks >= firsttick)
-            ax_i.set_yticks(newticks)
+            if yticks.size:
+                firsttick = np.compress(yticks >= min(ax_i.get_ylim()),
+                                        yticks)[0]
+                lasttick = np.compress(yticks <= max(ax_i.get_ylim()),
+                                       yticks)[-1]
+                ax_i.spines['left'].set_bounds(firsttick, lasttick)
+                ax_i.spines['right'].set_bounds(firsttick, lasttick)
+                newticks = yticks.compress(yticks <= lasttick)
+                newticks = newticks.compress(newticks >= firsttick)
+                ax_i.set_yticks(newticks)
 
 
 def offset_spines(offset=10, fig=None, ax=None):
@@ -348,11 +360,170 @@ def iqr(a):
     return q3 - q1
 
 
-def load_dataset(name):
-    """Load a dataset from the online repository (requires internet)."""
+def get_dataset_names():
+    """Report available example datasets, useful for reporting issues."""
+    # delayed import to not demand bs4 unless this function is actually used
+    from bs4 import BeautifulSoup
+    http = urlopen('https://github.com/mwaskom/seaborn-data/')
+    gh_list = BeautifulSoup(http)
+
+    return [l.text.replace('.csv', '')
+            for l in gh_list.find_all("a", {"class": "js-directory-link"})
+            if l.text.endswith('.csv')]
+
+
+def get_data_home(data_home=None):
+    """Return the path of the seaborn data directory.
+
+    This is used by the ``load_dataset`` function.
+
+    If the ``data_home`` argument is not specified, the default location
+    is ``~/seaborn-data``.
+
+    Alternatively, a different default location can be specified using the
+    environment variable ``SEABORN_DATA``.
+    """
+    if data_home is None:
+        data_home = os.environ.get('SEABORN_DATA',
+                                   os.path.join('~', 'seaborn-data'))
+    data_home = os.path.expanduser(data_home)
+    if not os.path.exists(data_home):
+        os.makedirs(data_home)
+    return data_home
+
+
+def load_dataset(name, cache=True, data_home=None, **kws):
+    """Load a dataset from the online repository (requires internet).
+
+    Parameters
+    ----------
+    name : str
+        Name of the dataset (`name`.csv on
+        https://github.com/mwaskom/seaborn-data).  You can obtain list of
+        available datasets using :func:`get_dataset_names`
+    cache : boolean, optional
+        If True, then cache data locally and use the cache on subsequent calls
+    data_home : string, optional
+        The directory in which to cache data. By default, uses ~/seaborn_data/
+    kws : dict, optional
+        Passed to pandas.read_csv
+
+    """
     path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
     full_path = path.format(name)
-    df = pd.read_csv(full_path)
+
+    if cache:
+        cache_path = os.path.join(get_data_home(data_home),
+                                  os.path.basename(full_path))
+        if not os.path.exists(cache_path):
+            urlretrieve(full_path, cache_path)
+        full_path = cache_path
+
+    df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
+
+    if not pandas_has_categoricals:
+        return df
+
+    # Set some columns as a categorical type with ordered levels
+
+    if name == "tips":
+        df["day"] = pd.Categorical(df["day"], ["Thur", "Fri", "Sat", "Sun"])
+        df["sex"] = pd.Categorical(df["sex"], ["Male", "Female"])
+        df["time"] = pd.Categorical(df["time"], ["Lunch", "Dinner"])
+        df["smoker"] = pd.Categorical(df["smoker"], ["Yes", "No"])
+
+    if name == "flights":
+        df["month"] = pd.Categorical(df["month"], df.month.unique())
+
+    if name == "exercise":
+        df["time"] = pd.Categorical(df["time"], ["1 min", "15 min", "30 min"])
+        df["kind"] = pd.Categorical(df["kind"], ["rest", "walking", "running"])
+        df["diet"] = pd.Categorical(df["diet"], ["no fat", "low fat"])
+
+    if name == "titanic":
+        df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
+        df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
     return df
+
+
+def axis_ticklabels_overlap(labels):
+    """Return a boolean for whether the list of ticklabels have overlaps.
+
+    Parameters
+    ----------
+    labels : list of ticklabels
+
+    Returns
+    -------
+    overlap : boolean
+        True if any of the labels overlap.
+
+    """
+    if not labels:
+        return False
+    try:
+        bboxes = [l.get_window_extent() for l in labels]
+        overlaps = [b.count_overlaps(bboxes) for b in bboxes]
+        return max(overlaps) > 1
+    except RuntimeError:
+        # Issue on macosx backend rasies an error in the above code
+        return False
+
+
+def axes_ticklabels_overlap(ax):
+    """Return booleans for whether the x and y ticklabels on an Axes overlap.
+
+    Parameters
+    ----------
+    ax : matplotlib Axes
+
+    Returns
+    -------
+    x_overlap, y_overlap : booleans
+        True when the labels on that axis overlap.
+
+    """
+    return (axis_ticklabels_overlap(ax.get_xticklabels()),
+            axis_ticklabels_overlap(ax.get_yticklabels()))
+
+
+def categorical_order(values, order=None):
+    """Return a list of unique data values.
+
+    Determine an ordered list of levels in ``values``.
+
+    Parameters
+    ----------
+    values : list, array, Categorical, or Series
+        Vector of "categorical" values
+    order : list-like, optional
+        Desired order of category levels to override the order determined
+        from the ``values`` object.
+
+    Returns
+    -------
+    order : list
+        Ordered list of category levels not including null values.
+
+    """
+    if order is None:
+        if hasattr(values, "categories"):
+            order = values.categories
+        else:
+            try:
+                order = values.cat.categories
+            except (TypeError, AttributeError):
+                try:
+                    order = values.unique()
+                except AttributeError:
+                    order = pd.unique(values)
+                try:
+                    np.asarray(values).astype(np.float)
+                    order = np.sort(order)
+                except (ValueError, TypeError):
+                    order = order
+        order = filter(pd.notnull, order)
+    return list(order)
