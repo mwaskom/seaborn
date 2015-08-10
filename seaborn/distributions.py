@@ -248,6 +248,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         else:
             ax.set_xlabel(axlabel)
 
+    if label:
+        ax.legend()
+
     return ax
 
 
