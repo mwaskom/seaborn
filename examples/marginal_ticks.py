@@ -18,4 +18,4 @@ x, y = rs.multivariate_normal(mean, cov, 100).T
 # Use JointGrid directly to draw a custom plot
 grid = sns.JointGrid(x, y, space=0, size=6, ratio=50)
 grid.plot_joint(plt.scatter, color="g")
-grid.plot_marginals(sns.rugplot, color="g")
+grid.plot_marginals(sns.rugplot, height=1, color="g")

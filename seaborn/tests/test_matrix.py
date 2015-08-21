@@ -522,8 +522,7 @@ class TestDendrogram(object):
                                                     metric='euclidean',
                                                     method='single')
     except ImportError:
-        x_norm_distances = distance.squareform(
-            distance.pdist(x_norm.T, metric='euclidean'))
+        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_list=['k'],
@@ -632,8 +631,7 @@ class TestDendrogram(object):
             linkage = fastcluster.linkage_vector(self.x_norm, method='single',
                                                  metric='euclidean')
         except ImportError:
-            d = distance.squareform(distance.pdist(self.x_norm,
-                                                   metric='euclidean'))
+            d = distance.pdist(self.x_norm, metric='euclidean')
             linkage = hierarchy.linkage(d, method='single')
         dendrogram = hierarchy.dendrogram(linkage, no_plot=True,
                                           color_list=['k'],
@@ -663,9 +661,8 @@ class TestDendrogram(object):
         from scipy.spatial import distance
         from scipy.cluster import hierarchy
 
-        dists = distance.squareform(distance.pdist(self.x_norm.T,
-                                                   metric=self.default_kws[
-                                                       'metric']))
+        dists = distance.pdist(self.x_norm.T,
+                               metric=self.default_kws['metric'])
         linkage = hierarchy.linkage(dists, method=self.default_kws['method'])
 
         npt.assert_array_equal(scipy_linkage, linkage)
@@ -763,8 +760,7 @@ class TestClustermap(object):
                                                     metric='euclidean',
                                                     method='single')
     except ImportError:
-        x_norm_distances = distance.squareform(
-            distance.pdist(x_norm.T, metric='euclidean'))
+        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_list=['k'],
@@ -865,7 +861,7 @@ class TestClustermap(object):
 
     def test_z_score(self):
         df = self.df_norm.copy()
-        df = (df - df.mean()) / df.var()
+        df = (df - df.mean()) / df.std()
         kws = self.default_kws.copy()
         kws['z_score'] = 1
 
@@ -877,7 +873,7 @@ class TestClustermap(object):
     def test_z_score_axis0(self):
         df = self.df_norm.copy()
         df = df.T
-        df = (df - df.mean()) / df.var()
+        df = (df - df.mean()) / df.std()
         df = df.T
         kws = self.default_kws.copy()
         kws['z_score'] = 0

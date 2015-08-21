@@ -286,6 +286,7 @@ def test_ticklabels_overlap():
 def test_categorical_order():
 
     x = ["a", "c", "c", "b", "a", "d"]
+    y = [3, 2, 5, 1, 4]
     order = ["a", "b", "c", "d"]
 
     out = utils.categorical_order(x)
@@ -302,6 +303,15 @@ def test_categorical_order():
 
     out = utils.categorical_order(pd.Series(x))
     nt.assert_equal(out, ["a", "c", "b", "d"])
+
+    out = utils.categorical_order(y)
+    nt.assert_equal(out, [1, 2, 3, 4, 5])
+
+    out = utils.categorical_order(np.array(y))
+    nt.assert_equal(out, [1, 2, 3, 4, 5])
+
+    out = utils.categorical_order(pd.Series(y))
+    nt.assert_equal(out, [1, 2, 3, 4, 5])
 
     if pandas_has_categoricals:
         x = pd.Categorical(x, order)

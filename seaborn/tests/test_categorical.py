@@ -513,7 +513,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         sem = stats.sem(y[g == "b"])
         half_ci = stats.norm.ppf(.975) * sem
         ci = mean - half_ci, mean + half_ci
-        npt.assert_equal(p.statistic[1], mean)
+        npt.assert_almost_equal(p.statistic[1], mean)
         npt.assert_array_almost_equal(p.confint[1], ci, 2)
 
         npt.assert_equal(p.statistic[2], np.nan)
@@ -588,7 +588,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         sem = stats.sem(y[(g == "b") & (h == "x")])
         half_ci = stats.norm.ppf(.975) * sem
         ci = mean - half_ci, mean + half_ci
-        npt.assert_equal(p.statistic[1, 2], mean)
+        npt.assert_almost_equal(p.statistic[1, 2], mean)
         npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
 
         npt.assert_array_equal(p.statistic[:, 0], [np.nan] * 4)
@@ -2133,6 +2133,11 @@ class TestFactorPlot(CategoricalFixture):
 
         with nt.assert_raises(ValueError):
             cat.factorplot("g", "y", data=self.df, kind="not_a_kind")
+
+    def test_count_x_and_y(self):
+
+        with nt.assert_raises(ValueError):
+            cat.factorplot("g", "y", data=self.df, kind="count")
 
     def test_plot_colors(self):
 

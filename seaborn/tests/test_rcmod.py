@@ -133,7 +133,7 @@ class TestPlottingContext(RCParamTester):
         notebook_big = rcmod.plotting_context("notebook", 2)
 
         font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
-                     "xtick.labelsize", "ytick.labelsize"]
+                     "xtick.labelsize", "ytick.labelsize", "font.size"]
 
         for k in font_keys:
             nt.assert_equal(notebook_ref[k] * 2, notebook_big[k])

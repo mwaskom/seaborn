@@ -141,7 +141,7 @@ class _CategoricalPlotter(object):
             # Validate the inputs
             for input in [x, y, hue, units]:
                 if isinstance(input, string_types):
-                    err = "Could not interperet input '{}'".format(input)
+                    err = "Could not interpret input '{}'".format(input)
                     raise ValueError(err)
 
             # Figure out the plotting orientation
@@ -1466,7 +1466,7 @@ _categorical_docs = dict(
     x, y, hue : names of variables in ``data``
         Inputs for plotting long-form data. See examples for interpretation.\
         """),
-    data=dedent("""\
+    categorical_data=dedent("""\
     data : DataFrame, array, or list of arrays, optional
         Dataset for plotting. If ``x`` and ``y`` are absent, this is
         interpreted as wide-form. Otherwise it is expected to be long-form.\
@@ -1638,7 +1638,7 @@ boxplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     {orient}
     {color}
@@ -1821,7 +1821,7 @@ violinplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     bw : {{'scott', 'silverman', float}}, optional
         Either the name of a reference rule or the scale factor to use when
@@ -2023,7 +2023,7 @@ stripplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     jitter : float, ``True``/``1`` is special-cased, optional
         Amount of jitter (only along the categorical axis) to apply. This
@@ -2219,7 +2219,7 @@ barplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     {stat_api_params}
     {orient}
@@ -2386,7 +2386,7 @@ pointplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     {stat_api_params}
     markers : string or list of strings, optional
@@ -2564,7 +2564,7 @@ countplot.__doc__ = dedent("""\
     Parameters
     ----------
     {input_params}
-    {data}
+    {categorical_data}
     {order_vars}
     {orient}
     {color}
@@ -2666,6 +2666,8 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
             x_, y_, orient = y, y, "h"
         elif y is None and x is not None:
             x_, y_, orient = x, x, "v"
+        else:
+            raise ValueError("Either `x` or `y` must be None for count plots")
     else:
         x_, y_ = x, y
 
