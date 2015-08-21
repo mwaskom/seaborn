@@ -1,5 +1,7 @@
 import itertools
 import tempfile
+from matplotlib.cm import get_cmap
+from matplotlib.colors import ListedColormap
 
 import numpy as np
 import matplotlib as mpl
@@ -35,6 +37,19 @@ class TestHeatmap(object):
 
     x_unif = rs.rand(20, 13)
     df_unif = pd.DataFrame(x_unif)
+
+    # 5 unique values
+    x_string = np.array([['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A'],
+                         ['C', 'T', 'O', 'R', 'F', 'A', 'C', 'T'],
+                         ['O', 'R', 'F', 'A', 'C', 'T', 'O', 'R'],
+                         ['F', 'A', 'C', 'T', 'O', 'R', 'F', 'A']], dtype=str)
+    df_string = pd.DataFrame(x_string, index=letters)
+
+    x_bool = x_norm > 0.5
+    df_bool = pd.DataFrame(x_bool, index=letters)
+
+    x_int = np.array(x_norm, dtype=int)
+    df_int = pd.DataFrame(x_int, index=letters)
 
     default_kws = dict(vmin=None, vmax=None, cmap=None, center=None,
                        robust=False, annot=False, fmt=".2f", annot_kws=None,
@@ -108,6 +123,36 @@ class TestHeatmap(object):
         nt.assert_equal(p.vmax, vlim)
         nt.assert_true(p.divergent)
 
+    def test_default_asfactor_vlims(self):
+
+        factor_datasets = [self.df_bool, self.df_int, self.df_string,
+                           self.x_bool, self.x_int, self.x_string]
+        for dataset in factor_datasets:
+            print '{!r}'.format(dataset)
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            unique_values = sorted(pd.Series(np.ravel(dataset)).unique())
+            vmax = len(unique_values) - 1
+            nt.assert_equal(p.unique_values, unique_values)
+            nt.assert_equal(p.vmin, 0)
+            nt.assert_equal(p.vmax, vmax)
+            nt.assert_true(p.as_factors)
+
+    def test_asfactor_converts_plot_data_to_ints(self):
+
+        small_dataset = np.array([['a', 'b', 'c'],
+                                  ['c', 'a', 'b']], dtype='str')
+
+        p = mat._HeatMapper(small_dataset,
+                            as_factors=True,
+                            **self.default_kws)
+
+        expected_plot_data = np.array([[0, 1, 2],
+                                       [2, 0, 1]])
+        expected_plot_data = expected_plot_data[::-1]  # reverse
+        npt.assert_array_equal(expected_plot_data, p.plot_data)
+
     def test_robust_sequential_vlims(self):
 
         kws = self.default_kws.copy()
@@ -163,12 +208,51 @@ class TestHeatmap(object):
         npt.assert_array_equal(np.isnan(m.plot_data.data),
                                m.plot_data.mask)
 
+    def test_bool_datasets_default_to_factor(self):
+        bool_datasets = [self.df_bool, self.x_bool]
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=None,
+                                **self.default_kws)
+            nt.assert_true(p.as_factors)
+
+    def test_nones_are_ignored_from_unique_values(self):
+        bool_datasets = [self.df_bool.copy(), self.x_bool.copy()]
+
+        bool_datasets[0][0:3] = None
+        bool_datasets[1][0:3] = None
+
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            npt.assert_array_equal([False, True], p.unique_values)
+
+    def test_string_datasets_default_to_factor(self):
+        bool_datasets = [self.df_string, self.x_string]
+        for dataset in bool_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=None,
+                                **self.default_kws)
+            nt.assert_true(p.as_factors)
+
+    def test_default_as_factors_cmap(self):
+        factor_datasets = [self.df_bool, self.df_int, self.df_string,
+                           self.x_bool, self.x_int, self.x_string]
+        for dataset in factor_datasets:
+            p = mat._HeatMapper(dataset,
+                                as_factors=True,
+                                **self.default_kws)
+            expected_N = len(pd.Series(np.ravel(dataset)).unique())
+            nt.assert_is_instance(p.cmap, ListedColormap)
+            nt.assert_equals(p.cmap.N, expected_N)
+
     def test_custom_cmap(self):
 
         kws = self.default_kws.copy()
         kws["cmap"] = "BuGn"
         p = mat._HeatMapper(self.df_unif, **kws)
-        nt.assert_equal(p.cmap, "BuGn")
+        nt.assert_equal(p.cmap, get_cmap("BuGn"))
 
     def test_centered_vlims(self):
 
@@ -217,26 +301,106 @@ class TestHeatmap(object):
                                self.df_norm.index[::-1][ystart:ny:3])
 
     def test_heatmap_annotation(self):
-
-        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
-                         annot_kws={"fontsize": 14})
-        for val, text in zip(self.x_norm[::-1].flat, ax.texts):
-            nt.assert_equal(text.get_text(), "{:.1f}".format(val))
-            nt.assert_equal(text.get_fontsize(), 14)
-        plt.close("all")
+        try:
+            ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
+                             annot_kws={"fontsize": 14})
+            for val, text in zip(self.x_norm[::-1].flat, ax.texts):
+                nt.assert_equal(text.get_text(), "{:.1f}".format(val))
+                nt.assert_equal(text.get_fontsize(), 14)
+        finally:
+            plt.close("all")
 
     def test_heatmap_annotation_with_mask(self):
-
         df = pd.DataFrame(data={'a': [1, 1, 1],
                                 'b': [2, np.nan, 2],
                                 'c': [3, 3, np.nan]})
         mask = np.isnan(df.values)
         df_masked = np.ma.masked_where(mask, df)
         ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
-        nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
-        for val, text in zip(df_masked[::-1].compressed(), ax.texts):
-            nt.assert_equal("{:.1f}".format(val), text.get_text())
-        plt.close("all")
+        try:
+            nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
+            for val, text in zip(df_masked[::-1].compressed(), ax.texts):
+                nt.assert_equal("{:.1f}".format(val), text.get_text())
+        finally:
+            plt.close("all")
+
+    def test_heatmap_annotation_from_string_factor(self):
+
+        ax = mat.heatmap(self.df_string, annot=True, as_factors=True)
+        try:
+            for val, text in zip(self.x_string[::-1].flat, ax.texts):
+                nt.assert_equal(text.get_text(), "{:}".format(val))
+        finally:
+            plt.close("all")
+
+    def test_factor_heatmap_disables_axes_for_colorbar(self):
+        try:
+            fig = plt.figure()
+            ax = plt.subplot(121)
+            cax = plt.subplot(122)
+
+            mat.heatmap(self.df_string, as_factors=True,
+                        ax=ax, cbar_ax=cax)
+            # Disable the default axes for colorbar legend
+            # otherwise clustermap plots look odd
+            nt.assert_false(cax.axison)
+        finally:
+            plt.close('all')
+
+
+    def test_factor_heatmap_does_not_crash_when_string_cmap_provided(self):
+        # The legend plotting fails if the string cmap
+        # is not converted to a colormap object properly
+        try:
+            ax = mat.heatmap(self.df_string, as_factors=True, cmap='PuOr_r')
+        finally:
+            plt.close('all')
+
+    def test_heatmap_initialisation_with_list_of_colors_for_factor_data(self):
+        colors = ['red', 'blue']
+        kws = self.default_kws.copy()
+        kws["cmap"] = colors
+        kws['as_factors'] = True
+        p = mat._HeatMapper(self.df_bool, **kws)
+
+        nt.assert_is_instance(p.cmap, ListedColormap)
+        nt.assert_equal(p.cmap.colors, colors)
+
+    def test_heatmap_initialisation_when_a_list_of_factors_provided(self):
+        factors = [True, False]
+        kws = self.default_kws.copy()
+        kws['as_factors'] = factors
+        p = mat._HeatMapper(self.df_bool, **kws)
+
+        nt.assert_true(p.as_factors)
+        # Important:
+        # unique_values should preserve the order of factors specified
+        nt.assert_list_equal(p.unique_values, factors)
+
+    def test_heatmap_initialisation_with_wrong_list_of_factors(self):
+        kws = self.default_kws.copy()
+
+        # Too many parameters
+        kws['as_factors'] = [True, False, 'FileNotFound']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
+        # Too few parameters
+        kws['as_factors'] = [True]
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
+        # Correct number of parameters, but parameters are wrong
+        kws['as_factors'] = [True, 'more True']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+
+    def test_no_of_colors_checks_for_factor_data(self):
+        kws = self.default_kws.copy()
+        kws["cmap"] = ['red', 'blue', 'green']
+        kws['as_factors'] = True
+        # Too many colors
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
+        # Too few colors
+        kws['cmap'] = ['red']
+        nt.assert_raises(ValueError, mat._HeatMapper, self.df_bool, **kws)
 
     def test_heatmap_cbar(self):
 
