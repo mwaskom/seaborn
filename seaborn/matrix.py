@@ -111,19 +111,19 @@ class _HeatMapper(object):
         if isinstance(xticklabels, int) and xticklabels > 1:
             xtickevery = xticklabels
             xticklabels = _index_to_ticklabels(data.columns)
-        elif isinstance(xticklabels, bool) and xticklabels:
+        elif xticklabels is True:
             xticklabels = _index_to_ticklabels(data.columns)
-        elif isinstance(xticklabels, bool) and not xticklabels:
-            xticklabels = ['' for _ in range(data.shape[1])]
+        elif xticklabels is False:
+            xticklabels = []
 
         ytickevery = 1
         if isinstance(yticklabels, int) and yticklabels > 1:
             ytickevery = yticklabels
             yticklabels = _index_to_ticklabels(data.index)
-        elif isinstance(yticklabels, bool) and yticklabels:
+        elif yticklabels is True:
             yticklabels = _index_to_ticklabels(data.index)
-        elif isinstance(yticklabels, bool) and not yticklabels:
-            yticklabels = ['' for _ in range(data.shape[0])]
+        elif yticklabels is False:
+            yticklabels = []
         else:
             yticklabels = yticklabels[::-1]
 
