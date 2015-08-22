@@ -185,10 +185,8 @@ class TestHeatmap(object):
         kws['xticklabels'] = False
         kws['yticklabels'] = False
         p = mat._HeatMapper(self.df_norm, **kws)
-        nt.assert_equal(p.xticklabels, ['' for _ in range(
-            self.df_norm.shape[1])])
-        nt.assert_equal(p.yticklabels, ['' for _ in range(
-            self.df_norm.shape[0])])
+        nt.assert_equal(p.xticklabels, [])
+        nt.assert_equal(p.yticklabels, [])
 
     def test_custom_ticklabels(self):
         kws = self.default_kws.copy()
