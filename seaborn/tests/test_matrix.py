@@ -223,6 +223,17 @@ class TestHeatmap(object):
             nt.assert_equal(text.get_fontsize(), 14)
         plt.close("all")
 
+    def test_heatmap_annotation_overwrite_kws(self):
+
+        annot_kws = dict(color="0.3", va="bottom", ha="left")
+        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
+                         annot_kws=annot_kws)
+        for text in ax.texts:
+            nt.assert_equal(text.get_color(), "0.3")
+            nt.assert_equal(text.get_ha(), "left")
+            nt.assert_equal(text.get_va(), "bottom")
+        plt.close("all")
+
     def test_heatmap_annotation_with_mask(self):
 
         df = pd.DataFrame(data={'a': [1, 1, 1],

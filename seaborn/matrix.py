@@ -201,8 +201,9 @@ class _HeatMapper(object):
                 _, l, _ = colorsys.rgb_to_hls(*color[:3])
                 text_color = ".15" if l > .5 else "w"
                 val = ("{:" + self.fmt + "}").format(val)
-                ax.text(x, y, val, color=text_color,
-                        ha="center", va="center", **self.annot_kws)
+                text_kwargs = dict(color=text_color, ha="center", va="center")
+                text_kwargs.update(self.annot_kws)
+                ax.text(x, y, val, **text_kwargs)
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
