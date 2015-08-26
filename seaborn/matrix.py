@@ -515,13 +515,6 @@ class _DendrogramPlotter(object):
         self.dependent_coord = self.dendrogram['dcoord']
         self.independent_coord = self.dendrogram['icoord']
 
-        if self.rotate:
-            self.X = self.dendrogram['dcoord']
-            self.Y = self.dendrogram['icoord']
-        else:
-            self.X = self.dendrogram['icoord']
-            self.Y = self.dendrogram['dcoord']
-
     def _calculate_linkage_scipy(self):
         if np.product(self.shape) >= 10000:
             UserWarning('This will be slow... (gentle suggestion: '
