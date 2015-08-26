@@ -3,6 +3,7 @@ import itertools
 
 import colorsys
 import matplotlib as mpl
+from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
@@ -511,6 +512,9 @@ class _DendrogramPlotter(object):
             self.yticklabels, self.xticklabels = [], []
             self.xlabel, self.ylabel = '', ''
 
+        self.dependent_coord = self.dendrogram['dcoord']
+        self.independent_coord = self.dendrogram['icoord']
+
         if self.rotate:
             self.X = self.dendrogram['dcoord']
             self.Y = self.dendrogram['icoord']
@@ -583,19 +587,33 @@ class _DendrogramPlotter(object):
             Axes object upon which the dendrogram is plotted
 
         """
-        for x, y in zip(self.X, self.Y):
-            ax.plot(x, y, color='k', linewidth=.5)
+        line_kwargs = dict(linewidths=.5, colors='k')
+        if self.rotate and self.axis == 0:
+            lines = LineCollection([list(zip(x, y)) for x, y in zip(self.dependent_coord,
+                                                                    self.independent_coord)],
+                                   **line_kwargs)
+        else:
+            lines = LineCollection([list(zip(x, y)) for x, y in zip(self.independent_coord,
+                                                                    self.dependent_coord)],
+                                   **line_kwargs)
+
+        ax.add_collection(lines)
+        number_of_leaves = len(self.reordered_ind)
+        max_dependent_coord = max(map(max, self.dependent_coord))
 
         if self.rotate and self.axis == 0:
-            ax.invert_xaxis()
             ax.yaxis.set_ticks_position('right')
-
-            ymax = min(map(min, self.Y)) + max(map(max, self.Y))
-            ax.set_ylim(0, ymax)
             ax.invert_yaxis()
+
+            # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
+            ax.set_ylim(0, number_of_leaves * 10)
+            ax.set_xlim(0, max_dependent_coord * 1.05)
+
+            ax.invert_xaxis()
         else:
-            xmax = min(map(min, self.X)) + max(map(max, self.X))
-            ax.set_xlim(0, xmax)
+            # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
+            ax.set_xlim(0, number_of_leaves * 10)
+            ax.set_ylim(0, max_dependent_coord * 1.05)
 
         despine(ax=ax, bottom=True, left=True)
 
