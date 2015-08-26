@@ -594,7 +594,7 @@ class _DendrogramPlotter(object):
         number_of_leaves = len(self.reordered_ind)
         max_dependent_coord = max(map(max, self.dependent_coord))
 
-        if self.rotate and self.axis == 0:
+        if self.rotate:
             ax.yaxis.set_ticks_position('right')
 
             # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
