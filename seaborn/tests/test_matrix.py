@@ -546,7 +546,8 @@ class TestDendrogram(object):
         nt.assert_equal(xlim[0], 0)
         nt.assert_equal(xlim[1], xmax)
 
-        nt.assert_equal(len(ax.collections[0].get_paths()), len(d.dependent_coord))
+        nt.assert_equal(len(ax.collections[0].get_paths()),
+                        len(d.dependent_coord))
 
         plt.close('all')
 
@@ -562,7 +563,8 @@ class TestDendrogram(object):
         # 10 comes from _plot_dendrogram in scipy.cluster.hierarchy
         ymax = len(d.reordered_ind) * 10
 
-        # Since y axis is inverted, ylim is (80, 0) and not (0, 80) as expected:
+        # Since y axis is inverted, ylim is (80, 0)
+        # and therefore not (0, 80) as usual:
         nt.assert_equal(ylim[1], 0)
         nt.assert_equal(ylim[0], ymax)
         plt.close('all')

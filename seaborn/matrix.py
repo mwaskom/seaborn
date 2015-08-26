@@ -582,12 +582,14 @@ class _DendrogramPlotter(object):
         """
         line_kwargs = dict(linewidths=.5, colors='k')
         if self.rotate and self.axis == 0:
-            lines = LineCollection([list(zip(x, y)) for x, y in zip(self.dependent_coord,
-                                                                    self.independent_coord)],
+            lines = LineCollection([list(zip(x, y))
+                                    for x, y in zip(self.dependent_coord,
+                                                    self.independent_coord)],
                                    **line_kwargs)
         else:
-            lines = LineCollection([list(zip(x, y)) for x, y in zip(self.independent_coord,
-                                                                    self.dependent_coord)],
+            lines = LineCollection([list(zip(x, y))
+                                    for x, y in zip(self.independent_coord,
+                                                    self.dependent_coord)],
                                    **line_kwargs)
 
         ax.add_collection(lines)
@@ -597,14 +599,16 @@ class _DendrogramPlotter(object):
         if self.rotate:
             ax.yaxis.set_ticks_position('right')
 
-            # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
+            # Constants 10 and 1.05 come from
+            # `scipy.cluster.hierarchy._plot_dendrogram`
             ax.set_ylim(0, number_of_leaves * 10)
             ax.set_xlim(0, max_dependent_coord * 1.05)
 
             ax.invert_xaxis()
             ax.invert_yaxis()
         else:
-            # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
+            # Constants 10 and 1.05 come from
+            # `scipy.cluster.hierarchy._plot_dendrogram`
             ax.set_xlim(0, number_of_leaves * 10)
             ax.set_ylim(0, max_dependent_coord * 1.05)
 
