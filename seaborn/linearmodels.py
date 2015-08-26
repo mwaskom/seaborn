@@ -557,8 +557,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # by the limits of the plot
     if sharex:
         for ax in facets.axes.flat:
-            scatter = ax.scatter(data[x], np.ones(len(data)) * data[y].mean())
-            scatter.remove()
+            ax.scatter(data[x], np.ones(len(data)) * data[y].mean()).remove()
 
     # Draw the regression plot on each facet
     regplot_kws = dict(
