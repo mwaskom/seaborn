@@ -603,13 +603,13 @@ class _DendrogramPlotter(object):
 
         if self.rotate and self.axis == 0:
             ax.yaxis.set_ticks_position('right')
-            ax.invert_yaxis()
 
             # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
             ax.set_ylim(0, number_of_leaves * 10)
             ax.set_xlim(0, max_dependent_coord * 1.05)
 
             ax.invert_xaxis()
+            ax.invert_yaxis()
         else:
             # Constants 10 and 1.05 come from _plot_dendrogram in scipy.cluster.hierarchy
             ax.set_xlim(0, number_of_leaves * 10)
