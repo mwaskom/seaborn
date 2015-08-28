@@ -130,12 +130,22 @@ class _HeatMapper(object):
 
         # Get the positions and used label for the ticks
         nx, ny = data.T.shape
-        xstart, xend, xstep = 0, nx, xtickevery
-        self.xticks = np.arange(xstart, xend, xstep) + .5
-        self.xticklabels = xticklabels[xstart:xend:xstep]
-        ystart, yend, ystep = (ny - 1) % ytickevery, ny, ytickevery
-        self.yticks = np.arange(ystart, yend, ystep) + .5
-        self.yticklabels = yticklabels[ystart:yend:ystep]
+
+        if xticklabels == []:
+            self.xticks = []
+            self.xticklabels = []
+        else:
+            xstart, xend, xstep = 0, nx, xtickevery
+            self.xticks = np.arange(xstart, xend, xstep) + .5
+            self.xticklabels = xticklabels[xstart:xend:xstep]
+
+        if yticklabels == []:
+            self.yticks = []
+            self.yticklabels = []
+        else:
+            ystart, yend, ystep = (ny - 1) % ytickevery, ny, ytickevery
+            self.yticks = np.arange(ystart, yend, ystep) + .5
+            self.yticklabels = yticklabels[ystart:yend:ystep]
 
         # Get good names for the axis labels
         xlabel = _index_to_label(data.columns)
