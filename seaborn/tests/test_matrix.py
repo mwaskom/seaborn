@@ -539,13 +539,16 @@ class TestDendrogram(object):
         d = mat.dendrogram(self.x_norm, **self.default_kws)
 
         ax = plt.gca()
-        d.xmin, d.xmax = ax.get_xlim()
-        xmax = min(map(min, d.X)) + max(map(max, d.X))
-        nt.assert_equal(d.xmin, 0)
-        nt.assert_equal(d.xmax, xmax)
+        xlim = ax.get_xlim()
+        # 10 comes from _plot_dendrogram in scipy.cluster.hierarchy
+        xmax = len(d.reordered_ind) * 10
 
-        nt.assert_equal(len(ax.get_lines()), len(d.X))
-        nt.assert_equal(len(ax.get_lines()), len(d.Y))
+        nt.assert_equal(xlim[0], 0)
+        nt.assert_equal(xlim[1], xmax)
+
+        nt.assert_equal(len(ax.collections[0].get_paths()),
+                        len(d.dependent_coord))
+
         plt.close('all')
 
     def test_dendrogram_rotate(self):
@@ -555,10 +558,15 @@ class TestDendrogram(object):
         d = mat.dendrogram(self.x_norm, **kws)
 
         ax = plt.gca()
-        d.ymin, d.ymax = ax.get_ylim()
-        ymax = min(map(min, d.Y)) + max(map(max, d.Y))
-        nt.assert_equal(d.ymin, 0)
-        nt.assert_equal(d.ymax, ymax)
+        ylim = ax.get_ylim()
+
+        # 10 comes from _plot_dendrogram in scipy.cluster.hierarchy
+        ymax = len(d.reordered_ind) * 10
+
+        # Since y axis is inverted, ylim is (80, 0)
+        # and therefore not (0, 80) as usual:
+        nt.assert_equal(ylim[1], 0)
+        nt.assert_equal(ylim[0], ymax)
         plt.close('all')
 
     def test_dendrogram_ticklabel_rotation(self):
@@ -824,10 +832,10 @@ class TestClustermap(object):
     def test_plot_dendrograms(self):
         cm = mat.clustermap(self.df_norm, **self.default_kws)
 
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_lines()),
-                        len(cm.dendrogram_row.X))
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_lines()),
-                        len(cm.dendrogram_col.X))
+        nt.assert_equal(len(cm.ax_row_dendrogram.collections[0].get_paths()),
+                        len(cm.dendrogram_row.independent_coord))
+        nt.assert_equal(len(cm.ax_col_dendrogram.collections[0].get_paths()),
+                        len(cm.dendrogram_col.independent_coord))
         data2d = self.df_norm.iloc[cm.dendrogram_row.reordered_ind,
                                    cm.dendrogram_col.reordered_ind]
         pdt.assert_frame_equal(cm.data2d, data2d)
