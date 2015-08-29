@@ -235,3 +235,54 @@ class TestJointPlot(object):
     def teardown_class(cls):
         """Ensure that all figures are closed on exit."""
         plt.close("all")
+
+
+class TestDistPlot(object):
+
+    data = np.random.normal(0, 0.1, 10)
+
+    def test_distplot_legend_render(self):
+
+        # No label should indicate no legend
+        g = dist.distplot(self.data)
+        nt.assert_is_none(g.legend_)
+        plt.close("all")
+
+        # Label should create a legend
+        g = dist.distplot(self.data, label="Foo")
+        nt.assert_is_not_none(g.legend_)
+        plt.close("all")
+
+        # Keywords should still create a legend
+        g = dist.distplot(self.data, kde_kws={"label": "Foo"})
+        nt.assert_is_not_none(g.legend_)
+        plt.close("all")
+
+        # Multiple keywords should create two legend entries:
+        # One patch, one line
+        g = dist.distplot(self.data, kde_kws={"label": "Foo"},
+                          hist_kws={"label": "Foo"})
+        leg_props = g.legend_.properties()
+        nt.assert_equal(1, len(leg_props["patches"]))
+        nt.assert_equal(1, len(leg_props["lines"]))
+        plt.close("all")
+
+        # hist_kws + label should create one patch legend entry
+        g = dist.distplot(self.data, hist_kws={"label": "Foo"},
+                          label="Foo")
+        leg_props = g.legend_.properties()
+        nt.assert_equal(1, len(leg_props["patches"]))
+        nt.assert_equal(0, len(leg_props["lines"]))
+        plt.close("all")
+
+        # kde_kws + label should create one patch, one line legend entry
+        g = dist.distplot(self.data, kde_kws={"label": "Foo"},
+                          label="Foo")
+        leg_props = g.legend_.properties()
+        nt.assert_equal(1, len(leg_props["patches"]))
+        nt.assert_equal(1, len(leg_props["lines"]))
+
+    @classmethod
+    def teardown_class(cls):
+        """Ensure that all figures are closed on exit."""
+        plt.close("all")
