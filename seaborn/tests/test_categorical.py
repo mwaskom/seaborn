@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pandas as pd
 import scipy
@@ -2177,4 +2178,202 @@ class TestFactorPlot(CategoricalFixture):
         g = cat.factorplot("g", "y", data=self.df, palette="Set2")
         for l1, l2 in zip(ax.lines, g.ax.lines):
             nt.assert_equal(l1.get_color(), l2.get_color())
+        plt.close("all")
+
+
+class TestLVPlotter(CategoricalFixture):
+
+    def setUp(self):
+        def edge_calc(n, data):
+                f = 2**(-n)
+                mid = np.median(data)
+                maxi = np.max(data)
+                return np.array([mid*f, maxi - mid*f])
+
+        self.default_kws = dict(x=None, y=None, hue=None, data=None,
+                                order=None, hue_order=None,
+                                orient=None, color=None, palette=None,
+                                saturation=.75, width=.8,
+                                k_depth='proportion', linewidth=None,
+                                scale='exponential', outlier_prop=None)
+        self.linear_data = np.arange(101)
+        self.n = len(self.linear_data)
+        self.expected_edges = map(lambda i: edge_calc(i, self.linear_data),
+                             xrange(5, 0, -1))
+        self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.08)) + 1
+        self.outlier_data = np.concatenate((np.arange(100), [200]))
+
+    def test_box_ends_finite(self):
+        p = cat._LVPlotter(**self.default_kws)
+        p.establish_variables("g", "y", data=self.df)
+        box_ends, k_vals = np.hsplit(np.asarray(map(p._lv_box_ends,
+                                                    p.plot_data)), 2)
+        box_ends = box_ends.squeeze()
+        k_vals = k_vals.squeeze()
+
+        # Check that all the box ends are finite and are within
+        # the bounds of the data
+        b_e = map(lambda a: np.all(np.isfinite(a)), box_ends)
+        npt.assert_equal(np.sum(b_e), len(box_ends))
+
+        def within(t):
+            a, d = t
+            return ((np.ravel(a) <= d.max()) &
+                    (np.ravel(a) >= d.min())).all()
+
+        b_w = map(within, itertools.izip(box_ends, p.plot_data))
+        npt.assert_equal(np.sum(b_w), len(box_ends))
+
+        k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
+        npt.assert_equal(np.sum(k_f), len(k_vals))
+
+    def test_box_ends_correct(self):
+        p = cat._LVPlotter(**self.default_kws)
+        calc_edges, calc_k = p._lv_box_ends(self.linear_data)
+
+        npt.assert_equal(self.expected_edges, calc_edges)
+
+        npt.assert_equal(self.expected_k, calc_k)
+
+    def test_outliers(self):
+        p = cat._LVPlotter(**self.default_kws)
+        calc_edges, calc_k = p._lv_box_ends(self.outlier_data)
+
+        npt.assert_equal(self.expected_edges, calc_edges)
+
+        npt.assert_equal(self.expected_k, calc_k)
+
+        out_calc = p._lv_outliers(self.outlier_data, calc_k)
+        out_exp = p._lv_outliers(self.outlier_data, self.expected_k)
+
+        npt.assert_equal(out_exp, out_calc)
+
+    def test_hue_offsets(self):
+
+        p = cat._LVPlotter(**self.default_kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        npt.assert_array_equal(p.hue_offsets, [-.2, .2])
+
+        kws = self.default_kws.copy()
+        kws["width"] = .6
+        p = cat._LVPlotter(**kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        npt.assert_array_equal(p.hue_offsets, [-.15, .15])
+
+        p = cat._LVPlotter(**kws)
+        p.establish_variables("h", "y", "g", data=self.df)
+        npt.assert_array_almost_equal(p.hue_offsets, [-.2, 0, .2])
+
+    def test_axes_data(self):
+
+        ax = cat.lvplot("g", "y", data=self.df)
+        nt.assert_equal(len(ax.artists), 3)
+
+        plt.close("all")
+
+        ax = cat.lvplot("g", "y", "h", data=self.df)
+        nt.assert_equal(len(ax.artists), 6)
+
+        plt.close("all")
+
+    def test_box_colors(self):
+
+        ax = cat.lvplot("g", "y", data=self.df, saturation=1)
+        pal = palettes.color_palette("deep", 3)
+        for patch, color in zip(ax.artists, pal):
+            nt.assert_equal(patch.get_facecolor()[:3], color)
+
+        plt.close("all")
+
+        ax = cat.lvplot("g", "y", "h", data=self.df, saturation=1)
+        pal = palettes.color_palette("deep", 2)
+        for patch, color in zip(ax.artists, pal * 2):
+            nt.assert_equal(patch.get_facecolor()[:3], color)
+
+        plt.close("all")
+
+    def test_draw_missing_boxes(self):
+
+        ax = cat.lvplot("g", "y", data=self.df,
+                         order=["a", "b", "c", "d"])
+        nt.assert_equal(len(ax.artists), 3)
+        plt.close("all")
+
+    def test_missing_data(self):
+
+        x = ["a", "a", "b", "b", "c", "c", "d", "d"]
+        h = ["x", "y", "x", "y", "x", "y", "x", "y"]
+        y = self.rs.randn(8)
+        y[-2:] = np.nan
+
+        ax = cat.lvplot(x, y)
+        nt.assert_equal(len(ax.artists), 3)
+
+        plt.close("all")
+
+        y[-1] = 0
+        ax = cat.lvplot(x, y, h)
+        nt.assert_equal(len(ax.artists), 7)
+
+        plt.close("all")
+
+    def test_lvplots(self):
+
+        # Smoke test the high level lvplot options
+
+        cat.lvplot("y", data=self.df)
+        plt.close("all")
+
+        cat.lvplot(y="y", data=self.df)
+        plt.close("all")
+
+        cat.lvplot("g", "y", data=self.df)
+        plt.close("all")
+
+        cat.lvplot("y", "g", data=self.df, orient="h")
+        plt.close("all")
+
+        cat.lvplot("g", "y", "h", data=self.df)
+        plt.close("all")
+
+        cat.lvplot("g", "y", "h", order=list("nabc"), data=self.df)
+        plt.close("all")
+
+        cat.lvplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        plt.close("all")
+
+        cat.lvplot("y", "g", "h", data=self.df, orient="h")
+        plt.close("all")
+
+    def test_axes_annotation(self):
+
+        ax = cat.lvplot("g", "y", data=self.df)
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "y")
+        nt.assert_equal(ax.get_xlim(), (-.5, 2.5))
+        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
+                               ["a", "b", "c"])
+
+        plt.close("all")
+
+        ax = cat.lvplot("g", "y", "h", data=self.df)
+        nt.assert_equal(ax.get_xlabel(), "g")
+        nt.assert_equal(ax.get_ylabel(), "y")
+        npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_xticklabels()],
+                               ["a", "b", "c"])
+        npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
+                               ["m", "n"])
+
+        plt.close("all")
+
+        ax = cat.lvplot("y", "g", data=self.df, orient="h")
+        nt.assert_equal(ax.get_xlabel(), "y")
+        nt.assert_equal(ax.get_ylabel(), "g")
+        nt.assert_equal(ax.get_ylim(), (2.5, -.5))
+        npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
+        npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
+                               ["a", "b", "c"])
+
         plt.close("all")

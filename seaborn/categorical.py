@@ -1464,7 +1464,7 @@ class _LVPlotter(_CategoricalPlotter):
         self.linewidth = linewidth
 
         if scale is None:
-            scale = 'linear'
+            scale = 'exponential'
         self.scale = scale
 
         self.outlier_prop = outlier_prop
@@ -3120,8 +3120,8 @@ factorplot.__doc__ = dedent("""\
 
 
 def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-           orient=None, color=None, palette=None, saturation=None,
-           width=None, k_depth=None, linewidth=None, scale=None,
+           orient=None, color=None, palette=None, saturation=.75,
+           width=.8, k_depth='proportion', linewidth=None, scale='exponential',
            outlier_prop=None, ax=None, **kwargs):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
