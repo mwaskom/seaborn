@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
+from . import PlotTestCase
 from .. import rcmod
 
 
@@ -164,7 +165,7 @@ class TestPlottingContext(RCParamTester):
         self.assert_rc_params(orig_params)
 
 
-class TestFonts(object):
+class TestFonts(PlotTestCase):
 
     def test_set_font(self):
 
@@ -183,7 +184,6 @@ class TestFonts(object):
                 raise nose.SkipTest("Verdana font is not present")
         finally:
             rcmod.set()
-            plt.close("all")
 
     def test_set_serif_font(self):
 
@@ -196,7 +196,6 @@ class TestFonts(object):
                      mpl.rcParams["font.serif"])
 
         rcmod.set()
-        plt.close("all")
 
     def test_different_sans_serif(self):
 
@@ -220,8 +219,6 @@ class TestFonts(object):
                 raise nose.SkipTest("Verdana font is not present")
         finally:
             rcmod.set()
-            plt.close("all")
-
 
 def has_verdana():
     """Helper to verify if Verdana font is present"""

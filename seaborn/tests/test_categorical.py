@@ -12,11 +12,12 @@ import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
+from . import PlotTestCase
 from .. import categorical as cat
 from .. import palettes
 
 
-class CategoricalFixture(object):
+class CategoricalFixture(PlotTestCase):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -725,7 +726,6 @@ class TestBoxPlotter(CategoricalFixture):
         ax = cat.boxplot("g", "y", data=self.df,
                          order=["a", "b", "c", "d"])
         nt.assert_equal(len(ax.artists), 3)
-        plt.close("all")
 
     def test_missing_data(self):
 
@@ -1191,7 +1191,6 @@ class TestViolinPlotter(CategoricalFixture):
         for val, line in zip(np.percentile(self.y, [25, 50, 75]), ax.lines):
             _, y = line.get_xydata().T
             npt.assert_array_equal(y, [val, val])
-        plt.close("all")
 
     def test_draw_points(self):
 
@@ -1434,8 +1433,6 @@ class TestStripPlotter(CategoricalFixture):
 
             npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
 
-        plt.close("all")
-
     @skipif(not pandas_has_categoricals)
     def test_stripplot_horiztonal(self):
 
@@ -1449,8 +1446,6 @@ class TestStripPlotter(CategoricalFixture):
 
             npt.assert_array_equal(x, vals)
             npt.assert_array_equal(y, np.ones(len(x)) * i)
-
-        plt.close("all")
 
     def test_stripplot_jitter(self):
 
@@ -1466,8 +1461,6 @@ class TestStripPlotter(CategoricalFixture):
             npt.assert_array_equal(y, vals)
 
             npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
-
-        plt.close("all")
 
     def test_split_nested_stripplot_vertical(self):
 
@@ -1485,8 +1478,6 @@ class TestStripPlotter(CategoricalFixture):
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 npt.assert_equal(fc, pal[j])
 
-        plt.close("all")
-
     @skipif(not pandas_has_categoricals)
     def test_split_nested_stripplot_horizontal(self):
 
@@ -1501,8 +1492,6 @@ class TestStripPlotter(CategoricalFixture):
 
                 npt.assert_array_equal(x, vals)
                 npt.assert_array_equal(y, np.ones(len(x)) * i + [-.2, .2][j])
-
-        plt.close("all")
 
     def test_unsplit_nested_stripplot_vertical(self):
 
@@ -1521,8 +1510,6 @@ class TestStripPlotter(CategoricalFixture):
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 npt.assert_equal(fc, pal[j])
 
-        plt.close("all")
-
     @skipif(not pandas_has_categoricals)
     def test_unsplit_nested_stripplot_horizontal(self):
 
@@ -1537,8 +1524,6 @@ class TestStripPlotter(CategoricalFixture):
 
                 npt.assert_array_equal(x, vals)
                 npt.assert_array_equal(y, np.ones(len(x)) * i)
-
-        plt.close("all")
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -1583,8 +1568,6 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_equal(bar.get_height(), abs(stat))
             nt.assert_equal(bar.get_width(), p.width)
 
-        plt.close("all")
-
     def test_draw_horizontal_bars(self):
 
         kws = self.default_kws.copy()
@@ -1606,8 +1589,6 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_equal(bar.get_y(), pos)
             nt.assert_equal(bar.get_height(), p.width)
             nt.assert_equal(bar.get_width(), abs(stat))
-
-        plt.close("all")
 
     def test_draw_nested_vertical_bars(self):
 
@@ -1636,8 +1617,6 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_x(), pos - p.width / 2)
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
 
-        plt.close("all")
-
     def test_draw_nested_horizontal_bars(self):
 
         kws = self.default_kws.copy()
@@ -1664,8 +1643,6 @@ class TestBarPlotter(CategoricalFixture):
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
             nt.assert_almost_equal(bar.get_x(), min(0, stat))
             nt.assert_almost_equal(bar.get_width(), abs(stat))
-
-        plt.close("all")
 
     def test_draw_missing_bars(self):
 
@@ -1835,8 +1812,6 @@ class TestPointPlotter(CategoricalFixture):
                                          p.colors):
             npt.assert_array_equal(got_color[:-1], want_color)
 
-        plt.close("all")
-
     def test_draw_horizontal_points(self):
 
         kws = self.default_kws.copy()
@@ -1858,8 +1833,6 @@ class TestPointPlotter(CategoricalFixture):
         for got_color, want_color in zip(points.get_facecolors(),
                                          p.colors):
             npt.assert_array_equal(got_color[:-1], want_color)
-
-        plt.close("all")
 
     def test_draw_vertical_nested_points(self):
 
@@ -1887,8 +1860,6 @@ class TestPointPlotter(CategoricalFixture):
             for got_color in points.get_facecolors():
                 npt.assert_array_equal(got_color[:-1], color)
 
-        plt.close("all")
-
     def test_draw_horizontal_nested_points(self):
 
         kws = self.default_kws.copy()
@@ -1914,8 +1885,6 @@ class TestPointPlotter(CategoricalFixture):
 
             for got_color in points.get_facecolors():
                 npt.assert_array_equal(got_color[:-1], color)
-
-        plt.close("all")
 
     def test_pointplot_colors(self):
 
@@ -2066,8 +2035,6 @@ class TestFactorPlot(CategoricalFixture):
         g = cat.factorplot("g", "y", col="u", row="h", data=self.df)
         nt.assert_equal(g.axes.shape, (2, 3))
 
-        plt.close("all")
-
     def test_plot_elements(self):
 
         g = cat.factorplot("g", "y", data=self.df)
@@ -2126,8 +2093,6 @@ class TestFactorPlot(CategoricalFixture):
         g = cat.factorplot("g", "y", "h", data=self.df, kind="strip")
         want_elements = self.g.unique().size * self.h.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
-
-        plt.close("all")
 
     def test_bad_plot_kind_error(self):
 

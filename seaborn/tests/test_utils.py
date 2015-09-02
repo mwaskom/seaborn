@@ -16,14 +16,15 @@ from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 from pandas.util.testing import network
-from ..utils import get_dataset_names, load_dataset
 
 try:
     from bs4 import BeautifulSoup
 except ImportError:
     BeautifulSoup = None
 
+from . import PlotTestCase
 from .. import utils, rcmod
+from ..utils import get_dataset_names, load_dataset
 
 
 a_norm = np.random.randn(100)
@@ -109,7 +110,7 @@ def test_iqr():
     assert_equal(iqr, 2)
 
 
-class TestSpineUtils(object):
+class TestSpineUtils(PlotTestCase):
 
     sides = ["left", "right", "bottom", "top"]
     outer_sides = ["top", "right"]
@@ -134,8 +135,6 @@ class TestSpineUtils(object):
         for side in self.sides:
             nt.assert_true(~ax.spines[side].get_visible())
 
-        plt.close("all")
-
     def test_despine_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
 
@@ -148,8 +147,6 @@ class TestSpineUtils(object):
             nt.assert_true(~ax2.spines[side].get_visible())
         for side in self.inner_sides:
             nt.assert_true(ax2.spines[side].get_visible())
-
-        plt.close("all")
 
     def test_despine_with_offset(self):
         f, ax = plt.subplots()
@@ -168,8 +165,6 @@ class TestSpineUtils(object):
             else:
                 nt.assert_equal(new_position, self.original_position)
 
-        plt.close("all")
-
     def test_despine_with_offset_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
 
@@ -184,7 +179,6 @@ class TestSpineUtils(object):
             else:
                 nt.assert_equal(ax2.spines[side].get_position(),
                                 self.original_position)
-        plt.close("all")
 
     def test_despine_trim_spines(self):
         f, ax = plt.subplots()
@@ -195,8 +189,6 @@ class TestSpineUtils(object):
         for side in self.inner_sides:
             bounds = ax.spines[side].get_bounds()
             nt.assert_equal(bounds, (1, 3))
-
-        plt.close("all")
 
     def test_despine_trim_inverted(self):
 
@@ -209,8 +201,6 @@ class TestSpineUtils(object):
         for side in self.inner_sides:
             bounds = ax.spines[side].get_bounds()
             nt.assert_equal(bounds, (1, 3))
-
-        plt.close("all")
 
     def test_despine_trim_noticks(self):
 
@@ -229,8 +219,6 @@ class TestSpineUtils(object):
             nt.assert_true('deprecated' in str(w[0].message))
             nt.assert_true(issubclass(w[0].category, UserWarning))
 
-        plt.close('all')
-
     def test_offset_spines(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning)
@@ -246,8 +234,6 @@ class TestSpineUtils(object):
                 nt.assert_equal(ax.spines[side].get_position(),
                                 self.offset_position)
 
-        plt.close("all")
-
     def test_offset_spines_specific_axes(self):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always", category=UserWarning)
@@ -260,8 +246,6 @@ class TestSpineUtils(object):
                                 self.original_position)
                 nt.assert_equal(ax2.spines[side].get_position(),
                                 self.offset_position)
-        plt.close("all")
-
 
 def test_ticklabels_overlap():
 

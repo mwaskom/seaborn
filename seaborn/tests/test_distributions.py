@@ -7,6 +7,7 @@ import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
+from . import PlotTestCase
 from .. import distributions as dist
 
 try:
@@ -17,7 +18,7 @@ except ImportError:
     _no_statsmodels = True
 
 
-class TestKDE(object):
+class TestKDE(PlotTestCase):
 
     rs = np.random.RandomState(0)
     x = rs.randn(50)
@@ -108,10 +109,9 @@ class TestKDE(object):
                         len(ax_values.collections))
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
-        plt.close("all")
 
 
-class TestJointPlot(object):
+class TestJointPlot(PlotTestCase):
 
     rs = np.random.RandomState(sum(map(ord, "jointplot")))
     x = rs.randn(100)
@@ -133,8 +133,6 @@ class TestJointPlot(object):
         y_bins = dist._freedman_diaconis_bins(self.y)
         nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
 
-        plt.close("all")
-
     def test_reg(self):
 
         g = dist.jointplot("x", "y", self.data, kind="reg")
@@ -154,8 +152,6 @@ class TestJointPlot(object):
         nt.assert_equal(len(g.ax_marg_x.lines), 1)
         nt.assert_equal(len(g.ax_marg_y.lines), 1)
 
-        plt.close("all")
-
     def test_resid(self):
 
         g = dist.jointplot("x", "y", self.data, kind="resid")
@@ -163,8 +159,6 @@ class TestJointPlot(object):
         nt.assert_equal(len(g.ax_joint.lines), 1)
         nt.assert_equal(len(g.ax_marg_x.lines), 0)
         nt.assert_equal(len(g.ax_marg_y.lines), 1)
-
-        plt.close("all")
 
     def test_hex(self):
 
@@ -177,8 +171,6 @@ class TestJointPlot(object):
         y_bins = dist._freedman_diaconis_bins(self.y)
         nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
 
-        plt.close("all")
-
     def test_kde(self):
 
         g = dist.jointplot("x", "y", self.data, kind="kde")
@@ -189,8 +181,6 @@ class TestJointPlot(object):
 
         nt.assert_equal(len(g.ax_marg_x.lines), 1)
         nt.assert_equal(len(g.ax_marg_y.lines), 1)
-
-        plt.close("all")
 
     def test_color(self):
 
@@ -203,8 +193,6 @@ class TestJointPlot(object):
         hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
         nt.assert_equal(hist_color, purple)
 
-        plt.close("all")
-
     def test_annotation(self):
 
         g = dist.jointplot("x", "y", self.data)
@@ -212,8 +200,6 @@ class TestJointPlot(object):
 
         g = dist.jointplot("x", "y", self.data, stat_func=None)
         nt.assert_is(g.ax_joint.legend_, None)
-
-        plt.close("all")
 
     def test_hex_customise(self):
 
@@ -224,14 +210,7 @@ class TestJointPlot(object):
         a = g.ax_joint.collections[0].get_array()
         nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
 
-        plt.close("all")
-
     def test_bad_kind(self):
 
         with nt.assert_raises(ValueError):
             dist.jointplot("x", "y", self.data, kind="not_a_kind")
-
-    @classmethod
-    def teardown_class(cls):
-        """Ensure that all figures are closed on exit."""
-        plt.close("all")
