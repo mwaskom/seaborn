@@ -247,6 +247,7 @@ class TestSpineUtils(PlotTestCase):
                 nt.assert_equal(ax2.spines[side].get_position(),
                                 self.offset_position)
 
+
 def test_ticklabels_overlap():
 
     rcmod.set()

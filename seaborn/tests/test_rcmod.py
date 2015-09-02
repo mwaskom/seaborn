@@ -220,6 +220,7 @@ class TestFonts(PlotTestCase):
         finally:
             rcmod.set()
 
+
 def has_verdana():
     """Helper to verify if Verdana font is present"""
     # This import is relatively lengthy, so to prevent its import for
