@@ -365,6 +365,7 @@ class FacetGrid(Grid):
         self._y_var = None
         self._dropna = dropna
         self._not_na = not_na
+        self._sharex = sharex
 
         # Make the axes look good
         fig.tight_layout()
@@ -787,6 +788,12 @@ class FacetGrid(Grid):
             if self._dropna:
                 data_ijk = data_ijk.dropna()
             kwargs["data"] = data_ijk
+            
+            #if sharex is False, set the order for each subplot separatly 
+            if not self._sharex:
+                groups = data_ijk.get(x, x)
+                group_names = utils.categorical_order(groups)
+                kwargs["order"] = group_names
 
             # Draw the plot
             self._facet_plot(func, ax, args, kwargs)
