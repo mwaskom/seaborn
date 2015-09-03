@@ -3176,8 +3176,8 @@ lvplot.__doc__ = dedent("""\
         is proportional to the percentage of data covered.
     outlier_prop : float, optional
         Proportion of data believed to be outliers. Is used in conjuction with
-        k_depth to determine the number of percentiles to draw. Defaults to 8
-        outliers.
+        k_depth to determine the number of percentiles to draw. Defaults to
+        0.007 as a proportion of outliers. Should be in range [0, 1].
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.plot`` and
