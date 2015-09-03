@@ -15,6 +15,7 @@ try:
 except ImportError:
     _no_statsmodels = True
 
+from . import PlotTestCase
 from .. import linearmodels as lm
 from .. import algorithms as algo
 from .. import utils
@@ -23,7 +24,7 @@ from ..palettes import color_palette
 rs = np.random.RandomState(0)
 
 
-class TestLinearPlotter(object):
+class TestLinearPlotter(PlotTestCase):
 
     rs = np.random.RandomState(77)
     df = pd.DataFrame(dict(x=rs.normal(size=60),
@@ -87,7 +88,7 @@ class TestLinearPlotter(object):
         pdt.assert_series_equal(p.y_na, self.df.y_na[mask])
 
 
-class TestRegressionPlotter(object):
+class TestRegressionPlotter(PlotTestCase):
 
     rs = np.random.RandomState(49)
 
@@ -395,10 +396,8 @@ class TestRegressionPlotter(object):
         nt.assert_equal(grid.min(), self.df.x.min())
         nt.assert_equal(grid.max(), self.df.x.max())
 
-        plt.close("all")
 
-
-class TestRegressionPlots(object):
+class TestRegressionPlots(PlotTestCase):
 
     rs = np.random.RandomState(56)
     df = pd.DataFrame(dict(x=rs.randn(90),
@@ -421,8 +420,6 @@ class TestRegressionPlots(object):
         npt.assert_array_equal(x, self.df.x)
         npt.assert_array_equal(y, self.df.y)
 
-        plt.close("all")
-
     def test_regplot_selective(self):
 
         f, ax = plt.subplots()
@@ -442,8 +439,6 @@ class TestRegressionPlots(object):
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), 1)
         ax.clear()
-
-        plt.close("all")
 
     def test_regplot_scatter_kws_alpha(self):
 
@@ -469,15 +464,11 @@ class TestRegressionPlots(object):
         ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
         nt.assert_equal(ax.collections[0]._alpha, 0.8)
 
-        plt.close("all")
-
     def test_regplot_binned(self):
 
         ax = lm.regplot("x", "y", self.df, x_bins=5)
         nt.assert_equal(len(ax.lines), 6)
         nt.assert_equal(len(ax.collections), 2)
-
-        plt.close("all")
 
     def test_lmplot_basic(self):
 
@@ -490,8 +481,6 @@ class TestRegressionPlots(object):
         npt.assert_array_equal(x, self.df.x)
         npt.assert_array_equal(y, self.df.y)
 
-        plt.close("all")
-
     def test_lmplot_hue(self):
 
         g = lm.lmplot("x", "y", data=self.df, hue="h")
@@ -499,7 +488,6 @@ class TestRegressionPlots(object):
 
         nt.assert_equal(len(ax.lines), 2)
         nt.assert_equal(len(ax.collections), 4)
-        plt.close("all")
 
     def test_lmplot_markers(self):
 
@@ -512,8 +500,6 @@ class TestRegressionPlots(object):
         with nt.assert_raises(ValueError):
             lm.lmplot("x", "y", data=self.df, hue="h", markers=["o", "s", "d"])
 
-        plt.close("all")
-
     def test_lmplot_marker_linewidths(self):
 
         if mpl.__version__ == "1.4.2":
@@ -525,7 +511,6 @@ class TestRegressionPlots(object):
         nt.assert_equal(c[0].get_linewidths()[0], 0)
         rclw = mpl.rcParams["lines.linewidth"]
         nt.assert_equal(c[1].get_linewidths()[0], rclw)
-        plt.close("all")
 
     def test_lmplot_facets(self):
 
@@ -537,13 +522,11 @@ class TestRegressionPlots(object):
 
         g = lm.lmplot("x", "y", data=self.df, hue="h", col="u")
         nt.assert_equal(g.axes.shape, (1, 6))
-        plt.close("all")
 
     def test_lmplot_hue_col_nolegend(self):
 
         g = lm.lmplot("x", "y", data=self.df, col="h", hue="h")
         nt.assert_is(g._legend, None)
-        plt.close("all")
 
     def test_lmplot_scatter_kws(self):
 
@@ -553,8 +536,6 @@ class TestRegressionPlots(object):
         red, blue = color_palette(n_colors=2)
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
-
-        plt.close("all")
 
     def test_residplot(self):
 
@@ -566,7 +547,6 @@ class TestRegressionPlots(object):
 
         npt.assert_array_equal(x, x_plot)
         npt.assert_array_almost_equal(resid, y_plot)
-        plt.close("all")
 
     @skipif(_no_statsmodels)
     def test_residplot_lowess(self):
@@ -576,5 +556,3 @@ class TestRegressionPlots(object):
 
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
-
-        plt.close("all")

@@ -2,11 +2,12 @@ import nose.tools as nt
 import numpy.testing as npt
 import matplotlib.pyplot as plt
 
+from . import PlotTestCase
 from .. import miscplot as misc
 from seaborn import color_palette
 
 
-class TestPalPlot(object):
+class TestPalPlot(PlotTestCase):
     """Test the function that visualizes a color palette."""
     def test_palplot_size(self):
 
@@ -24,5 +25,3 @@ class TestPalPlot(object):
         misc.palplot(palbig, 2)
         sizebig = plt.gcf().get_size_inches()
         nt.assert_equal(tuple(sizebig), (6, 2))
-
-        plt.close("all")
