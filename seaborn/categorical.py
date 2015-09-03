@@ -1522,7 +1522,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
-                vert='v', widths=1, k_depth='proportion',
+                vert=True, widths=1, k_depth='proportion',
                 ax=None, outlier_prop=None, scale='exponential',
                 **kws):
 
@@ -1531,12 +1531,13 @@ class _LVPlotter(_CategoricalPlotter):
 
         # If we only have one data point, plot a line
         if len(box_data) == 1:
+            kws.update({'color': self.gray, 'linestyle': '-'})
             ys = [box_data[0], box_data[0]]
             xs = [x - widths / 2, x + widths / 2]
             if vert:
-                xx, yy = ys, xs
-            else:
                 xx, yy = xs, ys
+            else:
+                xx, yy = ys, xs
             ax.plot(xx, yy, **kws)
         else:
             # Get the number of data points and calculate "depth" of
@@ -1663,7 +1664,6 @@ class _LVPlotter(_CategoricalPlotter):
 
                     color = self.colors[j]
                     center = i + offsets[j]
-
                     artist_dict = self._lvplot(box_data,
                                                positions=[center],
                                                color=color,

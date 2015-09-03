@@ -2190,6 +2190,8 @@ class TestLVPlotter(CategoricalFixture):
                 maxi = np.max(data)
                 return np.array([mid*f, maxi - mid*f])
 
+        self.ispatch = lambda c: isinstance(c, mpl.collections.PatchCollection)
+
         self.default_kws = dict(x=None, y=None, hue=None, data=None,
                                 order=None, hue_order=None,
                                 orient=None, color=None, palette=None,
@@ -2267,12 +2269,14 @@ class TestLVPlotter(CategoricalFixture):
     def test_axes_data(self):
 
         ax = cat.lvplot("g", "y", data=self.df)
-        nt.assert_equal(len(ax.artists), 3)
+        patches = filter(self.ispatch, ax.collections)
+        nt.assert_equal(len(patches), 3)
 
         plt.close("all")
 
         ax = cat.lvplot("g", "y", "h", data=self.df)
-        nt.assert_equal(len(ax.artists), 6)
+        patches = filter(self.ispatch, ax.collections)
+        nt.assert_equal(len(patches), 6)
 
         plt.close("all")
 
@@ -2296,7 +2300,9 @@ class TestLVPlotter(CategoricalFixture):
 
         ax = cat.lvplot("g", "y", data=self.df,
                          order=["a", "b", "c", "d"])
-        nt.assert_equal(len(ax.artists), 3)
+
+        patches = filter(self.ispatch, ax.collections)
+        nt.assert_equal(len(patches), 3)
         plt.close("all")
 
     def test_missing_data(self):
@@ -2307,7 +2313,8 @@ class TestLVPlotter(CategoricalFixture):
         y[-2:] = np.nan
 
         ax = cat.lvplot(x, y)
-        nt.assert_equal(len(ax.artists), 3)
+        patches = filter(self.ispatch, ax.collections)
+        nt.assert_equal(len(patches), 3)
 
         plt.close("all")
 
