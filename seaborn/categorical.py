@@ -1480,8 +1480,12 @@ class _LVPlotter(_CategoricalPlotter):
         n = len(vals)
         # If p is not set, calculate it so that 8 points are outliers
         if not outlier_prop:
-            p = 8./n
+            # Conventional boxplots assume this proportion of the data are
+            # outliers.
+            p = 0.007
         else:
+            if ((outlier_prop > 1.) or (outlier_prop < 0.)):
+                raise ValueError('outlier_prop not in range [0, 1]!')
             p = outlier_prop
         # Select the depth, i.e. number of boxes to draw, based on the method
         k_dict = {'proportion': (np.log2(n)) - int(np.log2(n*p)) + 1,
