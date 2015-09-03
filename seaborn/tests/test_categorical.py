@@ -2199,7 +2199,7 @@ class TestLVPlotter(CategoricalFixture):
         self.linear_data = np.arange(101)
         self.n = len(self.linear_data)
         self.expected_edges = map(lambda i: edge_calc(i, self.linear_data),
-                             xrange(5, 0, -1))
+                             range(5, 0, -1))
         self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.08)) + 1
         self.outlier_data = np.concatenate((np.arange(100), [200]))
 
