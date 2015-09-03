@@ -2314,13 +2314,13 @@ class TestLVPlotter(CategoricalFixture):
 
         ax = cat.lvplot(x, y)
         patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(patches), 3)
+        nt.assert_equal(len(ax.lines), 3)
 
         plt.close("all")
 
         y[-1] = 0
         ax = cat.lvplot(x, y, h)
-        nt.assert_equal(len(ax.artists), 7)
+        nt.assert_equal(len(ax.lines), 7)
 
         plt.close("all")
 
