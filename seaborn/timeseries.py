@@ -60,7 +60,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
         Can use one or more than one method.
     ci : float or list of floats in [0, 100]
-        Confidence interaval size(s). If a list, it will stack the error
+        Confidence interval size(s). If a list, it will stack the error
         plots for each confidence interval. Only relevant for error styles
         with "ci" in the name.
     interpolate : boolean
