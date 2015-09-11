@@ -327,8 +327,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
-    x_diff = x[1] - x[0]
     if not interpolate:
+        x_diff = x[1] - x[0]
         ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
 
     # Add the plot labels
