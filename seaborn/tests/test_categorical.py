@@ -1995,8 +1995,8 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
                         (len(self.g.unique())
-                         * len(self.h.unique())
-                         + len(self.h.unique())))
+                        * len(self.h.unique())
+                        + len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "mean(y)")
         plt.close("all")
@@ -2209,7 +2209,8 @@ class TestLVPlotter(CategoricalFixture):
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
         p.establish_variables("g", "y", data=self.df)
-        box_k = np.asarray(map(p._lv_box_ends, p.plot_data))
+        box_k = np.asarray([[b, k]
+                           for b, k in map(p._lv_box_ends, p.plot_data)])
         box_ends = box_k[:, 0]
         k_vals = box_k[:, 1]
 
@@ -2299,7 +2300,7 @@ class TestLVPlotter(CategoricalFixture):
     def test_draw_missing_boxes(self):
 
         ax = cat.lvplot("g", "y", data=self.df,
-                         order=["a", "b", "c", "d"])
+                        order=["a", "b", "c", "d"])
 
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 3)
