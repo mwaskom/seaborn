@@ -2217,7 +2217,7 @@ class TestLVPlotter(CategoricalFixture):
         # Check that all the box ends are finite and are within
         # the bounds of the data
         b_e = map(lambda a: np.all(np.isfinite(a)), box_ends)
-        npt.assert_equal(np.sum(b_e), len(box_ends))
+        npt.assert_equal(np.sum(list(b_e)), len(box_ends))
 
         def within(t):
             a, d = t
@@ -2225,10 +2225,10 @@ class TestLVPlotter(CategoricalFixture):
                     (np.ravel(a) >= d.min())).all()
 
         b_w = map(within, itertools.izip(box_ends, p.plot_data))
-        npt.assert_equal(np.sum(b_w), len(box_ends))
+        npt.assert_equal(np.sum(list(b_w)), len(box_ends))
 
         k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
-        npt.assert_equal(np.sum(k_f), len(k_vals))
+        npt.assert_equal(np.sum(list(k_f)), len(k_vals))
 
     def test_box_ends_correct(self):
         p = cat._LVPlotter(**self.default_kws)
