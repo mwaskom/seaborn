@@ -2185,10 +2185,9 @@ class TestLVPlotter(CategoricalFixture):
 
     def setUp(self):
         def edge_calc(n, data):
-                f = 2**(-n)
-                mid = np.median(data)
-                maxi = np.max(data)
-                return np.array([mid*f, maxi - mid*f])
+            q = np.asanyarray([0.5**n, 1 - 0.5**n]) * 100
+            q = list(np.unique(q))
+            return np.percentile(data, q)
 
         self.ispatch = lambda c: isinstance(c, mpl.collections.PatchCollection)
 
@@ -2200,10 +2199,12 @@ class TestLVPlotter(CategoricalFixture):
                                 scale='exponential', outlier_prop=None)
         self.linear_data = np.arange(101)
         self.n = len(self.linear_data)
-        self.expected_edges = map(lambda i: edge_calc(i, self.linear_data),
-                             range(5, 0, -1))
-        self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.08)) + 1
+        self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.007)) + 1
+        self.expected_edges_l = map(lambda i: edge_calc(i, self.linear_data),
+                                    range(self.expected_k + 2, 1, -1))
         self.outlier_data = np.concatenate((np.arange(100), [200]))
+        self.expected_edges_o = map(lambda i: edge_calc(i, self.outlier_data),
+                                    range(self.expected_k + 2, 1, -1))
 
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
@@ -2233,7 +2234,7 @@ class TestLVPlotter(CategoricalFixture):
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(self.linear_data)
 
-        npt.assert_equal(self.expected_edges, calc_edges)
+        npt.assert_equal(self.expected_edges_l, calc_edges)
 
         npt.assert_equal(self.expected_k, calc_k)
 
@@ -2241,7 +2242,7 @@ class TestLVPlotter(CategoricalFixture):
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(self.outlier_data)
 
-        npt.assert_equal(self.expected_edges, calc_edges)
+        npt.assert_equal(self.expected_edges_o, calc_edges)
 
         npt.assert_equal(self.expected_k, calc_k)
 
@@ -2270,13 +2271,13 @@ class TestLVPlotter(CategoricalFixture):
 
         ax = cat.lvplot("g", "y", data=self.df)
         patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(patches), 3)
+        nt.assert_equal(len(list(patches)), 3)
 
         plt.close("all")
 
         ax = cat.lvplot("g", "y", "h", data=self.df)
         patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(patches), 6)
+        nt.assert_equal(len(list(patches)), 6)
 
         plt.close("all")
 
@@ -2302,7 +2303,7 @@ class TestLVPlotter(CategoricalFixture):
                          order=["a", "b", "c", "d"])
 
         patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(patches), 3)
+        nt.assert_equal(len(list(patches)), 3)
         plt.close("all")
 
     def test_missing_data(self):
