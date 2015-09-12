@@ -1,4 +1,3 @@
-import itertools
 import numpy as np
 import pandas as pd
 import scipy
@@ -2224,7 +2223,7 @@ class TestLVPlotter(CategoricalFixture):
             return ((np.ravel(a) <= d.max()) &
                     (np.ravel(a) >= d.min())).all()
 
-        b_w = map(within, itertools.izip(box_ends, p.plot_data))
+        b_w = map(within, zip(box_ends, p.plot_data))
         npt.assert_equal(np.sum(list(b_w)), len(box_ends))
 
         k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
