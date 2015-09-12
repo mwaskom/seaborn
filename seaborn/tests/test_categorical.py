@@ -2209,10 +2209,9 @@ class TestLVPlotter(CategoricalFixture):
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
         p.establish_variables("g", "y", data=self.df)
-        box_ends, k_vals = np.hsplit(np.asarray(map(p._lv_box_ends,
-                                                    p.plot_data)), 2)
-        box_ends = box_ends.squeeze()
-        k_vals = k_vals.squeeze()
+        box_k = np.asarray(map(p._lv_box_ends, p.plot_data))
+        box_ends = box_k[:, 0]
+        k_vals = box_k[:, 1]
 
         # Check that all the box ends are finite and are within
         # the bounds of the data
@@ -2234,7 +2233,7 @@ class TestLVPlotter(CategoricalFixture):
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(self.linear_data)
 
-        npt.assert_equal(self.expected_edges_l, calc_edges)
+        npt.assert_equal(list(self.expected_edges_l), calc_edges)
 
         npt.assert_equal(self.expected_k, calc_k)
 
@@ -2242,7 +2241,7 @@ class TestLVPlotter(CategoricalFixture):
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(self.outlier_data)
 
-        npt.assert_equal(self.expected_edges_o, calc_edges)
+        npt.assert_equal(list(self.expected_edges_o), calc_edges)
 
         npt.assert_equal(self.expected_k, calc_k)
 
