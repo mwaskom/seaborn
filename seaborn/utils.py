@@ -527,3 +527,29 @@ def categorical_order(values, order=None):
                     order = order
         order = filter(pd.notnull, order)
     return list(order)
+
+
+def to_unicode_or_bust(obj, encoding='utf-8'):
+    """
+    Ensures convertion of an object to unicode.
+
+    From "Unicode in Python, Completely Demystified" by Kumar McMillan.
+    http://farmdev.com/talks/unicode/
+
+    Parameters
+    ----------
+
+    obj : object
+        String-like object.
+    encoding : str
+        Encoding of obj.
+
+    Returns
+    -------
+    obj : unicode
+        Unicode representation of obj.
+    """
+    if isinstance(obj, basestring):
+        if not isinstance(obj, unicode):
+            obj = unicode(obj, encoding)
+    return obj
