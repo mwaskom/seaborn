@@ -185,6 +185,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     # Always return in r, g, b tuple format
     try:
+        print(palette)
         if len(palette[0]) > 1: # normal list of [r,g,b])
             palette = map(mpl.colors.colorConverter.to_rgb, palette)
             palette = _ColorPalette(palette)  
