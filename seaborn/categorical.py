@@ -261,7 +261,7 @@ class _CategoricalPlotter(object):
         if color is None and palette is None:
             # Determine whether the current palette will have enough values
             # If not, we'll default to the husl palette so each is distinct
-            current_palette = mpl.rcParams["axes.color_cycle"]
+            current_palette = mpl.rcParams["axes.prop_cycle"]
             if n_colors <= len(current_palette):
                 colors = color_palette(n_colors=n_colors)
             else:

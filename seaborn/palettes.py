@@ -148,7 +148,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     """
     if palette is None:
-        palette = mpl.rcParams["axes.color_cycle"]
+        palette = mpl.rcParams["axes.prop_cycle"]
         if n_colors is None:
             n_colors = len(palette)
 

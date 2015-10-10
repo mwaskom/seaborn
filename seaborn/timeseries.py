@@ -257,7 +257,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
     # Set up the color palette
     if color is None:
-        current_palette = mpl.rcParams["axes.color_cycle"]
+        current_palette = mpl.rcParams["axes.prop_cycle"]
         if len(current_palette) < n_cond:
             colors = color_palette("husl", n_cond)
         else:
