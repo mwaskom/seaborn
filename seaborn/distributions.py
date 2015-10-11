@@ -476,7 +476,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         densities on the same Axes.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis.
-    kwargs : key, value pairs
+    kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.plot()`` or
         ``plt.contour{f}`` depending on whether a univariate or bivariate
         plot is being drawn.
@@ -616,7 +616,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
         Axis to draw rugplot on.
     ax : matplotlib axes, optional
         Axes to draw plot into; otherwise grabs current axes.
-    kwargs : key, value pairs
+    kwargs : key, value pairings
         Other keyword arguments are passed to ``axvline`` or ``axhline``.
 
     Returns
@@ -675,7 +675,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         Axis limits to set before plotting.
     {joint, marginal, annot}_kws : dicts, optional
         Additional keyword arguments for the plot components.
-    kwargs : key, value pairs
+    kwargs : key, value pairings
         Additional keyword arguments are passed to the function used to
         draw the plot on the joint Axes, superseding items in the
         ``joint_kws`` dictionary.
