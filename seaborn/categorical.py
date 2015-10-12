@@ -7,6 +7,7 @@ import pandas as pd
 from pandas.core.series import remove_na
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from distutils.version import LooseVersion
 import warnings
 
 from .external.six import string_types
@@ -261,7 +262,10 @@ class _CategoricalPlotter(object):
         if color is None and palette is None:
             # Determine whether the current palette will have enough values
             # If not, we'll default to the husl palette so each is distinct
-            current_palette = mpl.rcParams["axes.color_cycle"]
+            if LooseVersion(mpl.__version__) <= "1.4.9":
+                current_palette = mpl.rcParams["axes.color_cycle"]
+            else:
+                current_palette = mpl.rcParams["axes.prop_cycle"]
             if n_colors <= len(current_palette):
                 colors = color_palette(n_colors=n_colors)
             else:

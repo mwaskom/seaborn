@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
+from distutils.version import LooseVersion
 
 from .external import husl
 from .external.six import string_types
@@ -148,7 +149,10 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     """
     if palette is None:
-        palette = mpl.rcParams["axes.color_cycle"]
+        if LooseVersion(mpl.__version__) <= "1.4.9":
+            palette = mpl.rcParams["axes.color_cycle"]
+        else:
+            palette = mpl.rcParams["axes.prop_cycle"]
         if n_colors is None:
             n_colors = len(palette)
 
@@ -185,8 +189,15 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     # Always return in r, g, b tuple format
     try:
-        palette = map(mpl.colors.colorConverter.to_rgb, palette)
-        palette = _ColorPalette(palette)
+        #  print(palette)
+        if len(palette[0]) > 1:  # normal list of [r,g,b])
+            palette = map(mpl.colors.colorConverter.to_rgb, palette)
+            palette = _ColorPalette(palette)
+        else:  # matplotlib1.5 list of dicts, or list ('a','b')
+            tmp_b = [i if isinstance(i, str) else list(i.values())[0]
+                     for i in palette]
+            palette = map(mpl.colors.colorConverter.to_rgb, tmp_b)
+            palette = _ColorPalette(palette)
     except ValueError:
         raise ValueError("Could not generate a palette for %s" % str(palette))
 

@@ -1,6 +1,7 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 import numpy as np
 import matplotlib as mpl
+from distutils.version import LooseVersion
 
 from . import palettes
 
@@ -490,7 +491,10 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     """
     colors = palettes.color_palette(palette, n_colors, desat)
-    mpl.rcParams["axes.color_cycle"] = list(colors)
+    if LooseVersion(mpl.__version__) <= "1.4.9":
+        mpl.rcParams["axes.color_cycle"] = list(colors)
+    else:
+        mpl.rcParams["axes.prop_cycle"] = mpl.cycler('color', list(colors))
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         palettes.set_color_codes(palette)

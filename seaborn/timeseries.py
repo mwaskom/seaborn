@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from distutils.version import LooseVersion
 
 from .external.six import string_types
 
@@ -257,7 +258,10 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
     # Set up the color palette
     if color is None:
-        current_palette = mpl.rcParams["axes.color_cycle"]
+        if LooseVersion(mpl.__version__) <= "1.4.9":
+            current_palette = mpl.rcParams["axes.color_cycle"]
+        else:
+            current_palette = mpl.rcParams["axes.prop_cycle"]
         if len(current_palette) < n_cond:
             colors = color_palette("husl", n_cond)
         else:
