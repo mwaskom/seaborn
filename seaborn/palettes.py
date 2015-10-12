@@ -190,13 +190,13 @@ def color_palette(palette=None, n_colors=None, desat=None):
     # Always return in r, g, b tuple format
     try:
         #  print(palette)
-        if len(palette[0]) > 1: # normal list of [r,g,b])
+        if len(palette[0]) > 1:  # normal list of [r,g,b])
             palette = map(mpl.colors.colorConverter.to_rgb, palette)
-            palette = _ColorPalette(palette)  
+            palette = _ColorPalette(palette)
         else:  # matplotlib1.5 list of dicts
-            tmp_b = [list(i.values())[0]  for i in palette]
-            palette = map(mpl.colors.colorConverter.to_rgb,tmp_b) 
-            palette = _ColorPalette(palette)        
+            tmp_b = [list(i.values())[0] for i in palette]
+            palette = map(mpl.colors.colorConverter.to_rgb, tmp_b) 
+            palette = _ColorPalette(palette)
     except ValueError:
         raise ValueError("Could not generate a palette for %s" % str(palette))
 
