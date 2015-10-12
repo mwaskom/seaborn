@@ -194,7 +194,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
             palette = map(mpl.colors.colorConverter.to_rgb, palette)
             palette = _ColorPalette(palette)
         else:  # matplotlib1.5 list of dicts
-            tmp_b = [i if isinstance(i, str) else list(i.values())[0] for i in palette]
+            tmp_b = [i if isinstance(i, str) else list(i.values())[0]
+                     for i in palette]
             palette = map(mpl.colors.colorConverter.to_rgb, tmp_b)
             palette = _ColorPalette(palette)
     except ValueError:
