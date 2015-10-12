@@ -16,7 +16,7 @@ class TestColorPalettes(object):
 
         pal = palettes.color_palette(["red", "blue", "green"], 3)
         rcmod.set_palette(pal, 3)
-        nt.assert_equal(pal, mpl.rcParams["axes.prop_cycle"])
+        nt.assert_equal(pal, mpl.rcParams["axes.color_cycle"])
         rcmod.set()
 
     def test_palette_context(self):
@@ -25,9 +25,9 @@ class TestColorPalettes(object):
         context_pal = palettes.color_palette("muted")
 
         with palettes.color_palette(context_pal):
-            nt.assert_equal(mpl.rcParams["axes.prop_cycle"], context_pal)
+            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
 
-        nt.assert_equal(mpl.rcParams["axes.prop_cycle"], default_pal)
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], default_pal)
 
     def test_big_palette_context(self):
 
@@ -36,9 +36,9 @@ class TestColorPalettes(object):
 
         rcmod.set_palette(original_pal)
         with palettes.color_palette(context_pal, 10):
-            nt.assert_equal(mpl.rcParams["axes.prop_cycle"], context_pal)
+            nt.assert_equal(mpl.rcParams["axes.color_cycle"], context_pal)
 
-        nt.assert_equal(mpl.rcParams["axes.prop_cycle"], original_pal)
+        nt.assert_equal(mpl.rcParams["axes.color_cycle"], original_pal)
 
         # Reset default
         rcmod.set()
