@@ -193,7 +193,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         if len(palette[0]) > 1:  # normal list of [r,g,b])
             palette = map(mpl.colors.colorConverter.to_rgb, palette)
             palette = _ColorPalette(palette)
-        else:  # matplotlib1.5 list of dicts
+        else:  # matplotlib1.5 list of dicts, or list ('a','b')
             tmp_b = [i if isinstance(i, str) else list(i.values())[0]
                      for i in palette]
             palette = map(mpl.colors.colorConverter.to_rgb, tmp_b)
