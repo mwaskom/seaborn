@@ -573,7 +573,8 @@ class FacetGrid(Grid):
             >>> df = pd.DataFrame(
             ...     data=np.random.randn(90, 4),
             ...     columns=pd.Series(list("ABCD"), name="walk"),
-            ...     index=pd.date_range("Jan 1", "March 31", name="date"))
+            ...     index=pd.date_range("2015-01-01", "2015-03-31",
+            ...                         name="date"))
             >>> df = df.cumsum(axis=0).stack().reset_index(name="val")
             >>> def dateplot(x, y, **kwargs):
             ...     ax = plt.gca()
