@@ -11,11 +11,10 @@ from .external import husl
 from .external.six import string_types
 from .external.six.moves import range
 
-from .utils import desaturate, set_hls_values
+from .utils import desaturate, set_hls_values, get_color_cycle
 from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 from .miscplot import palplot
-
 
 SEABORN_PALETTES = dict(
     deep=["#4C72B0", "#55A868", "#C44E52",
@@ -148,7 +147,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
     """
     if palette is None:
-        palette = mpl.rcParams["axes.color_cycle"]
+        palette = get_color_cycle()
         if n_colors is None:
             n_colors = len(palette)
 

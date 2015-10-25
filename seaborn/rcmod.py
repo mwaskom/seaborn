@@ -1,9 +1,12 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
+from distutils.version import LooseVersion
+
 import numpy as np
 import matplotlib as mpl
 
 from . import palettes
 
+mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 
 _style_keys = (
 
@@ -490,7 +493,12 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     """
     colors = palettes.color_palette(palette, n_colors, desat)
-    mpl.rcParams["axes.color_cycle"] = list(colors)
+    if mpl_ge_150:
+        from cycler import cycler
+        cyl = cycler('color', colors)
+        mpl.rcParams['axes.prop_cycle'] = cyl
+    else:
+        mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         palettes.set_color_codes(palette)

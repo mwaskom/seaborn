@@ -146,7 +146,7 @@ class Grid(object):
 
             # By default use either the current color palette or HUSL
             if palette is None:
-                current_palette = mpl.rcParams["axes.color_cycle"]
+                current_palette = utils.get_color_cycle()
                 if n_colors > len(current_palette):
                     colors = color_palette("husl", n_colors)
                 else:

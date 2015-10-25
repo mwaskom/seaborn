@@ -7,12 +7,13 @@ import os
 import numpy as np
 from scipy import stats
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-
+mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 
 
@@ -527,3 +528,16 @@ def categorical_order(values, order=None):
                     order = order
         order = filter(pd.notnull, order)
     return list(order)
+
+
+def get_color_cycle():
+    if mpl_ge_150:
+        cyl = mpl.rcParams['axes.prop_cycle']
+        # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
+        # but no garuantee that there's a `color` key.
+        # so users could have a custom rcParmas w/ no color...
+        try:
+            return [x['color'] for x in cyl]
+        except KeyError:
+            pass  # just return axes.color style below
+    return mpl.rcParams['axes.color_cycle']
