@@ -33,7 +33,7 @@ class TestLinearPlotter(PlotTestCase):
                            s=np.tile(list("abcdefghij"), 6)))
     df["z"] = df.y + rs.randn(60)
     df["y_na"] = df.y.copy()
-    df.y_na.ix[[10, 20, 30]] = np.nan
+    df.loc[[10, 20, 30], 'y_na'] = np.nan
 
     def test_establish_variables_from_frame(self):
 
@@ -109,7 +109,7 @@ class TestRegressionPlotter(PlotTestCase):
 
     p = 1 / (1 + np.exp(-(df.x * 2 + rs.randn(60))))
     df["c"] = [rs.binomial(1, p_i) for p_i in p]
-    df.y_na.ix[[10, 20, 30]] = np.nan
+    df.loc[[10, 20, 30], 'y_na'] = np.nan
 
     def test_variables_from_frame(self):
 
