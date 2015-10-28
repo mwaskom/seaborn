@@ -11,3 +11,5 @@ v0.6.1 (Unreleased)
 - Fixed a bug in :func:`clustermap` when ``fastcluster`` is not installed.
 
 - Fixed a bug in the zscore calculation in :func:`clustermap`.
+
+- Added compatability for various IPython (and Jupyter) versions in functions that use widgets.

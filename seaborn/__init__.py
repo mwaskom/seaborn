@@ -8,6 +8,7 @@ from .timeseries import *
 from .matrix import *
 from .miscplot import *
 from .axisgrid import *
+from .widgets import *
 from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 set()
