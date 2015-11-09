@@ -574,7 +574,7 @@ class _DendrogramPlotter(object):
             "reordered_ind" which indicates the re-ordering of the matrix
         """
         return hierarchy.dendrogram(self.linkage, no_plot=True,
-                                    color_list=['k'], color_threshold=-np.inf)
+                                    color_threshold=-np.inf)
 
     @property
     def reordered_ind(self):
