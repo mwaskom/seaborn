@@ -58,7 +58,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     err_style : string or list of strings or None
         Names of ways to plot uncertainty across units from set of
         {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points,
-        std, sem}.
+        std_band, std_bars, sem_band, sem_bars}.
         Can use one or more than one method.
     ci : float or list of floats in [0, 100]
         Confidence interval size(s). If a list, it will stack the error
@@ -346,19 +346,52 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 # ----------------------------------------
 
 
-def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
+def _plotstyle_band(ax, x, low, high, color, err_kws):
     """Plot translucent error bands around the central tendancy."""
-    low, high = ci
     if "alpha" not in err_kws:
         err_kws["alpha"] = 0.2
     ax.fill_between(x, low, high, color=color, **err_kws)
 
 
-def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
+def _plotstyle_bars(ax, x, central_data, low_high, color, err_kws):
     """Plot error bars at each data point."""
-    for x_i, y_i, (low, high) in zip(x, central_data, ci.T):
+    for x_i, y_i, (low, high) in zip(x, central_data, np.array(low_high).T):
         ax.plot([x_i, x_i], [low, high], color=color,
                 solid_capstyle="round", **err_kws)
+
+
+def _get_low_high(func, central_data, data):
+    extent = func(data, axis=0)
+    return central_data-extent, central_data+extent
+
+
+def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
+    low, high = ci
+    _plotstyle_band(ax, x, low, high, color, err_kws)
+
+
+def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
+    _plotstyle_bars(ax, x, central_data, ci, color, err_kws)
+
+
+def _plot_std_band(ax, x, central_data, data, color, err_kws, **kwargs):
+    low, high = _get_low_high(np.std, central_data, data)
+    _plotstyle_band(ax, x, low, high, color, err_kws)
+
+
+def _plot_std_bars(ax, x, central_data, data, color, err_kws, **kwargs):
+    low_high = _get_low_high(np.std, central_data, data)
+    _plotstyle_bars(ax, x, central_data, low_high, color, err_kws)
+
+
+def _plot_sem_band(ax, x, central_data, data, color, err_kws, **kwargs):
+    low, high = _get_low_high(stats.sem, central_data, data)
+    _plotstyle_band(ax, x, low, high, color, err_kws)
+
+
+def _plot_sem_bars(ax, x, central_data, data, color, err_kws, **kwargs):
+    low_high = _get_low_high(stats.sem, central_data, data)
+    _plotstyle_bars(ax, x, central_data, low_high, color, err_kws)
 
 
 def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
@@ -403,24 +436,6 @@ def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
 def _plot_unit_kde(ax, x, data, color, **kwargs):
     """Plot the kernal density estimate over the sample."""
     _ts_kde(ax, x, data, color, **kwargs)
-
-
-def _plot_std(ax, x, central_data, data, color, err_kws, **kwargs):
-    """Plot translucent error bands around the central tendancy."""
-    if "alpha" not in err_kws:
-        err_kws["alpha"] = 0.2
-    std = np.std(data, axis=0)
-    ax.fill_between(x, central_data-std, central_data+std, color=color,
-                    **err_kws)
-
-
-def _plot_sem(ax, x, central_data, data, color, err_kws, **kwargs):
-    """Plot translucent error bands around the central tendancy."""
-    if "alpha" not in err_kws:
-        err_kws["alpha"] = 0.2
-    sem = stats.sem(data, axis=0)
-    ax.fill_between(x, central_data-sem, central_data+sem, color=color,
-                    **err_kws)
 
 
 def _ts_kde(ax, x, data, color, **kwargs):
