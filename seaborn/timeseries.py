@@ -57,7 +57,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         legend (unless legend is set to False).
     err_style : string or list of strings or None
         Names of ways to plot uncertainty across units from set of
-        {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
+        {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points,
+        std, sem}.
         Can use one or more than one method.
     ci : float or list of floats in [0, 100]
         Confidence interval size(s). If a list, it will stack the error
@@ -402,6 +403,24 @@ def _plot_boot_kde(ax, x, boot_data, color, **kwargs):
 def _plot_unit_kde(ax, x, data, color, **kwargs):
     """Plot the kernal density estimate over the sample."""
     _ts_kde(ax, x, data, color, **kwargs)
+
+
+def _plot_std(ax, x, central_data, data, color, err_kws, **kwargs):
+    """Plot translucent error bands around the central tendancy."""
+    if "alpha" not in err_kws:
+        err_kws["alpha"] = 0.2
+    std = np.std(data, axis=0)
+    ax.fill_between(x, central_data-std, central_data+std, color=color,
+                    **err_kws)
+
+
+def _plot_sem(ax, x, central_data, data, color, err_kws, **kwargs):
+    """Plot translucent error bands around the central tendancy."""
+    if "alpha" not in err_kws:
+        err_kws["alpha"] = 0.2
+    sem = stats.sem(data, axis=0)
+    ax.fill_between(x, central_data-sem, central_data+sem, color=color,
+                    **err_kws)
 
 
 def _ts_kde(ax, x, data, color, **kwargs):
