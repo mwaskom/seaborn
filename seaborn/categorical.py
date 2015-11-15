@@ -6,6 +6,8 @@ from scipy import stats
 import pandas as pd
 from pandas.core.series import remove_na
 import matplotlib as mpl
+from matplotlib.collections import PatchCollection
+import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 import warnings
 
@@ -1438,6 +1440,252 @@ class _PointPlotter(_CategoricalStatPlotter):
         if self.orient == "h":
             ax.invert_yaxis()
 
+
+class _LVPlotter(_CategoricalPlotter):
+
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 orient, color, palette, saturation,
+                 width, k_depth, linewidth, scale, outlier_prop):
+
+        if width is None:
+            width = .8
+        self.width = width
+
+        if saturation is None:
+            saturation = .75
+        self.saturation = saturation
+
+        if k_depth is None:
+            k_depth = 'proportion'
+        self.k_depth = k_depth
+
+        if linewidth is None:
+            linewidth = mpl.rcParams["lines.linewidth"]
+        self.linewidth = linewidth
+
+        if scale is None:
+            scale = 'exponential'
+        self.scale = scale
+
+        self.outlier_prop = outlier_prop
+
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, saturation)
+
+    def _lv_box_ends(self, vals, k_depth='proportion', outlier_prop=None):
+        """Get the number of data points and calculate `depth` of
+        letter-value plot."""
+        vals = np.asarray(vals)
+        vals = vals[np.isfinite(vals)]
+        n = len(vals)
+        # If p is not set, calculate it so that 8 points are outliers
+        if not outlier_prop:
+            # Conventional boxplots assume this proportion of the data are
+            # outliers.
+            p = 0.007
+        else:
+            if ((outlier_prop > 1.) or (outlier_prop < 0.)):
+                raise ValueError('outlier_prop not in range [0, 1]!')
+            p = outlier_prop
+        # Select the depth, i.e. number of boxes to draw, based on the method
+        k_dict = {'proportion': (np.log2(n)) - int(np.log2(n*p)) + 1,
+                  'tukey': (np.log2(n)) - 3,
+                  'trustworthy': (np.log2(n) -
+                                  np.log2(2*stats.norm.ppf((1-p))**2)) + 1}
+        k = k_dict[k_depth]
+        try:
+            k = int(k)
+        except ValueError:
+            k = 1
+        # If the number happens to be less than 0, set k to 0
+        if k < 1.:
+            k = 1
+        # Calculate the upper box ends
+        upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
+        # Calculate the lower box ends
+        lower = [100*(0.5**(i+2)) for i in range(k, -1, -1)]
+        # Stitch the box ends together
+        percentile_ends = [(i, j) for i, j in zip(lower, upper)]
+        box_ends = [np.percentile(vals, q) for q in percentile_ends]
+        return box_ends, k
+
+    def _lv_outliers(self, vals, k):
+        """Find the outliers based on the letter value depth."""
+        perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
+        edges = np.percentile(vals, perc_ends)
+        lower_out = vals[np.where(vals < edges[0])[0]]
+        upper_out = vals[np.where(vals > edges[1])[0]]
+        return np.concatenate((lower_out, upper_out))
+
+    def _width_functions(self, width_func):
+        # Dictionary of functions for computing the width of the boxes
+        width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
+                           'exponential': lambda h, i, k: 2**(-k+i-1),
+                           'area': lambda h, i, k: (1 - 2**(-k+i-2)) / h}
+        return width_functions[width_func]
+
+    def _lvplot(self, box_data, positions,
+                color=[255. / 256., 185. / 256., 0.],
+                vert=True, widths=1, k_depth='proportion',
+                ax=None, outlier_prop=None, scale='exponential',
+                **kws):
+
+        x = positions[0]
+        box_data = np.asarray(box_data)
+
+        # If we only have one data point, plot a line
+        if len(box_data) == 1:
+            kws.update({'color': self.gray, 'linestyle': '-'})
+            ys = [box_data[0], box_data[0]]
+            xs = [x - widths / 2, x + widths / 2]
+            if vert:
+                xx, yy = xs, ys
+            else:
+                xx, yy = ys, xs
+            ax.plot(xx, yy, **kws)
+        else:
+            # Get the number of data points and calculate "depth" of
+            # letter-value plot
+            box_ends, k = self._lv_box_ends(box_data, k_depth=k_depth,
+                                            outlier_prop=outlier_prop)
+
+            # Anonymous functions for calculating the width and height
+            # of the letter value boxes
+            width = self._width_functions(scale)
+
+            # Function to find height of boxes
+            def height(b):
+                return b[1] - b[0]
+
+            # Functions to construct the letter value boxes
+            def vert_perc_box(x, b, i, k, w):
+                rect = Patches.Rectangle((x - widths*w / 2, b[0]),
+                                         widths*w,
+                                         height(b), fill=True)
+                return rect
+
+            def horz_perc_box(x, b, i, k, w):
+                rect = Patches.Rectangle((b[0], x - widths*w / 2),
+                                         height(b), widths*w,
+                                         fill=True)
+                return rect
+
+            # Scale the width of the boxes so the biggest starts at 1
+            w_area = np.array([width(height(b), i, k)
+                               for i, b in enumerate(box_ends)])
+            w_area = w_area / np.max(w_area)
+
+            # Calculate the medians
+            y = np.median(box_data)
+
+            # Calculate the outliers and plot
+            outliers = self._lv_outliers(box_data, k)
+
+            if vert:
+                boxes = [vert_perc_box(x, b[0], i, k, b[1])
+                         for i, b in enumerate(zip(box_ends, w_area))]
+
+                # Plot the medians
+                ax.plot([x - widths / 2, x + widths / 2], [y, y],
+                        c='k', alpha=.45, **kws)
+
+                ax.scatter(np.repeat(x, len(outliers)), outliers,
+                           marker='d', c=color, **kws)
+            else:
+                boxes = [horz_perc_box(x, b[0], i, k, b[1])
+                         for i, b in enumerate(zip(box_ends, w_area))]
+
+                # Plot the medians
+                ax.plot([y, y], [x - widths / 2, x + widths / 2],
+                        c='k', alpha=.45, **kws)
+
+                ax.scatter(outliers, np.repeat(x, len(outliers)),
+                           marker='d', c=color, **kws)
+
+            # Construct a color map from the input color
+            rgb = [[1, 1, 1], list(color)]
+            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+            collection = PatchCollection(boxes, cmap=cmap)
+
+            # Set the color gradation
+            collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
+
+            # Plot the boxes
+            ax.add_collection(collection)
+
+    def draw_letter_value_plot(self, ax, kws):
+        """Use matplotlib to draw a letter value plot on an Axes."""
+        vert = self.orient == "v"
+
+        for i, group_data in enumerate(self.plot_data):
+
+            if self.plot_hues is None:
+
+                # Handle case where there is data at this level
+                if group_data.size == 0:
+                    continue
+
+                # Draw a single box or a set of boxes
+                # with a single level of grouping
+                box_data = remove_na(group_data)
+
+                # Handle case where there is no non-null data
+                if box_data.size == 0:
+                    continue
+
+                color = self.colors[i]
+
+                artist_dict = self._lvplot(box_data,
+                                           positions=[i],
+                                           color=color,
+                                           vert=vert,
+                                           widths=self.width,
+                                           k_depth=self.k_depth,
+                                           ax=ax,
+                                           scale=self.scale,
+                                           outlier_prop=self.outlier_prop,
+                                           **kws)
+
+            else:
+                # Draw nested groups of boxes
+                offsets = self.hue_offsets
+                for j, hue_level in enumerate(self.hue_names):
+                    hue_mask = self.plot_hues[i] == hue_level
+
+                    # Add a legend for this hue level
+                    if not i:
+                        self.add_legend_data(ax, self.colors[j], hue_level)
+
+                    # Handle case where there is data at this level
+                    if group_data.size == 0:
+                        continue
+
+                    box_data = remove_na(group_data[hue_mask])
+
+                    # Handle case where there is no non-null data
+                    if box_data.size == 0:
+                        continue
+
+                    color = self.colors[j]
+                    center = i + offsets[j]
+                    artist_dict = self._lvplot(box_data,
+                                               positions=[center],
+                                               color=color,
+                                               vert=vert,
+                                               widths=self.nested_width,
+                                               k_depth=self.k_depth,
+                                               ax=ax,
+                                               scale=self.scale,
+                                               outlier_prop=self.outlier_prop,
+                                               **kws)
+
+    def plot(self, ax, boxplot_kws):
+        """Make the plot."""
+        self.draw_letter_value_plot(ax, boxplot_kws)
+        self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
+
 _categorical_docs = dict(
 
     # Shared narrative docs
@@ -1561,6 +1809,9 @@ _categorical_docs = dict(
     """),
     factorplot=dedent("""\
     factorplot : Combine categorical plots and a class:`FacetGrid`.\
+    """),
+    lvplot=dedent("""\
+    lvplot : An extension of the boxplot for long-tailed and large data sets.
     """),
     )
 
@@ -2867,6 +3118,158 @@ factorplot.__doc__ = dedent("""\
         ...   .set_titles("{{col_name}} {{col_var}}")
         ...   .set(ylim=(0, 1))
         ...   .despine(left=True))  #doctest: +ELLIPSIS
+        <seaborn.axisgrid.FacetGrid object at 0x...>
+
+    """).format(**_categorical_docs)
+
+
+def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+           orient=None, color=None, palette=None, saturation=.75,
+           width=.8, k_depth='proportion', linewidth=None, scale='exponential',
+           outlier_prop=None, ax=None, **kwargs):
+
+    plotter = _LVPlotter(x, y, hue, data, order, hue_order,
+                         orient, color, palette, saturation,
+                         width, k_depth, linewidth, scale, outlier_prop)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+    return ax
+
+lvplot.__doc__ = dedent("""\
+    Create a letter value plot
+
+    Letter value (LV) plots are non-parametric estimates of the distribution of
+    a dataset, similar to boxplots. LV plots are also similar to violin plots
+    but without the need to fit a kernel density estimate. Thus, LV plots are
+    fast to generate, directly interpretable in terms of the distribution of
+    data, and easy to understand. For a more extensive explanation of letter
+    value plots and their properties, see Hadley Wickham's excellent paper on
+    the topic:
+
+    http://vita.had.co.nz/papers/letter-value-plot.html
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {input_params}
+    {categorical_data}
+    {order_vars}
+    {orient}
+    {color}
+    {palette}
+    {saturation}
+    {width}
+    k_depth : "proportion" | "tukey" | "trustworthy", optional
+        The number of boxes, and by extension number of percentiles, to draw.
+        All methods are detailed in Wickham's paper. Each makes different
+        assumptions about the number of outliers and leverages different
+        statistical properties.
+    {linewidth}
+    scale : "linear" | "exonential" | "area"
+        Method to use for the width of the letter value boxes. All give similar
+        results visually. "linear" reduces the width by a constant linear
+        factor, "exponential" uses the proportion of data not covered, "area"
+        is proportional to the percentage of data covered.
+    outlier_prop : float, optional
+        Proportion of data believed to be outliers. Is used in conjuction with
+        k_depth to determine the number of percentiles to draw. Defaults to
+        0.007 as a proportion of outliers. Should be in range [0, 1].
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.plot`` and
+        ``plt.scatter`` at draw time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {violinplot}
+    {boxplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal letter value plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.lvplot(x=tips["total_bill"])
+
+    Draw a vertical letter value plot grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
+
+    Draw a letter value plot with nested grouping by two categorical variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="day", y="total_bill", hue="smoker",
+        ...                  data=tips, palette="Set3")
+
+    Draw a letter value plot with nested grouping when some bins are empty:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
+        ...                  data=tips, linewidth=2.5)
+
+    Control box order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort("size"))
+
+    Control box order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="size", y="tip", data=tips,
+        ...                  order=np.arange(1, 7), palette="Blues_d")
+
+    Draw a letter value plot for each numeric variable in a DataFrame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> ax = sns.lvplot(data=iris, orient="h", palette="Set2")
+
+    Use :func:`stripplot` to show the datapoints on top of the boxes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
+        ...                    size=4, jitter=True, edgecolor="gray")
+
+    Draw a letter value plot on to a :class:`FacetGrid` to group within an
+    additional categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
+        >>> (g.map(sns.lvplot, "sex", "total_bill", "smoker")
+        ...   .despine(left=True)
+        ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
         <seaborn.axisgrid.FacetGrid object at 0x...>
 
     """).format(**_categorical_docs)
