@@ -253,6 +253,10 @@ class _HeatMapper(object):
             cb = ax.figure.colorbar(mesh, cax, ax,
                                     ticks=ticker, **self.cbar_kws)
             cb.outline.set_linewidth(0)
+            # If rasterized is passed to pcolormesh, also rasterize the
+            # colorbar to avoid white lines on the PDF rendering
+            if kws.get('rasterized', False):
+                cb.solids.set_rasterized(True)
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
