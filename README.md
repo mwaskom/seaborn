@@ -18,8 +18,8 @@ Seaborn: statistical data visualization
 <img src="http://stanford.edu/~mwaskom/software/seaborn/_static/regression_marginals_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/violinplots.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/violinplots_thumb.png" height="135" width="135">
+<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/grouped_violinplots.html>
+<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/grouped_violinplots_thumb.png" height="135" width="135">
 </a>
 
 </div>
