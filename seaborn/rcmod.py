@@ -1,5 +1,6 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 from distutils.version import LooseVersion
+import functools
 
 import numpy as np
 import matplotlib as mpl
@@ -112,34 +113,6 @@ def reset_defaults():
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
     mpl.rcParams.update(mpl.rcParamsOrig)
-
-
-class _AxesStyle(dict):
-    """Light wrapper on a dict to set style temporarily."""
-    def __enter__(self):
-        """Open the context."""
-        rc = mpl.rcParams
-        self._orig_style = {k: rc[k] for k in _style_keys}
-        set_style(self)
-        return self
-
-    def __exit__(self, *args):
-        """Close the context."""
-        set_style(self._orig_style)
-
-
-class _PlottingContext(dict):
-    """Light wrapper on a dict to set context temporarily."""
-    def __enter__(self):
-        """Open the context."""
-        rc = mpl.rcParams
-        self._orig_context = {k: rc[k] for k in _context_keys}
-        set_context(self)
-        return self
-
-    def __exit__(self, *args):
-        """Close the context."""
-        set_context(self._orig_context)
 
 
 def axes_style(style=None, rc=None):
@@ -458,6 +431,35 @@ def set_context(context=None, font_scale=1, rc=None):
     """
     context_object = plotting_context(context, font_scale, rc)
     mpl.rcParams.update(context_object)
+
+
+class _StyleOrContext(dict):
+    def __enter__(self):
+        rc = mpl.rcParams
+        self._orig = {k: rc[k] for k in self._keys}
+        type(self)._set(self)
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        type(self)._set(self._orig)
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+        return wrapper
+
+
+class _AxesStyle(_StyleOrContext):
+    """Light wrapper on a dict to set style temporarily."""
+    _keys = _style_keys
+    _set = set_style
+
+
+class _PlottingContext(_StyleOrContext):
+    """Light wrapper on a dict to set context temporarily."""
+    _keys = _context_keys
+    _set = set_context
 
 
 def set_palette(palette, n_colors=None, desat=None, color_codes=False):
