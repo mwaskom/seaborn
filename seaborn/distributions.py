@@ -129,14 +129,15 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
         >>> from scipy.stats import norm
         >>> ax = sns.distplot(x, fit=norm, kde=False)
-    
-    Plot the distribution with a histogram, a KDE and fitted sum of 2 gaussians.
-    This is a numerical algorithm (scipy.optimize.curve_fit), so a reasonable
-    initial guess of the parameters (p0 passed through fit_kws) is important.
-    
+
+    Plot the distribution with a histogram, a KDE and fitted sum of 2
+    gaussians. This is a numerical algorithm (scipy.optimize.curve_fit), so a
+    reasonable initial guess of the parameters (p0 passed through fit_kws) is
+    important.
+
     .. plot::
         :context: close-figs
-        
+
         >>> def gauss(x, *p0):
         >>>     A, mu, sigma = p0
         >>>     return A*np.exp(-(x-mu)**2/(2.*sigma**2))
@@ -149,7 +150,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         >>> p0 = [1., 0., 1., 1., 2., 1.]
         >>> ax = sns.distplot(a, fit=gauss2,
                  fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
-        
+
     Plot the distribution on the vertical axis:
 
     .. plot::
@@ -264,13 +265,13 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             except KeyError:
                 raise KeyError("p0 (starting fit parameters) need to be"
                               "provided in fit_kws when fitting an"
-                              "arbitrary function.") 
+                              "arbitrary function.")
             if bins is None:
                 bins = min(_freedman_diaconis_bins(a), 50)
             hist, bin_edges = np.histogram(a, density=True, bins=bins)
             bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
             coeff, var_matrix = curve_fit(fit, bin_centres, hist, p0=p0)
-            x = np.linspace(bin_centres[0], bin_centres[-1], gridsize)             
+            x = np.linspace(bin_centres[0], bin_centres[-1], gridsize)
             y = fit(x, *coeff)
         if vertical:
             x, y = y, x
