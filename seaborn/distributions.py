@@ -264,8 +264,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
                 p0 = fit_kws.pop("p0")
             except KeyError:
                 raise KeyError("p0 (starting fit parameters) need to be"
-                              "provided in fit_kws when fitting an"
-                              "arbitrary function.")
+                               "provided in fit_kws when fitting an"
+                               "arbitrary function.")
             if bins is None:
                 bins = min(_freedman_diaconis_bins(a), 50)
             hist, bin_edges = np.histogram(a, density=True, bins=bins)
