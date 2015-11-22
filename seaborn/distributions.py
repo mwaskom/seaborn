@@ -139,15 +139,15 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         :context: close-figs
 
         >>> def gauss(x, *p0):
-        >>>     A, mu, sigma = p0
-        >>>     return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+        ...     a, p0 = p0[0], p0[1:]
+        ...     return a*norm.pdf(x, *p0)
         >>> def gauss2(x, *p0):
-        >>>     p1 = p0[:3]
-        >>>     p2 = p0[3:]
-        >>>     return gauss(x, *p1)+gauss(x, *p2)
+        ...     p1 = p0[:2]
+        ...     p2 = p0[2:]
+        ...     return gauss(x, *p1)+gauss(x, *p2)
         >>> a = np.append(np.random.normal(0.0, 0.5, size=500),
                           np.random.normal(3, 0.5, size=500))
-        >>> p0 = [1., 0., 1., 1., 2., 1.]
+        >>> p0 = [1., 0., 1., 2.]
         >>> ax = sns.distplot(a, fit=gauss2,
                  fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
 
@@ -266,12 +266,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
                 raise KeyError("p0 (starting fit parameters) need to be"
                                "provided in fit_kws when fitting an"
                                "arbitrary function.")
-            if bins is None:
-                bins = min(_freedman_diaconis_bins(a), 50)
-            hist, bin_edges = np.histogram(a, density=True, bins=bins)
+            hist, bin_edges = np.histogram(a, density=True, bins=gridsize)
             bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
             coeff, var_matrix = curve_fit(fit, bin_centres, hist, p0=p0)
-            x = np.linspace(bin_centres[0], bin_centres[-1], gridsize)
             y = fit(x, *coeff)
         if vertical:
             x, y = y, x
