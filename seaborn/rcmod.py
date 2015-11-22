@@ -498,7 +498,7 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
         cyl = cycler('color', colors)
         mpl.rcParams['axes.prop_cycle'] = cyl
     else:
-        mpl.rcParams["axes.prop_cycle"] = list(colors)
+        mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         palettes.set_color_codes(palette)
