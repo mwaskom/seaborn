@@ -540,4 +540,4 @@ def get_color_cycle():
             return [x['color'] for x in cyl]
         except KeyError:
             pass  # just return axes.color style below
-    return mpl.rcParams['axes.color_cycle']
+    return mpl.rcParams['axes.prop_cycle']
