@@ -5,13 +5,20 @@ import pandas as pd
 from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+"""
 from .external.six import string_types
 
 
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
+"""
+from seaborn.external.six import string_types
+
+
+from seaborn import utils
+from seaborn import algorithms as algo
+from seaborn.palettes import color_palette
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
