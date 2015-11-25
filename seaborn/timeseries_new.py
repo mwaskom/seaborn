@@ -45,6 +45,8 @@ class TimeSeriesPlotter(object):
                                       condition=condition, value=value,
                                       color=color, legend=legend)
 
+        self._colors = self._set_up_color_palette(color, self._data[self._names['condition']].unique())
+
     @property
     def data(self):
         return copy(self._data)
@@ -147,7 +149,26 @@ class TimeSeriesPlotter(object):
                 dict(xlabel=xlabel, ylabel=ylabel),
                 dict(legend=legend, legend_title=legend_title))
 
+    @staticmethod
+    def _set_up_color_palette(color, conditions):
+        n_cond = len(conditions)
+        # Set up the color palette
+        if color is None:
+            current_palette = utils.get_color_cycle()
+            if len(current_palette) < n_cond:
+                colors = color_palette("husl", n_cond)
+            else:
+                colors = color_palette(n_colors=n_cond)
+        elif isinstance(color, dict):
+            colors = [color[c] for c in np.unique(conditions)]
+        else:
+            try:
+                colors = color_palette(color, n_cond)
+            except ValueError:
+                color = mpl.colors.colorConverter.to_rgb(color)
+                colors = [color] * n_cond
 
+        return colors
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
