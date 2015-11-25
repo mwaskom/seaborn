@@ -13,12 +13,140 @@ from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
 """
+from copy import copy
 from seaborn.external.six import string_types
 
 
 from seaborn import utils
 from seaborn import algorithms as algo
 from seaborn.palettes import color_palette
+
+
+class TimeSeriesPlotter(object):
+
+    def __init__(self, data, time=None, unit=None, condition=None, value=None,
+                 err_style="ci_band", ci=68, interpolate=True, color=None,
+                 estimator=np.mean, n_boot=5000, err_palette=None,
+                 err_kws=None, legend=True, ax=None, **kwargs):
+
+        # extract and (re)format data
+        if isinstance(data, pd.DataFrame):
+            self._data, self._names, self._labels, self._legend = \
+                self._init_from_df(data, time=time, unit=unit,
+                                   condition=condition, value=value,
+                                   color=color, legend=legend)
+        else:
+            self._data, self._names, self._labels, self._legend = \
+                self._init_from_array(data, time=time, unit=unit,
+                                      condition=condition, value=value,
+                                      color=color, legend=legend)
+
+    @property
+    def data(self):
+        return copy(self._data)
+
+    @property
+    def names(self):
+        return copy(self._names)
+
+    @property
+    def labels(self):
+        return copy(self._labels)
+
+    @property
+    def legend(self):
+        return copy(self._legend)
+
+    @staticmethod
+    def _init_from_df(data, time=None, unit=None,
+                      condition=None, value=None,
+                      color=None, legend=True):
+
+        xlabel = time
+        ylabel = value
+        # Condition is optional
+        if condition is None:
+            condition = pd.Series(np.ones(len(data)))
+            legend = False
+            legend_title = None
+        else:
+            legend = True and legend
+            legend_title = condition
+
+        return (data,
+                dict(unit=unit, time=time, condition=condition, value=value),
+                dict(xlabel=xlabel, ylabel=ylabel),
+                dict(legend=legend, legend_title=legend_title))
+
+    @staticmethod
+    def _init_from_array(data, time=None, unit=None,
+                         condition=None, value=None,
+                         color=None, legend=True):
+
+        data = np.asarray(data)
+        # Data can be a timecourse from a single unit or
+        # several observations in one condition
+        if data.ndim == 1:
+            data = data[np.newaxis, :, np.newaxis]
+        elif data.ndim == 2:
+            data = data[:, :, np.newaxis]
+        n_unit, n_time, n_cond = data.shape
+
+        # Units are experimental observations. Maybe subjects, or neurons
+        if unit is None:
+            units = np.arange(n_unit)
+        unit = "unit"
+        units = np.repeat(units, n_time * n_cond)
+        ylabel = None
+
+        # Time forms the xaxis of the plot
+        if time is None:
+            times = np.arange(n_time)
+        else:
+            times = np.asarray(time)
+        xlabel = None
+        if hasattr(time, "name"):
+            xlabel = time.name
+        time = "time"
+        times = np.tile(np.repeat(times, n_cond), n_unit)
+
+        # Conditions split the timeseries plots
+        if condition is None:
+            conds = np.arange(n_cond)
+            legend = False
+            legend_title = None
+            if isinstance(color, dict):
+                err = "Must have condition names if using color dict."
+                raise ValueError(err)
+        else:
+            conds = np.asarray(condition)
+            legend = True and legend
+            if hasattr(condition, "name"):
+                legend_title = condition.name
+            else:
+                legend_title = None
+        condition = "condition"
+        conds = np.tile(conds, n_unit * n_time)
+
+        # Value forms the y value in the plot
+        if value is None:
+            ylabel = None
+        else:
+            ylabel = value
+        value = "value"
+
+        # Convert to long-form DataFrame
+        data = pd.DataFrame(dict(value=data.ravel(),
+                                 time=times,
+                                 unit=units,
+                                 condition=conds))
+
+        return (data,
+                dict(unit=unit, time=time, condition=condition, value=value),
+                dict(xlabel=xlabel, ylabel=ylabel),
+                dict(legend=legend, legend_title=legend_title))
+
+
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
