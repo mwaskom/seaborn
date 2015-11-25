@@ -21,6 +21,10 @@ import seaborn.utils
 class TestTimeSeriesPlotter(PlotTestCase):
 
     # TODO: what about `unit is not None`?
+    @nt.raises(ValueError)
+    def test_init_value_error(self):
+        TimeSeriesPlotter(np.array([1, 2]), condition=None,
+                          color={'a': 'green', 'b': 'blue'})
 
     def test_init_from_df(self):
 
@@ -117,8 +121,11 @@ class TestTimeSeriesPlotter(PlotTestCase):
 
     def test_init_from_array_3d_1(self):
 
-        data = np.array([[[1, 1], [2, 2]],
-                          [[3, 3], [4, 4]]])
+        data = np.array([[[1, 3],
+                          [1, 3]],
+
+                         [[2, 4],
+                          [2, 4]]])
         time = pd.Series([0, 2], name='tiempo')
         condition = pd.Series(['a', 'b'], name='condicion')
 

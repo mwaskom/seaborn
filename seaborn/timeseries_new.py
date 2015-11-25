@@ -29,6 +29,10 @@ class TimeSeriesPlotter(object):
                  estimator=np.mean, n_boot=5000, err_palette=None,
                  err_kws=None, legend=True, ax=None, **kwargs):
 
+        if condition is None and isinstance(color, dict):
+            err = "Must have condition names if using color dict."
+            raise ValueError(err)
+
         # extract and (re)format data
         if isinstance(data, pd.DataFrame):
             self._data, self._names, self._labels, self._legend = \
@@ -115,9 +119,6 @@ class TimeSeriesPlotter(object):
             conds = np.arange(n_cond)
             legend = False
             legend_title = None
-            if isinstance(color, dict):
-                err = "Must have condition names if using color dict."
-                raise ValueError(err)
         else:
             conds = np.asarray(condition)
             legend = True and legend
