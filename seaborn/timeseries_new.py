@@ -46,6 +46,8 @@ class TimeSeriesPlotter(object):
                                       color=color, legend=legend)
 
         self._colors = self._set_up_color_palette(color, self._data[self._names['condition']].unique())
+        self.interpolate = interpolate
+        self.kwargs = self._set_up_central_trace_kwargs(kwargs)
 
     @property
     def data(self):
@@ -169,6 +171,12 @@ class TimeSeriesPlotter(object):
                 colors = [color] * n_cond
 
         return colors
+
+    def _set_up_central_trace_kwargs(self, kwargs):
+        kwargs.setdefault("marker", "" if self.interpolate else "o")
+        ls = kwargs.pop("ls", "-" if self.interpolate else "")
+        kwargs.setdefault("linestyle", ls)
+        return kwargs
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
