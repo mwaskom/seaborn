@@ -16,9 +16,7 @@ from seaborn.timeseries_new import TimeSeriesPlotter
 import seaborn.utils
 
 
-
-
-class TestTimeSeriesPlotter(PlotTestCase):
+class TestTimeSeriesPlotterDataInit(PlotTestCase):
 
     # TODO: what about `unit is not None`?
     @nt.raises(ValueError)
@@ -140,6 +138,33 @@ class TestTimeSeriesPlotter(PlotTestCase):
         assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
         assert dict(legend=True, legend_title='condicion') == tsp.legend
         assert dict(xlabel='tiempo', ylabel='valor') == tsp.labels
+
+
+class TestTimeSeriesPlotterColor(PlotTestCase):
+
+    def test_color_is_none(self):
+        pass
+
+    def test_color_is_dict(self):
+        pass
+
+    def test_color_is_palette(self):
+        pass
+
+    def test_color_raises_value_error(self):
+        pass
+
+
+class TestTimeSeriesPlotterPlotData(PlotTestCase):
+
+    def test_compute_plot_data(self):
+        pass
+
+
+class TestTimeSeriesPlotterPlot(PlotTestCase):
+
+    def test_axis_labels():
+        pass
 
 
 if __name__ == '__main__':
