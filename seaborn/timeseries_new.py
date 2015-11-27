@@ -1,5 +1,6 @@
 """Timeseries plotting functions."""
 from __future__ import division
+from textwrap import dedent
 import numpy as np
 import pandas as pd
 from scipy import stats, interpolate
@@ -22,12 +23,12 @@ from seaborn import algorithms as algo
 from seaborn.palettes import color_palette
 
 
-class TimeSeriesPlotter(object):
+class _TimeSeriesPlotter(object):
 
     def __init__(self, data, time=None, unit=None, condition=None, value=None,
                  err_style="ci_band", ci=68, interpolate=True, color=None,
                  estimator=np.mean, n_boot=5000, err_palette=None,
-                 err_kws=None, legend=True, ax=None, **kwargs):
+                 err_kws=None, legend=True, **kwargs):
 
         if condition is None and isinstance(color, dict):
             err = "Must have condition names if using color dict."
@@ -35,19 +36,46 @@ class TimeSeriesPlotter(object):
 
         # extract and (re)format data
         if isinstance(data, pd.DataFrame):
-            self._data, self._names, self._labels, self._legend = \
+            data, names, labels, legend = \
                 self._init_from_df(data, time=time, unit=unit,
                                    condition=condition, value=value,
                                    color=color, legend=legend)
         else:
-            self._data, self._names, self._labels, self._legend = \
+            data, names, labels, legend = \
                 self._init_from_array(data, time=time, unit=unit,
                                       condition=condition, value=value,
                                       color=color, legend=legend)
 
-        self._colors = self._set_up_color_palette(color, self._data[self._names['condition']].unique())
+        # establish colors
+        colors = self._set_up_color_palette(color, data[names['condition']].unique())
+
+        # establish kwargs for central trace
+        kwargs.setdefault("marker", "" if interpolate else "o")
+        ls = kwargs.pop("ls", "-" if interpolate else "")
+        kwargs.setdefault("linestyle", ls)
+
+        # Set up the err_style and ci arguments
+        if isinstance(err_style, string_types):
+            err_style = [err_style]
+        elif err_style is None:
+            err_style = []
+        if not hasattr(ci, "__iter__"):
+            ci = [ci]
+
+        # assign attributes
+        self._data = data
+        self._names = names
+        self._labels = labels
+        self._legend = legend
+        self._kwargs = kwargs
+        self._colors = colors
+        self._err_style = err_style
+        self._ci = ci
         self.interpolate = interpolate
-        self.kwargs = self._set_up_central_trace_kwargs(kwargs)
+        self.estimator = estimator
+        self.n_boot = n_boot
+        self.err_palette = err_palette
+        self.err_kws = err_kws
 
     @property
     def data(self):
@@ -64,6 +92,22 @@ class TimeSeriesPlotter(object):
     @property
     def legend(self):
         return copy(self._legend)
+
+    @property
+    def kwargs(self):
+        return copy(self._kwargs)
+
+    @property
+    def colors(self):
+        return copy(self._colors)
+
+    @property
+    def err_style(self):
+        return copy(self._err_style)
+
+    @property
+    def ci(self):
+        return copy(self._ci)
 
     @staticmethod
     def _init_from_df(data, time=None, unit=None,
@@ -172,18 +216,109 @@ class TimeSeriesPlotter(object):
 
         return colors
 
-    def _set_up_central_trace_kwargs(self, kwargs):
-        kwargs.setdefault("marker", "" if self.interpolate else "o")
-        ls = kwargs.pop("ls", "-" if self.interpolate else "")
-        kwargs.setdefault("linestyle", ls)
-        return kwargs
+    def _compute_plot_data(self):
+
+        for c, (cond, df_c) in enumerate(self.data.groupby(self.names['condition'], sort=False)):
+            df_c = df_c.pivot(self.names['unit'],
+                              self.names['time'],
+                              self.names['value'])
+            x = df_c.columns.values.astype(np.float)
+
+            # Bootstrap the data for confidence intervals
+            boot_data = algo.bootstrap(df_c.values, n_boot=self.n_boot,
+                                       axis=0, func=self.estimator)
+            cis = [utils.ci(boot_data, v, axis=0) for v in self.ci]
+            central_data = self.estimator(df_c.values, axis=0)
+
+            yield (cond, df_c, x, boot_data, cis, central_data)
+
+    def _err_color(self, color, style, n):
+        # Possibly set up to plot each observation in a different color
+        if self.err_palette is not None and 'unit' in style:
+            err_color = color_palette(self.err_palette, n)
+        else:
+            err_color = color
+        return err_color
+
+    def plot(self, ax):
+
+        for c, plot_data in enumerate(self._compute_plot_data()):
+            cond, df_c, x, boot_data, cis, central_data = plot_data
+            # Get the color for this condition
+            color = self.colors[c]
+
+            # Plot the central trace
+            label = cond if self.legend['legend'] else "_nolegend_"
+            ax.plot(x, central_data, color=color, label=label, **self.kwargs)
+
+            # Use subroutines to plot the uncertainty
+            for style in self.err_style:
+
+                # Allow for null style (only plot central tendency)
+                if style is None:
+                    continue
+
+                # Grab the function from the global environment
+                try:
+                    plot_func = globals()["_plot_%s" % style]
+                except KeyError:
+                    raise ValueError("%s is not a valid err_style" % style)
+
+                # Possibly set up to plot each observation in a different color
+                err_color = self._err_color(color, style, len(df_c.values))
+                # Pass all parameters to the error plotter as keyword args
+                plot_kwargs = dict(ax=ax, x=x, data=df_c.values,
+                                   boot_data=boot_data,
+                                   central_data=central_data,
+                                   color=err_color, err_kws=self.err_kws)
+
+                # Plot the error representation, possibly for multiple cis
+                for ci_i in cis:
+                    plot_kwargs["ci"] = ci_i
+                    plot_func(**plot_kwargs)
+
+        # Pad the sides of the plot only when not interpolating
+        ax.set_xlim(x.min(), x.max())
+        x_diff = x[1] - x[0]
+        if not interpolate:
+            ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
+
+        # Add the plot labels
+        if self.labels['xlabel'] is not None:
+            ax.set_xlabel(self.labels['xlabel'])
+        if self.labels['ylabel'] is not None:
+            ax.set_ylabel(self.labels['ylabel'])
+        if self.legend['legend']:
+            ax.legend(loc=0, title=self.legend['legend_title'])
+
+        return ax
 
 
 def tsplot(data, time=None, unit=None, condition=None, value=None,
            err_style="ci_band", ci=68, interpolate=True, color=None,
            estimator=np.mean, n_boot=5000, err_palette=None, err_kws=None,
            legend=True, ax=None, **kwargs):
-    """Plot one or more timeseries with flexible representation of uncertainty.
+
+    # Sort out default values for the parameters
+    if ax is None:
+        ax = plt.gca()
+
+    if err_kws is None:
+        err_kws = {}
+
+    plotter = _TimeSeriesPlotter(data, time=time, unit=unit,
+                                 condition=condition, value=value,
+                                 err_style=err_style, ci=ci,
+                                 interpolate=interpolate, color=color,
+                                 estimator=estimator, n_boot=n_boot,
+                                 err_palette=err_palette,
+                                 err_kws=err_kws, legend=legend, **kwargs)
+    plotter.plot(ax)
+
+    return ax
+
+tsplot.__doc__ = dedent("""\
+    Plot one or more timeseries with flexible representation of uncertainty.
 
     This function is intended to be used with data where observations are
     nested within sampling units that were measured at multiple timepoints.
@@ -328,183 +463,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
         >>> ax = sns.tsplot(data=data, err_style="unit_traces")
 
-    """
-    # Sort out default values for the parameters
-    if ax is None:
-        ax = plt.gca()
-
-    if err_kws is None:
-        err_kws = {}
-
-    # Handle different types of input data
-    if isinstance(data, pd.DataFrame):
-
-        xlabel = time
-        ylabel = value
-
-        # Condition is optional
-        if condition is None:
-            condition = pd.Series(np.ones(len(data)))
-            legend = False
-            legend_name = None
-            n_cond = 1
-        else:
-            legend = True and legend
-            legend_name = condition
-            n_cond = len(data[condition].unique())
-
-    else:
-        data = np.asarray(data)
-
-        # Data can be a timecourse from a single unit or
-        # several observations in one condition
-        if data.ndim == 1:
-            data = data[np.newaxis, :, np.newaxis]
-        elif data.ndim == 2:
-            data = data[:, :, np.newaxis]
-        n_unit, n_time, n_cond = data.shape
-
-        # Units are experimental observations. Maybe subjects, or neurons
-        if unit is None:
-            units = np.arange(n_unit)
-        unit = "unit"
-        units = np.repeat(units, n_time * n_cond)
-        ylabel = None
-
-        # Time forms the xaxis of the plot
-        if time is None:
-            times = np.arange(n_time)
-        else:
-            times = np.asarray(time)
-        xlabel = None
-        if hasattr(time, "name"):
-            xlabel = time.name
-        time = "time"
-        times = np.tile(np.repeat(times, n_cond), n_unit)
-
-        # Conditions split the timeseries plots
-        if condition is None:
-            conds = range(n_cond)
-            legend = False
-            if isinstance(color, dict):
-                err = "Must have condition names if using color dict."
-                raise ValueError(err)
-        else:
-            conds = np.asarray(condition)
-            legend = True and legend
-            if hasattr(condition, "name"):
-                legend_name = condition.name
-            else:
-                legend_name = None
-        condition = "cond"
-        conds = np.tile(conds, n_unit * n_time)
-
-        # Value forms the y value in the plot
-        if value is None:
-            ylabel = None
-        else:
-            ylabel = value
-        value = "value"
-
-        # Convert to long-form DataFrame
-        data = pd.DataFrame(dict(value=data.ravel(),
-                                 time=times,
-                                 unit=units,
-                                 cond=conds))
-
-    # Set up the err_style and ci arguments for the loop below
-    if isinstance(err_style, string_types):
-        err_style = [err_style]
-    elif err_style is None:
-        err_style = []
-    if not hasattr(ci, "__iter__"):
-        ci = [ci]
-
-    # Set up the color palette
-    if color is None:
-        current_palette = utils.get_color_cycle()
-        if len(current_palette) < n_cond:
-            colors = color_palette("husl", n_cond)
-        else:
-            colors = color_palette(n_colors=n_cond)
-    elif isinstance(color, dict):
-        colors = [color[c] for c in data[condition].unique()]
-    else:
-        try:
-            colors = color_palette(color, n_cond)
-        except ValueError:
-            color = mpl.colors.colorConverter.to_rgb(color)
-            colors = [color] * n_cond
-
-    # Do a groupby with condition and plot each trace
-    for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
-
-        df_c = df_c.pivot(unit, time, value)
-        x = df_c.columns.values.astype(np.float)
-
-        # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
-                                   axis=0, func=estimator)
-        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
-        central_data = estimator(df_c.values, axis=0)
-
-        # Get the color for this condition
-        color = colors[c]
-
-        # Use subroutines to plot the uncertainty
-        for style in err_style:
-
-            # Allow for null style (only plot central tendency)
-            if style is None:
-                continue
-
-            # Grab the function from the global environment
-            try:
-                plot_func = globals()["_plot_%s" % style]
-            except KeyError:
-                raise ValueError("%s is not a valid err_style" % style)
-
-            # Possibly set up to plot each observation in a different color
-            if err_palette is not None and "unit" in style:
-                orig_color = color
-                color = color_palette(err_palette, len(df_c.values))
-
-            # Pass all parameters to the error plotter as keyword args
-            plot_kwargs = dict(ax=ax, x=x, data=df_c.values,
-                               boot_data=boot_data,
-                               central_data=central_data,
-                               color=color, err_kws=err_kws)
-
-            # Plot the error representation, possibly for multiple cis
-            for ci_i in cis:
-                plot_kwargs["ci"] = ci_i
-                plot_func(**plot_kwargs)
-
-            if err_palette is not None and "unit" in style:
-                color = orig_color
-
-        # Plot the central trace
-        kwargs.setdefault("marker", "" if interpolate else "o")
-        ls = kwargs.pop("ls", "-" if interpolate else "")
-        kwargs.setdefault("linestyle", ls)
-        label = cond if legend else "_nolegend_"
-        ax.plot(x, central_data, color=color, label=label, **kwargs)
-
-    # Pad the sides of the plot only when not interpolating
-    ax.set_xlim(x.min(), x.max())
-    x_diff = x[1] - x[0]
-    if not interpolate:
-        ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
-
-    # Add the plot labels
-    if xlabel is not None:
-        ax.set_xlabel(xlabel)
-    if ylabel is not None:
-        ax.set_ylabel(ylabel)
-    if legend:
-        ax.legend(loc=0, title=legend_name)
-
-    return ax
+    """)
 
 # Subroutines for tsplot errorbar plotting
 # ----------------------------------------
