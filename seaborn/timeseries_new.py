@@ -17,7 +17,6 @@ from .palettes import color_palette
 from copy import copy
 from seaborn.external.six import string_types
 
-
 from seaborn import utils
 from seaborn import algorithms as algo
 from seaborn.palettes import color_palette
@@ -206,13 +205,24 @@ class _TimeSeriesPlotter(object):
             else:
                 colors = color_palette(n_colors=n_cond)
         elif isinstance(color, dict):
-            colors = [color[c] for c in np.unique(conditions)]
+            try:
+                colors = [color[c] for c in conditions]
+            except KeyError:
+                err = '`color`-dict must provide a color for all conditions'
+                raise ValueError(err)
         else:
             try:
                 colors = color_palette(color, n_cond)
             except ValueError:
-                color = mpl.colors.colorConverter.to_rgb(color)
                 colors = [color] * n_cond
+
+        try:
+            # Convert the colors to a common rgb representation
+            colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
+        except ValueError:
+            err = ('`matplotlib.colors.colorConverter.to_rgb` fails to ' +
+                   'convert colors in `color` to rgb')
+            raise ValueError(err)
 
         return colors
 
