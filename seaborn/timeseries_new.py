@@ -229,9 +229,9 @@ class _TimeSeriesPlotter(object):
     def _compute_plot_data(self):
 
         for c, (cond, df_c) in enumerate(self.data.groupby(self.names['condition'], sort=False)):
-            df_c = df_c.pivot(self.names['unit'],
-                              self.names['time'],
-                              self.names['value'])
+            df_c = df_c.pivot(index=self.names['unit'],
+                              columns=self.names['time'],
+                              values=self.names['value'])
             x = df_c.columns.values.astype(np.float)
 
             # Bootstrap the data for confidence intervals
