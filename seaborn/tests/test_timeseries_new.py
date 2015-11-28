@@ -16,29 +16,33 @@ from seaborn.timeseries_new import _TimeSeriesPlotter
 from seaborn import utils
 from seaborn.palettes import color_palette
 
-"""
+
 class TestTimeSeriesPlotterDataInit(PlotTestCase):
+
+    df = pd.DataFrame({'condition': ['a', 'a', 'a', 'a', 'b', 'b'],
+                       'unit': [0, 0, 1, 1, 0, 0],
+                       'time': [0, 1, 0, 1, 0, 1],
+                       'value': [1, 1, 2, 2, 3, 3]})
+    # TODO: better wording for df_kwargs?
+    df_kwargs = dict(value='value', time='time', unit='unit',
+                     condition='condition', legend=True)
 
     # TODO: what about `unit is not None`?
     @nt.raises(ValueError)
     def test_init_value_error(self):
         _TimeSeriesPlotter(np.array([1, 2]), condition=None,
-                          color={'a': 'green', 'b': 'blue'})
+                           color={'a': 'green', 'b': 'blue'})
 
     def test_init_from_df(self):
 
-        data = pd.DataFrame({'condition': ['a', 'a', 'a', 'a', 'b', 'b'],
-                             'unit': [0, 0, 1, 1, 0, 0],
-                             'time': [0, 1, 0, 1, 0, 1],
-                             'value': [1, 1, 2, 2, 3, 3]})
+        tsp = _TimeSeriesPlotter(self.df, **self.df_kwargs)
 
-        tsp = _TimeSeriesPlotter(data, value='value', time='time', unit='unit', condition='condition',
-                                legend=True)
-
-        pdt.assert_frame_equal(data, tsp.data)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=True, legend_title='condition') == tsp.legend
-        assert dict(xlabel='time', ylabel='value') == tsp.labels
+        pdt.assert_frame_equal(self.df, tsp.data)
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=True,
+                                         legend_title='condition'))
+        nt.assert_equal(tsp.labels, dict(xlabel='time', ylabel='value'))
 
     def test_init_from_array_1d_0(self):
 
@@ -54,9 +58,10 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=False, legend_title=None) == tsp.legend
-        assert dict(xlabel=None, ylabel=None) == tsp.labels
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=False, legend_title=None))
+        nt.assert_equal(tsp.labels, dict(xlabel=None, ylabel=None))
 
     def test_init_from_array_1d_1(self):
 
@@ -72,10 +77,11 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition, value='valor', legend=True)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=True, legend_title='condicion') == tsp.legend
-        assert dict(xlabel='tiempo', ylabel='valor') == tsp.labels
-
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=True,
+                                         legend_title='condicion'))
+        nt.assert_equal(tsp.labels, dict(xlabel='tiempo', ylabel='valor'))
 
     def test_init_from_array_2d(self):
 
@@ -91,10 +97,10 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=False, legend_title=None) == tsp.legend
-        assert dict(xlabel=None, ylabel=None) == tsp.labels
-
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=False, legend_title=None))
+        nt.assert_equal(tsp.labels, dict(xlabel=None, ylabel=None))
 
     def test_init_from_array_3d_0(self):
 
@@ -114,9 +120,10 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
         data_actual = tsp.data.sort_values(['condition', 'unit']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=False, legend_title=None) == tsp.legend
-        assert dict(xlabel=None, ylabel=None) == tsp.labels
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=False, legend_title=None))
+        nt.assert_equal(tsp.labels, dict(xlabel=None, ylabel=None))
 
     def test_init_from_array_3d_1(self):
 
@@ -136,30 +143,82 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=True, value='valor')
         data_actual = tsp.data.sort_values(['condition', 'unit']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
-        assert dict(condition='condition', unit='unit', time='time', value='value') == tsp.names
-        assert dict(legend=True, legend_title='condicion') == tsp.legend
-        assert dict(xlabel='tiempo', ylabel='valor') == tsp.labels
-"""
+        nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
+                                        time='time', value='value'))
+        nt.assert_equal(tsp.legend, dict(legend=True,
+                                         legend_title='condicion'))
+        nt.assert_equal(tsp.labels, dict(xlabel='tiempo', ylabel='valor'))
 
-"""
-import unittest
-import mock
+    # interpolate is False and no values for marker or linestyle are supplied,
+    # use default marker='o' and ls=''
+    def test_interpolate_is_False_and_no_kwargs_supplied(self):
 
-def check():
-    return test()
-def test():
-    return "test"
+        tsp = _TimeSeriesPlotter(self.df,
+                                 interpolate=False,
+                                 #no marker
+                                 #no ls
+                                 **self.df_kwargs)
 
-class CheckTest(unittest.TestCase):
-    @mock.patch('__main__.test')
-    def test_test(self, mocked):
-        mocked.return_value = "mocked"
-        self.assertEqual(check(), "mocked")
+        nt.assert_equal(tsp.kwargs, dict(linestyle='', marker='o'))
 
+    # interpolate is False and values for marker and linestyle are supplied,
+    # use these"
+    def test_interpolate_is_False_and_kwargs_supplied(self):
 
-if __name__ == '__main__':
-    unittest.main()
-"""
+        tsp = _TimeSeriesPlotter(self.df,
+                                 interpolate=False,
+                                 marker='x',
+                                 ls='-.',
+                                 **self.df_kwargs)
+
+        nt.assert_equal(tsp.kwargs, dict(linestyle='-.', marker='x'))
+
+    # interpolate is True and no values for marker or linestyle are supplied,
+    # use default marker='' and ls='-'
+    def test_interpolate_is_True_and_no_kwargs_supplied(self):
+
+        tsp = _TimeSeriesPlotter(self.df,
+                                 interpolate=True,
+                                 #no marker
+                                 #no ls
+                                 **self.df_kwargs)
+        nt.assert_equal(tsp.kwargs, dict(linestyle='-', marker=''))
+
+    # interpolate is True and values for marker and linestyle are supplied,
+    # use these
+    def test_interpolate_is_True_and_kwargs_supplied(self):
+
+        tsp = _TimeSeriesPlotter(self.df,
+                                 interpolate=True,
+                                 marker='x',
+                                 ls='-.',
+                                 **self.df_kwargs)
+        nt.assert_equal(tsp.kwargs, dict(linestyle='-.', marker='x'))
+
+    # make sure that err_style is iterable
+    def test_err_style_is_string_type(self):
+        err_style = 'ci_band'
+        err_style_expected = [err_style]
+        tsp = _TimeSeriesPlotter(self.df, err_style=err_style,
+                                 **self.df_kwargs)
+        nt.assert_equal(tsp.err_style, err_style_expected)
+
+    # make sure that err_style is iterable
+    def test_err_style_is_None(self):
+        err_style = None
+        err_style_expected = []
+        tsp = _TimeSeriesPlotter(self.df, err_style=err_style,
+                                 **self.df_kwargs)
+        nt.assert_equal(tsp.err_style, err_style_expected)
+
+    # make sure that ci is iterable
+    def test_ci(self):
+        ci = 68
+        tsp = _TimeSeriesPlotter(self.df, ci=ci,
+                                 **self.df_kwargs)
+        ci_expected = [ci]
+        nt.assert_equal(tsp.ci, ci_expected)
+
 
 class TestTimeSeriesPlotterColor(PlotTestCase):
 
@@ -244,7 +303,6 @@ class TestTimeSeriesPlotterColor(PlotTestCase):
         color = 'blaaa'
         conditions = np.array(['a', 'b'])
         _TimeSeriesPlotter._set_up_color_palette(color, conditions)
-
 
 """
 class TestTimeSeriesPlotterPlotData(PlotTestCase):
