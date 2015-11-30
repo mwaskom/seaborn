@@ -1309,6 +1309,7 @@ class PairGrid(Grid):
             self.diag_axes = np.array(diag_axes, np.object)
 
         # Plot on each of the diagonal axes
+        color = kwargs.pop('color', None)
         for i, var in enumerate(self.x_vars):
             ax = self.diag_axes[i]
             hue_grouped = self.data[var].groupby(self.hue_vals)
@@ -1323,7 +1324,9 @@ class PairGrid(Grid):
                         vals.append(np.asarray(hue_grouped.get_group(label)))
                     except KeyError:
                         vals.append(np.array([]))
-                func(vals, color=self.palette, histtype="barstacked",
+                if color is None:
+                    color = self.palette
+                func(vals, color=color, histtype="barstacked",
                      **kwargs)
             else:
                 for k, label_k in enumerate(self.hue_names):
@@ -1333,8 +1336,10 @@ class PairGrid(Grid):
                     except KeyError:
                         data_k = np.array([])
                     plt.sca(ax)
+                    if color is None:
+                        color = self.palette[k]
                     func(data_k, label=label_k,
-                         color=self.palette[k], **kwargs)
+                         color=color, **kwargs)
 
             self._clean_axis(ax)
 
