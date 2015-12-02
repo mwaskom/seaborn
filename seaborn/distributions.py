@@ -150,7 +150,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         >>> a = a = np.append(a1, a2)
         >>> p0 = [1., 0., 1., 2.]
         >>> ax = sns.distplot(a, fit=gauss2,
-                 fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
+        ...                   fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
 
     Plot the distribution on the vertical axis:
 
