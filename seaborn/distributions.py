@@ -145,8 +145,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         ...     p1 = p0[:2]
         ...     p2 = p0[2:]
         ...     return gauss(x, *p1)+gauss(x, *p2)
-        >>> a = np.append(np.random.normal(0.0, 0.5, size=500),
-                          np.random.normal(3, 0.5, size=500))
+        >>> a1 = np.random.normal(0.0, 0.5, size=500)
+        >>> a2 = np.random.normal(3, 0.5, size=500)
+        >>> a = a = np.append(a1, a2)
         >>> p0 = [1., 0., 1., 2.]
         >>> ax = sns.distplot(a, fit=gauss2,
                  fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
