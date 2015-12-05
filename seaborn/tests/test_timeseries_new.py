@@ -4,6 +4,7 @@ import numpy.testing as npt
 import pandas as pd
 import pandas.util.testing as pdt
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import nose
 import nose.tools as nt
 """
@@ -12,12 +13,15 @@ from .. import timeseries_new as tsn
 from .. import utils
 """
 from seaborn.tests import PlotTestCase
-from seaborn.timeseries_new import _TimeSeriesPlotter
+from seaborn.timeseries_new import _TimeSeriesPlotter, tsplot
 from seaborn import utils
 from seaborn.palettes import color_palette
 
+# TODO: add a test that checks if computed data is also plotted - this closes the circle
+# TODO: replace fake data by gammas
 
-class TestTimeSeriesPlotterDataInit(PlotTestCase):
+
+class TestDataInit(PlotTestCase):
 
     df = pd.DataFrame({'condition': ['a', 'a', 'a', 'a', 'b', 'b'],
                        'unit': [0, 0, 1, 1, 0, 0],
@@ -220,7 +224,7 @@ class TestTimeSeriesPlotterDataInit(PlotTestCase):
         nt.assert_equal(tsp.ci, ci_expected)
 
 
-class TestTimeSeriesPlotterColor(PlotTestCase):
+class TestColor(PlotTestCase):
 
     # color is None and we have more different conditions than colors
     # in the current color cycle, therefore we use 'husl' palette
@@ -305,81 +309,55 @@ class TestTimeSeriesPlotterColor(PlotTestCase):
         _TimeSeriesPlotter._set_up_color_palette(color, conditions)
 
 
-class TestTimeSeriesPlotterPlotData(PlotTestCase):
+class TestPlotData(PlotTestCase):
 
-    rs = np.random.RandomState(123)
+    gammas = utils.load_dataset("gammas")
+    gammas_kwargs = dict(time="timepoint", value="BOLD signal",
+                         unit="subject", condition="ROI")
 
-    def create_single_condition_data(self):
-        n_units = 10
-        n_times = 10
-        unit = np.repeat(np.arange(n_units), n_times)
-        time = np.tile(np.arange(n_times), n_units)
-        value = []
-        for _ in range(n_units):
-            value.append(self.rs.rand(n_times))
-        value = np.hstack(value)
+    color = {'AG': 'red', 'IPS': 'green', 'V1': 'blue'}
+    color = {k: mpl.colors.colorConverter.to_rgb(c)
+             for k, c in color.items()}
 
-        data = pd.DataFrame(dict(value=value, time=time, unit=unit))
-        data['condition'] = 'a'
-        data_kwargs = dict(value='value', time='time',
-                           unit='unit', condition='condition')
-        return data, data_kwargs
+    def test_compute_plot_data(self):
 
-    def test_compute_plot_data_single_condition(self):
-        data, data_kwargs = self.create_single_condition_data()
-        n_boot = 100
+        n_boot = 200
         estimator = np.mean
         ci = [68, 99]
-        tsp = _TimeSeriesPlotter(data, estimator=estimator, n_boot=n_boot,
-                                 ci=ci, **data_kwargs)
+        tsp = _TimeSeriesPlotter(self.gammas, estimator=estimator, n_boot=n_boot,
+                                 color=self.color, ci=ci, **self.gammas_kwargs)
 
-        cond, df_c, x, boot_data, cis, central_data = list(tsp._compute_plot_data())[0]
-        ci_small, ci_big = cis
-
-        cond_expected = data[data_kwargs['condition']][0]
-        df_c_expected = data.pivot(index=data_kwargs['unit'],
-                                   columns=data_kwargs['time'],
-                                   values=data_kwargs['value'])
-        x_expected = data[data_kwargs['time']].unique()
-        central_data_expected = estimator(df_c, axis=0).values
-
-        nt.assert_is(cond, cond_expected)
-        pdt.assert_frame_equal(df_c, df_c_expected)
-        npt.assert_allclose(x, x_expected)
-        npt.assert_array_less(ci_small[0], central_data)
-        npt.assert_array_less(central_data, ci_small[1])
-        npt.assert_array_less(np.diff(ci_small, axis=0), np.diff(ci_big, axis=0))
-        npt.assert_allclose(central_data, central_data_expected)
-
-    def test_compute_plot_data_multiple_conditions_and_color_order(self):
-
-        color = {'a': 'red', 'b': 'green', 'c': 'blue'}
-        color = {k: mpl.colors.colorConverter.to_rgb(c)
-                 for k, c in color.items()}
-
-        data = pd.DataFrame({'value': [1, 1, 1, 1, 1, 1],
-                             'time': [0, 1, 0, 1, 0, 1],
-                             'unit': [0, 0, 0, 0, 0, 0],
-                             'condition': ['a', 'a', 'c', 'c', 'b', 'b']})
-
-        tsp = _TimeSeriesPlotter(data, value='value', time='time',
-                                 unit='unit', condition='condition',
-                                 color=color)
-
-        # check if tsp.colors (which is a list) colors are correctly mapped
-        # to the different conditions as required by the color dict
         for c, plot_data in enumerate(tsp._compute_plot_data()):
             cond, df_c, x, boot_data, cis, central_data = plot_data
-            color_c = tsp.colors[c]
-            nt.assert_equal(color_c, color[cond])
+            (ci68_low, ci68_high), (ci99_low, ci99_high) = cis
+            # condition in the right order?
+            cond_expected = self.gammas[self.gammas_kwargs['condition']].unique()[c]
+            nt.assert_equal(cond, cond_expected)
+            # are colors mapped correctly?
+            color_expected = self.color[cond_expected]
+            nt.assert_equal(tsp.colors[c], color_expected)
+            # condition-dataframe
+            gammas_c = self.gammas[self.gammas[self.gammas_kwargs['condition']]
+                                   == cond_expected]
+            df_c_expected = gammas_c.pivot(index=self.gammas_kwargs['unit'],
+                                           columns=self.gammas_kwargs['time'],
+                                           values=self.gammas_kwargs['value'])
+            pdt.assert_frame_equal(df_c, df_c_expected)
+            # time
+            x_expected = self.gammas[self.gammas_kwargs['time']].unique()
+            npt.assert_allclose(x, x_expected)
+            # central data
+            central_data_expected = estimator(df_c, axis=0).values
+            npt.assert_allclose(central_data, central_data_expected)
+            # check cis
+            npt.assert_array_less(ci68_low, central_data)
+            npt.assert_array_less(central_data, ci68_high)
+            npt.assert_array_less(ci99_low, central_data)
+            npt.assert_array_less(central_data, ci99_high)
+            npt.assert_array_less(ci68_high - ci68_low, ci99_high - ci99_low)
+            # check number of bootstrapped samples
+            nt.assert_equal(boot_data.shape[0], n_boot)
 
-
-"""
-class TestTimeSeriesPlotterPlot(PlotTestCase):
-
-    def test_axis_labels():
-        pass
-"""
 
 if __name__ == '__main__':
     nose.runmodule(exit=False)
