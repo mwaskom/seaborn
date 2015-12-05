@@ -290,7 +290,7 @@ class _TimeSeriesPlotter(object):
         # Pad the sides of the plot only when not interpolating
         ax.set_xlim(x.min(), x.max())
         x_diff = x[1] - x[0]
-        if not interpolate:
+        if not self.interpolate:
             ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
 
         # Add the plot labels
