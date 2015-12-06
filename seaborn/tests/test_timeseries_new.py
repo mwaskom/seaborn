@@ -359,5 +359,68 @@ class TestPlotData(PlotTestCase):
             nt.assert_equal(boot_data.shape[0], n_boot)
 
 
+class TestPlots(PlotTestCase):
+
+    rs = np.random.RandomState(56)
+
+    x = np.linspace(0, 15, 31)
+    data = np.sin(x) + rs.rand(10, 31) + rs.randn(10, 1)
+    estimator = np.mean
+
+    gammas = utils.load_dataset("gammas")
+    gammas_kwargs = dict(time="timepoint", value="BOLD signal",
+                         unit="subject", condition="ROI")
+
+    def test_basic(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, estimator=np.mean, ax=ax)
+
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 1)
+
+        npt.assert_allclose(ax.lines[0].get_xdata(),
+                            np.arange(self.data.shape[1]))
+        npt.assert_array_equal(ax.lines[0].get_ydata(),
+                               np.mean(self.data, axis=0))
+
+        nt.assert_equal(ax.get_ylabel(), '')
+        nt.assert_equal(ax.get_xlabel(), '')
+        nt.assert_equal(ax.get_legend(), None)
+
+    def test_basic_with_labels(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
+                    estimator=np.mean, value='value', ax=ax)
+
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), 1)
+
+        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
+        npt.assert_array_equal(ax.lines[0].get_ydata(),
+                               np.mean(self.data, axis=0))
+
+        nt.assert_equal(ax.get_ylabel(), 'value')
+        nt.assert_equal(ax.get_xlabel(), 'time')
+        nt.assert_equal(ax.get_legend(), None)
+
+    def test_gammas(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.gammas, ax=ax, **self.gammas_kwargs)
+
+        nt.assert_equal(len(ax.lines), len(self.gammas[self.gammas_kwargs['condition']].unique()))
+        nt.assert_equal(len(ax.collections), len(self.gammas[self.gammas_kwargs['condition']].unique()))
+
+        nt.assert_equal(ax.get_ylabel(), self.gammas_kwargs['value'])
+        nt.assert_equal(ax.get_xlabel(), self.gammas_kwargs['time'])
+        legend = ax.get_legend()
+        nt.assert_equal(legend.get_title().get_text(),
+                        self.gammas_kwargs['condition'])
+        nt.assert_equal(len(legend.get_lines()), 3)
+
+
+# TODO: also test computations of tsplot directly to allow testing original tsplot
 if __name__ == '__main__':
     nose.runmodule(exit=False)
