@@ -61,6 +61,14 @@ class _TimeSeriesPlotter(object):
         if not hasattr(ci, "__iter__"):
             ci = [ci]
 
+        plot_funcs = {}
+        for style in err_style:
+            # Grab the function from the global environment
+            try:
+                plot_funcs[style] = globals()["_plot_%s" % style]
+            except KeyError:
+                raise ValueError("%s is not a valid err_style" % style)
+
         # assign attributes
         self._data = data
         self._names = names
@@ -69,6 +77,7 @@ class _TimeSeriesPlotter(object):
         self._kwargs = kwargs
         self._colors = colors
         self._err_style = err_style
+        self._plot_funcs = plot_funcs
         self._ci = ci
         self.interpolate = interpolate
         self.estimator = estimator
@@ -268,11 +277,7 @@ class _TimeSeriesPlotter(object):
                 if style is None:
                     continue
 
-                # Grab the function from the global environment
-                try:
-                    plot_func = globals()["_plot_%s" % style]
-                except KeyError:
-                    raise ValueError("%s is not a valid err_style" % style)
+                plot_func = self._plot_funcs[style]
 
                 # Possibly set up to plot each observation in a different color
                 err_color = self._err_color(color, style, len(df_c.values))
