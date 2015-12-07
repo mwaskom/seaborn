@@ -506,7 +506,7 @@ def _plot_boot_traces(ax, x, boot_data, color, err_kws, **kwargs):
 def _plot_unit_traces(ax, x, data, ci, color, err_kws, **kwargs):
     """Plot a trace for each observation in the original data."""
     if isinstance(color, list):
-        if "alpha" not in err_kws:
+        if "alpha" not in err_kws:  # TODO: err_kws.setdefault('alpha', 0.5)
             err_kws["alpha"] = .5
         for i, obs in enumerate(data):
             ax.plot(x, obs, color=color[i], label="_nolegend_", **err_kws)

@@ -13,12 +13,13 @@ from .. import timeseries_new as tsn
 from .. import utils
 """
 from seaborn.tests import PlotTestCase
-from seaborn.timeseries_new import _TimeSeriesPlotter, tsplot
+from seaborn.timeseries_new import (_TimeSeriesPlotter, tsplot, _plot_ci_band,
+                                    _plot_ci_bars, _plot_boot_traces,
+                                    _plot_unit_traces, _plot_unit_points,
+                                    _plot_boot_kde, _plot_unit_kde,
+                                    _ts_kde)
 from seaborn import utils
 from seaborn.palettes import color_palette
-
-# TODO: add a test that checks if computed data is also plotted - this closes the circle
-# TODO: replace fake data by gammas
 
 
 class TestDataInit(PlotTestCase):
@@ -421,6 +422,182 @@ class TestPlots(PlotTestCase):
         nt.assert_equal(len(legend.get_lines()), 3)
 
 
-# TODO: also test computations of tsplot directly to allow testing original tsplot
+class TestPlotFunctions(PlotTestCase):
+
+    rs = np.random.RandomState(56)
+
+    x = np.linspace(0, 15, 31)
+    data = np.sin(x) + rs.rand(10, 31) + rs.randn(10, 1)
+    color = mpl.colors.colorConverter.to_rgb('g')
+    n_boot = 100
+    estimator = np.mean
+    ci = 99
+    tsp = _TimeSeriesPlotter(data, color=color, n_boot=n_boot, ci=ci,
+                             estimator=estimator)
+
+    cond, df_c, x, boot_data, cis, central_data = \
+        list(tsp._compute_plot_data())[0]
+    ci = cis[0]
+    ci_low, ci_high = ci
+    kwargs = {}
+    colors = color_palette(n_colors=data.shape[0])
+
+    def test_plot_ci_band(self):
+        err_kws = {'alpha': 0.5}
+        fig, ax = plt.subplots()
+        _plot_ci_band(ax, self.x, self.ci, self.color, err_kws)
+        nt.assert_equal(len(ax.lines), 0)
+        nt.assert_equal(len(ax.collections), 1)
+        npt.assert_allclose(ax.collections[0].get_facecolor().ravel()[:-1],
+                            self.color)
+        nt.assert_equal(ax.collections[0].get_alpha(), err_kws['alpha'])
+        vertices_low = ax.collections[0].get_paths()[0].vertices[1:32, :]
+        vertices_high = ax.collections[0].get_paths()[0].vertices[33:-1, :]
+        vertices_high = np.flipud(vertices_high)
+        npt.assert_allclose(vertices_low[:, 0], self.x)
+        npt.assert_allclose(vertices_low[:, 1], self.ci_low)
+        npt.assert_allclose(vertices_high[:, 0], self.x)
+        npt.assert_allclose(vertices_high[:, 1], self.ci_high)
+        # default value for alpha is 0.2
+        fig, ax = plt.subplots()
+        err_kws = {}
+        _plot_ci_band(ax, self.x, self.ci, self.color, err_kws)
+        nt.assert_equals(ax.collections[0].get_alpha(), 0.2)
+
+    def test_plot_ci_bars(self):
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_ci_bars(ax, self.x, self.central_data, self.ci, self.color,
+                      err_kws)
+        nt.assert_equal(len(ax.lines), len(self.x))
+        for line in ax.lines:
+            nt.assert_equal(line.get_color(), self.color)
+        bar_x, bar_low, bar_high = [], [], []
+        for line in ax.lines:
+            bar_x.append(line.get_xdata()[0])
+            low, high = line.get_ydata()
+            bar_low.append(low)
+            bar_high.append(high)
+
+        npt.assert_allclose(bar_x, self.x)
+        npt.assert_allclose(bar_low, self.ci_low)
+        npt.assert_allclose(bar_high, self.ci_high)
+
+    def test_plot_boot_traces(self):
+        err_kws = {'alpha': 0.5, 'linewidth': 0.5}
+        fig, ax = plt.subplots()
+        _plot_boot_traces(ax, self.x, self.boot_data, self.color, err_kws)
+        nt.assert_equal(len(ax.lines), self.boot_data.shape[0])
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_alpha(), err_kws['alpha'])
+            nt.assert_equal(line.get_alpha(), err_kws['linewidth'])
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.boot_data[k, :])
+        # check default err_kws
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_boot_traces(ax, self.x, self.boot_data, self.color, err_kws)
+        for line in ax.lines:
+            nt.assert_equal(line.get_alpha(), 0.25)
+            nt.assert_equal(line.get_alpha(), 0.25)
+
+    def test_plot_unit_traces(self):
+        # color is not a list
+        ## alpha passed
+        err_kws = {'alpha': 0.8}
+        fig, ax = plt.subplots()
+        _plot_unit_traces(ax, self.x, self.data, self.ci, self.color, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.color)
+            nt.assert_equal(line.get_alpha(), err_kws['alpha'])
+            nt.assert_equal(line.get_linestyle(), '-')
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+        ## alpha not passed
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_unit_traces(ax, self.x, self.data, self.ci, self.color, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_alpha(), 0.2)
+
+        # color is a list
+        ## alpha passed
+        err_kws = {'alpha': 0.8}
+        fig, ax = plt.subplots()
+        _plot_unit_traces(ax, self.x, self.data, self.ci, self.colors, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.colors[k])
+            nt.assert_equal(line.get_alpha(), err_kws['alpha'])
+            nt.assert_equal(line.get_linestyle(), '-')
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+        ## alpha not passed
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_unit_traces(ax, self.x, self.data, self.ci, self.colors, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.colors[k])
+            nt.assert_equal(line.get_alpha(), 0.5)
+
+    def test_plot_unit_points(self):
+        # color is not a list
+        ## alpha passed
+        err_kws = {'alpha': 0.8}
+        fig, ax = plt.subplots()
+        _plot_unit_points(ax, self.x, self.data, self.color, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.color)
+            nt.assert_equal(line.get_alpha(), err_kws['alpha'])
+            nt.assert_equal(line.get_marker(), 'o')
+            nt.assert_equal(line.get_markersize(), 4)
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+        ## alpha not passed
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_unit_points(ax, self.x, self.data, self.color, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_alpha(), 0.5)
+
+        # color is a list
+        ## alpha passed
+        err_kws = {'alpha': 0.5}
+        fig, ax = plt.subplots()
+        _plot_unit_points(ax, self.x, self.data, self.colors, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.colors[k])
+            nt.assert_equal(line.get_alpha(), err_kws['alpha'])
+            nt.assert_equal(line.get_marker(), 'o')
+            nt.assert_equal(line.get_markersize(), 4)
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+        ## alpha not passed
+        err_kws = {}
+        fig, ax = plt.subplots()
+        _plot_unit_points(ax, self.x, self.data, self.colors, err_kws)
+        for k, line in enumerate(ax.lines):
+            nt.assert_equal(line.get_color(), self.colors[k])
+            nt.assert_equal(line.get_alpha(), 0.8)
+
+    def test_ts_kde(self):
+        fig, ax = plt.subplots()
+        _ts_kde(ax, self.x, self.data, self.color)
+        nt.assert_equal(len(ax.get_images()), 1)
+        image = ax.get_images()[0]
+        nt.assert_equal(image.get_interpolation(), 'spline16')
+        nt.assert_equal(image.get_extent(), (self.x.min(), self.x.max(),
+                                         self.data.min(), self.data.max()))
+
+
+# TODO: interpolation test case (i.e. is xlim correct)
+# TODO: add a test that checks if computed data is also plotted - this closes the circle
+# TODO: also test computations of tsplot directly to allow comparison with original tsplot
 if __name__ == '__main__':
     nose.runmodule(exit=False)
+
+
