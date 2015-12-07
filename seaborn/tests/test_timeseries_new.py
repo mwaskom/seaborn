@@ -224,6 +224,18 @@ class TestDataInit(PlotTestCase):
         ci_expected = [ci]
         nt.assert_equal(tsp.ci, ci_expected)
 
+    def test_plot_funcs_ci_band(self):
+        err_style = 'ci_band'
+        tsp = _TimeSeriesPlotter(self.df, err_style=err_style,
+                                 **self.df_kwargs)
+        nt.assert_equal(tsp._plot_funcs[err_style], _plot_ci_band)
+
+    @nt.raises(ValueError)
+    def test_plot_funcs_raises_ValueError(self):
+        err_style = 'ci_baaad'
+        tsp = _TimeSeriesPlotter(self.df, err_style=err_style,
+                                 **self.df_kwargs)
+
 
 class TestColor(PlotTestCase):
 
@@ -359,11 +371,12 @@ class TestPlotData(PlotTestCase):
             # check number of bootstrapped samples
             nt.assert_equal(boot_data.shape[0], n_boot)
 
-
+# TODO: add a test that checks if computed data is also plotted - this closes the circle
+# TODO: also test computations of tsplot directly to allow comparison with original tsplot
+# TODO: add test when init fails because of unknown style
 class TestPlots(PlotTestCase):
 
     rs = np.random.RandomState(56)
-
     x = np.linspace(0, 15, 31)
     data = np.sin(x) + rs.rand(10, 31) + rs.randn(10, 1)
     estimator = np.mean
@@ -388,6 +401,7 @@ class TestPlots(PlotTestCase):
         nt.assert_equal(ax.get_ylabel(), '')
         nt.assert_equal(ax.get_xlabel(), '')
         nt.assert_equal(ax.get_legend(), None)
+        npt.assert_allclose(ax.get_xlim(), (0, self.data.shape[1] - 1))
 
     def test_basic_with_labels(self):
 
@@ -405,6 +419,21 @@ class TestPlots(PlotTestCase):
         nt.assert_equal(ax.get_ylabel(), 'value')
         nt.assert_equal(ax.get_xlabel(), 'time')
         nt.assert_equal(ax.get_legend(), None)
+
+    def test_basic_with_ci_bars_no_interpolation(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
+                    err_style="ci_bars", color="g",
+                    interpolate=False, ax=ax)
+
+        nt.assert_equal(len(ax.lines), len(self.x) + 1)  # bars (31) + line (1)
+        nt.assert_equal(len(ax.collections), 0)
+        nt.assert_equal(ax.lines[0].get_marker(), 'o')
+        # check if padded correctly
+        # x[1] == x[1] - x[0] since x[0] == 0
+        npt.assert_allclose(ax.get_xlim(), (self.x.min() - self.x[1],
+                                            self.x.max() + self.x[1]))
 
     def test_gammas(self):
 
@@ -593,11 +622,5 @@ class TestPlotFunctions(PlotTestCase):
         nt.assert_equal(image.get_extent(), (self.x.min(), self.x.max(),
                                          self.data.min(), self.data.max()))
 
-
-# TODO: interpolation test case (i.e. is xlim correct)
-# TODO: add a test that checks if computed data is also plotted - this closes the circle
-# TODO: also test computations of tsplot directly to allow comparison with original tsplot
 if __name__ == '__main__':
     nose.runmodule(exit=False)
-
-
