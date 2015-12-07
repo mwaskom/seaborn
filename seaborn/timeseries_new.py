@@ -519,11 +519,15 @@ def _plot_unit_traces(ax, x, data, ci, color, err_kws, **kwargs):
 def _plot_unit_points(ax, x, data, color, err_kws, **kwargs):
     """Plot each original data point discretely."""
     if isinstance(color, list):
+        if "alpha" not in err_kws:
+            err_kws["alpha"] = 0.8
         for i, obs in enumerate(data):
-            ax.plot(x, obs, "o", color=color[i], alpha=0.8, markersize=4,
+            ax.plot(x, obs, "o", color=color[i], markersize=4,
                     label="_nolegend_", **err_kws)
     else:
-        ax.plot(x, data.T, "o", color=color, alpha=0.5, markersize=4,
+        if "alpha" not in err_kws:
+            err_kws["alpha"] = 0.5
+        ax.plot(x, data.T, "o", color=color, markersize=4,
                 label="_nolegend_", **err_kws)
 
 
