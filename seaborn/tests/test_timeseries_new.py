@@ -13,14 +13,15 @@ from .. import timeseries_new as tsn
 from .. import utils
 """
 from seaborn.tests import PlotTestCase
-from seaborn.timeseries_new import (_TimeSeriesPlotter, tsplot, _plot_ci_band,
+from seaborn.timeseries_new import (_TimeSeriesPlotter, _plot_ci_band,
                                     _plot_ci_bars, _plot_boot_traces,
                                     _plot_unit_traces, _plot_unit_points,
                                     _plot_boot_kde, _plot_unit_kde,
                                     _ts_kde)
+from seaborn.timeseries_new import tsplot# as tsplot_new
+from seaborn.timeseries import tsplot as tsplot_old
 from seaborn import utils
 from seaborn.palettes import color_palette
-
 
 class TestDataInit(PlotTestCase):
 
@@ -371,84 +372,280 @@ class TestPlotData(PlotTestCase):
             # check number of bootstrapped samples
             nt.assert_equal(boot_data.shape[0], n_boot)
 
-# TODO: add a test that checks if computed data is also plotted - this closes the circle
-# TODO: also test computations of tsplot directly to allow comparison with original tsplot
-# TODO: add test when init fails because of unknown style
+    def test_if_all_plot_data_is_passed_to_plot_func(self):
+        # TODO: also check if data is correct?
+        n_boot = 200
+        estimator = np.mean
+        ci = [68, 99]
+        tsp = _TimeSeriesPlotter(self.gammas, estimator=estimator,
+                                 n_boot=n_boot, err_style='ci_band',
+                                 color=self.color, ci=ci, **self.gammas_kwargs)
+
+        class KwargLogger(object):
+            def __init__(self, func):
+                self.func = func
+                self.logged_kwargs = []
+            def __call__(self, **kwargs):
+                self.logged_kwargs.append(kwargs)
+                self.func(**kwargs)
+
+        @KwargLogger
+        def fake_plot_func(**plot_kwargs):
+            return
+
+        tsp._plot_funcs = {'ci_band': fake_plot_func}
+        fig, ax = plt.subplots()
+        tsp.plot(ax)
+
+        for plot_kwargs in fake_plot_func.logged_kwargs:
+            nt.assert_list_equal(sorted(list(plot_kwargs.keys())),
+                                 sorted(['ax', 'x', 'data', 'boot_data', 'ci',
+                                         'central_data', 'color', 'err_kws']))
+
+
 class TestPlots(PlotTestCase):
 
     rs = np.random.RandomState(56)
+
     x = np.linspace(0, 15, 31)
     data = np.sin(x) + rs.rand(10, 31) + rs.randn(10, 1)
+    color = mpl.colors.colorConverter.to_rgb('g')
+    n_boot = 100
     estimator = np.mean
+    ci = 99
+    tsp = _TimeSeriesPlotter(data, color=color, n_boot=n_boot, ci=ci,
+                             estimator=estimator)
+
+    cond, df_c, x, boot_data, cis, central_data = \
+        list(tsp._compute_plot_data())[0]
+
+    ci_band = cis[0]
+    ci_low, ci_high = ci_band
+    kwargs = {}
+    colors = color_palette(n_colors=data.shape[0])
 
     gammas = utils.load_dataset("gammas")
     gammas_kwargs = dict(time="timepoint", value="BOLD signal",
                          unit="subject", condition="ROI")
 
-    def test_basic(self):
+    def test_ci_band(self):
 
         fig, ax = plt.subplots()
-        ax = tsplot(data=self.data, estimator=np.mean, ax=ax)
-
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 1)
-
-        npt.assert_allclose(ax.lines[0].get_xdata(),
-                            np.arange(self.data.shape[1]))
-        npt.assert_array_equal(ax.lines[0].get_ydata(),
-                               np.mean(self.data, axis=0))
-
+        ax = tsplot(data=self.data, err_style='ci_band', estimator=np.mean,
+                    ci=self.ci, color=self.color, ax=ax)
+        # collect plot data
+        x = np.arange(0, self.data.shape[1])
+        vertices_low = ax.collections[0].get_paths()[0].vertices[1:32, :]
+        vertices_high = ax.collections[0].get_paths()[0].vertices[33:-1, :]
+        vertices_high = np.flipud(vertices_high)
+        # check appearance
+        nt.assert_equal(len(ax.lines), 1)  # central trace
+        nt.assert_equal(len(ax.collections), 1)  # ci band
+        npt.assert_allclose(ax.collections[0].get_facecolor().ravel()[:-1],
+                            self.color)
+        npt.assert_allclose(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value for alpha
         nt.assert_equal(ax.get_ylabel(), '')
         nt.assert_equal(ax.get_xlabel(), '')
         nt.assert_equal(ax.get_legend(), None)
         npt.assert_allclose(ax.get_xlim(), (0, self.data.shape[1] - 1))
+        # check data
+        npt.assert_allclose(ax.lines[0].get_xdata(), x)
+        npt.assert_allclose(ax.lines[0].get_ydata(), self.central_data)
+        npt.assert_allclose(vertices_low[:, 0], x)
+        npt.assert_array_less(vertices_low[:, 1], self.central_data)
+        npt.assert_allclose(vertices_high[:, 0], x)
+        npt.assert_array_less(self.central_data, vertices_high[:, 1])
 
-    def test_basic_with_labels(self):
-
+    def test_ci_band_labels(self):
+        # same case as above but now with labels
         fig, ax = plt.subplots()
-        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
-                    estimator=np.mean, value='value', ax=ax)
+        ax = tsplot(data=self.data, err_style='ci_band', time=pd.Series(self.x, name='time'),
+                    estimator=np.mean, value='value', color=self.color, ci=self.ci, ax=ax)
 
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 1)
-
-        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
-        npt.assert_array_equal(ax.lines[0].get_ydata(),
-                               np.mean(self.data, axis=0))
-
+        # collect plot data
+        vertices_low = ax.collections[0].get_paths()[0].vertices[1:32, :]
+        vertices_high = ax.collections[0].get_paths()[0].vertices[33:-1, :]
+        vertices_high = np.flipud(vertices_high)
+        # check appearance
+        nt.assert_equal(len(ax.lines), 1)  # central trace
+        nt.assert_equal(len(ax.collections), 1)  # ci band
+        npt.assert_allclose(ax.collections[0].get_facecolor().ravel()[:-1],
+                            self.color)
+        npt.assert_allclose(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value for alpha
         nt.assert_equal(ax.get_ylabel(), 'value')
         nt.assert_equal(ax.get_xlabel(), 'time')
         nt.assert_equal(ax.get_legend(), None)
+        npt.assert_allclose(ax.get_xlim(), (self.x.min(), self.x.max()))
+        # check data
+        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
+        npt.assert_allclose(ax.lines[0].get_ydata(), self.central_data)
+        npt.assert_allclose(vertices_low[:, 0], self.x)
+        npt.assert_array_less(vertices_low[:, 1], self.central_data)
+        npt.assert_allclose(vertices_high[:, 0], self.x)
+        npt.assert_array_less(self.central_data, vertices_high[:, 1])
 
-    def test_basic_with_ci_bars_no_interpolation(self):
+    def test_ci_band_multiple_cis(self):
+
+        ci = [68, 95]
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, err_style='ci_band', estimator=np.mean, ci=ci, color=self.color, ax=ax)
+
+        nt.assert_equal(len(ax.lines), 1)
+        nt.assert_equal(len(ax.collections), len(ci))
+
+        vertices0_low = ax.collections[0].get_paths()[0].vertices[1:32, :]
+        vertices0_high = ax.collections[0].get_paths()[0].vertices[33:-1, :]
+        vertices1_low = ax.collections[1].get_paths()[0].vertices[1:32, :]
+        vertices1_high = ax.collections[1].get_paths()[0].vertices[33:-1, :]
+
+        npt.assert_array_less(vertices0_high[:, 1], vertices1_high[:, 1])
+        npt.assert_array_less(vertices1_low[:, 1], vertices0_low[:, 1])
+
+        nt.assert_equal(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)
+        nt.assert_equal(ax.collections[1].get_alpha(), 0.2)
+
+    def test_ci_bars_no_interpolation(self):
 
         fig, ax = plt.subplots()
         ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
-                    err_style="ci_bars", color="g",
+                    err_style="ci_bars", color=self.color, ci=self.ci,
                     interpolate=False, ax=ax)
 
-        nt.assert_equal(len(ax.lines), len(self.x) + 1)  # bars (31) + line (1)
+        for line in ax.lines:
+            nt.assert_equal(line.get_color(), self.color)
+        bar_x, bar_low, bar_high = [], [], []
+        for line in ax.lines[1:]:
+            bar_x.append(line.get_xdata()[0])
+            low, high = line.get_ydata()
+            bar_low.append(low)
+            bar_high.append(high)
+
+        npt.assert_allclose(bar_x, self.x)
+        npt.assert_array_less(bar_low, self.central_data)
+        npt.assert_array_less(self.central_data, bar_high)
+
+
+        nt.assert_equal(len(ax.lines), len(self.x) + 1)  # bars (31) + central line (1)
         nt.assert_equal(len(ax.collections), 0)
         nt.assert_equal(ax.lines[0].get_marker(), 'o')
+        for line in ax.lines:
+            nt.assert_equal(line.get_color(), self.color)
         # check if padded correctly
         # x[1] == x[1] - x[0] since x[0] == 0
         npt.assert_allclose(ax.get_xlim(), (self.x.min() - self.x[1],
                                             self.x.max() + self.x[1]))
 
+    def test_boot_traces(self):
+
+        fig, ax = plt.subplots()
+        tsplot(self.data, time=pd.Series(self.x, name='time'),
+               err_style="boot_traces", n_boot=self.n_boot, color=self.color, ax=ax)
+
+        nt.assert_equal(len(ax.lines), self.n_boot + 1)  # + 1 for central line
+
+        nt.assert_equal(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.lines[0].get_alpha(), None)
+        nt.assert_equal(ax.lines[0].get_label(), '_nolegend_')
+        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
+        npt.assert_allclose(ax.lines[0].get_ydata(), self.central_data)
+
+        nt.assert_equal(ax.get_ylabel(), '')
+        nt.assert_equal(ax.get_xlabel(), 'time')
+        nt.assert_equal(ax.get_legend(), None)
+
+        for line in ax.lines[1:]:
+            nt.assert_equal(line.get_color(), self.color)
+            nt.assert_equal(line.get_alpha(), 0.25)
+            nt.assert_equal(line.get_linewidth(), 0.25)
+            nt.assert_equal(line.get_label(), '_nolegend_')
+
+    def test_unit_traces(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
+                         value='value', estimator=np.mean, err_style="unit_traces",
+                         ci=self.ci, color=self.color, ax=ax)
+
+        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)  # + 1 for central line
+
+        nt.assert_equal(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.lines[0].get_alpha(), None)
+        nt.assert_equal(ax.lines[0].get_label(), '_nolegend_')
+        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
+        npt.assert_allclose(ax.lines[0].get_ydata(), self.central_data)
+
+        nt.assert_equal(ax.get_ylabel(), 'value')
+        nt.assert_equal(ax.get_xlabel(), 'time')
+        nt.assert_equal(ax.get_legend(), None)
+
+        for k, line in enumerate(ax.lines[1:]):
+            nt.assert_equal(line.get_color(), self.color)
+            nt.assert_equal(line.get_alpha(), 0.2)
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+
+    def test_unit_points(self):
+
+        fig, ax = plt.subplots()
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'), legend=True,
+                         value='value', estimator=np.mean, err_style="unit_points",
+                         ci=self.ci, color=self.color, ax=ax)
+
+        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)  # + 1 for central line
+
+        nt.assert_equal(ax.lines[0].get_color(), self.color)
+        nt.assert_equal(ax.lines[0].get_alpha(), None)
+        nt.assert_equal(ax.lines[0].get_label(), '_nolegend_')
+        npt.assert_allclose(ax.lines[0].get_xdata(), self.x)
+        npt.assert_allclose(ax.lines[0].get_ydata(), self.central_data)
+
+        nt.assert_equal(ax.get_ylabel(), 'value')
+        nt.assert_equal(ax.get_xlabel(), 'time')
+        nt.assert_equal(ax.get_legend(), None)
+
+        for k, line in enumerate(ax.lines[1:]):
+            nt.assert_equal(line.get_color(), self.color)
+            nt.assert_equal(line.get_alpha(), 0.5)
+            nt.assert_equal(line.get_marker(), 'o')
+            nt.assert_equal(line.get_markersize(), 4)
+            nt.assert_equal(line.get_label(), '_nolegend_')
+            npt.assert_allclose(line.get_xdata(), self.x)
+            npt.assert_allclose(line.get_ydata(), self.data[k, :])
+
     def test_gammas(self):
+
+        conditions = self.gammas[self.gammas_kwargs['condition']].unique()
+        n_conditions = len(conditions)
+        color = dict(zip(conditions, color_palette(n_colors=n_conditions)))
 
         fig, ax = plt.subplots()
         ax = tsplot(data=self.gammas, ax=ax, **self.gammas_kwargs)
 
-        nt.assert_equal(len(ax.lines), len(self.gammas[self.gammas_kwargs['condition']].unique()))
-        nt.assert_equal(len(ax.collections), len(self.gammas[self.gammas_kwargs['condition']].unique()))
+        nt.assert_equal(len(ax.lines), n_conditions)
+        nt.assert_equal(len(ax.collections), n_conditions)
 
         nt.assert_equal(ax.get_ylabel(), self.gammas_kwargs['value'])
         nt.assert_equal(ax.get_xlabel(), self.gammas_kwargs['time'])
         legend = ax.get_legend()
         nt.assert_equal(legend.get_title().get_text(),
                         self.gammas_kwargs['condition'])
-        nt.assert_equal(len(legend.get_lines()), 3)
+        nt.assert_equal(len(legend.get_lines()), n_conditions)
+
+        for c, (collection, line) in enumerate(zip(ax.collections, ax.lines)):
+            label = line.get_label()
+            nt.assert_equal(label, conditions[c])
+            nt.assert_equal(line.get_color(), color[label])
+            npt.assert_allclose(collection.get_facecolor().ravel()[:-1],
+                                color[label])
+            nt.assert_equal(collection.get_alpha(), 0.2)
+            gammas_c = self.gammas[self.gammas[self.gammas_kwargs['condition']] == label]
+            y = gammas_c.groupby(self.gammas_kwargs['time'])[self.gammas_kwargs['value']].agg(np.mean)
+            npt.assert_allclose(line.get_xdata(), y.index.values)
+            npt.assert_allclose(line.get_ydata(), y.values)
 
 
 class TestPlotFunctions(PlotTestCase):
@@ -519,7 +716,7 @@ class TestPlotFunctions(PlotTestCase):
         nt.assert_equal(len(ax.lines), self.boot_data.shape[0])
         for k, line in enumerate(ax.lines):
             nt.assert_equal(line.get_alpha(), err_kws['alpha'])
-            nt.assert_equal(line.get_alpha(), err_kws['linewidth'])
+            nt.assert_equal(line.get_linewidth(), err_kws['linewidth'])
             nt.assert_equal(line.get_label(), '_nolegend_')
             npt.assert_allclose(line.get_xdata(), self.x)
             npt.assert_allclose(line.get_ydata(), self.boot_data[k, :])
@@ -537,6 +734,7 @@ class TestPlotFunctions(PlotTestCase):
         err_kws = {'alpha': 0.8}
         fig, ax = plt.subplots()
         _plot_unit_traces(ax, self.x, self.data, self.ci, self.color, err_kws)
+        nt.assert_equal(len(ax.lines), self.data.shape[0])
         for k, line in enumerate(ax.lines):
             nt.assert_equal(line.get_color(), self.color)
             nt.assert_equal(line.get_alpha(), err_kws['alpha'])
@@ -577,6 +775,7 @@ class TestPlotFunctions(PlotTestCase):
         err_kws = {'alpha': 0.8}
         fig, ax = plt.subplots()
         _plot_unit_points(ax, self.x, self.data, self.color, err_kws)
+        nt.assert_equal(len(ax.lines), self.data.shape[0])
         for k, line in enumerate(ax.lines):
             nt.assert_equal(line.get_color(), self.color)
             nt.assert_equal(line.get_alpha(), err_kws['alpha'])
