@@ -376,7 +376,7 @@ class _RegressionPlotter(_LinearPlotter):
         # Draw the regression line and confidence interval
         ax.plot(grid, yhat, **kws)
         if err_bands is not None:
-            ax.fill_between(grid, *err_bands, color=fill_color, alpha=.15)
+            ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
         ax.set_xlim(*xlim)
 
 

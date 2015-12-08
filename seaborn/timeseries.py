@@ -350,7 +350,7 @@ def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
     low, high = ci
     if "alpha" not in err_kws:
         err_kws["alpha"] = 0.2
-    ax.fill_between(x, low, high, color=color, **err_kws)
+    ax.fill_between(x, low, high, facecolor=color, **err_kws)
 
 
 def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
