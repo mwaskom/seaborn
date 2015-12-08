@@ -67,7 +67,8 @@ class _TimeSeriesPlotter(object):
             try:
                 plot_funcs[style] = globals()["_plot_%s" % style]
             except KeyError:
-                raise ValueError("%s is not a valid err_style" % style)
+                err = "%s is not a valid err_style" % style
+                raise ValueError(err)
 
         # assign attributes
         self._data = data
