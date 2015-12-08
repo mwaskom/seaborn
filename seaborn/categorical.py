@@ -797,7 +797,7 @@ class _ViolinPlotter(_CategoricalPlotter):
                 fill_func(support,
                           grid - density * self.dwidth,
                           grid + density * self.dwidth,
-                          color=self.colors[i],
+                          facecolor=self.colors[i],
                           **kws)
 
                 # Draw the interior representation of the data

@@ -695,7 +695,7 @@ class FacetGrid(Grid):
         for (row_i, col_j, hue_k), data_ijk in self.facet_data():
 
             # If this subset is null, move on
-            if not data_ijk.values.tolist():
+            if not data_ijk.values.size:
                 continue
 
             # Get the current axis
@@ -767,7 +767,7 @@ class FacetGrid(Grid):
         for (row_i, col_j, hue_k), data_ijk in self.facet_data():
 
             # If this subset is null, move on
-            if not data_ijk.values.tolist():
+            if not data_ijk.values.size:
                 continue
 
             # Get the current axis
