@@ -293,5 +293,5 @@ class TestColorPalettes(object):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             result = utils.get_color_cycle()
-            expected = mpl.rcParams['axes.color_cycle']
+            expected = mpl.rcParams['axes.prop_cycle']
         nt.assert_equal(result, expected)

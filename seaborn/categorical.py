@@ -1963,7 +1963,7 @@ boxplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.boxplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control box order by passing an explicit order:
 
@@ -2164,7 +2164,7 @@ violinplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.violinplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control violin order by passing an explicit order:
 
@@ -2375,7 +2375,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.stripplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control strip order by passing an explicit order:
 
@@ -2526,7 +2526,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.barplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control bar order by passing an explicit order:
 
@@ -2556,7 +2556,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort_values(by="size"),
         ...                  palette="Blues_d")
 
     Plot all bars in a single color:
@@ -2564,7 +2564,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort_values(by="size"),
         ...                  color="salmon", saturation=.5)
 
     Use ``plt.bar`` keyword arguments to further change the aesthetic:
@@ -2740,7 +2740,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.pointplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control point order by passing an explicit order:
 
@@ -3233,7 +3233,7 @@ lvplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort("size"))
+        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort_values(by="size"))
 
     Control box order by passing an explicit order:
 
