@@ -461,7 +461,6 @@ class _BoxPlotter(_CategoricalPlotter):
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
 
                     # Add a legend for this hue level
                     if not i:
@@ -471,6 +470,7 @@ class _BoxPlotter(_CategoricalPlotter):
                     if group_data.size == 0:
                         continue
 
+                    hue_mask = self.plot_hues[i] == hue_level
                     box_data = remove_na(group_data[hue_mask])
 
                     # Handle case where there is no non-null data
@@ -1650,7 +1650,6 @@ class _LVPlotter(_CategoricalPlotter):
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
 
                     # Add a legend for this hue level
                     if not i:
@@ -1660,6 +1659,7 @@ class _LVPlotter(_CategoricalPlotter):
                     if group_data.size == 0:
                         continue
 
+                    hue_mask = self.plot_hues[i] == hue_level
                     box_data = remove_na(group_data[hue_mask])
 
                     # Handle case where there is no non-null data
