@@ -15,7 +15,7 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from . import utils
-from .utils import desaturate, iqr, categorical_order
+from .utils import iqr, categorical_order
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -290,20 +290,20 @@ class _CategoricalPlotter(object):
 
             colors = color_palette(palette, n_colors)
 
-        # Conver the colors to a common rgb representation
-        colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-
         # Desaturate a bit because these are patches
         if saturation < 1:
-            colors = [desaturate(c, saturation) for c in colors]
+            colors = color_palette(colors, desat=saturation)
+
+        # Conver the colors to a common representations
+        rgb_colors = color_palette(colors)
 
         # Determine the gray color to use for the lines framing the plot
-        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
+        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in rgb_colors]
         l = min(light_vals) * .6
-        gray = (l, l, l)
+        gray = mpl.colors.rgb2hex((l, l, l))
 
         # Assign object attributes
-        self.colors = colors
+        self.colors = rgb_colors
         self.gray = gray
 
     def infer_orient(self, x, y, orient=None):
@@ -1010,7 +1010,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     def draw_points(self, ax, data, center):
         """Draw individual observations as points at middle of the violin."""
         kws = dict(s=np.square(self.linewidth * 2),
-                   c=self.gray,
+                   color=self.gray,
                    edgecolor=self.gray)
 
         grid = np.ones(len(data)) * center
@@ -1088,7 +1088,7 @@ class _StripPlotter(_CategoricalPlotter):
                 # Determine the positions of the points
                 strip_data = remove_na(group_data)
                 jitter = self.jitterer(len(strip_data))
-                kws["color"] = self.colors[i]
+                kws["color"] = mpl.colors.rgb2hex(self.colors[i])
 
                 # Draw the plot
                 if self.orient == "v":
@@ -1107,7 +1107,7 @@ class _StripPlotter(_CategoricalPlotter):
                     strip_data = remove_na(group_data[hue_mask])
                     pos = i + offsets[j] if self.split else i
                     jitter = self.jitterer(len(strip_data))
-                    kws["color"] = self.colors[j]
+                    kws["color"] = mpl.colors.rgb2hex(self.colors[j])
 
                     # Only label one set of plots
                     if i:
@@ -1587,17 +1587,17 @@ class _LVPlotter(_CategoricalPlotter):
 
                 # Plot the medians
                 ax.plot([x - widths / 2, x + widths / 2], [y, y],
-                        c='k', alpha=.45, **kws)
+                        c='.15', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=color, **kws)
+                           marker='d', c=mpl.colors.rgb2hex(color), **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
                 ax.plot([y, y], [x - widths / 2, x + widths / 2],
-                        c='k', alpha=.45, **kws)
+                        c='.15', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
                            marker='d', c=color, **kws)

@@ -1525,6 +1525,12 @@ class TestStripPlotter(CategoricalFixture):
                 npt.assert_array_equal(x, vals)
                 npt.assert_array_equal(y, np.ones(len(x)) * i)
 
+    def test_three_strip_points(self):
+
+        x = np.arange(3)
+        ax = cat.stripplot(x=x)
+        nt.assert_equal(ax.collections[0].get_facecolor().shape, (1, 4))
+
 
 class TestBarPlotter(CategoricalFixture):
 
