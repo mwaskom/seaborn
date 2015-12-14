@@ -1129,11 +1129,102 @@ class _StripPlotter(_CategoricalPlotter):
             ax.invert_yaxis()
 
 
-class _SwarmPlotter(_BoxPlotter):
+class _SwarmPlotter(_CategoricalPlotter):
 
     def __init__(self):
 
         pass
+
+    def overlap(self, xy_i, xy_j, d):
+        """Return True if two circles with the same diameter will overlap."""
+        x_i, y_i = xy_i
+        x_j, y_j = xy_j
+        return np.linalg.norm([x_i - x_j, y_i - y_j]) < d
+
+    def could_overlap(self, xy_i, swarm, d):
+        """Return a list of all swarm points that could overlap with target."""
+        _, y_i = xy_i
+        neighbors = []
+        for xy_j in swarm:
+            _, y_j = xy_j
+            if (y_i - y_j) < d:
+                neighbors.append(xy_j)
+        return neighbors
+
+    def position_candidates(self, xy_i, neighbors, d):
+        """Return a list of (x, y) coordinates that might be valid."""
+        candidates = [xy_i]
+        x_i, y_i = xy_i
+        for x_j, y_j in neighbors:
+            dy = y_i - y_j
+            dx = np.sqrt(d ** 2 - dy ** 2) * 1.05
+            candidates.extend([(x_j - dx, y_i), (x_j + dx, y_i)])
+
+        return candidates
+
+    def prune_candidates(self, candidates, neighbors, d):
+        """Remove candidates from the list of they overlap with the swarm."""
+        good_candidates = []
+        for xy_i in candidates:
+            good_candidate = True
+            for xy_j in neighbors:
+                if self.overlap(xy_i, xy_j, d):
+                    good_candidate = False
+            if good_candidate:
+                good_candidates.append(xy_i)
+        assert good_candidates
+        return np.array(good_candidates)
+
+    def plot_level(self, ax, x, y, s=30, **kws):
+
+        # Sort the data so later steps are easier
+        y = np.sort(y)
+
+        # Plot the data and set the xlim so that
+        # we can get a meaningful transformation
+        # from data to point coordinates
+        c = ax.scatter([x] * len(y), y, s=s, **kws)
+
+        # Convert from point size (area) to diameter
+        default_lw = mpl.rcParams["patch.linewidth"]
+        lw = kws.get("linewidth", kws.get("lw", default_lw))
+        d = np.sqrt(s) + lw
+
+        # Transform the data coordinates to point coordinates.
+        # We'll figure out the swarm positions in the latter
+        # and then convert back and replot
+        orig_xy = ax.transData.transform(c.get_offsets())
+        center = orig_xy[0, 0]
+
+        # Start the swarm with the first point
+        swarm = [orig_xy[0]]
+
+        # Loop over the remaining points
+        for xy_i in orig_xy[1:]:
+
+            # Find the points in the swarm that could possibly
+            # overlap with the point we are currently placing
+            neighbors = self.could_overlap(xy_i, swarm, d)
+
+            # Find positions that would be valid individually
+            # with respect to each of the swarm neighbors
+            candidates = self.position_candidates(xy_i, neighbors, d)
+
+            # Remove the positions that overlap with any of the
+            # other neighbors
+            candidates = self.prune_candidates(candidates, neighbors, d)
+
+            # Find the most central of the remaining positions
+            offsets = np.abs(candidates[:, 0] - center)
+            best_index = np.argmin(offsets)
+            new_xy_i = candidates[best_index]
+            swarm.append(new_xy_i)
+
+        # Transform the point coordinates back to data coordinates
+        new_xy = ax.transData.inverted().transform(swarm)
+
+        # Reposition the points so they do not overlap
+        c.set_offsets(new_xy)
 
     def plot(self, ax):
 
