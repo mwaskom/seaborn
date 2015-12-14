@@ -1175,16 +1175,24 @@ class _SwarmPlotter(_CategoricalPlotter):
         assert good_candidates
         return np.array(good_candidates)
 
-    def plot_level(self, ax, x, y, s=30, **kws):
+    def add_gutters(self, points, center):
+        """Stop points from extending beyond their territory."""
+        half_width = self.width / 2
+        low_gutter = center - half_width
+        off_low = points < low_gutter
+        if off_low.any():
+            points[off_low] = low_gutter
+        high_gutter = center + half_width
+        off_high = points > high_gutter
+        if off_high.any():
+            points[off_high] = high_gutter
 
-        # Sort the data so later steps are easier
-        y = np.sort(y)
+    def swarm_points(self, ax, points, center, s, **kws):
+        """Find new positions on the categorical axis for each point.
 
-        # Plot the data and set the xlim so that
-        # we can get a meaningful transformation
-        # from data to point coordinates
-        c = ax.scatter([x] * len(y), y, s=s, **kws)
-
+        In this method, ``x`` means the categorical axis and ``y`` means the
+        data axis.
+        """
         # Convert from point size (area) to diameter
         default_lw = mpl.rcParams["patch.linewidth"]
         lw = kws.get("linewidth", kws.get("lw", default_lw))
@@ -1193,8 +1201,15 @@ class _SwarmPlotter(_CategoricalPlotter):
         # Transform the data coordinates to point coordinates.
         # We'll figure out the swarm positions in the latter
         # and then convert back and replot
-        orig_xy = ax.transData.transform(c.get_offsets())
-        center = orig_xy[0, 0]
+        orig_xy = ax.transData.transform(points.get_offsets())
+
+        # Order the variables so that x is the caegorical axis
+        if self.orient == "v":
+            orig_x, orig_y = orig_xy.T
+        else:
+            orig_y, orig_x = orig_xy.T
+        orig_xy = np.c_[orig_x, orig_y]
+        midline = orig_x[0]
 
         # Start the swarm with the first point
         swarm = [orig_xy[0]]
@@ -1215,20 +1230,56 @@ class _SwarmPlotter(_CategoricalPlotter):
             candidates = self.prune_candidates(candidates, neighbors, d)
 
             # Find the most central of the remaining positions
-            offsets = np.abs(candidates[:, 0] - center)
+            offsets = np.abs(candidates[:, 0] - midline)
             best_index = np.argmin(offsets)
             new_xy_i = candidates[best_index]
             swarm.append(new_xy_i)
 
         # Transform the point coordinates back to data coordinates
-        new_xy = ax.transData.inverted().transform(swarm)
+        swarm = np.array(swarm)
+        if self.orient == "v":
+            new_xy = swarm[:, [0, 1]]
+        else:
+            new_xy = swarm[:, [1, 0]]
+        new_x, new_y = ax.transData.inverted().transform(new_xy).T
+
+        # Add gutters
+        if self.orient == "v":
+            self.add_gutters(new_x, center)
+        else:
+            self.add_gutters(new_y, center)
 
         # Reposition the points so they do not overlap
-        c.set_offsets(new_xy)
+        points.set_offsets(np.c_[new_x, new_y])
 
-    def plot(self, ax):
+    def draw_swarmplot(self, ax, kws):
 
-        pass
+        swarms = []
+        for i, group_data in enumerate(self.plot_data):
+
+            swarm_data = remove_na(group_data)
+
+            # TODO Will have to be careful to account for hue data
+            swarm_data = np.sort(swarm_data)
+
+            cat_pos = np.ones(swarm_data.size) * i
+            kws.update(color=self.colors[i])
+            if self.orient == "v":
+                points = ax.scatter(cat_pos, swarm_data, **kws)
+            else:
+                points = ax.scatter(swarm_data, cat_pos, **kws)
+            swarms.append(points)
+
+        s = kws.get("s", 7 ** 2)
+        for i, swarm in enumerate(swarms):
+            self.swarm_points(ax, swarm, i, s, **kws)
+
+    def plot(self, ax, **kws):
+
+        self.draw_swarmplot(ax, kws)
+        self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
