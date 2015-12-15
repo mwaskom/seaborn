@@ -1057,7 +1057,45 @@ class _ViolinPlotter(_CategoricalPlotter):
             ax.invert_yaxis()
 
 
-class _StripPlotter(_CategoricalPlotter):
+class _CategoricalScatterPlotter(_CategoricalPlotter):
+
+    @property
+    def point_colors(self):
+        """Return a color for each scatter point based on group and hue."""
+        colors = []
+        for i, group_data in enumerate(self.plot_data):
+
+            # Initialize the array for this group level
+            group_colors = np.empty((group_data.size, 3))
+
+            if self.plot_hues is None:
+
+                # Use the same color for all points at this level
+                group_color = self.colors[i]
+                group_colors[:] = group_color
+
+            else:
+
+                # Color the points based on  the hue level
+                for j, level in enumerate(self.hue_names):
+                    hue_color = self.colors[j]
+                    group_colors[self.plot_hues[i] == level] = hue_color
+
+            colors.append(group_colors)
+
+        return colors
+
+    def add_legend_data(self, ax):
+
+        if self.hue_names is not None:
+            for rgb, label in zip(self.colors, self.hue_names):
+                ax.scatter([], [],
+                           color=mpl.colors.rgb2hex(rgb),
+                           label=label,
+                           s=60)
+
+
+class _StripPlotter(_CategoricalScatterPlotter):
     """1-d scatterplot with categorical organization."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  jitter, split, orient, color, palette):
@@ -1129,7 +1167,7 @@ class _StripPlotter(_CategoricalPlotter):
             ax.invert_yaxis()
 
 
-class _SwarmPlotter(_CategoricalPlotter):
+class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def __init__(self):
 
@@ -1254,29 +1292,42 @@ class _SwarmPlotter(_CategoricalPlotter):
 
     def draw_swarmplot(self, ax, kws):
 
+        s = kws.pop("s", 7 ** 2)
+
         swarms = []
+
+        # Set the categorical axes limits here for the swarm math
+        if self.orient == "v":
+            ax.set_xlim(-.5, len(self.plot_data) - .5)
+        else:
+            ax.set_ylim(-.5, len(self.plot_data) - .5)
+
+        # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
 
             swarm_data = remove_na(group_data)
 
-            # TODO Will have to be careful to account for hue data
-            swarm_data = np.sort(swarm_data)
+            sorter = np.argsort(swarm_data)
+            swarm_data = swarm_data[sorter]
+            point_colors = self.point_colors[i][sorter]
 
             cat_pos = np.ones(swarm_data.size) * i
-            kws.update(color=self.colors[i])
+            kws.update(c=point_colors)
             if self.orient == "v":
-                points = ax.scatter(cat_pos, swarm_data, **kws)
+                points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
             else:
-                points = ax.scatter(swarm_data, cat_pos, **kws)
+                points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
             swarms.append(points)
 
-        s = kws.get("s", 7 ** 2)
+        # Update the position of each point on the categorical axis
+        # Do this after plotting so that the numerical axis limits are correct
         for i, swarm in enumerate(swarms):
             self.swarm_points(ax, swarm, i, s, **kws)
 
     def plot(self, ax, **kws):
 
         self.draw_swarmplot(ax, kws)
+        self.add_legend_data(ax)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
