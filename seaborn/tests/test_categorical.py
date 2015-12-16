@@ -1610,7 +1610,9 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_position_candidates(self):
 
         p = cat._SwarmPlotter()
-        candidates = p.position_candidates((0, 1), [(0, 1), (0, 1.5)], 1)
+        xy_i = (0, 1)
+        neighbors = [(0, 1), (0, 1.5)]
+        candidates = p.position_candidates(xy_i, neighbors, 1)
         dx1 = 1.05
         dx2 = np.sqrt(1 - .5 ** 2) * 1.05
         nt.assert_equal(candidates,
@@ -1619,8 +1621,18 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_prune_candidates(self):
 
         p = cat._SwarmPlotter()
-        candidates = p.prune_candidates([(.5, 1), (1, 1)], [(0, 1)], 1)
+        candidates = [(.5, 1), (1, 1)]
+        neighbors = [(0, 1)]
+        candidates = p.prune_candidates(candidates, neighbors, 1)
         npt.assert_array_equal(candidates, np.array([(1, 1)]))
+
+    def test_add_gutters(self):
+
+        p = cat._SwarmPlotter()
+        points = np.array([0, -1, .4])
+        points = p.add_gutters(points, 0, 1)
+        npt.assert_array_equal(points,
+                               np.array([0, -.5, .4]))
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -2059,7 +2071,7 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("g", "y", "h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique()) +
+                        (len(self.g.unique()) *
                          len(self.h.unique()) +
                          len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")

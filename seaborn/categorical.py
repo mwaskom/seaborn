@@ -1227,6 +1227,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         off_high = points > high_gutter
         if off_high.any():
             points[off_high] = high_gutter
+        return points
 
     def swarm_points(self, ax, points, center, width, s, **kws):
         """Find new positions on the categorical axis for each point.
