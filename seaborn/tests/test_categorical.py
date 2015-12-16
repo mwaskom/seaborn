@@ -1417,6 +1417,65 @@ class TestViolinPlotter(CategoricalFixture):
             plt.close("all")
 
 
+class TestCategoricalScatterPlotter(CategoricalFixture):
+
+    def test_group_point_colors(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        p.establish_variables(x="g", y="y", data=self.df)
+        p.establish_colors(None, "deep", 1)
+
+        point_colors = p.point_colors
+        nt.assert_equal(len(point_colors), self.g.unique().size)
+        deep_colors = palettes.color_palette("deep", self.g.unique().size)
+
+        for i, group_colors in enumerate(point_colors):
+            nt.assert_equal(tuple(deep_colors[i]), tuple(group_colors[0]))
+            for channel in group_colors.T:
+                nt.assert_equals(np.unique(channel).size, 1)
+
+    def test_hue_point_colors(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        hue_order = ["m", "n"]
+        p.establish_variables(x="g", y="y", hue="h",
+                              hue_order=hue_order, data=self.df)
+        p.establish_colors(None, "deep", 1)
+
+        point_colors = p.point_colors
+        nt.assert_equal(len(point_colors), self.g.unique().size)
+        deep_colors = palettes.color_palette("deep", self.h.unique().size)
+
+        for i, group_colors in enumerate(point_colors):
+            for j, point_color in enumerate(group_colors):
+                hue_level = p.plot_hues[i][j]
+                nt.assert_equal(tuple(point_color),
+                                deep_colors[hue_order.index(hue_level)])
+
+    def test_scatterplot_legend(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        hue_order = ["m", "n"]
+        p.establish_variables(x="g", y="y", hue="h",
+                              hue_order=hue_order, data=self.df)
+        p.establish_colors(None, "deep", 1)
+        deep_colors = palettes.color_palette("deep", self.h.unique().size)
+
+        f, ax = plt.subplots()
+        p.add_legend_data(ax)
+        leg = ax.legend()
+
+        for i, t in enumerate(leg.get_texts()):
+            nt.assert_equal(t.get_text(), hue_order[i])
+
+        for i, h in enumerate(leg.legendHandles):
+            rgb = h.get_facecolor()[0, :3]
+            nt.assert_equal(tuple(rgb), tuple(deep_colors[i]))
+
+
 class TestStripPlotter(CategoricalFixture):
 
     def test_stripplot_vertical(self):

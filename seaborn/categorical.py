@@ -1086,7 +1086,7 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
         return colors
 
     def add_legend_data(self, ax):
-
+        """Add empty scatterplot artists with labels for the legend."""
         if self.hue_names is not None:
             for rgb, label in zip(self.colors, self.hue_names):
                 ax.scatter([], [],
@@ -1213,9 +1213,9 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         assert good_candidates
         return np.array(good_candidates)
 
-    def add_gutters(self, points, center):
+    def add_gutters(self, points, center, width):
         """Stop points from extending beyond their territory."""
-        half_width = self.width / 2
+        half_width = width / 2
         low_gutter = center - half_width
         off_low = points < low_gutter
         if off_low.any():
@@ -1225,7 +1225,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         if off_high.any():
             points[off_high] = high_gutter
 
-    def swarm_points(self, ax, points, center, s, **kws):
+    def swarm_points(self, ax, points, center, width, s, **kws):
         """Find new positions on the categorical axis for each point.
 
         In this method, ``x`` means the categorical axis and ``y`` means the
@@ -1238,7 +1238,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
         # Transform the data coordinates to point coordinates.
         # We'll figure out the swarm positions in the latter
-        # and then convert back and replot
+        # and then convert back to data coordinates and replot
         orig_xy = ax.transData.transform(points.get_offsets())
 
         # Order the variables so that x is the caegorical axis
@@ -1247,6 +1247,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         else:
             orig_y, orig_x = orig_xy.T
         orig_xy = np.c_[orig_x, orig_y]
+
+        # Center of the swarm, in point (not data) coordinates
         midline = orig_x[0]
 
         # Start the swarm with the first point
@@ -1283,9 +1285,9 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
         # Add gutters
         if self.orient == "v":
-            self.add_gutters(new_x, center)
+            self.add_gutters(new_x, center, width)
         else:
-            self.add_gutters(new_y, center)
+            self.add_gutters(new_y, center, width)
 
         # Reposition the points so they do not overlap
         points.set_offsets(np.c_[new_x, new_y])
@@ -1322,7 +1324,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # Update the position of each point on the categorical axis
         # Do this after plotting so that the numerical axis limits are correct
         for i, swarm in enumerate(swarms):
-            self.swarm_points(ax, swarm, i, s, **kws)
+            self.swarm_points(ax, swarm, i, self.width, s, **kws)
 
     def plot(self, ax, **kws):
 
