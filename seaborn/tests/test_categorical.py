@@ -6,7 +6,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 import nose.tools as nt
 import numpy.testing as npt
@@ -15,6 +14,9 @@ from numpy.testing.decorators import skipif
 from . import PlotTestCase
 from .. import categorical as cat
 from .. import palettes
+
+
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 class CategoricalFixture(PlotTestCase):
@@ -1610,7 +1612,7 @@ class TestSwarmPlotter(CategoricalFixture):
         p = cat._SwarmPlotter()
         candidates = p.position_candidates((0, 1), [(0, 1), (0, 1.5)], 1)
         dx1 = 1.05
-        dx2 = np.sqrt(1 - .5 **2) * 1.05
+        dx2 = np.sqrt(1 - .5 ** 2) * 1.05
         nt.assert_equal(candidates,
                         [(0, 1), (-dx1, 1), (dx1, 1), (-dx2, 1), (dx2, 1)])
 
@@ -2057,9 +2059,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("g", "y", "h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique())
-                        * len(self.h.unique())
-                        + len(self.h.unique())))
+                        (len(self.g.unique()) +
+                         len(self.h.unique()) +
+                         len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "mean(y)")
         plt.close("all")
@@ -2067,9 +2069,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("y", "g", "h", orient="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique())
-                         * len(self.h.unique())
-                         + len(self.h.unique())))
+                        (len(self.g.unique()) *
+                         len(self.h.unique()) +
+                         len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "mean(y)")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
