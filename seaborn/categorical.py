@@ -1180,7 +1180,10 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         return np.linalg.norm([x_i - x_j, y_i - y_j]) < d
 
     def could_overlap(self, xy_i, swarm, d):
-        """Return a list of all swarm points that could overlap with target."""
+        """Return a list of all swarm points that could overlap with target.
+
+        Assumes that we are working through a sorted storm.
+        """
         _, y_i = xy_i
         neighbors = []
         for xy_j in swarm:

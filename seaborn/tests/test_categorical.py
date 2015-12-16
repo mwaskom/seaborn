@@ -1591,6 +1591,36 @@ class TestStripPlotter(CategoricalFixture):
         nt.assert_equal(ax.collections[0].get_facecolor().shape, (1, 4))
 
 
+class TestSwarmPlotter(CategoricalFixture):
+
+    def test_overlap(self):
+
+        p = cat._SwarmPlotter()
+        nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(2)))
+        nt.assert_true(p.overlap((0, 0), (1, 1), np.sqrt(2.001)))
+
+    def test_could_overlap(self):
+
+        p = cat._SwarmPlotter()
+        neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
+        nt.assert_equal(neighbors, [(1, .5), (.5, .5)])
+
+    def test_position_candidates(self):
+
+        p = cat._SwarmPlotter()
+        candidates = p.position_candidates((0, 1), [(0, 1), (0, 1.5)], 1)
+        dx1 = 1.05
+        dx2 = np.sqrt(1 - .5 **2) * 1.05
+        nt.assert_equal(candidates,
+                        [(0, 1), (-dx1, 1), (dx1, 1), (-dx2, 1), (dx2, 1)])
+
+    def test_prune_candidates(self):
+
+        p = cat._SwarmPlotter()
+        candidates = p.prune_candidates([(.5, 1), (1, 1)], [(0, 1)], 1)
+        npt.assert_array_equal(candidates, np.array([(1, 1)]))
+
+
 class TestBarPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
