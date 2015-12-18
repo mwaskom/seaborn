@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import scipy
-from scipy import stats
+from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -1625,6 +1625,19 @@ class TestSwarmPlotter(CategoricalFixture):
         neighbors = [(0, 1)]
         candidates = p.prune_candidates(candidates, neighbors, 1)
         npt.assert_array_equal(candidates, np.array([(1, 1)]))
+
+    def test_beeswarm(self):
+
+        p = cat._SwarmPlotter()
+        d = self.y.diff().mean() * 1.5
+        x = np.zeros(self.y.size)
+        y = np.sort(self.y)
+        orig_xy = np.c_[x, y]
+        swarm = p.beeswarm(orig_xy, d)
+        dmat = spatial.distance.cdist(swarm, swarm)
+        triu = dmat[np.triu_indices_from(dmat, 1)]
+        npt.assert_array_less(d, triu)
+        npt.assert_array_equal(y, swarm[:, 1])
 
     def test_add_gutters(self):
 

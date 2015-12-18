@@ -1196,11 +1196,17 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         """Return a list of (x, y) coordinates that might be valid."""
         candidates = [xy_i]
         x_i, y_i = xy_i
+        left_first = True
         for x_j, y_j in neighbors:
             dy = y_i - y_j
             dx = np.sqrt(d ** 2 - dy ** 2) * 1.05
-            candidates.extend([(x_j - dx, y_i), (x_j + dx, y_i)])
-
+            cl, cr = (x_j - dx, y_i), (x_j + dx, y_i)
+            if left_first:
+                new_candidates = [cl, cr]
+            else:
+                new_candidates = [cr, cl]
+            candidates.extend(new_candidates)
+            left_first = ~left_first
         return candidates
 
     def prune_candidates(self, candidates, neighbors, d):
@@ -1216,44 +1222,11 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         assert good_candidates
         return np.array(good_candidates)
 
-    def add_gutters(self, points, center, width):
-        """Stop points from extending beyond their territory."""
-        half_width = width / 2
-        low_gutter = center - half_width
-        off_low = points < low_gutter
-        if off_low.any():
-            points[off_low] = low_gutter
-        high_gutter = center + half_width
-        off_high = points > high_gutter
-        if off_high.any():
-            points[off_high] = high_gutter
-        return points
-
-    def swarm_points(self, ax, points, center, width, s, **kws):
-        """Find new positions on the categorical axis for each point.
-
-        In this method, ``x`` means the categorical axis and ``y`` means the
-        data axis.
-        """
-        # Convert from point size (area) to diameter
-        default_lw = mpl.rcParams["patch.linewidth"]
-        lw = kws.get("linewidth", kws.get("lw", default_lw))
-        d = np.sqrt(s) + lw
-
-        # Transform the data coordinates to point coordinates.
-        # We'll figure out the swarm positions in the latter
-        # and then convert back to data coordinates and replot
-        orig_xy = ax.transData.transform(points.get_offsets())
-
-        # Order the variables so that x is the caegorical axis
-        if self.orient == "v":
-            orig_x, orig_y = orig_xy.T
-        else:
-            orig_y, orig_x = orig_xy.T
-        orig_xy = np.c_[orig_x, orig_y]
-
-        # Center of the swarm, in point (not data) coordinates
-        midline = orig_x[0]
+    def beeswarm(self, orig_xy, d):
+        """Adjust x position of points to avoid overlaps."""
+        # In this method, ``x`` is always the categorical axis
+        # Center of the swarm, in point coordinates
+        midline = orig_xy[0, 0]
 
         # Start the swarm with the first point
         swarm = [orig_xy[0]]
@@ -1279,8 +1252,41 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             new_xy_i = candidates[best_index]
             swarm.append(new_xy_i)
 
+        return np.array(swarm)
+
+    def add_gutters(self, points, center, width):
+        """Stop points from extending beyond their territory."""
+        half_width = width / 2
+        low_gutter = center - half_width
+        off_low = points < low_gutter
+        if off_low.any():
+            points[off_low] = low_gutter
+        high_gutter = center + half_width
+        off_high = points > high_gutter
+        if off_high.any():
+            points[off_high] = high_gutter
+        return points
+
+    def swarm_points(self, ax, points, center, width, s, **kws):
+        """Find new positions on the categorical axis for each point."""
+        # Convert from point size (area) to diameter
+        default_lw = mpl.rcParams["patch.linewidth"]
+        lw = kws.get("linewidth", kws.get("lw", default_lw))
+        d = np.sqrt(s) + lw
+
+        # Transform the data coordinates to point coordinates.
+        # We'll figure out the swarm positions in the latter
+        # and then convert back to data coordinates and replot
+        orig_xy = ax.transData.transform(points.get_offsets())
+
+        # Order the variables so that x is the caegorical axis
+        if self.orient == "h":
+            orig_xy = orig_xy[:, [1, 0]]
+
+        # Do the beeswarm in point coordinates
+        swarm = self.beeswarm(orig_xy, d)
+
         # Transform the point coordinates back to data coordinates
-        swarm = np.array(swarm)
         if self.orient == "v":
             new_xy = swarm[:, [0, 1]]
         else:
@@ -1297,7 +1303,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         points.set_offsets(np.c_[new_x, new_y])
 
     def draw_swarmplot(self, ax, kws):
-
+        """Plot the data."""
         s = kws.pop("s", 7 ** 2)
 
         swarms = []
@@ -1331,7 +1337,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             self.swarm_points(ax, swarm, i, self.width, s, **kws)
 
     def plot(self, ax, **kws):
-
+        """Make the full plot."""
         self.draw_swarmplot(ax, kws)
         self.add_legend_data(ax)
         self.annotate_axes(ax)
