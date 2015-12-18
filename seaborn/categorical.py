@@ -1169,9 +1169,15 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
 class _SwarmPlotter(_CategoricalScatterPlotter):
 
-    def __init__(self):
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 split, orient, color, palette):
+        """Initialize the plotter."""
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, 1)
 
-        pass
+        # Set object attributes
+        self.split = split
+        self.width = .8
 
     def overlap(self, xy_i, xy_j, d):
         """Return True if two circles with the same diameter will overlap."""
@@ -1336,7 +1342,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         for i, swarm in enumerate(swarms):
             self.swarm_points(ax, swarm, i, self.width, s, **kws)
 
-    def plot(self, ax, **kws):
+    def plot(self, ax, kws):
         """Make the full plot."""
         self.draw_swarmplot(ax, kws)
         self.add_legend_data(ax)
@@ -2617,6 +2623,23 @@ stripplot.__doc__ = dedent("""\
         ...                    jitter=True, color="white", edgecolor="gray")
 
     """).format(**_categorical_docs)
+
+
+def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              split=False, orient=None, color=None, palette=None,
+              size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
+
+    plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
+                            split, orient, color, palette)
+    if ax is None:
+        ax = plt.gca()
+
+    kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
+    if edgecolor == "gray":
+        kwargs["edgecolor"] = plotter.gray
+
+    plotter.plot(ax, kwargs)
+    return ax
 
 
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,

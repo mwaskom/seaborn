@@ -1642,10 +1642,10 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_add_gutters(self):
 
         p = cat._SwarmPlotter()
-        points = np.array([0, -1, .4])
+        points = np.array([0, -1, .4, .8])
         points = p.add_gutters(points, 0, 1)
         npt.assert_array_equal(points,
-                               np.array([0, -.5, .4]))
+                               np.array([0, -.5, .4, .5]))
 
 
 class TestBarPlotter(CategoricalFixture):
