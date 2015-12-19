@@ -1595,21 +1595,25 @@ class TestStripPlotter(CategoricalFixture):
 
 class TestSwarmPlotter(CategoricalFixture):
 
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                      order=None, hue_order=None, split=False,
+                      orient=None, color=None, palette=None)
+
     def test_overlap(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(2)))
         nt.assert_true(p.overlap((0, 0), (1, 1), np.sqrt(2.001)))
 
     def test_could_overlap(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
         nt.assert_equal(neighbors, [(1, .5), (.5, .5)])
 
     def test_position_candidates(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         xy_i = (0, 1)
         neighbors = [(0, 1), (0, 1.5)]
         candidates = p.position_candidates(xy_i, neighbors, 1)
@@ -1620,7 +1624,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_prune_candidates(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         candidates = [(.5, 1), (1, 1)]
         neighbors = [(0, 1)]
         candidates = p.prune_candidates(candidates, neighbors, 1)
@@ -1628,7 +1632,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_beeswarm(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         d = self.y.diff().mean() * 1.5
         x = np.zeros(self.y.size)
         y = np.sort(self.y)
@@ -1641,7 +1645,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_add_gutters(self):
 
-        p = cat._SwarmPlotter()
+        p = cat._SwarmPlotter(**self.default_kws)
         points = np.array([0, -1, .4, .8])
         points = p.add_gutters(points, 0, 1)
         npt.assert_array_equal(points,
