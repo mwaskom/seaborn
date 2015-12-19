@@ -1596,8 +1596,8 @@ class TestStripPlotter(CategoricalFixture):
 class TestSwarmPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
-                      order=None, hue_order=None, split=False,
-                      orient=None, color=None, palette=None)
+                       order=None, hue_order=None, split=False,
+                       orient=None, color=None, palette=None)
 
     def test_overlap(self):
 
