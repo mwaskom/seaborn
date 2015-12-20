@@ -1079,7 +1079,8 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
                 # Color the points based on  the hue level
                 for j, level in enumerate(self.hue_names):
                     hue_color = self.colors[j]
-                    group_colors[self.plot_hues[i] == level] = hue_color
+                    if group_data.size:
+                        group_colors[self.plot_hues[i] == level] = hue_color
 
             colors.append(group_colors)
 
@@ -2046,7 +2047,11 @@ _categorical_docs = dict(
     """),
     stripplot=dedent("""\
     stripplot : A scatterplot where one variable is categorical. Can be used
-                in conjunction with a other plots to show each observation.\
+                in conjunction with other plots to show each observation.\
+    """),
+    swarmplot=dedent("""\
+    swarmplot : A categorical scatterplot where the points do not overlap. Can
+                be used with other plots to show each observation.\
     """),
     barplot=dedent("""\
     barplot : Show point estimates and confidence intervals using bars.\
@@ -2686,6 +2691,141 @@ def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter.plot(ax, kwargs)
     return ax
+
+
+swarmplot.__doc__ = dedent("""\
+    Draw a categorical scatterplot with non-overlapping points.
+
+    This function is similar to :func:`stripplot`, but the points are adjusted
+    (only along the categorical axis) so that they don't overlap. This gives a
+    better representation of the distribution of values, although it does not
+    scale as well to large numbers of observations (both in terms of the
+    ability to show all the points and in terms of the computation needed
+    to arrange them).
+
+    A swarm plot can be drawn on its own, but it is also a good complement
+    to a box or violin plot in cases where you want to show all observations
+    along with some representation of the underlying distribution.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {input_params}
+    {categorical_data}
+    {order_vars}
+    split : bool, optional
+        When using ``hue`` nesting, setting this to ``True`` will separate
+        the strips for different hue levels along the categorical axis.
+        Otherwise, the points for each level will be plotted in one swarm.
+    {orient}
+    {color}
+    {palette}
+    size : float, optional
+        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        to draw the points, the ``size`` argument here takes a "normal"
+        markersize and not size^2 like ``plt.scatter``.
+    edgecolor : matplotlib color, "gray" is special-cased, optional
+        Color of the lines around each point. If you pass ``"gray"``, the
+        brightness is determined by the color palette used for the body
+        of the points.
+    {linewidth}
+    {ax_in}
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {boxplot}
+    {violinplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal swarm plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.swarmplot(x=tips["total_bill"])
+
+    Group the swarms by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips)
+
+    Draw horizontal swarms:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="total_bill", y="day", data=tips)
+
+    Color the points using a second categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", hue="sex", data=tips)
+
+    Split each level of the ``hue`` variable along the categorical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set2", split=True)
+
+    Control swarm order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip",
+        ...                    data=tips.sort_values("size"))
+
+    Control swarm order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip", data=tips,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
+
+    Plot using smaller points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip", data=tips, size=4,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
+
+
+    Draw swarms of observations on top of a box plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
+        >>> ax = sns.swarmplot(x="tip", y="day", data=tips)
+
+    Draw swarms of observations on top of a violin plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
+        ...                    color="white", edgecolor="gray")
+
+    """).format(**_categorical_docs)
 
 
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
