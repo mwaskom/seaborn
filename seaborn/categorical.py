@@ -1312,6 +1312,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         """Plot the data."""
         s = kws.pop("s", 7 ** 2)
 
+        centers = []
         swarms = []
 
         # Set the categorical axes limits here for the swarm math
@@ -1323,24 +1324,57 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
 
-            swarm_data = remove_na(group_data)
+            if self.plot_hues is None or not self.split:
 
-            sorter = np.argsort(swarm_data)
-            swarm_data = swarm_data[sorter]
-            point_colors = self.point_colors[i][sorter]
+                width = self.width
+                swarm_data = remove_na(group_data)
 
-            cat_pos = np.ones(swarm_data.size) * i
-            kws.update(c=point_colors)
-            if self.orient == "v":
-                points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
+                # Sort the points for the beeswarm algorithm
+                sorter = np.argsort(swarm_data)
+                swarm_data = swarm_data[sorter]
+                point_colors = self.point_colors[i][sorter]
+
+                # Plot the points in centered positions
+                cat_pos = np.ones(swarm_data.size) * i
+                kws.update(c=point_colors)
+                if self.orient == "v":
+                    points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
+                else:
+                    points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
+
+                centers.append(i)
+                swarms.append(points)
+
             else:
-                points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
-            swarms.append(points)
+                offsets = self.hue_offsets
+                width = self.nested_width
+
+                for j, hue_level in enumerate(self.hue_names):
+                    hue_mask = self.plot_hues[i] == hue_level
+                    swarm_data = remove_na(group_data[hue_mask])
+
+                    # Sort the points for the beeswarm algorithm
+                    sorter = np.argsort(swarm_data)
+                    swarm_data = swarm_data[sorter]
+                    point_colors = self.point_colors[i][hue_mask][sorter]
+
+                    # Plot the points in centered positions
+                    center = i + offsets[j]
+                    cat_pos = np.ones(swarm_data.size) * center
+                    kws.update(c=point_colors)
+                    if self.orient == "v":
+                        points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
+                    else:
+                        points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
+
+                    centers.append(center)
+                    swarms.append(points)
 
         # Update the position of each point on the categorical axis
         # Do this after plotting so that the numerical axis limits are correct
-        for i, swarm in enumerate(swarms):
-            self.swarm_points(ax, swarm, i, self.width, s, **kws)
+        for center, swarm in zip(centers, swarms):
+            if swarm.get_offsets().size:
+                self.swarm_points(ax, swarm, center, width, s, **kws)
 
     def plot(self, ax, kws):
         """Make the full plot."""
@@ -2627,16 +2661,22 @@ stripplot.__doc__ = dedent("""\
 
 def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               split=False, orient=None, color=None, palette=None,
-              size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
+              size=7, edgecolor="w", linewidth=None, ax=None, **kwargs):
 
     plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
                             split, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
-    kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+    if linewidth is None:
+        linewidth = size / 10
     if edgecolor == "gray":
-        kwargs["edgecolor"] = plotter.gray
+        edgecolor = plotter.gray
+    kwargs.update(dict(s=size ** 2,
+                       edgecolor=edgecolor,
+                       linewidth=linewidth))
 
     plotter.plot(ax, kwargs)
     return ax
