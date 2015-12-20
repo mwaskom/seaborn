@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
 
+import nose
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
@@ -1707,6 +1708,9 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_unsplit_nested_swarmplot_vertical(self):
 
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
+
         ax = cat.swarmplot("g", "y", "h", data=self.df)
 
         pal = palettes.color_palette()
@@ -1727,6 +1731,9 @@ class TestSwarmPlotter(CategoricalFixture):
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
 
     def test_unsplit_nested_swarmplot_horizontal(self):
+
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
 
         ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h")
 
