@@ -2177,6 +2177,7 @@ boxplot.__doc__ = dedent("""\
     --------
     {violinplot}
     {stripplot}
+    {swarmplot}
 
     Examples
     --------
@@ -2237,14 +2238,14 @@ boxplot.__doc__ = dedent("""\
         >>> iris = sns.load_dataset("iris")
         >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
 
-    Use :func:`stripplot` to show the datapoints on top of the boxes:
+    Use :func:`swarmplot` to show the datapoints on top of the boxes:
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, edgecolor="gray")
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
+        ...                   size=4, edgecolor="gray")
 
     Draw a box plot on to a :class:`FacetGrid` to group within an additional
     categorical variable:
@@ -2378,6 +2379,7 @@ violinplot.__doc__ = dedent("""\
     --------
     {boxplot}
     {stripplot}
+    {swarmplot}
 
     Examples
     --------
@@ -2563,6 +2565,7 @@ stripplot.__doc__ = dedent("""\
 
     See Also
     --------
+    {swarmplot}
     {boxplot}
     {violinplot}
 
@@ -2709,6 +2712,10 @@ swarmplot.__doc__ = dedent("""\
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
+    Note that arranging the points properly requires an accurate transformation
+    between data and point coordinates. This means that non-default axis limits
+    should be set *before* drawing the swarm plot.
+
     {main_api_narrative}
 
     Parameters
@@ -2742,6 +2749,8 @@ swarmplot.__doc__ = dedent("""\
     --------
     {boxplot}
     {violinplot}
+    {stripplot}
+    {factorplot}
 
     Examples
     --------
