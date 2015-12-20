@@ -1651,6 +1651,102 @@ class TestSwarmPlotter(CategoricalFixture):
         npt.assert_array_equal(points,
                                np.array([0, -.5, .4, .5]))
 
+    def test_swarmplot_vertical(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("g", "y", data=self.df)
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+            npt.assert_array_almost_equal(y, np.sort(vals))
+
+            fc = ax.collections[i].get_facecolors()[0, :3]
+            npt.assert_equal(fc, pal[i])
+
+    def test_swarmplot_horizontal(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("y", "g", data=self.df, orient="h")
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+            npt.assert_array_almost_equal(x, np.sort(vals))
+
+            fc = ax.collections[i].get_facecolors()[0, :3]
+            npt.assert_equal(fc, pal[i])
+
+    def test_split_nested_swarmplot_vetical(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("g", "y", "h", data=self.df, split=True)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+                npt.assert_array_almost_equal(y, np.sort(vals))
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+    def test_split_nested_swarmplot_horizontal(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h", split=True)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+                npt.assert_array_almost_equal(x, np.sort(vals))
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+    def test_unsplit_nested_swarmplot_vertical(self):
+
+        ax = cat.swarmplot("g", "y", "h", data=self.df)
+
+        pal = palettes.color_palette()
+        hue_names = self.h.unique().tolist()
+        grouped_hues = list(self.h.groupby(self.g))
+
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            points = ax.collections[i]
+            x, y = points.get_offsets().T
+            sorter = np.argsort(vals)
+            npt.assert_array_almost_equal(y, vals.iloc[sorter])
+
+            _, hue_vals = grouped_hues[i]
+            for hue, fc in zip(hue_vals.values[sorter],
+                               points.get_facecolors()):
+
+                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+
+    def test_unsplit_nested_swarmplot_horizontal(self):
+
+        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h")
+
+        pal = palettes.color_palette()
+        hue_names = self.h.unique().tolist()
+        grouped_hues = list(self.h.groupby(self.g))
+
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            points = ax.collections[i]
+            x, y = points.get_offsets().T
+            sorter = np.argsort(vals)
+            npt.assert_array_almost_equal(x, vals.iloc[sorter])
+
+            _, hue_vals = grouped_hues[i]
+            for hue, fc in zip(hue_vals.values[sorter],
+                               points.get_facecolors()):
+
+                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+
 
 class TestBarPlotter(CategoricalFixture):
 
