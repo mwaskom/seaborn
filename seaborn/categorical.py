@@ -1184,19 +1184,21 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         """Return True if two circles with the same diameter will overlap."""
         x_i, y_i = xy_i
         x_j, y_j = xy_j
-        return np.linalg.norm([x_i - x_j, y_i - y_j]) < d
+        return (x_i - x_j) ** 2 + (y_i - y_j) ** 2 < d ** 2
 
     def could_overlap(self, xy_i, swarm, d):
         """Return a list of all swarm points that could overlap with target.
 
-        Assumes that we are working through a sorted storm.
+        Assumes that swarm is a sorted list of all points below xy_i.
         """
         _, y_i = xy_i
         neighbors = []
-        for xy_j in swarm:
+        for xy_j in reversed(swarm):
             _, y_j = xy_j
             if (y_i - y_j) < d:
                 neighbors.append(xy_j)
+            else:
+                break
         return neighbors
 
     def position_candidates(self, xy_i, neighbors, d):
@@ -1217,7 +1219,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         return candidates
 
     def prune_candidates(self, candidates, neighbors, d):
-        """Remove candidates from the list of they overlap with the swarm."""
+        """Remove candidates from the list if they overlap with the swarm."""
         good_candidates = []
         for xy_i in candidates:
             good_candidate = True
