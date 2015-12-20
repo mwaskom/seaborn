@@ -2246,8 +2246,7 @@ boxplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
-        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
-        ...                   size=4, edgecolor="gray")
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
     Draw a box plot on to a :class:`FacetGrid` to group within an additional
     categorical variable:
