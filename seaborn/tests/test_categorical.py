@@ -1603,7 +1603,7 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_overlap(self):
 
         p = cat._SwarmPlotter(**self.default_kws)
-        nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(2)))
+        nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(1.999)))
         nt.assert_true(p.overlap((0, 0), (1, 1), np.sqrt(2.001)))
 
     def test_could_overlap(self):

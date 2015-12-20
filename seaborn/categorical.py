@@ -1184,7 +1184,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         """Return True if two circles with the same diameter will overlap."""
         x_i, y_i = xy_i
         x_j, y_j = xy_j
-        return (x_i - x_j) ** 2 + (y_i - y_j) ** 2 < d ** 2
+        return ((x_i - x_j) ** 2 + (y_i - y_j) ** 2) < (d ** 2)
 
     def could_overlap(self, xy_i, swarm, d):
         """Return a list of all swarm points that could overlap with target.
@@ -1199,7 +1199,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 neighbors.append(xy_j)
             else:
                 break
-        return neighbors
+        return list(reversed(neighbors))
 
     def position_candidates(self, xy_i, neighbors, d):
         """Return a list of (x, y) coordinates that might be valid."""
