@@ -2703,6 +2703,8 @@ swarmplot.__doc__ = dedent("""\
     ability to show all the points and in terms of the computation needed
     to arrange them).
 
+    This style of plot is often called a "beeswarm".
+
     A swarm plot can be drawn on its own, but it is also a good complement
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
