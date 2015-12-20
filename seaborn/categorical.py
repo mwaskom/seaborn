@@ -1212,7 +1212,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             else:
                 new_candidates = [cr, cl]
             candidates.extend(new_candidates)
-            left_first = ~left_first
+            left_first = not left_first
         return candidates
 
     def prune_candidates(self, candidates, neighbors, d):
@@ -1327,12 +1327,18 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             if self.plot_hues is None or not self.split:
 
                 width = self.width
-                swarm_data = remove_na(group_data)
+
+                if self.hue_names is None:
+                    hue_mask = np.ones(group_data.size, np.bool)
+                else:
+                    hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+
+                swarm_data = group_data[hue_mask]
 
                 # Sort the points for the beeswarm algorithm
                 sorter = np.argsort(swarm_data)
                 swarm_data = swarm_data[sorter]
-                point_colors = self.point_colors[i][sorter]
+                point_colors = self.point_colors[i][hue_mask][sorter]
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(swarm_data.size) * i
@@ -1351,7 +1357,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    swarm_data = remove_na(group_data[hue_mask])
+                    swarm_data = group_data[hue_mask]
 
                     # Sort the points for the beeswarm algorithm
                     sorter = np.argsort(swarm_data)

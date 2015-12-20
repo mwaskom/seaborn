@@ -1441,14 +1441,14 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
 
         p = cat._CategoricalScatterPlotter()
 
-        hue_order = ["m", "n"]
+        hue_order = self.h.unique().tolist()
         p.establish_variables(x="g", y="y", hue="h",
                               hue_order=hue_order, data=self.df)
         p.establish_colors(None, "deep", 1)
 
         point_colors = p.point_colors
         nt.assert_equal(len(point_colors), self.g.unique().size)
-        deep_colors = palettes.color_palette("deep", self.h.unique().size)
+        deep_colors = palettes.color_palette("deep", len(hue_order))
 
         for i, group_colors in enumerate(point_colors):
             for j, point_color in enumerate(group_colors):
@@ -1620,7 +1620,7 @@ class TestSwarmPlotter(CategoricalFixture):
         dx1 = 1.05
         dx2 = np.sqrt(1 - .5 ** 2) * 1.05
         nt.assert_equal(candidates,
-                        [(0, 1), (-dx1, 1), (dx1, 1), (-dx2, 1), (dx2, 1)])
+                        [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)])
 
     def test_prune_candidates(self):
 
