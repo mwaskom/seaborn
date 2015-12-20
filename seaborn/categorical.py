@@ -2675,7 +2675,7 @@ stripplot.__doc__ = dedent("""\
 
 def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               split=False, orient=None, color=None, palette=None,
-              size=7, edgecolor="w", linewidth=None, ax=None, **kwargs):
+              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
     plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
                             split, orient, color, palette)
