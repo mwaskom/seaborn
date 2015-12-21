@@ -1228,7 +1228,6 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     good_candidate = False
             if good_candidate:
                 good_candidates.append(xy_i)
-        assert good_candidates
         return np.array(good_candidates)
 
     def beeswarm(self, orig_xy, d):
@@ -1293,13 +1292,11 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             orig_xy = orig_xy[:, [1, 0]]
 
         # Do the beeswarm in point coordinates
-        swarm = self.beeswarm(orig_xy, d)
+        new_xy = self.beeswarm(orig_xy, d)
 
         # Transform the point coordinates back to data coordinates
-        if self.orient == "v":
-            new_xy = swarm[:, [0, 1]]
-        else:
-            new_xy = swarm[:, [1, 0]]
+        if self.orient == "h":
+            new_xy = new_xy[:, [1, 0]]
         new_x, new_y = ax.transData.inverted().transform(new_xy).T
 
         # Add gutters
