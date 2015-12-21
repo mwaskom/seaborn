@@ -1,5 +1,5 @@
 
-v0.6.1 (Unreleased)
+v0.7.0 (Unreleased)
 -------------------
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
