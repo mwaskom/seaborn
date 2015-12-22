@@ -45,6 +45,7 @@ Categorical plots
     boxplot
     violinplot
     stripplot
+    swarmplot
     pointplot
     barplot
     countplot

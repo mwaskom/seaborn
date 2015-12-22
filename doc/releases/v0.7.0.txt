@@ -1,6 +1,8 @@
 
-v0.6.1 (Unreleased)
+v0.7.0 (Unreleased)
 -------------------
+
+- Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
 
 - Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overriden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` dtype will still follow the category order even if the levels are strictly numerical.
 
