@@ -490,7 +490,7 @@ class _BoxPlotter(_CategoricalPlotter):
     def restyle_boxplot(self, artist_dict, color, kws):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
-            box.update(dict(color=color,
+            box.update(dict(facecolor=color,
                             zorder=.9,
                             edgecolor=self.gray,
                             linewidth=self.linewidth))
@@ -509,7 +509,7 @@ class _BoxPlotter(_CategoricalPlotter):
                             linewidth=self.linewidth))
             med.update(kws.get("medianprops", {}))
         for fly in artist_dict["fliers"]:
-            fly.update(dict(color=self.gray,
+            fly.update(dict(markerfacecolor=self.gray,
                             marker="d",
                             markeredgecolor=self.gray,
                             markersize=self.fliersize))
