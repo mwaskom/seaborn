@@ -433,6 +433,10 @@ class _BoxPlotter(_CategoricalPlotter):
         """Use matplotlib to draw a boxplot on an Axes."""
         vert = self.orient == "v"
 
+        props = {}
+        for obj in ["box", "whisker", "cap", "median", "flier"]:
+            props[obj] = kws.pop(obj + "props", {})
+
         for i, group_data in enumerate(self.plot_data):
 
             if self.plot_hues is None:
@@ -456,7 +460,7 @@ class _BoxPlotter(_CategoricalPlotter):
                                          widths=self.width,
                                          **kws)
                 color = self.colors[i]
-                self.restyle_boxplot(artist_dict, color, kws)
+                self.restyle_boxplot(artist_dict, color, props)
             else:
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
@@ -484,36 +488,36 @@ class _BoxPlotter(_CategoricalPlotter):
                                              positions=[center],
                                              widths=self.nested_width,
                                              **kws)
-                    self.restyle_boxplot(artist_dict, self.colors[j], kws)
+                    self.restyle_boxplot(artist_dict, self.colors[j], props)
                     # Add legend data, but just for one set of boxes
 
-    def restyle_boxplot(self, artist_dict, color, kws):
+    def restyle_boxplot(self, artist_dict, color, props):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
-            box.update(dict(color=color,
+            box.update(dict(facecolor=color,
                             zorder=.9,
                             edgecolor=self.gray,
                             linewidth=self.linewidth))
-            box.update(kws.get("boxprops", {}))
+            box.update(props["box"])
         for whisk in artist_dict["whiskers"]:
             whisk.update(dict(color=self.gray,
                               linewidth=self.linewidth,
                               linestyle="-"))
-            whisk.update(kws.get("whiskerprops", {}))
+            whisk.update(props["whisker"])
         for cap in artist_dict["caps"]:
             cap.update(dict(color=self.gray,
                             linewidth=self.linewidth))
-            cap.update(kws.get("capprops", {}))
+            cap.update(props["cap"])
         for med in artist_dict["medians"]:
             med.update(dict(color=self.gray,
                             linewidth=self.linewidth))
-            med.update(kws.get("medianprops", {}))
+            med.update(props["median"])
         for fly in artist_dict["fliers"]:
-            fly.update(dict(color=self.gray,
+            fly.update(dict(markerfacecolor=self.gray,
                             marker="d",
                             markeredgecolor=self.gray,
                             markersize=self.fliersize))
-            fly.update(kws.get("flierprops", {}))
+            fly.update(props["flier"])
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
