@@ -14,4 +14,6 @@ v0.7.0 (Unreleased)
 
 - Fixed a bug in the zscore calculation in :func:`clustermap`.
 
+- Added workarounds for some matplotlib boxplot issues, such as strange colors of outlier points.
+
 - Added compatability for various IPython (and Jupyter) versions in functions that use widgets.
