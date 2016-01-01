@@ -268,10 +268,6 @@ class _TimeSeriesPlotter(object):
             # Get the color for this condition
             color = self.colors[c]
 
-            # Plot the central trace
-            label = cond if self.legend['legend'] else "_nolegend_"
-            ax.plot(x, central_data, color=color, label=label, **self.kwargs)
-
             # Use subroutines to plot the uncertainty
             for style in self.err_style:
 
@@ -293,6 +289,10 @@ class _TimeSeriesPlotter(object):
                 for ci_i in cis:
                     plot_kwargs["ci"] = ci_i
                     plot_func(**plot_kwargs)
+
+            # Plot the central trace
+            label = cond if self.legend['legend'] else "_nolegend_"
+            ax.plot(x, central_data, color=color, label=label, **self.kwargs)
 
         # Pad the sides of the plot only when not interpolating
         ax.set_xlim(x.min(), x.max())
