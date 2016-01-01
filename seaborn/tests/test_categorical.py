@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 import scipy
-from scipy import stats
+from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
+import nose
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
@@ -15,6 +15,9 @@ from numpy.testing.decorators import skipif
 from . import PlotTestCase
 from .. import categorical as cat
 from .. import palettes
+
+
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 class CategoricalFixture(PlotTestCase):
@@ -1417,6 +1420,65 @@ class TestViolinPlotter(CategoricalFixture):
             plt.close("all")
 
 
+class TestCategoricalScatterPlotter(CategoricalFixture):
+
+    def test_group_point_colors(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        p.establish_variables(x="g", y="y", data=self.df)
+        p.establish_colors(None, "deep", 1)
+
+        point_colors = p.point_colors
+        nt.assert_equal(len(point_colors), self.g.unique().size)
+        deep_colors = palettes.color_palette("deep", self.g.unique().size)
+
+        for i, group_colors in enumerate(point_colors):
+            nt.assert_equal(tuple(deep_colors[i]), tuple(group_colors[0]))
+            for channel in group_colors.T:
+                nt.assert_equals(np.unique(channel).size, 1)
+
+    def test_hue_point_colors(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        hue_order = self.h.unique().tolist()
+        p.establish_variables(x="g", y="y", hue="h",
+                              hue_order=hue_order, data=self.df)
+        p.establish_colors(None, "deep", 1)
+
+        point_colors = p.point_colors
+        nt.assert_equal(len(point_colors), self.g.unique().size)
+        deep_colors = palettes.color_palette("deep", len(hue_order))
+
+        for i, group_colors in enumerate(point_colors):
+            for j, point_color in enumerate(group_colors):
+                hue_level = p.plot_hues[i][j]
+                nt.assert_equal(tuple(point_color),
+                                deep_colors[hue_order.index(hue_level)])
+
+    def test_scatterplot_legend(self):
+
+        p = cat._CategoricalScatterPlotter()
+
+        hue_order = ["m", "n"]
+        p.establish_variables(x="g", y="y", hue="h",
+                              hue_order=hue_order, data=self.df)
+        p.establish_colors(None, "deep", 1)
+        deep_colors = palettes.color_palette("deep", self.h.unique().size)
+
+        f, ax = plt.subplots()
+        p.add_legend_data(ax)
+        leg = ax.legend()
+
+        for i, t in enumerate(leg.get_texts()):
+            nt.assert_equal(t.get_text(), hue_order[i])
+
+        for i, h in enumerate(leg.legendHandles):
+            rgb = h.get_facecolor()[0, :3]
+            nt.assert_equal(tuple(rgb), tuple(deep_colors[i]))
+
+
 class TestStripPlotter(CategoricalFixture):
 
     def test_stripplot_vertical(self):
@@ -1524,6 +1586,173 @@ class TestStripPlotter(CategoricalFixture):
 
                 npt.assert_array_equal(x, vals)
                 npt.assert_array_equal(y, np.ones(len(x)) * i)
+
+    def test_three_strip_points(self):
+
+        x = np.arange(3)
+        ax = cat.stripplot(x=x)
+        nt.assert_equal(ax.collections[0].get_facecolor().shape, (1, 4))
+
+
+class TestSwarmPlotter(CategoricalFixture):
+
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                       order=None, hue_order=None, split=False,
+                       orient=None, color=None, palette=None)
+
+    def test_overlap(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(1.999)))
+        nt.assert_true(p.overlap((0, 0), (1, 1), np.sqrt(2.001)))
+
+    def test_could_overlap(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
+        nt.assert_equal(neighbors, [(1, .5), (.5, .5)])
+
+    def test_position_candidates(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        xy_i = (0, 1)
+        neighbors = [(0, 1), (0, 1.5)]
+        candidates = p.position_candidates(xy_i, neighbors, 1)
+        dx1 = 1.05
+        dx2 = np.sqrt(1 - .5 ** 2) * 1.05
+        nt.assert_equal(candidates,
+                        [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)])
+
+    def test_prune_candidates(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        candidates = [(.5, 1), (1, 1)]
+        neighbors = [(0, 1)]
+        candidates = p.prune_candidates(candidates, neighbors, 1)
+        npt.assert_array_equal(candidates, np.array([(1, 1)]))
+
+    def test_beeswarm(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        d = self.y.diff().mean() * 1.5
+        x = np.zeros(self.y.size)
+        y = np.sort(self.y)
+        orig_xy = np.c_[x, y]
+        swarm = p.beeswarm(orig_xy, d)
+        dmat = spatial.distance.cdist(swarm, swarm)
+        triu = dmat[np.triu_indices_from(dmat, 1)]
+        npt.assert_array_less(d, triu)
+        npt.assert_array_equal(y, swarm[:, 1])
+
+    def test_add_gutters(self):
+
+        p = cat._SwarmPlotter(**self.default_kws)
+        points = np.array([0, -1, .4, .8])
+        points = p.add_gutters(points, 0, 1)
+        npt.assert_array_equal(points,
+                               np.array([0, -.5, .4, .5]))
+
+    def test_swarmplot_vertical(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("g", "y", data=self.df)
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+            npt.assert_array_almost_equal(y, np.sort(vals))
+
+            fc = ax.collections[i].get_facecolors()[0, :3]
+            npt.assert_equal(fc, pal[i])
+
+    def test_swarmplot_horizontal(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("y", "g", data=self.df, orient="h")
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            x, y = ax.collections[i].get_offsets().T
+            npt.assert_array_almost_equal(x, np.sort(vals))
+
+            fc = ax.collections[i].get_facecolors()[0, :3]
+            npt.assert_equal(fc, pal[i])
+
+    def test_split_nested_swarmplot_vetical(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("g", "y", "h", data=self.df, split=True)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+                npt.assert_array_almost_equal(y, np.sort(vals))
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+    def test_split_nested_swarmplot_horizontal(self):
+
+        pal = palettes.color_palette()
+
+        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h", split=True)
+        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
+            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+
+                x, y = ax.collections[i * 2 + j].get_offsets().T
+                npt.assert_array_almost_equal(x, np.sort(vals))
+
+                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
+                npt.assert_equal(fc, pal[j])
+
+    def test_unsplit_nested_swarmplot_vertical(self):
+
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
+
+        ax = cat.swarmplot("g", "y", "h", data=self.df)
+
+        pal = palettes.color_palette()
+        hue_names = self.h.unique().tolist()
+        grouped_hues = list(self.h.groupby(self.g))
+
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            points = ax.collections[i]
+            x, y = points.get_offsets().T
+            sorter = np.argsort(vals)
+            npt.assert_array_almost_equal(y, vals.iloc[sorter])
+
+            _, hue_vals = grouped_hues[i]
+            for hue, fc in zip(hue_vals.values[sorter],
+                               points.get_facecolors()):
+
+                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+
+    def test_unsplit_nested_swarmplot_horizontal(self):
+
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
+
+        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h")
+
+        pal = palettes.color_palette()
+        hue_names = self.h.unique().tolist()
+        grouped_hues = list(self.h.groupby(self.g))
+
+        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+
+            points = ax.collections[i]
+            x, y = points.get_offsets().T
+            sorter = np.argsort(vals)
+            npt.assert_array_almost_equal(x, vals.iloc[sorter])
+
+            _, hue_vals = grouped_hues[i]
+            for hue, fc in zip(hue_vals.values[sorter],
+                               points.get_facecolors()):
+
+                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -1962,9 +2191,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("g", "y", "h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique())
-                        * len(self.h.unique())
-                        + len(self.h.unique())))
+                        (len(self.g.unique()) *
+                         len(self.h.unique()) +
+                         len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "mean(y)")
         plt.close("all")
@@ -1972,9 +2201,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("y", "g", "h", orient="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique())
-                         * len(self.h.unique())
-                         + len(self.h.unique())))
+                        (len(self.g.unique()) *
+                         len(self.h.unique()) +
+                         len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "mean(y)")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")

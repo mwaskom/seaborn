@@ -53,9 +53,9 @@ Seaborn: statistical data visualization
             <img src="_static/hexbin_marginals_thumb.png">
           </div>
         </a>
-        <a href="examples/grouped_violinplots.html">
+        <a href="examples/scatterplot_categorical.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/grouped_violinplots_thumb.png">
+            <img src="_static/scatterplot_categorical_thumb.png">
           </div>
         </a>
       </div>

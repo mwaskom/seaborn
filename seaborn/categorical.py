@@ -15,7 +15,7 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from . import utils
-from .utils import desaturate, iqr, categorical_order
+from .utils import iqr, categorical_order
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -290,20 +290,20 @@ class _CategoricalPlotter(object):
 
             colors = color_palette(palette, n_colors)
 
-        # Conver the colors to a common rgb representation
-        colors = [mpl.colors.colorConverter.to_rgb(c) for c in colors]
-
         # Desaturate a bit because these are patches
         if saturation < 1:
-            colors = [desaturate(c, saturation) for c in colors]
+            colors = color_palette(colors, desat=saturation)
+
+        # Conver the colors to a common representations
+        rgb_colors = color_palette(colors)
 
         # Determine the gray color to use for the lines framing the plot
-        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in colors]
+        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in rgb_colors]
         l = min(light_vals) * .6
-        gray = (l, l, l)
+        gray = mpl.colors.rgb2hex((l, l, l))
 
         # Assign object attributes
-        self.colors = colors
+        self.colors = rgb_colors
         self.gray = gray
 
     def infer_orient(self, x, y, orient=None):
@@ -433,6 +433,10 @@ class _BoxPlotter(_CategoricalPlotter):
         """Use matplotlib to draw a boxplot on an Axes."""
         vert = self.orient == "v"
 
+        props = {}
+        for obj in ["box", "whisker", "cap", "median", "flier"]:
+            props[obj] = kws.pop(obj + "props", {})
+
         for i, group_data in enumerate(self.plot_data):
 
             if self.plot_hues is None:
@@ -456,12 +460,11 @@ class _BoxPlotter(_CategoricalPlotter):
                                          widths=self.width,
                                          **kws)
                 color = self.colors[i]
-                self.restyle_boxplot(artist_dict, color, kws)
+                self.restyle_boxplot(artist_dict, color, props)
             else:
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
 
                     # Add a legend for this hue level
                     if not i:
@@ -471,6 +474,7 @@ class _BoxPlotter(_CategoricalPlotter):
                     if group_data.size == 0:
                         continue
 
+                    hue_mask = self.plot_hues[i] == hue_level
                     box_data = remove_na(group_data[hue_mask])
 
                     # Handle case where there is no non-null data
@@ -484,36 +488,36 @@ class _BoxPlotter(_CategoricalPlotter):
                                              positions=[center],
                                              widths=self.nested_width,
                                              **kws)
-                    self.restyle_boxplot(artist_dict, self.colors[j], kws)
+                    self.restyle_boxplot(artist_dict, self.colors[j], props)
                     # Add legend data, but just for one set of boxes
 
-    def restyle_boxplot(self, artist_dict, color, kws):
+    def restyle_boxplot(self, artist_dict, color, props):
         """Take a drawn matplotlib boxplot and make it look nice."""
         for box in artist_dict["boxes"]:
-            box.update(dict(color=color,
+            box.update(dict(facecolor=color,
                             zorder=.9,
                             edgecolor=self.gray,
                             linewidth=self.linewidth))
-            box.update(kws.get("boxprops", {}))
+            box.update(props["box"])
         for whisk in artist_dict["whiskers"]:
             whisk.update(dict(color=self.gray,
                               linewidth=self.linewidth,
                               linestyle="-"))
-            whisk.update(kws.get("whiskerprops", {}))
+            whisk.update(props["whisker"])
         for cap in artist_dict["caps"]:
             cap.update(dict(color=self.gray,
                             linewidth=self.linewidth))
-            cap.update(kws.get("capprops", {}))
+            cap.update(props["cap"])
         for med in artist_dict["medians"]:
             med.update(dict(color=self.gray,
                             linewidth=self.linewidth))
-            med.update(kws.get("medianprops", {}))
+            med.update(props["median"])
         for fly in artist_dict["fliers"]:
-            fly.update(dict(color=self.gray,
+            fly.update(dict(markerfacecolor=self.gray,
                             marker="d",
                             markeredgecolor=self.gray,
                             markersize=self.fliersize))
-            fly.update(kws.get("flierprops", {}))
+            fly.update(props["flier"])
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
@@ -1010,7 +1014,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     def draw_points(self, ax, data, center):
         """Draw individual observations as points at middle of the violin."""
         kws = dict(s=np.square(self.linewidth * 2),
-                   c=self.gray,
+                   color=self.gray,
                    edgecolor=self.gray)
 
         grid = np.ones(len(data)) * center
@@ -1057,7 +1061,46 @@ class _ViolinPlotter(_CategoricalPlotter):
             ax.invert_yaxis()
 
 
-class _StripPlotter(_CategoricalPlotter):
+class _CategoricalScatterPlotter(_CategoricalPlotter):
+
+    @property
+    def point_colors(self):
+        """Return a color for each scatter point based on group and hue."""
+        colors = []
+        for i, group_data in enumerate(self.plot_data):
+
+            # Initialize the array for this group level
+            group_colors = np.empty((group_data.size, 3))
+
+            if self.plot_hues is None:
+
+                # Use the same color for all points at this level
+                group_color = self.colors[i]
+                group_colors[:] = group_color
+
+            else:
+
+                # Color the points based on  the hue level
+                for j, level in enumerate(self.hue_names):
+                    hue_color = self.colors[j]
+                    if group_data.size:
+                        group_colors[self.plot_hues[i] == level] = hue_color
+
+            colors.append(group_colors)
+
+        return colors
+
+    def add_legend_data(self, ax):
+        """Add empty scatterplot artists with labels for the legend."""
+        if self.hue_names is not None:
+            for rgb, label in zip(self.colors, self.hue_names):
+                ax.scatter([], [],
+                           color=mpl.colors.rgb2hex(rgb),
+                           label=label,
+                           s=60)
+
+
+class _StripPlotter(_CategoricalScatterPlotter):
     """1-d scatterplot with categorical organization."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  jitter, split, orient, color, palette):
@@ -1088,7 +1131,7 @@ class _StripPlotter(_CategoricalPlotter):
                 # Determine the positions of the points
                 strip_data = remove_na(group_data)
                 jitter = self.jitterer(len(strip_data))
-                kws["color"] = self.colors[i]
+                kws["color"] = mpl.colors.rgb2hex(self.colors[i])
 
                 # Draw the plot
                 if self.orient == "v":
@@ -1107,7 +1150,7 @@ class _StripPlotter(_CategoricalPlotter):
                     strip_data = remove_na(group_data[hue_mask])
                     pos = i + offsets[j] if self.split else i
                     jitter = self.jitterer(len(strip_data))
-                    kws["color"] = self.colors[j]
+                    kws["color"] = mpl.colors.rgb2hex(self.colors[j])
 
                     # Only label one set of plots
                     if i:
@@ -1129,15 +1172,227 @@ class _StripPlotter(_CategoricalPlotter):
             ax.invert_yaxis()
 
 
-class _SwarmPlotter(_BoxPlotter):
+class _SwarmPlotter(_CategoricalScatterPlotter):
 
-    def __init__(self):
+    def __init__(self, x, y, hue, data, order, hue_order,
+                 split, orient, color, palette):
+        """Initialize the plotter."""
+        self.establish_variables(x, y, hue, data, orient, order, hue_order)
+        self.establish_colors(color, palette, 1)
 
-        pass
+        # Set object attributes
+        self.split = split
+        self.width = .8
 
-    def plot(self, ax):
+    def overlap(self, xy_i, xy_j, d):
+        """Return True if two circles with the same diameter will overlap."""
+        x_i, y_i = xy_i
+        x_j, y_j = xy_j
+        return ((x_i - x_j) ** 2 + (y_i - y_j) ** 2) < (d ** 2)
 
-        pass
+    def could_overlap(self, xy_i, swarm, d):
+        """Return a list of all swarm points that could overlap with target.
+
+        Assumes that swarm is a sorted list of all points below xy_i.
+        """
+        _, y_i = xy_i
+        neighbors = []
+        for xy_j in reversed(swarm):
+            _, y_j = xy_j
+            if (y_i - y_j) < d:
+                neighbors.append(xy_j)
+            else:
+                break
+        return list(reversed(neighbors))
+
+    def position_candidates(self, xy_i, neighbors, d):
+        """Return a list of (x, y) coordinates that might be valid."""
+        candidates = [xy_i]
+        x_i, y_i = xy_i
+        left_first = True
+        for x_j, y_j in neighbors:
+            dy = y_i - y_j
+            dx = np.sqrt(d ** 2 - dy ** 2) * 1.05
+            cl, cr = (x_j - dx, y_i), (x_j + dx, y_i)
+            if left_first:
+                new_candidates = [cl, cr]
+            else:
+                new_candidates = [cr, cl]
+            candidates.extend(new_candidates)
+            left_first = not left_first
+        return candidates
+
+    def prune_candidates(self, candidates, neighbors, d):
+        """Remove candidates from the list if they overlap with the swarm."""
+        good_candidates = []
+        for xy_i in candidates:
+            good_candidate = True
+            for xy_j in neighbors:
+                if self.overlap(xy_i, xy_j, d):
+                    good_candidate = False
+            if good_candidate:
+                good_candidates.append(xy_i)
+        return np.array(good_candidates)
+
+    def beeswarm(self, orig_xy, d):
+        """Adjust x position of points to avoid overlaps."""
+        # In this method, ``x`` is always the categorical axis
+        # Center of the swarm, in point coordinates
+        midline = orig_xy[0, 0]
+
+        # Start the swarm with the first point
+        swarm = [orig_xy[0]]
+
+        # Loop over the remaining points
+        for xy_i in orig_xy[1:]:
+
+            # Find the points in the swarm that could possibly
+            # overlap with the point we are currently placing
+            neighbors = self.could_overlap(xy_i, swarm, d)
+
+            # Find positions that would be valid individually
+            # with respect to each of the swarm neighbors
+            candidates = self.position_candidates(xy_i, neighbors, d)
+
+            # Remove the positions that overlap with any of the
+            # other neighbors
+            candidates = self.prune_candidates(candidates, neighbors, d)
+
+            # Find the most central of the remaining positions
+            offsets = np.abs(candidates[:, 0] - midline)
+            best_index = np.argmin(offsets)
+            new_xy_i = candidates[best_index]
+            swarm.append(new_xy_i)
+
+        return np.array(swarm)
+
+    def add_gutters(self, points, center, width):
+        """Stop points from extending beyond their territory."""
+        half_width = width / 2
+        low_gutter = center - half_width
+        off_low = points < low_gutter
+        if off_low.any():
+            points[off_low] = low_gutter
+        high_gutter = center + half_width
+        off_high = points > high_gutter
+        if off_high.any():
+            points[off_high] = high_gutter
+        return points
+
+    def swarm_points(self, ax, points, center, width, s, **kws):
+        """Find new positions on the categorical axis for each point."""
+        # Convert from point size (area) to diameter
+        default_lw = mpl.rcParams["patch.linewidth"]
+        lw = kws.get("linewidth", kws.get("lw", default_lw))
+        d = np.sqrt(s) + lw
+
+        # Transform the data coordinates to point coordinates.
+        # We'll figure out the swarm positions in the latter
+        # and then convert back to data coordinates and replot
+        orig_xy = ax.transData.transform(points.get_offsets())
+
+        # Order the variables so that x is the caegorical axis
+        if self.orient == "h":
+            orig_xy = orig_xy[:, [1, 0]]
+
+        # Do the beeswarm in point coordinates
+        new_xy = self.beeswarm(orig_xy, d)
+
+        # Transform the point coordinates back to data coordinates
+        if self.orient == "h":
+            new_xy = new_xy[:, [1, 0]]
+        new_x, new_y = ax.transData.inverted().transform(new_xy).T
+
+        # Add gutters
+        if self.orient == "v":
+            self.add_gutters(new_x, center, width)
+        else:
+            self.add_gutters(new_y, center, width)
+
+        # Reposition the points so they do not overlap
+        points.set_offsets(np.c_[new_x, new_y])
+
+    def draw_swarmplot(self, ax, kws):
+        """Plot the data."""
+        s = kws.pop("s", 7 ** 2)
+
+        centers = []
+        swarms = []
+
+        # Set the categorical axes limits here for the swarm math
+        if self.orient == "v":
+            ax.set_xlim(-.5, len(self.plot_data) - .5)
+        else:
+            ax.set_ylim(-.5, len(self.plot_data) - .5)
+
+        # Plot each swarm
+        for i, group_data in enumerate(self.plot_data):
+
+            if self.plot_hues is None or not self.split:
+
+                width = self.width
+
+                if self.hue_names is None:
+                    hue_mask = np.ones(group_data.size, np.bool)
+                else:
+                    hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+
+                swarm_data = group_data[hue_mask]
+
+                # Sort the points for the beeswarm algorithm
+                sorter = np.argsort(swarm_data)
+                swarm_data = swarm_data[sorter]
+                point_colors = self.point_colors[i][hue_mask][sorter]
+
+                # Plot the points in centered positions
+                cat_pos = np.ones(swarm_data.size) * i
+                kws.update(c=point_colors)
+                if self.orient == "v":
+                    points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
+                else:
+                    points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
+
+                centers.append(i)
+                swarms.append(points)
+
+            else:
+                offsets = self.hue_offsets
+                width = self.nested_width
+
+                for j, hue_level in enumerate(self.hue_names):
+                    hue_mask = self.plot_hues[i] == hue_level
+                    swarm_data = group_data[hue_mask]
+
+                    # Sort the points for the beeswarm algorithm
+                    sorter = np.argsort(swarm_data)
+                    swarm_data = swarm_data[sorter]
+                    point_colors = self.point_colors[i][hue_mask][sorter]
+
+                    # Plot the points in centered positions
+                    center = i + offsets[j]
+                    cat_pos = np.ones(swarm_data.size) * center
+                    kws.update(c=point_colors)
+                    if self.orient == "v":
+                        points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
+                    else:
+                        points = ax.scatter(swarm_data, cat_pos, s=s, **kws)
+
+                    centers.append(center)
+                    swarms.append(points)
+
+        # Update the position of each point on the categorical axis
+        # Do this after plotting so that the numerical axis limits are correct
+        for center, swarm in zip(centers, swarms):
+            if swarm.get_offsets().size:
+                self.swarm_points(ax, swarm, center, width, s, **kws)
+
+    def plot(self, ax, kws):
+        """Make the full plot."""
+        self.draw_swarmplot(ax, kws)
+        self.add_legend_data(ax)
+        self.annotate_axes(ax)
+        if self.orient == "h":
+            ax.invert_yaxis()
 
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
@@ -1587,17 +1842,17 @@ class _LVPlotter(_CategoricalPlotter):
 
                 # Plot the medians
                 ax.plot([x - widths / 2, x + widths / 2], [y, y],
-                        c='k', alpha=.45, **kws)
+                        c='.15', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=color, **kws)
+                           marker='d', c=mpl.colors.rgb2hex(color), **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
                 ax.plot([y, y], [x - widths / 2, x + widths / 2],
-                        c='k', alpha=.45, **kws)
+                        c='.15', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
                            marker='d', c=color, **kws)
@@ -1650,7 +1905,6 @@ class _LVPlotter(_CategoricalPlotter):
                 # Draw nested groups of boxes
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
 
                     # Add a legend for this hue level
                     if not i:
@@ -1660,6 +1914,7 @@ class _LVPlotter(_CategoricalPlotter):
                     if group_data.size == 0:
                         continue
 
+                    hue_mask = self.plot_hues[i] == hue_level
                     box_data = remove_na(group_data[hue_mask])
 
                     # Handle case where there is no non-null data
@@ -1795,7 +2050,11 @@ _categorical_docs = dict(
     """),
     stripplot=dedent("""\
     stripplot : A scatterplot where one variable is categorical. Can be used
-                in conjunction with a other plots to show each observation.\
+                in conjunction with other plots to show each observation.\
+    """),
+    swarmplot=dedent("""\
+    swarmplot : A categorical scatterplot where the points do not overlap. Can
+                be used with other plots to show each observation.\
     """),
     barplot=dedent("""\
     barplot : Show point estimates and confidence intervals using bars.\
@@ -1921,6 +2180,7 @@ boxplot.__doc__ = dedent("""\
     --------
     {violinplot}
     {stripplot}
+    {swarmplot}
 
     Examples
     --------
@@ -1981,14 +2241,13 @@ boxplot.__doc__ = dedent("""\
         >>> iris = sns.load_dataset("iris")
         >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
 
-    Use :func:`stripplot` to show the datapoints on top of the boxes:
+    Use :func:`swarmplot` to show the datapoints on top of the boxes:
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, edgecolor="gray")
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
     Draw a box plot on to a :class:`FacetGrid` to group within an additional
     categorical variable:
@@ -2122,6 +2381,7 @@ violinplot.__doc__ = dedent("""\
     --------
     {boxplot}
     {stripplot}
+    {swarmplot}
 
     Examples
     --------
@@ -2307,6 +2567,7 @@ stripplot.__doc__ = dedent("""\
 
     See Also
     --------
+    {swarmplot}
     {boxplot}
     {violinplot}
 
@@ -2410,6 +2671,172 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
         ...                    jitter=True, color="white", edgecolor="gray")
+
+    """).format(**_categorical_docs)
+
+
+def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              split=False, orient=None, color=None, palette=None,
+              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
+
+    plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
+                            split, orient, color, palette)
+    if ax is None:
+        ax = plt.gca()
+
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+    if linewidth is None:
+        linewidth = size / 10
+    if edgecolor == "gray":
+        edgecolor = plotter.gray
+    kwargs.update(dict(s=size ** 2,
+                       edgecolor=edgecolor,
+                       linewidth=linewidth))
+
+    plotter.plot(ax, kwargs)
+    return ax
+
+
+swarmplot.__doc__ = dedent("""\
+    Draw a categorical scatterplot with non-overlapping points.
+
+    This function is similar to :func:`stripplot`, but the points are adjusted
+    (only along the categorical axis) so that they don't overlap. This gives a
+    better representation of the distribution of values, although it does not
+    scale as well to large numbers of observations (both in terms of the
+    ability to show all the points and in terms of the computation needed
+    to arrange them).
+
+    This style of plot is often called a "beeswarm".
+
+    A swarm plot can be drawn on its own, but it is also a good complement
+    to a box or violin plot in cases where you want to show all observations
+    along with some representation of the underlying distribution.
+
+    Note that arranging the points properly requires an accurate transformation
+    between data and point coordinates. This means that non-default axis limits
+    should be set *before* drawing the swarm plot.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {input_params}
+    {categorical_data}
+    {order_vars}
+    split : bool, optional
+        When using ``hue`` nesting, setting this to ``True`` will separate
+        the strips for different hue levels along the categorical axis.
+        Otherwise, the points for each level will be plotted in one swarm.
+    {orient}
+    {color}
+    {palette}
+    size : float, optional
+        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        to draw the points, the ``size`` argument here takes a "normal"
+        markersize and not size^2 like ``plt.scatter``.
+    edgecolor : matplotlib color, "gray" is special-cased, optional
+        Color of the lines around each point. If you pass ``"gray"``, the
+        brightness is determined by the color palette used for the body
+        of the points.
+    {linewidth}
+    {ax_in}
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {boxplot}
+    {violinplot}
+    {stripplot}
+    {factorplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal swarm plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set_style("whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.swarmplot(x=tips["total_bill"])
+
+    Group the swarms by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips)
+
+    Draw horizontal swarms:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="total_bill", y="day", data=tips)
+
+    Color the points using a second categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", hue="sex", data=tips)
+
+    Split each level of the ``hue`` variable along the categorical axis:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set2", split=True)
+
+    Control swarm order by sorting the input data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip",
+        ...                    data=tips.sort_values("size"))
+
+    Control swarm order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip", data=tips,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
+
+    Plot using smaller points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.swarmplot(x="size", y="tip", data=tips, size=4,
+        ...                    order=np.arange(1, 7), palette="Blues_d")
+
+
+    Draw swarms of observations on top of a box plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
+        >>> ax = sns.swarmplot(x="tip", y="day", data=tips)
+
+    Draw swarms of observations on top of a violin plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
+        >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
+        ...                    color="white", edgecolor="gray")
 
     """).format(**_categorical_docs)
 

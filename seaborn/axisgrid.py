@@ -179,7 +179,7 @@ _facet_docs = dict(
         span multiple rows. Incompatible with a ``row`` facet.\
     """),
     share_xy=dedent("""\
-    share_{x,y} : bool, optional
+    share{x,y} : bool, optional
         If true, the facets will share y axes across columns and/or x axes
         across rows.\
     """),

@@ -5,7 +5,7 @@ Scatterplot with categorical variables
 """
 import pandas as pd
 import seaborn as sns
-sns.set(style="whitegrid", palette="pastel")
+sns.set(style="whitegrid", palette="muted")
 
 # Load the example iris dataset
 iris = sns.load_dataset("iris")
@@ -14,5 +14,4 @@ iris = sns.load_dataset("iris")
 iris = pd.melt(iris, "species", var_name="measurement")
 
 # Draw a categorical scatterplot to show each observation
-sns.stripplot(x="measurement", y="value", hue="species", data=iris,
-              jitter=True, edgecolor="gray")
+sns.swarmplot(x="measurement", y="value", hue="species", data=iris)
