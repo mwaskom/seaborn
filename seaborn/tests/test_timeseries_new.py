@@ -61,7 +61,8 @@ class TestDataInit(PlotTestCase):
                                       'time': [0, 1],
                                       'value': [1, 1]})
 
-        tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
+        tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
+                                 legend=False)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
@@ -80,7 +81,8 @@ class TestDataInit(PlotTestCase):
                                       'time': [0, 2],
                                       'value': [1, 1]})
 
-        tsp = _TimeSeriesPlotter(data, time=time, condition=condition, value='valor', legend=True)
+        tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
+                                 value='valor', legend=True)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
@@ -100,7 +102,8 @@ class TestDataInit(PlotTestCase):
                                       'time': [0, 1, 0, 1],
                                       'value': [1, 1, 2, 2]})
         # TODO: is there a configuration I should try?
-        tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
+        tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
+                                 legend=False)
 
         pdt.assert_frame_equal(data_expected, tsp.data)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
@@ -123,8 +126,10 @@ class TestDataInit(PlotTestCase):
                                       'time': [0, 1, 0, 1, 0, 1, 0, 1],
                                       'value': [1, 1, 2, 2, 3, 3, 4, 4]})
 
-        tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=False)
-        data_actual = tsp.data.sort_values(['condition', 'unit']).reset_index(drop=True)
+        tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
+                                 legend=False)
+        data_actual = tsp.data.sort_values(['condition',
+                                            'unit']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
                                         time='time', value='value'))
@@ -141,13 +146,16 @@ class TestDataInit(PlotTestCase):
         time = pd.Series([0, 2], name='tiempo')
         condition = pd.Series(['a', 'b'], name='condicion')
 
-        data_expected = pd.DataFrame({'condition': ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b'],
+        data_expected = pd.DataFrame({'condition': ['a', 'a', 'a', 'a',
+                                                    'b', 'b', 'b', 'b'],
                                       'unit': [0, 0, 1, 1, 0, 0, 1, 1],
                                       'time': [0, 2, 0, 2, 0, 2, 0, 2],
                                       'value': [1, 1, 2, 2, 3, 3, 4, 4]})
 
-        tsp = _TimeSeriesPlotter(data, time=time, condition=condition, legend=True, value='valor')
-        data_actual = tsp.data.sort_values(['condition', 'unit']).reset_index(drop=True)
+        tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
+                                 legend=True, value='valor')
+        data_actual = tsp.data.sort_values(['condition',
+                                            'unit']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
                                         time='time', value='value'))
@@ -250,7 +258,8 @@ class TestColor(PlotTestCase):
                                in range(len(current_palette) + 1)])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
         colors_expected = color_palette('husl', len(conditions))
-        colors_expected = [mpl.colors.colorConverter.to_rgb(c) for c in colors_expected]
+        colors_expected = [mpl.colors.colorConverter.to_rgb(c)
+                           for c in colors_expected]
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -264,7 +273,8 @@ class TestColor(PlotTestCase):
                                in range(len(current_palette) - 1)])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
         colors_expected = current_palette[:len(current_palette) - 1]
-        colors_expected = [mpl.colors.colorConverter.to_rgb(c) for c in colors_expected]
+        colors_expected = [mpl.colors.colorConverter.to_rgb(c)
+                           for c in colors_expected]
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -273,7 +283,8 @@ class TestColor(PlotTestCase):
         color = {'a': 'r', 'b': 'g'}
         conditions = np.array(['a', 'b'])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
-        colors_expected = [mpl.colors.colorConverter.to_rgb(color[c]) for c in conditions]
+        colors_expected = [mpl.colors.colorConverter.to_rgb(color[c])
+                           for c in conditions]
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -291,7 +302,8 @@ class TestColor(PlotTestCase):
         color = {'a': 'r', 'b': 'g'}
         conditions = np.array(['a', 'b', 'c'])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
-        colors_expected = [mpl.colors.colorConverter.to_rgb(color[c]) for c in conditions]
+        colors_expected = [mpl.colors.colorConverter.to_rgb(color[c])
+                           for c in conditions]
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -301,7 +313,8 @@ class TestColor(PlotTestCase):
         conditions = np.array(['a', 'b'])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
         colors_expected = color_palette(color, len(conditions))
-        colors_expected = [mpl.colors.colorConverter.to_rgb(c) for c in colors_expected]
+        colors_expected = [mpl.colors.colorConverter.to_rgb(c)
+                           for c in colors_expected]
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -311,7 +324,8 @@ class TestColor(PlotTestCase):
         color = 'red'
         conditions = np.array(['a', 'b'])
         colors = _TimeSeriesPlotter._set_up_color_palette(color, conditions)
-        colors_expected = [mpl.colors.colorConverter.to_rgb(color)] * len(conditions)
+        colors_expected = \
+            [mpl.colors.colorConverter.to_rgb(color)] * len(conditions)
 
         npt.assert_array_almost_equal(colors, colors_expected)
 
@@ -338,14 +352,16 @@ class TestPlotData(PlotTestCase):
         n_boot = 200
         estimator = np.mean
         ci = [68, 99]
-        tsp = _TimeSeriesPlotter(self.gammas, estimator=estimator, n_boot=n_boot,
-                                 color=self.color, ci=ci, **self.gammas_kwargs)
+        tsp = _TimeSeriesPlotter(self.gammas, estimator=estimator,
+                                 n_boot=n_boot, color=self.color, ci=ci,
+                                 **self.gammas_kwargs)
 
         for c, plot_data in enumerate(tsp._compute_plot_data()):
             cond, df_c, x, boot_data, cis, central_data = plot_data
             (ci68_low, ci68_high), (ci99_low, ci99_high) = cis
             # condition in the right order?
-            cond_expected = self.gammas[self.gammas_kwargs['condition']].unique()[c]
+            cond_expected = \
+                self.gammas[self.gammas_kwargs['condition']].unique()[c]
             nt.assert_equal(cond, cond_expected)
             # are colors mapped correctly?
             color_expected = self.color[cond_expected]
@@ -444,7 +460,7 @@ class TestPlots(PlotTestCase):
         npt.assert_allclose(ax.collections[0].get_facecolor().ravel()[:-1],
                             self.color)
         npt.assert_allclose(ax.lines[0].get_color(), self.color)
-        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value for alpha
+        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value
         nt.assert_equal(ax.get_ylabel(), '')
         nt.assert_equal(ax.get_xlabel(), '')
         nt.assert_equal(ax.get_legend(), None)
@@ -460,8 +476,9 @@ class TestPlots(PlotTestCase):
     def test_ci_band_labels(self):
         # same case as above but now with labels
         fig, ax = plt.subplots()
-        ax = tsplot(data=self.data, err_style='ci_band', time=pd.Series(self.x, name='time'),
-                    estimator=np.mean, value='value', color=self.color, ci=self.ci, ax=ax)
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
+                    err_style='ci_band', estimator=np.mean, value='value',
+                    color=self.color, ci=self.ci, ax=ax)
 
         # collect plot data
         vertices_low = ax.collections[0].get_paths()[0].vertices[1:32, :]
@@ -473,7 +490,7 @@ class TestPlots(PlotTestCase):
         npt.assert_allclose(ax.collections[0].get_facecolor().ravel()[:-1],
                             self.color)
         npt.assert_allclose(ax.lines[0].get_color(), self.color)
-        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value for alpha
+        nt.assert_equal(ax.collections[0].get_alpha(), 0.2)  # default value
         nt.assert_equal(ax.get_ylabel(), 'value')
         nt.assert_equal(ax.get_xlabel(), 'time')
         nt.assert_equal(ax.get_legend(), None)
@@ -490,7 +507,8 @@ class TestPlots(PlotTestCase):
 
         ci = [68, 95]
         fig, ax = plt.subplots()
-        ax = tsplot(data=self.data, err_style='ci_band', estimator=np.mean, ci=ci, color=self.color, ax=ax)
+        ax = tsplot(data=self.data, err_style='ci_band', estimator=np.mean,
+                    ci=ci, color=self.color, ax=ax)
 
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), len(ci))
@@ -528,7 +546,7 @@ class TestPlots(PlotTestCase):
         npt.assert_array_less(self.central_data, bar_high)
 
 
-        nt.assert_equal(len(ax.lines), len(self.x) + 1)  # bars (31) + central line (1)
+        nt.assert_equal(len(ax.lines), len(self.x) + 1)  # bars + central line
         nt.assert_equal(len(ax.collections), 0)
         nt.assert_equal(ax.lines[0].get_marker(), 'o')
         for line in ax.lines:
@@ -542,7 +560,8 @@ class TestPlots(PlotTestCase):
 
         fig, ax = plt.subplots()
         tsplot(self.data, time=pd.Series(self.x, name='time'),
-               err_style="boot_traces", n_boot=self.n_boot, color=self.color, ax=ax)
+               err_style="boot_traces", n_boot=self.n_boot, color=self.color,
+               ax=ax)
 
         nt.assert_equal(len(ax.lines), self.n_boot + 1)  # + 1 for central line
 
@@ -566,11 +585,10 @@ class TestPlots(PlotTestCase):
 
         fig, ax = plt.subplots()
         ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
-                         value='value', estimator=np.mean, err_style="unit_traces",
-                         ci=self.ci, color=self.color, ax=ax)
+                    err_style="unit_traces", value='value', estimator=np.mean,
+                    ci=self.ci, color=self.color, ax=ax)
 
-        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)  # + 1 for central line
-
+        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)
         nt.assert_equal(ax.lines[0].get_color(), self.color)
         nt.assert_equal(ax.lines[0].get_alpha(), None)
         nt.assert_equal(ax.lines[0].get_label(), '_nolegend_')
@@ -591,11 +609,11 @@ class TestPlots(PlotTestCase):
     def test_unit_points(self):
 
         fig, ax = plt.subplots()
-        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'), legend=True,
-                         value='value', estimator=np.mean, err_style="unit_points",
-                         ci=self.ci, color=self.color, ax=ax)
+        ax = tsplot(data=self.data, time=pd.Series(self.x, name='time'),
+                    value='value', estimator=np.mean, err_style="unit_points",
+                    ci=self.ci, color=self.color, legend=True, ax=ax)
 
-        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)  # + 1 for central line
+        nt.assert_equal(len(ax.lines), self.data.shape[0] + 1)
 
         nt.assert_equal(ax.lines[0].get_color(), self.color)
         nt.assert_equal(ax.lines[0].get_alpha(), None)
@@ -642,8 +660,10 @@ class TestPlots(PlotTestCase):
             npt.assert_allclose(collection.get_facecolor().ravel()[:-1],
                                 color[label])
             nt.assert_equal(collection.get_alpha(), 0.2)
-            gammas_c = self.gammas[self.gammas[self.gammas_kwargs['condition']] == label]
-            y = gammas_c.groupby(self.gammas_kwargs['time'])[self.gammas_kwargs['value']].agg(np.mean)
+            idx_c = self.gammas[self.gammas_kwargs['condition']] == label
+            gammas_c = self.gammas[idx_c]
+            gammas_c_gb = gammas_c.groupby(self.gammas_kwargs['time'])
+            y = gammas_c_gb[self.gammas_kwargs['value']].agg(np.mean)
             npt.assert_allclose(line.get_xdata(), y.index.values)
             npt.assert_allclose(line.get_ydata(), y.values)
 

@@ -46,7 +46,8 @@ class _TimeSeriesPlotter(object):
                                       color=color, legend=legend)
 
         # establish colors
-        colors = self._set_up_color_palette(color, data[names['condition']].unique())
+        colors = self._set_up_color_palette(color,
+                                            data[names['condition']].unique())
 
         # establish kwargs for central trace
         kwargs.setdefault("marker", "" if interpolate else "o")
@@ -237,8 +238,8 @@ class _TimeSeriesPlotter(object):
         return colors
 
     def _compute_plot_data(self):
-
-        for c, (cond, df_c) in enumerate(self.data.groupby(self.names['condition'], sort=False)):
+        cond = self.names['condition']
+        for c, (cond, df_c) in enumerate(self.data.groupby(cond, sort=False)):
             df_c = df_c.pivot(index=self.names['unit'],
                               columns=self.names['time'],
                               values=self.names['value'])
@@ -490,7 +491,7 @@ def _plot_ci_band(ax, x, ci, color, err_kws, **kwargs):
     low, high = ci
     if "alpha" not in err_kws:
         err_kws["alpha"] = 0.2
-    ax.fill_between(x, low, high, color=color, **err_kws)
+    ax.fill_between(x, low, high, facecolor=color, **err_kws)
 
 
 def _plot_ci_bars(ax, x, central_data, ci, color, err_kws, **kwargs):
