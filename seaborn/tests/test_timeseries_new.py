@@ -20,6 +20,7 @@ from ..timeseries import tsplot as tsplot_old
 from .. import utils
 from ..palettes import color_palette
 
+
 class TestDataInit(PlotTestCase):
     """Tests to check the internally constructed long-form dataframe
     as well as the corresponding keywords for different kind of input data
