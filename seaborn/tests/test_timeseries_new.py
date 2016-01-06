@@ -20,7 +20,6 @@ from ..timeseries import tsplot as tsplot_old
 from .. import utils
 from ..palettes import color_palette
 
-
 class TestDataInit(PlotTestCase):
     """Tests to check the internally constructed long-form dataframe
     as well as the corresponding keywords for different kind of input data
@@ -127,8 +126,13 @@ class TestDataInit(PlotTestCase):
 
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
                                  legend=False)
-        data_actual = tsp.data.sort_values(['condition',
-                                            'unit']).reset_index(drop=True)
+        data_actual = tsp.data.sort(['condition',
+                                     'unit',
+                                     'time']).reset_index(drop=True)
+        # as of pandas 0.17.0, to avoid FutureWarning, use
+        # data_actual = tsp.data.sort_values(['condition',
+        #                                     'unit',
+        #                                     'time']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
                                         time='time', value='value'))
@@ -153,8 +157,13 @@ class TestDataInit(PlotTestCase):
 
         tsp = _TimeSeriesPlotter(data, time=time, condition=condition,
                                  legend=True, value='valor')
-        data_actual = tsp.data.sort_values(['condition',
-                                            'unit']).reset_index(drop=True)
+        data_actual = tsp.data.sort(['condition',
+                                     'unit',
+                                     'time']).reset_index(drop=True)
+        # as of pandas 0.17.0, to avoid FutureWarning, use
+        # data_actual = tsp.data.sort_values(['condition',
+        #                                     'unit',
+        #                                     'time']).reset_index(drop=True)
         pdt.assert_frame_equal(data_expected, data_actual)
         nt.assert_equal(tsp.names, dict(condition='condition', unit='unit',
                                         time='time', value='value'))
