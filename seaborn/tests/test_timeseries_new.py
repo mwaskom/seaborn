@@ -854,7 +854,10 @@ class TestPlotsNew(PlotTestCase):
             gammas_c = self.gammas[idx_c]
             gammas_c_gb = gammas_c.groupby(self.gammas_kwargs['time'])
             y = gammas_c_gb[self.gammas_kwargs['value']].agg(np.mean)
-            npt.assert_allclose(line.get_xdata(), y.index.values)
+            # .astype(np.float) because in pandas 0.12.0
+            # y.index.values.dtype is of dtype 'object'
+            npt.assert_allclose(line.get_xdata(),
+                                y.index.values.astype(np.float))
             npt.assert_allclose(line.get_ydata(), y.values)
 
 
@@ -1106,5 +1109,8 @@ class TestPlotsOld(PlotTestCase):
             gammas_c = self.gammas[idx_c]
             gammas_c_gb = gammas_c.groupby(self.gammas_kwargs['time'])
             y = gammas_c_gb[self.gammas_kwargs['value']].agg(np.mean)
-            npt.assert_allclose(line.get_xdata(), y.index.values)
+            # .astype(np.float) because in pandas 0.12.0
+            # y.index.values.dtype is of dtype 'object'
+            npt.assert_allclose(line.get_xdata(),
+                                y.index.values.astype(np.float))
             npt.assert_allclose(line.get_ydata(), y.values)
