@@ -4,7 +4,7 @@ v0.7.0 (Unreleased)
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
 
-- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overriden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` dtype will still follow the category order even if the levels are strictly numerical.
+- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overridden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` datatype will still follow the category order even if the levels are strictly numerical.
 
 - Improve performance for large dendrograms in :func:`clustermap`.
 
@@ -14,6 +14,16 @@ v0.7.0 (Unreleased)
 
 - Fixed a bug in the zscore calculation in :func:`clustermap`.
 
+- Fixed a bug in :func:`distplot` where sometimes the default number of bins would not be an integer.
+
+- Heatmap colorbars are now rasterized for better performance in vector plots.
+
 - Added workarounds for some matplotlib boxplot issues, such as strange colors of outlier points.
+
+- Added workarounds for an issue where violinplot edges would be missing or have random colors.
+
+- Fixed a bug on newer versions of matplotlib where a colormap would be erroneously applied to scatterplots with only three observations.
+
+- Updated seaborn for compatibility with matplotlib 1.5.
 
 - Added compatability for various IPython (and Jupyter) versions in functions that use widgets.
