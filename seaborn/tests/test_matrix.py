@@ -245,6 +245,14 @@ class TestHeatmap(PlotTestCase):
         for val, text in zip(df_masked[::-1].compressed(), ax.texts):
             nt.assert_equal("{:.1f}".format(val), text.get_text())
 
+    def test_heatmap_annotation_mesh_colors(self):
+
+        ax = mat.heatmap(self.df_norm, annot=True)
+        mesh = ax.collections[0]
+        nt.assert_equal(len(mesh.get_facecolors()), 4 * 8)
+
+        plt.close("all")
+
     def test_heatmap_cbar(self):
 
         f = plt.figure()
