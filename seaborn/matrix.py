@@ -205,6 +205,7 @@ class _HeatMapper(object):
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
+        mesh.update_scalarmappable()
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
