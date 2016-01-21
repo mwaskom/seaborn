@@ -249,7 +249,7 @@ class TestHeatmap(PlotTestCase):
 
         ax = mat.heatmap(self.df_norm, annot=True)
         mesh = ax.collections[0]
-        nt.assert_equal(len(mesh.get_facecolors()), self.df_norm.size)
+        nt.assert_equal(len(mesh.get_facecolors()), self.df_norm.values.size)
 
         plt.close("all")
 
