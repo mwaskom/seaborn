@@ -1142,6 +1142,13 @@ class _StripPlotter(_CategoricalScatterPlotter):
             else:
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
+                    # add legend entries only for first group                    
+                    if not i :
+                        kws['color'] = self.colors[j]
+                        kws['label'] = hue_level
+                        ax.scatter([], [], **kws)
+                        kws.pop("label", None)
+                        
                     hue_mask = self.plot_hues[i] == hue_level
                     if not hue_mask.any():
                         continue
@@ -1151,12 +1158,6 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     pos = i + offsets[j] if self.split else i
                     jitter = self.jitterer(len(strip_data))
                     kws["color"] = mpl.colors.rgb2hex(self.colors[j])
-
-                    # Only label one set of plots
-                    if i:
-                        kws.pop("label", None)
-                    else:
-                        kws["label"] = hue_level
 
                     # Draw the plot
                     if self.orient == "v":
