@@ -1557,6 +1557,9 @@ class TestStripPlotter(CategoricalFixture):
 
     def test_unsplit_nested_stripplot_vertical(self):
 
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
+
         # Test a simple vertical strip plot
         ax = cat.stripplot("g", "y", "h", data=self.df, split=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
@@ -1568,6 +1571,9 @@ class TestStripPlotter(CategoricalFixture):
 
     @skipif(not pandas_has_categoricals)
     def test_unsplit_nested_stripplot_horizontal(self):
+
+        if LooseVersion(np.__version__) < "1.7":
+            raise nose.SkipTest
 
         df = self.df.copy()
         df.g = df.g.astype("category")

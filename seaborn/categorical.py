@@ -2504,7 +2504,7 @@ violinplot.__doc__ = dedent("""\
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, split=True, orient=None, color=None, palette=None,
+              jitter=False, split=False, orient=None, color=None, palette=None,
               size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
 
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
@@ -2619,7 +2619,7 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
         ...                    data=tips, jitter=True)
 
-    Draw each level of the ``hue`` variable at the same location on the
+    Draw each level of the ``hue`` variable at different locations on the
     major categorical axis:
 
     .. plot::
@@ -2627,14 +2627,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, jitter=True,
-        ...                    palette="Set2", split=False)
-
-    Control strip order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="size", y="tip", data=tips.sort("size"))
+        ...                    palette="Set2", split=True)
 
     Control strip order by passing an explicit order:
 
