@@ -1124,8 +1124,6 @@ class _StripPlotter(_CategoricalScatterPlotter):
         """Draw the points onto `ax`."""
         # Set the default zorder to 2.1, so that the points
         # will be drawn on top of line elements (like in a boxplot)
-        kws.setdefault("zorder", 2.1)
-        s = kws.pop("s", 7 ** 2)
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None or not self.split:
 
@@ -1141,9 +1139,9 @@ class _StripPlotter(_CategoricalScatterPlotter):
                 cat_pos += self.jitterer(len(strip_data))
                 kws.update(c=self.point_colors[i][hue_mask])
                 if self.orient == "v":
-                    ax.scatter(cat_pos, strip_data, s=s, **kws)
+                    ax.scatter(cat_pos, strip_data, **kws)
                 else:
-                    ax.scatter(strip_data, cat_pos, s=s, **kws)
+                    ax.scatter(strip_data, cat_pos, **kws)
 
             else:
                 offsets = self.hue_offsets
@@ -1157,9 +1155,9 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     cat_pos += self.jitterer(len(strip_data))
                     kws.update(c=self.point_colors[i][hue_mask])
                     if self.orient == "v":
-                        ax.scatter(cat_pos, strip_data, s=s, **kws)
+                        ax.scatter(cat_pos, strip_data, **kws)
                     else:
-                        ax.scatter(strip_data, cat_pos, s=s, **kws)
+                        ax.scatter(strip_data, cat_pos, **kws)
 
     def plot(self, ax, kws):
         """Make the plot."""
@@ -1312,7 +1310,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def draw_swarmplot(self, ax, kws):
         """Plot the data."""
-        s = kws.pop("s", 7 ** 2)
+        s = kws.pop("s")
 
         centers = []
         swarms = []
@@ -2505,16 +2503,22 @@ violinplot.__doc__ = dedent("""\
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               jitter=False, split=False, orient=None, color=None, palette=None,
-              size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
+              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
                             jitter, split, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
-    kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+    if linewidth is None:
+        linewidth = size / 10
     if edgecolor == "gray":
-        kwargs["edgecolor"] = plotter.gray
+        edgecolor = plotter.gray
+    kwargs.update(dict(s=size ** 2,
+                       edgecolor=edgecolor,
+                       linewidth=linewidth))
 
     plotter.plot(ax, kwargs)
     return ax
@@ -2611,6 +2615,14 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
         ...                    jitter=True)
 
+    Draw outlines around the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
+        ...                    jitter=True, linewidth=1)
+
     Nest the strips within a second categorical variable:
 
     .. plot::
@@ -2652,16 +2664,17 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips,
+        ...                    jitter=True, color=".3")
 
     Draw strips of observations on top of a violin plot:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    jitter=True, color="white", edgecolor="gray")
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
+        ...                     inner=None, color=".8")
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
     """).format(**_categorical_docs)
 

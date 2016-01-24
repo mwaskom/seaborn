@@ -1528,7 +1528,7 @@ class TestStripPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.stripplot("g", "y", "h", data=self.df)
+        ax = cat.stripplot("g", "y", "h", data=self.df, split=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1546,7 +1546,7 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df)
+        ax = cat.stripplot("y", "g", "h", data=df, split=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -2321,8 +2321,7 @@ class TestFactorPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.collections), want_elements)
 
         g = cat.factorplot("g", "y", "h", data=self.df, kind="strip")
-        n_hues = self.h.unique().size
-        want_elements = self.g.unique().size * n_hues + n_hues
+        want_elements = self.g.unique().size + self.h.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
 
     def test_bad_plot_kind_error(self):
