@@ -1557,20 +1557,14 @@ class TestStripPlotter(CategoricalFixture):
 
     def test_unsplit_nested_stripplot_vertical(self):
 
-        pal = palettes.color_palette()
-
         # Test a simple vertical strip plot
         ax = cat.stripplot("g", "y", "h", data=self.df, split=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
-                x, y = ax.collections[i * 2 + j].get_offsets().T
+            x, y = ax.collections[i].get_offsets().T
 
-                npt.assert_array_equal(x, np.ones(len(x)) * i)
-                npt.assert_array_equal(y, vals)
-
-                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                npt.assert_equal(fc, pal[j])
+            npt.assert_array_equal(x, np.ones(len(x)) * i)
+            npt.assert_array_equal(y, group_vals)
 
     @skipif(not pandas_has_categoricals)
     def test_unsplit_nested_stripplot_horizontal(self):
@@ -1580,18 +1574,19 @@ class TestStripPlotter(CategoricalFixture):
 
         ax = cat.stripplot("y", "g", "h", data=df, split=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
-                x, y = ax.collections[i * 2 + j].get_offsets().T
+            x, y = ax.collections[i].get_offsets().T
 
-                npt.assert_array_equal(x, vals)
-                npt.assert_array_equal(y, np.ones(len(x)) * i)
+            npt.assert_array_equal(x, group_vals)
+            npt.assert_array_equal(y, np.ones(len(x)) * i)
 
     def test_three_strip_points(self):
 
         x = np.arange(3)
         ax = cat.stripplot(x=x)
-        nt.assert_equal(ax.collections[0].get_facecolor().shape, (1, 4))
+        facecolors = ax.collections[0].get_facecolor()
+        nt.assert_equal(facecolors.shape, (3, 4))
+        npt.assert_array_equal(facecolors[0], facecolors[1])
 
 
 class TestSwarmPlotter(CategoricalFixture):
@@ -2320,7 +2315,8 @@ class TestFactorPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.collections), want_elements)
 
         g = cat.factorplot("g", "y", "h", data=self.df, kind="strip")
-        want_elements = self.g.unique().size * self.h.unique().size
+        n_hues = self.h.unique().size
+        want_elements = self.g.unique().size * n_hues + n_hues
         nt.assert_equal(len(g.ax.collections), want_elements)
 
     def test_bad_plot_kind_error(self):

@@ -1125,48 +1125,47 @@ class _StripPlotter(_CategoricalScatterPlotter):
         # Set the default zorder to 2.1, so that the points
         # will be drawn on top of line elements (like in a boxplot)
         kws.setdefault("zorder", 2.1)
+        s = kws.pop("s", 7 ** 2)
         for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None:
+            if self.plot_hues is None or not self.split:
 
-                # Determine the positions of the points
-                strip_data = remove_na(group_data)
-                jitter = self.jitterer(len(strip_data))
-                kws["color"] = mpl.colors.rgb2hex(self.colors[i])
-
-                # Draw the plot
-                if self.orient == "v":
-                    ax.scatter(i + jitter, strip_data, **kws)
+                if self.hue_names is None:
+                    hue_mask = np.ones(group_data.size, np.bool)
                 else:
-                    ax.scatter(strip_data, i + jitter, **kws)
+                    hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+
+                strip_data = group_data[hue_mask]
+
+                # Plot the points in centered positions
+                cat_pos = np.ones(strip_data.size) * i
+                cat_pos += self.jitterer(len(strip_data))
+                kws.update(c=self.point_colors[i][hue_mask])
+                if self.orient == "v":
+                    ax.scatter(cat_pos, strip_data, s=s, **kws)
+                else:
+                    ax.scatter(strip_data, cat_pos, s=s, **kws)
 
             else:
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    if not hue_mask.any():
-                        continue
+                    strip_data = group_data[hue_mask]
 
-                    # Determine the positions of the points
-                    strip_data = remove_na(group_data[hue_mask])
-                    pos = i + offsets[j] if self.split else i
-                    jitter = self.jitterer(len(strip_data))
-                    kws["color"] = mpl.colors.rgb2hex(self.colors[j])
-
-                    # Only label one set of plots
-                    if i:
-                        kws.pop("label", None)
-                    else:
-                        kws["label"] = hue_level
-
-                    # Draw the plot
+                    # Plot the points in centered positions
+                    center = i + offsets[j]
+                    cat_pos = np.ones(strip_data.size) * center
+                    cat_pos += self.jitterer(len(strip_data))
+                    kws.update(c=self.point_colors[i][hue_mask])
                     if self.orient == "v":
-                        ax.scatter(pos + jitter, strip_data, **kws)
+                        ax.scatter(cat_pos, strip_data, s=s, **kws)
                     else:
-                        ax.scatter(strip_data, pos + jitter, **kws)
+                        ax.scatter(strip_data, cat_pos, s=s, **kws)
+
 
     def plot(self, ax, kws):
         """Make the plot."""
         self.draw_stripplot(ax, kws)
+        self.add_legend_data(ax)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
