@@ -1161,7 +1161,6 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     else:
                         ax.scatter(strip_data, cat_pos, s=s, **kws)
 
-
     def plot(self, ax, kws):
         """Make the plot."""
         self.draw_stripplot(ax, kws)
