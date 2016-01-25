@@ -6,9 +6,9 @@ This is a major release from 0.6. The main new feature is :func:`swarmplot` whic
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
 
-- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overridden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` datatype will still follow the category order even if the levels are strictly numerical.
+- Changed some of the :func:`stripplot` defaults to be closer to :func:`swarmplot`. Points are now somewhat smaller, have no outlines, and are not split by default when using ``hue``. These settings remain customizable through function parameters.
 
-- Changed some of the :func:`stripplot` defaults to be closer to :func:`swarmplot` points are somewhat smaller, have no outlines, and are not split by default when using ``hue``.
+- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overridden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` datatype will still follow the category order even if the levels are strictly numerical.
 
 - Changed how :func:`stripplot` draws points when using ``hue`` nesting with ``split=False`` so that the different ``hue`` levels are not drawn strictly on top of each other.
 
