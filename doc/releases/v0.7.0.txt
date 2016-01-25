@@ -1,6 +1,8 @@
 
-v0.7.0 (Unreleased)
--------------------
+v0.7.0 (January 2016)
+---------------------
+
+This is a major release from 0.6. The main new feature is :func:`swarmplot` which implements the beeswarm approach for drawing categorical scatterplots. There are also some performance improvements, bug fixes, and updates for compatibility with new versions of dependencies.
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
 
@@ -28,8 +30,10 @@ v0.7.0 (Unreleased)
 
 - Added workarounds for an issue where violinplot edges would be missing or have random colors.
 
+- Added a workaround for an issue where only one :func:`heatmap` cell would be annotated on some matplotlib backends.
+
 - Fixed a bug on newer versions of matplotlib where a colormap would be erroneously applied to scatterplots with only three observations.
 
 - Updated seaborn for compatibility with matplotlib 1.5.
 
-- Added compatability for various IPython (and Jupyter) versions in functions that use widgets.
+- Added compatibility for various IPython (and Jupyter) versions in functions that use widgets.
