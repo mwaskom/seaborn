@@ -13,4 +13,4 @@ from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 set()
 
-__version__ = "0.7.dev"
+__version__ = "0.7.0"
