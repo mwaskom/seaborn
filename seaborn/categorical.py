@@ -3626,7 +3626,7 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lvplot(x="day", y="total_bill", hue="smoker",
-        ...                  data=tips, palette="Set3")
+        ...                 data=tips, palette="Set3")
 
     Draw a letter value plot with nested grouping when some bins are empty:
 
@@ -3634,7 +3634,7 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
-        ...                  data=tips, linewidth=2.5)
+        ...                 data=tips, linewidth=2.5)
 
     Control box order by passing an explicit order:
 
