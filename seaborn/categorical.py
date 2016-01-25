@@ -2220,20 +2220,13 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
-    Control box order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="size", y="tip", data=tips.sort("size"))
-
     Control box order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.boxplot(x="time", y="tip", data=tips,
+        ...                  order=["Dinner", "Lunch"])
 
     Draw a boxplot for each numeric variable in a DataFrame:
 
@@ -2421,20 +2414,13 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
         ...                     data=tips, palette="muted", split=True)
 
-    Control violin order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="size", y="tip", data=tips.sort("size"))
-
     Control violin order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot(x="size", y="tip", data=tips,
-        ...                     order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.violinplot(x="time", y="tip", data=tips,
+        ...                     order=["Dinner", "Lunch"])
 
     Scale the violin width by the number of observations in each bin:
 
@@ -2652,8 +2638,8 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.stripplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
     Draw strips with large points and different aesthetics:
 
@@ -2819,16 +2805,15 @@ swarmplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.swarmplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
-    Plot using smaller points:
+    Plot using larger points:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="size", y="tip", data=tips, size=4,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.swarmplot(x="time", y="tip", data=tips, size=6)
 
 
     Draw swarms of observations on top of a box plot:
@@ -2958,20 +2943,13 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot(x="tip", y="day", data=tips)
 
-    Control bar order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="size", y="tip", data=tips.sort("size"))
-
     Control bar order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.barplot(x="time", y="tip", data=tips,
+        ...                  order=["Dinner", "Lunch"])
 
     Use median as the estimate of central tendency:
 
@@ -2993,7 +2971,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  palette="Blues_d")
 
     Plot all bars in a single color:
@@ -3001,7 +2979,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  color="salmon", saturation=.5)
 
     Use ``plt.bar`` keyword arguments to further change the aesthetic:
@@ -3172,20 +3150,13 @@ pointplot.__doc__ = dedent("""\
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2")
 
-    Control point order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="size", y="tip", data=tips.sort("size"))
-
     Control point order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.pointplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
     Use median as the estimate of central tendency:
 
@@ -3665,20 +3636,13 @@ lvplot.__doc__ = dedent("""\
         >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
-    Control box order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort("size"))
-
     Control box order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lvplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.lvplot(x="time", y="tip", data=tips,
+        ...                 order=["Dinner", "Lunch"])
 
     Draw a letter value plot for each numeric variable in a DataFrame:
 
