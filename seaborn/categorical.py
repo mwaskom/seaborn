@@ -1131,7 +1131,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     hue_mask = np.ones(group_data.size, np.bool)
                 else:
                     hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]])
+                                         for h in self.plot_hues[i]], np.bool)
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
@@ -1335,7 +1335,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     hue_mask = np.ones(group_data.size, np.bool)
                 else:
                     hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]])
+                                         for h in self.plot_hues[i]], np.bool)
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
