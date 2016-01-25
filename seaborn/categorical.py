@@ -2792,14 +2792,6 @@ swarmplot.__doc__ = dedent("""\
         >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2", split=True)
 
-    Control swarm order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.swarmplot(x="size", y="tip",
-        ...                    data=tips.sort_values("size"))
-
     Control swarm order by passing an explicit order:
 
     .. plot::
