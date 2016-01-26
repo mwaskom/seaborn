@@ -210,8 +210,12 @@ class _HeatMapper(object):
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
             if val is not np.ma.masked:
-                _, l, _ = colorsys.rgb_to_hls(*color[:3])
-                text_color = ".15" if l > .5 else "w"
+                r_s, g_s, b_s = color[:3]
+                r = r_s/12.92 if r_s <= 0.03928 else ((r_s+0.055)/1.055) ** 2.4
+                g = g_s/12.92 if g_s <= 0.03928 else ((g_s+0.055)/1.055) ** 2.4
+                b = b_s/12.92 if b_s <= 0.03928 else ((b_s+0.055)/1.055) ** 2.4
+                l = 0.2126 * r + 0.7152 * g + 0.0722 * b
+                text_color = ".15" if l > .408 else "w"
                 val = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
