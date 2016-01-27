@@ -369,6 +369,7 @@ if LooseVersion(pd.__version__) >= "0.15":
             # yield check_load_dataset, name
             check_load_cached_dataset(name)
 
+
 def test_relative_luminance():
         """Test relative luminance."""
         out1 = utils.relative_luminance("white")
@@ -377,5 +378,5 @@ def test_relative_luminance():
         out2 = utils.relative_luminance("#000000")
         assert_equal(out2, 0)
 
-        out3 = utils.relative_luminance((.25,.5,.75))
+        out3 = utils.relative_luminance((.25, .5, .75))
         nose.tools.assert_almost_equal(out3, 0.201624536)

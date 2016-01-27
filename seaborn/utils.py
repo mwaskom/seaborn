@@ -542,6 +542,7 @@ def get_color_cycle():
             pass  # just return axes.color style below
     return mpl.rcParams['axes.color_cycle']
 
+
 def relative_luminance(color):
     """Calculate the relative luminance of a color according to W3C standards
 
@@ -558,10 +559,10 @@ def relative_luminance(color):
     # Get rgb tuple rep
     r_s, g_s, b_s = mplcol.colorConverter.to_rgb(color)
 
-    #Calculate relative luminance
+    # Calculate relative luminance
     r = r_s/12.92 if r_s <= 0.03928 else ((r_s+0.055)/1.055) ** 2.4
     g = g_s/12.92 if g_s <= 0.03928 else ((g_s+0.055)/1.055) ** 2.4
     b = b_s/12.92 if b_s <= 0.03928 else ((b_s+0.055)/1.055) ** 2.4
-    luminance =  0.2126 * r + 0.7152 * g + 0.0722 * b
+    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
 
     return luminance
