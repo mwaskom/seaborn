@@ -371,7 +371,6 @@ class TestDendrogram(PlotTestCase):
         x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
-                                             color_list=['k'],
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
@@ -480,7 +479,6 @@ class TestDendrogram(PlotTestCase):
             d = distance.pdist(self.x_norm, metric='euclidean')
             linkage = hierarchy.linkage(d, method='single')
         dendrogram = hierarchy.dendrogram(linkage, no_plot=True,
-                                          color_list=['k'],
                                           color_threshold=-np.inf)
         kws['linkage'] = linkage
         p = mat._DendrogramPlotter(self.df_norm, **kws)
@@ -614,7 +612,6 @@ class TestClustermap(PlotTestCase):
         x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
-                                             color_list=['k'],
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
