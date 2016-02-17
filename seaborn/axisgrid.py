@@ -1323,7 +1323,7 @@ class PairGrid(Grid):
                         vals.append(np.asarray(hue_grouped.get_group(label)))
                     except KeyError:
                         vals.append(np.array([]))
-                
+
                 # check and see if histtype override was provided in kwargs
                 if 'histtype' in kwargs:
                     func(vals, color=self.palette, **kwargs)
