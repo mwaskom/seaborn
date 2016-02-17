@@ -1323,8 +1323,13 @@ class PairGrid(Grid):
                         vals.append(np.asarray(hue_grouped.get_group(label)))
                     except KeyError:
                         vals.append(np.array([]))
-                func(vals, color=self.palette, histtype="barstacked",
-                     **kwargs)
+                
+                # check and see if histtype override was provided in kwargs
+                if 'histtype' in kwargs:
+                    func(vals, color=self.palette, **kwargs)
+                else:
+                    func(vals, color=self.palette, histtype="barstacked",
+                         **kwargs)
             else:
                 for k, label_k in enumerate(self.hue_names):
                     # Attempt to get data for this level, allowing for empty
