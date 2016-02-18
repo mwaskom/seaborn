@@ -787,7 +787,6 @@ class TestPairGrid(PlotTestCase):
             for ptch in ax.patches:
                 nt.assert_equal(ptch.fill, False)
 
-
     @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 

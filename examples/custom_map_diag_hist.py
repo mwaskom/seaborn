@@ -12,9 +12,9 @@ sns.set(style="white", palette="muted", color_codes=True)
 rs = np.random.RandomState(10)
 
 # make some test data with a boolean label of unequal sample size
-df = pd.DataFrame({'data1':np.random.randn(2000),
-                   'data2':np.random.randn(2000),
-                   'label': np.random.randn(2000) > 0})
+df = pd.DataFrame({'data1':np.random.randn(20000),
+                   'data2':np.random.randn(20000),
+                   'label': np.random.randn(20000) > 0})
 
 # Default barstacked histogram
 g = sns.PairGrid(df, x_vars= ['data1', 'data2'],
