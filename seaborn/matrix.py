@@ -250,9 +250,10 @@ class _HeatMapper(object):
 
         # Possibly add a colorbar
         if self.cbar:
-            ticker = mpl.ticker.MaxNLocator(6)
+            default_ticker = mpl.ticker.MaxNLocator(6)
+            self.cbar_kws.setdefault('ticks', default_ticker)
             cb = ax.figure.colorbar(mesh, cax, ax,
-                                    ticks=ticker, **self.cbar_kws)
+                                    **self.cbar_kws)
             cb.outline.set_linewidth(0)
             # If rasterized is passed to pcolormesh, also rasterize the
             # colorbar to avoid white lines on the PDF rendering

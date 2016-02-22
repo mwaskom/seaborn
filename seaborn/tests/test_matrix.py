@@ -351,6 +351,28 @@ class TestHeatmap(PlotTestCase):
         mask_out = mat._matrix_mask(data, mask_in)
         npt.assert_array_equal(mask_out, [[True, True], [False, False]])
 
+    def test_cbar_ticker(self):
+
+        a = plt.gca()
+        ticks = [0, 1]
+        ref = ['$%d$' % t for t in ticks]
+        kws = self.default_kws.copy()
+        cbar_kws = dict(ticks=ticks)
+        kws['cbar_kws'] = cbar_kws
+        kws['cbar'] = True
+        kws['ax'] = a
+        kws['cbar_ax'] = a
+
+        ax = mat.heatmap(self.df_norm,**kws)
+        xticklabels = [l.get_text() for l in a.get_xticklabels()]
+        yticklabels = [l.get_text() for l in a.get_yticklabels()]
+        
+        npt.assert_equal(xticklabels, [])
+        npt.assert_equal(yticklabels,ref)
+
+        plt.close("all")
+
+
 
 class TestDendrogram(PlotTestCase):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
