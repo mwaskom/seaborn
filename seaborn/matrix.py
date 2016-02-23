@@ -165,8 +165,9 @@ class _HeatMapper(object):
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws
+        self.cbar_kws.setdefault('ticks', mpl.ticker.MaxNLocator(6))
 
-    def _determine_cmap_params(self, plot_data, vmin, vmax,
+        def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
         """Use some heuristics to set good defaults for colorbar and range."""
         calc_data = plot_data.data[~np.isnan(plot_data.data)]
@@ -250,9 +251,7 @@ class _HeatMapper(object):
 
         # Possibly add a colorbar
         if self.cbar:
-            ticker = mpl.ticker.MaxNLocator(6)
-            cb = ax.figure.colorbar(mesh, cax, ax,
-                                    ticks=ticker, **self.cbar_kws)
+            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
             cb.outline.set_linewidth(0)
             # If rasterized is passed to pcolormesh, also rasterize the
             # colorbar to avoid white lines on the PDF rendering
