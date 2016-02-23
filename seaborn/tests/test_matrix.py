@@ -359,6 +359,7 @@ class TestHeatmap(PlotTestCase):
         nt.assert_equal(len(ax2.yaxis.get_ticklabels()), 4)
         plt.close(f)
 
+
 class TestDendrogram(PlotTestCase):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
@@ -893,4 +894,3 @@ class TestClustermap(PlotTestCase):
 
         npt.assert_array_equal(xtl_actual, xtl_want)
         npt.assert_array_equal(ytl_actual, ytl_want)
-
