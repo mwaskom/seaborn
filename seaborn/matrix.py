@@ -167,7 +167,7 @@ class _HeatMapper(object):
         self.cbar_kws = {} if cbar_kws is None else cbar_kws
         self.cbar_kws.setdefault('ticks', mpl.ticker.MaxNLocator(6))
 
-        def _determine_cmap_params(self, plot_data, vmin, vmax,
+    def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
         """Use some heuristics to set good defaults for colorbar and range."""
         calc_data = plot_data.data[~np.isnan(plot_data.data)]
