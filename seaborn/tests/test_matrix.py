@@ -351,6 +351,13 @@ class TestHeatmap(PlotTestCase):
         mask_out = mat._matrix_mask(data, mask_in)
         npt.assert_array_equal(mask_out, [[True, True], [False, False]])
 
+    def test_cbar_ticks(self):
+        locator = mpl.ticker.MaxNLocator(4)
+        f, (ax1, ax2) = plt.subplots(2)
+        mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
+                    cbar_kws=dict(ticks=locator))
+        nt.assert_equal(len(ax2.yaxis.get_ticklabels()), 4)
+        plt.close(f)
 
 class TestDendrogram(PlotTestCase):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
@@ -886,3 +893,4 @@ class TestClustermap(PlotTestCase):
 
         npt.assert_array_equal(xtl_actual, xtl_want)
         npt.assert_array_equal(ytl_actual, ytl_want)
+
