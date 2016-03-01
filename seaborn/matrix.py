@@ -36,14 +36,19 @@ def _index_to_ticklabels(index):
 def _convert_colors(colors):
     """Convert either a list of colors or nested lists of colors to RGB."""
     to_rgb = mpl.colors.colorConverter.to_rgb
-    try:
-        to_rgb(colors[0])
-        # If this works, there is only one level of colors
-        return list(map(to_rgb, colors))
-    except ValueError:
-        # If we get here, we have nested lists
-        return [list(map(to_rgb, l)) for l in colors]
 
+    if isinstance(colors, pd.DataFrame):
+        # Convert dataframe
+        return pd.DataFrame({col: colors[col].map(to_rgb)
+                            for col in colors})
+    else:
+        try:
+            to_rgb(colors[0])
+            # If this works, there is only one level of colors
+            return list(map(to_rgb, colors))
+        except ValueError:
+            # If we get here, we have nested lists
+            return [list(map(to_rgb, l)) for l in colors]
 
 def _matrix_mask(data, mask):
     """Ensure that data and mask are compatabile and add missing values.
@@ -708,9 +713,16 @@ class ClusterGrid(Grid):
         self.fig = plt.figure(figsize=figsize)
 
         if row_colors is not None:
+            if isinstance(row_colors, pd.DataFrame):
+                # Ensure colors match data indices
+                row_colors = row_colors.ix[data.index]
             row_colors = _convert_colors(row_colors)
         self.row_colors = row_colors
+
         if col_colors is not None:
+            if isinstance(col_colors, pd.DataFrame):
+                # Ensure colors match data indices
+                col_colors = col_colors.ix[data.columns]
             col_colors = _convert_colors(col_colors)
         self.col_colors = col_colors
 
@@ -899,6 +911,10 @@ class ClusterGrid(Grid):
             all_colors = set(itertools.chain(*colors))
             n = len(colors)
             m = len(colors[0])
+        elif isinstance(colors, pd.DataFrame):
+            all_colors = set(itertools.chain(*colors.values))
+            m, n = colors.shape
+            colors = colors.T.values
         else:
             all_colors = set(colors)
             n = 1
@@ -964,18 +980,43 @@ class ClusterGrid(Grid):
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)
+
+            # Get labels from colors if given as dataframe
+            if isinstance(self.row_colors, pd.DataFrame):
+                xticklabels = self.row_colors.columns
+            else:
+                xticklabels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
-                    xticklabels=False, yticklabels=False,
+                    xticklabels=xticklabels, yticklabels=False,
                     **kws)
+
+            # Adjust rotation of labels
+            if xticklabels is not False:
+                self.ax_row_colors.set_xticklabels(
+                    self.ax_row_colors.get_xticklabels(), rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
+
+            # Get labels from colors if given as dataframe
+            if isinstance(self.col_colors, pd.DataFrame):
+                yticklabels = self.col_colors.columns
+            else:
+                yticklabels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
-                    xticklabels=False, yticklabels=False,
+                    xticklabels=False, yticklabels=yticklabels,
                     **kws)
+
+            # Adjust rotation of labels, place on right side
+            if yticklabels is not False:
+                self.ax_col_colors.set_yticklabels(
+                    self.ax_col_colors.get_yticklabels(), rotation=0)
+                self.ax_col_colors.yaxis.tick_right()
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
