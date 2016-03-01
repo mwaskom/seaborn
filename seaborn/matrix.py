@@ -41,6 +41,8 @@ def _convert_colors(colors):
         # Convert dataframe
         return pd.DataFrame({col: colors[col].map(to_rgb)
                             for col in colors})
+    elif isinstance(colors, pd.Series):
+        return colors.map(to_rgb)
     else:
         try:
             to_rgb(colors[0])
@@ -713,14 +715,14 @@ class ClusterGrid(Grid):
         self.fig = plt.figure(figsize=figsize)
 
         if row_colors is not None:
-            if isinstance(row_colors, pd.DataFrame):
+            if isinstance(row_colors, (pd.DataFrame, pd.Series)):
                 # Ensure colors match data indices
                 row_colors = row_colors.ix[data.index]
             row_colors = _convert_colors(row_colors)
         self.row_colors = row_colors
 
         if col_colors is not None:
-            if isinstance(col_colors, pd.DataFrame):
+            if isinstance(col_colors, (pd.DataFrame, pd.Series)):
                 # Ensure colors match data indices
                 col_colors = col_colors.ix[data.columns]
             col_colors = _convert_colors(col_colors)
@@ -984,6 +986,9 @@ class ClusterGrid(Grid):
             # Get labels from colors if given as dataframe
             if isinstance(self.row_colors, pd.DataFrame):
                 xticklabels = self.row_colors.columns
+            elif isinstance(self.row_colors, pd.Series) and \
+                    self.row_colors.name:
+                xticklabels = [self.row_colors.name]
             else:
                 xticklabels = False
 
@@ -1005,6 +1010,9 @@ class ClusterGrid(Grid):
             # Get labels from colors if given as dataframe
             if isinstance(self.col_colors, pd.DataFrame):
                 yticklabels = self.col_colors.columns
+            elif isinstance(self.col_colors, pd.Series) and \
+                    self.col_colors.name:
+                yticklabels = [self.col_colors.name]
             else:
                 yticklabels = False
 
