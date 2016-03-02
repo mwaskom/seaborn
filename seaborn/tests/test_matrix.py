@@ -852,6 +852,120 @@ class TestClustermap(PlotTestCase):
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
 
+    def test_row_col_colors_df(self):
+        kws = self.default_kws.copy()
+        kws['row_colors'] = pd.DataFrame({'row_annot': list(self.row_colors)},
+                                         index=self.df_norm.index)
+        kws['col_colors'] = pd.DataFrame({'col_annot': list(self.col_colors)},
+                                         index=self.df_norm.columns)
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        row_labels = [l.get_text() for l in
+                      cm.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(row_labels, ['row_annot'])
+
+        col_labels = [l.get_text() for l in
+                      cm.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(col_labels, ['col_annot'])
+
+    def test_row_col_colors_df_shuffled(self):
+        # Tests if colors are properly matched, even if given in wrong order
+
+        m, n = self.df_norm.shape
+        shuffled_inds = [self.df_norm.index[i] for i in
+                         list(range(0, m, 2)) + list(range(1, m, 2))]
+        shuffled_cols = [self.df_norm.columns[i] for i in
+                         list(range(0, n, 2)) + list(range(1, n, 2))]
+
+        kws = self.default_kws.copy()
+
+        row_colors = pd.DataFrame({'row_annot': list(self.row_colors)},
+                                  index=self.df_norm.index)
+        kws['row_colors'] = row_colors.ix[shuffled_inds]
+
+        col_colors = pd.DataFrame({'col_annot': list(self.col_colors)},
+                                  index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.ix[shuffled_cols]
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        nt.assert_equal(list(cm.col_colors)[0], list(self.col_colors))
+        nt.assert_equal(list(cm.row_colors)[0], list(self.row_colors))
+
+    def test_row_col_colors_df_missing(self):
+        kws = self.default_kws.copy()
+        row_colors = pd.DataFrame({'row_annot': list(self.row_colors)},
+                                  index=self.df_norm.index)
+        kws['row_colors'] = row_colors.drop(self.df_norm.index[0])
+
+        col_colors = pd.DataFrame({'col_annot': list(self.col_colors)},
+                                  index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.drop(self.df_norm.columns[0])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(list(cm.col_colors)[0],
+                        [(1.0, 1.0, 1.0)] + list(self.col_colors[1:]))
+        nt.assert_equal(list(cm.row_colors)[0],
+                        [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
+
+    def test_row_col_colors_series(self):
+        kws = self.default_kws.copy()
+        kws['row_colors'] = pd.Series(list(self.row_colors), name='row_annot',
+                                      index=self.df_norm.index)
+        kws['col_colors'] = pd.Series(list(self.col_colors), name='col_annot',
+                                      index=self.df_norm.columns)
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        row_labels = [l.get_text() for l in
+                      cm.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(row_labels, ['row_annot'])
+
+        col_labels = [l.get_text() for l in
+                      cm.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(col_labels, ['col_annot'])
+
+    def test_row_col_colors_series_shuffled(self):
+        # Tests if colors are properly matched, even if given in wrong order
+
+        m, n = self.df_norm.shape
+        shuffled_inds = [self.df_norm.index[i] for i in
+                         list(range(0, m, 2)) + list(range(1, m, 2))]
+        shuffled_cols = [self.df_norm.columns[i] for i in
+                         list(range(0, n, 2)) + list(range(1, n, 2))]
+
+        kws = self.default_kws.copy()
+
+        row_colors = pd.Series(list(self.row_colors), name='row_annot',
+                               index=self.df_norm.index)
+        kws['row_colors'] = row_colors.ix[shuffled_inds]
+
+        col_colors = pd.Series(list(self.col_colors), name='col_annot',
+                               index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.ix[shuffled_cols]
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(list(cm.col_colors), list(self.col_colors))
+        nt.assert_equal(list(cm.row_colors), list(self.row_colors))
+
+    def test_row_col_colors_series_missing(self):
+        kws = self.default_kws.copy()
+        row_colors = pd.Series(list(self.row_colors), name='row_annot',
+                               index=self.df_norm.index)
+        kws['row_colors'] = row_colors.drop(self.df_norm.index[0])
+
+        col_colors = pd.Series(list(self.col_colors), name='col_annot',
+                               index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.drop(self.df_norm.columns[0])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        nt.assert_equal(list(cm.col_colors),
+                        [(1.0, 1.0, 1.0)] + list(self.col_colors[1:]))
+        nt.assert_equal(list(cm.row_colors),
+                        [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
+
     def test_mask_reorganization(self):
 
         kws = self.default_kws.copy()
