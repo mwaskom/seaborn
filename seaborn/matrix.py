@@ -715,19 +715,8 @@ class ClusterGrid(Grid):
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
 
-        # if row_colors is not None:
-        #     if isinstance(row_colors, (pd.DataFrame, pd.Series)):
-        #         # Ensure colors match data indices
-        #         row_colors = row_colors.ix[data.index]
-        #     row_colors = _convert_colors(row_colors)
         self.row_colors, self.row_color_labels = \
             self._preprocess_colors(data, row_colors, axis=0)
-
-        # if col_colors is not None:
-        #     if isinstance(col_colors, (pd.DataFrame, pd.Series)):
-        #         # Ensure colors match data indices
-        #         col_colors = col_colors.ix[data.columns]
-        #     col_colors = _convert_colors(col_colors)
         self.col_colors, self.col_color_labels = \
             self._preprocess_colors(data, col_colors, axis=1)
 
