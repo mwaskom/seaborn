@@ -2,4 +2,4 @@
 v0.7.1 (Unreleased)
 -------------------
 
-
+- Made it possible to pass a tick locator object to the :func:`heatmap` colorbar.
