@@ -35,13 +35,21 @@ def _index_to_ticklabels(index):
 def _convert_colors(colors):
     """Convert either a list of colors or nested lists of colors to RGB."""
     to_rgb = mpl.colors.colorConverter.to_rgb
-    try:
-        to_rgb(colors[0])
-        # If this works, there is only one level of colors
-        return list(map(to_rgb, colors))
-    except ValueError:
-        # If we get here, we have nested lists
-        return [list(map(to_rgb, l)) for l in colors]
+
+    if isinstance(colors, pd.DataFrame):
+        # Convert dataframe
+        return pd.DataFrame({col: colors[col].map(to_rgb)
+                            for col in colors})
+    elif isinstance(colors, pd.Series):
+        return colors.map(to_rgb)
+    else:
+        try:
+            to_rgb(colors[0])
+            # If this works, there is only one level of colors
+            return list(map(to_rgb, colors))
+        except ValueError:
+            # If we get here, we have nested lists
+            return [list(map(to_rgb, l)) for l in colors]
 
 
 def _matrix_mask(data, mask):
@@ -705,12 +713,10 @@ class ClusterGrid(Grid):
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
 
-        if row_colors is not None:
-            row_colors = _convert_colors(row_colors)
-        self.row_colors = row_colors
-        if col_colors is not None:
-            col_colors = _convert_colors(col_colors)
-        self.col_colors = col_colors
+        self.row_colors, self.row_color_labels = \
+            self._preprocess_colors(data, row_colors, axis=0)
+        self.col_colors, self.col_color_labels = \
+            self._preprocess_colors(data, col_colors, axis=1)
 
         width_ratios = self.dim_ratios(self.row_colors,
                                        figsize=figsize,
@@ -748,6 +754,32 @@ class ClusterGrid(Grid):
 
         self.dendrogram_row = None
         self.dendrogram_col = None
+
+    def _preprocess_colors(self, data, colors, axis):
+        labels = None
+
+        if colors is not None:
+            if isinstance(colors, (pd.DataFrame, pd.Series)):
+                # Ensure colors match data indices
+                if axis == 0:
+                    colors = colors.ix[data.index]
+                else:
+                    colors = colors.ix[data.columns]
+
+                # Replace na's with background color
+                colors = colors.fillna('white')
+
+                # Extract color values and labels from frame/series
+                if isinstance(colors, pd.DataFrame):
+                    labels = colors.columns
+                    colors = colors.T.values
+                else:
+                    labels = [colors.name]
+                    colors = colors.values
+
+            colors = _convert_colors(colors)
+
+        return colors, labels
 
     def format_data(self, data, pivot_kws, z_score=None,
                     standard_scale=None):
@@ -962,18 +994,39 @@ class ClusterGrid(Grid):
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)
+
+            # Get row_color labels
+            if self.row_color_labels is not None:
+                row_color_labels = self.row_color_labels
+            else:
+                row_color_labels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
-                    xticklabels=False, yticklabels=False,
-                    **kws)
+                    xticklabels=row_color_labels, yticklabels=False, **kws)
+
+            # Adjust rotation of labels
+            if row_color_labels is not False:
+                plt.setp(self.ax_row_colors.get_xticklabels(), rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
+
+            # Get col_color labels
+            if self.row_color_labels is not None:
+                col_color_labels = self.col_color_labels
+            else:
+                col_color_labels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
-                    xticklabels=False, yticklabels=False,
-                    **kws)
+                    xticklabels=False, yticklabels=col_color_labels, **kws)
+
+            # Adjust rotation of labels, place on right side
+            if col_color_labels is not False:
+                self.ax_col_colors.yaxis.tick_right()
+                plt.setp(self.ax_col_colors.get_yticklabels(), rotation=0)
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
