@@ -1,7 +1,6 @@
 """Functions to visualize matrices of data."""
 import itertools
 
-import colorsys
 import matplotlib as mpl
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
@@ -13,7 +12,7 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap
+from .utils import despine, axis_ticklabels_overlap, relative_luminance
 from .external.six.moves import range
 
 
@@ -211,8 +210,8 @@ class _HeatMapper(object):
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
             if val is not np.ma.masked:
-                _, l, _ = colorsys.rgb_to_hls(*color[:3])
-                text_color = ".15" if l > .5 else "w"
+                l = relative_luminance(color)
+                text_color = ".15" if l > .408 else "w"
                 val = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
