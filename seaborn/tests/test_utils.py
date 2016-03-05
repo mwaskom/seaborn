@@ -5,6 +5,7 @@ import shutil
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import nose
 import nose.tools as nt
@@ -371,12 +372,19 @@ if LooseVersion(pd.__version__) >= "0.15":
 
 
 def test_relative_luminance():
-        """Test relative luminance."""
-        out1 = utils.relative_luminance("white")
-        assert_equal(out1, 1)
+    """Test relative luminance."""
+    out1 = utils.relative_luminance("white")
+    assert_equal(out1, 1)
 
-        out2 = utils.relative_luminance("#000000")
-        assert_equal(out2, 0)
+    out2 = utils.relative_luminance("#000000")
+    assert_equal(out2, 0)
 
-        out3 = utils.relative_luminance((.25, .5, .75))
-        nose.tools.assert_almost_equal(out3, 0.201624536)
+    out3 = utils.relative_luminance((.25, .5, .75))
+    nose.tools.assert_almost_equal(out3, 0.201624536)
+
+    rgbs = mpl.cm.RdBu(np.linspace(0, 1, 10))
+    lums1 = [utils.relative_luminance(rgb) for rgb in rgbs]
+    lums2 = utils.relative_luminance(rgbs)
+
+    for lum1, lum2 in zip(lums1, lums2):
+        nose.tools.assert_almost_equal(lum1, lum2)

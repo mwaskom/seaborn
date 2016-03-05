@@ -548,21 +548,18 @@ def relative_luminance(color):
 
     Parameters
     ----------
-    color : matplotlib color
-        hex, rgb-tuple, or html color name
+    color : matplotlib color or sequence of matplotlib colors
+        Hex code, rgb-tuple, or html color name.
 
     Returns
     -------
-    luminance : float between 0 and 1
+    luminance : float(s) between 0 and 1
 
     """
-    # Get rgb tuple rep
-    r_s, g_s, b_s = mplcol.colorConverter.to_rgb(color)
-
-    # Calculate relative luminance
-    r = r_s/12.92 if r_s <= 0.03928 else ((r_s+0.055)/1.055) ** 2.4
-    g = g_s/12.92 if g_s <= 0.03928 else ((g_s+0.055)/1.055) ** 2.4
-    b = b_s/12.92 if b_s <= 0.03928 else ((b_s+0.055)/1.055) ** 2.4
-    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-    return luminance
+    rgb = mpl.colors.colorConverter.to_rgba_array(color)[:, :3]
+    rgb = np.where(rgb <= .03928, rgb / 12.92, ((rgb + .055) / 1.055) ** 2.4)
+    lum = rgb.dot([.2126, .7152, .0722])
+    try:
+        return lum.item()
+    except ValueError:
+        return lum
