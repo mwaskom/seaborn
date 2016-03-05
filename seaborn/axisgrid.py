@@ -1121,7 +1121,18 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris, hue="species")
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map_diag(plt.hist)
+            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.add_legend()
+
+        Use a different style to show multiple histograms:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris, hue="species")
+            >>> g = g.map_diag(plt.hist, histtype="step", linewidth=3)
+            >>> g = g.map_offdiag(plt.scatter)
             >>> g = g.add_legend()
 
         Plot a subset of variables
