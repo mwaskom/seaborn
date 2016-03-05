@@ -780,6 +780,13 @@ class TestPairGrid(PlotTestCase):
         for ax in g3.diag_axes:
             nt.assert_equal(len(ax.patches), 40)
 
+        g4 = ag.PairGrid(self.df, hue="a")
+        g4.map_diag(plt.hist, histtype='step')
+
+        for ax in g4.diag_axes:
+            for ptch in ax.patches:
+                nt.assert_equal(ptch.fill, False)
+
     @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
