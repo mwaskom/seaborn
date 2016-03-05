@@ -2,4 +2,6 @@
 v0.7.1 (Unreleased)
 -------------------
 
+- Improved the luminance calculation that determines the annotation color in :func:`heatmap`.
+
 - Made it possible to pass a tick locator object to the :func:`heatmap` colorbar.
