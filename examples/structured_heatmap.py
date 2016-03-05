@@ -26,7 +26,7 @@ network_lut = dict(zip(map(str, used_networks), network_pal))
 
 # Convert the palette to vectors that will be drawn on the side of the matrix
 networks = df.columns.get_level_values("network")
-network_colors = pd.Series(networks).map(network_lut)
+network_colors = pd.Series(networks, index=df.columns).map(network_lut)
 
 # Create a custom colormap for the heatmap values
 cmap = sns.diverging_palette(h_neg=210, h_pos=350, s=90, l=30, as_cmap=True)
