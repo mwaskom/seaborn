@@ -2,6 +2,8 @@
 v0.7.1 (Unreleased)
 -------------------
 
+- Improved the row and column colors display in :func:`clustermap`. It is now possible to pass Pandas objects for these elements and, when possible, the semantic information in the Pandas objects will be used to add labels to the plot. When Pandas objects are used, the color data is matched against the main heatmap based on the index, not on position. This is more accurate, but may lead to different results if current code assumed positional matching.
+
 - Improved the luminance calculation that determines the annotation color in :func:`heatmap`.
 
 - Made it possible to pass a tick locator object to the :func:`heatmap` colorbar.
