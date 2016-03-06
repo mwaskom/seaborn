@@ -854,20 +854,26 @@ class TestClustermap(PlotTestCase):
 
     def test_row_col_colors_df(self):
         kws = self.default_kws.copy()
-        kws['row_colors'] = pd.DataFrame({'row_annot': list(self.row_colors)},
-                                         index=self.df_norm.index)
-        kws['col_colors'] = pd.DataFrame({'col_annot': list(self.col_colors)},
-                                         index=self.df_norm.columns)
+        kws['row_colors'] = pd.DataFrame({'row_1': list(self.row_colors),
+                                          'row_2': list(self.row_colors)},
+                                         index=self.df_norm.index,
+                                         columns=['row_1', 'row_2'])
+        kws['col_colors'] = pd.DataFrame({'col_1': list(self.col_colors),
+                                          'col_2': list(self.col_colors)},
+                                         index=self.df_norm.columns,
+                                         columns=['col_1', 'col_2'])
 
         cm = mat.clustermap(self.df_norm, **kws)
 
         row_labels = [l.get_text() for l in
                       cm.ax_row_colors.get_xticklabels()]
-        nt.assert_equal(row_labels, ['row_annot'])
+        nt.assert_equal(cm.row_color_labels, ['row_1', 'row_2'])
+        nt.assert_equal(row_labels, cm.row_color_labels)
 
         col_labels = [l.get_text() for l in
                       cm.ax_col_colors.get_yticklabels()]
-        nt.assert_equal(col_labels, ['col_annot'])
+        nt.assert_equal(cm.col_color_labels, ['col_1', 'col_2'])
+        nt.assert_equal(col_labels[::-1], cm.col_color_labels)
 
     def test_row_col_colors_df_shuffled(self):
         # Tests if colors are properly matched, even if given in wrong order
@@ -909,6 +915,36 @@ class TestClustermap(PlotTestCase):
         nt.assert_equal(list(cm.row_colors)[0],
                         [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
 
+    def test_row_col_colors_df_one_axis(self):
+        # Test case with only row annotation.
+        kws1 = self.default_kws.copy()
+        kws1['row_colors'] = pd.DataFrame({'row_1': list(self.row_colors),
+                                           'row_2': list(self.row_colors)},
+                                          index=self.df_norm.index,
+                                          columns=['row_1', 'row_2'])
+
+        cm1 = mat.clustermap(self.df_norm, **kws1)
+
+        row_labels = [l.get_text() for l in
+                      cm1.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(cm1.row_color_labels, ['row_1', 'row_2'])
+        nt.assert_equal(row_labels, cm1.row_color_labels)
+
+        # Test case with onl col annotation.
+        kws2 = self.default_kws.copy()
+        kws2['col_colors'] = pd.DataFrame({'col_1': list(self.col_colors),
+                                           'col_2': list(self.col_colors)},
+                                          index=self.df_norm.columns,
+                                          columns=['col_1', 'col_2'])
+
+        cm2 = mat.clustermap(self.df_norm, **kws2)
+
+        col_labels = [l.get_text() for l in
+                      cm2.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(cm2.col_color_labels, ['col_1', 'col_2'])
+        nt.assert_equal(col_labels[::-1], cm2.col_color_labels)
+
+
     def test_row_col_colors_series(self):
         kws = self.default_kws.copy()
         kws['row_colors'] = pd.Series(list(self.row_colors), name='row_annot',
@@ -920,11 +956,13 @@ class TestClustermap(PlotTestCase):
 
         row_labels = [l.get_text() for l in
                       cm.ax_row_colors.get_xticklabels()]
-        nt.assert_equal(row_labels, ['row_annot'])
+        nt.assert_equal(cm.row_color_labels, ['row_annot'])
+        nt.assert_equal(row_labels, cm.row_color_labels)
 
         col_labels = [l.get_text() for l in
                       cm.ax_col_colors.get_yticklabels()]
-        nt.assert_equal(col_labels, ['col_annot'])
+        nt.assert_equal(cm.col_color_labels, ['col_annot'])
+        nt.assert_equal(col_labels, cm.col_color_labels)
 
     def test_row_col_colors_series_shuffled(self):
         # Tests if colors are properly matched, even if given in wrong order
