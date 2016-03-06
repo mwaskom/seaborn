@@ -756,6 +756,7 @@ class ClusterGrid(Grid):
         self.dendrogram_col = None
 
     def _preprocess_colors(self, data, colors, axis):
+        """Preprocess {row/col}_colors to extract labels and convert colors."""
         labels = None
 
         if colors is not None:
@@ -771,7 +772,7 @@ class ClusterGrid(Grid):
 
                 # Extract color values and labels from frame/series
                 if isinstance(colors, pd.DataFrame):
-                    labels = colors.columns
+                    labels = list(colors.columns)
                     colors = colors.T.values
                 else:
                     labels = [colors.name]
@@ -1015,7 +1016,7 @@ class ClusterGrid(Grid):
                 self.col_colors, xind, axis=1)
 
             # Get col_color labels
-            if self.row_color_labels is not None:
+            if self.col_color_labels is not None:
                 col_color_labels = self.col_color_labels
             else:
                 col_color_labels = False
@@ -1113,10 +1114,14 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     {row,col}_linkage : numpy.array, optional
         Precomputed linkage matrix for the rows or columns. See
         scipy.cluster.hierarchy.linkage for specific formats.
-    {row,col}_colors : list-like, optional
+    {row,col}_colors : list-like or pandas DataFrame/Series, optional
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together. Can
-        use nested lists for multiple color levels of labeling.
+        use nested lists or DataFrame for multiple color levels of labeling.
+        If given as a DataFrame or Series, labels for the colors are extracted
+        from the DataFrames column names or from the name of the Series.
+        DataFrame/Series colors are also matched to the data by their
+        index, ensuring colors are drawn in the correct order.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
