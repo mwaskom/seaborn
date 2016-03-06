@@ -944,7 +944,6 @@ class TestClustermap(PlotTestCase):
         nt.assert_equal(cm2.col_color_labels, ['col_1', 'col_2'])
         nt.assert_equal(col_labels[::-1], cm2.col_color_labels)
 
-
     def test_row_col_colors_series(self):
         kws = self.default_kws.copy()
         kws['row_colors'] = pd.Series(list(self.row_colors), name='row_annot',
