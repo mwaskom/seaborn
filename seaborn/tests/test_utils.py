@@ -110,7 +110,13 @@ def test_iqr():
     iqr = utils.iqr(a)
     assert_equal(iqr, 2)
 
-
+def test_str_to_utf8():
+    """Test the to_utf8 function: string to Unicode"""
+    s = "\u01ff\u02ff"
+    u = utils.to_utf8(s)
+    assert_equal(type(s), type(str()))
+    assert_equal(type(u), type(u"\u01ff\u02ff"))
+    
 class TestSpineUtils(PlotTestCase):
 
     sides = ["left", "right", "bottom", "top"]
