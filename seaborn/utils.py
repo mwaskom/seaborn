@@ -564,8 +564,6 @@ def relative_luminance(color):
     except ValueError:
         return lum
 
-        row_template = _to_utf8(row_template)
-
 def to_utf8(obj):
     """Return a Unicode string representing a Python object.
     
