@@ -9,3 +9,5 @@ v0.7.1 (Unreleased)
 - Made it possible to pass a tick locator object to the :func:`heatmap` colorbar.
 
 - Made it possible to use different styles (e.g., step) for :class:`PairGrid` histograms when there are multiple hue levels.
+
+- Improved unicode compatibility in :class:`FacetGrid`.
