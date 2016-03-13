@@ -922,6 +922,10 @@ class FacetGrid(Grid):
                 template = row_template
             else:
                 template = " | ".join([row_template, col_template])
+                
+        row_template = utils.to_utf8(row_template)
+        col_template = utils.to_utf8(col_template)
+        template = utils.to_utf8(template)
 
         if self._margin_titles:
             if self.row_names is not None:
@@ -1836,3 +1840,4 @@ class JointGrid(object):
         """Wrap figure.savefig defaulting to tight bounding box."""
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
