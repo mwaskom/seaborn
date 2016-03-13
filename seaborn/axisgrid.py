@@ -1840,4 +1840,3 @@ class JointGrid(object):
         """Wrap figure.savefig defaulting to tight bounding box."""
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
-
