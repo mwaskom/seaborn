@@ -922,7 +922,7 @@ class FacetGrid(Grid):
                 template = row_template
             else:
                 template = " | ".join([row_template, col_template])
-                
+
         row_template = utils.to_utf8(row_template)
         col_template = utils.to_utf8(col_template)
         template = utils.to_utf8(template)

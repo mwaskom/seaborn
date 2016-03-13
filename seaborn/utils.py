@@ -564,23 +564,24 @@ def relative_luminance(color):
     except ValueError:
         return lum
 
+
 def to_utf8(obj):
     """Return a Unicode string representing a Python object.
-    
+
     Unicode strings (i.e. type ``unicode`` in Python 2.7 and type ``str`` in
     Python 3.x) are returned unchanged.
-    
-    Byte strings (i.e. type ``str`` in Python 2.7 and type ``bytes`` in 
+
+    Byte strings (i.e. type ``str`` in Python 2.7 and type ``bytes`` in
     Python 3.x) are returned as UTF-8-encoded strings.
 
-    For other objects, the method ``__str__()`` is called, and the result is 
+    For other objects, the method ``__str__()`` is called, and the result is
     returned as a UTF-8-encoded string.
 
     Parameters
     ----------
     obj : object
         Any Python object
-        
+
     Returns
     -------
     s : unicode (Python 2.7) / str (Python 3.x)
@@ -588,29 +589,27 @@ def to_utf8(obj):
     """
     if isinstance(obj, str):
         try:
-            # If obj is a string, try to return it as a Unicode-encoded 
+            # If obj is a string, try to return it as a Unicode-encoded
             # string:
             return obj.decode("utf-8")
         except AttributeError:
-            # Python 3.x strings are already Unicode, and do not have a 
+            # Python 3.x strings are already Unicode, and do not have a
             # decode() method, so the unchanged string is returned
             return obj
 
-    # 
     try:
         if isinstance(obj, unicode):
             # do not attemt a conversion if string is already a Unicode
             # string:
             return obj
         else:
-            # call __str__() for non-string object, and return the 
+            # call __str__() for non-string object, and return the
             # result to Unicode:
             return obj.__str__().decode("utf-8")
     except NameError:
-        # NameError is raised in Python 3.x as type 'unicode' is not 
+        # NameError is raised in Python 3.x as type 'unicode' is not
         # defined.
         if isinstance(obj, bytes):
             return obj.decode("utf-8")
         else:
             return obj.__str__()
-
