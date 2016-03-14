@@ -172,7 +172,10 @@ class _HeatMapper(object):
         if annot_data is None:
             self.annot_data = plot_data
         else:
-            self.annot_data = annot_data.ix[::-1].values
+            if isinstance(annot_data, pd.DataFrame):
+                self.annot_data = annot_data.ix[::-1].values
+            else:
+                self.annot_data = annot_data[::-1]
 
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
