@@ -93,7 +93,7 @@ class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
-                 annot_kws, cbar, cbar_kws,
+                 annot_kws, annot_data, cbar, cbar_kws,
                  xticklabels=True, yticklabels=True, mask=None):
         """Initialize the plotting object."""
         # We always want to have a DataFrame with semantic information
@@ -168,6 +168,12 @@ class _HeatMapper(object):
         self.data = data
         self.plot_data = plot_data
         self.annot = annot
+
+        if annot_data is None:
+            self.annot_data = plot_data
+        else:
+            self.annot_data = annot_data.ix[::-1].values
+
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
@@ -215,15 +221,16 @@ class _HeatMapper(object):
         """Add textual labels with the value in each cell."""
         mesh.update_scalarmappable()
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
-        for x, y, val, color in zip(xpos.flat, ypos.flat,
-                                    mesh.get_array(), mesh.get_facecolors()):
-            if val is not np.ma.masked:
+        for x, y, m, color, val in zip(xpos.flat, ypos.flat,
+                                       mesh.get_array(), mesh.get_facecolors(),
+                                       self.annot_data.flat):
+            if m is not np.ma.masked:
                 l = relative_luminance(color)
                 text_color = ".15" if l > .408 else "w"
-                val = ("{:" + self.fmt + "}").format(val)
+                annotation = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
-                ax.text(x, y, val, **text_kwargs)
+                ax.text(x, y, annotation, **text_kwargs)
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
@@ -267,7 +274,7 @@ class _HeatMapper(object):
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=False, fmt=".2g", annot_kws=None,
+            annot=False, fmt=".2g", annot_kws=None, annot_data=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
@@ -454,8 +461,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
-                          annot_kws, cbar, cbar_kws, xticklabels, yticklabels,
-                          mask)
+                          annot_kws, annot_data, cbar, cbar_kws, xticklabels,
+                          yticklabels, mask)
 
     # Add the pcolormesh kwargs here
     kwargs["linewidths"] = linewidths
