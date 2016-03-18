@@ -93,7 +93,7 @@ class _HeatMapper(object):
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
-                 annot_kws, annot_data, cbar, cbar_kws,
+                 annot_kws, cbar, cbar_kws,
                  xticklabels=True, yticklabels=True, mask=None):
         """Initialize the plotting object."""
         # We always want to have a DataFrame with semantic information
@@ -169,13 +169,17 @@ class _HeatMapper(object):
         self.plot_data = plot_data
         self.annot = annot
 
-        if annot_data is None:
+        if isinstance(self.annot, bool) and self.annot:
             self.annot_data = plot_data
-        else:
-            if isinstance(annot_data, pd.DataFrame):
-                self.annot_data = annot_data.ix[::-1].values
+        elif not isinstance(self.annot, bool):
+            if isinstance(self.annot, pd.DataFrame):
+                self.annot_data = self.annot.ix[::-1].values
             else:
-                self.annot_data = annot_data[::-1]
+                self.annot_data = self.annot[::-1]
+            if self.annot.shape != self.plot_data.shape:
+                raise ValueError('Data supplied to "annot" must be the same '
+                                 'shape as the data to plot.')
+            self.annot = True
 
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
@@ -277,7 +281,7 @@ class _HeatMapper(object):
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=False, fmt=".2g", annot_kws=None, annot_data=None,
+            annot=False, fmt=".2g", annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
@@ -314,8 +318,10 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     robust : bool, optional
         If True and ``vmin`` or ``vmax`` are absent, the colormap range is
         computed with robust quantiles instead of the extreme values.
-    annot : bool, optional
-        If True, write the data value in each cell.
+    annot : bool, or array, optional
+        If True, write the data value in each cell. If an array of the same
+        shape as ``data``, then use this to annotate the heatmap instead of the
+        raw data.
     fmt : string, optional
         String formatting code to use when ``annot`` is True.
     annot_kws : dict of key, value mappings, optional
@@ -464,7 +470,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
-                          annot_kws, annot_data, cbar, cbar_kws, xticklabels,
+                          annot_kws, cbar, cbar_kws, xticklabels,
                           yticklabels, mask)
 
     # Add the pcolormesh kwargs here

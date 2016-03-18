@@ -39,7 +39,7 @@ class TestHeatmap(PlotTestCase):
 
     default_kws = dict(vmin=None, vmax=None, cmap=None, center=None,
                        robust=False, annot=False, fmt=".2f", annot_kws=None,
-                       cbar=True, cbar_kws=None, mask=None, annot_data=None)
+                       cbar=True, cbar_kws=None, mask=None)
 
     def test_ndarray_input(self):
 
@@ -256,8 +256,8 @@ class TestHeatmap(PlotTestCase):
     def test_heatmap_annotation_other_data(self):
         annot_data = self.df_norm + 10
 
-        ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
-                         annot_kws={"fontsize": 14}, annot_data=annot_data)
+        ax = mat.heatmap(self.df_norm, annot=annot_data, fmt=".1f",
+                         annot_kws={"fontsize": 14})
 
         for val, text in zip(annot_data.values[::-1].flat, ax.texts):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
