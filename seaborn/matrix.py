@@ -751,7 +751,8 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 
 class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
-                 figsize=None, row_colors=None, col_colors=None, mask=None):
+                 figsize=None, row_colors=None, col_colors=None,
+                 col_color_ratio=None, row_color_ratio=None, mask=None):
         """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
@@ -776,10 +777,12 @@ class ClusterGrid(Grid):
 
         width_ratios = self.dim_ratios(self.row_colors,
                                        figsize=figsize,
+                                       side_colors_ratio=row_color_ratio,
                                        axis=1)
 
         height_ratios = self.dim_ratios(self.col_colors,
                                         figsize=figsize,
+                                        side_colors_ratio=col_color_ratio,
                                         axis=0)
         nrows = 3 if self.col_colors is None else 4
         ncols = 3 if self.row_colors is None else 4
@@ -933,9 +936,13 @@ class ClusterGrid(Grid):
         else:
             return standardized.T
 
-    def dim_ratios(self, side_colors, axis, figsize, side_colors_ratio=0.05):
+    def dim_ratios(self, side_colors, axis, figsize, side_colors_ratio=None):
         """Get the proportions of the figure taken up by each axes
         """
+
+        if side_colors_ratio is None:
+            side_colors_ratio = 0.05
+
         figdim = figsize[axis]
         # Get resizing proportion of this figure for the dendrogram and
         # colorbar, so only the heatmap gets bigger but the dendrogram stays
@@ -1145,7 +1152,9 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                z_score=None, standard_scale=None, figsize=None, cbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
-               row_colors=None, col_colors=None, mask=None, **kwargs):
+               row_colors=None, col_colors=None,
+               col_color_ratio=None, row_color_ratio=None,
+               mask=None, **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters
@@ -1260,7 +1269,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(iris, col_cluster=False)
+        >>> g = sns.clustermap(flights, z_score=0)
 
     Add colored labels:
 
@@ -1279,7 +1288,6 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         >>> g = sns.clustermap(iris, standard_scale=1)
 
     Normalize the data within the rows:
-
     .. plot::
         :context: close-figs
 
@@ -1290,7 +1298,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale,
-                          mask=mask)
+                          col_color_ratio=col_color_ratio,
+                          row_color_ratio=row_color_ratio, mask=mask)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=cbar_kws,
