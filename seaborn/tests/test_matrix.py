@@ -664,11 +664,11 @@ class TestClustermap(PlotTestCase):
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
 
     default_kws = dict(pivot_kws=None, z_score=None, standard_scale=None,
-                       figsize=None, row_colors=None, col_colors=None)
+                       figsize=None, row_colors=None, col_colors=None,
+                       row_cluster=True, col_cluster=True)
 
     default_plot_kws = dict(metric='euclidean', method='average',
                             colorbar_kws=None,
-                            row_cluster=True, col_cluster=True,
                             row_linkage=None, col_linkage=None)
 
     row_colors = color_palette('Set2', df_norm.shape[0])
@@ -859,15 +859,17 @@ class TestClustermap(PlotTestCase):
         kws['col_cluster'] = False
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
-
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
+        nt.assert_equal(cm.ax_row_dendrogram, None)
+        nt.assert_equal(cm.ax_col_dendrogram, None)
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
+
+    def test_colorbar_false(self):
+        kws = self.default_kws.copy()
+        kws['colorbar'] = False
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        nt.assert_equal(cm.cax, None)
 
     def test_row_col_colors(self):
         kws = self.default_kws.copy()
@@ -887,13 +889,9 @@ class TestClustermap(PlotTestCase):
         kws['col_colors'] = self.col_colors
 
         cm = mat.clustermap(self.df_norm, **kws)
-        nt.assert_equal(len(cm.ax_row_dendrogram.lines), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.lines), 0)
+        nt.assert_equal(cm.ax_row_dendrogram, None)
+        nt.assert_equal(cm.ax_col_dendrogram, None)
 
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_row_dendrogram.get_yticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_xticks()), 0)
-        nt.assert_equal(len(cm.ax_col_dendrogram.get_yticks()), 0)
         nt.assert_equal(len(cm.ax_row_colors.collections), 1)
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
 
