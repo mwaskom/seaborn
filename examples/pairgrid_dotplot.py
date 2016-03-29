@@ -11,7 +11,7 @@ sns.set(style="whitegrid")
 crashes = sns.load_dataset("car_crashes")
 
 # Make the PairGrid
-g = sns.PairGrid(crashes.sort("total", ascending=False),
+g = sns.PairGrid(crashes.sort_values("total", ascending=False),
                  x_vars=crashes.columns[:-3], y_vars=["abbrev"],
                  size=10, aspect=.25)
 

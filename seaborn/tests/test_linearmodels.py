@@ -556,3 +556,11 @@ class TestRegressionPlots(PlotTestCase):
 
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
+
+    def test_three_point_colors(self):
+
+        x, y = np.random.randn(2, 3)
+        ax = lm.regplot(x, y, color=(1, 0, 0))
+        color = ax.collections[0].get_facecolors()
+        npt.assert_almost_equal(color[0, :3],
+                                (1, 0, 0))

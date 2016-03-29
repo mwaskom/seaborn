@@ -1,7 +1,6 @@
 """Functions to visualize matrices of data."""
 import itertools
 
-import colorsys
 import matplotlib as mpl
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
@@ -13,7 +12,7 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap
+from .utils import despine, axis_ticklabels_overlap, relative_luminance
 from .external.six.moves import range
 
 
@@ -36,13 +35,21 @@ def _index_to_ticklabels(index):
 def _convert_colors(colors):
     """Convert either a list of colors or nested lists of colors to RGB."""
     to_rgb = mpl.colors.colorConverter.to_rgb
-    try:
-        to_rgb(colors[0])
-        # If this works, there is only one level of colors
-        return list(map(to_rgb, colors))
-    except ValueError:
-        # If we get here, we have nested lists
-        return [list(map(to_rgb, l)) for l in colors]
+
+    if isinstance(colors, pd.DataFrame):
+        # Convert dataframe
+        return pd.DataFrame({col: colors[col].map(to_rgb)
+                            for col in colors})
+    elif isinstance(colors, pd.Series):
+        return colors.map(to_rgb)
+    else:
+        try:
+            to_rgb(colors[0])
+            # If this works, there is only one level of colors
+            return list(map(to_rgb, colors))
+        except ValueError:
+            # If we get here, we have nested lists
+            return [list(map(to_rgb, l)) for l in colors]
 
 
 def _matrix_mask(data, mask):
@@ -165,6 +172,7 @@ class _HeatMapper(object):
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws
+        self.cbar_kws.setdefault('ticks', mpl.ticker.MaxNLocator(6))
 
     def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
@@ -205,12 +213,13 @@ class _HeatMapper(object):
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
+        mesh.update_scalarmappable()
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
         for x, y, val, color in zip(xpos.flat, ypos.flat,
                                     mesh.get_array(), mesh.get_facecolors()):
             if val is not np.ma.masked:
-                _, l, _ = colorsys.rgb_to_hls(*color[:3])
-                text_color = ".15" if l > .5 else "w"
+                l = relative_luminance(color)
+                text_color = ".15" if l > .408 else "w"
                 val = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
@@ -249,9 +258,7 @@ class _HeatMapper(object):
 
         # Possibly add a colorbar
         if self.cbar:
-            ticker = mpl.ticker.MaxNLocator(6)
-            cb = ax.figure.colorbar(mesh, cax, ax,
-                                    ticks=ticker, **self.cbar_kws)
+            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
             cb.outline.set_linewidth(0)
             # If rasterized is passed to pcolormesh, also rasterize the
             # colorbar to avoid white lines on the PDF rendering
@@ -706,12 +713,10 @@ class ClusterGrid(Grid):
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
 
-        if row_colors is not None:
-            row_colors = _convert_colors(row_colors)
-        self.row_colors = row_colors
-        if col_colors is not None:
-            col_colors = _convert_colors(col_colors)
-        self.col_colors = col_colors
+        self.row_colors, self.row_color_labels = \
+            self._preprocess_colors(data, row_colors, axis=0)
+        self.col_colors, self.col_color_labels = \
+            self._preprocess_colors(data, col_colors, axis=1)
 
         width_ratios = self.dim_ratios(self.row_colors,
                                        figsize=figsize,
@@ -749,6 +754,33 @@ class ClusterGrid(Grid):
 
         self.dendrogram_row = None
         self.dendrogram_col = None
+
+    def _preprocess_colors(self, data, colors, axis):
+        """Preprocess {row/col}_colors to extract labels and convert colors."""
+        labels = None
+
+        if colors is not None:
+            if isinstance(colors, (pd.DataFrame, pd.Series)):
+                # Ensure colors match data indices
+                if axis == 0:
+                    colors = colors.ix[data.index]
+                else:
+                    colors = colors.ix[data.columns]
+
+                # Replace na's with background color
+                colors = colors.fillna('white')
+
+                # Extract color values and labels from frame/series
+                if isinstance(colors, pd.DataFrame):
+                    labels = list(colors.columns)
+                    colors = colors.T.values
+                else:
+                    labels = [colors.name]
+                    colors = colors.values
+
+            colors = _convert_colors(colors)
+
+        return colors, labels
 
     def format_data(self, data, pivot_kws, z_score=None,
                     standard_scale=None):
@@ -963,18 +995,39 @@ class ClusterGrid(Grid):
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)
+
+            # Get row_color labels
+            if self.row_color_labels is not None:
+                row_color_labels = self.row_color_labels
+            else:
+                row_color_labels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_row_colors,
-                    xticklabels=False, yticklabels=False,
-                    **kws)
+                    xticklabels=row_color_labels, yticklabels=False, **kws)
+
+            # Adjust rotation of labels
+            if row_color_labels is not False:
+                plt.setp(self.ax_row_colors.get_xticklabels(), rotation=90)
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
+
+            # Get col_color labels
+            if self.col_color_labels is not None:
+                col_color_labels = self.col_color_labels
+            else:
+                col_color_labels = False
+
             heatmap(matrix, cmap=cmap, cbar=False, ax=self.ax_col_colors,
-                    xticklabels=False, yticklabels=False,
-                    **kws)
+                    xticklabels=False, yticklabels=col_color_labels, **kws)
+
+            # Adjust rotation of labels, place on right side
+            if col_color_labels is not False:
+                self.ax_col_colors.yaxis.tick_right()
+                plt.setp(self.ax_col_colors.get_yticklabels(), rotation=0)
         else:
             despine(self.ax_col_colors, left=True, bottom=True)
 
@@ -1061,10 +1114,14 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     {row,col}_linkage : numpy.array, optional
         Precomputed linkage matrix for the rows or columns. See
         scipy.cluster.hierarchy.linkage for specific formats.
-    {row,col}_colors : list-like, optional
+    {row,col}_colors : list-like or pandas DataFrame/Series, optional
         List of colors to label for either the rows or columns. Useful to
         evaluate whether samples within a group are clustered together. Can
-        use nested lists for multiple color levels of labeling.
+        use nested lists or DataFrame for multiple color levels of labeling.
+        If given as a DataFrame or Series, labels for the colors are extracted
+        from the DataFrames column names or from the name of the Series.
+        DataFrame/Series colors are also matched to the data by their
+        index, ensuring colors are drawn in the correct order.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for

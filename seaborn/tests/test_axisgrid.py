@@ -580,6 +580,139 @@ class TestFacetGrid(PlotTestCase):
         g = ag.FacetGrid(df, dropna=True, row="hasna")
         nt.assert_equal(g._not_na.sum(), 50)
 
+    def test_unicode_column_label_with_rows(self):
+
+        # use a smaller copy of the default testing data frame:
+        df = self.df.copy()
+        df = df[["a", "b", "x"]]
+
+        # rename column 'a' (which will be used for the columns in the grid)
+        # by using a Unicode string:
+        unicode_column_label = u"\u01ff\u02ff\u03ff"
+        df = df.rename(columns={"a": unicode_column_label})
+
+        # ensure that the data frame columns have the expected names:
+        nt.assert_equal(list(df.columns), [unicode_column_label, "b", "x"])
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, col=unicode_column_label, row="b")
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_column_label_no_rows(self):
+
+        # use a smaller copy of the default testing data frame:
+        df = self.df.copy()
+        df = df[["a", "x"]]
+
+        # rename column 'a' (which will be used for the columns in the grid)
+        # by using a Unicode string:
+        unicode_column_label = u"\u01ff\u02ff\u03ff"
+        df = df.rename(columns={"a": unicode_column_label})
+
+        # ensure that the data frame columns have the expected names:
+        nt.assert_equal(list(df.columns), [unicode_column_label, "x"])
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, col=unicode_column_label)
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_row_label_with_columns(self):
+
+        # use a smaller copy of the default testing data frame:
+        df = self.df.copy()
+        df = df[["a", "b", "x"]]
+
+        # rename column 'b' (which will be used for the rows in the grid)
+        # by using a Unicode string:
+        unicode_row_label = u"\u01ff\u02ff\u03ff"
+        df = df.rename(columns={"b": unicode_row_label})
+
+        # ensure that the data frame columns have the expected names:
+        nt.assert_equal(list(df.columns), ["a", unicode_row_label, "x"])
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, col="a", row=unicode_row_label)
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_row_label_no_columns(self):
+
+        # use a smaller copy of the default testing data frame:
+        df = self.df.copy()
+        df = df[["b", "x"]]
+
+        # rename column 'b' (which will be used for the rows in the grid)
+        # by using a Unicode string:
+        unicode_row_label = u"\u01ff\u02ff\u03ff"
+        df = df.rename(columns={"b": unicode_row_label})
+
+        # ensure that the data frame columns have the expected names:
+        nt.assert_equal(list(df.columns), [unicode_row_label, "x"])
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, row=unicode_row_label)
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_content_with_row_and_column(self):
+
+        df = self.df.copy()
+
+        # replace content of column 'a' (which will form the columns in the
+        # grid) by Unicode characters:
+        unicode_column_val = np.repeat((u'\u01ff', u'\u02ff', u'\u03ff'), 20)
+        df["a"] = unicode_column_val
+
+        # make sure that the replacement worked as expected:
+        nt.assert_equal(
+            list(df["a"]),
+            [u'\u01ff'] * 20 + [u'\u02ff'] * 20 + [u'\u03ff'] * 20)
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, col="a", row="b")
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_content_no_rows(self):
+
+        df = self.df.copy()
+
+        # replace content of column 'a' (which will form the columns in the
+        # grid) by Unicode characters:
+        unicode_column_val = np.repeat((u'\u01ff', u'\u02ff', u'\u03ff'), 20)
+        df["a"] = unicode_column_val
+
+        # make sure that the replacement worked as expected:
+        nt.assert_equal(
+            list(df["a"]),
+            [u'\u01ff'] * 20 + [u'\u02ff'] * 20 + [u'\u03ff'] * 20)
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, col="a")
+        g = g.map(plt.plot, "x")
+
+    def test_unicode_content_no_columns(self):
+
+        df = self.df.copy()
+
+        # replace content of column 'a' (which will form the rows in the
+        # grid) by Unicode characters:
+        unicode_column_val = np.repeat((u'\u01ff', u'\u02ff', u'\u03ff'), 20)
+        df["b"] = unicode_column_val
+
+        # make sure that the replacement worked as expected:
+        nt.assert_equal(
+            list(df["b"]),
+            [u'\u01ff'] * 20 + [u'\u02ff'] * 20 + [u'\u03ff'] * 20)
+
+        # plot the grid -- if successful, no UnicodeEncodingError should
+        # occur:
+        g = ag.FacetGrid(df, row="b")
+        g = g.map(plt.plot, "x")
+
 
 class TestPairGrid(PlotTestCase):
 
@@ -779,6 +912,13 @@ class TestPairGrid(PlotTestCase):
 
         for ax in g3.diag_axes:
             nt.assert_equal(len(ax.patches), 40)
+
+        g4 = ag.PairGrid(self.df, hue="a")
+        g4.map_diag(plt.hist, histtype='step')
+
+        for ax in g4.diag_axes:
+            for ptch in ax.patches:
+                nt.assert_equal(ptch.fill, False)
 
     @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):

@@ -245,6 +245,14 @@ class TestHeatmap(PlotTestCase):
         for val, text in zip(df_masked[::-1].compressed(), ax.texts):
             nt.assert_equal("{:.1f}".format(val), text.get_text())
 
+    def test_heatmap_annotation_mesh_colors(self):
+
+        ax = mat.heatmap(self.df_norm, annot=True)
+        mesh = ax.collections[0]
+        nt.assert_equal(len(mesh.get_facecolors()), self.df_norm.values.size)
+
+        plt.close("all")
+
     def test_heatmap_cbar(self):
 
         f = plt.figure()
@@ -343,6 +351,16 @@ class TestHeatmap(PlotTestCase):
         mask_out = mat._matrix_mask(data, mask_in)
         npt.assert_array_equal(mask_out, [[True, True], [False, False]])
 
+    def test_cbar_ticks(self):
+        max_n_ticks = 3
+
+        locator = mpl.ticker.MaxNLocator(max_n_ticks)
+        f, (ax1, ax2) = plt.subplots(2)
+        mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
+                    cbar_kws=dict(ticks=locator))
+        nt.assert_equal(len(ax2.yaxis.get_ticklabels()), max_n_ticks)
+        plt.close(f)
+
 
 class TestDendrogram(PlotTestCase):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
@@ -363,7 +381,6 @@ class TestDendrogram(PlotTestCase):
         x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
-                                             color_list=['k'],
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
@@ -472,7 +489,6 @@ class TestDendrogram(PlotTestCase):
             d = distance.pdist(self.x_norm, metric='euclidean')
             linkage = hierarchy.linkage(d, method='single')
         dendrogram = hierarchy.dendrogram(linkage, no_plot=True,
-                                          color_list=['k'],
                                           color_threshold=-np.inf)
         kws['linkage'] = linkage
         p = mat._DendrogramPlotter(self.df_norm, **kws)
@@ -606,7 +622,6 @@ class TestClustermap(PlotTestCase):
         x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
         x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
-                                             color_list=['k'],
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
@@ -846,6 +861,157 @@ class TestClustermap(PlotTestCase):
         nt.assert_equal(len(cm.ax_col_colors.collections), 1)
 
         pdt.assert_frame_equal(cm.data2d, self.df_norm)
+
+    def test_row_col_colors_df(self):
+        kws = self.default_kws.copy()
+        kws['row_colors'] = pd.DataFrame({'row_1': list(self.row_colors),
+                                          'row_2': list(self.row_colors)},
+                                         index=self.df_norm.index,
+                                         columns=['row_1', 'row_2'])
+        kws['col_colors'] = pd.DataFrame({'col_1': list(self.col_colors),
+                                          'col_2': list(self.col_colors)},
+                                         index=self.df_norm.columns,
+                                         columns=['col_1', 'col_2'])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        row_labels = [l.get_text() for l in
+                      cm.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(cm.row_color_labels, ['row_1', 'row_2'])
+        nt.assert_equal(row_labels, cm.row_color_labels)
+
+        col_labels = [l.get_text() for l in
+                      cm.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(cm.col_color_labels, ['col_1', 'col_2'])
+        nt.assert_equal(col_labels[::-1], cm.col_color_labels)
+
+    def test_row_col_colors_df_shuffled(self):
+        # Tests if colors are properly matched, even if given in wrong order
+
+        m, n = self.df_norm.shape
+        shuffled_inds = [self.df_norm.index[i] for i in
+                         list(range(0, m, 2)) + list(range(1, m, 2))]
+        shuffled_cols = [self.df_norm.columns[i] for i in
+                         list(range(0, n, 2)) + list(range(1, n, 2))]
+
+        kws = self.default_kws.copy()
+
+        row_colors = pd.DataFrame({'row_annot': list(self.row_colors)},
+                                  index=self.df_norm.index)
+        kws['row_colors'] = row_colors.ix[shuffled_inds]
+
+        col_colors = pd.DataFrame({'col_annot': list(self.col_colors)},
+                                  index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.ix[shuffled_cols]
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        nt.assert_equal(list(cm.col_colors)[0], list(self.col_colors))
+        nt.assert_equal(list(cm.row_colors)[0], list(self.row_colors))
+
+    def test_row_col_colors_df_missing(self):
+        kws = self.default_kws.copy()
+        row_colors = pd.DataFrame({'row_annot': list(self.row_colors)},
+                                  index=self.df_norm.index)
+        kws['row_colors'] = row_colors.drop(self.df_norm.index[0])
+
+        col_colors = pd.DataFrame({'col_annot': list(self.col_colors)},
+                                  index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.drop(self.df_norm.columns[0])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(list(cm.col_colors)[0],
+                        [(1.0, 1.0, 1.0)] + list(self.col_colors[1:]))
+        nt.assert_equal(list(cm.row_colors)[0],
+                        [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
+
+    def test_row_col_colors_df_one_axis(self):
+        # Test case with only row annotation.
+        kws1 = self.default_kws.copy()
+        kws1['row_colors'] = pd.DataFrame({'row_1': list(self.row_colors),
+                                           'row_2': list(self.row_colors)},
+                                          index=self.df_norm.index,
+                                          columns=['row_1', 'row_2'])
+
+        cm1 = mat.clustermap(self.df_norm, **kws1)
+
+        row_labels = [l.get_text() for l in
+                      cm1.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(cm1.row_color_labels, ['row_1', 'row_2'])
+        nt.assert_equal(row_labels, cm1.row_color_labels)
+
+        # Test case with onl col annotation.
+        kws2 = self.default_kws.copy()
+        kws2['col_colors'] = pd.DataFrame({'col_1': list(self.col_colors),
+                                           'col_2': list(self.col_colors)},
+                                          index=self.df_norm.columns,
+                                          columns=['col_1', 'col_2'])
+
+        cm2 = mat.clustermap(self.df_norm, **kws2)
+
+        col_labels = [l.get_text() for l in
+                      cm2.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(cm2.col_color_labels, ['col_1', 'col_2'])
+        nt.assert_equal(col_labels[::-1], cm2.col_color_labels)
+
+    def test_row_col_colors_series(self):
+        kws = self.default_kws.copy()
+        kws['row_colors'] = pd.Series(list(self.row_colors), name='row_annot',
+                                      index=self.df_norm.index)
+        kws['col_colors'] = pd.Series(list(self.col_colors), name='col_annot',
+                                      index=self.df_norm.columns)
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        row_labels = [l.get_text() for l in
+                      cm.ax_row_colors.get_xticklabels()]
+        nt.assert_equal(cm.row_color_labels, ['row_annot'])
+        nt.assert_equal(row_labels, cm.row_color_labels)
+
+        col_labels = [l.get_text() for l in
+                      cm.ax_col_colors.get_yticklabels()]
+        nt.assert_equal(cm.col_color_labels, ['col_annot'])
+        nt.assert_equal(col_labels, cm.col_color_labels)
+
+    def test_row_col_colors_series_shuffled(self):
+        # Tests if colors are properly matched, even if given in wrong order
+
+        m, n = self.df_norm.shape
+        shuffled_inds = [self.df_norm.index[i] for i in
+                         list(range(0, m, 2)) + list(range(1, m, 2))]
+        shuffled_cols = [self.df_norm.columns[i] for i in
+                         list(range(0, n, 2)) + list(range(1, n, 2))]
+
+        kws = self.default_kws.copy()
+
+        row_colors = pd.Series(list(self.row_colors), name='row_annot',
+                               index=self.df_norm.index)
+        kws['row_colors'] = row_colors.ix[shuffled_inds]
+
+        col_colors = pd.Series(list(self.col_colors), name='col_annot',
+                               index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.ix[shuffled_cols]
+
+        cm = mat.clustermap(self.df_norm, **kws)
+
+        nt.assert_equal(list(cm.col_colors), list(self.col_colors))
+        nt.assert_equal(list(cm.row_colors), list(self.row_colors))
+
+    def test_row_col_colors_series_missing(self):
+        kws = self.default_kws.copy()
+        row_colors = pd.Series(list(self.row_colors), name='row_annot',
+                               index=self.df_norm.index)
+        kws['row_colors'] = row_colors.drop(self.df_norm.index[0])
+
+        col_colors = pd.Series(list(self.col_colors), name='col_annot',
+                               index=self.df_norm.columns)
+        kws['col_colors'] = col_colors.drop(self.df_norm.columns[0])
+
+        cm = mat.clustermap(self.df_norm, **kws)
+        nt.assert_equal(list(cm.col_colors),
+                        [(1.0, 1.0, 1.0)] + list(self.col_colors[1:]))
+        nt.assert_equal(list(cm.row_colors),
+                        [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
 
     def test_mask_reorganization(self):
 

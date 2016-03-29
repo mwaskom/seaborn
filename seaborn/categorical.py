@@ -1124,49 +1124,48 @@ class _StripPlotter(_CategoricalScatterPlotter):
         """Draw the points onto `ax`."""
         # Set the default zorder to 2.1, so that the points
         # will be drawn on top of line elements (like in a boxplot)
-        kws.setdefault("zorder", 2.1)
         for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None:
+            if self.plot_hues is None or not self.split:
 
-                # Determine the positions of the points
-                strip_data = remove_na(group_data)
-                jitter = self.jitterer(len(strip_data))
-                kws["color"] = mpl.colors.rgb2hex(self.colors[i])
-
-                # Draw the plot
-                if self.orient == "v":
-                    ax.scatter(i + jitter, strip_data, **kws)
+                if self.hue_names is None:
+                    hue_mask = np.ones(group_data.size, np.bool)
                 else:
-                    ax.scatter(strip_data, i + jitter, **kws)
+                    hue_mask = np.array([h in self.hue_names
+                                         for h in self.plot_hues[i]], np.bool)
+                    # Broken on older numpys
+                    # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+
+                strip_data = group_data[hue_mask]
+
+                # Plot the points in centered positions
+                cat_pos = np.ones(strip_data.size) * i
+                cat_pos += self.jitterer(len(strip_data))
+                kws.update(c=self.point_colors[i][hue_mask])
+                if self.orient == "v":
+                    ax.scatter(cat_pos, strip_data, **kws)
+                else:
+                    ax.scatter(strip_data, cat_pos, **kws)
 
             else:
                 offsets = self.hue_offsets
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    if not hue_mask.any():
-                        continue
+                    strip_data = group_data[hue_mask]
 
-                    # Determine the positions of the points
-                    strip_data = remove_na(group_data[hue_mask])
-                    pos = i + offsets[j] if self.split else i
-                    jitter = self.jitterer(len(strip_data))
-                    kws["color"] = mpl.colors.rgb2hex(self.colors[j])
-
-                    # Only label one set of plots
-                    if i:
-                        kws.pop("label", None)
-                    else:
-                        kws["label"] = hue_level
-
-                    # Draw the plot
+                    # Plot the points in centered positions
+                    center = i + offsets[j]
+                    cat_pos = np.ones(strip_data.size) * center
+                    cat_pos += self.jitterer(len(strip_data))
+                    kws.update(c=self.point_colors[i][hue_mask])
                     if self.orient == "v":
-                        ax.scatter(pos + jitter, strip_data, **kws)
+                        ax.scatter(cat_pos, strip_data, **kws)
                     else:
-                        ax.scatter(strip_data, pos + jitter, **kws)
+                        ax.scatter(strip_data, cat_pos, **kws)
 
     def plot(self, ax, kws):
         """Make the plot."""
         self.draw_stripplot(ax, kws)
+        self.add_legend_data(ax)
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
@@ -1314,7 +1313,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def draw_swarmplot(self, ax, kws):
         """Plot the data."""
-        s = kws.pop("s", 7 ** 2)
+        s = kws.pop("s")
 
         centers = []
         swarms = []
@@ -1335,7 +1334,10 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 if self.hue_names is None:
                     hue_mask = np.ones(group_data.size, np.bool)
                 else:
-                    hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+                    hue_mask = np.array([h in self.hue_names
+                                         for h in self.plot_hues[i]], np.bool)
+                    # Broken on older numpys
+                    # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
                 swarm_data = group_data[hue_mask]
 
@@ -2218,20 +2220,13 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", hue="time",
         ...                  data=tips, linewidth=2.5)
 
-    Control box order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.boxplot(x="size", y="tip", data=tips.sort("size"))
-
     Control box order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.boxplot(x="time", y="tip", data=tips,
+        ...                  order=["Dinner", "Lunch"])
 
     Draw a boxplot for each numeric variable in a DataFrame:
 
@@ -2419,20 +2414,13 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="day", y="total_bill", hue="smoker",
         ...                     data=tips, palette="muted", split=True)
 
-    Control violin order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="size", y="tip", data=tips.sort("size"))
-
     Control violin order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot(x="size", y="tip", data=tips,
-        ...                     order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.violinplot(x="time", y="tip", data=tips,
+        ...                     order=["Dinner", "Lunch"])
 
     Scale the violin width by the number of observations in each bin:
 
@@ -2506,17 +2494,23 @@ violinplot.__doc__ = dedent("""\
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, split=True, orient=None, color=None, palette=None,
-              size=7, edgecolor="w", linewidth=1, ax=None, **kwargs):
+              jitter=False, split=False, orient=None, color=None, palette=None,
+              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
                             jitter, split, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
-    kwargs.update(dict(s=size ** 2, edgecolor=edgecolor, linewidth=linewidth))
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+    if linewidth is None:
+        linewidth = size / 10
     if edgecolor == "gray":
-        kwargs["edgecolor"] = plotter.gray
+        edgecolor = plotter.gray
+    kwargs.update(dict(s=size ** 2,
+                       edgecolor=edgecolor,
+                       linewidth=linewidth))
 
     plotter.plot(ax, kwargs)
     return ax
@@ -2613,6 +2607,14 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
         ...                    jitter=True)
 
+    Draw outlines around the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
+        ...                    jitter=True, linewidth=1)
+
     Nest the strips within a second categorical variable:
 
     .. plot::
@@ -2621,7 +2623,7 @@ stripplot.__doc__ = dedent("""\
         >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
         ...                    data=tips, jitter=True)
 
-    Draw each level of the ``hue`` variable at the same location on the
+    Draw each level of the ``hue`` variable at different locations on the
     major categorical axis:
 
     .. plot::
@@ -2629,22 +2631,15 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, jitter=True,
-        ...                    palette="Set2", split=False)
-
-    Control strip order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="size", y="tip", data=tips.sort("size"))
+        ...                    palette="Set2", split=True)
 
     Control strip order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.stripplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
     Draw strips with large points and different aesthetics:
 
@@ -2661,16 +2656,17 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips,
+        ...                    jitter=True, color=".3")
 
     Draw strips of observations on top of a violin plot:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    jitter=True, color="white", edgecolor="gray")
+        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
+        ...                     inner=None, color=".8")
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
     """).format(**_categorical_docs)
 
@@ -2796,29 +2792,20 @@ swarmplot.__doc__ = dedent("""\
         >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2", split=True)
 
-    Control swarm order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.swarmplot(x="size", y="tip",
-        ...                    data=tips.sort_values("size"))
-
     Control swarm order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.swarmplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
-    Plot using smaller points:
+    Plot using larger points:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="size", y="tip", data=tips, size=4,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.swarmplot(x="time", y="tip", data=tips, size=6)
 
 
     Draw swarms of observations on top of a box plot:
@@ -2948,20 +2935,13 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot(x="tip", y="day", data=tips)
 
-    Control bar order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.barplot(x="size", y="tip", data=tips.sort("size"))
-
     Control bar order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.barplot(x="time", y="tip", data=tips,
+        ...                  order=["Dinner", "Lunch"])
 
     Use median as the estimate of central tendency:
 
@@ -2983,7 +2963,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  palette="Blues_d")
 
     Plot all bars in a single color:
@@ -2991,7 +2971,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips.sort("size"),
+        >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  color="salmon", saturation=.5)
 
     Use ``plt.bar`` keyword arguments to further change the aesthetic:
@@ -3162,20 +3142,13 @@ pointplot.__doc__ = dedent("""\
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2")
 
-    Control point order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.pointplot(x="size", y="tip", data=tips.sort("size"))
-
     Control point order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="size", y="tip", data=tips,
-        ...                    order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.pointplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
 
     Use median as the estimate of central tendency:
 
@@ -3645,7 +3618,7 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lvplot(x="day", y="total_bill", hue="smoker",
-        ...                  data=tips, palette="Set3")
+        ...                 data=tips, palette="Set3")
 
     Draw a letter value plot with nested grouping when some bins are empty:
 
@@ -3653,22 +3626,15 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
-        ...                  data=tips, linewidth=2.5)
-
-    Control box order by sorting the input data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="size", y="tip", data=tips.sort("size"))
+        ...                 data=tips, linewidth=2.5)
 
     Control box order by passing an explicit order:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.lvplot(x="size", y="tip", data=tips,
-        ...                  order=np.arange(1, 7), palette="Blues_d")
+        >>> ax = sns.lvplot(x="time", y="tip", data=tips,
+        ...                 order=["Dinner", "Lunch"])
 
     Draw a letter value plot for each numeric variable in a DataFrame:
 

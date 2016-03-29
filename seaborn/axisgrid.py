@@ -607,7 +607,7 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> g = sns.FacetGrid(tips.sort("size"), col="size", col_wrap=3)
+            >>> g = sns.FacetGrid(tips, col="size", col_wrap=3)
             >>> g = (g.map(plt.hist, "tip", bins=np.arange(0, 13), color="c")
             ...       .set_titles("{{col_name}} diners"))
 
@@ -923,6 +923,10 @@ class FacetGrid(Grid):
             else:
                 template = " | ".join([row_template, col_template])
 
+        row_template = utils.to_utf8(row_template)
+        col_template = utils.to_utf8(col_template)
+        template = utils.to_utf8(template)
+
         if self._margin_titles:
             if self.row_names is not None:
                 # Draw the row titles on the right edge of the grid
@@ -1121,7 +1125,18 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris, hue="species")
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map_diag(plt.hist)
+            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.add_legend()
+
+        Use a different style to show multiple histograms:
+
+        .. plot::
+            :context: close-figs
+
+            >>> g = sns.PairGrid(iris, hue="species")
+            >>> g = g.map_diag(plt.hist, histtype="step", linewidth=3)
+            >>> g = g.map_offdiag(plt.scatter)
             >>> g = g.add_legend()
 
         Plot a subset of variables
@@ -1323,8 +1338,13 @@ class PairGrid(Grid):
                         vals.append(np.asarray(hue_grouped.get_group(label)))
                     except KeyError:
                         vals.append(np.array([]))
-                func(vals, color=self.palette, histtype="barstacked",
-                     **kwargs)
+
+                # check and see if histtype override was provided in kwargs
+                if 'histtype' in kwargs:
+                    func(vals, color=self.palette, **kwargs)
+                else:
+                    func(vals, color=self.palette, histtype="barstacked",
+                         **kwargs)
             else:
                 for k, label_k in enumerate(self.hue_names):
                     # Attempt to get data for this level, allowing for empty

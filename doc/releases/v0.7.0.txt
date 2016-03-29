@@ -1,10 +1,16 @@
 
-v0.7.0 (Unreleased)
--------------------
+v0.7.0 (January 2016)
+---------------------
+
+This is a major release from 0.6. The main new feature is :func:`swarmplot` which implements the beeswarm approach for drawing categorical scatterplots. There are also some performance improvements, bug fixes, and updates for compatibility with new versions of dependencies.
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
 
-- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overriden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` dtype will still follow the category order even if the levels are strictly numerical.
+- Changed some of the :func:`stripplot` defaults to be closer to :func:`swarmplot`. Points are now somewhat smaller, have no outlines, and are not split by default when using ``hue``. These settings remain customizable through function parameters.
+
+- Added an additional rule when determining category order in categorical plots. Now, when numeric variables are used in a categorical role, the default behavior is to sort the unique levels of the variable (i.e they will be in proper numerical order). This can still be overridden by the appropriate ``{*_}order`` parameter, and variables with a ``category`` datatype will still follow the category order even if the levels are strictly numerical.
+
+- Changed how :func:`stripplot` draws points when using ``hue`` nesting with ``split=False`` so that the different ``hue`` levels are not drawn strictly on top of each other.
 
 - Improve performance for large dendrograms in :func:`clustermap`.
 
@@ -14,6 +20,20 @@ v0.7.0 (Unreleased)
 
 - Fixed a bug in the zscore calculation in :func:`clustermap`.
 
+- Fixed a bug in :func:`distplot` where sometimes the default number of bins would not be an integer.
+
+- Fixed a bug in :func:`stripplot` where a legend item would not appear for a ``hue`` level if there were no observations in the first group of points.
+
+- Heatmap colorbars are now rasterized for better performance in vector plots.
+
 - Added workarounds for some matplotlib boxplot issues, such as strange colors of outlier points.
 
-- Added compatability for various IPython (and Jupyter) versions in functions that use widgets.
+- Added workarounds for an issue where violinplot edges would be missing or have random colors.
+
+- Added a workaround for an issue where only one :func:`heatmap` cell would be annotated on some matplotlib backends.
+
+- Fixed a bug on newer versions of matplotlib where a colormap would be erroneously applied to scatterplots with only three observations.
+
+- Updated seaborn for compatibility with matplotlib 1.5.
+
+- Added compatibility for various IPython (and Jupyter) versions in functions that use widgets.
