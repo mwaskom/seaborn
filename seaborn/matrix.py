@@ -850,11 +850,11 @@ class ClusterGrid(Grid):
         """
 
         if axis == 0:
-            side_colors = self.row_colors
-            side_cluster = self.row_cluster
-        else:
             side_colors = self.col_colors
             side_cluster = self.col_colors
+        else:
+            side_colors = self.row_colors
+            side_cluster = self.row_cluster
 
         # Get resizing proportion of this figure for the dendrogram and
         # colorbar, so only the heatmap gets bigger but the dendrogram stays
