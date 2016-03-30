@@ -1498,24 +1498,43 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             self.value_label = "{}({})".format(estimator.__name__,
                                                self.value_label)
 
-    def draw_confints(self, ax, at_group, confint, colors, **kws):
+    def draw_confints(self,
+                      ax, at_group,
+                      confint,
+                      colors,
+                      conf_lw=1,
+                      capsize=0,
+                      **kws):
 
-        kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
+        kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * conf_lw)
+        kws.pop('lw')
 
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
                                                 colors):
             if self.orient == "v":
-                ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
+                ax.plot([at, at], [ci_low, ci_high], color=color,
+                        lw=conf_lw, **kws)
+                ax.plot([at - capsize / 2, at + capsize / 2],
+                        [ci_low, ci_low], color=color, lw=conf_lw, **kws)
+                ax.plot([at - capsize / 2, at + capsize / 2],
+                        [ci_high, ci_high], color=color, lw=conf_lw, **kws)
             else:
-                ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
-
+                ax.plot([ci_low, ci_high], [at, at], color=color,
+                        lw=conf_lw, **kws)
+                ax.plot([ci_low, ci_low],
+                        [at - capsize /2, at + capsize /2],
+                        color=color, lw=conf_lw, **kws)
+                ax.plot([ci_high, ci_high],
+                        [at - capsize /2, at + capsize /2],
+                        color=color, lw=conf_lw, **kws)
 
 class _BarPlotter(_CategoricalStatPlotter):
     """Show point estimates and confidence intervals with bars."""
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation, errcolor):
+                 orient, color, palette, saturation, errcolor, conf_lw,
+                 capsize):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1523,6 +1542,8 @@ class _BarPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot)
 
         self.errcolor = errcolor
+        self.conf_lw = conf_lw
+        self.capsize = capsize
 
     def draw_bars(self, ax, kws):
         """Draw the bars onto `ax`."""
@@ -1538,7 +1559,12 @@ class _BarPlotter(_CategoricalStatPlotter):
 
             # Draw the confidence intervals
             errcolors = [self.errcolor] * len(barpos)
-            self.draw_confints(ax, barpos, self.confint, errcolors)
+            self.draw_confints(ax,
+                               barpos,
+                               self.confint,
+                               errcolors,
+                               self.conf_lw,
+                               self.capsize)
 
         else:
 
@@ -1554,7 +1580,12 @@ class _BarPlotter(_CategoricalStatPlotter):
                 if self.confint.size:
                     confint = self.confint[:, j]
                     errcolors = [self.errcolor] * len(offpos)
-                    self.draw_confints(ax, offpos, confint, errcolors)
+                    self.draw_confints(ax,
+                                       offpos,
+                                       confint,
+                                       errcolors,
+                                       self.conf_lw,
+                                       self.capsize)
 
     def plot(self, ax, bar_kws):
         """Make the plot."""
@@ -1569,7 +1600,7 @@ class _PointPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  markers, linestyles, dodge, join, scale,
-                 orient, color, palette):
+                 orient, color, palette, conf_lw, capsize):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1602,6 +1633,8 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.dodge = dodge
         self.join = join
         self.scale = scale
+        self.conf_lw = conf_lw
+        self.capsize = capsize
 
     @property
     def hue_offsets(self):
@@ -1634,7 +1667,8 @@ class _PointPlotter(_CategoricalStatPlotter):
                             color=color, ls=ls, lw=lw)
 
             # Draw the confidence intervals
-            self.draw_confints(ax, pointpos, self.confint, self.colors, lw=lw)
+            self.draw_confints(ax, pointpos, self.confint, self.colors,
+                               self.conf_lw, self.capsize, lw=lw)
 
             # Draw the estimate points
             marker = self.markers[0]
@@ -1675,6 +1709,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                     confint = self.confint[:, j]
                     errcolors = [self.colors[j]] * len(offpos)
                     self.draw_confints(ax, offpos, confint, errcolors,
+                                       self.conf_lw, self.capsize,
                                        zorder=z, lw=lw)
 
                 # Draw the estimate points
@@ -2025,6 +2060,17 @@ _categorical_docs = dict(
         ``1`` if you want the plot colors to perfectly match the input color
         spec.\
     """),
+    capsize=dedent("""\
+         capsize : float, optional
+             Length of caps on confidence interval (drawn perpendicular to primary
+             line. If 0.0 (default), no caps will be drawn. Typical values are
+             between 0.03 and 0.1.\
+         """),
+    conf_lw = dedent("""\
+         conf_lw : float, optional
+             Thickness of lines draw for the confidence interval (and caps).
+             Default is 1.8.\
+         """),
     width=dedent("""\
     width : float, optional
         Width of a full element when not using hue nesting, or width of all the
@@ -2074,6 +2120,9 @@ _categorical_docs = dict(
     lvplot=dedent("""\
     lvplot : An extension of the boxplot for long-tailed and large data sets.
     """),
+
+
+
     )
 
 _categorical_docs.update(_facet_docs)
@@ -2831,7 +2880,7 @@ swarmplot.__doc__ = dedent("""\
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             estimator=np.mean, ci=95, n_boot=1000, units=None,
             orient=None, color=None, palette=None, saturation=.75,
-            errcolor=".26", ax=None, **kwargs):
+            errcolor=".26", conf_lw=1.8, capsize=0, ax=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2850,7 +2899,7 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor)
+                          errcolor, conf_lw, capsize)
 
     if ax is None:
         ax = plt.gca()
@@ -2894,6 +2943,8 @@ barplot.__doc__ = dedent("""\
     errcolor : matplotlib color
         Color for the lines that represent the confidence interval.
     {ax_in}
+    {conf_lw}
+    {capsize}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.bar`` at draw
         time.
@@ -2989,7 +3040,8 @@ barplot.__doc__ = dedent("""\
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, ax=None, **kwargs):
+              orient=None, color=None, palette=None, ax=None, conf_lw=1.8,
+              capsize=0, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -3008,7 +3060,7 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
                             markers, linestyles, dodge, join, scale,
-                            orient, color, palette)
+                            orient, color, palette, conf_lw, capsize)
 
     if ax is None:
         ax = plt.gca()
@@ -3187,12 +3239,12 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     elif x is not None and y is not None:
         raise TypeError("Cannot pass values for both `x` and `y`")
     else:
-        raise TypeError("Must pass valus for either `x` or `y`")
+        raise TypeError("Must pass values for either `x` or `y`")
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor)
+                          errcolor, conf_lw=1, capsize=0)
 
     plotter.value_label = "count"
 

@@ -1749,7 +1749,7 @@ class TestBarPlotter(CategoricalFixture):
                        estimator=np.mean, ci=95, n_boot=100, units=None,
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
-                       saturation=.75, errcolor=".26")
+                       saturation=.75, errcolor=".26", conf_lw=1.8, capsize=0)
 
     def test_nested_width(self):
 
@@ -1974,7 +1974,7 @@ class TestPointPlotter(CategoricalFixture):
                        order=None, hue_order=None,
                        markers="o", linestyles="-", dodge=0,
                        join=True, scale=1,
-                       orient=None, color=None, palette=None)
+                       orient=None, color=None, palette=None, conf_lw=1, capsize=0)
 
     def test_different_defualt_colors(self):
 
