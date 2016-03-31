@@ -1524,22 +1524,22 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                 else:
                     ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
                     ax.plot([ci_low, ci_low],
-                            [at - capsize /2, at + capsize /2],
+                            [at - capsize / 2, at + capsize / 2],
                             color=color, **kws)
                     ax.plot([ci_high, ci_high],
-                            [at - capsize /2, at + capsize /2],
+                            [at - capsize / 2, at + capsize / 2],
                             color=color, **kws)
         else:
-            for at, (ci_low, ci_high), color in zip(at_group,
-                                                        confint,
-                                                        colors):
+            for at, (ci_low, ci_high), color in zip(at_group, confint, colors):
                 if self.orient == "v":
                     ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
                 else:
                     ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
 
+
 class _BarPlotter(_CategoricalStatPlotter):
     """Show point estimates and confidence intervals with bars."""
+
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  orient, color, palette, saturation, errcolor, conf_lw=None,
@@ -1595,7 +1595,6 @@ class _BarPlotter(_CategoricalStatPlotter):
                                        errcolors,
                                        self.conf_lw,
                                        self.capsize)
-
 
     def plot(self, ax, bar_kws):
         """Make the plot."""
@@ -2071,11 +2070,11 @@ _categorical_docs = dict(
     """),
     capsize=dedent("""\
          capsize : float, optional
-             Length of caps on confidence interval (drawn perpendicular to primary
-             line. If 0.0 (default), no caps will be drawn. Typical values are
-             between 0.03 and 0.1.\
+             Length of caps on confidence interval (drawn perpendicular to
+             primary line. If 0.0 (default), no caps will be drawn.
+             Typical values are between 0.03 and 0.1.\
          """),
-    conf_lw = dedent("""\
+    conf_lw=dedent("""\
          conf_lw : float, optional
              Thickness of lines draw for the confidence interval (and caps).
              Default is 1.8.\
