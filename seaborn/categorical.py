@@ -1508,7 +1508,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
         if conf_lw:
             kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * conf_lw)
-            kws.pop("lw")
         else:
             kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
 
