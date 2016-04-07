@@ -2001,6 +2001,7 @@ class TestBarPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
+
 class TestPointPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
