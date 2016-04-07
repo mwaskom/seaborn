@@ -1511,30 +1511,25 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         else:
             kws.setdefault("lw", 1.8)
 
-        if capsize is not None:
-            for at, (ci_low, ci_high), color in zip(at_group,
-                                                    confint,
-                                                    colors):
-                if self.orient == "v":
-                    ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
+        for at, (ci_low, ci_high), color in zip(at_group,
+                                                confint,
+                                                colors):
+            if self.orient == "v":
+                ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
+                if capsize is not None:
                     ax.plot([at - capsize / 2, at + capsize / 2],
                             [ci_low, ci_low], color=color, **kws)
                     ax.plot([at - capsize / 2, at + capsize / 2],
                             [ci_high, ci_high], color=color, **kws)
-                else:
-                    ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
+            else:
+                ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
+                if capsize is not None:
                     ax.plot([ci_low, ci_low],
                             [at - capsize / 2, at + capsize / 2],
                             color=color, **kws)
                     ax.plot([ci_high, ci_high],
                             [at - capsize / 2, at + capsize / 2],
                             color=color, **kws)
-        else:
-            for at, (ci_low, ci_high), color in zip(at_group, confint, colors):
-                if self.orient == "v":
-                    ax.plot([at, at], [ci_low, ci_high], color=color, **kws)
-                else:
-                    ax.plot([ci_low, ci_high], [at, at], color=color, **kws)
 
 
 class _BarPlotter(_CategoricalStatPlotter):
