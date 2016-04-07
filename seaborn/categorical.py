@@ -1502,12 +1502,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                       ax, at_group,
                       confint,
                       colors,
-                      conf_lw=None,
+                      errwidth=None,
                       capsize=None,
                       **kws):
 
-        if conf_lw is not None:
-            kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * conf_lw)
+        if errwidth is not None:
+            kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * errwidth)
         else:
             kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
 
@@ -1542,7 +1542,7 @@ class _BarPlotter(_CategoricalStatPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation, errcolor, conf_lw=None,
+                 orient, color, palette, saturation, errcolor, errwidth=None,
                  capsize=None):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
@@ -1551,7 +1551,7 @@ class _BarPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot)
 
         self.errcolor = errcolor
-        self.conf_lw = conf_lw
+        self.errwidth = errwidth
         self.capsize = capsize
 
     def draw_bars(self, ax, kws):
@@ -1572,7 +1572,7 @@ class _BarPlotter(_CategoricalStatPlotter):
                                barpos,
                                self.confint,
                                errcolors,
-                               self.conf_lw,
+                               self.errwidth,
                                self.capsize)
 
         else:
@@ -1593,7 +1593,7 @@ class _BarPlotter(_CategoricalStatPlotter):
                                        offpos,
                                        confint,
                                        errcolors,
-                                       self.conf_lw,
+                                       self.errwidth,
                                        self.capsize)
 
     def plot(self, ax, bar_kws):
@@ -1609,7 +1609,7 @@ class _PointPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  markers, linestyles, dodge, join, scale,
-                 orient, color, palette, conf_lw=None, capsize=None):
+                 orient, color, palette, errwidth=None, capsize=None):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1642,7 +1642,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.dodge = dodge
         self.join = join
         self.scale = scale
-        self.conf_lw = conf_lw
+        self.errwidth = errwidth
         self.capsize = capsize
 
     @property
@@ -1677,7 +1677,7 @@ class _PointPlotter(_CategoricalStatPlotter):
 
             # Draw the confidence intervals
             self.draw_confints(ax, pointpos, self.confint, self.colors,
-                               self.conf_lw, self.capsize)
+                               self.errwidth, self.capsize)
             # Draw the estimate points
             marker = self.markers[0]
             if self.orient == "h":
@@ -1717,7 +1717,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                     confint = self.confint[:, j]
                     errcolors = [self.colors[j]] * len(offpos)
                     self.draw_confints(ax, offpos, confint, errcolors,
-                                       self.conf_lw, self.capsize,
+                                       self.errwidth, self.capsize,
                                        zorder=z)
 
                 # Draw the estimate points
@@ -2074,8 +2074,8 @@ _categorical_docs = dict(
              primary line. If 0.0 (default), no caps will be drawn.
              Typical values are between 0.03 and 0.1.\
          """),
-    conf_lw=dedent("""\
-         conf_lw : float, optional
+    errwidth=dedent("""\
+         errwidth : float, optional
              Thickness of lines draw for the confidence interval (and caps).
              Default is 1.8.\
          """),
@@ -2888,7 +2888,7 @@ swarmplot.__doc__ = dedent("""\
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             estimator=np.mean, ci=95, n_boot=1000, units=None,
             orient=None, color=None, palette=None, saturation=.75,
-            errcolor=".26", conf_lw=None, capsize=None, ax=None, **kwargs):
+            errcolor=".26", errwidth=None, capsize=None, ax=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2907,7 +2907,7 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor, conf_lw, capsize)
+                          errcolor, errwidth, capsize)
 
     if ax is None:
         ax = plt.gca()
@@ -2951,7 +2951,7 @@ barplot.__doc__ = dedent("""\
     errcolor : matplotlib color
         Color for the lines that represent the confidence interval.
     {ax_in}
-    {conf_lw}
+    {errwidth}
     {capsize}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.bar`` at draw
@@ -3048,7 +3048,7 @@ barplot.__doc__ = dedent("""\
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, ax=None, conf_lw=None,
+              orient=None, color=None, palette=None, ax=None, errwidth=None,
               capsize=None, **kwargs):
 
     # Handle some deprecated arguments
@@ -3068,7 +3068,7 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
                             markers, linestyles, dodge, join, scale,
-                            orient, color, palette, conf_lw, capsize)
+                            orient, color, palette, errwidth, capsize)
 
     if ax is None:
         ax = plt.gca()

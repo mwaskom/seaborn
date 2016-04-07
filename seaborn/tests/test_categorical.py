@@ -684,9 +684,9 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        # Test conf_lw is set appropriately
+        # Test errwidth is set appropriately
         f, ax = plt.subplots()
-        p.draw_confints(ax, at_group, confints, colors, conf_lw=2)
+        p.draw_confints(ax, at_group, confints, colors, errwidth=2)
         capline = ax.lines[len(ax.lines)-1]
         nt.assert_equal(capline._linewidth, 2)
         nt.assert_equal(len(ax.lines), 2)
