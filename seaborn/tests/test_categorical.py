@@ -650,11 +650,46 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         plt.close("all")
 
+        # Test vertical CIs with endcaps
+        p.orient = "v"
+
+        f, ax = plt.subplots()
+        p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
+        capline = ax.lines[len(ax.lines) - 1]
+        caplinestart = capline.get_xdata()[0]
+        caplineend = capline.get_xdata()[1]
+        caplinelength = abs(caplineend - caplinestart)
+        nt.assert_almost_equal(caplinelength, 0.3)
+        nt.assert_equal(len(ax.lines), 6)
+
+        plt.close("all")
+
+        # Test horizontal CIs with endcaps
+        p.orient = "h"
+
+        f, ax = plt.subplots()
+        p.draw_confints(ax, at_group, confints, colors, capsize=0.3)
+        capline = ax.lines[len(ax.lines) - 1]
+        caplinestart = capline.get_ydata()[0]
+        caplineend = capline.get_ydata()[1]
+        caplinelength = abs(caplineend - caplinestart)
+        nt.assert_almost_equal(caplinelength, 0.3)
+        nt.assert_equal(len(ax.lines), 6)
+
         # Test extra keyword arguments
         f, ax = plt.subplots()
         p.draw_confints(ax, at_group, confints, colors, lw=4)
         line = ax.lines[0]
         nt.assert_equal(line.get_linewidth(), 4)
+
+        plt.close("all")
+
+        # Test conf_lw is set appropriately
+        f, ax = plt.subplots()
+        p.draw_confints(ax, at_group, confints, colors, conf_lw=2)
+        capline = ax.lines[len(ax.lines)-1]
+        nt.assert_equal(capline._linewidth, 2)
+        nt.assert_equal(len(ax.lines), 2)
 
         plt.close("all")
 
@@ -1965,7 +2000,6 @@ class TestBarPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_xlabel(), "mean(y)")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
-
 
 class TestPointPlotter(CategoricalFixture):
 
