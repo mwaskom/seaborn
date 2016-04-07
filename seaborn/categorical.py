@@ -2071,7 +2071,7 @@ _categorical_docs = dict(
     capsize=dedent("""\
          capsize : float, optional
              Length of caps on confidence interval (drawn perpendicular to
-             primary line. If 0.0 (default), no caps will be drawn.
+             primary line). If unspecified, no caps will be drawn.
              Typical values are between 0.03 and 0.1.\
          """),
     errwidth=dedent("""\
