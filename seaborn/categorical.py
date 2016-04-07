@@ -2076,8 +2076,7 @@ _categorical_docs = dict(
          """),
     errwidth=dedent("""\
          errwidth : float, optional
-             Thickness of lines draw for the confidence interval (and caps).
-             Default is 1.8.\
+             Thickness of lines drawn for the confidence interval (and caps).\
          """),
     width=dedent("""\
     width : float, optional
