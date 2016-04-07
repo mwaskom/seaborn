@@ -1506,12 +1506,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                       capsize=None,
                       **kws):
 
-        if conf_lw:
+        if conf_lw is not None:
             kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * conf_lw)
         else:
             kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
 
-        if capsize:
+        if capsize is not None:
             for at, (ci_low, ci_high), color in zip(at_group,
                                                     confint,
                                                     colors):
