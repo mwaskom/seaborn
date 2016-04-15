@@ -20,6 +20,12 @@ from .external.six import string_types
 
 
 __all__ = ["heatmap", "clustermap"]
+    precedence goes to key value pairs in latter dicts.
+    """
+    result = {}
+    for dictionary in dict_args:
+        result.update(dictionary)
+    return result
 
 
 def _index_to_label(index):
@@ -752,8 +758,8 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None,
-                 col_colors_ratio=0.05, row_colors_ratio=0.05,
-                 row_cluster=True, col_cluster=True, colorbar=True, mask=None):
+                 row_ratios=None, col_ratios=None, row_cluster=True,
+                 col_cluster=True, colorbar=True, mask=None):
         """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
@@ -783,9 +789,9 @@ class ClusterGrid(Grid):
 
         self.colorbar = colorbar
 
-        self._setup_axes(figsize, row_colors_ratio, col_colors_ratio)
+        self._setup_axes(figsize, row_ratios, col_ratios)
 
-    def _setup_axes(self, figsize, row_colors_ratio, col_colors_ratio):
+    def _setup_axes(self, figsize, row_ratios, col_ratios):
         """Setup the different axes that make up the ClusterGrid.
            Axes that are not required under the passed arguments,
            (missing side_colors or disabled dendrograms for example)
@@ -797,10 +803,10 @@ class ClusterGrid(Grid):
 
         # Setup axes grid.
         height_ratios = self._dim_ratios(figsize=figsize, axis=0,
-                                         side_colors_ratio=col_colors_ratio)
+                                         ratios=col_ratios)
 
         width_ratios = self._dim_ratios(figsize=figsize,  axis=1,
-                                        side_colors_ratio=row_colors_ratio)
+                                        ratios=row_ratios)
 
         self.gs = gridspec.GridSpec(len(height_ratios),
                                     len(width_ratios),
@@ -845,42 +851,45 @@ class ClusterGrid(Grid):
         else:
             self.ax_col_colors = None
 
-    def _dim_ratios(self, figsize, axis, side_colors_ratio=0.05):
+    def _dim_ratios(self, figsize, axis, ratios=None):
         """Get the proportions of the figure taken up by each axes
         """
 
+        # Merge default ratios with any overridden ratios
+        default_ratios = {'dendrogram': min(2. / figsize[axis], .2),
+                          'side_colors': 0.05,
+                          'heatmap': 0.8}
+
+        ratios = merge_dicts(default_ratios, ratios or {})
+
+        # Determine which clustering/colors to use
         if axis == 0:
             side_colors = self.col_colors
-            side_cluster = self.col_colors
+            side_cluster = self.col_cluster
         else:
             side_colors = self.row_colors
             side_cluster = self.row_cluster
 
-        # Get resizing proportion of this figure for the dendrogram and
-        # colorbar, so only the heatmap gets bigger but the dendrogram stays
-        # the same size.
-        dendrogram = min(2. / figsize[axis], .2)
-
-        # add the colorbar
+        # Add the colorbar
         if self.colorbar:
-            colorbar_width = .8 * dendrogram
-            colorbar_height = .2 * dendrogram
+            colorbar_width = .8 * ratios['dendrogram']
+            colorbar_height = .2 * ratios['dendrogram']
 
             if axis == 0:
-                ratios = [colorbar_width, colorbar_height]
+                dim_ratios = [colorbar_width, colorbar_height]
             else:
-                ratios = [colorbar_height, colorbar_width]
+                dim_ratios = [colorbar_height, colorbar_width]
         else:
-            ratios = [dendrogram]
+            dim_ratios = [ratios['dendrogram']]
 
         if side_colors is not None:
             # Add room for the colors
-            ratios += [side_colors_ratio]
+            dim_ratios += [ratios['side_colors']]
 
         # Add the ratio for the heatmap itself
-        ratios += [.8]
+        dim_ratios += [ratios['heatmap']]
 
-        return ratios
+        return dim_ratios
 
     def _preprocess_colors(self, data, colors, axis):
         """Preprocess {row/col}_colors to extract labels and convert colors."""
@@ -1212,9 +1221,9 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None,
-               col_color_ratio=None, row_color_ratio=None,
-               mask=None, **kwargs):
-    """Plot a matrix dataset as a hierarchically-clustered heatmap.
+               row_ratios=None, col_ratios=None,
+               colorbar=True, mask=None, **kwargs):
+    """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     Parameters
     ----------
@@ -1355,8 +1364,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale,
-                          col_colors_ratio=col_colors_ratio,
-                          row_colors_ratio=row_colors_ratio,
+                          row_ratios=row_ratios, col_ratios=col_ratios,
                           row_cluster=row_cluster, col_cluster=col_cluster,
                           colorbar=colorbar, mask=mask)
 
