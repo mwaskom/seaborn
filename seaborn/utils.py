@@ -369,7 +369,7 @@ def get_dataset_names():
     gh_list = BeautifulSoup(http)
 
     return [l.text.replace('.csv', '')
-            for l in gh_list.find_all("a", {"class": "js-directory-link"})
+            for l in gh_list.find_all("a", {"class": "js-navigation-open"})
             if l.text.endswith('.csv')]
 
 
