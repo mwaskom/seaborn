@@ -1509,7 +1509,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         if errwidth is not None:
             kws.setdefault("lw", errwidth)
         else:
-            kws.setdefault("lw", 1.8)
+            kws.setdefault("lw", mpl.rcParams["lines.linewidth"] * 1.8)
 
         for at, (ci_low, ci_high), color in zip(at_group,
                                                 confint,
