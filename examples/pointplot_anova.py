@@ -12,5 +12,5 @@ df = sns.load_dataset("exercise")
 
 # Draw a pointplot to show pulse as a function of three categorical factors
 g = sns.factorplot(x="time", y="pulse", hue="kind", col="diet", data=df,
-                   palette="YlGnBu_d", size=6, aspect=.75)
+                   capsize=.2, palette="YlGnBu_d", size=6, aspect=.75)
 g.despine(left=True)

@@ -1498,13 +1498,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             self.value_label = "{}({})".format(estimator.__name__,
                                                self.value_label)
 
-    def draw_confints(self,
-                      ax, at_group,
-                      confint,
-                      colors,
-                      errwidth=None,
-                      capsize=None,
-                      **kws):
+    def draw_confints(self, ax, at_group, confint, colors,
+                      errwidth=None, capsize=None, **kws):
 
         if errwidth is not None:
             kws.setdefault("lw", errwidth)
@@ -2065,13 +2060,11 @@ _categorical_docs = dict(
     """),
     capsize=dedent("""\
          capsize : float, optional
-             Length of caps on confidence interval (drawn perpendicular to
-             primary line). If unspecified, no caps will be drawn.
-             Typical values are between 0.03 and 0.1.\
+             Width of the "caps" on error bars.
          """),
     errwidth=dedent("""\
          errwidth : float, optional
-             Thickness of lines drawn for the confidence interval (and caps).\
+             Thickness of error bar lines (and caps).\
          """),
     width=dedent("""\
     width : float, optional
@@ -2122,8 +2115,6 @@ _categorical_docs = dict(
     lvplot=dedent("""\
     lvplot : An extension of the boxplot for long-tailed and large data sets.
     """),
-
-
 
     )
 
@@ -3011,6 +3002,13 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot(x="day", y="tip", data=tips, ci=68)
 
+    Add "caps" to the error bars:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="day", y="tip", data=tips, capsize=.2)
+
     Use a different color palette for the bars:
 
     .. plot::
@@ -3218,6 +3216,13 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
+
+    Add "caps" to the error bars:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
 
     """).format(**_categorical_docs)
 
