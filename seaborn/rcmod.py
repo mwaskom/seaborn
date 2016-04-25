@@ -5,7 +5,7 @@ import functools
 import numpy as np
 import matplotlib as mpl
 
-from . import palettes
+from . import palettes, _orig_rc_params
 
 mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 
@@ -112,7 +112,7 @@ def reset_defaults():
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
-    mpl.rcParams.update(mpl.rcParamsOrig)
+    mpl.rcParams.update(_orig_rc_params)
 
 
 def axes_style(style=None, rc=None):
