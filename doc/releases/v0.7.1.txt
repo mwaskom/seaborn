@@ -8,6 +8,8 @@ v0.7.1 (Unreleased)
 
 - Improved the luminance calculation that determines the annotation color in :func:`heatmap`.
 
+- The ``annot`` parameter of :func:`heatmap` now accepts a rectangular dataset in addition to a boolean value. If a dataset is passed, its values will be used for the annotations, while the main dataset will be used for the heatmap cell colors.
+
 - Made it possible to pass a tick locator object to the :func:`heatmap` colorbar.
 
 - Made it possible to use different styles (e.g., step) for :class:`PairGrid` histograms when there are multiple hue levels.
