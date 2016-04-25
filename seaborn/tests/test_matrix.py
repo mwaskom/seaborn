@@ -253,6 +253,16 @@ class TestHeatmap(PlotTestCase):
 
         plt.close("all")
 
+    def test_heatmap_annotation_other_data(self):
+        annot_data = self.df_norm + 10
+
+        ax = mat.heatmap(self.df_norm, annot=annot_data, fmt=".1f",
+                         annot_kws={"fontsize": 14})
+
+        for val, text in zip(annot_data.values[::-1].flat, ax.texts):
+            nt.assert_equal(text.get_text(), "{:.1f}".format(val))
+            nt.assert_equal(text.get_fontsize(), 14)
+
     def test_heatmap_cbar(self):
 
         f = plt.figure()

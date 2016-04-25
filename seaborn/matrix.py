@@ -168,6 +168,19 @@ class _HeatMapper(object):
         self.data = data
         self.plot_data = plot_data
         self.annot = annot
+
+        if isinstance(self.annot, bool) and self.annot:
+            self.annot_data = plot_data
+        elif not isinstance(self.annot, bool):
+            if isinstance(self.annot, pd.DataFrame):
+                self.annot_data = self.annot.ix[::-1].values
+            else:
+                self.annot_data = self.annot[::-1]
+            if self.annot.shape != self.plot_data.shape:
+                raise ValueError('Data supplied to "annot" must be the same '
+                                 'shape as the data to plot.')
+            self.annot = True
+
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
         self.cbar = cbar
@@ -215,15 +228,16 @@ class _HeatMapper(object):
         """Add textual labels with the value in each cell."""
         mesh.update_scalarmappable()
         xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
-        for x, y, val, color in zip(xpos.flat, ypos.flat,
-                                    mesh.get_array(), mesh.get_facecolors()):
-            if val is not np.ma.masked:
+        for x, y, m, color, val in zip(xpos.flat, ypos.flat,
+                                       mesh.get_array(), mesh.get_facecolors(),
+                                       self.annot_data.flat):
+            if m is not np.ma.masked:
                 l = relative_luminance(color)
                 text_color = ".15" if l > .408 else "w"
-                val = ("{:" + self.fmt + "}").format(val)
+                annotation = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
-                ax.text(x, y, val, **text_kwargs)
+                ax.text(x, y, annotation, **text_kwargs)
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
@@ -304,8 +318,10 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     robust : bool, optional
         If True and ``vmin`` or ``vmax`` are absent, the colormap range is
         computed with robust quantiles instead of the extreme values.
-    annot : bool, optional
-        If True, write the data value in each cell.
+    annot : bool, or array, optional
+        If True, write the data value in each cell. If an array of the same
+        shape as ``data``, then use this to annotate the heatmap instead of the
+        raw data.
     fmt : string, optional
         String formatting code to use when ``annot`` is True.
     annot_kws : dict of key, value mappings, optional
@@ -454,8 +470,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
-                          annot_kws, cbar, cbar_kws, xticklabels, yticklabels,
-                          mask)
+                          annot_kws, cbar, cbar_kws, xticklabels,
+                          yticklabels, mask)
 
     # Add the pcolormesh kwargs here
     kwargs["linewidths"] = linewidths
