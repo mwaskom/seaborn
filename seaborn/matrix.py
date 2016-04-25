@@ -109,8 +109,8 @@ class _HeatMapper(object):
 
         # Reverse the rows so the plot looks like the matrix
         plot_data = plot_data[::-1]
-        data = data.ix[::-1]
-        mask = mask.ix[::-1]
+        data = data.iloc[::-1]
+        mask = mask.iloc[::-1]
 
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
@@ -164,22 +164,31 @@ class _HeatMapper(object):
         self._determine_cmap_params(plot_data, vmin, vmax,
                                     cmap, center, robust)
 
+        # Sort out the annotations
+        if annot is None:
+            annot = False
+            annot_data = None
+        elif isinstance(annot, bool):
+            if annot:
+                annot_data = plot_data
+            else:
+                annot_data = None
+        else:
+            try:
+                annot_data = annot.values[::-1]
+            except AttributeError:
+                annot_data = annot[::-1]
+            if annot.shape != plot_data.shape:
+                raise ValueError('Data supplied to "annot" must be the same '
+                                 'shape as the data to plot.')
+            annot = True
+
         # Save other attributes to the object
         self.data = data
         self.plot_data = plot_data
-        self.annot = annot
 
-        if isinstance(self.annot, bool) and self.annot:
-            self.annot_data = plot_data
-        elif not isinstance(self.annot, bool):
-            if isinstance(self.annot, pd.DataFrame):
-                self.annot_data = self.annot.ix[::-1].values
-            else:
-                self.annot_data = self.annot[::-1]
-            if self.annot.shape != self.plot_data.shape:
-                raise ValueError('Data supplied to "annot" must be the same '
-                                 'shape as the data to plot.')
-            self.annot = True
+        self.annot = annot
+        self.annot_data = annot_data
 
         self.fmt = fmt
         self.annot_kws = {} if annot_kws is None else annot_kws
@@ -281,7 +290,7 @@ class _HeatMapper(object):
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=False, fmt=".2g", annot_kws=None,
+            annot=None, fmt=".2g", annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
@@ -318,12 +327,12 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     robust : bool, optional
         If True and ``vmin`` or ``vmax`` are absent, the colormap range is
         computed with robust quantiles instead of the extreme values.
-    annot : bool, or array, optional
-        If True, write the data value in each cell. If an array of the same
-        shape as ``data``, then use this to annotate the heatmap instead of the
-        raw data.
+    annot : bool or rectangular dataset, optional
+        If True, write the data value in each cell. If an array-like with the
+        same shape as ``data``, then use this to annotate the heatmap instead
+        of the raw data.
     fmt : string, optional
-        String formatting code to use when ``annot`` is True.
+        String formatting code to use when adding annotations.
     annot_kws : dict of key, value mappings, optional
         Keyword arguments for ``ax.text`` when ``annot`` is True.
     linewidths : float, optional
