@@ -23,6 +23,11 @@ from .palettes import (color_palette, dark_palette, light_palette,
                        diverging_palette, cubehelix_palette)
 
 
+__all__ = ["choose_colorbrewer_palette", "choose_cubehelix_palette",
+           "choose_dark_palette", "choose_light_palette",
+           "choose_diverging_palette"]
+
+
 def _init_mutable_colormap():
     """Create a matplotlib colormap that will be updated by the widgets."""
     greys = color_palette("Greys", 256)

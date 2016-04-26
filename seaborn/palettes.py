@@ -13,6 +13,13 @@ from .utils import desaturate, set_hls_values, get_color_cycle
 from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 
+
+__all__ = ["color_palette", "hls_palette", "husl_palette", "mpl_palette",
+           "dark_palette", "light_palette", "diverging_palette",
+           "blend_palette", "xkcd_palette", "crayon_palette",
+           "cubehelix_palette", "set_color_codes"]
+
+
 SEABORN_PALETTES = dict(
     deep=["#4C72B0", "#55A868", "#C44E52",
           "#8172B2", "#CCB974", "#64B5CD"],

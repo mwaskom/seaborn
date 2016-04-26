@@ -21,6 +21,10 @@ from .palettes import color_palette, husl_palette, light_palette
 from .axisgrid import FacetGrid, _facet_docs
 
 
+__all__ = ["boxplot", "violinplot", "stripplot", "swarmplot", "lvplot",
+           "pointplot", "barplot", "countplot", "factorplot"]
+
+
 class _CategoricalPlotter(object):
 
     width = .8

@@ -17,6 +17,10 @@ mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 
 
+__all__ = ["desaturate", "saturate", "set_hls_values",
+           "despine", "get_dataset_names", "load_dataset"]
+
+
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
 

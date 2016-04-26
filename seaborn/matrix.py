@@ -13,7 +13,9 @@ from scipy.cluster import hierarchy
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
 from .utils import despine, axis_ticklabels_overlap, relative_luminance
-from .external.six.moves import range
+
+
+__all__ = ["heatmap", "clustermap"]
 
 
 def _index_to_label(index):

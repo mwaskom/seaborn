@@ -6,7 +6,8 @@ import matplotlib as mpl
 import nose.tools as nt
 import numpy.testing as npt
 
-from .. import palettes, utils, rcmod, husl
+from .. import palettes, utils, rcmod
+from ..external import husl
 from ..xkcd_rgb import xkcd_rgb
 from ..crayons import crayons
 

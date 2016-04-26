@@ -28,6 +28,11 @@ from .axisgrid import FacetGrid, PairGrid, _facet_docs
 from .distributions import kdeplot
 
 
+__all__ = ["lmplot", "regplot", "residplot",
+           "coefplot", "interactplot",
+           "pairplot"]
+
+
 class _LinearPlotter(object):
     """Base class for plotting relational data in tidy format.
 

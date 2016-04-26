@@ -7,7 +7,14 @@ import matplotlib as mpl
 
 from . import palettes, _orig_rc_params
 
+
 mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
+
+
+__all__ = ["set", "reset_defaults", "reset_orig",
+           "axes_style", "set_style", "plotting_context", "set_context",
+           "set_palette"]
+
 
 _style_keys = (
 

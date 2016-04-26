@@ -20,6 +20,9 @@ from .palettes import color_palette, blend_palette
 from .axisgrid import JointGrid
 
 
+__all__ = ["distplot", "kdeplot", "rugplot", "jointplot"]
+
+
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
     # From http://stats.stackexchange.com/questions/798/

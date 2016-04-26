@@ -9,10 +9,11 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from six import string_types
-
 from . import utils
 from .palettes import color_palette
+
+
+__all__ = ["FacetGrid", "PairGrid", "JointGrid"]
 
 
 class Grid(object):

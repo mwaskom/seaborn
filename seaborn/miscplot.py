@@ -4,6 +4,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
+__call__ = ["palplot", "puppyplot"]
+
+
 def palplot(pal, size=1):
     """Plot the values in a color palette as a horizontal array.
 
