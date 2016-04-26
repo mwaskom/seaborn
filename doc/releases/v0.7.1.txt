@@ -16,4 +16,6 @@ v0.7.1 (Unreleased)
 
 - The :func:`reset_orig` function (and, by extension, importing ``seaborn.apionly``) resets matplotlib rcParams to their values at the time seaborn itself was imported, which should work better with rcParams changed by the jupyter notebook backend.
 
+- Removed some objects from the top-level ``seaborn`` namespace.
+
 - Improved unicode compatibility in :class:`FacetGrid`.
