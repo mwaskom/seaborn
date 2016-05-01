@@ -1233,6 +1233,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             for xy_j in neighbors:
                 if self.overlap(xy_i, xy_j, d):
                     good_candidate = False
+                    break
             if good_candidate:
                 good_candidates.append(xy_i)
         return np.array(good_candidates)
