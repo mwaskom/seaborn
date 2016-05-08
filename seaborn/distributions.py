@@ -345,7 +345,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
             warnings.warn(msg, UserWarning)
     if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
-        bw = getattr(kde, "%s_factor" % bw)()
+        bw = getattr(kde, "%s_factor" % bw)()*np.std(data)
     grid = _kde_support(data, bw, gridsize, cut, clip)
     y = kde(grid)
     return grid, y
