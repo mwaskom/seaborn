@@ -255,13 +255,18 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 
 def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
-                        clip, legend, ax, cumulative=False, **kwargs):
+                        clip, legend, ax, logspace=False, cumulative=False,
+                        **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
     # Sort out the clipping
     if clip is None:
         clip = (-np.inf, np.inf)
 
+    if logspace:
+        # Do the KDE-ing and plotting on the log of the data, then transform back
+        data = np.log(data)
+        
     # Calculate the KDE
     if _has_statsmodels:
         # Prefer using statsmodels for kernel flexibility
@@ -280,6 +285,10 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
                               "Please install statsmodels.")
         x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
 
+    if logspace:
+        # y is the KDE estimate at the corresponding x, but we logged the data, so un-log the x's
+        x = np.exp(x)
+        
     # Make sure the density is nonnegative
     y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
 
@@ -353,7 +362,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
 
 def _bivariate_kdeplot(x, y, filled, fill_lowest,
                        kernel, bw, gridsize, cut, clip,
-                       axlabel, ax, **kwargs):
+                       axlabel, ax, logspace=False, **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
     # Determine the clipping
     if clip is None:
@@ -361,12 +370,22 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     elif np.ndim(clip) == 1:
         clip = [clip, clip]
 
+    # If in logspace, log the data
+    if logspace:
+        x = np.log(x)
+        y = np.log(y)
+        
     # Calculate the KDE
     if _has_statsmodels:
         xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
     else:
         xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip)
 
+    # If in logspace, xx, yy are logged, so transform back
+    if logspace:
+        xx = np.exp(xx)
+        yy = np.exp(yy)
+        
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
     cmap = kwargs.get("cmap", "BuGn" if filled else "BuGn_d")
@@ -441,7 +460,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-            cumulative=False, shade_lowest=True, ax=None, **kwargs):
+            cumulative=False, logspace=False, shade_lowest=True, ax=None, **kwargs):
     """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
@@ -472,6 +491,8 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         If True, add a legend or label the axes when possible.
     cumulative : bool, optional
         If True, draw the cumulative distribution estimated by the kde.
+    logspace : bool, optional
+        If True, compute and plot the KDE on the log of the data.
     shade_lowest : bool, optional
         If True, shade the lowest contour of a bivariate KDE plot. Not
         relevant when drawing a univariate plot or when ``shade=False``.
@@ -597,11 +618,19 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if bivariate:
         ax = _bivariate_kdeplot(x, y, shade, shade_lowest,
                                 kernel, bw, gridsize, cut, clip, legend,
-                                ax, **kwargs)
+                                ax, logspace=logspace, **kwargs)
+        if logspace:
+            ax.set_xscale("log")
+            ax.set_yscale("log")
     else:
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
-                                 gridsize, cut, clip, legend, ax,
+                                 gridsize, cut, clip, legend, ax, logspace=logspace,
                                  cumulative=cumulative, **kwargs)
+        if logspace:
+            if vertical:
+                ax.set_yscale("log")
+            else:
+                ax.set_xscale("log")
 
     return ax
 
