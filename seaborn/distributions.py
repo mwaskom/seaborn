@@ -657,7 +657,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         Data or names of variables in ``data``.
     data : DataFrame, optional
         DataFrame when ``x`` and ``y`` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" | "hist2d" }, optional
         Kind of plot to draw.
     stat_func : callable or None, optional
         Function used to calculate a statistic about the relationship and
@@ -821,6 +821,21 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(distplot, **marginal_kws)
 
+    elif kind.startswith("hist2d"):
+
+        x_bins = _freedman_diaconis_bins(grid.x)
+        y_bins = _freedman_diaconis_bins(grid.y)
+        gridsize = int(np.mean([x_bins, y_bins]))
+
+        joint_kws.setdefault("bins", gridsize)
+        joint_kws.setdefault("cmap", cmap)
+        grid.plot_joint(plt.hist2d, **joint_kws)
+        grid.ax_joint.grid(False)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
+
     elif kind.startswith("kde"):
 
         joint_kws.setdefault("shade", True)
@@ -856,7 +871,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
                  **marginal_kws)
         stat_func = None
     else:
-        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
+        msg = ("kind must be either 'scatter', 'reg', 'resid', 'kde', 'hex', "
+               "or 'hist2d'")
         raise ValueError(msg)
 
     if stat_func is not None:
