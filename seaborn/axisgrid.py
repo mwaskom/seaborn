@@ -271,7 +271,7 @@ class FacetGrid(Grid):
                 err = "Cannot use `row` and `col_wrap` together."
                 raise ValueError(err)
             ncol = col_wrap
-            nrow = int(np.ceil(len(data[col].unique()) / col_wrap))
+            nrow = int(np.ceil(len(col_names) / col_wrap))
         self._ncol = ncol
         self._nrow = nrow
 

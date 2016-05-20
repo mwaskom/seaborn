@@ -713,6 +713,15 @@ class TestFacetGrid(PlotTestCase):
         g = ag.FacetGrid(df, row="b")
         g = g.map(plt.plot, "x")
 
+    def test_categorical_column_missing_categories(self):
+
+        df = self.df.copy()
+        df['a'] = df['a'].astype('category')
+
+        g = ag.FacetGrid(df.query("a != 'a'"), col="a", col_wrap=1)
+
+        nt.assert_equal(g.axes.shape, (len(df['a'].cat.categories),))
+
 
 class TestPairGrid(PlotTestCase):
 
