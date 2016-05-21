@@ -718,7 +718,7 @@ class TestFacetGrid(PlotTestCase):
         df = self.df.copy()
         df['a'] = df['a'].astype('category')
 
-        g = ag.FacetGrid(df.query("a != 'a'"), col="a", col_wrap=1)
+        g = ag.FacetGrid(df[df['a'] == 'a'], col="a", col_wrap=1)
 
         nt.assert_equal(g.axes.shape, (len(df['a'].cat.categories),))
 
