@@ -24,6 +24,7 @@ from ..utils import categorical_order
 rs = np.random.RandomState(0)
 
 old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
+pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 class TestFacetGrid(PlotTestCase):
@@ -713,6 +714,7 @@ class TestFacetGrid(PlotTestCase):
         g = ag.FacetGrid(df, row="b")
         g = g.map(plt.plot, "x")
 
+    @skipif(not pandas_has_categoricals)
     def test_categorical_column_missing_categories(self):
 
         df = self.df.copy()
