@@ -13,7 +13,7 @@ mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 
 __all__ = ["set", "reset_defaults", "reset_orig",
            "axes_style", "set_style", "plotting_context", "set_context",
-           "set_palette"]
+           "set_palette", "Stylish"]
 
 
 _style_keys = (
@@ -111,6 +111,10 @@ def set(context="notebook", style="darkgrid", palette="deep",
     if rc is not None:
         mpl.rcParams.update(rc)
 
+class Stylish(mpl.rc_context):
+    def __init__(self, **kwargs):
+        mpl.rc_context.__init__(self)
+        set(**kwargs)
 
 def reset_defaults():
     """Restore all RC params to default settings."""
