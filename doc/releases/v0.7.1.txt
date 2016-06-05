@@ -1,5 +1,5 @@
 
-v0.7.1 (Unreleased)
+v0.7.1 (June 2016)
 -------------------
 
 - Added the ability to put "caps" on the error bars that are drawn by :func:`barplot` or :func:`pointplot` (and, by extension, :func:`factorplot`). Additionally, the line width of the error bars can now be controlled. These changes involve the new parameters ``capsize`` and ``errwidth``. See the `github pull request <https://github.com/mwaskom/seaborn/pull/898>`_ for examples of usage.

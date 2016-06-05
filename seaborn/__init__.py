@@ -20,4 +20,4 @@ from .crayons import crayons
 # Set default aesthetics
 set()
 
-__version__ = "0.8.dev"
+__version__ = "0.7.1"
