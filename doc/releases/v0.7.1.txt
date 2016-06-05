@@ -16,6 +16,8 @@ v0.7.1 (Unreleased)
 
 - Made it possible to use different styles (e.g., step) for :class:`PairGrid` histograms when there are multiple hue levels.
 
+- Fixed a bug in scipy-based univariate kernel density bandwidth calculation.
+
 - The :func:`reset_orig` function (and, by extension, importing ``seaborn.apionly``) resets matplotlib rcParams to their values at the time seaborn itself was imported, which should work better with rcParams changed by the jupyter notebook backend.
 
 - Removed some objects from the top-level ``seaborn`` namespace.
