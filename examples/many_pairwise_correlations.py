@@ -4,7 +4,10 @@ Plotting a diagonal correlation matrix
 
 _thumb: .3, .6
 """
-from string import letters
+try:
+    from string import letters
+except ImportError:
+    from string import ascii_letters as letters
 import numpy as np
 import pandas as pd
 import seaborn as sns
