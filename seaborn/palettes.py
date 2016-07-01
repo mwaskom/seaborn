@@ -68,7 +68,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     Calling this function with ``palette=None`` will return the current
     matplotlib color cycle.
 
-    Matplotlib paletes can be specified as reversed palettes by appending
+    Matplotlib palettes can be specified as reversed palettes by appending
     "_r" to the name or as dark palettes by appending "_d" to the name.
     (These options are mutually exclusive, but the resulting list of colors
     can also be reversed).
