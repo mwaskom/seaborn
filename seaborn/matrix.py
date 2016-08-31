@@ -296,7 +296,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
             square=False, ax=None, xticklabels=True, yticklabels=True,
-            mask=None, invert_y=False,
+            mask=None, invert_yaxis=False,
             **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
@@ -367,7 +367,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
-    invert_y : boolearn, optional
+    invert_yaxis : boolearn, optional
         If True, flip the ordering of values on the y-axis. For typical
         visualizations, this results in lower values on the bottom of the
         y-axis (default: False).
@@ -497,7 +497,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         ax = plt.gca()
     if square:
         ax.set_aspect("equal")
-    if invert_y:
+    if invert_yaxis:
         ax.invert_yaxis()
     plotter.plot(ax, cbar_ax, kwargs)
     return ax
