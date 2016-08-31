@@ -47,7 +47,7 @@ Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo
 Dependencies
 ------------
 
-- Python 2.7 or 3.3+
+- Python [2.7](https://www.python.org/download/releases/2.7/) or [3.3](https://www.python.org/download/releases/3.3.0/)+
 
 ### Mandatory
 
