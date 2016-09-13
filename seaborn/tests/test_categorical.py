@@ -1751,7 +1751,7 @@ class TestSwarmPlotter(CategoricalFixture):
             npt.assert_array_almost_equal(y, vals.iloc[sorter])
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter],
+            for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
@@ -1772,7 +1772,7 @@ class TestSwarmPlotter(CategoricalFixture):
             npt.assert_array_almost_equal(x, vals.iloc[sorter])
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter],
+            for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
