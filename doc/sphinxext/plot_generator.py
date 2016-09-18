@@ -7,6 +7,7 @@ Lightly modified from the mpld3 project.
 from __future__ import division
 import os
 import os.path as op
+import sys
 import re
 import glob
 import token
@@ -19,6 +20,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from matplotlib import image
+
+if sys.version_info >= (3,0):
+    execfile = (lambda filename, globals=None, locals=None: 
+            exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals))
 
 
 RST_TEMPLATE = """
@@ -235,7 +240,7 @@ class ExampleGenerator(object):
 
         docstring = ''
         first_par = ''
-        tokens = tokenize.generate_tokens(lines.__iter__().next)
+        tokens = tokenize.generate_tokens(lambda: next(lines.__iter__()))
         for tok_type, tok_content, _, (erow, _), _ in tokens:
             tok_type = token.tok_name[tok_type]
             if tok_type in ('NEWLINE', 'COMMENT', 'NL', 'INDENT', 'DEDENT'):
