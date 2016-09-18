@@ -1,0 +1,5 @@
+
+v0.8.0 (Unreleased)
+-------------------
+
+- Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
