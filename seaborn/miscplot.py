@@ -31,17 +31,23 @@ def palplot(pal, size=1):
 
 def puppyplot(grown_up=False):
     """Plot today's daily puppy. Only works in the IPython notebook."""
-    from .external.six.moves.urllib.request import urlopen
+    import requests
     from IPython.display import HTML
+    print('test')
     try:
-        from bs4 import BeautifulSoup
         url = "http://www.dailypuppy.com"
         if grown_up:
             url += "/dogs"
-        html_doc = urlopen(url)
-        soup = BeautifulSoup(html_doc)
-        puppy = soup.find("div", {"class": "daily_puppy"})
-        return HTML(str(puppy.img))
+        response = requests.get(url)
+        start = 'src="'
+        end = '"'
+        for line in response.iter_lines():
+            if '<img id="feature_image"' in line.decode('utf8'):
+                this_pup = line.decode('utf8')
+                pup = this_pup[this_pup.find(start)+len(start):]
+                pup = pup[:pup.find(end)]
+                pup = '<img src="{p}" style="width:450px;"/>'.format(p=pup)
+                return HTML(pup)
     except ImportError:
         html = ('<img  src="http://cdn-www.dailypuppy.com/dog-images/'
                 'decker-the-nova-scotia-duck-tolling-retriever_'
