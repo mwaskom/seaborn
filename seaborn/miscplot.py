@@ -31,17 +31,16 @@ def palplot(pal, size=1):
 
 def puppyplot(grown_up=False):
     """Plot today's daily puppy. Only works in the IPython notebook."""
-    import requests
+    import urllib.request
     from IPython.display import HTML
-    print('test')
     try:
         url = "http://www.dailypuppy.com"
         if grown_up:
             url += "/dogs"
-        response = requests.get(url)
+        response = urllib.request.urlopen(url)
         start = 'src="'
         end = '"'
-        for line in response.iter_lines():
+        for line in response.readlines():
             if '<img id="feature_image"' in line.decode('utf8'):
                 this_pup = line.decode('utf8')
                 pup = this_pup[this_pup.find(start)+len(start):]
