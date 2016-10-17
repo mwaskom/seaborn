@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012-2014 Michael Waskom <mwaskom@stanford.edu>
+# Copyright (C) 2012-2016 Michael Waskom
 import os
 # temporarily redirect config directory to prevent matplotlib importing
 # testing that for writeable directory which results in sandbox error in
@@ -25,7 +25,7 @@ Some of the features that seaborn offers are
 DISTNAME = 'seaborn'
 MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
-URL = 'http://stanford.edu/~mwaskom/software/seaborn/'
+URL = 'http://seaborn.stanford.edu'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.8.dev'
