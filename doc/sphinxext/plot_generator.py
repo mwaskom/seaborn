@@ -7,13 +7,13 @@ Lightly modified from the mpld3 project.
 from __future__ import division
 import os
 import os.path as op
-import sys
 import re
 import glob
 import token
 import tokenize
 import shutil
-import json
+
+from seaborn.external import six
 
 import matplotlib
 matplotlib.use('Agg')
@@ -21,9 +21,11 @@ import matplotlib.pyplot as plt
 
 from matplotlib import image
 
-if sys.version_info >= (3,0):
-    execfile = (lambda filename, globals=None, locals=None: 
-            exec(compile(open(filename, "rb").read(), filename, 'exec'), globals, locals))
+if six.PY3:
+    # Python 3 has no execfile
+    def execfile(filename, globals=None, locals=None):
+        with open(filename, "rb") as fp:
+            six.exec_(compile(fp.read(), filename, 'exec'), globals, locals)
 
 
 RST_TEMPLATE = """
