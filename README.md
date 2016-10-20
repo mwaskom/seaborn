@@ -1,4 +1,4 @@
-Seaborn: statistical data visualization
+seaborn: statistical data visualization
 =======================================
 
 <div class="row">
@@ -43,12 +43,12 @@ The documentation has an [example gallery](https://seaborn.pydata.org/examples/i
 Citing
 ------
 
-Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.45133.svg)](http://dx.doi.org/10.5281/zenodo.45133)
+Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.54844.svg)](https://doi.org/10.5281/zenodo.54844)
 
 Dependencies
 ------------
 
-- Python 2.7 or 3.3+
+- Python 2.7 or 3.4+
 
 ### Mandatory
 
@@ -56,7 +56,7 @@ Dependencies
 
 - [scipy](http://www.scipy.org/)
 
-- [matplotlib](http://matplotlib.sourceforge.net)
+- [matplotlib](http://matplotlib.org/)
 
 - [pandas](http://pandas.pydata.org/)
 
