@@ -30,12 +30,12 @@ Seaborn is a Python visualization library based on matplotlib. It provides a hig
 Documentation
 -------------
 
-Online documentation is available [here](https://seaborn.github.io/). It includes a high-level tutorial, detailed API documentation, and other useful info.
+Online documentation is available [here](https://seaborn.pydata.org/). It includes a high-level tutorial, detailed API documentation, and other useful info.
 
 Examples
 --------
 
-The documentation has an [example gallery](https://seaborn.github.io/examples/index.html) with short scripts showing how to use different parts of the package.
+The documentation has an [example gallery](https://seaborn.pydata.org/examples/index.html) with short scripts showing how to use different parts of the package.
 
 Citing
 ------
