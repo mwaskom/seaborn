@@ -7,25 +7,28 @@ Seaborn: statistical data visualization
 </a>
 
 <a href=http://seaborn.pydata.org/examples/many_pairwise_correlations.html>
-<img src="http://seaborn.pydata.org/_static/many_pairwise_correlations.png" height="135" width="135">
+<img src="http://seaborn.pydata.org/_static/many_pairwise_correlations_thumb.png" height="135" width="135">
 </a>
 
 <a href=http://seaborn.pydata.org/examples/many_facets.html>
-<img src="http://seaborn.pydata.org/_static/many_facets.png" height="135" width="135">
-</a>    
+<img src="http://seaborn.pydata.org/_static/many_facets_thumb.png" height="135" width="135">
+</a>
 
 <a href=http://seaborn.pydata.org/examples/scatterplot_matrix.html>
-<img src="http://seaborn.pydata.org/_static/scatterplot_matrix.png" height="135" width="135">
+<img src="http://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
 </a>
 
 <a href=http://seaborn.pydata.org/examples/hexbin_marginals.html>
-<img src="http://seaborn.pydata.org/_static/hexbin_marginals.png" height="135" width="135">
+<img src="http://seaborn.pydata.org/_static/hexbin_marginals_thumb.png" height="135" width="135">
+</a>
+
+<a href=http://seaborn.pydata.org/examples/scatterplot_categorical.html>
+<img src="http://seaborn.pydata.org/_static/scatterplot_categorical_thumb.png" height="135" width="135">
 </a>
 
 </div>
 
 Seaborn is a Python visualization library based on matplotlib. It provides a high-level interface for drawing attractive statistical graphics.
-
 
 Documentation
 -------------
