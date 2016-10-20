@@ -2,24 +2,24 @@ Seaborn: statistical data visualization
 =======================================
 
 <div class="row">
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/anscombes_quartet.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/anscombes_quartet_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/anscombes_quartet.html>
+<img src="http://seaborn.pydata.org/_static/anscombes_quartet_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/timeseries_from_dataframe.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/timeseries_from_dataframe_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/many_pairwise_correlations.html>
+<img src="http://seaborn.pydata.org/_static/many_pairwise_correlations.png" height="135" width="135">
 </a>
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/distplot_options.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/distplot_options_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/many_facets.html>
+<img src="http://seaborn.pydata.org/_static/many_facets.png" height="135" width="135">
 </a>    
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/regression_marginals.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/regression_marginals_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/scatterplot_matrix.html>
+<img src="http://seaborn.pydata.org/_static/scatterplot_matrix.png" height="135" width="135">
 </a>
 
-<a href=http://stanford.edu/~mwaskom/software/seaborn/examples/grouped_violinplots.html>
-<img src="http://stanford.edu/~mwaskom/software/seaborn/_static/grouped_violinplots_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/hexbin_marginals.html>
+<img src="http://seaborn.pydata.org/_static/hexbin_marginals.png" height="135" width="135">
 </a>
 
 </div>
