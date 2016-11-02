@@ -4,7 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
-__call__ = ["palplot", "puppyplot"]
+__all__ = ["palplot", "puppyplot"]
 
 
 def palplot(pal, size=1):
