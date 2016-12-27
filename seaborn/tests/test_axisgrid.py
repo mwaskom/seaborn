@@ -269,7 +269,10 @@ class TestFacetGrid(PlotTestCase):
 
         g = ag.FacetGrid(self.df, subplot_kws=dict(axisbg="blue"))
         for ax in g.axes.flat:
-            nt.assert_equal(ax.get_axis_bgcolor(), "blue")
+            if hasattr(ax, 'get_facecolor'):
+                nt.assert_equal(ax.get_facecolor(), "blue")
+            else:
+                nt.assert_equal(ax.get_axis_bgcolor(), "blue")
 
     @skipif(old_matplotlib)
     def test_gridspec_kws(self):
