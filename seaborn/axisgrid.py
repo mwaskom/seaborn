@@ -64,7 +64,7 @@ class Grid(object):
             if self.hue_names is None:
                 label_order = np.sort(list(legend_data.keys()))
             else:
-                label_order = list(map(str, self.hue_names))
+                label_order = list(map(utils.to_utf8, self.hue_names))
 
         blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
         handles = [legend_data.get(l, blank_handle) for l in label_order]
@@ -711,7 +711,7 @@ class FacetGrid(Grid):
 
             # Insert a label in the keyword arguments for the legend
             if self._hue_var is not None:
-                kwargs["label"] = str(self.hue_names[hue_k])
+                kwargs["label"] = utils.to_utf8(self.hue_names[hue_k])
 
             # Get the actual data we are going to plot with
             plot_data = data_ijk[list(args)]
