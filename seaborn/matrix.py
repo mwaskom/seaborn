@@ -12,7 +12,8 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap, relative_luminance, to_utf8
+from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
+                    to_utf8)
 
 
 __all__ = ["heatmap", "clustermap"]
