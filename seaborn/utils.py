@@ -409,7 +409,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     cache : boolean, optional
         If True, then cache data locally and use the cache on subsequent calls
     data_home : string, optional
-        The directory in which to cache data. By default, uses ~/seaborn_data/
+        The directory in which to cache data. By default, uses ~/seaborn-data/
     kws : dict, optional
         Passed to pandas.read_csv
 
