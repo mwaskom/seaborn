@@ -267,9 +267,10 @@ class TestFacetGrid(PlotTestCase):
 
     def test_subplot_kws(self):
 
-        g = ag.FacetGrid(self.df, subplot_kws=dict(axisbg="blue"))
+        g = ag.FacetGrid(self.df, despine=False,
+                         subplot_kws=dict(projection="polar"))
         for ax in g.axes.flat:
-            nt.assert_equal(ax.get_axis_bgcolor(), "blue")
+            nt.assert_true("PolarAxesSubplot" in str(type(ax)))
 
     @skipif(old_matplotlib)
     def test_gridspec_kws(self):
