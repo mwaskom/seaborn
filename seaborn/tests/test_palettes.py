@@ -163,7 +163,7 @@ class TestColorPalettes(object):
 
         pal_forward = palettes.mpl_palette("BuPu", 6)
         pal_reverse = palettes.mpl_palette("BuPu_r", 6)
-        nt.assert_equal(pal_forward, pal_reverse[::-1])
+        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
 
     def test_rgb_from_hls(self):
 
