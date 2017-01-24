@@ -33,7 +33,7 @@ Mandatory dependencies
 
 -  `scipy <http://www.scipy.org/>`__
 
--  `matplotlib <matplotlib.sourceforge.net>`__
+-  `matplotlib <http://matplotlib.org>`__
 
 -  `pandas <http://pandas.pydata.org/>`__
 
