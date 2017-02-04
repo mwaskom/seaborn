@@ -12,7 +12,8 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap, relative_luminance
+from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
+                    to_utf8)
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -21,7 +22,7 @@ __all__ = ["heatmap", "clustermap"]
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label."""
     if isinstance(index, pd.MultiIndex):
-        return "-".join(map(str, index.names))
+        return "-".join(map(to_utf8, index.names))
     else:
         return index.name
 
@@ -29,7 +30,7 @@ def _index_to_label(index):
 def _index_to_ticklabels(index):
     """Convert a pandas index or multiindex into ticklabels."""
     if isinstance(index, pd.MultiIndex):
-        return ["-".join(map(str, i)) for i in index.values]
+        return ["-".join(map(to_utf8, i)) for i in index.values]
     else:
         return index.values
 
