@@ -8,15 +8,18 @@ try:
     from ipywidgets import interact, FloatSlider, IntSlider
 except ImportError:
     import warnings
+    # ignore ShimWarning raised by IPython, see GH #892
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore") # ignore ShimWarning raised by IPython, see #892
+        warnings.simplefilter("ignore")
         try:
             from IPython.html.widgets import interact, FloatSlider, IntSlider
         except ImportError:
             try:
                 from IPython.html.widgets import (interact,
-                                                  FloatSliderWidget as FloatSlider,
-                                                  IntSliderWidget as IntSlider)
+                                                  FloatSliderWidget,
+                                                  IntSliderWidget)
+                FloatSlider = FloatSliderWidget
+                IntSlider = IntSliderWidget
             except ImportError:
                 pass
 
