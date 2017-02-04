@@ -15,7 +15,7 @@ coverage:
 
 lint:
 
-	pyflakes -x W seaborn
+	pyflakes -x W -X seaborn/external/six.py seaborn
 	pep8 --exclude external seaborn
 
 hexstrip:
