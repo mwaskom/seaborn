@@ -173,11 +173,13 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
         Specific axes object to despine.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
-    offset : int or None  (default), optional
+    offset : int or dict, optional
         Absolute distance, in points, spines should be moved away
-        from the axes (negative values move spines inward).
+        from the axes (negative values move spines inward). A single value
+        applies to all spines; a dict can be used to set offset values per
+        side.
     trim : bool, optional
-        If true, limit spines to the smallest and largest major tick
+        If True, limit spines to the smallest and largest major tick
         on each non-despined axis.
 
     Returns
@@ -199,7 +201,11 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
             is_visible = not locals()[side]
             ax_i.spines[side].set_visible(is_visible)
             if offset is not None and is_visible:
-                _set_spine_position(ax_i.spines[side], ('outward', offset))
+                try:
+                    val = offset.get(side, 0)
+                except AttributeError:
+                    val = offset
+                _set_spine_position(ax_i.spines[side], ('outward', val))
 
         # Set the ticks appropriately
         if bottom:

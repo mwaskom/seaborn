@@ -174,6 +174,19 @@ class TestSpineUtils(PlotTestCase):
             else:
                 nt.assert_equal(new_position, self.original_position)
 
+    def test_despine_side_specific_offset(self):
+
+        f, ax = plt.subplots()
+        utils.despine(ax=ax, offset=dict(left=self.offset))
+
+        for side in self.sides:
+            is_visible = ax.spines[side].get_visible()
+            new_position = ax.spines[side].get_position()
+            if is_visible and side == "left":
+                nt.assert_equal(new_position, self.offset_position)
+            else:
+                nt.assert_equal(new_position, self.original_position)
+
     def test_despine_with_offset_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
 
