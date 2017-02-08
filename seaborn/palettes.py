@@ -59,7 +59,7 @@ class _ColorPalette(list):
 def color_palette(palette=None, n_colors=None, desat=None):
     """Return a list of colors defining a color palette.
 
-    Availible seaborn palette names:
+    Available seaborn palette names:
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
@@ -788,7 +788,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     This produces a colormap with linearly-decreasing (or increasing)
     brightness. That means that information will be preserved if printed to
     black and white or viewed by someone who is colorblind.  "cubehelix" is
-    also availible as a matplotlib-based palette, but this function gives the
+    also available as a matplotlib-based palette, but this function gives the
     user more control over the look of the palette and has a different set of
     defaults.
 
