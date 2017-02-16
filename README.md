@@ -74,7 +74,7 @@ To install the released version, just do
 
 You may instead want to use the development version from Github, by running
 
-    pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn
+    pip install git+https://github.com/mwaskom/seaborn.git#egg=seaborn
 
 
 Testing
@@ -85,6 +85,7 @@ Testing
 To test seaborn, run `make test` in the source directory. This will run the
 unit-test and doctest suite (using `nose`).
 
+ 
 Development
 -----------
 
