@@ -9,7 +9,7 @@ install seaborn``). It's also possible to install the released version using
 version availible from PyPI.
 
 Alternatively, you can use ``pip`` to install the development version, with the
-command ``pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn``.
+command ``pip install git+https://github.com/mwaskom/seaborn.git#egg=seaborn``.
 Another option would be to to clone the `github repository
 <https://github.com/mwaskom/seaborn>`_ and install with ``pip install .`` from
 the source directory. Seaborn itself is pure Python, so installation should be
