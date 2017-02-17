@@ -23,12 +23,12 @@ class CategoricalFixture(PlotTestCase):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
-    x = rs.randn(n_total / 3, 3)
+    x = rs.randn(int(n_total / 3), 3)
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    u = pd.Series(np.tile(list("jkh"), n_total / 3))
+    g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
+    h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
+    u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
     df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
     x_df["W"] = g
 
