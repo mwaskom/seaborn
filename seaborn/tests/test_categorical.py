@@ -82,7 +82,7 @@ class TestCategoricalPlotter(CategoricalFixture):
 
         # Test an object array that looks 1D but isn't
         x_notreally_1d = np.array([self.x.ravel(),
-                                   self.x.ravel()[:self.n_total / 2]])
+                                   self.x.ravel()[:int(self.n_total / 2)]])
         p.establish_variables(data=x_notreally_1d)
         nt.assert_equal(len(p.plot_data), 2)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
