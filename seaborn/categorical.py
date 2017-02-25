@@ -848,7 +848,7 @@ class _ViolinPlotter(_CategoricalPlotter):
                 for j, hue_level in enumerate(self.hue_names):
 
                     support, density = self.support[i][j], self.density[i][j]
-                    kws["color"] = self.colors[j]
+                    kws["facecolor"] = self.colors[j]
 
                     # Add legend data, but just for one set of violins
                     if not i:
