@@ -1636,17 +1636,11 @@ class TestSwarmPlotter(CategoricalFixture):
                        order=None, hue_order=None, split=False,
                        orient=None, color=None, palette=None)
 
-    def test_overlap(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-        nt.assert_false(p.overlap((0, 0), (1, 1), np.sqrt(1.999)))
-        nt.assert_true(p.overlap((0, 0), (1, 1), np.sqrt(2.001)))
-
     def test_could_overlap(self):
 
         p = cat._SwarmPlotter(**self.default_kws)
         neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
-        nt.assert_equal(neighbors, [(1, .5), (.5, .5)])
+        npt.assert_array_equal(neighbors, [(1, .5), (.5, .5)])
 
     def test_position_candidates(self):
 
@@ -1663,7 +1657,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
         p = cat._SwarmPlotter(**self.default_kws)
         candidates = [(.5, 1), (1, 1), (1.5, 1)]
-        neighbors = [(0, 1)]
+        neighbors = np.array([(0, 1)])
 
         first = p.first_non_overlapping_candidate(candidates, neighbors, 1)
         npt.assert_array_equal(first, (1, 1))

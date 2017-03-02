@@ -1198,12 +1198,6 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         self.split = split
         self.width = .8
 
-    def overlap(self, xy_i, xy_j, d):
-        """Return True if two circles with the same diameter will overlap."""
-        x_i, y_i = xy_i
-        x_j, y_j = xy_j
-        return ((x_i - x_j) ** 2 + (y_i - y_j) ** 2) < (d ** 2)
-
     def could_overlap(self, xy_i, swarm, d):
         """Return a list of all swarm points that could overlap with target.
 
@@ -1217,7 +1211,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 neighbors.append(xy_j)
             else:
                 break
-        return list(reversed(neighbors))
+        return np.array(list(reversed(neighbors)))
 
     def position_candidates(self, xy_i, neighbors, d):
         """Return a list of (x, y) coordinates that might be valid."""
@@ -1238,12 +1232,28 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def first_non_overlapping_candidate(self, candidates, neighbors, d):
         """Remove candidates from the list if they overlap with the swarm."""
+
+        # IF we have no neighbours, all candidates are good.
+        if len(neighbors) == 0:
+            return candidates[0]
+
+        neighbors_x = neighbors[:, 0]
+        neighbors_y = neighbors[:, 1]
+
+        d_square = d ** 2
+
         for xy_i in candidates:
-            good_candidate = True
-            for xy_j in neighbors:
-                if self.overlap(xy_i, xy_j, d):
-                    good_candidate = False
-                    break
+            x_i, y_i = xy_i
+
+            dx = neighbors_x - x_i
+            dy = neighbors_y - y_i
+
+            sq_distances = np.power(dx, 2.0) + np.power(dy, 2.0)
+
+            # good candidate does not overlap any of neighbors
+            # which means that squared distance between candidate
+            # and any of the neighbours has to be at least square of the diameter
+            good_candidate = np.all(sq_distances >= d_square)
 
             if good_candidate:
                 return xy_i
