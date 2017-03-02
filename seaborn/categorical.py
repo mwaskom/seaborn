@@ -1237,15 +1237,16 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         if len(neighbors) == 0:
             return candidates[0]
 
+        neighbors_x = neighbors[:, 0]
+        neighbors_y = neighbors[:, 1]
+
         d_square = d ** 2
 
         for xy_i in candidates:
             x_i, y_i = xy_i
 
-            close_neighbors = neighbors[np.abs(neighbors[:, 0] - x_i) < d]
-
-            dx = close_neighbors[:, 0] - x_i
-            dy = close_neighbors[:, 1] - y_i
+            dx = neighbors_x - x_i
+            dy = neighbors_y - y_i
 
             sq_distances = np.power(dx, 2.0) + np.power(dy, 2.0)
 
