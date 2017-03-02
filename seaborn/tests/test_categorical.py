@@ -1640,7 +1640,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
         p = cat._SwarmPlotter(**self.default_kws)
         neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
-        npt.assert_array_equal(neighbors, [(1, .5), (.5, .5)])
+        npt.assert_array_equal(neighbors, [(.5, .5), (1, .5)])
 
     def test_position_candidates(self):
 

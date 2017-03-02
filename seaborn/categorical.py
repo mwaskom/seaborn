@@ -1202,6 +1202,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         """Return a list of all swarm points that could overlap with target.
 
         Assumes that swarm is a sorted list of all points below xy_i.
+
+        Returns a sorted list of neigbors
         """
         _, y_i = xy_i
         neighbors = []
@@ -1211,7 +1213,13 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 neighbors.append(xy_j)
             else:
                 break
-        return np.array(list(reversed(neighbors)))
+
+        neighbors = np.array(neighbors)
+        if len(neighbors) == 0:
+            return neighbors
+
+        neighbors = neighbors[np.argsort(neighbors[:, 0])]
+        return neighbors
 
     def position_candidates(self, xy_i, neighbors, d):
         """Return a list of (x, y) coordinates that might be valid."""
@@ -1231,18 +1239,26 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         return np.array(candidates)
 
     def first_non_overlapping_candidate(self, candidates, neighbors, d):
-        """Remove candidates from the list if they overlap with the swarm."""
+        """
+        Remove candidates from the list if they overlap with the swarm.
+        Assumes neighbors is sorted ascending by x coordinate
+        """
 
         # IF we have no neighbours, all candidates are good.
         if len(neighbors) == 0:
             return candidates[0]
 
         d_square = d ** 2
+        neighbors_x = neighbors[:, 0]
 
         for xy_i in candidates:
             x_i, y_i = xy_i
 
-            close_neighbors = neighbors[np.abs(neighbors[:, 0] - x_i) < d]
+            # Find all neighbors that are within one diameter from the target
+            # exploit the sorted structure of neighbors array for efficiency
+            left = np.searchsorted(neighbors_x, x_i-d, side='left')
+            right = np.searchsorted(neighbors_x, x_i+d, side='right')
+            close_neighbors = neighbors[left:right]
 
             dx = close_neighbors[:, 0] - x_i
             dy = close_neighbors[:, 1] - y_i
