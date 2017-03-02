@@ -1656,16 +1656,17 @@ class TestSwarmPlotter(CategoricalFixture):
         candidates = p.position_candidates(xy_i, neighbors, 1)
         dx1 = 1.05
         dx2 = np.sqrt(1 - .5 ** 2) * 1.05
-        nt.assert_equal(candidates,
-                        [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)])
+        npt.assert_array_equal(candidates,
+                               [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)])
 
-    def test_prune_candidates(self):
+    def test_find_first_non_overlapping_candidate(self):
 
         p = cat._SwarmPlotter(**self.default_kws)
-        candidates = [(.5, 1), (1, 1)]
+        candidates = [(.5, 1), (1, 1), (1.5, 1)]
         neighbors = [(0, 1)]
-        candidates = p.prune_candidates(candidates, neighbors, 1)
-        npt.assert_array_equal(candidates, np.array([(1, 1)]))
+
+        first = p.first_non_overlapping_candidate(candidates, neighbors, 1)
+        npt.assert_array_equal(first, (1, 1))
 
     def test_beeswarm(self):
 

@@ -1234,19 +1234,22 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 new_candidates = [cr, cl]
             candidates.extend(new_candidates)
             left_first = not left_first
-        return candidates
+        return np.array(candidates)
 
-    def prune_candidates(self, candidates, neighbors, d):
+    def first_non_overlapping_candidate(self, candidates, neighbors, d):
         """Remove candidates from the list if they overlap with the swarm."""
-        good_candidates = []
         for xy_i in candidates:
             good_candidate = True
             for xy_j in neighbors:
                 if self.overlap(xy_i, xy_j, d):
                     good_candidate = False
+                    break
+
             if good_candidate:
-                good_candidates.append(xy_i)
-        return np.array(good_candidates)
+                return xy_i
+
+        # If `position_candidates` works well this should never happen
+        raise Exception('No non-overlapping candidates found. This should not happen.')
 
     def beeswarm(self, orig_xy, d):
         """Adjust x position of points to avoid overlaps."""
@@ -1268,14 +1271,14 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             # with respect to each of the swarm neighbors
             candidates = self.position_candidates(xy_i, neighbors, d)
 
-            # Remove the positions that overlap with any of the
-            # other neighbors
-            candidates = self.prune_candidates(candidates, neighbors, d)
-
-            # Find the most central of the remaining positions
+            # Sort candidates by their centrality
             offsets = np.abs(candidates[:, 0] - midline)
-            best_index = np.argmin(offsets)
-            new_xy_i = candidates[best_index]
+            candidates = candidates[np.argsort(offsets)]
+
+            # Find the first candidate that doesn't overlap any neighbours
+            new_xy_i = self.first_non_overlapping_candidate(candidates, neighbors, d)
+
+            # Place it into the swarm
             swarm.append(new_xy_i)
 
         return np.array(swarm)
