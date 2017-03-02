@@ -1651,7 +1651,8 @@ class TestSwarmPlotter(CategoricalFixture):
         dx1 = 1.05
         dx2 = np.sqrt(1 - .5 ** 2) * 1.05
         npt.assert_array_equal(candidates,
-                               [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)])
+                               [(0, 1), (-dx1, 1), (dx1, 1),
+                                (dx2, 1), (-dx2, 1)])
 
     def test_find_first_non_overlapping_candidate(self):
 

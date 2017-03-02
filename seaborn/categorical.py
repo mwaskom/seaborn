@@ -1252,14 +1252,17 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
             # good candidate does not overlap any of neighbors
             # which means that squared distance between candidate
-            # and any of the neighbours has to be at least square of the diameter
+            # and any of the neighbours has to be at least
+            # square of the diameter
             good_candidate = np.all(sq_distances >= d_square)
 
             if good_candidate:
                 return xy_i
 
-        # If `position_candidates` works well this should never happen
-        raise Exception('No non-overlapping candidates found. This should not happen.')
+        # If `position_candidates` works well
+        # this should never happen
+        raise Exception('No non-overlapping candidates found. '
+                        'This should not happen.')
 
     def beeswarm(self, orig_xy, d):
         """Adjust x position of points to avoid overlaps."""
@@ -1286,7 +1289,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             candidates = candidates[np.argsort(offsets)]
 
             # Find the first candidate that doesn't overlap any neighbours
-            new_xy_i = self.first_non_overlapping_candidate(candidates, neighbors, d)
+            new_xy_i = self.first_non_overlapping_candidate(candidates,
+                                                            neighbors, d)
 
             # Place it into the swarm
             swarm.append(new_xy_i)
