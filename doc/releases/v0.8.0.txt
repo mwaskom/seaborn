@@ -1,0 +1,11 @@
+
+v0.8.0 (Unreleased)
+-------------------
+
+- Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
+
+- Allow side-specific offsets in :func:`despine`.
+
+- Put a cap on the number of bins used in :func:`jointplot` for ``type=="hex"`` to avoid hanging when the reference rule prescribes too many.
+
+- Turn off dendrogram axes in :func:`clustermap` rather than setting the background color to white.

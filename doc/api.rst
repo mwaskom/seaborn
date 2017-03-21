@@ -150,5 +150,3 @@ Utility functions
     desaturate
     saturate
     set_hls_values
-    ci_to_errsize
-    axlabel

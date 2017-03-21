@@ -6,10 +6,10 @@ Installing and getting started
 To install the released version of seaborn, you can use ``pip`` (i.e. ``pip
 install seaborn``). It's also possible to install the released version using
 ``conda`` (i.e. ``conda install seaborn``), although this may lag behind the
-version availible from PyPI.
+version available from PyPI.
 
 Alternatively, you can use ``pip`` to install the development version, with the
-command ``pip install git+git://github.com/mwaskom/seaborn.git#egg=seaborn``.
+command ``pip install git+https://github.com/mwaskom/seaborn.git#egg=seaborn``.
 Another option would be to to clone the `github repository
 <https://github.com/mwaskom/seaborn>`_ and install with ``pip install .`` from
 the source directory. Seaborn itself is pure Python, so installation should be
@@ -21,7 +21,7 @@ are not built automatically and may at times fall out of sync with the actual
 master branch on github.
 
 
-Dependencies 
+Dependencies
 ~~~~~~~~~~~~
 
 -  Python 2.7 or 3.3+
@@ -33,7 +33,7 @@ Mandatory dependencies
 
 -  `scipy <http://www.scipy.org/>`__
 
--  `matplotlib <matplotlib.sourceforge.net>`__
+-  `matplotlib <http://matplotlib.org>`__
 
 -  `pandas <http://pandas.pydata.org/>`__
 
@@ -47,7 +47,7 @@ dependencies if they do not exist at install-time.
 
 I recommend using seaborn with the `Anaconda distribution
 <https://store.continuum.io/cshop/anaconda/>`_, as this makes it easy to manage
-the main dependencies, which otherwise can be difficult to install. 
+the main dependencies, which otherwise can be difficult to install.
 
 I attempt to keep seaborn importable and generally functional on the versions
 available through the stable Debian channels.  There may be cases where some
@@ -83,7 +83,7 @@ Testing
 
 To test seaborn, run ``make test`` in the root directory of the source
 distribution. This runs the unit test suite (which can also be exercised
-separately by running ``nosetests``). It also runs the code in the example 
+separately by running ``nosetests``). It also runs the code in the example
 notebooks to smoke-test a broader and more realistic range of example usage.
 
 The full set of tests requires an internet connection to download the example

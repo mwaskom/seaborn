@@ -23,12 +23,12 @@ class CategoricalFixture(PlotTestCase):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
-    x = rs.randn(n_total / 3, 3)
+    x = rs.randn(int(n_total / 3), 3)
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
-    g = pd.Series(np.repeat(list("abc"), n_total / 3), name="small")
-    h = pd.Series(np.tile(list("mn"), n_total / 2), name="medium")
-    u = pd.Series(np.tile(list("jkh"), n_total / 3))
+    g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
+    h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
+    u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
     df = pd.DataFrame(dict(y=y, g=g, h=h, u=u))
     x_df["W"] = g
 
@@ -82,7 +82,7 @@ class TestCategoricalPlotter(CategoricalFixture):
 
         # Test an object array that looks 1D but isn't
         x_notreally_1d = np.array([self.x.ravel(),
-                                   self.x.ravel()[:self.n_total / 2]])
+                                   self.x.ravel()[:int(self.n_total / 2)]])
         p.establish_variables(data=x_notreally_1d)
         nt.assert_equal(len(p.plot_data), 2)
         nt.assert_equal(len(p.plot_data[0]), self.n_total)
@@ -699,12 +699,13 @@ class TestBoxPlotter(CategoricalFixture):
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
-                       saturation=.75, width=.8,
+                       saturation=.75, width=.8, dodge=True,
                        fliersize=5, linewidth=None)
 
     def test_nested_width(self):
 
-        p = cat._BoxPlotter(**self.default_kws)
+        kws = self.default_kws.copy()
+        p = cat._BoxPlotter(**kws)
         p.establish_variables("g", "y", "h", data=self.df)
         nt.assert_equal(p.nested_width, .4 * .98)
 
@@ -713,6 +714,12 @@ class TestBoxPlotter(CategoricalFixture):
         p = cat._BoxPlotter(**kws)
         p.establish_variables("g", "y", "h", data=self.df)
         nt.assert_equal(p.nested_width, .3 * .98)
+
+        kws = self.default_kws.copy()
+        kws["dodge"] = False
+        p = cat._BoxPlotter(**kws)
+        p.establish_variables("g", "y", "h", data=self.df)
+        nt.assert_equal(p.nested_width, .8)
 
     def test_hue_offsets(self):
 
@@ -850,7 +857,7 @@ class TestViolinPlotter(CategoricalFixture):
                        order=None, hue_order=None,
                        bw="scott", cut=2, scale="area", scale_hue=True,
                        gridsize=100, width=.8, inner="box", split=False,
-                       orient=None, linewidth=None,
+                       dodge=True, orient=None, linewidth=None,
                        color=None, palette=None, saturation=.75)
 
     def test_split_error(self):
@@ -1751,7 +1758,7 @@ class TestSwarmPlotter(CategoricalFixture):
             npt.assert_array_almost_equal(y, vals.iloc[sorter])
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter],
+            for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
@@ -1772,7 +1779,7 @@ class TestSwarmPlotter(CategoricalFixture):
             npt.assert_array_almost_equal(x, vals.iloc[sorter])
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter],
+            for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
@@ -1784,7 +1791,8 @@ class TestBarPlotter(CategoricalFixture):
                        estimator=np.mean, ci=95, n_boot=100, units=None,
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
-                       saturation=.75, errcolor=".26")
+                       saturation=.75, errcolor=".26", errwidth=None,
+                       capsize=None, dodge=True)
 
     def test_nested_width(self):
 
@@ -1797,6 +1805,11 @@ class TestBarPlotter(CategoricalFixture):
         p = cat._BarPlotter(**kws)
         p.establish_variables("h", "y", "g", data=self.df)
         nt.assert_equal(p.nested_width, .8 / 3)
+
+        kws["dodge"] = False
+        p = cat._BarPlotter(**kws)
+        p.establish_variables("h", "y", "g", data=self.df)
+        nt.assert_equal(p.nested_width, .8)
 
     def test_draw_vertical_bars(self):
 
@@ -2410,7 +2423,7 @@ class TestLVPlotter(CategoricalFixture):
         self.default_kws = dict(x=None, y=None, hue=None, data=None,
                                 order=None, hue_order=None,
                                 orient=None, color=None, palette=None,
-                                saturation=.75, width=.8,
+                                saturation=.75, width=.8, dodge=True,
                                 k_depth='proportion', linewidth=None,
                                 scale='exponential', outlier_prop=None)
         self.linear_data = np.arange(101)

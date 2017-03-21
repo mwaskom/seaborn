@@ -356,16 +356,23 @@ class _CategoricalPlotter(object):
     def hue_offsets(self):
         """A list of center positions for plots when hue nesting is used."""
         n_levels = len(self.hue_names)
-        each_width = self.width / n_levels
-        offsets = np.linspace(0, self.width - each_width, n_levels)
-        offsets -= offsets.mean()
+        if self.dodge:
+            each_width = self.width / n_levels
+            offsets = np.linspace(0, self.width - each_width, n_levels)
+            offsets -= offsets.mean()
+        else:
+            offsets = np.zeros(n_levels)
 
         return offsets
 
     @property
     def nested_width(self):
         """A float with the width of plot elements when hue nesting is used."""
-        return self.width / len(self.hue_names) * .98
+        if self.dodge:
+            width = self.width / len(self.hue_names) * .98
+        else:
+            width = self.width
+        return width
 
     def annotate_axes(self, ax):
         """Add descriptive labels to an Axes object."""
@@ -421,11 +428,12 @@ class _BoxPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
-                 width, fliersize, linewidth):
+                 width, dodge, fliersize, linewidth):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
 
+        self.dodge = dodge
         self.width = width
         self.fliersize = fliersize
 
@@ -535,7 +543,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  bw, cut, scale, scale_hue, gridsize,
-                 width, inner, split, orient, linewidth,
+                 width, inner, split, dodge, orient, linewidth,
                  color, palette, saturation):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
@@ -544,6 +552,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
         self.gridsize = gridsize
         self.width = width
+        self.dodge = dodge
 
         if inner is not None:
             if not any([inner.startswith("quart"),
@@ -768,7 +777,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     @property
     def dwidth(self):
 
-        if self.hue_names is None:
+        if self.hue_names is None or not self.dodge:
             return self.width / 2
         elif self.split:
             return self.width / 2
@@ -839,7 +848,7 @@ class _ViolinPlotter(_CategoricalPlotter):
                 for j, hue_level in enumerate(self.hue_names):
 
                     support, density = self.support[i][j], self.density[i][j]
-                    kws["color"] = self.colors[j]
+                    kws["facecolor"] = self.colors[j]
 
                     # Add legend data, but just for one set of violins
                     if not i:
@@ -1066,6 +1075,8 @@ class _ViolinPlotter(_CategoricalPlotter):
 
 
 class _CategoricalScatterPlotter(_CategoricalPlotter):
+
+    dodge = True
 
     @property
     def point_colors(self):
@@ -1406,7 +1417,11 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
     @property
     def nested_width(self):
         """A float with the width of plot elements when hue nesting is used."""
-        return self.width / len(self.hue_names)
+        if self.dodge:
+            width = self.width / len(self.hue_names)
+        else:
+            width = self.width
+        return width
 
     def estimate_statistic(self, estimator, ci, n_boot):
 
@@ -1499,8 +1514,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
         # Rename the value label to reflect the estimation
         if self.value_label is not None:
-            self.value_label = "{}({})".format(estimator.__name__,
-                                               self.value_label)
+            self.value_label = u"{}({})".format(estimator.__name__,
+                                                self.value_label)
 
     def draw_confints(self, ax, at_group, confint, colors,
                       errwidth=None, capsize=None, **kws):
@@ -1536,13 +1551,15 @@ class _BarPlotter(_CategoricalStatPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
-                 orient, color, palette, saturation, errcolor, errwidth=None,
-                 capsize=None):
+                 orient, color, palette, saturation, errcolor,
+                 errwidth, capsize, dodge):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, saturation)
         self.estimate_statistic(estimator, ci, n_boot)
+
+        self.dodge = dodge
 
         self.errcolor = errcolor
         self.errwidth = errwidth
@@ -1642,8 +1659,11 @@ class _PointPlotter(_CategoricalStatPlotter):
     @property
     def hue_offsets(self):
         """Offsets relative to the center position for each hue level."""
-        offset = np.linspace(0, self.dodge, len(self.hue_names))
-        offset -= offset.mean()
+        if self.dodge:
+            offset = np.linspace(0, self.dodge, len(self.hue_names))
+            offset -= offset.mean()
+        else:
+            offset = np.zeros(len(self.hue_names))
         return offset
 
     def draw_points(self, ax):
@@ -1739,11 +1759,14 @@ class _LVPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
-                 width, k_depth, linewidth, scale, outlier_prop):
+                 width, dodge, k_depth, linewidth, scale, outlier_prop):
 
+        # TODO assigning variables for None is unceccesary
         if width is None:
             width = .8
         self.width = width
+
+        self.dodge = dodge
 
         if saturation is None:
             saturation = .75
@@ -2075,6 +2098,11 @@ _categorical_docs = dict(
         Width of a full element when not using hue nesting, or width of all the
         elements for one level of the major grouping variable.\
     """),
+    dodge=dedent("""\
+    dodge : bool, optional
+        When hue nesting is used, whether elements should be shifted along the
+        categorical axis.\
+    """),
     linewidth=dedent("""\
     linewidth : float, optional
         Width of the gray lines that frame the plot elements.\
@@ -2127,8 +2155,8 @@ _categorical_docs.update(_facet_docs)
 
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
-            width=.8, fliersize=5, linewidth=None, whis=1.5, notch=False,
-            ax=None, **kwargs):
+            width=.8, dodge=True, fliersize=5, linewidth=None,
+            whis=1.5, notch=False, ax=None, **kwargs):
 
     # Try to handle broken backwards-compatability
     # This should help with the lack of a smooth deprecation,
@@ -2172,7 +2200,7 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
-                          width, fliersize, linewidth)
+                          width, dodge, fliersize, linewidth)
 
     if ax is None:
         ax = plt.gca()
@@ -2203,6 +2231,7 @@ boxplot.__doc__ = dedent("""\
     {palette}
     {saturation}
     {width}
+    {dodge}
     fliersize : float, optional
         Size of the markers used to indicate outlier observations.
     {linewidth}
@@ -2282,6 +2311,15 @@ boxplot.__doc__ = dedent("""\
         >>> iris = sns.load_dataset("iris")
         >>> ax = sns.boxplot(data=iris, orient="h", palette="Set2")
 
+    Use ``hue`` without changing box position or width:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
+        >>> ax = sns.boxplot(x="day", y="total_bill", hue="weekend",
+        ...                  data=tips, dodge=False)
+
     Use :func:`swarmplot` to show the datapoints on top of the boxes:
 
     .. plot::
@@ -2307,8 +2345,9 @@ boxplot.__doc__ = dedent("""\
 
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
-               width=.8, inner="box", split=False, orient=None, linewidth=None,
-               color=None, palette=None, saturation=.75, ax=None, **kwargs):
+               width=.8, inner="box", split=False, dodge=True, orient=None,
+               linewidth=None, color=None, palette=None, saturation=.75,
+               ax=None, **kwargs):
 
     # Try to handle broken backwards-compatability
     # This should help with the lack of a smooth deprecation,
@@ -2343,7 +2382,7 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
-                             width, inner, split, orient, linewidth,
+                             width, inner, split, dodge, orient, linewidth,
                              color, palette, saturation)
 
     if ax is None:
@@ -2407,6 +2446,7 @@ violinplot.__doc__ = dedent("""\
         When using hue nesting with a variable that takes two levels, setting
         ``split`` to True will draw half of a violin for each level. This can
         make it easier to directly compare the distributions.
+    {dodge}
     {orient}
     {linewidth}
     {color}
@@ -2513,6 +2553,15 @@ violinplot.__doc__ = dedent("""\
         ...                     data=tips, palette="Set2", split=True,
         ...                     scale="count", inner="stick",
         ...                     scale_hue=False, bw=.2)
+
+    Use ``hue`` without changing violin position or width:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
+        ...                     data=tips, dodge=False)
 
     Draw horizontal violins:
 
@@ -2877,7 +2926,8 @@ swarmplot.__doc__ = dedent("""\
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             estimator=np.mean, ci=95, n_boot=1000, units=None,
             orient=None, color=None, palette=None, saturation=.75,
-            errcolor=".26", errwidth=None, capsize=None, ax=None, **kwargs):
+            errcolor=".26", errwidth=None, capsize=None, dodge=True,
+            ax=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -2896,7 +2946,7 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor, errwidth, capsize)
+                          errcolor, errwidth, capsize, dodge)
 
     if ax is None:
         ax = plt.gca()
@@ -2942,6 +2992,7 @@ barplot.__doc__ = dedent("""\
     {ax_in}
     {errwidth}
     {capsize}
+    {dodge}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.bar`` at draw
         time.
@@ -3020,6 +3071,15 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  palette="Blues_d")
+
+    Use ``hue`` without changing bar position or width:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
+        >>> ax = sns.barplot(x="day", y="total_bill", hue="weekend",
+        ...                  data=tips, dodge=False)
 
     Plot all bars in a single color:
 
@@ -3233,13 +3293,15 @@ pointplot.__doc__ = dedent("""\
 
 def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               orient=None, color=None, palette=None, saturation=.75,
-              ax=None, **kwargs):
+              dodge=True, ax=None, **kwargs):
 
     estimator = len
     ci = None
     n_boot = 0
     units = None
     errcolor = None
+    errwidth = None
+    capsize = None
 
     if x is None and y is not None:
         orient = "h"
@@ -3255,7 +3317,7 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor)
+                          errcolor, errwidth, capsize, dodge)
 
     plotter.value_label = "count"
 
@@ -3284,6 +3346,7 @@ countplot.__doc__ = dedent("""\
     {color}
     {palette}
     {saturation}
+    {dodge}
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed to ``plt.bar``.
@@ -3437,7 +3500,7 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
             g.set_axis_labels(y_var="count")
 
     if legend and (hue is not None) and (hue not in [x, row, col]):
-        hue_order = list(map(str, hue_order))
+        hue_order = list(map(utils.to_utf8, hue_order))
         g.add_legend(title=hue, label_order=hue_order)
 
     return g
@@ -3588,12 +3651,12 @@ factorplot.__doc__ = dedent("""\
 
 def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
            orient=None, color=None, palette=None, saturation=.75,
-           width=.8, k_depth='proportion', linewidth=None, scale='exponential',
-           outlier_prop=None, ax=None, **kwargs):
+           width=.8, dodge=True, k_depth='proportion', linewidth=None,
+           scale='exponential', outlier_prop=None, ax=None, **kwargs):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
-                         width, k_depth, linewidth, scale, outlier_prop)
+                         width, dodge, k_depth, linewidth, scale, outlier_prop)
 
     if ax is None:
         ax = plt.gca()
@@ -3626,6 +3689,7 @@ lvplot.__doc__ = dedent("""\
     {palette}
     {saturation}
     {width}
+    {dodge}
     k_depth : "proportion" | "tukey" | "trustworthy", optional
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different

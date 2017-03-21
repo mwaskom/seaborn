@@ -809,8 +809,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
     elif kind.startswith("hex"):
 
-        x_bins = _freedman_diaconis_bins(grid.x)
-        y_bins = _freedman_diaconis_bins(grid.y)
+        x_bins = min(_freedman_diaconis_bins(grid.x), 50)
+        y_bins = min(_freedman_diaconis_bins(grid.y), 50)
         gridsize = int(np.mean([x_bins, y_bins]))
 
         joint_kws.setdefault("gridsize", gridsize)

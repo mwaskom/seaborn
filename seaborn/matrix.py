@@ -12,7 +12,8 @@ from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
 from .palettes import cubehelix_palette
-from .utils import despine, axis_ticklabels_overlap, relative_luminance
+from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
+                    to_utf8)
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -21,7 +22,7 @@ __all__ = ["heatmap", "clustermap"]
 def _index_to_label(index):
     """Convert a pandas index or multiindex to an axis label."""
     if isinstance(index, pd.MultiIndex):
-        return "-".join(map(str, index.names))
+        return "-".join(map(to_utf8, index.names))
     else:
         return index.name
 
@@ -29,7 +30,7 @@ def _index_to_label(index):
 def _index_to_ticklabels(index):
     """Convert a pandas index or multiindex into ticklabels."""
     if isinstance(index, pd.MultiIndex):
-        return ["-".join(map(str, i)) for i in index.values]
+        return ["-".join(map(to_utf8, i)) for i in index.values]
     else:
         return index.values
 
@@ -759,10 +760,10 @@ class ClusterGrid(Grid):
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
-        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2],
-                                                      axisbg="white")
-        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1],
-                                                      axisbg="white")
+        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2])
+        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1])
+        self.ax_row_dendrogram.set_axis_off()
+        self.ax_col_dendrogram.set_axis_off()
 
         self.ax_row_colors = None
         self.ax_col_colors = None

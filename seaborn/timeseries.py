@@ -181,7 +181,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
         # Condition is optional
         if condition is None:
-            condition = pd.Series(np.ones(len(data)))
+            condition = pd.Series(1, index=data.index)
             legend = False
             legend_name = None
             n_cond = 1

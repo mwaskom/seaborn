@@ -12,13 +12,20 @@ import glob
 import token
 import tokenize
 import shutil
-import json
+
+from seaborn.external import six
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from matplotlib import image
+
+if six.PY3:
+    # Python 3 has no execfile
+    def execfile(filename, globals=None, locals=None):
+        with open(filename, "rb") as fp:
+            six.exec_(compile(fp.read(), filename, 'exec'), globals, locals)
 
 
 RST_TEMPLATE = """
@@ -235,7 +242,7 @@ class ExampleGenerator(object):
 
         docstring = ''
         first_par = ''
-        tokens = tokenize.generate_tokens(lines.__iter__().next)
+        tokens = tokenize.generate_tokens(lambda: next(lines.__iter__()))
         for tok_type, tok_content, _, (erow, _), _ in tokens:
             tok_type = token.tok_name[tok_type]
             if tok_type in ('NEWLINE', 'COMMENT', 'NL', 'INDENT', 'DEDENT'):
