@@ -350,6 +350,15 @@ class TestRegressionPlotter(PlotTestCase):
         npt.assert_array_less(0, yhat)
 
     @skipif(_no_statsmodels)
+    def test_logistic_perfect_separation(self):
+
+        y = self.df.x > self.df.x.mean()
+        p = lm._RegressionPlotter("x", y, data=self.df,
+                                  logistic=True, n_boot=10)
+        _, yhat, _ = p.fit_regression(x_range=(-3, 3))
+        nt.assert_true(np.isnan(yhat).all())
+
+    @skipif(_no_statsmodels)
     def test_robust_regression(self):
 
         p_ols = lm._RegressionPlotter("x", "y", data=self.df,

@@ -246,7 +246,13 @@ class _RegressionPlotter(_LinearPlotter):
         """More general regression function using statsmodels objects."""
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
-        reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
+        import statsmodels.genmod.generalized_linear_model as glm
+        def reg_func(_x, _y):
+            try:
+                yhat = model(_y, _x, **kwargs).fit().predict(grid)
+            except glm.PerfectSeparationError:
+                yhat = np.ones(len(grid)) * np.nan
+            return yhat
         yhat = reg_func(X, y)
         if self.ci is None:
             return yhat, None
