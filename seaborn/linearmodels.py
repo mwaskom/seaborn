@@ -252,7 +252,8 @@ class _RegressionPlotter(_LinearPlotter):
             try:
                 yhat = model(_y, _x, **kwargs).fit().predict(grid)
             except glm.PerfectSeparationError:
-                yhat = np.ones(len(grid)) * np.nan
+                yhat = np.empty(len(grid))
+                yhat.fill(np.nan)
             return yhat
 
         yhat = reg_func(X, y)
