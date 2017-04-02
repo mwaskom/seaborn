@@ -420,7 +420,8 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         Passed to pandas.read_csv
 
     """
-    path = "https://github.com/mwaskom/seaborn-data/raw/master/{0}.csv"
+    path = ("https://raw.githubusercontent.com/"
+            "mwaskom/seabon-data/master/{}.csv")
     full_path = path.format(name)
 
     if cache:
