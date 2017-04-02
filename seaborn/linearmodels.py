@@ -102,7 +102,8 @@ class _RegressionPlotter(_LinearPlotter):
         self.label = label
 
         # Validate the regression options:
-        if sum((order > 1, logistic, robust, lowess, logx)) > 1:
+        if (sum([order > 1, logistic, robust, lowess]) > 1 or
+                sum([order > 1, logx]) > 1):
             raise ValueError("Mutually exclusive regression options.")
 
         # Extract the data vals from the arguments or passed dataframe
@@ -244,8 +245,12 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_statsmodels(self, grid, model, **kwargs):
         """More general regression function using statsmodels objects."""
-        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
-        grid = np.c_[np.ones(len(grid)), grid]
+        if self.logx:
+            X, y = np.c_[np.ones(len(self.x)), np.log(self.x)], self.y
+            grid = np.c_[np.ones(len(grid)), np.log(grid)]
+        else:
+            X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+            grid = np.c_[np.ones(len(grid)), grid]
         reg_func = lambda _x, _y: model(_y, _x, **kwargs).fit().predict(grid)
         yhat = reg_func(X, y)
         if self.ci is None:
@@ -258,8 +263,12 @@ class _RegressionPlotter(_LinearPlotter):
     def fit_lowess(self):
         """Fit a locally-weighted regression, which returns its own grid."""
         from statsmodels.nonparametric.smoothers_lowess import lowess
-        grid, yhat = lowess(self.y, self.x).T
-        return grid, yhat
+        if self.logx:
+            grid, yhat = lowess(self.y, np.log(self.x)).T
+            return np.exp(grid), yhat
+        else:
+            grid, yhat = lowess(self.y, self.x).T
+            return grid, yhat
 
     def fit_logx(self, grid):
         """Fit the model in log-space."""
