@@ -421,7 +421,7 @@ def load_dataset(name, cache=True, data_home=None, **kws):
 
     """
     path = ("https://raw.githubusercontent.com/"
-            "mwaskom/seabon-data/master/{}.csv")
+            "mwaskom/seaborn-data/master/{}.csv")
     full_path = path.format(name)
 
     if cache:
