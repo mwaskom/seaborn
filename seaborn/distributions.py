@@ -643,7 +643,8 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
 def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
               color=None, size=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
-              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
+              joint_kws=None, marginal_kws=None, annot_kws=None,
+              fig=None, subplot_spec=None, **kwargs):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
     This function provides a convenient interface to the :class:`JointGrid`
@@ -795,7 +796,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     # Initialize the JointGrid object
     grid = JointGrid(x, y, data, dropna=dropna,
                      size=size, ratio=ratio, space=space,
-                     xlim=xlim, ylim=ylim)
+                     xlim=xlim, ylim=ylim,
+                     fig=fig, subplot_spec=subplot_spec)
 
     # Plot the data using the grid
     if kind == "scatter":

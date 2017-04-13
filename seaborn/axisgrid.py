@@ -1282,7 +1282,6 @@ class PairGrid(Grid):
         # Make the plot look nice
         if despine:
             utils.despine(fig=fig)
-        #fig.tight_layout()
 
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
@@ -1524,7 +1523,7 @@ class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
 
     def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
-                 dropna=True, xlim=None, ylim=None):
+                 dropna=True, xlim=None, ylim=None, subplot_spec=None, fig=None):
         """Set up the grid of subplots.
 
         Parameters
@@ -1651,8 +1650,29 @@ class JointGrid(object):
 
         """
         # Set up the subplot grid
-        f = plt.figure(figsize=(size, size))
-        gs = plt.GridSpec(ratio + 1, ratio + 1)
+        if subplot_spec:
+            if type(subplot_spec) == plt.Subplot:
+                raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`. You passed in a subplot,' +
+                                 'most likely due to using plt.subplots() instead of mpl.gridspec.GridSpec()')
+            if not type(subplot_spec) == gridspec.SubplotSpec:
+                raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`')
+
+            # look for fig with gcf. If no fig, make one.
+            if type(fig) is plt.Figure:
+                f = fig
+            elif fig is None:
+                figManager = _pylab_helpers.Gcf.get_active()
+                if figManager is not None:
+                    f = figManager.canvas.figure
+                else:
+                    f = plt.figure(figsize=(size, size))
+            else:
+                raise ValueError('fig must be either None or a matplotlib Figure')
+            gs = gridspec.GridSpecFromSubplotSpec(ratio + 1, ratio + 1, hspace=space, wspace=space, subplot_spec=subplot_spec)
+
+        else:
+            f = plt.figure(figsize=(size, size))
+            gs = plt.GridSpec(ratio + 1, ratio + 1, hspace=space, wspace=space)
 
         ax_joint = f.add_subplot(gs[1:, :-1])
         ax_marg_x = f.add_subplot(gs[0, :-1], sharex=ax_joint)
@@ -1711,8 +1731,8 @@ class JointGrid(object):
         utils.despine(f)
         utils.despine(ax=ax_marg_x, left=True)
         utils.despine(ax=ax_marg_y, bottom=True)
-        f.tight_layout()
-        f.subplots_adjust(hspace=space, wspace=space)
+        #f.tight_layout()
+        #f.subplots_adjust(hspace=space, wspace=space)
 
     def plot(self, joint_func, marginal_func, annot_func=None):
         """Shortcut to draw the full plot.
