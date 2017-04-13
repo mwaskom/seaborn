@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib import _pylab_helpers
+import matplotlib.gridspec as gridspec
 
 from . import utils
 from .palettes import color_palette
@@ -1054,7 +1056,7 @@ class PairGrid(Grid):
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
                  diag_sharey=True, size=2.5, aspect=1,
-                 despine=True, dropna=True):
+                 despine=True, dropna=True, subplot_spec=None, fig=None):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1087,6 +1089,10 @@ class PairGrid(Grid):
             Remove the top and right spines from the plots.
         dropna : boolean, optional
             Drop missing values from the data before plotting.
+        subplot_spec : matplotlib.gridspec.SubplotSpec, optional
+            plot the PairGrid on this region of the figure. If None, use entire figure.
+        fig : mpl.Figure, optional
+            plot PairGrid on this figure. If None, create a new figure
 
         See Also
         --------
@@ -1213,10 +1219,34 @@ class PairGrid(Grid):
         # Create the figure and the array of subplots
         figsize = len(x_vars) * size * aspect, len(y_vars) * size
 
-        fig, axes = plt.subplots(len(y_vars), len(x_vars),
-                                 figsize=figsize,
+        gridspec_kw = {}
+        if subplot_spec:
+            if not type(subplot_spec) == gridspec.SubplotSpec:
+                if type(subplot_spec) == plt.Subplot:
+                    raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`. You passed in a subplot,' +
+                                     'most likely due to using plt.subplots() instead of mpl.gridspec.GridSpec()')
+                raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`')
+            if fig is None:
+                figManager = _pylab_helpers.Gcf.get_active()
+                if figManager is not None:
+                    fig = figManager.canvas.figure
+                else:
+                    fig = plt.figure(figsize=figsize)
+            elif type(fig) is not plt.Figure:
+                raise ValueError('fig must be either None or a matplotlib Figure')
+
+            bounds = subplot_spec.get_position(fig).bounds
+            gridspec_kw['left'] = bounds[0]
+            gridspec_kw['bottom'] = bounds[1]
+            gridspec_kw['right'] = bounds[0] + bounds[2]
+            gridspec_kw['top'] = bounds[1] + bounds[3]
+
+        else:
+            fig = plt.figure(figsize=figsize)
+
+        axes = fig.subplots(len(y_vars), len(x_vars),
                                  sharex="col", sharey="row",
-                                 squeeze=False)
+                                 squeeze=False, gridspec_kw=gridspec_kw)
 
         self.fig = fig
         self.axes = axes
@@ -1252,7 +1282,7 @@ class PairGrid(Grid):
         # Make the plot look nice
         if despine:
             utils.despine(fig=fig)
-        fig.tight_layout()
+        #fig.tight_layout()
 
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
