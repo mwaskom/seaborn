@@ -2345,17 +2345,18 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
-    Draw a box plot on to a :class:`FacetGrid` to group within an additional
-    categorical variable:
+    Use :func:`factorplot` to combine a :func:`boxplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> (g.map(sns.boxplot, "sex", "total_bill", "smoker")
-        ...   .despine(left=True)
-        ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
-        <seaborn.axisgrid.FacetGrid object at 0x...>
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="box",
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2590,17 +2591,18 @@ violinplot.__doc__ = dedent("""\
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", palette="Set3")
 
-    Draw a violin plot on to a :class:`FacetGrid` to group within an additional
-    categorical variable:
+    Use :func:`factorplot` to combine a :func:`violinplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> (g.map(sns.violinplot, "sex", "total_bill", "smoker", split=True)
-        ...   .despine(left=True)
-        ...   .add_legend(title="smoker"))  # doctest: +ELLIPSIS
-        <seaborn.axisgrid.FacetGrid object at 0x...>
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="violin", split=True,
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2780,6 +2782,20 @@ stripplot.__doc__ = dedent("""\
         ...                     inner=None, color=".8")
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
+    Use :func:`factorplot` to combine a :func:`stripplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="strip",
+        ...                    jitter=True,
+        ...                    size=4, aspect=.7);
+
     """).format(**_categorical_docs)
 
 
@@ -2919,14 +2935,13 @@ swarmplot.__doc__ = dedent("""\
 
         >>> ax = sns.swarmplot(x="time", y="tip", data=tips, size=6)
 
-
     Draw swarms of observations on top of a box plot:
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.swarmplot(x="tip", y="day", data=tips)
+        >>> ax = sns.swarmplot(x="tip", y="day", data=tips, color=".2")
 
     Draw swarms of observations on top of a violin plot:
 
@@ -2936,6 +2951,19 @@ swarmplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips, inner=None)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
         ...                    color="white", edgecolor="gray")
+
+    Use :func:`factorplot` to combine a :func:`swarmplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="swarm",
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3114,6 +3142,19 @@ barplot.__doc__ = dedent("""\
         >>> ax = sns.barplot("day", "total_bill", data=tips,
         ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
         ...                  errcolor=".2", edgecolor=".2")
+
+    Use :func:`factorplot` to combine a :func:`barplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="bar",
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3305,6 +3346,20 @@ pointplot.__doc__ = dedent("""\
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
 
+    Use :func:`factorplot` to combine a :func:`barplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="point",
+        ...                    dodge=True,
+        ...                    size=4, aspect=.7);
+
     """).format(**_categorical_docs)
 
 
@@ -3420,6 +3475,19 @@ countplot.__doc__ = dedent("""\
         ...                    facecolor=(0, 0, 0, 0),
         ...                    linewidth=5,
         ...                    edgecolor=sns.color_palette("dark", 3))
+
+    Use :func:`factorplot` to combine a :func:`countplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="count",
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3682,7 +3750,7 @@ def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     return ax
 
 lvplot.__doc__ = dedent("""\
-    Create a letter value plot
+    Draw a letter value plot to show distributions of large datasets.
 
     Letter value (LV) plots are non-parametric estimates of the distribution of
     a dataset, similar to boxplots. LV plots are also similar to violin plots
@@ -3795,18 +3863,19 @@ lvplot.__doc__ = dedent("""\
 
         >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, edgecolor="gray")
+        ...                    size=4, jitter=True, color="gray")
 
-    Draw a letter value plot on to a :class:`FacetGrid` to group within an
-    additional categorical variable:
+    Use :func:`factorplot` to combine a :func:`lvplot` and a
+    :class:`FacetGrid`. This allows grouping within additional categorical
+    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.FacetGrid(tips, col="time", size=4, aspect=.7)
-        >>> (g.map(sns.lvplot, "sex", "total_bill", "smoker")
-        ...   .despine(left=True)
-        ...   .add_legend(title="smoker"))  #doctest: +ELLIPSIS
-        <seaborn.axisgrid.FacetGrid object at 0x...>
+        >>> g = sns.factorplot(x="sex", y="total_bill",
+        ...                    hue="smoker", col="time",
+        ...                    data=tips, kind="lv",
+        ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
