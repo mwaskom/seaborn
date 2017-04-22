@@ -3162,8 +3162,8 @@ barplot.__doc__ = dedent("""\
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, ax=None, errwidth=None,
-              capsize=None, **kwargs):
+              orient=None, color=None, palette=None, errwidth=None,
+              capsize=None, ax=None, **kwargs):
 
     # Handle some deprecated arguments
     if "hline" in kwargs:
@@ -3236,6 +3236,8 @@ pointplot.__doc__ = dedent("""\
     {orient}
     {color}
     {palette}
+    {errwidth}
+    {capsize}
     {ax_in}
 
     Returns
