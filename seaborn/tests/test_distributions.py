@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
@@ -16,6 +17,9 @@ try:
     _no_statsmodels = False
 except ImportError:
     _no_statsmodels = True
+
+
+_old_matplotlib = LooseVersion(mpl.__version__) < "1.5"
 
 
 class TestKDE(PlotTestCase):
@@ -110,6 +114,7 @@ class TestKDE(PlotTestCase):
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
 
+    @skipif(_old_matplotlib)
     def test_bivariate_kde_colorbar(self):
 
         f, ax = plt.subplots()
