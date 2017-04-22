@@ -3486,9 +3486,8 @@ countplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="count",
+        >>> g = sns.factorplot(x="class", hue="who", col="survived",
+        ...                    data=titanic, kind="count",
         ...                    size=4, aspect=.7);
 
     """).format(**_categorical_docs)
