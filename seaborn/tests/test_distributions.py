@@ -110,6 +110,15 @@ class TestKDE(PlotTestCase):
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
 
+    def test_bivariate_kde_colorbar(self):
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y,
+                     cbar=True, cbar_kws=dict(label="density"),
+                     ax=ax)
+        nt.assert_equal(len(f.axes), 2)
+        nt.assert_equal(f.axes[1].get_ylabel(), "density")
+
 
 class TestJointPlot(PlotTestCase):
 
