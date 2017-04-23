@@ -482,8 +482,15 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         relevant when drawing a univariate plot or when ``shade=False``.
         Setting this to ``False`` can be useful when you want multiple
         densities on the same Axes.
-    ax : matplotlib axis, optional
-        Axis to plot on, otherwise uses current axis.
+    cbar : bool, optional
+        If True and drawing a bivariate KDE plot, add a colorbar.
+    cbar_ax : matplotlib axes, optional
+        Existing axes to draw the colorbar onto, otherwise space is taken
+        from the main axes.
+    cbar_kws : dict, optional
+        Keyword arguments for ``fig.colorbar()``.
+    ax : matplotlib axes, optional
+        Axes to plot on, otherwise uses current axes.
     kwargs : key, value pairings
         Other keyword arguments are passed to ``plt.plot()`` or
         ``plt.contour{f}`` depending on whether a univariate or bivariate
