@@ -5,7 +5,10 @@ import pandas as pd
 
 import nose.tools as nt
 import numpy.testing as npt
-import pandas.util.testing as pdt
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
 from nose import SkipTest
 
