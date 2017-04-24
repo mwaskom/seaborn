@@ -353,7 +353,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
 
 def _bivariate_kdeplot(x, y, filled, fill_lowest,
                        kernel, bw, gridsize, cut, clip,
-                       axlabel, ax, **kwargs):
+                       axlabel, cbar, cbar_ax, cbar_kws, ax, **kwargs):
     """Plot a joint KDE estimate as a bivariate contour plot."""
     # Determine the clipping
     if clip is None:
@@ -384,6 +384,10 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     if filled and not fill_lowest:
         cset.collections[0].set_alpha(0)
     kwargs["n_levels"] = n_levels
+
+    if cbar:
+        cbar_kws = {} if cbar_kws is None else cbar_kws
+        ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
     # Label the axes
     if hasattr(x, "name") and axlabel:
@@ -441,7 +445,8 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-            cumulative=False, shade_lowest=True, ax=None, **kwargs):
+            cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
+            cbar_kws=None, ax=None, **kwargs):
     """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
@@ -557,6 +562,13 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
         >>> ax = sns.kdeplot(x, cut=0)
 
+    Add a colorbar for the contours:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.kdeplot(x, y, cbar=True)
+
     Plot two shaded bivariate densities:
 
     .. plot::
@@ -597,7 +609,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if bivariate:
         ax = _bivariate_kdeplot(x, y, shade, shade_lowest,
                                 kernel, bw, gridsize, cut, clip, legend,
-                                ax, **kwargs)
+                                cbar, cbar_ax, cbar_kws, ax, **kwargs)
     else:
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
                                  gridsize, cut, clip, legend, ax,
