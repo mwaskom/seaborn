@@ -647,10 +647,10 @@ def _network(t=None, url='http://google.com'):
     def wrapper(*args, **kwargs):
         # attempt to connect
         try:
-            with urlopen(url):
-                pass
+            f = urlopen(url)
         except (IOError, HTTPException):
             raise nose.SkipTest()
         else:
+            f.close()
             return t(*args, **kwargs)
     return wrapper
