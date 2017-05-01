@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import colorsys
 import warnings
 import os
+from functools import partial
 
 import numpy as np
 from scipy import stats
@@ -15,6 +16,8 @@ from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 from .external.six.moves.urllib.request import urlopen, urlretrieve
+from .external.six.moves.http_client import HTTPException
+from .external.six import wraps
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
@@ -624,3 +627,30 @@ def to_utf8(obj):
             return obj.decode("utf-8")
         else:
             return obj.__str__()
+
+
+def _network(t=None, url='http://google.com'):
+    """
+    Decorator that will skip a test if `url` is unreachable.
+
+    Parameters
+    ----------
+    t : function, optional
+    url : str, optional
+    """
+    import nose
+
+    if t is None:
+        return partial(_network, url=url)
+
+    @wraps(t)
+    def wrapper(*args, **kwargs):
+        # attempt to connect
+        try:
+            with urlopen(url):
+                pass
+        except (IOError, HTTPException):
+            raise nose.SkipTest()
+        else:
+            return t(*args, **kwargs)
+    return wrapper

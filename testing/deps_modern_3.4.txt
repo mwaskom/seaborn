@@ -1,6 +1,5 @@
 ipython-notebook
 nose
-pytest
 numpy
 scipy
 matplotlib

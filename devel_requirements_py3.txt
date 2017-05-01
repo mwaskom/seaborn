@@ -4,4 +4,3 @@ sphinx_bootstrap_theme
 numpydoc
 pillow
 nose
-pytest
