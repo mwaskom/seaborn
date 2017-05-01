@@ -3,7 +3,7 @@ from __future__ import print_function, division
 import colorsys
 import warnings
 import os
-from functools import partial
+import functools
 
 import numpy as np
 from scipy import stats
@@ -641,7 +641,7 @@ def _network(t=None, url='http://google.com'):
     import nose
 
     if t is None:
-        return partial(_network, url=url)
+        return functools.partial(_network, url=url)
 
     @wraps(t)
     def wrapper(*args, **kwargs):
