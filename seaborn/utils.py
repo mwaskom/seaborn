@@ -16,7 +16,6 @@ pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 from .external.six.moves.http_client import HTTPException
-from .external.six import wraps
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
@@ -642,7 +641,6 @@ def _network(t=None, url='http://google.com'):
     if t is None:
         return lambda x: _network(x, url=url)
 
-    @wraps(t)
     def wrapper(*args, **kwargs):
         # attempt to connect
         try:
