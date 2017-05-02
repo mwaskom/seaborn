@@ -10,7 +10,10 @@ from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
-import pandas.util.testing as tm
+try:
+    import pandas.testing as tm
+except ImportError:
+    import pandas.util.testing as tm
 
 from . import PlotTestCase
 from .. import axisgrid as ag

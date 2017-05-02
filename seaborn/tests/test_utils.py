@@ -11,12 +11,14 @@ import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
 import numpy.testing as npt
-import pandas.util.testing as pdt
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
-from pandas.util.testing import network
 
 try:
     from bs4 import BeautifulSoup
@@ -25,7 +27,7 @@ except ImportError:
 
 from . import PlotTestCase
 from .. import utils, rcmod
-from ..utils import get_dataset_names, load_dataset
+from ..utils import get_dataset_names, load_dataset, _network
 
 
 a_norm = np.random.randn(100)
@@ -359,7 +361,7 @@ if LooseVersion(pd.__version__) >= "0.15":
         finally:
             shutil.rmtree(tmpdir)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_get_dataset_names():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")
@@ -367,7 +369,7 @@ if LooseVersion(pd.__version__) >= "0.15":
         assert(len(names) > 0)
         assert(u"titanic" in names)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_load_datasets():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")
@@ -379,7 +381,7 @@ if LooseVersion(pd.__version__) >= "0.15":
             # yield check_load_dataset, name
             check_load_dataset(name)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_load_cached_datasets():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")

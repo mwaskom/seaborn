@@ -15,6 +15,7 @@ from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 from .external.six.moves.urllib.request import urlopen, urlretrieve
+from .external.six.moves.http_client import HTTPException
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
@@ -624,3 +625,29 @@ def to_utf8(obj):
             return obj.decode("utf-8")
         else:
             return obj.__str__()
+
+
+def _network(t=None, url='http://google.com'):
+    """
+    Decorator that will skip a test if `url` is unreachable.
+
+    Parameters
+    ----------
+    t : function, optional
+    url : str, optional
+    """
+    import nose
+
+    if t is None:
+        return lambda x: _network(x, url=url)
+
+    def wrapper(*args, **kwargs):
+        # attempt to connect
+        try:
+            f = urlopen(url)
+        except (IOError, HTTPException):
+            raise nose.SkipTest()
+        else:
+            f.close()
+            return t(*args, **kwargs)
+    return wrapper
