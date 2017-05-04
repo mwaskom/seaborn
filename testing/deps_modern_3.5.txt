@@ -3,6 +3,6 @@ nose
 numpy
 scipy
 matplotlib
-pandas
+pandas==0.20.0rc2
 statsmodels
 patsy
