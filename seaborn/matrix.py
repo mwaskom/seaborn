@@ -804,7 +804,10 @@ class ClusterGrid(Grid):
                     labels = list(colors.columns)
                     colors = colors.T.values
                 else:
-                    labels = [colors.name]
+                    if colors.name is None:
+                        labels = [""]
+                    else:
+                        labels = [colors.name]
                     colors = colors.values
 
             colors = _convert_colors(colors)
