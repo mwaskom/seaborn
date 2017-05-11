@@ -796,6 +796,7 @@ class ClusterGrid(Grid):
                     colors = colors.ix[data.columns]
 
                 # Replace na's with background color
+                # TODO We should set these to transparent instead
                 colors = colors.fillna('white')
 
                 # Extract color values and labels from frame/series
@@ -1018,8 +1019,11 @@ class ClusterGrid(Grid):
         kws.pop('center', None)
         kws.pop('vmin', None)
         kws.pop('vmax', None)
+        kws.pop('robust', None)
         kws.pop('xticklabels', None)
         kws.pop('yticklabels', None)
+
+        # Plot the row colors
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)
@@ -1039,6 +1043,7 @@ class ClusterGrid(Grid):
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
+        # Plot the column colors
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
