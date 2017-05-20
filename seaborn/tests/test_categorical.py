@@ -1825,9 +1825,10 @@ class TestBarPlotter(CategoricalFixture):
         positions = np.arange(len(p.plot_data)) - p.width / 2
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_x(), pos)
-            nt.assert_equal(bar.get_y(), 0)
-            nt.assert_equal(bar.get_height(), stat)
             nt.assert_equal(bar.get_width(), p.width)
+            if LooseVersion(mpl.__version__) >= "2.0.2":
+                nt.assert_equal(bar.get_y(), 0)
+                nt.assert_equal(bar.get_height(), stat)
 
     def test_draw_horizontal_bars(self):
 
@@ -1846,10 +1847,11 @@ class TestBarPlotter(CategoricalFixture):
 
         positions = np.arange(len(p.plot_data)) - p.width / 2
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
-            nt.assert_equal(bar.get_x(), 0)
             nt.assert_equal(bar.get_y(), pos)
             nt.assert_equal(bar.get_height(), p.width)
-            nt.assert_equal(bar.get_width(), stat)
+            if LooseVersion(mpl.__version__) >= "2.0.2":
+                nt.assert_equal(bar.get_x(), 0)
+                nt.assert_equal(bar.get_width(), stat)
 
     def test_draw_nested_vertical_bars(self):
 
@@ -1869,14 +1871,15 @@ class TestBarPlotter(CategoricalFixture):
         for bar in ax.patches[n_groups:]:
             nt.assert_equal(bar.get_facecolor()[:-1], p.colors[1])
 
-        for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            nt.assert_almost_equal(bar.get_y(), 0)
-            nt.assert_almost_equal(bar.get_height(), stat)
-
         positions = np.arange(len(p.plot_data))
         for bar, pos in zip(ax.patches[:n_groups], positions):
             nt.assert_almost_equal(bar.get_x(), pos - p.width / 2)
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
+
+        if LooseVersion(mpl.__version__) >= "2.0.2":
+            for bar, stat in zip(ax.patches, p.statistic.T.flat):
+                nt.assert_almost_equal(bar.get_y(), 0)
+                nt.assert_almost_equal(bar.get_height(), stat)
 
     def test_draw_nested_horizontal_bars(self):
 
@@ -1901,9 +1904,10 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_y(), pos - p.width / 2)
             nt.assert_almost_equal(bar.get_height(), p.nested_width)
 
-        for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            nt.assert_almost_equal(bar.get_x(), 0)
-            nt.assert_almost_equal(bar.get_width(), stat)
+        if LooseVersion(mpl.__version__) >= "2.0.2":
+            for bar, stat in zip(ax.patches, p.statistic.T.flat):
+                nt.assert_almost_equal(bar.get_x(), 0)
+                nt.assert_almost_equal(bar.get_width(), stat)
 
     def test_draw_missing_bars(self):
 
