@@ -1829,6 +1829,9 @@ class TestBarPlotter(CategoricalFixture):
             if LooseVersion(mpl.__version__) >= "2.0.2":
                 nt.assert_equal(bar.get_y(), 0)
                 nt.assert_equal(bar.get_height(), stat)
+            else:
+                nt.assert_equal(bar.get_y(), min(0, stat))
+                nt.assert_equal(bar.get_height(), abs(stat))
 
     def test_draw_horizontal_bars(self):
 
@@ -1852,6 +1855,9 @@ class TestBarPlotter(CategoricalFixture):
             if LooseVersion(mpl.__version__) >= "2.0.2":
                 nt.assert_equal(bar.get_x(), 0)
                 nt.assert_equal(bar.get_width(), stat)
+            else:
+                nt.assert_equal(bar.get_x(), min(0, stat))
+                nt.assert_equal(bar.get_width(), abs(stat))
 
     def test_draw_nested_vertical_bars(self):
 
@@ -1876,10 +1882,13 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_x(), pos - p.width / 2)
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
 
-        if LooseVersion(mpl.__version__) >= "2.0.2":
-            for bar, stat in zip(ax.patches, p.statistic.T.flat):
+        for bar, stat in zip(ax.patches, p.statistic.T.flat):
+            if LooseVersion(mpl.__version__) >= "2.0.2":
                 nt.assert_almost_equal(bar.get_y(), 0)
                 nt.assert_almost_equal(bar.get_height(), stat)
+            else:
+                nt.assert_almost_equal(bar.get_y(), min(0, stat))
+                nt.assert_almost_equal(bar.get_height(), abs(stat))
 
     def test_draw_nested_horizontal_bars(self):
 
@@ -1904,10 +1913,13 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_y(), pos - p.width / 2)
             nt.assert_almost_equal(bar.get_height(), p.nested_width)
 
-        if LooseVersion(mpl.__version__) >= "2.0.2":
-            for bar, stat in zip(ax.patches, p.statistic.T.flat):
+        for bar, stat in zip(ax.patches, p.statistic.T.flat):
+            if LooseVersion(mpl.__version__) >= "2.0.2":
                 nt.assert_almost_equal(bar.get_x(), 0)
                 nt.assert_almost_equal(bar.get_width(), stat)
+            else:
+                nt.assert_almost_equal(bar.get_x(), min(0, stat))
+                nt.assert_almost_equal(bar.get_width(), abs(stat))
 
     def test_draw_missing_bars(self):
 
