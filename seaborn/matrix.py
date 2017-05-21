@@ -1086,8 +1086,15 @@ class ClusterGrid(Grid):
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=self.mask,
                 xticklabels=xtl, yticklabels=ytl, **kws)
+
+        xtl_rot = self.ax_heatmap.get_xticklabels()[0].get_rotation()
+        ytl_rot = self.ax_heatmap.get_yticklabels()[0].get_rotation()
+
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
+
+        plt.setp(self.ax_heatmap.get_xticklabels(), rotation=xtl_rot)
+        plt.setp(self.ax_heatmap.get_yticklabels(), rotation=ytl_rot)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
              row_linkage, col_linkage, **kws):
