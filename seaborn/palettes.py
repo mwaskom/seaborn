@@ -394,9 +394,10 @@ def mpl_palette(name, n_colors=6):
         >>> sns.palplot(sns.mpl_palette("GnBu_d"))
 
     """
-    brewer_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
-                        "Pastel1": 9, "Pastel2": 8,
-                        "Set1": 9, "Set2": 8, "Set3": 12}
+    mpl_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
+                     "Pastel1": 9, "Pastel2": 8,
+                     "Set1": 9, "Set2": 8, "Set3": 12,
+                     "tab10": 10, "tab20": 20, "tab20b": 20, "tab20c": 20}
 
     if name.endswith("_d"):
         pal = ["#333333"]
@@ -404,8 +405,8 @@ def mpl_palette(name, n_colors=6):
         cmap = blend_palette(pal, n_colors, as_cmap=True)
     else:
         cmap = getattr(mpl.cm, name)
-    if name in brewer_qual_pals:
-        bins = np.linspace(0, 1, brewer_qual_pals[name])[:n_colors]
+    if name in mpl_qual_pals:
+        bins = np.linspace(0, 1, mpl_qual_pals[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
