@@ -212,12 +212,9 @@ class _HeatMapper(object):
             vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
         self.vmin, self.vmax = vmin, vmax
 
-        # Simple heuristics for whether these data should  have a divergent map
-        divergent = ((vmin < 0) and (vmax > 0)) or center is not None
-
         # Choose default colormaps if not provided
         if cmap is None:
-            if divergent:
+            if center is not None:
                 self.cmap = mpl.cm.RdBu_r
             else:
                 self.cmap = cubehelix_palette(light=.95, as_cmap=True)
