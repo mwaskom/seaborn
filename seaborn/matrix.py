@@ -226,12 +226,10 @@ class _HeatMapper(object):
             self.cmap = cmap
 
         # Recenter a divergent colormap
-        if divergent:
-
-            center = 0 if center is None else center
-            vrange = 2 * max(vmax - center, center - vmin)
-            cmax = vmax / vrange + (.5 - center)
-            cmin = vmin / vrange + (.5 - center)
+        if center is not None:
+            vrange = max(vmax - center, center - vmin)
+            normlize = mpl.colors.Normalize(center - vrange, center + vrange)
+            cmin, cmax = normlize([vmin, vmax])
             cc = np.linspace(cmin, cmax, 256)
             self.cmap = mpl.colors.ListedColormap(self.cmap(cc))
 
