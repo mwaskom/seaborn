@@ -1,4 +1,5 @@
 """Functions to visualize matrices of data."""
+from __future__ import division
 import itertools
 
 import matplotlib as mpl
@@ -11,9 +12,11 @@ from scipy.spatial import distance
 from scipy.cluster import hierarchy
 
 from .axisgrid import Grid
-from .palettes import cubehelix_palette
+from .palettes import cubehelix_palette, diverging_palette
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
                     to_utf8)
+
+from .external.six import string_types
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -207,34 +210,33 @@ class _HeatMapper(object):
             vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
         if vmax is None:
             vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
+        self.vmin, self.vmax = vmin, vmax
 
         # Simple heuristics for whether these data should  have a divergent map
         divergent = ((vmin < 0) and (vmax > 0)) or center is not None
 
-        # Now set center to 0 so math below makes sense
-        if center is None:
-            center = 0
-
-        # A divergent map should be symmetric around the center value
-        if divergent:
-            vlim = max(abs(vmin - center), abs(vmax - center))
-            vmin, vmax = -vlim, vlim
-        self.divergent = divergent
-
-        # Now add in the centering value and set the limits
-        vmin += center
-        vmax += center
-        self.vmin = vmin
-        self.vmax = vmax
-
         # Choose default colormaps if not provided
         if cmap is None:
             if divergent:
-                self.cmap = "RdBu_r"
+                self.cmap = mpl.cm.RdBu_r
             else:
                 self.cmap = cubehelix_palette(light=.95, as_cmap=True)
+        elif isinstance(cmap, string_types):
+            self.cmap = mpl.cm.get_cmap(cmap)
+        elif isinstance(cmap, list):
+            self.cmap = mpl.colors.ListedColormap(cmap)
         else:
             self.cmap = cmap
+
+        # Recenter a divergent colormap
+        if divergent:
+
+            center = 0 if center is None else center
+            vrange = 2 * max(vmax - center, center - vmin)
+            cmax = vmax / vrange + (.5 - center)
+            cmin = vmin / vrange + (.5 - center)
+            cc = np.linspace(cmin, cmax, 256)
+            self.cmap = mpl.colors.ListedColormap(self.cmap(cc))
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
