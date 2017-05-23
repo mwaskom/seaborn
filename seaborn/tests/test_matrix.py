@@ -97,22 +97,13 @@ class TestHeatmap(PlotTestCase):
 
         npt.assert_array_equal(p.plot_data, plot_data[::-1])
 
-    def test_default_sequential_vlims(self):
+    def test_default_vlims(self):
 
         p = mat._HeatMapper(self.df_unif, **self.default_kws)
         nt.assert_equal(p.vmin, self.x_unif.min())
         nt.assert_equal(p.vmax, self.x_unif.max())
-        nt.assert_true(not p.divergent)
 
-    def test_default_diverging_vlims(self):
-
-        p = mat._HeatMapper(self.df_norm, **self.default_kws)
-        vlim = max(abs(self.x_norm.min()), abs(self.x_norm.max()))
-        nt.assert_equal(p.vmin, -vlim)
-        nt.assert_equal(p.vmax, vlim)
-        nt.assert_true(p.divergent)
-
-    def test_robust_sequential_vlims(self):
+    def test_robust_vlims(self):
 
         kws = self.default_kws.copy()
         kws["robust"] = True
@@ -136,9 +127,10 @@ class TestHeatmap(PlotTestCase):
         kws = self.default_kws.copy()
         kws["vmin"] = -4
         kws["vmax"] = 5
+        kws["center"] = 0
         p = mat._HeatMapper(self.df_norm, **kws)
 
-        nt.assert_equal(p.vmin, -5)
+        nt.assert_equal(p.vmin, -4)
         nt.assert_equal(p.vmax, 5)
 
     def test_array_with_nans(self):
@@ -172,7 +164,7 @@ class TestHeatmap(PlotTestCase):
         kws = self.default_kws.copy()
         kws["cmap"] = "BuGn"
         p = mat._HeatMapper(self.df_unif, **kws)
-        nt.assert_equal(p.cmap, "BuGn")
+        nt.assert_equal(p.cmap, mpl.cm.BuGn)
 
     def test_centered_vlims(self):
 
@@ -181,8 +173,33 @@ class TestHeatmap(PlotTestCase):
 
         p = mat._HeatMapper(self.df_unif, **kws)
 
-        nt.assert_true(p.divergent)
-        nt.assert_equal(p.vmax - .5, .5 - p.vmin)
+        nt.assert_equal(p.vmin, self.df_unif.values.min())
+        nt.assert_equal(p.vmax, self.df_unif.values.max())
+
+    def test_default_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        cvals = np.linspace(0, 1, 9)
+        npt.assert_array_almost_equal(fc, cmap(cvals), 2)
+
+    def test_custom_vlim_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], vmin=0, cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        npt.assert_array_almost_equal(fc, cmap(vals), 2)
+
+    def test_custom_center_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], center=.5, cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        npt.assert_array_almost_equal(fc, cmap(vals), 2)
 
     def test_tickabels_off(self):
         kws = self.default_kws.copy()
