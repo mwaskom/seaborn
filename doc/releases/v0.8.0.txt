@@ -2,6 +2,10 @@
 v0.8.0 (Unreleased)
 -------------------
 
+- Changed the behavior of :func:`heatmap` (and by extension :func:`clustermap`) when plotting divergent dataesets (i.e. when the ``center`` parameter is used). Instead of extending the lower and upper limits of the colormap to be symettrical around the ``center`` value, the colormap is modified so that its middle color corresponds to ``center``. This means that the full range of the colormap will not be used (unless the data or specified ``vmin`` and ``vmax`` are symettric), but the upper and lower limits of the colorbar will correspond to the range of the data. See the Github pull request `(#1184) <https://github.com/mwaskom/seaborn/pull/1184>`_ for examples of the behavior.
+
+- Removed automatic detection of diverging data in :func:`heatmap` (and by extension :func:`clustermap`). If you want the colormap to be treated as diverging (see above), it is now necessary to specify the ``center`` value. When no colormap is specified, specifying ``center`` will still change the default to be one that is more appropriate for displaying diverging data.
+
 - Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
 
 - Added the ability to draw a colorbar for a bivariate :func:`kdeplot` with the ``cbar`` parameter (and related ``cbar_ax`` and ``cbar_kws`` parameters).
