@@ -298,10 +298,6 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
-    This function tries to infer a good colormap to use from the data, but
-    this is not guaranteed to work, so take care to make sure the kind of
-    colormap (sequential or diverging) and its limits are appropriate.
-
     This is an Axes-level function and will draw the heatmap into the
     currently-active Axes if none is provided to the ``ax`` argument.  Part of
     this Axes space will be taken and used to plot a colormap, unless ``cbar``
@@ -315,15 +311,15 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         columns and rows.
     vmin, vmax : floats, optional
         Values to anchor the colormap, otherwise they are inferred from the
-        data and other keyword arguments. When a diverging dataset is inferred,
-        one of these values may be ignored.
-    cmap : matplotlib colormap name or object, optional
+        data and other keyword arguments.
+    cmap : matplotlib colormap name or object, or list of colors, optional
         The mapping from data values to color space. If not provided, this
         will be either a cubehelix map (if the function infers a sequential
         dataset) or ``RdBu_r`` (if the function infers a diverging dataset).
     center : float, optional
-        The value at which to center the colormap. Passing this value implies
-        use of a diverging colormap.
+        The value at which to center the colormap when plotting divergant data.
+        Using this parameter will change the default ``cmap`` if none is
+        specified.
     robust : bool, optional
         If True and ``vmin`` or ``vmax`` are absent, the colormap range is
         computed with robust quantiles instead of the extreme values.
@@ -352,12 +348,12 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes, optional
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
-    xticklabels : list-like, int, or bool, optional
+    xticklabels : bool, list-like, or int, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
         xticklabels. If an integer, use the column names but plot only every
         n label.
-    yticklabels : list-like, int, or bool, optional
+    yticklabels : bool, list-like, or int, optional
         If True, plot the row names of the dataframe. If False, don't plot
         the row names. If list-like, plot these alternate labels as the
         yticklabels. If an integer, use the index names but plot only every
@@ -372,6 +368,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     -------
     ax : matplotlib Axes
         Axes object with the heatmap.
+
+    See also
+    --------
+    clustermap : Plot a matrix using hierachical clustering to arrange the
+                 rows and columns.
 
     Examples
     --------
@@ -393,13 +394,13 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 
         >>> ax = sns.heatmap(uniform_data, vmin=0, vmax=1)
 
-    Plot a heatmap for data centered on 0:
+    Plot a heatmap for data centered on 0 with a diverging colormap:
 
     .. plot::
         :context: close-figs
 
         >>> normal_data = np.random.randn(10, 12)
-        >>> ax = sns.heatmap(normal_data)
+        >>> ax = sns.heatmap(normal_data, center=0)
 
     Plot a dataframe with meaningful row and column labels:
 
