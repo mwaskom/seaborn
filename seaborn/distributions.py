@@ -626,7 +626,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
                                  gridsize, cut, clip, legend, ax,
                                  cumulative=cumulative, **kwargs)
-    
+
     return ax
 
 
