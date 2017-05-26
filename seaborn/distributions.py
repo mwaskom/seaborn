@@ -593,9 +593,15 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if ax is None:
         ax = plt.gca()
 
+    if isinstance(data, list):
+        data = np.asarray(data)
+
     data = data.astype(np.float64)
     if data2 is not None:
+        if isinstance(data2, list):
+            data2 = np.asarray(data2)
         data2 = data2.astype(np.float64)
+
 
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
@@ -621,7 +627,6 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
                                  gridsize, cut, clip, legend, ax,
                                  cumulative=cumulative, **kwargs)
-
     return ax
 
 
