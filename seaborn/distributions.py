@@ -602,7 +602,6 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             data2 = np.asarray(data2)
         data2 = data2.astype(np.float64)
 
-
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
         bivariate = True
@@ -627,6 +626,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
                                  gridsize, cut, clip, legend, ax,
                                  cumulative=cumulative, **kwargs)
+    
     return ax
 
 
