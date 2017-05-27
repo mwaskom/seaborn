@@ -451,8 +451,8 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
     Parameters
     ----------
-    data : 1d array-like
-        Input data.
+    data : 1d array-like or 2d array-like
+        Input data, if 2d a bivariate KDE will be estimated.
     data2: 1d array-like, optional
         Second input data. If present, a bivariate KDE will be estimated.
     shade : bool, optional
@@ -588,6 +588,19 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         ...                  cmap="Reds", shade=True, shade_lowest=False)
         >>> ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
         ...                  cmap="Blues", shade=True, shade_lowest=False)
+
+    Data input from lists:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from random import random
+        >>> data = [random() for _ in range(25)]
+        >>> data2 = [random() for _ in range(25)]
+        >>> ax = sns.kdeplot(data)
+        >>> ax = sns.kdeplot(data,data2)
+        >>> data = [[random(),random()] for _ in range(25)]
+        >>> ax = sns.kdeplot(data)
 
     """
     if ax is None:
