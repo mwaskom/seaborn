@@ -19,7 +19,7 @@ __all__ = ["tsplot"]
 def tsplot(data, time=None, unit=None, condition=None, value=None,
            err_style="ci_band", ci=68, interpolate=True, color=None,
            estimator=np.mean, n_boot=5000, err_palette=None, err_kws=None,
-           legend=True, ax=None, **kwargs):
+           legend=True, ax=None, bootstrap_func=algo.bootstrap, **kwargs):
     """Plot one or more timeseries with flexible representation of uncertainty.
 
     This function is intended to be used with data where observations are
@@ -280,7 +280,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
+        boot_data = bootstrap_func(df_c.values, n_boot=n_boot,
                                    axis=0, func=estimator)
         cis = [utils.ci(boot_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
