@@ -590,6 +590,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         ...                  cmap="Blues", shade=True, shade_lowest=False)
 
     Data input from lists:
+    
     .. plot::
         :context: close-figs    
 
