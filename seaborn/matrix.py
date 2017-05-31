@@ -246,7 +246,10 @@ class _HeatMapper(object):
             if m is not np.ma.masked:
                 l = relative_luminance(color)
                 text_color = ".15" if l > .408 else "w"
-                annotation = ("{:" + self.fmt + "}").format(val)
+                if self.fmt is not None:
+                    annotation = ("{:" + self.fmt + "}").format(val)
+                else:
+                    annotation = val
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
                 ax.text(x, y, annotation, **text_kwargs)
