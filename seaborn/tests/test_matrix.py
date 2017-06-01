@@ -1,6 +1,5 @@
 import contextlib
 import itertools
-import pkg_resources
 import tempfile
 import warnings
 
@@ -1072,17 +1071,7 @@ class TestClustermap(PlotTestCase):
                     'error', 'elementwise.*comparison', FutureWarning)
                 warnings.filterwarnings(
                     'error', 'elementwise.*comparison', DeprecationWarning)
-                npv = pkg_resources.parse_version(np.__version__)
-                npv_warning = pkg_resources.parse_version('1.9.0')
-                #npv_change = pkg_resources.parse_version('?.?.?')
-                if npv < npv_warning:
-                    yield
-                #elif npv < npv_change:
-                else:
-                    with nt.assert_raises(Warning):
-                        yield
-                #else:
-                #    yield
+                yield
         df = pd.DataFrame(
             [
                 ['f', 'f', 1.0], ['f', 'b', 0.2], ['f', 'c', 0.3],
