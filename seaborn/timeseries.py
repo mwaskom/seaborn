@@ -277,7 +277,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
 
         df_c = df_c.pivot(unit, time, value)
-        x = df_c.columns.values.astype(np.float)
+        x = df_c.columns
 
         # Bootstrap the data for confidence intervals
         boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
