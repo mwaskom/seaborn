@@ -1,5 +1,8 @@
+import contextlib
 import itertools
+import pkg_resources
 import tempfile
+import warnings
 
 import numpy as np
 import matplotlib as mpl
@@ -1060,3 +1063,39 @@ class TestClustermap(PlotTestCase):
 
         npt.assert_array_equal(xtl_actual, xtl_want)
         npt.assert_array_equal(ytl_actual, ytl_want)
+
+    def test_clustermap_warning(self):
+        @contextlib.contextmanager
+        def wrap():
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    'error', 'elementwise.*comparison', FutureWarning)
+                warnings.filterwarnings(
+                    'error', 'elementwise.*comparison', DeprecationWarning)
+                npv = pkg_resources.parse_version(np.__version__)
+                npv_warning = pkg_resources.parse_version('1.9.0')
+                #npv_change = pkg_resources.parse_version('?.?.?')
+                if npv < npv_warning:
+                    yield
+                #elif npv < npv_change:
+                else:
+                    with nt.assert_raises(Warning):
+                        yield
+                #else:
+                #    yield
+        df = pd.DataFrame(
+            [
+                ['f', 'f', 1.0], ['f', 'b', 0.2], ['f', 'c', 0.3],
+                ['b', 'f', 0.2], ['b', 'b', 1.0], ['b', 'c', 0.7],
+            ],
+        )
+        pivot = df.pivot(
+            index=df.columns[-3],
+            columns=df.columns[-2],
+            values=df.columns[-1],
+        )
+        m = pivot.as_matrix()
+        xtl = pivot.columns.tolist()
+        ytl = pivot.index.tolist()
+        with wrap():
+            mat.clustermap(m, xticklabels=xtl, yticklabels=ytl)
