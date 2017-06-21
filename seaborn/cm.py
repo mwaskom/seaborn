@@ -1,10 +1,6 @@
 from matplotlib import colors, cm as mpl_cm
 
 
-__all__ = ["rocket", "mako", "vlag", "fmri",
-           "rocket_r", "mako_r", "vlag_r", "fmri_r"]
-
-
 _rocket_lut = [[ 0.01060815, 0.01808215, 0.10018654],
                [ 0.01428972, 0.02048237, 0.10374486],
                [ 0.01831941, 0.0229766 , 0.10738511],
