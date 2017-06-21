@@ -11,8 +11,8 @@ import pandas as pd
 from scipy.spatial import distance
 from scipy.cluster import hierarchy
 
+from . import cm
 from .axisgrid import Grid
-from .palettes import cubehelix_palette, diverging_palette
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
                     to_utf8)
 
@@ -214,10 +214,10 @@ class _HeatMapper(object):
 
         # Choose default colormaps if not provided
         if cmap is None:
-            if center is not None:
-                self.cmap = mpl.cm.RdBu_r
+            if center is None:
+                self.cmap = cm.rocket
             else:
-                self.cmap = cubehelix_palette(light=.95, as_cmap=True)
+                self.cmap = cm.fmri
         elif isinstance(cmap, string_types):
             self.cmap = mpl.cm.get_cmap(cmap)
         elif isinstance(cmap, list):
@@ -313,9 +313,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         Values to anchor the colormap, otherwise they are inferred from the
         data and other keyword arguments.
     cmap : matplotlib colormap name or object, or list of colors, optional
-        The mapping from data values to color space. If not provided, this
-        will be either a cubehelix map (if the function infers a sequential
-        dataset) or ``RdBu_r`` (if the function infers a diverging dataset).
+        The mapping from data values to color space. If not provided, the
+        default will depend on whether ``center`` is set.
     center : float, optional
         The value at which to center the colormap when plotting divergant data.
         Using this parameter will change the default ``cmap`` if none is
@@ -1211,15 +1210,14 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> cmap = sns.cubehelix_palette(as_cmap=True, rot=-.3, light=1)
-        >>> g = sns.clustermap(flights, cmap=cmap, linewidths=.5)
+        >>> g = sns.clustermap(flights, cmap="mako", linewidths=.5)
 
     Use a different figure size:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(flights, cmap=cmap, figsize=(7, 5))
+        >>> g = sns.clustermap(flights, figsize=(7, 5))
 
     Standardize the data across the columns:
 
@@ -1247,11 +1245,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> season_colors = (sns.color_palette("BuPu", 3) +
-        ...                  sns.color_palette("RdPu", 3) +
-        ...                  sns.color_palette("YlGn", 3) +
-        ...                  sns.color_palette("OrRd", 3))
-        >>> g = sns.clustermap(flights, row_colors=season_colors)
+        >>> month_colors = sns.hls_palette(12, h=.7)[::-1]
+        >>> g = sns.clustermap(flights, row_colors=month_colors)
 
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
