@@ -1117,11 +1117,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None, **kwargs):
-    """Plot a hierarchically clustered heatmap of a pandas DataFrame
+    """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters
     ----------
-    data: pandas.DataFrame
+    data: 2D array-like
         Rectangular data for clustering. Cannot contain NAs.
     pivot_kws : dict, optional
         If `data` is a tidy dataframe, can provide keyword arguments for
