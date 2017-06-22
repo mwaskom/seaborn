@@ -6,9 +6,9 @@ v0.8.0 (Unreleased)
 
 - Removed automatic detection of diverging data in :func:`heatmap` (and by extension :func:`clustermap`). If you want the colormap to be treated as diverging (see above), it is now necessary to specify the ``center`` value. When no colormap is specified, specifying ``center`` will still change the default to be one that is more appropriate for displaying diverging data.
 
-- Added four new colormaps, created using `viscm <https://github.com/matplotlib/viscm>`_ for perceptual uniformity. The new colormaps include two sequential colormaps ("rocket" and "mako") and two diverging colormaps ("vlag", and "fmri"). These colormaps are registered with matplotlib on seaborn input and the colormap objects can be accessed in the `seaborn.cm` namespace.
+- Added four new colormaps, created using `viscm <https://github.com/matplotlib/viscm>`_ for perceptual uniformity. The new colormaps include two sequential colormaps ("rocket" and "mako") and two diverging colormaps ("vlag", and "icefire"). These colormaps are registered with matplotlib on seaborn input and the colormap objects can be accessed in the `seaborn.cm` namespace.
 
-- Changed the default :func:`heatmap` colormaps to be "rocket" (in the case of sequential data) or "fmri" (in the case of diverging data). Note that this change reverses the direction of the luminance ramp from the previous defaults. While potentially confusing and disruptive, this change better aligns the seaborn defaults with the new matplotlib default colormap ("viridis") and arguably better aligns the semantics of a "heat" map with the appearance of the colormap.
+- Changed the default :func:`heatmap` colormaps to be "rocket" (in the case of sequential data) or "icefire" (in the case of diverging data). Note that this change reverses the direction of the luminance ramp from the previous defaults. While potentially confusing and disruptive, this change better aligns the seaborn defaults with the new matplotlib default colormap ("viridis") and arguably better aligns the semantics of a "heat" map with the appearance of the colormap.
 
 - Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
 

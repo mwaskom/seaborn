@@ -217,7 +217,7 @@ class _HeatMapper(object):
             if center is None:
                 self.cmap = cm.rocket
             else:
-                self.cmap = cm.fmri
+                self.cmap = cm.icefire
         elif isinstance(cmap, string_types):
             self.cmap = mpl.cm.get_cmap(cmap)
         elif isinstance(cmap, list):
