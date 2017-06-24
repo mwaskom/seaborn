@@ -281,8 +281,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        if ci == "std":
-            cis = [np.std(df_c.values, axis=0)]
+        if "std" in ci:
+            est = estimator(df_c.values, axis=0)
+            std = np.std(df_c.values, axis=0)
+            cis = [(est - std, est + std)]
+            boot_data = df_c.values
         else:
             boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
                                        axis=0, func=estimator)
