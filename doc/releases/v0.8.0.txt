@@ -6,7 +6,7 @@ v0.8.0 (Unreleased)
 
 - Added the ability to draw a colorbar for a bivariate :func:`kdeplot` with the ``cbar`` parameter (and related ``cbar_ax`` and ``cbar_kws`` parameters).
 
-- Added the ability to use error bars to show standard deviations rather than bootstrip confidence intervals in most statistical functions.
+- Added the ability to use error bars to show standard deviations rather than bootstrap confidence intervals in most statistical functions.
 
 - Allow side-specific offsets in :func:`despine`.
 
