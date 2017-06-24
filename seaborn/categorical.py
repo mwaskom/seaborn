@@ -1478,10 +1478,18 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         confint.append([np.nan, np.nan])
                         continue
 
-                    boots = bootstrap(stat_data, func=estimator,
-                                      n_boot=n_boot,
-                                      units=unit_data)
-                    confint.append(utils.ci(boots, ci))
+                    if ci == "std":
+
+                        estimate = estimator(stat_data)
+                        sd = np.std(stat_data)
+                        confint.append((estimate - sd, estimate + sd))
+
+                    else:
+
+                        boots = bootstrap(stat_data, func=estimator,
+                                          n_boot=n_boot,
+                                          units=unit_data)
+                        confint.append(utils.ci(boots, ci))
 
             # Option 2: we are grouping by a hue layer
             # ----------------------------------------
@@ -1520,10 +1528,18 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             confint[i].append([np.nan, np.nan])
                             continue
 
-                        boots = bootstrap(stat_data, func=estimator,
-                                          n_boot=n_boot,
-                                          units=unit_data)
-                        confint[i].append(utils.ci(boots, ci))
+                        if ci == "std":
+
+                            estimate = estimator(stat_data)
+                            sd = np.std(stat_data)
+                            confint[i].append((estimate - sd, estimate + sd))
+
+                        else:
+
+                            boots = bootstrap(stat_data, func=estimator,
+                                              n_boot=n_boot,
+                                              units=unit_data)
+                            confint[i].append(utils.ci(boots, ci))
 
         # Save the resulting values for plotting
         self.statistic = np.array(statistic)
@@ -2066,10 +2082,11 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or None, optional
-        Size of confidence intervals to draw around estimated values. If
-        ``None``, no bootstrapping will be performed, and error bars will
-        not be drawn.
+    ci : float or "std" or None, optional
+        Size of confidence intervals to draw around estimated values.  If
+        "std", skip bootstrapping and draw the standard deviation of the
+        observerations. If ``None``, no bootstrapping will be performed, and
+        error bars will not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals.

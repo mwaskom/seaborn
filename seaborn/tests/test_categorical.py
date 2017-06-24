@@ -602,6 +602,52 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         npt.assert_array_equal(p.confint[2],
                                np.zeros((3, 2)) * np.nan)
 
+    def test_std_error_bars(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y)
+        p.estimate_statistic(np.mean, "std", None)
+
+        nt.assert_equal(p.statistic.shape, (3,))
+        nt.assert_equal(p.confint.shape, (3, 2))
+
+        npt.assert_array_almost_equal(p.statistic,
+                                      y.groupby(g).mean())
+
+        for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
+            mean = grp_y.mean()
+            half_ci = np.std(grp_y)
+            ci_want = mean - half_ci, mean + half_ci
+            npt.assert_array_almost_equal(ci_want, ci, 2)
+
+    def test_nested_std_error_bars(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        h = pd.Series(np.tile(list("xy"), 150))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y, h)
+        p.estimate_statistic(np.mean, "std", None)
+
+        nt.assert_equal(p.statistic.shape, (3, 2))
+        nt.assert_equal(p.confint.shape, (3, 2, 2))
+
+        npt.assert_array_almost_equal(p.statistic,
+                                      y.groupby([g, h]).mean().unstack())
+
+        for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
+            for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
+                mean = hue_y.mean()
+                half_ci = np.std(hue_y)
+                ci_want = mean - half_ci, mean + half_ci
+                npt.assert_array_almost_equal(ci_want, ci, 2)
+
     def test_estimator_value_label(self):
 
         p = cat._CategoricalStatPlotter()
