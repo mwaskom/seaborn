@@ -61,10 +61,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Names of ways to plot uncertainty across units from set of
         {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
         Can use one or more than one method.
-    ci : float or list of floats in [0, 100]
-        Confidence interval size(s). If a list, it will stack the error
-        plots for each confidence interval. Only relevant for error styles
-        with "ci" in the name.
+    ci : float or list of floats in [0, 100] or "std" or None
+        Confidence interval size(s). If a list, it will stack the error plots
+        for each confidence interval. If ``"std"``, show standard deviation of
+        the observations instead of boostrapped confidence intervals. Only
+        relevant for error styles with "ci" in the name.
     interpolate : boolean
         Whether to do a linear interpolation between each timepoint when
         plotting. The value of this parameter also determines the marker
@@ -280,9 +281,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
-                                   axis=0, func=estimator)
-        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
+        if ci == "std":
+            cis = [np.std(df_c.values, axis=0)]
+        else:
+            boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
+                                       axis=0, func=estimator)
+            cis = [utils.ci(boot_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
 
         # Get the color for this condition
