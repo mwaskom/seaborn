@@ -17,6 +17,7 @@ from .. import palettes
 
 
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
+mpl_barplot_change = LooseVersion("2.0.1")
 
 
 class CategoricalFixture(PlotTestCase):
@@ -1826,7 +1827,7 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_x(), pos)
             nt.assert_equal(bar.get_width(), p.width)
-            if LooseVersion(mpl.__version__) >= "2.0.2":
+            if mpl.__version__ >= mpl_barplot_change:
                 nt.assert_equal(bar.get_y(), 0)
                 nt.assert_equal(bar.get_height(), stat)
             else:
@@ -1852,7 +1853,7 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_y(), pos)
             nt.assert_equal(bar.get_height(), p.width)
-            if LooseVersion(mpl.__version__) >= "2.0.2":
+            if mpl.__version__ >= mpl_barplot_change:
                 nt.assert_equal(bar.get_x(), 0)
                 nt.assert_equal(bar.get_width(), stat)
             else:
@@ -1883,7 +1884,7 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= "2.0.2":
+            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
                 nt.assert_almost_equal(bar.get_y(), 0)
                 nt.assert_almost_equal(bar.get_height(), stat)
             else:
@@ -1914,7 +1915,7 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_height(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= "2.0.2":
+            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
                 nt.assert_almost_equal(bar.get_x(), 0)
                 nt.assert_almost_equal(bar.get_width(), stat)
             else:
