@@ -3119,6 +3119,13 @@ barplot.__doc__ = dedent("""\
 
         >>> ax = sns.barplot(x="day", y="tip", data=tips, ci=68)
 
+    Show standard deviation of observations instead of a confidence interval:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci="std")
+
     Add "caps" to the error bars:
 
     .. plot::
@@ -3357,6 +3364,13 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
+
+    Show standard deviation of observations instead of a confidence interval:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci="std")
 
     Add "caps" to the error bars:
 

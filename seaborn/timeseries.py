@@ -144,6 +144,13 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
         >>> ax = sns.tsplot(data=data, ci=[68, 95], color="m")
 
+    Show the standard deviation of the observations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, ci="std")
+
     Use a different estimator:
 
     .. plot::
