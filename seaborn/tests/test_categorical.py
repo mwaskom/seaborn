@@ -602,7 +602,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         npt.assert_array_equal(p.confint[2],
                                np.zeros((3, 2)) * np.nan)
 
-    def test_std_error_bars(self):
+    def test_sd_error_bars(self):
 
         p = cat._CategoricalStatPlotter()
 
@@ -610,7 +610,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, "std", None)
+        p.estimate_statistic(np.mean, "sd", None)
 
         nt.assert_equal(p.statistic.shape, (3,))
         nt.assert_equal(p.confint.shape, (3, 2))
@@ -624,7 +624,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
             ci_want = mean - half_ci, mean + half_ci
             npt.assert_array_almost_equal(ci_want, ci, 2)
 
-    def test_nested_std_error_bars(self):
+    def test_nested_sd_error_bars(self):
 
         p = cat._CategoricalStatPlotter()
 
@@ -633,7 +633,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, "std", None)
+        p.estimate_statistic(np.mean, "sd", None)
 
         nt.assert_equal(p.statistic.shape, (3, 2))
         nt.assert_equal(p.confint.shape, (3, 2, 2))

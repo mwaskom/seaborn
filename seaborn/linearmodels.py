@@ -166,9 +166,9 @@ class _RegressionPlotter(_LinearPlotter):
                 cis.append(None)
             else:
                 units = None
-                if self.x_ci == "std":
-                    std = np.std(_y)
-                    _ci = est - std, est + std
+                if self.x_ci == "sd":
+                    sd = np.std(_y)
+                    _ci = est - sd, est + sd
                 else:
                     if self.units is not None:
                         units = self.units[x == val]
@@ -442,10 +442,10 @@ _regression_docs = dict(
         ``x_estimator`` is ``numpy.mean``.\
     """),
     x_ci=dedent("""\
-    x_ci : "ci", "std", int in [0, 100] or None, optional
+    x_ci : "ci", "sd", int in [0, 100] or None, optional
         Size of the confidence interval used when plotting a central tendency
         for discrete values of ``x``. If ``"ci"``, defer to the value of the
-        ``ci`` parameter. If ``"std"``, skip bootstrappig and show the standard
+        ``ci`` parameter. If ``"sd"``, skip bootstrappig and show the standard
         deviation of the observations in each bin.\
     """),
     scatter=dedent("""\

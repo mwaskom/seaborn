@@ -158,9 +158,9 @@ class TestRegressionPlotter(PlotTestCase):
         nt.assert_equal(p.ci, 95)
         nt.assert_equal(p.x_ci, 68)
 
-        p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci="std")
+        p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci="sd")
         nt.assert_equal(p.ci, 95)
-        nt.assert_equal(p.x_ci, "std")
+        nt.assert_equal(p.x_ci, "sd")
 
     @skipif(_no_statsmodels)
     def test_fast_regression(self):

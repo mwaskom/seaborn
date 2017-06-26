@@ -61,9 +61,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Names of ways to plot uncertainty across units from set of
         {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
         Can use one or more than one method.
-    ci : float or list of floats in [0, 100] or "std" or None
+    ci : float or list of floats in [0, 100] or "sd" or None
         Confidence interval size(s). If a list, it will stack the error plots
-        for each confidence interval. If ``"std"``, show standard deviation of
+        for each confidence interval. If ``"sd"``, show standard deviation of
         the observations instead of boostrapped confidence intervals. Only
         relevant for error styles with "ci" in the name.
     interpolate : boolean
@@ -149,7 +149,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.tsplot(data=data, ci="std")
+        >>> ax = sns.tsplot(data=data, ci="sd")
 
     Use a different estimator:
 
@@ -288,10 +288,10 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        if "std" in ci:
+        if "sd" in ci:
             est = estimator(df_c.values, axis=0)
-            std = np.std(df_c.values, axis=0)
-            cis = [(est - std, est + std)]
+            sd = np.std(df_c.values, axis=0)
+            cis = [(est - sd, est + sd)]
             boot_data = df_c.values
         else:
             boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,

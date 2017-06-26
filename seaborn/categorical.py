@@ -1478,7 +1478,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         confint.append([np.nan, np.nan])
                         continue
 
-                    if ci == "std":
+                    if ci == "sd":
 
                         estimate = estimator(stat_data)
                         sd = np.std(stat_data)
@@ -1528,7 +1528,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             confint[i].append([np.nan, np.nan])
                             continue
 
-                        if ci == "std":
+                        if ci == "sd":
 
                             estimate = estimator(stat_data)
                             sd = np.std(stat_data)
@@ -2082,9 +2082,9 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or "std" or None, optional
+    ci : float or "sd" or None, optional
         Size of confidence intervals to draw around estimated values.  If
-        "std", skip bootstrapping and draw the standard deviation of the
+        "sd", skip bootstrapping and draw the standard deviation of the
         observerations. If ``None``, no bootstrapping will be performed, and
         error bars will not be drawn.
     n_boot : int, optional
@@ -3124,7 +3124,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci="std")
+        >>> ax = sns.barplot(x="day", y="tip", data=tips, ci="sd")
 
     Add "caps" to the error bars:
 
@@ -3370,7 +3370,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci="std")
+        >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci="sd")
 
     Add "caps" to the error bars:
 
