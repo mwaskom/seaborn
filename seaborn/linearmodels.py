@@ -166,11 +166,15 @@ class _RegressionPlotter(_LinearPlotter):
                 cis.append(None)
             else:
                 units = None
-                if self.units is not None:
-                    units = self.units[x == val]
-                boots = algo.bootstrap(_y, func=self.x_estimator,
-                                       n_boot=self.n_boot, units=units)
-                _ci = utils.ci(boots, self.x_ci)
+                if self.x_ci == "sd":
+                    sd = np.std(_y)
+                    _ci = est - sd, est + sd
+                else:
+                    if self.units is not None:
+                        units = self.units[x == val]
+                    boots = algo.bootstrap(_y, func=self.x_estimator,
+                                           n_boot=self.n_boot, units=units)
+                    _ci = utils.ci(boots, self.x_ci)
                 cis.append(_ci)
 
         return vals, points, cis
@@ -424,7 +428,7 @@ _regression_docs = dict(
     x_estimator : callable that maps vector -> scalar, optional
         Apply this function to each unique value of ``x`` and plot the
         resulting estimate. This is useful when ``x`` is a discrete variable.
-        If ``x_ci`` is not ``None``, this estimate will be bootstrapped and a
+        If ``x_ci`` is given, this estimate will be bootstrapped and a
         confidence interval will be drawn.\
     """),
     x_bins=dedent("""\
@@ -438,10 +442,11 @@ _regression_docs = dict(
         ``x_estimator`` is ``numpy.mean``.\
     """),
     x_ci=dedent("""\
-    x_ci : "ci", int in [0, 100] or None, optional
+    x_ci : "ci", "sd", int in [0, 100] or None, optional
         Size of the confidence interval used when plotting a central tendency
-        for discrete values of ``x``. If "ci", defer to the value of the``ci``
-        parameter.\
+        for discrete values of ``x``. If ``"ci"``, defer to the value of the
+        ``ci`` parameter. If ``"sd"``, skip bootstrappig and show the standard
+        deviation of the observations in each bin.\
     """),
     scatter=dedent("""\
     scatter : bool, optional

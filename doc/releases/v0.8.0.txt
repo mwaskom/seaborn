@@ -6,6 +6,8 @@ v0.8.0 (Unreleased)
 
 - Added the ability to draw a colorbar for a bivariate :func:`kdeplot` with the ``cbar`` parameter (and related ``cbar_ax`` and ``cbar_kws`` parameters).
 
+- Added the ability to use error bars to show standard deviations rather than bootstrap confidence intervals in most statistical functions by putting `ci="sd"`.
+
 - Allow side-specific offsets in :func:`despine`.
 
 - Put a cap on the number of bins used in :func:`jointplot` for ``type=="hex"`` to avoid hanging when the reference rule prescribes too many.
