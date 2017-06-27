@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 from . import utils
 from .palettes import color_palette
+from .external.six import string_types
 
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid"]
@@ -1649,10 +1650,13 @@ class JointGrid(object):
 
         # Possibly extract the variables from a DataFrame
         if data is not None:
-            if x in data:
-                x = data[x]
-            if y in data:
-                y = data[y]
+            x = data.get(x, x)
+            y = data.get(y, y)
+
+        for var in [x, y]:
+            if isinstance(var, string_types):
+                err = "Could not interpret input '{}'".format(var)
+                raise ValueError(err)
 
         # Possibly drop NA
         if dropna:
