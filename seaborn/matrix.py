@@ -113,11 +113,6 @@ class _HeatMapper(object):
         # Validate the mask and convet to DataFrame
         mask = _matrix_mask(data, mask)
 
-        # Reverse the rows so the plot looks like the matrix
-        plot_data = plot_data[::-1]
-        data = data.iloc[::-1]
-        mask = mask.iloc[::-1]
-
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         # Get good names for the rows and columns
@@ -138,8 +133,6 @@ class _HeatMapper(object):
             yticklabels = _index_to_ticklabels(data.index)
         elif yticklabels is False:
             yticklabels = []
-        else:
-            yticklabels = yticklabels[::-1]
 
         # Get the positions and used label for the ticks
         nx, ny = data.T.shape
@@ -181,9 +174,9 @@ class _HeatMapper(object):
                 annot_data = None
         else:
             try:
-                annot_data = annot.values[::-1]
+                annot_data = annot.values
             except AttributeError:
-                annot_data = annot[::-1]
+                annot_data = annot
             if annot.shape != plot_data.shape:
                 raise ValueError('Data supplied to "annot" must be the same '
                                  'shape as the data to plot.')
