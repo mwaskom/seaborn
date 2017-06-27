@@ -4,6 +4,8 @@ from distutils.version import LooseVersion
 import warnings
 from textwrap import dedent
 
+from six import string_types
+
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -1649,10 +1651,17 @@ class JointGrid(object):
 
         # Possibly extract the variables from a DataFrame
         if data is not None:
-            if x in data:
-                x = data[x]
-            if y in data:
-                y = data[y]
+            msg = "'{}' is not a valid column name of 'data'"
+            if isinstance(x, string_types):
+                if x in data:
+                    x = data[x]
+                else:
+                    raise KeyError(msg.format(x))
+            if isinstance(y, string_types):
+                if y in data:
+                    y = data[y]
+                else:
+                    raise KeyError(msg.format(y))
 
         # Possibly drop NA
         if dropna:

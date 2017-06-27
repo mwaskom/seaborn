@@ -800,6 +800,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         ...                   s=40, edgecolor="w", linewidth=1)
 
     """
+
     # Set up empty default kwarg dicts
     if joint_kws is None:
         joint_kws = {}
