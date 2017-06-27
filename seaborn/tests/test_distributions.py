@@ -132,6 +132,14 @@ class TestJointPlot(PlotTestCase):
     y = rs.randn(100)
     data = pd.DataFrame(dict(x=x, y=y))
 
+    def test_input(self):
+        
+        with nt.assert_raises(TypeError):
+            dist.jointplot("x", "y", self.rs)
+        with nt.assert_raises(KeyError):
+            dist.jointplot("not_a_column", "y", self.data)
+            dist.jointplot("x", "not_a_column", self.data)
+
     def test_scatter(self):
 
         g = dist.jointplot("x", "y", self.data)
