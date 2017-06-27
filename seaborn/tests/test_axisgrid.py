@@ -1257,6 +1257,11 @@ class TestJointGrid(PlotTestCase):
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
 
+    def test_margin_grid_from_dataframe_bad_variable(self):
+
+        with nt.assert_raises(ValueError):
+            g = ag.JointGrid("x", "bad_column", self.data)
+
     def test_margin_grid_axis_labels(self):
 
         g = ag.JointGrid("x", "y", self.data)
