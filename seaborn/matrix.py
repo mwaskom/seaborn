@@ -140,18 +140,22 @@ class _HeatMapper(object):
         if xticklabels == []:
             self.xticks = []
             self.xticklabels = []
+        elif isinstance(xticklabels, string_types) and xticklabels == "auto":
+            self.xticks = "auto"
+            self.xticklabels = _index_to_ticklabels(data.columns)
         else:
-            xstart, xend, xstep = 0, nx, xtickevery
-            self.xticks = np.arange(xstart, xend, xstep) + .5
-            self.xticklabels = xticklabels[xstart:xend:xstep]
+            self.xticks, self.xticklabels = self._skip_ticks(xticklabels,
+                                                             xtickevery)
 
         if yticklabels == []:
             self.yticks = []
             self.yticklabels = []
+        elif isinstance(yticklabels, string_types) and yticklabels == "auto":
+            self.yticks = "auto"
+            self.yticklabels = _index_to_ticklabels(data.index)
         else:
-            ystart, yend, ystep = (ny - 1) % ytickevery, ny, ytickevery
-            self.yticks = np.arange(ystart, yend, ystep) + .5
-            self.yticklabels = yticklabels[ystart:yend:ystep]
+            self.yticks, self.yticklabels = self._skip_ticks(yticklabels,
+                                                             ytickevery)
 
         # Get good names for the axis labels
         xlabel = _index_to_label(data.columns)
@@ -241,6 +245,27 @@ class _HeatMapper(object):
                 text_kwargs.update(self.annot_kws)
                 ax.text(x, y, annotation, **text_kwargs)
 
+    def _skip_ticks(self, labels, tickevery):
+        """Return ticks and labels at evenly spaced intervals."""
+        n = len(labels)
+        start, end, step = (n - 1) % tickevery, n, tickevery
+        ticks = np.arange(start, end, step) + .5
+        ticklabels = labels[start:end:step]
+        return ticks, ticklabels
+
+    def _auto_ticks(self, ax, labels, axis):
+        """Determine ticks and ticklabels that minimize overlap."""
+        transform = ax.figure.dpi_scale_trans.inverted()
+        bbox = ax.get_window_extent().transformed(transform)
+        size = [bbox.width, bbox.height][axis]
+        axis = [ax.xaxis, ax.yaxis][axis]
+        fontsize = axis.get_majorticklabels()[0].get_fontsize()
+        max_ticks = int((size * .85) // (fontsize / 72))
+        tick_every = len(labels) // max_ticks
+        tick_every = 1 if tick_every == 0 else tick_every
+        ticks, labels = self._skip_ticks(labels, tick_every)
+        return ticks, labels
+
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
         # Remove all the Axes spines
@@ -253,10 +278,29 @@ class _HeatMapper(object):
         # Set the axis limits
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
 
+        # Possibly add a colorbar
+        if self.cbar:
+            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
+            cb.outline.set_linewidth(0)
+            # If rasterized is passed to pcolormesh, also rasterize the
+            # colorbar to avoid white lines on the PDF rendering
+            if kws.get('rasterized', False):
+                cb.solids.set_rasterized(True)
+
         # Add row and column labels
-        ax.set(xticks=self.xticks, yticks=self.yticks)
-        xtl = ax.set_xticklabels(self.xticklabels)
-        ytl = ax.set_yticklabels(self.yticklabels, rotation="vertical")
+        if isinstance(self.xticks, string_types) and self.xticks == "auto":
+            xticks, xticklabels = self._auto_ticks(ax, self.xticklabels, 0)
+        else:
+            xticks, xticklabels = self.xticks, self.xticklabels
+
+        if isinstance(self.yticks, string_types) and self.yticks == "auto":
+            yticks, yticklabels = self._auto_ticks(ax, self.yticklabels, 1)
+        else:
+            yticks, yticklabels = self.yticks, self.yticklabels
+
+        ax.set(xticks=xticks, yticks=yticks)
+        xtl = ax.set_xticklabels(xticklabels)
+        ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
 
         # Possibly rotate them if they overlap
         plt.draw()
@@ -272,23 +316,16 @@ class _HeatMapper(object):
         if self.annot:
             self._annotate_heatmap(ax, mesh)
 
-        # Possibly add a colorbar
-        if self.cbar:
-            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
-            cb.outline.set_linewidth(0)
-            # If rasterized is passed to pcolormesh, also rasterize the
-            # colorbar to avoid white lines on the PDF rendering
-            if kws.get('rasterized', False):
-                cb.solids.set_rasterized(True)
+        # Invert the y axis to show the plot in matrix form
+        ax.invert_yaxis()
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=None, fmt=".2g", annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
-            square=False, ax=None, xticklabels=True, yticklabels=True,
-            mask=None,
-            **kwargs):
+            square=False, ax=None, xticklabels="auto", yticklabels="auto",
+            mask=None, **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
     This is an Axes-level function and will draw the heatmap into the
@@ -340,16 +377,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     ax : matplotlib Axes, optional
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
-    xticklabels : bool, list-like, or int, optional
+    xticklabels, yticklabels : "auto", bool, list-like, or int, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
         xticklabels. If an integer, use the column names but plot only every
-        n label.
-    yticklabels : bool, list-like, or int, optional
-        If True, plot the row names of the dataframe. If False, don't plot
-        the row names. If list-like, plot these alternate labels as the
-        yticklabels. If an integer, use the index names but plot only every
-        n label.
+        n label. If "auto", try to densely plot non-overlapping labels.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
