@@ -133,7 +133,7 @@ class TestJointPlot(PlotTestCase):
     data = pd.DataFrame(dict(x=x, y=y))
 
     def test_input(self):
-        
+
         with nt.assert_raises(TypeError):
             dist.jointplot("x", "y", self.rs)
         with nt.assert_raises(KeyError):
