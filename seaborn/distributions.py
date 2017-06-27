@@ -800,15 +800,6 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         ...                   s=40, edgecolor="w", linewidth=1)
 
     """
-    # Verify that 'x' and 'y' are valid column names if 'data' is passed
-    if data is not None:
-        if not isinstance(data, pd.DataFrame):
-            msg = "If passed, 'data' has to be of type {}"
-            raise TypeError(msg.format(type(pd.DataFrame())))
-        for column in (x, y):
-            if column not in data.columns:
-                msg = "'{}' is not a valid column name of 'data'"
-                raise KeyError(msg.format(column))
 
     # Set up empty default kwarg dicts
     if joint_kws is None:

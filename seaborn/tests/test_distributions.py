@@ -134,8 +134,6 @@ class TestJointPlot(PlotTestCase):
 
     def test_input(self):
 
-        with nt.assert_raises(TypeError):
-            dist.jointplot("x", "y", self.rs)
         with nt.assert_raises(KeyError):
             dist.jointplot("not_a_column", "y", self.data)
             dist.jointplot("x", "not_a_column", self.data)
