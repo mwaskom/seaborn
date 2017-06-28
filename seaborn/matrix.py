@@ -117,7 +117,7 @@ class _HeatMapper(object):
 
         # Get good names for the rows and columns
         xtickevery = 1
-        if isinstance(xticklabels, int) and xticklabels > 1:
+        if isinstance(xticklabels, int):
             xtickevery = xticklabels
             xticklabels = _index_to_ticklabels(data.columns)
         elif xticklabels is True:
@@ -126,7 +126,7 @@ class _HeatMapper(object):
             xticklabels = []
 
         ytickevery = 1
-        if isinstance(yticklabels, int) and yticklabels > 1:
+        if isinstance(yticklabels, int):
             ytickevery = yticklabels
             yticklabels = _index_to_ticklabels(data.index)
         elif yticklabels is True:
@@ -248,10 +248,15 @@ class _HeatMapper(object):
     def _skip_ticks(self, labels, tickevery):
         """Return ticks and labels at evenly spaced intervals."""
         n = len(labels)
-        start, end, step = 0, n, tickevery
-        ticks = np.arange(start, end, step) + .5
-        ticklabels = labels[start:end:step]
-        return ticks, ticklabels
+        if tickevery == 0:
+            ticks, labels = [], []
+        elif tickevery == 1:
+            ticks, labels = np.arange(n) + .5, labels
+        else:
+            start, end, step = 0, n, tickevery
+            ticks = np.arange(start, end, step) + .5
+            labels = labels[start:end:step]
+        return ticks, labels
 
     def _auto_ticks(self, ax, labels, axis):
         """Determine ticks and ticklabels that minimize overlap."""
@@ -262,7 +267,7 @@ class _HeatMapper(object):
         tick, = axis.set_ticks([0])
         fontsize = tick.label.get_size()
         max_ticks = int(size // (fontsize / 72))
-        if max_ticks == 0:
+        if max_ticks < 1:
             return [], []
         tick_every = len(labels) // max_ticks + 1
         tick_every = 1 if tick_every == 0 else tick_every

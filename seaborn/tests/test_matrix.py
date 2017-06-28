@@ -229,14 +229,12 @@ class TestHeatmap(PlotTestCase):
         p = mat._HeatMapper(self.df_norm, **kws)
 
         nx, ny = self.df_norm.T.shape
-        xstart = (nx - 1) % xstep
-        ystart = (ny - 1) % ystep
-        npt.assert_array_equal(p.xticks, np.arange(xstart, nx, xstep) + .5)
-        npt.assert_array_equal(p.yticks, np.arange(ystart, ny, ystep) + .5)
+        npt.assert_array_equal(p.xticks, np.arange(0, nx, xstep) + .5)
+        npt.assert_array_equal(p.yticks, np.arange(0, ny, ystep) + .5)
         npt.assert_array_equal(p.xticklabels,
-                               self.df_norm.columns[xstart:nx:xstep])
+                               self.df_norm.columns[0:nx:xstep])
         npt.assert_array_equal(p.yticklabels,
-                               self.df_norm.index[ystart:ny:ystep])
+                               self.df_norm.index[0:ny:ystep])
 
     def test_heatmap_annotation(self):
 
@@ -321,7 +319,7 @@ class TestHeatmap(PlotTestCase):
     def test_heatmap_ticklabel_rotation(self):
 
         f, ax = plt.subplots(figsize=(2, 2))
-        mat.heatmap(self.df_norm, ax=ax)
+        mat.heatmap(self.df_norm, xticklabels=1, yticklabels=1, ax=ax)
 
         for t in ax.get_xticklabels():
             nt.assert_equal(t.get_rotation(), 0)
@@ -336,7 +334,7 @@ class TestHeatmap(PlotTestCase):
         df.index = [i * 10 for i in df.index]
 
         f, ax = plt.subplots(figsize=(2, 2))
-        mat.heatmap(df, ax=ax)
+        mat.heatmap(df, xticklabels=1, yticklabels=1, ax=ax)
 
         for t in ax.get_xticklabels():
             nt.assert_equal(t.get_rotation(), 90)
