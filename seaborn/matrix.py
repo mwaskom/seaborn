@@ -248,7 +248,7 @@ class _HeatMapper(object):
     def _skip_ticks(self, labels, tickevery):
         """Return ticks and labels at evenly spaced intervals."""
         n = len(labels)
-        start, end, step = (n - 1) % tickevery, n, tickevery
+        start, end, step = 0, n, tickevery
         ticks = np.arange(start, end, step) + .5
         ticklabels = labels[start:end:step]
         return ticks, ticklabels
@@ -264,7 +264,7 @@ class _HeatMapper(object):
         max_ticks = int(size // (fontsize / 72))
         if max_ticks == 0:
             return [], []
-        tick_every = len(labels) // max_ticks
+        tick_every = len(labels) // max_ticks + 1
         tick_every = 1 if tick_every == 0 else tick_every
         ticks, labels = self._skip_ticks(labels, tick_every)
         return ticks, labels
