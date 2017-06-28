@@ -259,8 +259,11 @@ class _HeatMapper(object):
         bbox = ax.get_window_extent().transformed(transform)
         size = [bbox.width, bbox.height][axis]
         axis = [ax.xaxis, ax.yaxis][axis]
-        fontsize = axis.get_majorticklabels()[0].get_fontsize()
-        max_ticks = int((size * .85) // (fontsize / 72))
+        tick, = axis.set_ticks([0])
+        fontsize = tick.label.get_size()
+        max_ticks = int(size // (fontsize / 72))
+        if max_ticks == 0:
+            return [], []
         tick_every = len(labels) // max_ticks
         tick_every = 1 if tick_every == 0 else tick_every
         ticks, labels = self._skip_ticks(labels, tick_every)
