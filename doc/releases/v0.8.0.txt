@@ -10,6 +10,8 @@ v0.8.0 (Unreleased)
 
 - Changed the default :func:`heatmap` colormaps to be "rocket" (in the case of sequential data) or "icefire" (in the case of diverging data). Note that this change reverses the direction of the luminance ramp from the previous defaults. While potentially confusing and disruptive, this change better aligns the seaborn defaults with the new matplotlib default colormap ("viridis") and arguably better aligns the semantics of a "heat" map with the appearance of the colormap.
 
+- Added `"auto"` as a (default) option for tick labels in :func:`heatmap` and :func:`clustermap`. This will try to estimate how many ticks can be labeled without the text objects overlapping, which should improve performance for larger matrices.
+
 - Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
 
 - Added the ability to draw a colorbar for a bivariate :func:`kdeplot` with the ``cbar`` parameter (and related ``cbar_ax`` and ``cbar_kws`` parameters).
