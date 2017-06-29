@@ -1102,12 +1102,12 @@ class ClusterGrid(Grid):
         self.mask = self.mask.iloc[yind, xind]
 
         # Try to reorganize specified tick labels, if provided
-        xtl = kws.pop("xticklabels", True)
+        xtl = kws.pop("xticklabels", "auto")
         try:
             xtl = np.asarray(xtl)[xind]
         except (TypeError, IndexError):
             pass
-        ytl = kws.pop("yticklabels", True)
+        ytl = kws.pop("yticklabels", "auto")
         try:
             ytl = np.asarray(ytl)[yind]
         except (TypeError, IndexError):
