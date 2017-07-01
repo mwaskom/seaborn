@@ -2,6 +2,9 @@
 
 .. currentmodule:: seaborn
 
+API reference
+=============
+
 .. _grid_api:
 
 Axis grids
@@ -17,9 +20,6 @@ Axis grids
     pairplot
     JointGrid
     jointplot
-
-API reference
-=============
 
 .. _categorical_api:
 
