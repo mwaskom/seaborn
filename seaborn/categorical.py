@@ -2193,46 +2193,6 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             width=.8, dodge=True, fliersize=5, linewidth=None,
             whis=1.5, notch=False, ax=None, **kwargs):
 
-    # Try to handle broken backwards-compatability
-    # This should help with the lack of a smooth deprecation,
-    # but won't catch everything
-    warn = False
-    if isinstance(x, pd.DataFrame):
-        data = x
-        x = None
-        warn = True
-
-    if "vals" in kwargs:
-        x = kwargs.pop("vals")
-        warn = True
-
-    if "groupby" in kwargs:
-        y = x
-        x = kwargs.pop("groupby")
-        warn = True
-
-    if "vert" in kwargs:
-        vert = kwargs.pop("vert", True)
-        if not vert:
-            x, y = y, x
-        orient = "v" if vert else "h"
-        warn = True
-
-    if "names" in kwargs:
-        kwargs.pop("names")
-        warn = True
-
-    if "join_rm" in kwargs:
-        kwargs.pop("join_rm")
-        warn = True
-
-    msg = ("The boxplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-
-    if warn:
-        warnings.warn(msg, UserWarning)
-
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
                           width, dodge, fliersize, linewidth)
@@ -2384,37 +2344,6 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                width=.8, inner="box", split=False, dodge=True, orient=None,
                linewidth=None, color=None, palette=None, saturation=.75,
                ax=None, **kwargs):
-
-    # Try to handle broken backwards-compatability
-    # This should help with the lack of a smooth deprecation,
-    # but won't catch everything
-    warn = False
-    if isinstance(x, pd.DataFrame):
-        data = x
-        x = None
-        warn = True
-
-    if "vals" in kwargs:
-        x = kwargs.pop("vals")
-        warn = True
-
-    if "groupby" in kwargs:
-        y = x
-        x = kwargs.pop("groupby")
-        warn = True
-
-    if "vert" in kwargs:
-        vert = kwargs.pop("vert", True)
-        if not vert:
-            x, y = y, x
-        orient = "v" if vert else "h"
-        warn = True
-
-    msg = ("The violinplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-    if warn:
-        warnings.warn(msg, UserWarning)
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
@@ -2992,20 +2921,6 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             errcolor=".26", errwidth=None, capsize=None, dodge=True,
             ax=None, **kwargs):
 
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
-
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
@@ -3189,20 +3104,6 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
               orient=None, color=None, palette=None, errwidth=None,
               capsize=None, ax=None, **kwargs):
-
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
@@ -3532,20 +3433,6 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                orient=None, color=None, palette=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
                margin_titles=False, facet_kws=None, **kwargs):
-
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
 
     # Determine the plotting function
     try:
