@@ -2,34 +2,24 @@
 
 .. currentmodule:: seaborn
 
+.. _grid_api:
+
+Axis grids
+----------
+
+.. autosummary::
+   :toctree: generated/
+
+    FacetGrid
+    factorplot
+    lmplot
+    PairGrid
+    pairplot
+    JointGrid
+    jointplot
+
 API reference
 =============
-
-.. _distribution_api:
-
-Distribution plots
-------------------
-
-.. autosummary::
-    :toctree: generated/
-
-    jointplot
-    pairplot
-    distplot
-    kdeplot
-    rugplot
-
-.. _regression_api:
-
-Regression plots
-----------------
-
-.. autosummary::
-    :toctree: generated/
-
-    lmplot
-    regplot
-    residplot
 
 .. _categorical_api:
 
@@ -39,7 +29,6 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
-    factorplot
     boxplot
     violinplot
     lvplot
@@ -48,6 +37,29 @@ Categorical plots
     pointplot
     barplot
     countplot
+
+.. _regression_api:
+
+Regression plots
+----------------
+
+.. autosummary::
+    :toctree: generated/
+
+    regplot
+    residplot
+
+.. _distribution_api:
+
+Distribution plots
+------------------
+
+.. autosummary::
+    :toctree: generated/
+
+    distplot
+    kdeplot
+    rugplot
 
 .. _matrix_api:
 
@@ -75,18 +87,6 @@ Miscellaneous plots
     :toctree: generated/
 
     palplot
-
-.. _grid_api:
-
-Axis grids
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-    FacetGrid
-    PairGrid
-    JointGrid
 
 .. _style_api:
 
