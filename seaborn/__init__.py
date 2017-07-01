@@ -18,7 +18,4 @@ from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 from . import cm
 
-# Set default aesthetics
-set()
-
 __version__ = "0.8.dev"
