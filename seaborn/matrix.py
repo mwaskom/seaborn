@@ -332,8 +332,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=None, fmt=".2g", annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
-            square=False, ax=None, xticklabels="auto", yticklabels="auto",
-            mask=None, **kwargs):
+            square=False, xticklabels="auto", yticklabels="auto",
+            mask=None, ax=None, **kwargs):
     """Plot rectangular data as a color-encoded matrix.
 
     This is an Axes-level function and will draw the heatmap into the
@@ -382,9 +382,6 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     square : boolean, optional
         If True, set the Axes aspect to "equal" so each cell will be
         square-shaped.
-    ax : matplotlib Axes, optional
-        Axes in which to draw the plot, otherwise use the currently-active
-        Axes.
     xticklabels, yticklabels : "auto", bool, list-like, or int, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
@@ -393,6 +390,9 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
+    ax : matplotlib Axes, optional
+        Axes in which to draw the plot, otherwise use the currently-active
+        Axes.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
