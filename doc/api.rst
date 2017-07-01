@@ -30,8 +30,6 @@ Regression plots
     lmplot
     regplot
     residplot
-    interactplot
-    coefplot
 
 .. _categorical_api:
 

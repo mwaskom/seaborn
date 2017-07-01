@@ -847,7 +847,6 @@ regplot.__doc__ = dedent("""\
     pairplot : Combine :func:`regplot` and :class:`PairGrid` (when used with
                ``kind="reg"``).
     residplot : Plot the residuals of a linear regression model.
-    interactplot : Plot a two-way interaction between continuous variables
 
     Notes
     -----
@@ -1064,6 +1063,11 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
         palette for the horizonal plots
 
     """
+    msg = (
+        "The `coefplot` function has been deprecated and will be removed "
+        "in a future version."
+    )
+    warnings.warn(msg, UserWarning)
     if not _has_statsmodels:
         raise ImportError("The `coefplot` function requires statsmodels")
     import statsmodels.formula.api as sf
@@ -1158,6 +1162,11 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
         Axis with the contour plot.
 
     """
+    msg = (
+        "The `interactplot` function has been deprecated and will be removed "
+        "in a future version."
+    )
+    warnings.warn(msg, UserWarning)
     if not _has_statsmodels:
         raise ImportError("The `interactplot` function requires statsmodels")
     from statsmodels.regression.linear_model import OLS
