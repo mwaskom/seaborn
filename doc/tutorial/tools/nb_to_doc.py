@@ -10,15 +10,15 @@ from subprocess import check_call as sh
 def convert_nb(nbname):
 
     # Execute the notebook
-    sh(["ipython", "nbconvert", "--to", "notebook",
-        "--execute", "--inplace", nbname + ".ipynb"])
+    sh(["jupyter", "nbconvert", "--to", "notebook",
+        "--execute", "--inplace", nbname])
 
     # Convert to .rst for Sphinx
-    sh(["ipython", "nbconvert", "--to", "rst", nbname + ".ipynb"])
+    sh(["jupyter", "nbconvert", "--to", "rst", nbname])
     
     # Clear notebook output
-    sh(["ipython", "nbconvert", "--to", "notebook", "--inplace",
-        "--ClearOutputPreprocessor.enabled=True", nbname + ".ipynb"])
+    sh(["jupyter", "nbconvert", "--to", "notebook", "--inplace",
+        "--ClearOutputPreprocessor.enabled=True", nbname])
 
 
 if __name__ == "__main__":

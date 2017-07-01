@@ -18,7 +18,9 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
+	@echo "  clean      to remove genrated output"
 	@echo "  html       to make standalone HTML files"
+	@echo "  notebooks   to make the Jupyter notebook-based tutorials"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
 	@echo "  singlehtml to make a single large HTML file"
 	@echo "  pickle     to make pickle files"
