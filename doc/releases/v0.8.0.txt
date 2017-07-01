@@ -28,6 +28,8 @@ v0.8.0 (Unreleased)
 
 - New matplotlib qualitative palettes (e.g. "tab10") are now handled correctly.
 
+- Some modules and functions have been internally reorganized; there should be no effect on code that uses the ``seaborn`` namespace.
+
 - Added a deprecation warning to func:`tsplot` function to indicate that it will be removed or replaced with a substantially altered version in a future release.
 
 - The ``interactplot`` and ``coefplot`` functions are officially deprecated and will be removed in a future release.

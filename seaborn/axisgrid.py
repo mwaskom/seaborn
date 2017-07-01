@@ -6,15 +6,17 @@ from textwrap import dedent
 
 import numpy as np
 import pandas as pd
+from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
-from .palettes import color_palette
+from .palettes import color_palette, blend_palette
 from .external.six import string_types
+from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
-__all__ = ["FacetGrid", "PairGrid", "JointGrid"]
+__all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
 
 
 class Grid(object):
@@ -1845,3 +1847,435 @@ class JointGrid(object):
         """Wrap figure.savefig defaulting to tight bounding box."""
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
+
+def pairplot(data, hue=None, hue_order=None, palette=None,
+             vars=None, x_vars=None, y_vars=None,
+             kind="scatter", diag_kind="hist", markers=None,
+             size=2.5, aspect=1, dropna=True,
+             plot_kws=None, diag_kws=None, grid_kws=None):
+    """Plot pairwise relationships in a dataset.
+
+    By default, this function will create a grid of Axes such that each
+    variable in ``data`` will by shared in the y-axis across a single row and
+    in the x-axis across a single column. The diagonal Axes are treated
+    differently, drawing a plot to show the univariate distribution of the data
+    for the variable in that column.
+
+    It is also possible to show a subset of variables or plot different
+    variables on the rows and columns.
+
+    This is a high-level interface for :class:`PairGrid` that is intended to
+    make it easy to draw a few common styles. You should use :class`PairGrid`
+    directly if you need more flexibility.
+
+    Parameters
+    ----------
+    data : DataFrame
+        Tidy (long-form) dataframe where each column is a variable and
+        each row is an observation.
+    hue : string (variable name), optional
+        Variable in ``data`` to map plot aspects to different colors.
+    hue_order : list of strings
+        Order for the levels of the hue variable in the palette
+    palette : dict or seaborn color palette
+        Set of colors for mapping the ``hue`` variable. If a dict, keys
+        should be values  in the ``hue`` variable.
+    vars : list of variable names, optional
+        Variables within ``data`` to use, otherwise use every column with
+        a numeric datatype.
+    {x, y}_vars : lists of variable names, optional
+        Variables within ``data`` to use separately for the rows and
+        columns of the figure; i.e. to make a non-square plot.
+    kind : {'scatter', 'reg'}, optional
+        Kind of plot for the non-identity relationships.
+    diag_kind : {'hist', 'kde'}, optional
+        Kind of plot for the diagonal subplots.
+    markers : single matplotlib marker code or list, optional
+        Either the marker to use for all datapoints or a list of markers with
+        a length the same as the number of levels in the hue variable so that
+        differently colored points will also have different scatterplot
+        markers.
+    size : scalar, optional
+        Height (in inches) of each facet.
+    aspect : scalar, optional
+        Aspect * size gives the width (in inches) of each facet.
+    dropna : boolean, optional
+        Drop missing values from the data before plotting.
+    {plot, diag, grid}_kws : dicts, optional
+        Dictionaries of keyword arguments.
+
+    Returns
+    -------
+    grid : PairGrid
+        Returns the underlying ``PairGrid`` instance for further tweaking.
+
+    See Also
+    --------
+    PairGrid : Subplot grid for more flexible plotting of pairwise
+               relationships.
+
+    Examples
+    --------
+
+    Draw scatterplots for joint relationships and histograms for univariate
+    distributions:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
+        >>> iris = sns.load_dataset("iris")
+        >>> g = sns.pairplot(iris)
+
+    Show different levels of a categorical variable by the color of plot
+    elements:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species")
+
+    Use a different color palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species", palette="husl")
+
+    Use different markers for each level of the hue variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
+
+    Plot a subset of variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
+
+    Draw larger plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, size=3,
+        ...                  vars=["sepal_width", "sepal_length"])
+
+    Plot different variables in the rows and columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris,
+        ...                  x_vars=["sepal_width", "sepal_length"],
+        ...                  y_vars=["petal_width", "petal_length"])
+
+    Use kernel density estimates for univariate plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, diag_kind="kde")
+
+    Fit linear regression models to the scatter plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, kind="reg")
+
+    Pass keyword arguments down to the underlying functions (it may be easier
+    to use :class:`PairGrid` directly):
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
+        ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
+        ...                  diag_kws=dict(shade=True))
+
+    """
+    if plot_kws is None:
+        plot_kws = {}
+    if diag_kws is None:
+        diag_kws = {}
+    if grid_kws is None:
+        grid_kws = {}
+
+    # Set up the PairGrid
+    diag_sharey = diag_kind == "hist"
+    grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
+                    hue_order=hue_order, palette=palette,
+                    diag_sharey=diag_sharey,
+                    size=size, aspect=aspect, dropna=dropna, **grid_kws)
+
+    # Add the markers here as PairGrid has figured out how many levels of the
+    # hue variable are needed and we don't want to duplicate that process
+    if markers is not None:
+        if grid.hue_names is None:
+            n_markers = 1
+        else:
+            n_markers = len(grid.hue_names)
+        if not isinstance(markers, list):
+            markers = [markers] * n_markers
+        if len(markers) != n_markers:
+            raise ValueError(("markers must be a singeton or a list of markers"
+                              " for each level of the hue variable"))
+        grid.hue_kws = {"marker": markers}
+
+    # Maybe plot on the diagonal
+    if grid.square_grid:
+        if diag_kind == "hist":
+            grid.map_diag(plt.hist, **diag_kws)
+        elif diag_kind == "kde":
+            diag_kws["legend"] = False
+            grid.map_diag(kdeplot, **diag_kws)
+
+    # Maybe plot on the off-diagonals
+    if grid.square_grid and diag_kind is not None:
+        plotter = grid.map_offdiag
+    else:
+        plotter = grid.map
+
+    if kind == "scatter":
+        plot_kws.setdefault("edgecolor", "white")
+        plotter(plt.scatter, **plot_kws)
+    elif kind == "reg":
+        from .regression import regplot  # Avoid circular import
+        plotter(regplot, **plot_kws)
+
+    # Add a legend
+    if hue is not None:
+        grid.add_legend()
+
+    return grid
+
+
+def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
+              color=None, size=6, ratio=5, space=.2,
+              dropna=True, xlim=None, ylim=None,
+              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
+    """Draw a plot of two variables with bivariate and univariate graphs.
+
+    This function provides a convenient interface to the :class:`JointGrid`
+    class, with several canned plot kinds. This is intended to be a fairly
+    lightweight wrapper; if you need more flexibility, you should use
+    :class:`JointGrid` directly.
+
+    Parameters
+    ----------
+    x, y : strings or vectors
+        Data or names of variables in ``data``.
+    data : DataFrame, optional
+        DataFrame when ``x`` and ``y`` are variable names.
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
+        Kind of plot to draw.
+    stat_func : callable or None, optional
+        Function used to calculate a statistic about the relationship and
+        annotate the plot. Should map `x` and `y` either to a single value
+        or to a (value, p) tuple. Set to ``None`` if you don't want to
+        annotate the plot.
+    color : matplotlib color, optional
+        Color used for the plot elements.
+    size : numeric, optional
+        Size of the figure (it will be square).
+    ratio : numeric, optional
+        Ratio of joint axes size to marginal axes height.
+    space : numeric, optional
+        Space between the joint and marginal axes
+    dropna : bool, optional
+        If True, remove observations that are missing from ``x`` and ``y``.
+    {x, y}lim : two-tuples, optional
+        Axis limits to set before plotting.
+    {joint, marginal, annot}_kws : dicts, optional
+        Additional keyword arguments for the plot components.
+    kwargs : key, value pairings
+        Additional keyword arguments are passed to the function used to
+        draw the plot on the joint Axes, superseding items in the
+        ``joint_kws`` dictionary.
+
+    Returns
+    -------
+    grid : :class:`JointGrid`
+        :class:`JointGrid` object with the plot on it.
+
+    See Also
+    --------
+    JointGrid : The Grid class used for drawing this plot. Use it directly if
+                you need more flexibility.
+
+    Examples
+    --------
+
+    Draw a scatterplot with marginal histograms:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np, pandas as pd; np.random.seed(0)
+        >>> import seaborn as sns; sns.set(style="white", color_codes=True)
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips)
+
+    Add regression and kernel density fits:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="reg")
+
+    Replace the scatterplot with a joint histogram using hexagonal bins:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="hex")
+
+    Replace the scatterplots and histograms with density estimates and align
+    the marginal Axes tightly with the joint Axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> g = sns.jointplot("sepal_width", "petal_length", data=iris,
+        ...                   kind="kde", space=0, color="g")
+
+    Use a different statistic for the annotation:
+
+    .. plot::
+        :context: close-figs
+
+        >>> from scipy.stats import spearmanr
+        >>> g = sns.jointplot("size", "total_bill", data=tips,
+        ...                   stat_func=spearmanr, color="m")
+
+    Draw a scatterplot, then add a joint density estimate:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = (sns.jointplot("sepal_length", "sepal_width",
+        ...                    data=iris, color="k")
+        ...         .plot_joint(sns.kdeplot, zorder=0, n_levels=6))
+
+    Pass vectors in directly without using Pandas, then name the axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> x, y = np.random.randn(2, 300)
+        >>> g = (sns.jointplot(x, y, kind="hex", stat_func=None)
+        ...         .set_axis_labels("x", "y"))
+
+    Draw a smaller figure with more space devoted to the marginal plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("total_bill", "tip", data=tips,
+        ...                   size=5, ratio=3, color="g")
+
+    Pass keyword arguments down to the underlying plots:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.jointplot("petal_length", "sepal_length", data=iris,
+        ...                   marginal_kws=dict(bins=15, rug=True),
+        ...                   annot_kws=dict(stat="r"),
+        ...                   s=40, edgecolor="w", linewidth=1)
+
+    """
+    # Set up empty default kwarg dicts
+    if joint_kws is None:
+        joint_kws = {}
+    joint_kws.update(kwargs)
+    if marginal_kws is None:
+        marginal_kws = {}
+    if annot_kws is None:
+        annot_kws = {}
+
+    # Make a colormap based off the plot color
+    if color is None:
+        color = color_palette()[0]
+    color_rgb = mpl.colors.colorConverter.to_rgb(color)
+    colors = [utils.set_hls_values(color_rgb, l=l)
+              for l in np.linspace(1, 0, 12)]
+    cmap = blend_palette(colors, as_cmap=True)
+
+    # Initialize the JointGrid object
+    grid = JointGrid(x, y, data, dropna=dropna,
+                     size=size, ratio=ratio, space=space,
+                     xlim=xlim, ylim=ylim)
+
+    # Plot the data using the grid
+    if kind == "scatter":
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(plt.scatter, **joint_kws)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
+
+    elif kind.startswith("hex"):
+
+        x_bins = min(_freedman_diaconis_bins(grid.x), 50)
+        y_bins = min(_freedman_diaconis_bins(grid.y), 50)
+        gridsize = int(np.mean([x_bins, y_bins]))
+
+        joint_kws.setdefault("gridsize", gridsize)
+        joint_kws.setdefault("cmap", cmap)
+        grid.plot_joint(plt.hexbin, **joint_kws)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
+
+    elif kind.startswith("kde"):
+
+        joint_kws.setdefault("shade", True)
+        joint_kws.setdefault("cmap", cmap)
+        grid.plot_joint(kdeplot, **joint_kws)
+
+        marginal_kws.setdefault("shade", True)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(kdeplot, **marginal_kws)
+
+    elif kind.startswith("reg"):
+
+        from .regression import regplot
+
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(distplot, **marginal_kws)
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(regplot, **joint_kws)
+
+    elif kind.startswith("resid"):
+
+        from .regression import residplot
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(residplot, **joint_kws)
+
+        x, y = grid.ax_joint.collections[0].get_offsets().T
+        marginal_kws.setdefault("color", color)
+        marginal_kws.setdefault("kde", False)
+        distplot(x, ax=grid.ax_marg_x, **marginal_kws)
+        distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
+                 **marginal_kws)
+        stat_func = None
+    else:
+        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
+        raise ValueError(msg)
+
+    if stat_func is not None:
+        grid.annotate(stat_func, **annot_kws)
+
+    return grid
