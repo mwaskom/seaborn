@@ -6,6 +6,8 @@ from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import warnings
+
 from .external.six import string_types
 
 from . import utils
@@ -174,6 +176,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         >>> ax = sns.tsplot(data=data, err_style="unit_traces")
 
     """
+    msg = (
+        "The tsplot function is deprecated and will be removed or replaced "
+        "(in a substantially altered version) in a future release."
+    )
+    warnings.warn(msg, UserWarning)
+
     # Sort out default values for the parameters
     if ax is None:
         ax = plt.gca()
