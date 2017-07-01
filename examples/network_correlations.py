@@ -15,7 +15,7 @@ corrmat = df.corr()
 f, ax = plt.subplots(figsize=(12, 9))
 
 # Draw the heatmap using seaborn
-sns.heatmap(corrmat, vmax=.8, square=True)
+sns.heatmap(corrmat, center=0, vmax=.8, square=True)
 
 # Use matplotlib directly to emphasize known networks
 networks = corrmat.columns.get_level_values("network")

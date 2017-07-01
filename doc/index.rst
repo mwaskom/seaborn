@@ -33,9 +33,9 @@ Seaborn: statistical data visualization
             <img src="_static/anscombes_quartet_thumb.png">
           </div>
         </a>
-        <a href="examples/many_pairwise_correlations.html">
+        <a href="examples/structured_heatmap.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/many_pairwise_correlations_thumb.png">
+            <img src="_static/structured_heatmap_thumb.png">
           </div>
         </a>
         <a href="examples/many_facets.html">

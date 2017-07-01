@@ -28,9 +28,7 @@ network_lut = dict(zip(map(str, used_networks), network_pal))
 networks = df.columns.get_level_values("network")
 network_colors = pd.Series(networks, index=df.columns).map(network_lut)
 
-# Create a custom colormap for the heatmap values
-cmap = sns.diverging_palette(h_neg=210, h_pos=350, s=90, l=30, as_cmap=True)
-
 # Draw the full plot
-sns.clustermap(df.corr(), row_colors=network_colors, linewidths=.5,
-               col_colors=network_colors, figsize=(13, 13), cmap=cmap)
+sns.clustermap(df.corr(), center=0, cmap="vlag",
+               row_colors=network_colors, col_colors=network_colors,
+               figsize=(13, 13))

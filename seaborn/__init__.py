@@ -16,6 +16,7 @@ from .axisgrid import *
 from .widgets import *
 from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
+from . import cm
 
 # Set default aesthetics
 set()
