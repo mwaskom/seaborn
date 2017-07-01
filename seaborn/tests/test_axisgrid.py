@@ -21,7 +21,7 @@ from .. import rcmod
 from ..palettes import color_palette
 from ..distributions import kdeplot
 from ..categorical import pointplot
-from ..linearmodels import pairplot
+from ..regression import pairplot
 from ..utils import categorical_order
 
 rs = np.random.RandomState(0)

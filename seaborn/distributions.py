@@ -863,7 +863,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
     elif kind.startswith("reg"):
 
-        from .linearmodels import regplot
+        from .regression import regplot
 
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(distplot, **marginal_kws)
@@ -873,7 +873,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
 
     elif kind.startswith("resid"):
 
-        from .linearmodels import residplot
+        from .regression import residplot
 
         joint_kws.setdefault("color", color)
         grid.plot_joint(residplot, **joint_kws)

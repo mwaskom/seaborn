@@ -6,7 +6,7 @@ _orig_rc_params = mpl.rcParams.copy()
 from .rcmod import *
 from .utils import *
 from .palettes import *
-from .linearmodels import *
+from .regression import *
 from .categorical import *
 from .distributions import *
 from .timeseries import *
