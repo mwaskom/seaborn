@@ -9,22 +9,16 @@ install seaborn``). It's also possible to install the released version using
 version available from PyPI.
 
 Alternatively, you can use ``pip`` to install the development version, with the
-command ``pip install git+https://github.com/mwaskom/seaborn.git#egg=seaborn``.
+command ``pip install git+https://github.com/mwaskom/seaborn.git``.
 Another option would be to to clone the `github repository
 <https://github.com/mwaskom/seaborn>`_ and install with ``pip install .`` from
 the source directory. Seaborn itself is pure Python, so installation should be
 reasonably straightforward.
 
-When using the development version, you may want to refer to the `development
-docs <http://stanford.edu/~mwaskom/software/seaborn-dev/>`_. Note that these
-are not built automatically and may at times fall out of sync with the actual
-master branch on github.
-
-
 Dependencies
 ~~~~~~~~~~~~
 
--  Python 2.7 or 3.3+
+-  Python 2.7 or 3.4+
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -42,23 +36,37 @@ Recommended dependencies
 
 -  `statsmodels <http://statsmodels.sourceforge.net/>`__
 
-The `pip` installation script will attempt to download the mandatory
-dependencies if they do not exist at install-time.
+The ``pip`` installation script will attempt to download the mandatory
+dependencies only if they do not exist at install-time.
 
-I recommend using seaborn with the `Anaconda distribution
-<https://store.continuum.io/cshop/anaconda/>`_, as this makes it easy to manage
-the main dependencies, which otherwise can be difficult to install.
-
-I attempt to keep seaborn importable and generally functional on the versions
-available through the stable Debian channels.  There may be cases where some
-more advanced features only work with newer versions of these dependencies,
-although these should be relatively rare.
+Unit tests aim to keep seaborn importable and generally functional on the
+versions available through the stable Debian channels.  There may be cases
+where some more advanced features only work with newer versions of these
+libraries, although these should be relatively rare.
 
 There are also some known bugs on older versions of matplotlib, so you should
 in general try to use a modern version. For many use cases, though, older
 matplotlibs will work fine.
 
-Seaborn is tested on the most recent versions offered through ``conda``.
+Seaborn is also tested on the most recent versions offered through ``conda``.
+
+Importing seaborn
+~~~~~~~~~~~~~~~~~
+
+Seaborn will apply its default style parameters to the global matplotlib style
+dictionary when you import it. This will change the look of all plots,
+including those created by using matplotlib functions directly. To avoid this
+behavior and use the default matplotlib aesthetics (along with any
+customization in your ``matplotlibrc``), you can import the ``seaborn.apionly``
+namespace.
+
+Seaborn has several other pre-packaged styles along with high-level :ref:`tools
+<aesthetics_tutorial>` for managing them, so you should not limit yourself to the
+default aesthetics.
+
+By convention, ``seaborn`` is abbreviated to ``sns`` on import.
+
+>>>>>>> Update some details and commentary on installing
 
 Testing
 ~~~~~~~
