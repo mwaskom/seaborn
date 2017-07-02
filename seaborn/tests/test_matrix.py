@@ -284,6 +284,12 @@ class TestHeatmap(PlotTestCase):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
             nt.assert_equal(text.get_fontsize(), 14)
 
+    def test_heatmap_annotation_with_limited_ticklabels(self):
+        ax = mat.heatmap(self.df_norm, fmt=".2f", annot=True,
+                         xticklabels=False, yticklabels=False)
+        for val, text in zip(self.x_norm.flat, ax.texts):
+            nt.assert_equal(text.get_text(), "{:.2f}".format(val))
+
     def test_heatmap_cbar(self):
 
         f = plt.figure()
