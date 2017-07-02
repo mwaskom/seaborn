@@ -19,7 +19,7 @@
 
     </style>
 
-Seaborn: statistical data visualization
+seaborn: statistical data visualization
 =======================================
 
 .. raw:: html
