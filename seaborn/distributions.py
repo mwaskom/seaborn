@@ -102,7 +102,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         :context: close-figs
 
         >>> import seaborn as sns, numpy as np
-        >>> sns.set(rc={"figure.figsize": (8, 4)}); np.random.seed(0)
+        >>> sns.set(); np.random.seed(0)
         >>> x = np.random.randn(100)
         >>> ax = sns.distplot(x)
 
