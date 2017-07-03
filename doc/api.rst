@@ -29,25 +29,14 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
+    stripplot
+    swarmplot
     boxplot
     violinplot
     lvplot
-    stripplot
-    swarmplot
     pointplot
     barplot
     countplot
-
-.. _regression_api:
-
-Regression plots
-----------------
-
-.. autosummary::
-    :toctree: generated/
-
-    regplot
-    residplot
 
 .. _distribution_api:
 
@@ -60,6 +49,17 @@ Distribution plots
     distplot
     kdeplot
     rugplot
+
+.. _regression_api:
+
+Regression plots
+----------------
+
+.. autosummary::
+    :toctree: generated/
+
+    regplot
+    residplot
 
 .. _matrix_api:
 

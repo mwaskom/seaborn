@@ -187,7 +187,7 @@ def axes_style(style=None, rc=None):
             "axes.axisbelow": True,
             "image.cmap": "rocket",
             "font.family": ["sans-serif"],
-            "font.sans-serif": ["DejaVu Sans", "Arial", "Liberation Sans",
+            "font.sans-serif": ["Arial", "DejaVu Sans", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
