@@ -60,24 +60,6 @@ matplotlibs will work fine.
 
 Seaborn is tested on the most recent versions offered through ``conda``.
 
-
-Importing seaborn
-~~~~~~~~~~~~~~~~~
-
-Seaborn will apply its default style parameters to the global matplotlib style
-dictionary when you import it. This will change the look of all plots,
-including those created by using matplotlib functions directly. To avoid this
-behavior and use the default matplotlib aesthetics (along with any
-customization in your ``matplotlibrc``), you can import the ``seaborn.apionly``
-namespace.
-
-Seaborn has several other pre-packaged styles along with high-level :ref:`tools
-<aesthetics_tutorial>` for managing them, so you should not limit yourself to the
-default aesthetics.
-
-By convention, ``seaborn`` is abbreviated to ``sns`` on import.
-
-
 Testing
 ~~~~~~~
 
@@ -105,14 +87,8 @@ report.
 Known issues
 ~~~~~~~~~~~~
 
-There is a `bug <https://github.com/matplotlib/matplotlib/issues/2654>`_ in the
-matplotlib OSX backend that causes unavoidable problems with some of the
-seaborn functions (particularly those that draw multi-panel figures). If you
-encounter this, you will want to try a `different backend
-<http://matplotlib.org/api/matplotlib_configuration_api.html>`_. In particular, this bug affects any multi-panel figure that internally calls the matplotlib ``tight_layout`` function.
-
 An unfortunate consequence of how the matplotlib marker styles work is that
 line-art markers (e.g. ``"+"``) or markers with ``facecolor`` set to ``"none"``
 will be invisible when the default seaborn style is in effect. This can be
 changed by using a different ``markeredgewidth`` (aliased to ``mew``) either in
-the function call or globally in the `rcParams`.
+the function call or globally in the ``rcParams``.

@@ -186,9 +186,9 @@ def axes_style(style=None, rc=None):
             "xtick.color": dark_gray,
             "ytick.color": dark_gray,
             "axes.axisbelow": True,
-            "image.cmap": "Greys",
+            "image.cmap": "rocket",
             "font.family": ["sans-serif"],
-            "font.sans-serif": ["Arial", "Liberation Sans",
+            "font.sans-serif": ["DejaVu Sans", "Arial", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
@@ -348,7 +348,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
         # Set up dictionary of default parameters
         base_context = {
 
-            "figure.figsize": np.array([8, 5.5]),
+            "figure.figsize": np.array([6.4, 4.8]),
             "font.size": 12,
             "axes.labelsize": 11,
             "axes.titlesize": 12,
