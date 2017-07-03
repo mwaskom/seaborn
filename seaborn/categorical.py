@@ -1315,7 +1315,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # Convert from point size (area) to diameter
         default_lw = mpl.rcParams["patch.linewidth"]
         lw = kws.get("linewidth", kws.get("lw", default_lw))
-        d = np.sqrt(s) + lw
+        dpi = ax.figure.dpi
+        d = (np.sqrt(s) + lw) * (dpi / 72)
 
         # Transform the data coordinates to point coordinates.
         # We'll figure out the swarm positions in the latter
