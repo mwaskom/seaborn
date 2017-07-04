@@ -2,11 +2,14 @@
 Plotting on a large number of facets
 ====================================
 
+_thumb: .35, .35
+
 """
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+
 sns.set(style="ticks")
 
 # Create a dataset with many short random walks

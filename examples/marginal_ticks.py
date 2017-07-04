@@ -2,7 +2,7 @@
 Scatterplot with marginal ticks
 ===============================
 
-_thumb: .65, .35
+_thumb: .68, .32
 """
 import numpy as np
 import seaborn as sns
