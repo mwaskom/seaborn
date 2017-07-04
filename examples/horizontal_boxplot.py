@@ -7,7 +7,7 @@ _thumb: .7, .37
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="ticks", palette="muted", color_codes=True)
+sns.set(style="ticks")
 
 # Initialize the figure
 f, ax = plt.subplots(figsize=(7, 6))

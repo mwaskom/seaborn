@@ -13,7 +13,7 @@ support for `numpy <http://www.numpy.org/>`_ and `pandas
 
 Some of the features that seaborn offers are
 
-- Several :ref:`built-in themes <aesthetics_tutorial>` that improve on the default matplotlib aesthetics
+- Several :ref:`built-in themes <aesthetics_tutorial>` for styling matplotlib graphics
 - Tools for choosing :ref:`color palettes <palette_tutorial>` to make beautiful plots that reveal patterns in your data
 - Functions for visualizing :ref:`univariate <distplot_options>` and :ref:`bivariate <joint_kde>` distributions or for :ref:`comparing <grouped_violinplots>` them between subsets of data
 - Tools that fit and visualize :ref:`linear regression <anscombes_quartet>` models for different kinds of :ref:`independent <pointplot_anova>` and :ref:`dependent <logistic_regression>` variables
