@@ -128,9 +128,11 @@ html_theme_options = {
     'bootswatch_theme': "paper",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
-    'navbar_links': [("API", "api"),
+    'navbar_links': [
+                     ("Gallery", "examples/index"),
                      ("Tutorial", "tutorial"),
-                     ("Gallery", "examples/index")],
+                     ("API", "api"),
+                     ],
 
     }
 
@@ -183,7 +185,7 @@ html_static_path = ['_static', 'example_thumbs']
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
