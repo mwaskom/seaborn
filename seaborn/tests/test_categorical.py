@@ -648,18 +648,6 @@ class TestCategoricalStatPlotter(CategoricalFixture):
                 ci_want = mean - half_ci, mean + half_ci
                 npt.assert_array_almost_equal(ci_want, ci, 2)
 
-    def test_estimator_value_label(self):
-
-        p = cat._CategoricalStatPlotter()
-        p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic(np.mean, None, 100)
-        nt.assert_equal(p.value_label, "mean(y)")
-
-        p = cat._CategoricalStatPlotter()
-        p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic(np.median, None, 100)
-        nt.assert_equal(p.value_label, "median(y)")
-
     def test_draw_cis(self):
 
         p = cat._CategoricalStatPlotter()
@@ -2050,12 +2038,12 @@ class TestBarPlotter(CategoricalFixture):
         ax = cat.barplot("g", "y", data=self.df)
         nt.assert_equal(len(ax.patches), len(self.g.unique()))
         nt.assert_equal(ax.get_xlabel(), "g")
-        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
         ax = cat.barplot("y", "g", orient="h", data=self.df)
         nt.assert_equal(len(ax.patches), len(self.g.unique()))
-        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
@@ -2063,13 +2051,13 @@ class TestBarPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.patches),
                         len(self.g.unique()) * len(self.h.unique()))
         nt.assert_equal(ax.get_xlabel(), "g")
-        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
         ax = cat.barplot("y", "g", "h", orient="h", data=self.df)
         nt.assert_equal(len(ax.patches),
                         len(self.g.unique()) * len(self.h.unique()))
-        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
@@ -2273,13 +2261,13 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.collections), 1)
         nt.assert_equal(len(ax.lines), len(self.g.unique()) + 1)
         nt.assert_equal(ax.get_xlabel(), "g")
-        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
         ax = cat.pointplot("y", "g", orient="h", data=self.df)
         nt.assert_equal(len(ax.collections), 1)
         nt.assert_equal(len(ax.lines), len(self.g.unique()) + 1)
-        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
@@ -2290,7 +2278,7 @@ class TestPointPlotter(CategoricalFixture):
                          len(self.h.unique()) +
                          len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")
-        nt.assert_equal(ax.get_ylabel(), "mean(y)")
+        nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
         ax = cat.pointplot("y", "g", "h", orient="h", data=self.df)
@@ -2299,7 +2287,7 @@ class TestPointPlotter(CategoricalFixture):
                         (len(self.g.unique()) *
                          len(self.h.unique()) +
                          len(self.h.unique())))
-        nt.assert_equal(ax.get_xlabel(), "mean(y)")
+        nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 

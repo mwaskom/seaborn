@@ -1546,11 +1546,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         self.statistic = np.array(statistic)
         self.confint = np.array(confint)
 
-        # Rename the value label to reflect the estimation
-        if self.value_label is not None:
-            self.value_label = u"{}({})".format(estimator.__name__,
-                                                self.value_label)
-
     def draw_confints(self, ax, at_group, confint, colors,
                       errwidth=None, capsize=None, **kws):
 
