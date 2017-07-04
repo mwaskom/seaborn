@@ -367,12 +367,12 @@ class TestCategoricalPlotter(CategoricalFixture):
         # Test palette mapping the x position
         p.establish_variables("g", "y", data=self.df)
         p.establish_colors(None, None, 1)
-        nt.assert_equal(p.colors, palettes.color_palette("deep", 3))
+        nt.assert_equal(p.colors, palettes.color_palette(n_colors=3))
 
         # Test palette mapping the hue position
         p.establish_variables("g", "y", "h", data=self.df)
         p.establish_colors(None, None, 1)
-        nt.assert_equal(p.colors, palettes.color_palette("deep", 2))
+        nt.assert_equal(p.colors, palettes.color_palette(n_colors=2))
 
     def test_default_palette_with_many_levels(self):
 
@@ -787,14 +787,14 @@ class TestBoxPlotter(CategoricalFixture):
     def test_box_colors(self):
 
         ax = cat.boxplot("g", "y", data=self.df, saturation=1)
-        pal = palettes.color_palette("deep", 3)
+        pal = palettes.color_palette(n_colors=3)
         for patch, color in zip(ax.artists, pal):
             nt.assert_equal(patch.get_facecolor()[:3], color)
 
         plt.close("all")
 
         ax = cat.boxplot("g", "y", "h", data=self.df, saturation=1)
-        pal = palettes.color_palette("deep", 2)
+        pal = palettes.color_palette(n_colors=2)
         for patch, color in zip(ax.artists, pal * 2):
             nt.assert_equal(patch.get_facecolor()[:3], color)
 
@@ -2560,14 +2560,14 @@ class TestLVPlotter(CategoricalFixture):
     def test_box_colors(self):
 
         ax = cat.lvplot("g", "y", data=self.df, saturation=1)
-        pal = palettes.color_palette("deep", 3)
+        pal = palettes.color_palette(n_colors=3)
         for patch, color in zip(ax.artists, pal):
             nt.assert_equal(patch.get_facecolor()[:3], color)
 
         plt.close("all")
 
         ax = cat.lvplot("g", "y", "h", data=self.df, saturation=1)
-        pal = palettes.color_palette("deep", 2)
+        pal = palettes.color_palette(n_colors=2)
         for patch, color in zip(ax.artists, pal * 2):
             nt.assert_equal(patch.get_facecolor()[:3], color)
 
