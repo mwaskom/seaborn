@@ -124,7 +124,7 @@ Example gallery
 
 
 def create_thumbnail(infile, thumbfile,
-                     width=300, height=300,
+                     width=275, height=275,
                      cx=0.5, cy=0.5, border=4):
     baseout, extout = op.splitext(thumbfile)
 
