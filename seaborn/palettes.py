@@ -404,6 +404,8 @@ def mpl_palette(name, n_colors=6):
         cmap = blend_palette(pal, n_colors, as_cmap=True)
     else:
         cmap = mpl.cm.get_cmap(name)
+        if cmap is None:
+            raise ValueError("{} is not a valid colormap".format(name))
     if name in mpl_qual_pals:
         bins = np.linspace(0, 1, mpl_qual_pals[name])[:n_colors]
     else:
