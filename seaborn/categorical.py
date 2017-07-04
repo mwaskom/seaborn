@@ -564,7 +564,8 @@ class _ViolinPlotter(_CategoricalPlotter):
         self.inner = inner
 
         if split and self.hue_names is not None and len(self.hue_names) != 2:
-            raise ValueError("Cannot use `split` with more than 2 hue levels.")
+            msg = "There must be exactly two hue levels to use `split`.'"
+            raise ValueError(msg)
         self.split = split
 
         if linewidth is None:
