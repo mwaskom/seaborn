@@ -137,7 +137,7 @@ class _HeatMapper(object):
         # Get the positions and used label for the ticks
         nx, ny = data.T.shape
 
-        if not xticklabels:
+        if not len(xticklabels):
             self.xticks = []
             self.xticklabels = []
         elif isinstance(xticklabels, string_types) and xticklabels == "auto":
@@ -147,7 +147,7 @@ class _HeatMapper(object):
             self.xticks, self.xticklabels = self._skip_ticks(xticklabels,
                                                              xtickevery)
 
-        if not yticklabels:
+        if not len(yticklabels):
             self.yticks = []
             self.yticklabels = []
         elif isinstance(yticklabels, string_types) and yticklabels == "auto":
