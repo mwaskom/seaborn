@@ -2515,15 +2515,6 @@ violinplot.__doc__ = dedent("""\
         ...                     scale="count", inner="stick",
         ...                     scale_hue=False, bw=.2)
 
-    Use ``hue`` without changing violin position or width:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
-        ...                     data=tips, dodge=False)
-
     Draw horizontal violins:
 
     .. plot::
@@ -2533,6 +2524,24 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="orbital_period", y="method",
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", palette="Set3")
+
+    Don't let density extend past extreme values in the data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="orbital_period", y="method",
+        ...                     data=planets[planets.orbital_period < 1000],
+        ...                     cut=0, scale="width", palette="Set3")
+
+    Use ``hue`` without changing violin position or width:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
+        ...                     data=tips, dodge=False)
 
     Use :func:`factorplot` to combine a :func:`violinplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
