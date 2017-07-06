@@ -14,4 +14,5 @@ df = sns.load_dataset("brain_networks", header=[0, 1, 2], index_col=0)
 f, ax = plt.subplots(figsize=(11, 6))
 
 # Draw the heatmap using seaborn
-sns.heatmap(df.T, center=0, robust=True)
+cbar_ticks = [-50, 0, 50]
+sns.heatmap(df.T, center=0, robust=True, cbar_kws=dict(ticks=cbar_ticks))

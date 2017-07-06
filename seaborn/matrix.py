@@ -1227,78 +1227,69 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> networks = sns.load_dataset("brain_networks",
-        ...                             index_col=0, header=[0, 1, 2])
-        >>> networks = networks.loc[:200].T
-        >>> g = sns.clustermap(networks)
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> iris = sns.load_dataset("iris")
+        >>> species = iris.pop("species")
+        >>> g = sns.clustermap(iris)
 
     Use a different similarity metric:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(networks, metric="correlation")
+        >>> g = sns.clustermap(iris, metric="correlation")
 
     Use a different clustering method:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(networks, method="single")
+        >>> g = sns.clustermap(iris, method="single")
 
     Use a different colormap and ignore outliers in colormap limits:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(networks, cmap="mako", robust=True)
+        >>> g = sns.clustermap(iris, cmap="mako", robust=True)
 
     Change the size of the figure:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(networks, figsize=(9, 5))
-
-    Standardize the data across the columns:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(networks, standard_scale=1)
-
-    Normalize the data across the rows:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(networks, z_score=0)
+        >>> g = sns.clustermap(iris, figsize=(6, 7))
 
     Plot one of the axes in its original organization:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(networks, col_cluster=False)
+        >>> g = sns.clustermap(iris, col_cluster=False)
 
     Add colored labels:
 
     .. plot::
         :context: close-figs
 
-        >>> from matplotlib.colors import Normalize
-        >>> labels = networks.index.get_level_values("network").astype(int)
-        >>> colors = sns.cm.vlag(Normalize(1, 17)(labels))
-        >>> g = sns.clustermap(networks, row_colors=colors)
+        >>> lut = dict(zip(species.unique(), "rbg"))
+        >>> row_colors = species.map(lut)
+        >>> g = sns.clustermap(iris, row_colors=row_colors)
 
-    Show data with a divergent colormap:
+    Standardize the data within the columns:
 
     .. plot::
         :context: close-figs
 
-        >>> corrmat = networks.T.corr()
-        >>> g = sns.clustermap(corrmat, center=0)
+        >>> g = sns.clustermap(iris, standard_scale=1)
+
+    Normalize the data within the rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, z_score=0)
+
 
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
