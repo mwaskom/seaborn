@@ -35,7 +35,7 @@ def _freedman_diaconis_bins(a):
 
 
 def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
-             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None, fitter_kws=None,
              color=None, vertical=False, norm_hist=False, axlabel=None,
              label=None, ax=None):
     """Flexibly plot a univariate distribution of observations.
@@ -63,8 +63,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         An object with `fit` method, returning a tuple that can be passed to a
         `pdf` method a positional arguments following an grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries, optional
+    {hist, kde, rug, fit, fitter}_kws : dictionaries, optional
         Keyword arguments for underlying plotting functions.
+        Note: ``fitter_kws`` are passed to the ``fit()`` method, while ``fit_kws``
+        are passed to the ``plot()`` command to draw the fitted pdf.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
     vertical : bool, optional
@@ -182,6 +184,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         rug_kws = dict()
     if fit_kws is None:
         fit_kws = dict()
+    if fitter_kws is None:
+        fitter_kws = dict()
 
     # Get the color from the current color cycle
     if color is None:
@@ -235,7 +239,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
         bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
         x = _kde_support(a, bw, gridsize, cut, clip)
-        params = fit.fit(a)
+        params = fit.fit(a,**fitter_kws)
         pdf = lambda x: fit.pdf(x, *params)
         y = pdf(x)
         if vertical:
