@@ -625,9 +625,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         y = data2
 
     if warn:
-        warn_msg = ("This 'matrix' style of input has been deprecated"
-                    "in favor of kdeplot(x,y) and will be removed in "
-                    "a forthcoming release. Please update your code.")
+        warn_msg = ("Passing a 2D dataset for a bivariate plot is deprecated "
+                    "in favor of kdeplot(x, y), and it will cause an error in "
+                    "future versions. Please update your code.")
         warnings.warn(warn_msg, UserWarning)
 
     if bivariate and cumulative:
