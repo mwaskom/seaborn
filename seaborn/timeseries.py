@@ -354,10 +354,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         raise RuntimeError("Invalid input data for tsplot.")
 
     # Pad the sides of the plot only when not interpolating
-    ax.set_xlim(x.min(), x.max())
-    x_diff = x[1] - x[0]
-    if not interpolate:
-        ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
+    if len(data):
+        if interpolate or len(data) == 1:
+            ax.set_xlim(x.min(), x.max())
+        else:
+            x_diff = x[1] - x[0]
+            ax.set_xlim(x.min() - x_diff, x.max() + x_diff)
 
     # Add the plot labels
     if xlabel is not None:
