@@ -2,7 +2,7 @@
 Multiple bivariate KDE plots
 ============================
 
-_thumb: .6, .4
+_thumb: .6, .45
 """
 import seaborn as sns
 import matplotlib.pyplot as plt

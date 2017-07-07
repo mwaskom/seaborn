@@ -53,7 +53,6 @@ _style_keys = (
     )
 
 _context_keys = (
-    "figure.figsize",
 
     "font.size",
     "axes.labelsize",
@@ -188,7 +187,7 @@ def axes_style(style=None, rc=None):
             "axes.axisbelow": True,
             "image.cmap": "rocket",
             "font.family": ["sans-serif"],
-            "font.sans-serif": ["DejaVu Sans", "Arial", "Liberation Sans",
+            "font.sans-serif": ["Arial", "DejaVu Sans", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
             "grid.linestyle": "-",
             "lines.solid_capstyle": "round",
@@ -348,7 +347,6 @@ def plotting_context(context=None, font_scale=1, rc=None):
         # Set up dictionary of default parameters
         base_context = {
 
-            "figure.figsize": np.array([6.4, 4.8]),
             "font.size": 12,
             "axes.labelsize": 11,
             "axes.titlesize": 12,
@@ -369,6 +367,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
             "xtick.major.pad": 7,
             "ytick.major.pad": 7,
+
             }
 
         # Scale all the parameters by the same factor depending on the context

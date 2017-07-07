@@ -1,6 +1,6 @@
 
-v0.8.0 (Unreleased)
--------------------
+v0.8.0 (July 2017)
+------------------
 
 - The default style is no longer applied when seaborn is imported. It is now necessary to explicitly call :func:`set` or one or more of :func:`set_style`, :func:`set_context`, and :func:`set_palette`. Correspondingly, the ``seaborn.apionly`` module has been deprecated.
 
@@ -8,22 +8,32 @@ v0.8.0 (Unreleased)
 
 - Removed automatic detection of diverging data in :func:`heatmap` (and by extension :func:`clustermap`). If you want the colormap to be treated as diverging (see above), it is now necessary to specify the ``center`` value. When no colormap is specified, specifying ``center`` will still change the default to be one that is more appropriate for displaying diverging data.
 
-- Added four new colormaps, created using `viscm <https://github.com/matplotlib/viscm>`_ for perceptual uniformity. The new colormaps include two sequential colormaps ("rocket" and "mako") and two diverging colormaps ("vlag", and "icefire"). These colormaps are registered with matplotlib on seaborn input and the colormap objects can be accessed in the `seaborn.cm` namespace.
+- Added four new colormaps, created using `viscm <https://github.com/matplotlib/viscm>`_ for perceptual uniformity. The new colormaps include two sequential colormaps ("rocket" and "mako") and two diverging colormaps ("icefire" and "vlag"). These colormaps are registered with matplotlib on seaborn input and the colormap objects can be accessed in the ``seaborn.cm`` namespace.
 
 - Changed the default :func:`heatmap` colormaps to be "rocket" (in the case of sequential data) or "icefire" (in the case of diverging data). Note that this change reverses the direction of the luminance ramp from the previous defaults. While potentially confusing and disruptive, this change better aligns the seaborn defaults with the new matplotlib default colormap ("viridis") and arguably better aligns the semantics of a "heat" map with the appearance of the colormap.
 
-- Added `"auto"` as a (default) option for tick labels in :func:`heatmap` and :func:`clustermap`. This will try to estimate how many ticks can be labeled without the text objects overlapping, which should improve performance for larger matrices.
+- Added ``"auto"`` as a (default) option for tick labels in :func:`heatmap` and :func:`clustermap`. This will try to estimate how many ticks can be labeled without the text objects overlapping, which should improve performance for larger matrices.
 
-- Added the ``dodge`` argument to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
+- Added the ``dodge`` parameter to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
+
+- Correspondingly, the ``split`` parameter for :func:`stripplot` and :func:`swarmplot` has been renamed to ``dodge`` for consistency with the other categorical functions (and for differentiation from the meaning of ``split`` in :func:`violinplot`).
 
 - Added the ability to draw a colorbar for a bivariate :func:`kdeplot` with the ``cbar`` parameter (and related ``cbar_ax`` and ``cbar_kws`` parameters).
 
-- Added the ability to use error bars to show standard deviations rather than bootstrap confidence intervals in most statistical functions by putting `ci="sd"`.
+- Added the ability to use error bars to show standard deviations rather than bootstrap confidence intervals in most statistical functions by putting ``ci="sd"``.
 
 - Allow side-specific offsets in :func:`despine`.
+
+- Figure size is no longer part of the seaborn plotting context parameters.
 
 - Put a cap on the number of bins used in :func:`jointplot` for ``type=="hex"`` to avoid hanging when the reference rule prescribes too many.
 
 - Turn off dendrogram axes in :func:`clustermap` rather than setting the background color to white.
 
 - New matplotlib qualitative palettes (e.g. "tab10") are now handled correctly.
+
+- Some modules and functions have been internally reorganized; there should be no effect on code that uses the ``seaborn`` namespace.
+
+- Added a deprecation warning to :func:`tsplot` function to indicate that it will be removed or replaced with a substantially altered version in a future release.
+
+- The ``interactplot`` and ``coefplot`` functions are officially deprecated and will be removed in a future release.

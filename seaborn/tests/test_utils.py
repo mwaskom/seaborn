@@ -234,43 +234,6 @@ class TestSpineUtils(PlotTestCase):
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
 
-    def test_offset_spines_warns(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-
-            f, ax = plt.subplots()
-            utils.offset_spines(offset=self.offset)
-            nt.assert_true('deprecated' in str(w[0].message))
-            nt.assert_true(issubclass(w[0].category, UserWarning))
-
-    def test_offset_spines(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-            f, ax = plt.subplots()
-
-            for side in self.sides:
-                nt.assert_equal(ax.spines[side].get_position(),
-                                self.original_position)
-
-            utils.offset_spines(offset=self.offset)
-
-            for side in self.sides:
-                nt.assert_equal(ax.spines[side].get_position(),
-                                self.offset_position)
-
-    def test_offset_spines_specific_axes(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-            f, (ax1, ax2) = plt.subplots(2, 1)
-
-            utils.offset_spines(offset=self.offset, ax=ax2)
-
-            for side in self.sides:
-                nt.assert_equal(ax1.spines[side].get_position(),
-                                self.original_position)
-                nt.assert_equal(ax2.spines[side].get_position(),
-                                self.offset_position)
-
 
 def test_ticklabels_overlap():
 

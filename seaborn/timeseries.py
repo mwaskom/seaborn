@@ -6,6 +6,8 @@ from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import warnings
+
 from .external.six import string_types
 
 from . import utils
@@ -174,6 +176,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         >>> ax = sns.tsplot(data=data, err_style="unit_traces")
 
     """
+    msg = (
+        "The tsplot function is deprecated and will be removed or replaced "
+        "(in a substantially altered version) in a future release."
+    )
+    warnings.warn(msg, UserWarning)
+
     # Sort out default values for the parameters
     if ax is None:
         ax = plt.gca()
@@ -282,6 +290,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
             colors = [color] * n_cond
 
     # Do a groupby with condition and plot each trace
+    c = None
     for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
 
         df_c = df_c.pivot(unit, time, value)
@@ -340,6 +349,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         kwargs.setdefault("linestyle", ls)
         label = cond if legend else "_nolegend_"
         ax.plot(x, central_data, color=color, label=label, **kwargs)
+
+    if c is None:
+        raise RuntimeError("Invalid input data for tsplot.")
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())

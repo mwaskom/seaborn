@@ -19,9 +19,7 @@ except ImportError:
     _no_statsmodels = True
 
 from . import PlotTestCase
-from .. import linearmodels as lm
-from .. import algorithms as algo
-from .. import utils
+from .. import regression as lm
 from ..palettes import color_palette
 
 rs = np.random.RandomState(0)

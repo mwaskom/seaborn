@@ -564,7 +564,8 @@ class _ViolinPlotter(_CategoricalPlotter):
         self.inner = inner
 
         if split and self.hue_names is not None and len(self.hue_names) != 2:
-            raise ValueError("Cannot use `split` with more than 2 hue levels.")
+            msg = "There must be exactly two hue levels to use `split`.'"
+            raise ValueError(msg)
         self.split = split
 
         if linewidth is None:
@@ -1076,8 +1077,6 @@ class _ViolinPlotter(_CategoricalPlotter):
 
 class _CategoricalScatterPlotter(_CategoricalPlotter):
 
-    dodge = True
-
     @property
     def point_colors(self):
         """Return a color for each scatter point based on group and hue."""
@@ -1118,20 +1117,20 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
 class _StripPlotter(_CategoricalScatterPlotter):
     """1-d scatterplot with categorical organization."""
     def __init__(self, x, y, hue, data, order, hue_order,
-                 jitter, split, orient, color, palette):
+                 jitter, dodge, orient, color, palette):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, 1)
 
         # Set object attributes
-        self.split = split
+        self.dodge = dodge
         self.width = .8
 
         if jitter == 1:  # Use a good default for `jitter = True`
             jlim = 0.1
         else:
             jlim = float(jitter)
-        if self.hue_names is not None and split:
+        if self.hue_names is not None and dodge:
             jlim /= len(self.hue_names)
         self.jitterer = stats.uniform(-jlim, jlim * 2).rvs
 
@@ -1140,7 +1139,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
         # Set the default zorder to 2.1, so that the points
         # will be drawn on top of line elements (like in a boxplot)
         for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None or not self.split:
+            if self.plot_hues is None or not self.dodge:
 
                 if self.hue_names is None:
                     hue_mask = np.ones(group_data.size, np.bool)
@@ -1189,13 +1188,13 @@ class _StripPlotter(_CategoricalScatterPlotter):
 class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
-                 split, orient, color, palette):
+                 dodge, orient, color, palette):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, 1)
 
         # Set object attributes
-        self.split = split
+        self.dodge = dodge
         self.width = .8
 
     def could_overlap(self, xy_i, swarm, d):
@@ -1360,7 +1359,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
 
-            if self.plot_hues is None or not self.split:
+            if self.plot_hues is None or not self.dodge:
 
                 width = self.width
 
@@ -1545,11 +1544,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
         # Save the resulting values for plotting
         self.statistic = np.array(statistic)
         self.confint = np.array(confint)
-
-        # Rename the value label to reflect the estimation
-        if self.value_label is not None:
-            self.value_label = u"{}({})".format(estimator.__name__,
-                                                self.value_label)
 
     def draw_confints(self, ax, at_group, confint, colors,
                       errwidth=None, capsize=None, **kws):
@@ -2193,46 +2187,6 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             width=.8, dodge=True, fliersize=5, linewidth=None,
             whis=1.5, notch=False, ax=None, **kwargs):
 
-    # Try to handle broken backwards-compatability
-    # This should help with the lack of a smooth deprecation,
-    # but won't catch everything
-    warn = False
-    if isinstance(x, pd.DataFrame):
-        data = x
-        x = None
-        warn = True
-
-    if "vals" in kwargs:
-        x = kwargs.pop("vals")
-        warn = True
-
-    if "groupby" in kwargs:
-        y = x
-        x = kwargs.pop("groupby")
-        warn = True
-
-    if "vert" in kwargs:
-        vert = kwargs.pop("vert", True)
-        if not vert:
-            x, y = y, x
-        orient = "v" if vert else "h"
-        warn = True
-
-    if "names" in kwargs:
-        kwargs.pop("names")
-        warn = True
-
-    if "join_rm" in kwargs:
-        kwargs.pop("join_rm")
-        warn = True
-
-    msg = ("The boxplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-
-    if warn:
-        warnings.warn(msg, UserWarning)
-
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
                           width, dodge, fliersize, linewidth)
@@ -2384,37 +2338,6 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                width=.8, inner="box", split=False, dodge=True, orient=None,
                linewidth=None, color=None, palette=None, saturation=.75,
                ax=None, **kwargs):
-
-    # Try to handle broken backwards-compatability
-    # This should help with the lack of a smooth deprecation,
-    # but won't catch everything
-    warn = False
-    if isinstance(x, pd.DataFrame):
-        data = x
-        x = None
-        warn = True
-
-    if "vals" in kwargs:
-        x = kwargs.pop("vals")
-        warn = True
-
-    if "groupby" in kwargs:
-        y = x
-        x = kwargs.pop("groupby")
-        warn = True
-
-    if "vert" in kwargs:
-        vert = kwargs.pop("vert", True)
-        if not vert:
-            x, y = y, x
-        orient = "v" if vert else "h"
-        warn = True
-
-    msg = ("The violinplot API has been changed. Attempting to adjust your "
-           "arguments for the new API (which might not work). Please update "
-           "your code. See the version 0.6 release notes for more info.")
-    if warn:
-        warnings.warn(msg, UserWarning)
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
@@ -2590,15 +2513,6 @@ violinplot.__doc__ = dedent("""\
         ...                     scale="count", inner="stick",
         ...                     scale_hue=False, bw=.2)
 
-    Use ``hue`` without changing violin position or width:
-
-    .. plot::
-        :context: close-figs
-
-        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
-        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
-        ...                     data=tips, dodge=False)
-
     Draw horizontal violins:
 
     .. plot::
@@ -2608,6 +2522,24 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="orbital_period", y="method",
         ...                     data=planets[planets.orbital_period < 1000],
         ...                     scale="width", palette="Set3")
+
+    Don't let density extend past extreme values in the data:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.violinplot(x="orbital_period", y="method",
+        ...                     data=planets[planets.orbital_period < 1000],
+        ...                     cut=0, scale="width", palette="Set3")
+
+    Use ``hue`` without changing violin position or width:
+
+    .. plot::
+        :context: close-figs
+
+        >>> tips["weekend"] = tips["day"].isin(["Sat", "Sun"])
+        >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
+        ...                     data=tips, dodge=False)
 
     Use :func:`factorplot` to combine a :func:`violinplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
@@ -2626,11 +2558,16 @@ violinplot.__doc__ = dedent("""\
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, split=False, orient=None, color=None, palette=None,
+              jitter=False, dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
+    if "split" in kwargs:
+        dodge = kwargs.pop("split")
+        msg = "The `split` parameter has been renamed to `dodge`."
+        warnings.warn(msg, UserWarning)
+
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
-                            jitter, split, orient, color, palette)
+                            jitter, dodge, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
@@ -2763,7 +2700,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, jitter=True,
-        ...                    palette="Set2", split=True)
+        ...                    palette="Set2", dodge=True)
 
     Control strip order by passing an explicit order:
 
@@ -2818,11 +2755,16 @@ stripplot.__doc__ = dedent("""\
 
 
 def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              split=False, orient=None, color=None, palette=None,
+              dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
+    if "split" in kwargs:
+        dodge = kwargs.pop("split")
+        msg = "The `split` parameter has been renamed to `dodge`."
+        warnings.warn(msg, UserWarning)
+
     plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
-                            split, orient, color, palette)
+                            dodge, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
@@ -2936,7 +2878,7 @@ swarmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set2", split=True)
+        ...                    data=tips, palette="Set2", dodge=True)
 
     Control swarm order by passing an explicit order:
 
@@ -2991,20 +2933,6 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
             errcolor=".26", errwidth=None, capsize=None, dodge=True,
             ax=None, **kwargs):
-
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
@@ -3189,20 +3117,6 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
               orient=None, color=None, palette=None, errwidth=None,
               capsize=None, ax=None, **kwargs):
-
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
@@ -3533,20 +3447,6 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
                margin_titles=False, facet_kws=None, **kwargs):
 
-    # Handle some deprecated arguments
-    if "hline" in kwargs:
-        kwargs.pop("hline")
-        warnings.warn("The `hline` parameter has been removed", UserWarning)
-
-    if "dropna" in kwargs:
-        kwargs.pop("dropna")
-        warnings.warn("The `dropna` parameter has been removed", UserWarning)
-
-    if "x_order" in kwargs:
-        order = kwargs.pop("x_order")
-        warnings.warn("The `x_order` parameter has been renamed `order`",
-                      UserWarning)
-
     # Determine the plotting function
     try:
         plot_func = globals()[kind + "plot"]
@@ -3747,7 +3647,7 @@ factorplot.__doc__ = dedent("""\
         ...                    hue="sex", row="class",
         ...                    data=titanic[titanic.embark_town.notnull()],
         ...                    orient="h", size=2, aspect=3.5, palette="Set3",
-        ...                    kind="violin", split=True, cut=0, bw=.2)
+        ...                    kind="violin", dodge=True, cut=0, bw=.2)
 
     Use methods on the returned :class:`FacetGrid` to tweak the presentation:
 
