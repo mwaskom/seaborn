@@ -1077,8 +1077,6 @@ class _ViolinPlotter(_CategoricalPlotter):
 
 class _CategoricalScatterPlotter(_CategoricalPlotter):
 
-    dodge = True
-
     @property
     def point_colors(self):
         """Return a color for each scatter point based on group and hue."""
@@ -1119,20 +1117,20 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
 class _StripPlotter(_CategoricalScatterPlotter):
     """1-d scatterplot with categorical organization."""
     def __init__(self, x, y, hue, data, order, hue_order,
-                 jitter, split, orient, color, palette):
+                 jitter, dodge, orient, color, palette):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, 1)
 
         # Set object attributes
-        self.split = split
+        self.dodge = dodge
         self.width = .8
 
         if jitter == 1:  # Use a good default for `jitter = True`
             jlim = 0.1
         else:
             jlim = float(jitter)
-        if self.hue_names is not None and split:
+        if self.hue_names is not None and dodge:
             jlim /= len(self.hue_names)
         self.jitterer = stats.uniform(-jlim, jlim * 2).rvs
 
@@ -1141,7 +1139,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
         # Set the default zorder to 2.1, so that the points
         # will be drawn on top of line elements (like in a boxplot)
         for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None or not self.split:
+            if self.plot_hues is None or not self.dodge:
 
                 if self.hue_names is None:
                     hue_mask = np.ones(group_data.size, np.bool)
@@ -1190,13 +1188,13 @@ class _StripPlotter(_CategoricalScatterPlotter):
 class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
-                 split, orient, color, palette):
+                 dodge, orient, color, palette):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, 1)
 
         # Set object attributes
-        self.split = split
+        self.dodge = dodge
         self.width = .8
 
     def could_overlap(self, xy_i, swarm, d):
@@ -1361,7 +1359,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
 
-            if self.plot_hues is None or not self.split:
+            if self.plot_hues is None or not self.dodge:
 
                 width = self.width
 
@@ -2560,11 +2558,16 @@ violinplot.__doc__ = dedent("""\
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, split=False, orient=None, color=None, palette=None,
+              jitter=False, dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
+    if "split" in kwargs:
+        dodge = kwargs.pop("split")
+        msg = "The `split` parameter has been renamed to `dodge`."
+        warnings.warn(msg, UserWarning)
+
     plotter = _StripPlotter(x, y, hue, data, order, hue_order,
-                            jitter, split, orient, color, palette)
+                            jitter, dodge, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
@@ -2697,7 +2700,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, jitter=True,
-        ...                    palette="Set2", split=True)
+        ...                    palette="Set2", dodge=True)
 
     Control strip order by passing an explicit order:
 
@@ -2752,11 +2755,16 @@ stripplot.__doc__ = dedent("""\
 
 
 def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              split=False, orient=None, color=None, palette=None,
+              dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
+    if "split" in kwargs:
+        dodge = kwargs.pop("split")
+        msg = "The `split` parameter has been renamed to `dodge`."
+        warnings.warn(msg, UserWarning)
+
     plotter = _SwarmPlotter(x, y, hue, data, order, hue_order,
-                            split, orient, color, palette)
+                            dodge, orient, color, palette)
     if ax is None:
         ax = plt.gca()
 
@@ -2870,7 +2878,7 @@ swarmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.swarmplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set2", split=True)
+        ...                    data=tips, palette="Set2", dodge=True)
 
     Control swarm order by passing an explicit order:
 
@@ -3639,7 +3647,7 @@ factorplot.__doc__ = dedent("""\
         ...                    hue="sex", row="class",
         ...                    data=titanic[titanic.embark_town.notnull()],
         ...                    orient="h", size=2, aspect=3.5, palette="Set3",
-        ...                    kind="violin", split=True, cut=0, bw=.2)
+        ...                    kind="violin", dodge=True, cut=0, bw=.2)
 
     Use methods on the returned :class:`FacetGrid` to tweak the presentation:
 

@@ -18,12 +18,14 @@ f, ax = plt.subplots()
 sns.despine(bottom=True, left=True)
 
 # Show each observation with a scatterplot
-sns.stripplot(x="value", y="measurement", hue="species", data=iris,
-              split=True, jitter=True, alpha=.2, label=None)
+sns.stripplot(x="value", y="measurement", hue="species",
+              data=iris, dodge=True, jitter=True,
+              alpha=.25, zorder=1)
 
 # Show the conditional means
-sns.pointplot(x="value", y="measurement", hue="species", data=iris,
-              join=False, dodge=.5, markers="d", scale=.75, ci=None)
+sns.pointplot(x="value", y="measurement", hue="species",
+              data=iris, dodge=.532, join=False, palette="dark",
+              markers="d", scale=.75, ci=None)
 
 # Improve the legend 
 handles, labels = ax.get_legend_handles_labels()

@@ -1600,11 +1600,11 @@ class TestStripPlotter(CategoricalFixture):
 
             npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
 
-    def test_split_nested_stripplot_vertical(self):
+    def test_dodge_nested_stripplot_vertical(self):
 
         pal = palettes.color_palette()
 
-        ax = cat.stripplot("g", "y", "h", data=self.df, split=True)
+        ax = cat.stripplot("g", "y", "h", data=self.df, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1617,12 +1617,12 @@ class TestStripPlotter(CategoricalFixture):
                 npt.assert_equal(fc, pal[j])
 
     @skipif(not pandas_has_categoricals)
-    def test_split_nested_stripplot_horizontal(self):
+    def test_dodge_nested_stripplot_horizontal(self):
 
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df, split=True)
+        ax = cat.stripplot("y", "g", "h", data=df, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1631,10 +1631,10 @@ class TestStripPlotter(CategoricalFixture):
                 npt.assert_array_equal(x, vals)
                 npt.assert_array_equal(y, np.ones(len(x)) * i + [-.2, .2][j])
 
-    def test_unsplit_nested_stripplot_vertical(self):
+    def test_nested_stripplot_vertical(self):
 
         # Test a simple vertical strip plot
-        ax = cat.stripplot("g", "y", "h", data=self.df, split=False)
+        ax = cat.stripplot("g", "y", "h", data=self.df, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -1643,12 +1643,12 @@ class TestStripPlotter(CategoricalFixture):
             npt.assert_array_equal(y, group_vals)
 
     @skipif(not pandas_has_categoricals)
-    def test_unsplit_nested_stripplot_horizontal(self):
+    def test_nested_stripplot_horizontal(self):
 
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df, split=False)
+        ax = cat.stripplot("y", "g", "h", data=df, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -1668,7 +1668,7 @@ class TestStripPlotter(CategoricalFixture):
 class TestSwarmPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
-                       order=None, hue_order=None, split=False,
+                       order=None, hue_order=None, dodge=False,
                        orient=None, color=None, palette=None)
 
     def test_could_overlap(self):
@@ -1745,11 +1745,11 @@ class TestSwarmPlotter(CategoricalFixture):
             fc = ax.collections[i].get_facecolors()[0, :3]
             npt.assert_equal(fc, pal[i])
 
-    def test_split_nested_swarmplot_vetical(self):
+    def test_dodge_nested_swarmplot_vetical(self):
 
         pal = palettes.color_palette()
 
-        ax = cat.swarmplot("g", "y", "h", data=self.df, split=True)
+        ax = cat.swarmplot("g", "y", "h", data=self.df, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1759,11 +1759,11 @@ class TestSwarmPlotter(CategoricalFixture):
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 npt.assert_equal(fc, pal[j])
 
-    def test_split_nested_swarmplot_horizontal(self):
+    def test_dodge_nested_swarmplot_horizontal(self):
 
         pal = palettes.color_palette()
 
-        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h", split=True)
+        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h", dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1773,7 +1773,7 @@ class TestSwarmPlotter(CategoricalFixture):
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 npt.assert_equal(fc, pal[j])
 
-    def test_unsplit_nested_swarmplot_vertical(self):
+    def test_nested_swarmplot_vertical(self):
 
         ax = cat.swarmplot("g", "y", "h", data=self.df)
 
@@ -1794,7 +1794,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
 
-    def test_unsplit_nested_swarmplot_horizontal(self):
+    def test_nested_swarmplot_horizontal(self):
 
         ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h")
 
