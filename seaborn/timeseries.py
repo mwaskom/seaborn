@@ -290,6 +290,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
             colors = [color] * n_cond
 
     # Do a groupby with condition and plot each trace
+    c = None
     for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
 
         df_c = df_c.pivot(unit, time, value)
@@ -349,7 +350,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         label = cond if legend else "_nolegend_"
         ax.plot(x, central_data, color=color, label=label, **kwargs)
 
-    else:
+    if c is None:
         raise RuntimeError("Invalid input data for tsplot.")
 
     # Pad the sides of the plot only when not interpolating
