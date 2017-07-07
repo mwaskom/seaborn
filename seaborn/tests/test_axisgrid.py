@@ -935,6 +935,26 @@ class TestPairGrid(PlotTestCase):
                 nt.assert_equal(ptch.fill, False)
 
     @skipif(old_matplotlib)
+    def test_map_diag_color(self):
+
+        color = "red"
+        rgb_color = mpl.colors.colorConverter.to_rgba(color)
+
+        g1 = ag.PairGrid(self.df)
+        g1.map_diag(plt.hist, color=color)
+
+        for ax in g1.diag_axes:
+            for patch in ax.patches:
+                nt.assert_equals(patch.get_facecolor(), rgb_color)
+
+        g2 = ag.PairGrid(self.df)
+        g2.map_diag(kdeplot, color='red')
+
+        for ax in g2.diag_axes:
+            for line in ax.lines:
+                nt.assert_equals(line.get_color(), color)
+
+    @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
         vars = ["x", "y", "z"]
