@@ -2,6 +2,7 @@
 from __future__ import division
 import numpy as np
 from scipy import stats
+from scipy.optimize import curve_fit
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -131,6 +132,28 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         >>> from scipy.stats import norm
         >>> ax = sns.distplot(x, fit=norm, kde=False)
 
+    Plot the distribution with a histogram, a KDE and fitted sum of 2
+    gaussians. This is a numerical algorithm (scipy.optimize.curve_fit), so a
+    reasonable initial guess of the parameters (p0 passed through fit_kws) is
+    important.
+
+    .. plot::
+        :context: close-figs
+
+        >>> def gauss(x, *p0):
+        ...     a, p0 = p0[0], p0[1:]
+        ...     return a*norm.pdf(x, *p0)
+        >>> def gauss2(x, *p0):
+        ...     p1 = p0[:2]
+        ...     p2 = p0[2:]
+        ...     return gauss(x, *p1)+gauss(x, *p2)
+        >>> a1 = np.random.normal(0.0, 0.5, size=500)
+        >>> a2 = np.random.normal(3, 0.5, size=500)
+        >>> a = a = np.append(a1, a2)
+        >>> p0 = [1., 0., 1., 2.]
+        >>> ax = sns.distplot(a, fit=gauss2,
+        ...                   fit_kws={'p0':p0, 'label':'2 Gaussian fit'})
+
     Plot the distribution on the vertical axis:
 
     .. plot::
@@ -235,9 +258,21 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
         bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
         x = _kde_support(a, bw, gridsize, cut, clip)
-        params = fit.fit(a)
-        pdf = lambda x: fit.pdf(x, *params)
-        y = pdf(x)
+        try:
+            params = fit.fit(a)
+            pdf = lambda x: fit.pdf(x, *params)
+            y = pdf(x)
+        except AttributeError:
+            try:
+                p0 = fit_kws.pop("p0")
+            except KeyError:
+                raise KeyError("p0 (starting fit parameters) need to be"
+                               "provided in fit_kws when fitting an"
+                               "arbitrary function.")
+            hist, bin_edges = np.histogram(a, density=True, bins=gridsize)
+            bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+            coeff, var_matrix = curve_fit(fit, bin_centres, hist, p0=p0)
+            y = fit(x, *coeff)
         if vertical:
             x, y = y, x
         ax.plot(x, y, color=fit_color, **fit_kws)
