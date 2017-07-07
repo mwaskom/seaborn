@@ -607,11 +607,14 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             data2 = np.asarray(data2)
         data2 = data2.astype(np.float64)
 
+    warn = False
     bivariate = False
     if isinstance(data, np.ndarray) and np.ndim(data) > 1:
+        warn = True
         bivariate = True
         x, y = data.T
     elif isinstance(data, pd.DataFrame) and np.ndim(data) > 1:
+        warn = True
         bivariate = True
         x = data.iloc[:, 0].values
         y = data.iloc[:, 1].values
@@ -619,6 +622,12 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         bivariate = True
         x = data
         y = data2
+
+    if warn:
+        warn_msg = ("Passing a 2D dataset for a bivariate plot is deprecated "
+                    "in favor of kdeplot(x, y), and it will cause an error in "
+                    "future versions. Please update your code.")
+        warnings.warn(warn_msg, UserWarning)
 
     if bivariate and cumulative:
         raise TypeError("Cumulative distribution plots are not"
