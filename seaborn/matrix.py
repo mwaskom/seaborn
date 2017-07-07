@@ -599,10 +599,8 @@ class _DendrogramPlotter(object):
         if np.product(self.shape) >= 10000:
             UserWarning('This will be slow... (gentle suggestion: '
                         '"pip install fastcluster")')
-
-        pairwise_dists = distance.pdist(self.array, metric=self.metric)
-        linkage = hierarchy.linkage(pairwise_dists, method=self.method)
-        del pairwise_dists
+        linkage = hierarchy.linkage(self.array, method=self.method,
+                                    metric=self.metric)
         return linkage
 
     def _calculate_linkage_fastcluster(self):
@@ -618,9 +616,8 @@ class _DendrogramPlotter(object):
                                               method=self.method,
                                               metric=self.metric)
         else:
-            pairwise_dists = distance.pdist(self.array, metric=self.metric)
-            linkage = fastcluster.linkage(pairwise_dists, method=self.method)
-            del pairwise_dists
+            linkage = fastcluster.linkage(self.array, method=self.method,
+                                          metric=self.metric)
             return linkage
 
     @property
