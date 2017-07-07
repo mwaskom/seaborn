@@ -349,6 +349,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         label = cond if legend else "_nolegend_"
         ax.plot(x, central_data, color=color, label=label, **kwargs)
 
+    else:
+        raise RuntimeError("Invalid input data for tsplot.")
+
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())
     x_diff = x[1] - x[0]
