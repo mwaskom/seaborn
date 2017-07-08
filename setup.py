@@ -28,7 +28,7 @@ MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
 URL = 'http://seaborn.stanford.edu'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.8.dev'
+VERSION = '0.8.0'
 
 try:
     from setuptools import setup
