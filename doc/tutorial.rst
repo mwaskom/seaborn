@@ -19,8 +19,8 @@ Plotting functions
    :maxdepth: 2
 
    tutorial/distributions
-   tutorial/regression
    tutorial/categorical
+   tutorial/regression
 
 Structured grids
 ----------------

@@ -104,8 +104,8 @@ To see the code or report a bug, please visit the `github repository
 * Style functions: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
 * Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
 * Distribution plots: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
-* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
 * Categorical plots: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
+* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
 * Axis grid objects: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
  
 .. raw:: html
