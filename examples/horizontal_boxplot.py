@@ -7,9 +7,10 @@ _thumb: .7, .37
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+
 sns.set(style="ticks")
 
-# Initialize the figure
+# Initialize the figure with a logarithmic x axis
 f, ax = plt.subplots(figsize=(7, 6))
 ax.set_xscale("log")
 
@@ -24,8 +25,7 @@ sns.boxplot(x="distance", y="method", data=planets,
 sns.swarmplot(x="distance", y="method", data=planets,
               size=2, color=".3", linewidth=0)
 
-
-# Make the quantitative axis logarithmic
+# Tweak the visual presentation
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
