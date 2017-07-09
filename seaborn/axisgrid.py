@@ -2004,10 +2004,10 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         ...                  diag_kws=dict(shade=True))
 
     """
-    if not isinstance(data,pd.DataFrame):
+    if not isinstance(data, pd.DataFrame):
         raise TypeError(
             "'data' must be pandas DataFrame object, not: {typefound}".format(
-            	typefound=type(data)))
+                typefound=type(data)))
 
     if plot_kws is None:
         plot_kws = {}
