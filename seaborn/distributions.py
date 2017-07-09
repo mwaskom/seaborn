@@ -170,6 +170,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     # Make a a 1-d array
     a = np.asarray(a).squeeze()
 
+    #check if array is empty
+    if a.shape[0] < 1:
+        raise ValueError('Empty array')
+
     # Decide if the hist is normed
     norm_hist = norm_hist or kde or (fit is not None)
 
