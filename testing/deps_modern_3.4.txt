@@ -1,4 +1,3 @@
-ipython-notebook
 nose
 numpy
 scipy
