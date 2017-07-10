@@ -1084,3 +1084,16 @@ class TestClustermap(PlotTestCase):
 
         npt.assert_array_equal(xtl_actual, xtl_want)
         npt.assert_array_equal(ytl_actual, ytl_want)
+
+    def test_noticklabels(self):
+
+        kws = self.default_kws.copy()
+        kws["xticklabels"] = False
+        kws["yticklabels"] = False
+
+        g = mat.clustermap(self.df_norm, **kws)
+
+        xtl_actual = [t.get_text() for t in g.ax_heatmap.get_xticklabels()]
+        ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
+        nt.assert_equal(xtl_actual, [])
+        nt.assert_equal(ytl_actual, [])
