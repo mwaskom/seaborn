@@ -1115,8 +1115,14 @@ class ClusterGrid(Grid):
                 cbar_kws=colorbar_kws, mask=self.mask,
                 xticklabels=xtl, yticklabels=ytl, **kws)
 
-        xtl_rot = self.ax_heatmap.get_xticklabels()[0].get_rotation()
-        ytl_rot = self.ax_heatmap.get_yticklabels()[0].get_rotation()
+        try:
+            xtl_rot = self.ax_heatmap.get_xticklabels()[0].get_rotation()
+        except IndexError:
+            xtl_rot = 0
+        try:
+            ytl_rot = self.ax_heatmap.get_yticklabels()[0].get_rotation()
+        except IndexError:
+            ytl_rot = 0
 
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
