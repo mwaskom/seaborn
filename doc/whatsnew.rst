@@ -5,6 +5,8 @@
 What's new in the package
 =========================
 
+.. include:: releases/v0.8.1.txt
+
 .. include:: releases/v0.8.0.txt
 
 .. include:: releases/v0.7.1.txt
