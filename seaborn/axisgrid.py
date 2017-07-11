@@ -93,7 +93,7 @@ class Grid(object):
             figlegend._legend_title_box._text.set_font_properties(prop)
 
             # Draw the plot to set the bounding boxes correctly
-            plt.draw()
+            self.fig.draw(self.fig.canvas.get_renderer())
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
@@ -101,7 +101,7 @@ class Grid(object):
             self.fig.set_figwidth(figure_width + legend_width)
 
             # Draw the plot again to get the new transformations
-            plt.draw()
+            self.fig.draw(self.fig.canvas.get_renderer())
 
             # Now calculate how much space we need on the right side
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
