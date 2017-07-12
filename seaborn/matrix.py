@@ -20,12 +20,13 @@ from .external.six import string_types
 
 
 __all__ = ["heatmap", "clustermap"]
-    precedence goes to key value pairs in latter dicts.
-    """
-    result = {}
-    for dictionary in dict_args:
-        result.update(dictionary)
-    return result
+
+
+def _merge_dicts(a, b):
+    """Merge two dicts."""
+    merged = dict(a)
+    merged.update(b)
+    return merged
 
 
 def _index_to_label(index):
@@ -65,7 +66,7 @@ def _convert_colors(colors):
 
 
 def _matrix_mask(data, mask):
-    """Ensure that data and mask are compatabile and add missing values.
+    """Ensure that data and mask are compatible and add missing values.
 
     Values will be plotted for cells where ``mask`` is ``False``.
 
@@ -641,6 +642,7 @@ class _DendrogramPlotter(object):
 
         Returns
         -------
+
         dendrogram : dict
             Dendrogram dictionary as returned by scipy.cluster.hierarchy
             .dendrogram. The important key-value pairing is
@@ -756,6 +758,7 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 
 
 class ClusterGrid(Grid):
+
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None,
                  row_ratios=None, col_ratios=None, row_cluster=True,
@@ -802,17 +805,19 @@ class ClusterGrid(Grid):
         self.fig = plt.figure(figsize=figsize)
 
         # Setup axes grid.
-        height_ratios = self._dim_ratios(figsize=figsize, axis=0,
-                                         ratios=col_ratios)
+        height_ratios = self._dim_ratios(
+            figsize=figsize, axis=0, ratios=col_ratios)
 
-        width_ratios = self._dim_ratios(figsize=figsize,  axis=1,
-                                        ratios=row_ratios)
+        width_ratios = self._dim_ratios(
+            figsize=figsize, axis=1, ratios=row_ratios)
 
-        self.gs = gridspec.GridSpec(len(height_ratios),
-                                    len(width_ratios),
-                                    wspace=0.01, hspace=0.01,
-                                    width_ratios=width_ratios,
-                                    height_ratios=height_ratios)
+        self.gs = gridspec.GridSpec(
+            len(height_ratios),
+            len(width_ratios),
+            wspace=0.01,
+            hspace=0.01,
+            width_ratios=width_ratios,
+            height_ratios=height_ratios)
 
         # Set dendrogram axes.
         ax_index = slice(0, 2) if self.colorbar else 0
@@ -829,10 +834,8 @@ class ClusterGrid(Grid):
         else:
             self.ax_col_dendrogram = None
 
-        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2])
-        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1])
-        self.ax_row_dendrogram.set_axis_off()
-        self.ax_col_dendrogram.set_axis_off()
+        # Set heatmap axis.
+        self.ax_heatmap = self.fig.add_subplot(self.gs[-1, -1])
 
         # Set colorbar axis.
         if self.colorbar:
@@ -856,11 +859,20 @@ class ClusterGrid(Grid):
         """
 
         # Merge default ratios with any overridden ratios
-        default_ratios = {'dendrogram': min(2. / figsize[axis], .2),
-                          'side_colors': 0.05,
-                          'heatmap': 0.8}
+        default_ratios = {
+            'dendrogram': 0.25,
+            'colors': 0.05,
+            'heatmap': 0.7
+        }
 
-        ratios = merge_dicts(default_ratios, ratios or {})
+        ratios = _merge_dicts(default_ratios, ratios or {})
+
+        # Check for any invalid keys.
+        invalid_keys = set(ratios.keys()) - set(default_ratios.keys())
+        if len(invalid_keys) > 0:
+            raise ValueError(
+                'Unknown keys ({}) in ratios. Valid keys are: \'dendrogram\', '
+                '\'colors\' and \'heatmap\'.'.format(', '.join(invalid_keys)))
 
         # Determine which clustering/colors to use
         if axis == 0:
@@ -870,6 +882,7 @@ class ClusterGrid(Grid):
             side_colors = self.row_colors
             side_cluster = self.row_cluster
 
+        # Add the colorbar
         # Add the colorbar
         if self.colorbar:
             colorbar_width = .8 * ratios['dendrogram']
@@ -884,7 +897,7 @@ class ClusterGrid(Grid):
 
         if side_colors is not None:
             # Add room for the colors
-            dim_ratios += [ratios['side_colors']]
+            dim_ratios += [ratios['colors']]
 
         # Add the ratio for the heatmap itself
         dim_ratios += [ratios['heatmap']]
@@ -1013,32 +1026,6 @@ class ClusterGrid(Grid):
         else:
             return standardized.T
 
-        if side_colors_ratio is None:
-            side_colors_ratio = 0.05
-
-        figdim = figsize[axis]
-        # Get resizing proportion of this figure for the dendrogram and
-        # colorbar, so only the heatmap gets bigger but the dendrogram stays
-        # the same size.
-        dendrogram = min(2. / figdim, .2)
-
-        # add the colorbar
-        colorbar_width = .8 * dendrogram
-        colorbar_height = .2 * dendrogram
-        if axis == 0:
-            ratios = [colorbar_width, colorbar_height]
-        else:
-            ratios = [colorbar_height, colorbar_width]
-
-        if side_colors is not None:
-            # Add room for the colors
-            ratios += [side_colors_ratio]
-
-        # Add the ratio for the heatmap itself
-        ratios += [.8]
-
-        return ratios
-
     @staticmethod
     def color_list_to_matrix_and_cmap(colors, ind, axis=0):
         """Turns a list of colors into a numpy matrix and matplotlib colormap
@@ -1148,6 +1135,8 @@ class ClusterGrid(Grid):
             # Adjust rotation of labels
             if row_color_labels is not False:
                 plt.setp(self.ax_row_colors.get_xticklabels(), rotation=90)
+        else:
+            despine(self.ax_row_colors, left=True, bottom=True)
 
         # Plot the column colors
         if self.col_colors is not None:
@@ -1167,6 +1156,8 @@ class ClusterGrid(Grid):
             if col_color_labels is not False:
                 self.ax_col_colors.yaxis.tick_right()
                 plt.setp(self.ax_col_colors.get_yticklabels(), rotation=0)
+        else:
+            despine(self.ax_col_colors, left=True, bottom=True)
 
     def plot_matrix(self, colorbar_kws, xind, yind, **kws):
         self.data2d = self.data2d.iloc[yind, xind]
@@ -1184,10 +1175,10 @@ class ClusterGrid(Grid):
         except (TypeError, IndexError):
             pass
 
-        heatmap(self.data2d, ax=self.ax_heatmap,
-                cbar=self.colorbar, cbar_ax=self.cax,
+        heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=self.mask,
-                xticklabels=xtl, yticklabels=ytl, **kws)
+                xticklabels=xtl, yticklabels=ytl,
+                cbar=self.colorbar, **kws)
 
         ytl = self.ax_heatmap.get_yticklabels()
         ytl_rot = None if not ytl else ytl[0].get_rotation()
@@ -1196,12 +1187,16 @@ class ClusterGrid(Grid):
         if ytl_rot is not None:
             plt.setp(ytl, rotation=ytl_rot)
 
-    def plot(self, metric, method, colorbar_kws,
-             row_linkage, col_linkage, **kws):
+    def plot(self, metric, method, colorbar_kws, row_linkage, col_linkage,
+             **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
-        self.plot_dendrograms(self.row_cluster, self.col_cluster,
-                              metric, method, row_linkage=row_linkage,
-                              col_linkage=col_linkage)
+        self.plot_dendrograms(
+            self.row_cluster,
+            self.col_cluster,
+            metric,
+            method,
+            row_linkage=row_linkage,
+            col_linkage=col_linkage)
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
@@ -1222,7 +1217,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None,
                row_ratios=None, col_ratios=None,
-               colorbar=True, mask=None, **kwargs):
+               mask=None, colorbar=True, **kwargs):
     """Plot a hierarchically clustered heatmap of a pandas DataFrame
 
     Parameters
@@ -1268,6 +1263,15 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         from the DataFrames column names or from the name of the Series.
         DataFrame/Series colors are also matched to the data by their
         index, ensuring colors are drawn in the correct order.
+    {row,col}_ratios : dict, optional
+        Dictionary specifying the relative sizes for the different plot
+        elements. Sizes can be specified using the keys 'dendrogram',
+        'side_colors' and 'heatmap' for the dendrogram, side colors
+        and heatmap, respectively. Sizes are taken relatively, and do not
+        necessarily need to sum to one. Default values are 0.25, 0.05 and 0.7,
+        for the dendrogram, side colors and heatmap respectively.
+    colorbar : bool
+        Whether to draw a colorbar.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
