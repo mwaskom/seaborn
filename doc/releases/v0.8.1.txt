@@ -2,4 +2,6 @@
 v0.8.1 (Unreleased)
 -------------------
 
-- Fixed an error in :func:`clustermap` when using ``yticklabels=False``.
+- Fixed a problem where the :class:`FacetGrid` or :class:`PairGrid` legend remained inside the figure when using ``legend_out=True`` on an interactive backend.
+
+- Fixed an bug in :func:`clustermap` when using ``yticklabels=False``.
