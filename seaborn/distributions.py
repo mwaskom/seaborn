@@ -305,12 +305,16 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 
     # Draw the KDE plot and, optionally, shade
     ax.plot(x, y, color=color, label=label, **kwargs)
-    alpha = kwargs.get("alpha", 0.25)
+    shade_kws = dict(
+        facecolor=color,
+        alpha=kwargs.get("alpha", 0.25),
+        clip_on=kwargs.get("clip_on", True),
+        )
     if shade:
         if vertical:
-            ax.fill_betweenx(y, 0, x, facecolor=color, alpha=alpha)
+            ax.fill_betweenx(y, 0, x, **shade_kws)
         else:
-            ax.fill_between(x, 0, y, facecolor=color, alpha=alpha)
+            ax.fill_between(x, 0, y, **shade_kws)
 
     # Set the density axis minimum to 0
     if vertical:
