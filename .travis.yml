@@ -1,22 +1,16 @@
 language: python
 
-env:
-  - PYTHON=2.7 DEPS=modern
-  - PYTHON=2.7 DEPS=minimal
-  - PYTHON=3.4 DEPS=modern
-  - PYTHON=3.5 DEPS=modern
-  - PYTHON=3.6 DEPS=modern
 
-install:
-  - conda update conda --yes
-  - conda create -n testenv --yes pip python=$PYTHON
-  - conda update conda --yes
-  - source activate testenv
-  - conda install --yes --file testing/deps_${DEPS}_${PYTHON}.txt
-  - pip install pep8==1.5  # Later versions get stricter...
-  - pip install https://github.com/dcramer/pyflakes/tarball/master
-  - pip install .
-  - cp testing/matplotlibrc .
+env:
+  - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
+  - PYTHON=2.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.4 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.6 DEPS=minimal BACKEND=agg DOCTESTS=false
+
 
 before_install:
   - sudo apt-get update -yq
@@ -32,12 +26,32 @@ before_install:
   - conda update -q conda
   - conda info -a
 
+
+install:
+  - conda update conda --yes
+  - conda create -n testenv --yes pip python=$PYTHON
+  - conda update conda --yes
+  - source activate testenv
+  - conda install --yes --file testing/deps_${DEPS}.txt
+  - pip install pep8==1.5  # Later versions get stricter...
+  - pip install https://github.com/dcramer/pyflakes/tarball/master
+  - pip install .
+
+
 before_script:
+  - cp testing/matplotlibrc_${BACKEND} matplotlibrc
+  - if [ $BACKEND == "qtagg" ]; then
+    export DISPLAY=:99.0;
+    sh -e /etc/init.d/xvfb start;
+    sleep 3;
+    fi
+
+
+script:
   - if [ ${PYTHON:0:1} == "2" ]; then
     make lint;
     fi
-script:
-  - if [ $DEPS == 'modern' ];
+  - if [ $DOCTESTS == 'true' ];
     then nosetests --with-doctest;
     else nosetests;
     fi
