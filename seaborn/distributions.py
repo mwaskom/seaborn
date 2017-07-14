@@ -298,17 +298,20 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     label = "_nolegend_" if label is None else label
 
     # Use the active color cycle to find the plot color
+    facecolor = kwargs.pop("facecolor", None)
     line, = ax.plot(x, y, **kwargs)
     color = line.get_color()
     line.remove()
     kwargs.pop("color", None)
+    facecolor = color if facecolor is None else facecolor
 
     # Draw the KDE plot and, optionally, shade
     ax.plot(x, y, color=color, label=label, **kwargs)
     shade_kws = dict(
-        facecolor=color,
+        facecolor=facecolor,
         alpha=kwargs.get("alpha", 0.25),
         clip_on=kwargs.get("clip_on", True),
+        zorder=kwargs.get("zorder", 1),
         )
     if shade:
         if vertical:
