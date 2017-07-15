@@ -19,7 +19,8 @@ m = df.g.map(ord)
 df["x"] += m
 
 # Initialize the FacetGrid object
-g = sns.FacetGrid(df, row="g", hue="g", aspect=12, size=.5, palette="tab10")
+pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
+g = sns.FacetGrid(df, row="g", hue="g", aspect=12, size=.5, palette=pal)
 
 # Draw the densities in a few steps
 g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
