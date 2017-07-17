@@ -4,7 +4,6 @@ import colorsys
 import numpy as np
 from scipy import stats
 import pandas as pd
-from pandas.core.series import remove_na
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
@@ -23,6 +22,24 @@ from .axisgrid import FacetGrid, _facet_docs
 
 __all__ = ["boxplot", "violinplot", "stripplot", "swarmplot", "lvplot",
            "pointplot", "barplot", "countplot", "factorplot"]
+
+
+def remove_na(arr):
+    """
+    Helper method for removing NA values from array-like.
+
+    Parameters
+    ----------
+    arr : array-like
+        The array-like from which to remove NA values.
+
+    Returns
+    -------
+    clean_arr : array-like
+        The original array, just with NA values removed.
+    """
+
+    return arr[pd.notnull(arr)]
 
 
 class _CategoricalPlotter(object):
