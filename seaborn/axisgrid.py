@@ -1871,7 +1871,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     variables on the rows and columns.
 
     This is a high-level interface for :class:`PairGrid` that is intended to
-    make it easy to draw a few common styles. You should use :class`PairGrid`
+    make it easy to draw a few common styles. You should use :class:`PairGrid`
     directly if you need more flexibility.
 
     Parameters
