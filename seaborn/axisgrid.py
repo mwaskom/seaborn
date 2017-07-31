@@ -2028,7 +2028,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         if not isinstance(markers, list):
             markers = [markers] * n_markers
         if len(markers) != n_markers:
-            raise ValueError(("markers must be a singeton or a list of markers"
+            raise ValueError(("markers must be a singleton or a list of markers"
                               " for each level of the hue variable"))
         grid.hue_kws = {"marker": markers}
 
