@@ -612,6 +612,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     if isinstance(data, list):
         data = np.asarray(data)
 
+    if len(data) == 0:
+        return ax
+
     data = data.astype(np.float64)
     if data2 is not None:
         if isinstance(data2, list):
