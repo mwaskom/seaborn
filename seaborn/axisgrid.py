@@ -500,7 +500,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="day", size=4, aspect=.5)
-            >>> g = g.map(sns.boxplot, "time", "total_bill")
+            >>> g = g.map(plt.hist, "total_bill", bins=bins)
 
         Specify the order for plot elements:
 
@@ -549,9 +549,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> attend = sns.load_dataset("attention")
-            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5,
-            ...                   size=1.5, ylim=(0, 10))
-            >>> g = g.map(sns.pointplot, "solutions", "score", scale=.7)
+            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5, size=1.5)
+            >>> g = g.map(plt.plot, "solutions", "score", marker=".")
 
         Define a custom bivariate function to map onto the grid:
 
