@@ -374,3 +374,14 @@ def test_relative_luminance():
 
     for lum1, lum2 in zip(lums1, lums2):
         nose.tools.assert_almost_equal(lum1, lum2)
+
+
+def test_remove_na():
+
+    a_array = np.array([1, 2, np.nan, 3])
+    a_array_rm = utils.remove_na(a_array)
+    npt.assert_array_equal(a_array_rm, np.array([1, 2, 3]))
+
+    a_series = pd.Series([1, 2, np.nan, 3])
+    a_series_rm = utils.remove_na(a_series)
+    pdt.assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))

@@ -1,7 +1,6 @@
 """Small plotting-related utility functions."""
 from __future__ import print_function, division
 import colorsys
-import warnings
 import os
 
 import numpy as np
@@ -20,6 +19,23 @@ from .external.six.moves.http_client import HTTPException
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "load_dataset"]
+
+
+def remove_na(arr):
+    """Helper method for removing NA values from array-like.
+
+    Parameters
+    ----------
+    arr : array-like
+        The array-like from which to remove NA values.
+
+    Returns
+    -------
+    clean_arr : array-like
+        The original array with NA values removed.
+
+    """
+    return arr[pd.notnull(arr)]
 
 
 def ci_to_errsize(cis, heights):

@@ -4,6 +4,7 @@ import scipy
 from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import rgb2hex
 
 from distutils.version import LooseVersion
 
@@ -2213,7 +2214,7 @@ class TestPointPlotter(CategoricalFixture):
             nt.assert_equal(line.get_color(), color[:-1])
 
         for got_color in ax.collections[0].get_facecolors():
-            npt.assert_array_equal(got_color, color)
+            npt.assert_array_equal(rgb2hex(got_color), rgb2hex(color))
 
         plt.close("all")
 
@@ -2232,7 +2233,7 @@ class TestPointPlotter(CategoricalFixture):
 
         for point_color, pal_color in zip(ax.collections[0].get_facecolors(),
                                           palette):
-            npt.assert_array_equal(point_color[:-1], pal_color)
+            npt.assert_array_equal(rgb2hex(point_color), rgb2hex(pal_color))
 
         plt.close("all")
 

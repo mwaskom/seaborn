@@ -26,6 +26,8 @@ def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
     # From http://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
+    if len(a) < 2:
+        return 1
     h = 2 * iqr(a) / (len(a) ** (1 / 3))
     # fall back to sqrt(a) bins if iqr is 0
     if h == 0:
@@ -168,7 +170,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             label_ax = True
 
     # Make a a 1-d array
-    a = np.asarray(a).squeeze()
+    a = np.asarray(a)
+    if a.ndim > 1:
+        a = a.squeeze()
 
     # Decide if the hist is normed
     norm_hist = norm_hist or kde or (fit is not None)
@@ -607,6 +611,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
 
     if isinstance(data, list):
         data = np.asarray(data)
+
+    if len(data) == 0:
+        return ax
 
     data = data.astype(np.float64)
     if data2 is not None:

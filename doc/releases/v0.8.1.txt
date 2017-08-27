@@ -5,3 +5,13 @@ v0.8.1 (Unreleased)
 - Fixed a problem where the :class:`FacetGrid` or :class:`PairGrid` legend remained inside the figure when using ``legend_out=True`` on an interactive backend.
 
 - Fixed an bug in :func:`clustermap` when using ``yticklabels=False``.
+
+- Improved robustness of :func:`kdeplot` and :func:`distplot` to data with fewer than two observations.
+
+- In categorical plot functions with small plot elements, use :func:`dark_palette` instead of :func:`light_palette` to generate colors when both ``hue`` and ``color`` are specified.
+
+- Fixed an issue in :func:`pointplot` where colors were wrong if exactly three points were being drawn.
+
+- Fixed an issue in :func:`pointplot` where legend entries for missing data appeared with empty markers.
+
+- Improved compatibility with future versions of pandas.

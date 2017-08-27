@@ -31,6 +31,8 @@ v0.8.0 (July 2017)
 
 - Put a cap on the number of bins used in :func:`jointplot` for ``type=="hex"`` to avoid hanging when the reference rule prescribes too many.
 
+- Changed the y axis in :func:`heatmap`. Instead of reversing the rows of the data internally, the y axis is now inverted. This may affect code that draws on top of the heatmap in data coordinates.
+
 - Turn off dendrogram axes in :func:`clustermap` rather than setting the background color to white.
 
 - New matplotlib qualitative palettes (e.g. "tab10") are now handled correctly.
