@@ -1328,7 +1328,7 @@ class PairGrid(Grid):
             self.diag_axes = np.array(diag_axes, np.object)
 
         # Plot on each of the diagonal axes
-        color = kwargs.pop('color', None)
+        fixed_color = kwargs.pop("color", None)
         for i, var in enumerate(self.x_vars):
             ax = self.diag_axes[i]
             hue_grouped = self.data[var].groupby(self.hue_vals)
@@ -1336,6 +1336,7 @@ class PairGrid(Grid):
             # Special-case plt.hist with stacked bars
             if func is plt.hist:
                 plt.sca(ax)
+
                 vals = []
                 for label in self.hue_names:
                     # Attempt to get data for this level, allowing for empty
@@ -1344,26 +1345,30 @@ class PairGrid(Grid):
                     except KeyError:
                         vals.append(np.array([]))
 
-                if color is None:
-                    color = self.palette
-                # check and see if histtype override was provided in kwargs
-                if 'histtype' in kwargs:
+                color = self.palette if fixed_color is None else fixed_color
+
+                if "histtype" in kwargs:
                     func(vals, color=color, **kwargs)
                 else:
-                    func(vals, color=color, histtype="barstacked",
-                         **kwargs)
+                    func(vals, color=color, histtype="barstacked", **kwargs)
+
             else:
+                plt.sca(ax)
+
                 for k, label_k in enumerate(self.hue_names):
+
                     # Attempt to get data for this level, allowing for empty
                     try:
                         data_k = hue_grouped.get_group(label_k)
                     except KeyError:
                         data_k = np.array([])
-                    plt.sca(ax)
-                    if color is None:
+
+                    if fixed_color is None:
                         color = self.palette[k]
-                    func(data_k, label=label_k,
-                         color=color, **kwargs)
+                    else:
+                        color = fixed_color
+
+                    func(data_k, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
 
