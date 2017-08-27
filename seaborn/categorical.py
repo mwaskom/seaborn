@@ -1763,17 +1763,19 @@ class _PointPlotter(_CategoricalStatPlotter):
                                        zorder=z)
 
                 # Draw the estimate points
+                n_points = len(offpos)
                 marker = self.markers[j]
+                point_colors = [mpl.colors.rgb2hex(self.colors[j])] * n_points
                 if self.orient == "h":
                     ax.scatter(statistic, offpos, label=hue_level,
-                               c=[self.colors[j]] * len(offpos),
+                               c=point_colors, edgecolor=point_colors,
                                linewidth=mew, marker=marker, s=markersize,
-                               edgecolor=self.colors[j], zorder=z)
+                               zorder=z)
                 else:
                     ax.scatter(offpos, statistic, label=hue_level,
-                               c=[self.colors[j]] * len(offpos),
+                               c=point_colors, edgecolor=point_colors,
                                linewidth=mew, marker=marker, s=markersize,
-                               edgecolor=self.colors[j], zorder=z)
+                               zorder=z)
 
     def plot(self, ax):
         """Make the plot."""
