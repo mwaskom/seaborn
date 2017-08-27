@@ -695,6 +695,19 @@ class FacetGrid(Grid):
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
 
+        # Check for categorical plots without order information
+        if func.__module__ == "seaborn.categorical":
+            if "order" not in kwargs:
+                warning = ("Using the {} function without specifying "
+                           "`order` is likely to produce an incorrect "
+                           "plot.".format(func.__name__))
+                warnings.warn(warning)
+            if len(args) == 3 and "hue_order" not in kwargs:
+                warning = ("Using the {} function without specifying "
+                           "`hue_order` is likely to produce an incorrect "
+                           "plot.".format(func.__name__))
+                warnings.warn(warning)
+
         # Iterate over the data subsets
         for (row_i, col_j, hue_k), data_ijk in self.facet_data():
 
