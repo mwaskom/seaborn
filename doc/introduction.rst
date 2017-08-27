@@ -40,7 +40,7 @@ for it. When using seaborn, it is likely that you will often invoke matplotlib
 functions directly to draw simpler plots already available through the
 ``pyplot`` namespace. Further, the seaborn functions aim to make plots that are
 reasonably "production ready" (including extracting semantic information from
-Pandas objects to add informative labels), but full customization will reqiure
+Pandas objects to add informative labels), but full customization will require
 changing attributes on the matplotlib objects directly. The combination of
 seaborn's high-level interface and matplotlib's customizability and wide range
 of backends makes it easy to generate publication-quality figures.
