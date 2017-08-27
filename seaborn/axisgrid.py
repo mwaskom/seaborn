@@ -500,7 +500,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="day", size=4, aspect=.5)
-            >>> g = g.map(sns.boxplot, "time", "total_bill")
+            >>> g = g.map(plt.hist, "total_bill", bins=bins)
 
         Specify the order for plot elements:
 
@@ -549,9 +549,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> attend = sns.load_dataset("attention")
-            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5,
-            ...                   size=1.5, ylim=(0, 10))
-            >>> g = g.map(sns.pointplot, "solutions", "score", scale=.7)
+            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5, size=1.5)
+            >>> g = g.map(plt.plot, "solutions", "score", marker=".")
 
         Define a custom bivariate function to map onto the grid:
 
@@ -694,6 +693,19 @@ class FacetGrid(Grid):
         """
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
+
+        # Check for categorical plots without order information
+        if func.__module__ == "seaborn.categorical":
+            if "order" not in kwargs:
+                warning = ("Using the {} function without specifying "
+                           "`order` is likely to produce an incorrect "
+                           "plot.".format(func.__name__))
+                warnings.warn(warning)
+            if len(args) == 3 and "hue_order" not in kwargs:
+                warning = ("Using the {} function without specifying "
+                           "`hue_order` is likely to produce an incorrect "
+                           "plot.".format(func.__name__))
+                warnings.warn(warning)
 
         # Iterate over the data subsets
         for (row_i, col_j, hue_k), data_ijk in self.facet_data():

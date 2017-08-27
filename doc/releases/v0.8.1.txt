@@ -2,6 +2,8 @@
 v0.8.1 (Unreleased)
 -------------------
 
+- Added a warning in :class:`FacetGrid` when passing a categorical plot function without specifying ``order`` (or ``hue_order`` when ``hue`` is used), which is likely to produce a plot that is incorrect.
+
 - Fixed a problem where the :class:`FacetGrid` or :class:`PairGrid` legend remained inside the figure when using ``legend_out=True`` on an interactive backend.
 
 - Fixed an bug in :func:`clustermap` when using ``yticklabels=False``.

@@ -322,7 +322,10 @@ class _CategoricalPlotter(object):
         def is_categorical(s):
             try:
                 # Correct way, but doesnt exist in older Pandas
-                return pd.core.common.is_categorical_dtype(s)
+                try:
+                    return pd.api.types.is_categorical_dtype(s)
+                except AttributeError:
+                    return pd.core.common.is_categorical_dtype(s)
             except AttributeError:
                 # Also works, but feels hackier
                 return str(s.dtype) == "categorical"
