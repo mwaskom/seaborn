@@ -1730,16 +1730,17 @@ class _PointPlotter(_CategoricalStatPlotter):
             # Draw the confidence intervals
             self.draw_confints(ax, pointpos, self.confint, self.colors,
                                self.errwidth, self.capsize)
+
             # Draw the estimate points
             marker = self.markers[0]
+            hex_colors = [mpl.colors.rgb2hex(c) for c in self.colors]
             if self.orient == "h":
-                ax.scatter(self.statistic, pointpos,
-                           linewidth=mew, marker=marker, s=markersize,
-                           c=self.colors, edgecolor=self.colors)
+                x, y = self.statistic, pointpos
             else:
-                ax.scatter(pointpos, self.statistic,
-                           linewidth=mew, marker=marker, s=markersize,
-                           c=self.colors, edgecolor=self.colors)
+                x, y = pointpos, self.statistic
+            ax.scatter(x, y,
+                       linewidth=mew, marker=marker, s=markersize,
+                       c=hex_colors, edgecolor=hex_colors)
 
         else:
 
@@ -1773,19 +1774,23 @@ class _PointPlotter(_CategoricalStatPlotter):
                                        zorder=z)
 
                 # Draw the estimate points
-                n_points = len(offpos)
+                n_points = len(remove_na(offpos))
                 marker = self.markers[j]
-                point_colors = [mpl.colors.rgb2hex(self.colors[j])] * n_points
-                if self.orient == "h":
-                    ax.scatter(statistic, offpos, label=hue_level,
-                               c=point_colors, edgecolor=point_colors,
-                               linewidth=mew, marker=marker, s=markersize,
-                               zorder=z)
+                hex_color = mpl.colors.rgb2hex(self.colors[j])
+                if n_points:
+                    point_colors = [hex_color for _ in range(n_points)]
                 else:
-                    ax.scatter(offpos, statistic, label=hue_level,
-                               c=point_colors, edgecolor=point_colors,
-                               linewidth=mew, marker=marker, s=markersize,
-                               zorder=z)
+                    point_colors = hex_color
+                if self.orient == "h":
+                    x, y = statistic, offpos
+                else:
+                    x, y = offpos, statistic
+                if not len(remove_na(statistic)):
+                    x, y = [], []
+                ax.scatter(x, y, label=hue_level,
+                           c=point_colors, edgecolor=point_colors,
+                           linewidth=mew, marker=marker, s=markersize,
+                           zorder=z)
 
     def plot(self, ax):
         """Make the plot."""
