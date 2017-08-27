@@ -14,7 +14,7 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from . import utils
-from .utils import iqr, categorical_order
+from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -22,24 +22,6 @@ from .axisgrid import FacetGrid, _facet_docs
 
 __all__ = ["boxplot", "violinplot", "stripplot", "swarmplot", "lvplot",
            "pointplot", "barplot", "countplot", "factorplot"]
-
-
-def remove_na(arr):
-    """
-    Helper method for removing NA values from array-like.
-
-    Parameters
-    ----------
-    arr : array-like
-        The array-like from which to remove NA values.
-
-    Returns
-    -------
-    clean_arr : array-like
-        The original array, just with NA values removed.
-    """
-
-    return arr[pd.notnull(arr)]
 
 
 class _CategoricalPlotter(object):
