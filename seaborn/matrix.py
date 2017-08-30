@@ -1121,6 +1121,7 @@ class ClusterGrid(Grid):
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
         if ytl_rot is not None:
+            ytl = self.ax_heatmap.get_yticklabels()
             plt.setp(ytl, rotation=ytl_rot)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
