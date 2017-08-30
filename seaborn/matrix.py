@@ -1048,6 +1048,7 @@ class ClusterGrid(Grid):
         kws = kws.copy()
         kws.pop('cmap', None)
         kws.pop('center', None)
+        kws.pop('annot', None)
         kws.pop('vmin', None)
         kws.pop('vmax', None)
         kws.pop('robust', None)
