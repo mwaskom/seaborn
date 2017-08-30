@@ -16,4 +16,8 @@ v0.8.1 (Unreleased)
 
 - Fixed an issue in :func:`pointplot` where legend entries for missing data appeared with empty markers.
 
+- Fixed a bug in :func:`clustermap` where an error was raised when annotating the main heatmap and showing category colors.
+
+- Fixed an issue in :func:`clustermap` where row labels were not being properly rotated when they overlapped.
+
 - Improved compatibility with future versions of pandas.
