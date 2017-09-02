@@ -197,7 +197,7 @@ _facet_docs = dict(
         of each facet in inches.\
     """),
     palette=dedent("""\
-    palette : seaborn color palette or dict, optional
+    palette : palette name, list, or dict, optional
         Colors to use for the different levels of the ``hue`` variable. Should
         be something that can be interpreted by :func:`color_palette`, or a
         dictionary mapping hue levels to matplotlib colors.\

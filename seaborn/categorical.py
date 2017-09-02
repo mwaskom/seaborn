@@ -2118,7 +2118,7 @@ _categorical_docs = dict(
     """),
     color=dedent("""\
     color : matplotlib color, optional
-        Color for all of the elements, or seed for when using hue nesting.\
+        Color for all of the elements, or seed for a gradient palette.
     """),
     palette=dedent("""\
     palette : palette name, list, or dict, optional
@@ -2999,10 +2999,10 @@ barplot.__doc__ = dedent("""\
     {saturation}
     errcolor : matplotlib color
         Color for the lines that represent the confidence interval.
-    {ax_in}
     {errwidth}
     {capsize}
     {dodge}
+    {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to ``plt.bar`` at draw
         time.

@@ -1,6 +1,6 @@
 """
-Overlapping KDEs ('Joy Division plot')
-======================================
+Overlapping densities ('joy plot')
+==================================
 
 
 """
@@ -20,7 +20,7 @@ df["x"] += m
 
 # Initialize the FacetGrid object
 pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
-g = sns.FacetGrid(df, row="g", hue="g", aspect=12, size=.5, palette=pal)
+g = sns.FacetGrid(df, row="g", hue="g", aspect=15, size=.5, palette=pal)
 
 # Draw the densities in a few steps
 g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)

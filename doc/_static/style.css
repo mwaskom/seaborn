@@ -1,4 +1,5 @@
 body { color: #444444 !important; }
+
 h1 { font-size: 40px !important; }
 h2 { font-size: 32px !important; }
 h3 { font-size: 24px !important; }
@@ -19,7 +20,9 @@ blockquote p {
 }
 
 blockquote {
-    margin: 0 0 4px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    margin: 0 0 0px !important;
 }
 
 code {
