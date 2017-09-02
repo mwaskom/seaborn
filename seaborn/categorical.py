@@ -2100,7 +2100,7 @@ _categorical_docs = dict(
     ci : float or "sd" or None, optional
         Size of confidence intervals to draw around estimated values.  If
         "sd", skip bootstrapping and draw the standard deviation of the
-        observerations. If ``None``, no bootstrapping will be performed, and
+        observations. If ``None``, no bootstrapping will be performed, and
         error bars will not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
