@@ -20,4 +20,6 @@ v0.8.1 (Unreleased)
 
 - Fixed an issue in :func:`clustermap` where row labels were not being properly rotated when they overlapped.
 
+- Fixed an issue in :func:`kdeplot` where the maximum limit on the density axes was not being updated when multiple densities were drawn.
+
 - Improved compatibility with future versions of pandas.
