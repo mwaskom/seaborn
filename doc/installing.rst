@@ -3,17 +3,23 @@
 Installing and getting started
 ------------------------------
 
-To install the released version of seaborn, you can use ``pip`` (i.e. ``pip
-install seaborn``). It's also possible to install the released version using
-``conda`` (i.e. ``conda install seaborn``), although this may lag behind the
-version available from PyPI.
+To install the latest release of seaborn, you can use ``pip``::
 
-Alternatively, you can use ``pip`` to install the development version, with the
-command ``pip install git+https://github.com/mwaskom/seaborn.git``.
+    pip install seaborn
+
+It's also possible to install the released version using ``conda``::
+
+    conda install seaborn
+
+Alternatively, you can use ``pip`` to install the development version directly from github::
+
+    pip install git+https://github.com/mwaskom/seaborn.git
+
 Another option would be to to clone the `github repository
-<https://github.com/mwaskom/seaborn>`_ and install with ``pip install .`` from
-the source directory. Seaborn itself is pure Python, so installation should be
-reasonably straightforward.
+<https://github.com/mwaskom/seaborn>`_ install from your local copy::
+
+    pip install .
+
 
 Dependencies
 ~~~~~~~~~~~~
@@ -39,27 +45,27 @@ Recommended dependencies
 The ``pip`` installation script will attempt to download the mandatory
 dependencies only if they do not exist at install-time.
 
-Unit tests aim to keep seaborn importable and generally functional on the
-versions available through the stable Debian channels.  There may be cases
-where some more advanced features only work with newer versions of these
-libraries, although these should be relatively rare.
-
-There are also some known bugs on older versions of matplotlib, so you should
-in general try to use a modern version. For many use cases, though, older
-matplotlibs will work fine.
+There are not hard minimum version requirements for the dependencies. Unit
+tests aim to keep seaborn importable and generally functional on the versions
+available through the stable Debian channels, which are relatively old. There
+are some known bugs when using older versions of matplotlib (generally meaning
+1.3 or earlier), so you should in general try to use a modern version.  For
+most use cases, though, older versions of matplotlib will work fine.
 
 Seaborn is also tested on the most recent versions offered through ``conda``.
+
 
 Testing
 ~~~~~~~
 
 To test seaborn, run ``make test`` in the root directory of the source
 distribution. This runs the unit test suite (which can also be exercised
-separately by running ``nosetests``). It also runs the code in the example
-notebooks to smoke-test a broader and more realistic range of example usage.
+separately by running ``nosetests``). It also runs the example code in function
+docstrings to smoke-test a broader and more realistic range of example usage.
 
 The full set of tests requires an internet connection to download the example
-datasets, but the unit tests should be able to run offline.
+datasets (if they haven't been previously cached), but the unit tests should
+be able to run offline.
 
 
 Bugs
