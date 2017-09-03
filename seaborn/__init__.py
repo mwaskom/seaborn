@@ -18,4 +18,4 @@ from .xkcd_rgb import xkcd_rgb
 from .crayons import crayons
 from . import cm
 
-__version__ = "0.8.1"
+__version__ = "0.9.dev"

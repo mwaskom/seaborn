@@ -28,7 +28,7 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'http://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.8.1'
+VERSION = '0.9.dev'
 
 try:
     from setuptools import setup
