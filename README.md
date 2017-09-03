@@ -43,7 +43,7 @@ The documentation has an [example gallery](http://seaborn.pydata.org/examples/in
 Citing
 ------
 
-Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.54844.svg)](https://doi.org/10.5281/zenodo.54844)
+Seaborn can be cited using a DOI provided through Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.883859.svg)](https://doi.org/10.5281/zenodo.883859)
 
 Dependencies
 ------------
