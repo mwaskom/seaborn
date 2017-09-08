@@ -521,6 +521,18 @@ def categorical_order(values, order=None):
     return list(order)
 
 
+def hue_type(data):
+
+    data = remove_na(np.asarray(data))
+    try:
+        int_data = data.astype(np.int)
+        if np.array_equal(data, int_data):
+            return "discrete"
+        else:
+            return "numeric"
+    except ValueError:
+        return "categorical"
+
 def get_color_cycle():
     if mpl_ge_150:
         cyl = mpl.rcParams['axes.prop_cycle']
