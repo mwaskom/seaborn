@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 
 from .external.six import string_types
 
+from . import utils
 from .utils import categorical_order, hue_type, get_color_cycle
+from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette
 
 
@@ -116,15 +118,18 @@ class _LinePlotter(_BasicPlotter):
 
     def __init__(self,
                  x=None, y=None, hue=None, style=None, size=None, data=None,
-                 x_estimator=None, x_ci=95, y_estimator=None, y_ci=None,
                  palette=None, clims=None,
                  markers=None, dashes=None, slims=None,
-                 sort=True, errstyle="bars"):
+                 estimator=None, ci=None, n_boot=None,
+                 sort=True, errstyle="band"):
 
         self.establish_variables(x, y, hue, style, size, data)
         self.determine_attributes(palette, clims, markers, dashes, slims)
 
         self.sort = sort
+        self.estimator = estimator
+        self.ci = ci
+        self.n_boot = n_boot
 
     def determine_attributes(self,
                              palette=None, clims=None,
@@ -200,20 +205,24 @@ class _LinePlotter(_BasicPlotter):
             if dashes is True:
                 # TODO error on too many levels
                 dashes = dict(zip(style_levels, self.default_dashes))
-            elif isinstance(dashes, dict):
+            elif dashes and isinstance(dashes, dict):
                 # TODO error on missing levels
                 pass
-            else:
+            elif dashes:
                 dashes = dict(zip(style_levels, dashes))
+            else:
+                dashes = {}
 
             if markers is True:
                 # TODO error on too many levels
                 markers = dict(zip(style_levels, self.default_markers))
-            elif isinstance(markers, dict):
+            elif markers and isinstance(markers, dict):
                 # TODO error on missing levels
                 pass
-            else:
+            elif markers:
                 markers = dict(zip(style_levels, markers))
+            else:
+                markers = {}
 
         self.attributes = product(hue_levels, style_levels, size_levels)
 
@@ -222,10 +231,26 @@ class _LinePlotter(_BasicPlotter):
         self.markers = markers
         self.sizes = sizes
 
+    def estimate(self, vals, grouper, func, ci):
+
+        n_boot = self.n_boot
+
+        def bootstrapped_cis(vals):
+            boots = bootstrap(vals, n_boot=n_boot)
+            cis = utils.ci(boots, ci)
+            return pd.Series(cis, ["low", "high"])
+
+        # TODO handle ci="sd"
+
+        grouped = vals.groupby(grouper)
+        est = grouped.apply(func)
+        cis = grouped.apply(bootstrapped_cis)
+        return est.index, est, cis.unstack()
+
     def plot(self, ax, kws):
 
         orig_color = kws.pop("color", None)
-        orig_dashes = kws.pop("dashes", None)
+        orig_dashes = kws.pop("dashes", (np.inf, 1))
         orig_marker = kws.pop("marker", None)
         orig_linewidth = kws.pop("linewidth", kws.pop("lw", None))
 
@@ -249,16 +274,25 @@ class _LinePlotter(_BasicPlotter):
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
 
+            x, y = subset_data["x"], subset_data["y"]
+
+            if self.estimator is not None:
+                x, y, y_ci = self.estimate(y, x, self.estimator, self.ci)
+            else:
+                y_ci = None
+
             kws["color"] = self.palette.get(hue, orig_color)
             kws["dashes"] = self.dashes.get(style, orig_dashes)
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
 
             # TODO handle marker size adjustment
-            # TODO Add white edges to markers
 
-            ax.plot(subset_data["x"], subset_data["y"],
-                    **kws)
+            if y_ci is not None:
+                ax.fill_between(x, y_ci["low"], y_ci["high"],
+                                color=kws["color"], alpha=.2)
+
+            ax.plot(x, y, **kws)
 
 
 class _ScatterPlotter(_BasicPlotter):
@@ -279,18 +313,16 @@ _basic_docs = dict(
 
 
 def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
-             x_estimator=None, x_ci=95, y_estimator=None, y_ci=None,
              palette=None, clims=None, markers=None, dashes=None, slims=None,
-             sort=True, errstyle="bars",
+             estimator=None, ci=95, n_boot=1000, sort=True, errstyle="bars",
              ax=None, **kwargs):
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
-        x_estimator=x_estimator, x_ci=x_ci,
-        y_estimator=y_estimator, y_ci=y_ci,
         palette=palette, clims=clims,
         markers=markers, dashes=dashes,
         slims=slims,
+        estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle
     )
 
@@ -303,8 +335,8 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
-                x_estimator=None, x_ci=95, y_estimator=None, y_ci=None,
                 palette=None, clims=None, markers=None, slims=None,
+                x_bins=None, n_bins=None, estimator=None, ci=95, n_boot=1000,
                 errstyle="bars", alpha="auto",
                 ax=None, **kwargs):
 

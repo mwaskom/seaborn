@@ -522,7 +522,7 @@ def categorical_order(values, order=None):
 
 
 def hue_type(data):
-
+    """Determine whether data is discrete, numeric, or categorical."""
     data = remove_na(np.asarray(data))
     try:
         int_data = data.astype(np.int)
@@ -533,7 +533,9 @@ def hue_type(data):
     except ValueError:
         return "categorical"
 
+
 def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle."""
     if mpl_ge_150:
         cyl = mpl.rcParams['axes.prop_cycle']
         # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
@@ -543,6 +545,7 @@ def get_color_cycle():
             return [x['color'] for x in cyl]
         except KeyError:
             pass  # just return axes.color style below
+
     return mpl.rcParams['axes.color_cycle']
 
 
