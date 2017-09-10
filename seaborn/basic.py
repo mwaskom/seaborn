@@ -1,3 +1,4 @@
+from itertools import product
 from textwrap import dedent
 
 import numpy as np
@@ -9,6 +10,7 @@ from .external.six import string_types
 
 from .utils import categorical_order, hue_type, get_color_cycle
 from .palettes import color_palette, husl_palette
+
 
 class _BasicPlotter(object):
 
@@ -22,13 +24,12 @@ class _BasicPlotter(object):
                             hue=None, style=None, size=None,
                             data=None):
 
-        # Option 1: 
+        # Option 1:
         # We have a wide-form datast
         # --------------------------
 
         if x is None and y is None:
 
-            
             # Option 1a:
             # The input data is a Pandas DataFrame
             # ------------------------------------
@@ -45,7 +46,7 @@ class _BasicPlotter(object):
                                      "numeric values.")
 
                 plot_data = pd.melt(data.assign(x=data.index), "x",
-                               var_name="hue", value_name="y")
+                                    var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
 
             # Option 1b:
@@ -60,14 +61,13 @@ class _BasicPlotter(object):
 
                 if hasattr(data, "shape"):
 
-
                     plot_data = pd.DataFrame(data)
                     plot_data = pd.melt(plot_data.assign(x="data.index"), "x",
                                         var_name="hue", value_name="y")
                     plot_data["style"] = plot_data["hue"]
 
                 # The input data is a flat list:
-                # We will assign a numeric index for x, and use the values for y
+                # We will assign a numeric index for x and use the values for y
 
                 elif np.isscalar(data[0]):
 
@@ -86,7 +86,7 @@ class _BasicPlotter(object):
                         for i, data_i in enumerate(data)
                     ])
 
-        # Option 2: 
+        # Option 2:
         # We have long-form data
         # ----------------------
 
@@ -107,24 +107,41 @@ class _BasicPlotter(object):
                     raise ValueError(err)
 
             plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
-            plot_data = {k: v for k, v in plot_data.items() if v is not None}
             plot_data = pd.DataFrame(plot_data)
 
         self.plot_data = plot_data
 
-    def determine_attributes(self, palette=None, clims=None, markers=None,
-                             dashes=None, slims=None):
 
-        hue_subset_masks = []
+class _LinePlotter(_BasicPlotter):
 
-        if "hue" in self.plot_data:
+    def __init__(self,
+                 x=None, y=None, hue=None, style=None, size=None, data=None,
+                 x_estimator=None, x_ci=95, y_estimator=None, y_ci=None,
+                 palette=None, clims=None,
+                 markers=None, dashes=None, slims=None,
+                 sort=True, errstyle="bars"):
 
-            hue_data = self.plot_data["hue"]
-            type = hue_type(hue_data)
+        self.establish_variables(x, y, hue, style, size, data)
+        self.determine_attributes(palette, clims, markers, dashes, slims)
+
+        self.sort = sort
+
+    def determine_attributes(self,
+                             palette=None, clims=None,
+                             markers=None, dashes=None,
+                             slims=None):
+
+        data = self.plot_data
+
+        if data["hue"].isnull().all():
+            hue_levels = [None]
+            palette = {}
+        else:
+            type = hue_type(data["hue"])
 
             if type == "categorical":
 
-                hue_levels = categorical_order(hue_data)
+                hue_levels = categorical_order(data["hue"])
                 n_colors = len(hue_levels)
 
                 if isinstance(palette, dict):
@@ -133,9 +150,9 @@ class _BasicPlotter(object):
                         msg = ("palette dictionary is missing keys: {}"
                                .format(missing))
                         raise ValueError(msg)
-                else:        
+                else:
                     if palette is None:
-                        
+
                         # Determine whether the current palette will have
                         # enough values If not, we'll default to the husl
                         # palette so each is distinct
@@ -145,13 +162,8 @@ class _BasicPlotter(object):
                             colors = husl_palette(n_colors, l=.7)
                     else:
                         colors = color_palette(palette, n_colors)
-                    self.palette = dict(zip(hue_levels, colors))
+                    palette = dict(zip(hue_levels, colors))
 
-                
-                for hue in hue_levels:
-                    hue_subset_masks.append(
-                        (hue, self.plot_data["hue"] == hue)
-                    )
             else:
 
                 if palette is None:
@@ -161,40 +173,92 @@ class _BasicPlotter(object):
 
                     pass  # TODO
 
-        self.subset_masks = hue_subset_masks
-        
+        if data["size"].isnull().all():
+            size_levels = [None]
+            sizes = {}
 
-class _LinePlotter(_BasicPlotter):
+        else:
+            size_levels = categorical_order(data["size"])
 
-    def __init__(self,
-                 x=None, y=None, hue=None, style=None, size=None, data=None,
-                 x_estimator=None, x_ci=95, y_estimator=None, y_ci=None,
-                 palette=None, clims=None, markers=None, dashes=None, slims=None,
-                 sort=True, errstyle="bars"):
+            if slims is None:
+                smin, smax = 1, 3
+            else:
+                smin, smax = slims
+            smax -= smin
+            norm = mpl.colors.Normalize(data["size"].min(), data["size"].max())
+            sizes = {s: smin + (norm(s) * smax) for s in size_levels}
 
-        self.establish_variables(x, y, hue, style, size, data)
-        self.determine_attributes(palette, clims, markers, dashes, slims)
+        if data["style"].isnull().all():
+            style_levels = [None]
+            dashes = {}
+            markers = {}
 
-        self.sort = sort
+        else:
 
+            style_levels = categorical_order(data["style"])
+
+            if dashes is True:
+                # TODO error on too many levels
+                dashes = dict(zip(style_levels, self.default_dashes))
+            elif isinstance(dashes, dict):
+                # TODO error on missing levels
+                pass
+            else:
+                dashes = dict(zip(style_levels, dashes))
+
+            if markers is True:
+                # TODO error on too many levels
+                markers = dict(zip(style_levels, self.default_markers))
+            elif isinstance(markers, dict):
+                # TODO error on missing levels
+                pass
+            else:
+                markers = dict(zip(style_levels, markers))
+
+        self.attributes = product(hue_levels, style_levels, size_levels)
+
+        self.palette = palette
+        self.dashes = dashes
+        self.markers = markers
+        self.sizes = sizes
 
     def plot(self, ax, kws):
 
         orig_color = kws.pop("color", None)
+        orig_dashes = kws.pop("dashes", None)
+        orig_marker = kws.pop("marker", None)
+        orig_linewidth = kws.pop("linewidth", kws.pop("lw", None))
 
-        for (hue, subset_mask) in self.subset_masks:
+        kws.setdefault("markeredgewidth", .75)
+        kws.setdefault("markeredgecolor", "w")
 
-            subset_data = self.plot_data.loc[subset_mask]
+        data = self.plot_data
+        all_true = pd.Series(True, data.index)
+
+        for hue, style, size in self.attributes:
+
+            rows = (
+                all_true
+                & (all_true if hue is None else data["hue"] == hue)
+                & (all_true if style is None else data["style"] == style)
+                & (all_true if size is None else data["size"] == size)
+            )
+
+            subset_data = data.loc[rows]
 
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
 
-            kws["color"] = self.palette[hue]
+            kws["color"] = self.palette.get(hue, orig_color)
+            kws["dashes"] = self.dashes.get(style, orig_dashes)
+            kws["marker"] = self.markers.get(style, orig_marker)
+            kws["linewidth"] = self.sizes.get(size, orig_linewidth)
+
+            # TODO handle marker size adjustment
+            # TODO Add white edges to markers
 
             ax.plot(subset_data["x"], subset_data["y"],
                     **kws)
-
-        
 
 
 class _ScatterPlotter(_BasicPlotter):
@@ -236,7 +300,6 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
     p.plot(ax, kwargs)
 
     return ax, p  # TODO
-                     
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
