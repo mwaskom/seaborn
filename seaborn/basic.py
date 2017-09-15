@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, hue_type, get_color_cycle
+from .utils import categorical_order, remove_na, hue_type, get_color_cycle
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette
 
@@ -19,8 +19,8 @@ class _BasicPlotter(object):
     # TODO use different lists for mpl 1 and 2
     default_markers = ["o", "s", "D", "v", "^", "p"]
     marker_scales = {"o": 1, "s": .85, "D": .9, "v": 1.3, "^": 1.3, "p": 1.25}
-    default_dashes = [(np.inf, 1), (5, 1), (4, 1, 2, 1),
-                      (2, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
+    default_dashes = [(np.inf, 1), (4, 1), (1, 1),
+                      (4, 1, 2, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
 
     def establish_variables(self, x=None, y=None,
                             hue=None, style=None, size=None,
@@ -51,6 +51,8 @@ class _BasicPlotter(object):
                                     var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
 
+            # TODO accept a dict and try to coerce to a dataframe?
+
             # Option 1b:
             # The input data is an array or list
             # ----------------------------------
@@ -64,7 +66,8 @@ class _BasicPlotter(object):
                 if hasattr(data, "shape"):
 
                     plot_data = pd.DataFrame(data)
-                    plot_data = pd.melt(plot_data.assign(x="data.index"), "x",
+                    plot_data = plot_data.assign(x=plot_data.index)
+                    plot_data = pd.melt(plot_data, "x",
                                         var_name="hue", value_name="y")
                     plot_data["style"] = plot_data["hue"]
 
@@ -84,7 +87,7 @@ class _BasicPlotter(object):
 
                     plot_data = pd.concat([
                         pd.DataFrame(dict(x=np.arange(len(data_i)),
-                                          y=data_i, hue=i, style=i))
+                                          y=data_i, hue=i, style=i, size=None))
                         for i, data_i in enumerate(data)
                     ])
 
@@ -111,6 +114,11 @@ class _BasicPlotter(object):
             plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
             plot_data = pd.DataFrame(plot_data)
 
+        for attr in ["hue", "style", "size"]:
+            if attr not in plot_data:
+                plot_data[attr] = None
+
+        # TODO handle empty data more gracefully
         self.plot_data = plot_data
 
 
@@ -119,7 +127,7 @@ class _LinePlotter(_BasicPlotter):
     def __init__(self,
                  x=None, y=None, hue=None, style=None, size=None, data=None,
                  palette=None, clims=None,
-                 markers=None, dashes=None, slims=None,
+                 dashes=None, markers=None, slims=None,
                  estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle="band"):
 
@@ -169,14 +177,27 @@ class _LinePlotter(_BasicPlotter):
                         colors = color_palette(palette, n_colors)
                     palette = dict(zip(hue_levels, colors))
 
-            else:
+            elif type == "discrete":
+
+                # TODO wide-form array data will have an discrete hue type
+                # but we probably want to default to a categorical palette
+
+                hue_levels = np.arange(data["hue"].min(),
+                                       data["hue"].max() + 1)
+
+                if palette is None:
+                    vals = np.linspace(0, 1, len(hue_levels))
+                    colors = mpl.cm.viridis(vals)
+                    palette = dict(zip(hue_levels, colors))
 
                 if palette is None:
                     cmap_name = plt.rcParams["image.cmap"]
-
                 elif isinstance(palette, mpl.colors.Colormap):
-
                     pass  # TODO
+                else:
+                    vals = np.linspace(0, 1, len(hue_levels))
+                    colors = mpl.cm.get_cmap(palette)(vals)
+                    palette = dict(zip(hue_levels, colors))
 
         if data["size"].isnull().all():
             size_levels = [None]
@@ -224,8 +245,10 @@ class _LinePlotter(_BasicPlotter):
             else:
                 markers = {}
 
-        self.attributes = product(hue_levels, style_levels, size_levels)
+        # TODO This doesn't work when attributes share a variable
+        attributes = product(hue_levels, style_levels, size_levels)
 
+        self.attributes = attributes
         self.palette = palette
         self.dashes = dashes
         self.markers = markers
@@ -236,7 +259,7 @@ class _LinePlotter(_BasicPlotter):
         n_boot = self.n_boot
 
         def bootstrapped_cis(vals):
-            boots = bootstrap(vals, n_boot=n_boot)
+            boots = bootstrap(vals, func=func, n_boot=n_boot)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
@@ -244,6 +267,8 @@ class _LinePlotter(_BasicPlotter):
 
         grouped = vals.groupby(grouper)
         est = grouped.apply(func)
+        if ci is None:
+            return est.index, est, None
         cis = grouped.apply(bootstrapped_cis)
         return est.index, est, cis.unstack()
 
@@ -254,8 +279,8 @@ class _LinePlotter(_BasicPlotter):
         orig_marker = kws.pop("marker", None)
         orig_linewidth = kws.pop("linewidth", kws.pop("lw", None))
 
-        kws.setdefault("markeredgewidth", .75)
-        kws.setdefault("markeredgecolor", "w")
+        kws.setdefault("markeredgewidth", kws.pop("mew", .75))
+        kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
 
         data = self.plot_data
         all_true = pd.Series(True, data.index)
@@ -271,6 +296,10 @@ class _LinePlotter(_BasicPlotter):
 
             subset_data = data.loc[rows]
 
+            # TODO dumb way to handle shared attributes
+            if not len(subset_data):
+                continue
+
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
 
@@ -281,6 +310,8 @@ class _LinePlotter(_BasicPlotter):
             else:
                 y_ci = None
 
+            # TODO convert from None to (inf, 0) for dash spec?
+
             kws["color"] = self.palette.get(hue, orig_color)
             kws["dashes"] = self.dashes.get(style, orig_dashes)
             kws["marker"] = self.markers.get(style, orig_marker)
@@ -289,6 +320,7 @@ class _LinePlotter(_BasicPlotter):
             # TODO handle marker size adjustment
 
             if y_ci is not None:
+                # TODO fill_between doesn't follow color cylce with no palette
                 ax.fill_between(x, y_ci["low"], y_ci["high"],
                                 color=kws["color"], alpha=.2)
 
@@ -313,14 +345,14 @@ _basic_docs = dict(
 
 
 def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
-             palette=None, clims=None, markers=None, dashes=None, slims=None,
-             estimator=None, ci=95, n_boot=1000, sort=True, errstyle="bars",
+             palette=None, clims=None, dashes=True, markers=None, slims=None,
+             estimator=None, ci=95, n_boot=1000, sort=True, errstyle="band",
              ax=None, **kwargs):
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, clims=clims,
-        markers=markers, dashes=dashes,
+        dashes=dashes, markers=markers,
         slims=slims,
         estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle
@@ -336,7 +368,7 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, clims=None, markers=None, slims=None,
-                x_bins=None, n_bins=None, estimator=None, ci=95, n_boot=1000,
+                x_bins=None, y_bins=None, estimator=None, ci=95, n_boot=1000,
                 errstyle="bars", alpha="auto",
                 ax=None, **kwargs):
 
