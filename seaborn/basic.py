@@ -152,7 +152,7 @@ class _LinePlotter(_BasicPlotter):
                  x=None, y=None, hue=None, style=None, size=None, data=None,
                  palette=None, clim=None,
                  dashes=None, markers=None, slim=None,
-                 estimator=None, ci=None, n_boot=None,
+                 estimator=None, ci=None, n_boot=None, units=None,
                  sort=True, errstyle=None):
 
         self.establish_variables(x, y, hue, style, size, data)
@@ -169,64 +169,20 @@ class _LinePlotter(_BasicPlotter):
                              markers=None, dashes=None,
                              slim=None):
 
-        data = self.plot_data
+        # TODO going to need some way to specify attribute order
+        # TODO also should things generally be expected to take dicts
+        # as the most direct way of exact specification?
+        # TODO also need better names! Naming things is hard.
 
         self.parse_hue(self.plot_data["hue"], palette, clim)
-
-        if data["size"].isnull().all():
-            size_levels = [None]
-            sizes = {}
-
-        else:
-            size_levels = categorical_order(data["size"])
-
-            if slim is None:
-                smin, smax = 1, 3
-            else:
-                smin, smax = slim
-            smax -= smin
-            norm = mpl.colors.Normalize(data["size"].min(), data["size"].max())
-            sizes = {s: smin + (norm(s) * smax) for s in size_levels}
-
-        if data["style"].isnull().all():
-            style_levels = [None]
-            dashes = {}
-            markers = {}
-
-        else:
-
-            style_levels = categorical_order(data["style"])
-
-            if dashes is True:
-                # TODO error on too many levels
-                dashes = dict(zip(style_levels, self.default_dashes))
-            elif dashes and isinstance(dashes, dict):
-                # TODO error on missing levels
-                pass
-            elif dashes:
-                dashes = dict(zip(style_levels, dashes))
-            else:
-                dashes = {}
-
-            if markers is True:
-                # TODO error on too many levels
-                markers = dict(zip(style_levels, self.default_markers))
-            elif markers and isinstance(markers, dict):
-                # TODO error on missing levels
-                pass
-            elif markers:
-                markers = dict(zip(style_levels, markers))
-            else:
-                markers = {}
+        self.parse_size(self.plot_data["size"], slim)
+        self.parse_style(self.plot_data["style"], markers, dashes)
 
         # TODO This doesn't work when attributes share a variable
-        attributes = product(self.hue_levels,
-                             style_levels, size_levels)
-
-        self.attributes = attributes
-        self.dashes = dashes
-        self.markers = markers
-        self.sizes = sizes
+        # (but it is kind of handled in plot())
+        self.attributes = product(self.hue_levels,
+                                  self.style_levels,
+                                  self.size_levels)
 
     def parse_hue(self, data, palette, clim):
         """Determine what color palette to use given data characteristics."""
@@ -291,11 +247,16 @@ class _LinePlotter(_BasicPlotter):
             else:
                 cmap = mpl.cm.get_cmap(palette)
 
+            # TODO do we want to do something complicated to ensure contrast
+            # at the extremes of the colormap against the background?
+
             # -- Option 2a: a discrete colormap
 
             if palette_type == "discrete":
 
                 if clim is None:
+                    # TODO make sure this is handled properly in a
+                    # faceted context
                     hue_levels = np.arange(data.min(), data.max() + 1)
                 else:
                     hue_levels = np.arange(clim[0], clim[1] + 1)
@@ -317,6 +278,69 @@ class _LinePlotter(_BasicPlotter):
         self.palette = palette
         self.palette_type = palette_type
         self.cmap = cmap
+
+    def parse_size(self, data, slim):
+
+        # TODO note that as currently written, slim and clim are different
+        # slim is specified in marker units while clim is specified in data
+        # units. This needs to be remedied (not sure how).
+
+        if data.isnull().all():
+            size_levels = [None]
+            sizes = {}
+
+        else:
+
+            size_levels = categorical_order(data)
+
+            if slim is None:
+                # TODO ensure that this works properly in faceted context
+                smin, smax = 1, 3
+            else:
+                smin, smax = slim
+            smax -= smin
+            norm = mpl.colors.Normalize(data.min(), data.max())
+            sizes = {s: smin + (norm(s) * smax) for s in size_levels}
+
+        self.size_levels = size_levels
+        self.sizes = sizes
+
+    def parse_style(self, data, markers, dashes):
+
+        if data.isnull().all():
+            style_levels = [None]
+            dashes = {}
+            markers = {}
+
+        else:
+
+            style_levels = categorical_order(data)
+
+            if dashes is True:
+                # TODO error on too many levels
+                dashes = dict(zip(style_levels, self.default_dashes))
+            elif dashes and isinstance(dashes, dict):
+                # TODO error on missing levels
+                pass
+            elif dashes:
+                dashes = dict(zip(style_levels, dashes))
+            else:
+                dashes = {}
+
+            if markers is True:
+                # TODO error on too many levels
+                markers = dict(zip(style_levels, self.default_markers))
+            elif markers and isinstance(markers, dict):
+                # TODO error on missing levels
+                pass
+            elif markers:
+                markers = dict(zip(style_levels, markers))
+            else:
+                markers = {}
+
+        self.style_levels = style_levels
+        self.dashes = dashes
+        self.markers = markers
 
     def estimate(self, vals, grouper, func, ci):
 
@@ -434,15 +458,15 @@ _basic_docs = dict(
 
 def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
              palette=None, clim=None, dashes=True, markers=None, slim=None,
-             estimator=np.mean, ci=95, n_boot=1000, sort=True, errstyle="band",
-             ax=None, **kwargs):
+             estimator=np.mean, ci=95, n_boot=1000, units=None,
+             sort=True, errstyle="band", ax=None, **kwargs):
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, clim=clim,
         dashes=dashes, markers=markers,
         slim=slim,
-        estimator=estimator, ci=ci, n_boot=n_boot,
+        estimator=estimator, ci=ci, n_boot=n_boot, units=None,
         sort=sort, errstyle=errstyle
     )
 
