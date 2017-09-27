@@ -10,7 +10,7 @@ from matplotlib.collections import LineCollection
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, remove_na, hue_type, get_color_cycle
+from .utils import categorical_order, hue_type, get_color_cycle
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette
 
@@ -389,13 +389,11 @@ class _LinePlotter(_BasicPlotter):
                 & (all_true if size is None else data["size"] == size)
             )
 
-            subset_data = data.loc[rows]
+            subset_data = data.loc[rows, ["x", "y"]].dropna()
 
             # TODO dumb way to handle shared attributes
             if not len(subset_data):
                 continue
-
-            subset_data = remove_na(subset_data)
 
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
