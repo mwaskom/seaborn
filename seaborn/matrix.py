@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 import pandas as pd
-from scipy.spatial import distance
 from scipy.cluster import hierarchy
 
 from . import cm
@@ -607,7 +606,7 @@ class _DendrogramPlotter(object):
         import fastcluster
         # Fastcluster has a memory-saving vectorized version, but only
         # with certain linkage methods, and mostly with euclidean metric
-        vector_methods = ('single', 'centroid', 'median', 'ward')
+        # vector_methods = ('single', 'centroid', 'median', 'ward')
         euclidean_methods = ('centroid', 'median', 'ward')
         euclidean = self.metric == 'euclidean' and self.method in \
             euclidean_methods

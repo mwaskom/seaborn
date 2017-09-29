@@ -219,9 +219,11 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_fast(self, grid):
         """Low-level regression and prediction using linear algebra."""
+        def reg_func(_x, _y):
+            return np.linalg.pinv(_x).dot(_y)
+
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
-        reg_func = lambda _x, _y: np.linalg.pinv(_x).dot(_y)
         yhat = grid.dot(reg_func(X, y))
         if self.ci is None:
             return yhat, None
@@ -233,8 +235,10 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_poly(self, grid, order):
         """Regression using numpy polyfit for higher-order trends."""
+        def reg_func(_x, _y):
+            return np.polyval(np.polyfit(_x, _y, order), grid)
+
         x, y = self.x, self.y
-        reg_func = lambda _x, _y: np.polyval(np.polyfit(_x, _y, order), grid)
         yhat = reg_func(x, y)
         if self.ci is None:
             return yhat, None
@@ -245,9 +249,9 @@ class _RegressionPlotter(_LinearPlotter):
 
     def fit_statsmodels(self, grid, model, **kwargs):
         """More general regression function using statsmodels objects."""
+        import statsmodels.genmod.generalized_linear_model as glm
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
-        import statsmodels.genmod.generalized_linear_model as glm
 
         def reg_func(_x, _y):
             try:
@@ -790,6 +794,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
 
+
 regplot.__doc__ = dedent("""\
     Plot data and a linear regression model fit.
 
@@ -1085,9 +1090,13 @@ def coefplot(formula, data, groupby=None, intercept=False, ci=95,
     n_terms = len(coefs)
 
     # Plot seperately depending on groupby
+    def hsize(n):
+        return n * (h / 2)
+
+    def wsize(n):
+        return n * (w / (4 * (n / 5)))
+
     w, h = mpl.rcParams["figure.figsize"]
-    hsize = lambda n: n * (h / 2)
-    wsize = lambda n: n * (w / (4 * (n / 5)))
     if groupby is None:
         colors = itertools.cycle(color_palette(palette, n_terms))
         f, ax = plt.subplots(1, 1, figsize=(wsize(n_terms), hsize(1)))
@@ -1235,7 +1244,7 @@ def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
     c_min = min(np.percentile(y, 2), yhat.min())
     c_max = max(np.percentile(y, 98), yhat.max())
     delta = max(c_max - y_bar, y_bar - c_min)
-    c_min, cmax = y_bar - delta, y_bar + delta
+    c_min, c_max = y_bar - delta, y_bar + delta
     contour_kws.setdefault("vmin", c_min)
     contour_kws.setdefault("vmax", c_max)
 

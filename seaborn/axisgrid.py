@@ -302,7 +302,7 @@ class FacetGrid(Grid):
                           gridspec_kw=gridspec_kws)
 
             if OLD_MPL:
-                _ = kwargs.pop('gridspec_kw', None)
+                kwargs.pop('gridspec_kw', None)
                 if gridspec_kws:
                     msg = "gridspec module only available in mpl >= {}"
                     warnings.warn(msg.format(MPL_GRIDSPEC_VERSION))
