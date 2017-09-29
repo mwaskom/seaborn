@@ -2458,30 +2458,36 @@ class TestFactorPlot(CategoricalFixture):
         plt.close("all")
 
 
+def edge_calc(n, data):
+
+    q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
+    q = list(np.unique(q))
+    return np.percentile(data, q)
+
+
 class TestLVPlotter(CategoricalFixture):
 
-    def setUp(self):
-        def edge_calc(n, data):
-            q = np.asanyarray([0.5**n, 1 - 0.5**n]) * 100
-            q = list(np.unique(q))
-            return np.percentile(data, q)
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                            order=None, hue_order=None,
+                            orient=None, color=None, palette=None,
+                            saturation=.75, width=.8, dodge=True,
+                            k_depth='proportion', linewidth=None,
+                            scale='exponential', outlier_prop=None)
 
-        self.ispatch = lambda c: isinstance(c, mpl.collections.PatchCollection)
+    linear_data = np.arange(101)
+    n = len(linear_data)
+    expected_k = int(np.log2(n)) - int(np.log2(n*0.007)) + 1
 
-        self.default_kws = dict(x=None, y=None, hue=None, data=None,
-                                order=None, hue_order=None,
-                                orient=None, color=None, palette=None,
-                                saturation=.75, width=.8, dodge=True,
-                                k_depth='proportion', linewidth=None,
-                                scale='exponential', outlier_prop=None)
-        self.linear_data = np.arange(101)
-        self.n = len(self.linear_data)
-        self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.007)) + 1
-        self.expected_edges_l = map(lambda i: edge_calc(i, self.linear_data),
-                                    range(self.expected_k + 2, 1, -1))
-        self.outlier_data = np.concatenate((np.arange(100), [200]))
-        self.expected_edges_o = map(lambda i: edge_calc(i, self.outlier_data),
-                                    range(self.expected_k + 2, 1, -1))
+    expected_edges_l = [edge_calc(i, linear_data)
+                        for i in range(expected_k + 2, 1, -1)]
+
+    outlier_data = np.concatenate((np.arange(100), [200]))
+    expected_edges_o = [edge_calc(i, outlier_data)
+                        for i in range(expected_k + 2, 1, -1)]
+
+    def ispatch(self, c):
+
+        return isinstance(c, mpl.collections.PatchCollection)
 
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
