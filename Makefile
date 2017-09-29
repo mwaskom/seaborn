@@ -2,17 +2,16 @@ export SHELL := /bin/bash
 
 test:
 
-	nosetests --with-doctest
+	pytest --doctest-modules seaborn
 
 test-nodoctest:
 
-	nosetests
+	pytest seaborn
 
 coverage:
 
-	nosetests --cover-erase --with-coverage --cover-html --cover-package seaborn
+	nosetests --cov=seaborn seaborn
 
 lint:
 
-	pyflakes -x W -X seaborn/external/six.py seaborn
-	pep8 --exclude external,cm.py seaborn
+	flake8 --exclude seaborn/__init__.py,seaborn/cm.py,seaborn/tests,seaborn/external seaborn
