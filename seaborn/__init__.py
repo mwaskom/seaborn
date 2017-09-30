@@ -14,8 +14,7 @@ from .matrix import *
 from .miscplot import *
 from .axisgrid import *
 from .widgets import *
-from .xkcd_rgb import xkcd_rgb
-from .crayons import crayons
+from .colors import xkcd_rgb, crayons
 from . import cm
 
 __version__ = "0.9.dev"

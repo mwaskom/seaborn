@@ -2,4 +2,7 @@
 omit =
     seaborn/widgets.py
     seaborn/external/*
+    seaborn/colors/*
+    seaborn/cm.py
+    seaborn/conftest.py
     seaborn/tests/*
