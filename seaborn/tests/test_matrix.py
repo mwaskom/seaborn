@@ -16,7 +16,6 @@ except ImportError:
     import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import matrix as mat
 from .. import color_palette
 from ..external.six.moves import range
@@ -30,7 +29,7 @@ except ImportError:
     _no_fastcluster = True
 
 
-class TestHeatmap(PlotTestCase):
+class TestHeatmap(object):
     rs = np.random.RandomState(sum(map(ord, "heatmap")))
 
     x_norm = rs.randn(4, 8)
@@ -399,7 +398,7 @@ class TestHeatmap(PlotTestCase):
         plt.close(f)
 
 
-class TestDendrogram(PlotTestCase):
+class TestDendrogram(object):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -640,7 +639,7 @@ class TestDendrogram(PlotTestCase):
         plt.close(f)
 
 
-class TestClustermap(PlotTestCase):
+class TestClustermap(object):
     rs = np.random.RandomState(sum(map(ord, "clustermap")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)

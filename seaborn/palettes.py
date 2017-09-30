@@ -10,8 +10,7 @@ from .external.six import string_types
 from .external.six.moves import range
 
 from .utils import desaturate, set_hls_values, get_color_cycle
-from .xkcd_rgb import xkcd_rgb
-from .crayons import crayons
+from .colors import xkcd_rgb, crayons
 
 
 __all__ = ["color_palette", "hls_palette", "husl_palette", "mpl_palette",

@@ -18,14 +18,13 @@ try:
 except ImportError:
     _no_statsmodels = True
 
-from . import PlotTestCase
 from .. import regression as lm
 from ..palettes import color_palette
 
 rs = np.random.RandomState(0)
 
 
-class TestLinearPlotter(PlotTestCase):
+class TestLinearPlotter(object):
 
     rs = np.random.RandomState(77)
     df = pd.DataFrame(dict(x=rs.normal(size=60),
@@ -89,7 +88,7 @@ class TestLinearPlotter(PlotTestCase):
         pdt.assert_series_equal(p.y_na, self.df.y_na[mask])
 
 
-class TestRegressionPlotter(PlotTestCase):
+class TestRegressionPlotter(object):
 
     rs = np.random.RandomState(49)
 
@@ -360,7 +359,8 @@ class TestRegressionPlotter(PlotTestCase):
         y = self.df.x > self.df.x.mean()
         p = lm._RegressionPlotter("x", y, data=self.df,
                                   logistic=True, n_boot=10)
-        _, yhat, _ = p.fit_regression(x_range=(-3, 3))
+        with np.errstate(all="ignore"):
+            _, yhat, _ = p.fit_regression(x_range=(-3, 3))
         nt.assert_true(np.isnan(yhat).all())
 
     @skipif(_no_statsmodels)
@@ -411,7 +411,7 @@ class TestRegressionPlotter(PlotTestCase):
         nt.assert_equal(grid.max(), self.df.x.max())
 
 
-class TestRegressionPlots(PlotTestCase):
+class TestRegressionPlots(object):
 
     rs = np.random.RandomState(56)
     df = pd.DataFrame(dict(x=rs.randn(90),

@@ -10,11 +10,12 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from .external.six.moves.urllib.request import urlopen, urlretrieve
+from .external.six.moves.http_client import HTTPException
+
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
-from .external.six.moves.urllib.request import urlopen, urlretrieve
-from .external.six.moves.http_client import HTTPException
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",

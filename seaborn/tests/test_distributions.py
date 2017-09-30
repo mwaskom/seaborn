@@ -8,7 +8,6 @@ import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import distributions as dist
 
 try:
@@ -22,7 +21,7 @@ except ImportError:
 _old_matplotlib = LooseVersion(mpl.__version__) < "1.5"
 
 
-class TestKDE(PlotTestCase):
+class TestKDE(object):
 
     rs = np.random.RandomState(0)
     x = rs.randn(50)

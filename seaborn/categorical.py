@@ -769,19 +769,25 @@ class _ViolinPlotter(_CategoricalPlotter):
     def scale_count(self, density, counts, scale_hue):
         """Scale each density curve by the number of observations."""
         if self.hue_names is None:
-            for count, d in zip(counts, density):
-                d /= d.max()
-                d *= count / counts.max()
+            if counts.max() == 0:
+                d = 0
+            else:
+                for count, d in zip(counts, density):
+                    d /= d.max()
+                    d *= count / counts.max()
         else:
             for i, group in enumerate(density):
                 for j, d in enumerate(group):
-                    count = counts[i, j]
-                    if scale_hue:
-                        scaler = count / counts[i].max()
+                    if counts[i].max() == 0:
+                        d = 0
                     else:
-                        scaler = count / counts.max()
-                    d /= d.max()
-                    d *= scaler
+                        count = counts[i, j]
+                        if scale_hue:
+                            scaler = count / counts[i].max()
+                        else:
+                            scaler = count / counts.max()
+                        d /= d.max()
+                        d *= scaler
 
     @property
     def dwidth(self):
@@ -2000,16 +2006,16 @@ class _LVPlotter(_CategoricalPlotter):
 
                 color = self.colors[i]
 
-                artist_dict = self._lvplot(box_data,
-                                           positions=[i],
-                                           color=color,
-                                           vert=vert,
-                                           widths=self.width,
-                                           k_depth=self.k_depth,
-                                           ax=ax,
-                                           scale=self.scale,
-                                           outlier_prop=self.outlier_prop,
-                                           **kws)
+                self._lvplot(box_data,
+                             positions=[i],
+                             color=color,
+                             vert=vert,
+                             widths=self.width,
+                             k_depth=self.k_depth,
+                             ax=ax,
+                             scale=self.scale,
+                             outlier_prop=self.outlier_prop,
+                             **kws)
 
             else:
                 # Draw nested groups of boxes
@@ -2033,16 +2039,16 @@ class _LVPlotter(_CategoricalPlotter):
 
                     color = self.colors[j]
                     center = i + offsets[j]
-                    artist_dict = self._lvplot(box_data,
-                                               positions=[center],
-                                               color=color,
-                                               vert=vert,
-                                               widths=self.nested_width,
-                                               k_depth=self.k_depth,
-                                               ax=ax,
-                                               scale=self.scale,
-                                               outlier_prop=self.outlier_prop,
-                                               **kws)
+                    self._lvplot(box_data,
+                                 positions=[center],
+                                 color=color,
+                                 vert=vert,
+                                 widths=self.nested_width,
+                                 k_depth=self.k_depth,
+                                 ax=ax,
+                                 scale=self.scale,
+                                 outlier_prop=self.outlier_prop,
+                                 **kws)
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
@@ -2050,6 +2056,7 @@ class _LVPlotter(_CategoricalPlotter):
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
+
 
 _categorical_docs = dict(
 
@@ -2217,6 +2224,7 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     plotter.plot(ax, kwargs)
     return ax
 
+
 boxplot.__doc__ = dedent("""\
     Draw a box plot to show distributions with respect to categories.
 
@@ -2368,6 +2376,7 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter.plot(ax)
     return ax
+
 
 violinplot.__doc__ = dedent("""\
     Draw a combination of boxplot and kernel density estimate.
@@ -3700,6 +3709,7 @@ def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     plotter.plot(ax, kwargs)
     return ax
+
 
 lvplot.__doc__ = dedent("""\
     Draw a letter value plot to show distributions of large datasets.

@@ -12,7 +12,6 @@ import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import categorical as cat
 from .. import palettes
 
@@ -21,7 +20,7 @@ pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_barplot_change = LooseVersion("2.0.1")
 
 
-class CategoricalFixture(PlotTestCase):
+class CategoricalFixture(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -2460,28 +2459,22 @@ class TestFactorPlot(CategoricalFixture):
 
 class TestLVPlotter(CategoricalFixture):
 
-    def setUp(self):
-        def edge_calc(n, data):
-            q = np.asanyarray([0.5**n, 1 - 0.5**n]) * 100
-            q = list(np.unique(q))
-            return np.percentile(data, q)
+    default_kws = dict(x=None, y=None, hue=None, data=None,
+                            order=None, hue_order=None,
+                            orient=None, color=None, palette=None,
+                            saturation=.75, width=.8, dodge=True,
+                            k_depth='proportion', linewidth=None,
+                            scale='exponential', outlier_prop=None)
 
-        self.ispatch = lambda c: isinstance(c, mpl.collections.PatchCollection)
+    def ispatch(self, c):
 
-        self.default_kws = dict(x=None, y=None, hue=None, data=None,
-                                order=None, hue_order=None,
-                                orient=None, color=None, palette=None,
-                                saturation=.75, width=.8, dodge=True,
-                                k_depth='proportion', linewidth=None,
-                                scale='exponential', outlier_prop=None)
-        self.linear_data = np.arange(101)
-        self.n = len(self.linear_data)
-        self.expected_k = int(np.log2(self.n)) - int(np.log2(self.n*0.007)) + 1
-        self.expected_edges_l = map(lambda i: edge_calc(i, self.linear_data),
-                                    range(self.expected_k + 2, 1, -1))
-        self.outlier_data = np.concatenate((np.arange(100), [200]))
-        self.expected_edges_o = map(lambda i: edge_calc(i, self.outlier_data),
-                                    range(self.expected_k + 2, 1, -1))
+        return isinstance(c, mpl.collections.PatchCollection)
+
+    def edge_calc(self, n, data):
+
+        q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
+        q = list(np.unique(q))
+        return np.percentile(data, q)
 
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
@@ -2508,23 +2501,36 @@ class TestLVPlotter(CategoricalFixture):
         npt.assert_equal(np.sum(list(k_f)), len(k_vals))
 
     def test_box_ends_correct(self):
+
+        n = 100
+        linear_data = np.arange(n)
+        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_edges = [self.edge_calc(i, linear_data)
+                          for i in range(expected_k + 2, 1, -1)]
+
         p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(self.linear_data)
+        calc_edges, calc_k = p._lv_box_ends(linear_data)
 
-        npt.assert_equal(list(self.expected_edges_l), calc_edges)
-
-        npt.assert_equal(self.expected_k, calc_k)
+        npt.assert_equal(list(expected_edges), calc_edges)
+        npt.assert_equal(expected_k, calc_k)
 
     def test_outliers(self):
+
+        n = 100
+        outlier_data = np.append(np.arange(n - 1), 2 * n)
+        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_edges = [self.edge_calc(i, outlier_data)
+                          for i in range(expected_k + 2, 1, -1)]
+
         p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(self.outlier_data)
+        calc_edges, calc_k = p._lv_box_ends(outlier_data)
 
-        npt.assert_equal(list(self.expected_edges_o), calc_edges)
+        npt.assert_equal(list(expected_edges), calc_edges)
 
-        npt.assert_equal(self.expected_k, calc_k)
+        npt.assert_equal(expected_k, calc_k)
 
-        out_calc = p._lv_outliers(self.outlier_data, calc_k)
-        out_exp = p._lv_outliers(self.outlier_data, self.expected_k)
+        out_calc = p._lv_outliers(outlier_data, calc_k)
+        out_exp = p._lv_outliers(outlier_data, expected_k)
 
         npt.assert_equal(out_exp, out_calc)
 

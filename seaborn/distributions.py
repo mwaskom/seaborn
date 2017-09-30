@@ -233,6 +233,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             rug_kws["color"] = rug_color
 
     if fit is not None:
+
+        def pdf(x):
+            return fit.pdf(x, *params)
+
         fit_color = fit_kws.pop("color", "#282828")
         gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
@@ -240,7 +244,6 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
         x = _kde_support(a, bw, gridsize, cut, clip)
         params = fit.fit(a)
-        pdf = lambda x: fit.pdf(x, *params)
         y = pdf(x)
         if vertical:
             x, y = y, x
@@ -331,7 +334,8 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         ax.set_ylim(0, max(ax.get_ylim()[1], (1 + ymargin) * y.max()))
 
     # Draw the legend here
-    if legend:
+    handles, labels = ax.get_legend_handles_labels()
+    if legend and handles:
         ax.legend(loc="best")
 
     return ax

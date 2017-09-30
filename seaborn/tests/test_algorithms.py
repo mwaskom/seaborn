@@ -1,8 +1,6 @@
 import numpy as np
-from scipy import stats
 from ..external.six.moves import range
 
-import numpy.testing as npt
 from numpy.testing import assert_array_equal
 import nose.tools
 from nose.tools import assert_equal, raises
@@ -128,77 +126,3 @@ def test_bootstrap_noncallable():
     """Test that we get a TypeError with noncallable algo.unc."""
     non_func = "mean"
     algo.bootstrap(a_norm, 100, non_func)
-
-
-def test_randomize_corrmat():
-    """Test the correctness of the correlation matrix p values."""
-    a = rs.randn(30)
-    b = a + rs.rand(30) * 3
-    c = rs.randn(30)
-    d = [a, b, c]
-
-    p_mat, dist = algo.randomize_corrmat(d, tail="upper", corrected=False,
-                                         return_dist=True)
-    nose.tools.assert_greater(p_mat[2, 0], p_mat[1, 0])
-
-    corrmat = np.corrcoef(d)
-    pctile = 100 - stats.percentileofscore(dist[2, 1], corrmat[2, 1])
-    nose.tools.assert_almost_equal(p_mat[2, 1] * 100, pctile)
-
-    d[1] = -a + rs.rand(30)
-    p_mat = algo.randomize_corrmat(d)
-    nose.tools.assert_greater(0.05, p_mat[1, 0])
-
-
-def test_randomize_corrmat_dist():
-    """Test that the distribution looks right."""
-    a = rs.randn(3, 20)
-    for n_i in [5, 10]:
-        p_mat, dist = algo.randomize_corrmat(a, n_iter=n_i, return_dist=True)
-        assert_equal(n_i, dist.shape[-1])
-
-    p_mat, dist = algo.randomize_corrmat(a, n_iter=10000, return_dist=True)
-
-    diag_mean = dist[0, 0].mean()
-    assert_equal(diag_mean, 1)
-
-    off_diag_mean = dist[0, 1].mean()
-    nose.tools.assert_greater(0.05, off_diag_mean)
-
-
-def test_randomize_corrmat_correction():
-    """Test that FWE correction works."""
-    a = rs.randn(3, 20)
-    p_mat = algo.randomize_corrmat(a, "upper", False)
-    p_mat_corr = algo.randomize_corrmat(a, "upper", True)
-    triu = np.triu_indices(3, 1)
-    npt.assert_array_less(p_mat[triu], p_mat_corr[triu])
-
-
-def test_randimoize_corrmat_tails():
-    """Test that the tail argument works."""
-    a = rs.randn(30)
-    b = a + rs.rand(30) * 8
-    c = rs.randn(30)
-    d = [a, b, c]
-
-    p_mat_b = algo.randomize_corrmat(d, "both", False, random_seed=0)
-    p_mat_u = algo.randomize_corrmat(d, "upper", False, random_seed=0)
-    p_mat_l = algo.randomize_corrmat(d, "lower", False, random_seed=0)
-    assert_equal(p_mat_b[0, 1], p_mat_u[0, 1] * 2)
-    assert_equal(p_mat_l[0, 1], 1 - p_mat_u[0, 1])
-
-
-def test_randomise_corrmat_seed():
-    """Test that we can seed the corrmat randomization."""
-    a = rs.randn(3, 20)
-    _, dist1 = algo.randomize_corrmat(a, random_seed=0, return_dist=True)
-    _, dist2 = algo.randomize_corrmat(a, random_seed=0, return_dist=True)
-    assert_array_equal(dist1, dist2)
-
-
-@raises(ValueError)
-def test_randomize_corrmat_tail_error():
-    """Test that we are strict about tail paramete."""
-    a = rs.randn(3, 30)
-    algo.randomize_corrmat(a, "hello")

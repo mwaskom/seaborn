@@ -1,10 +1,7 @@
 """Functions that alter the matplotlib rc dictionary on the fly."""
 from distutils.version import LooseVersion
 import functools
-
-import numpy as np
 import matplotlib as mpl
-
 from . import palettes, _orig_rc_params
 
 

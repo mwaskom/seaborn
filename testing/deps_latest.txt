@@ -1,4 +1,3 @@
-nose
 numpy
 scipy
 matplotlib

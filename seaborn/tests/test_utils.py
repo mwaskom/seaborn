@@ -1,5 +1,4 @@
 """Tests for plotting utilities."""
-import warnings
 import tempfile
 import shutil
 
@@ -25,7 +24,6 @@ try:
 except ImportError:
     BeautifulSoup = None
 
-from . import PlotTestCase
 from .. import utils, rcmod
 from ..utils import get_dataset_names, load_dataset, _network
 
@@ -121,7 +119,7 @@ def test_str_to_utf8():
     assert_equal(type(u), type(u"\u01ff\u02ff"))
 
 
-class TestSpineUtils(PlotTestCase):
+class TestSpineUtils(object):
 
     sides = ["left", "right", "bottom", "top"]
     outer_sides = ["top", "right"]

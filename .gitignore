@@ -4,6 +4,7 @@ build/
 .ipynb_checkpoints/
 dist/
 seaborn.egg-info/
+.cache/
 .coverage
 cover/
 .idea

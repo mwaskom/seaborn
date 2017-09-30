@@ -14,10 +14,7 @@ env:
 
 before_install:
   - sudo apt-get update -yq
-  - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
-  - sudo apt-get install msttcorefonts -qq
-
-  # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
+  - sudo sh testing/getmsfonts.sh
   - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -28,13 +25,12 @@ before_install:
 
 
 install:
-  - conda update conda --yes
-  - conda create -n testenv --yes pip python=$PYTHON
-  - conda update conda --yes
+  - conda update conda
+  - conda create -n testenv pip python=$PYTHON
+  - conda update conda
   - source activate testenv
-  - conda install --yes --file testing/deps_${DEPS}.txt
-  - pip install pep8==1.5  # Later versions get stricter...
-  - pip install https://github.com/dcramer/pyflakes/tarball/master
+  - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
+  - conda install --file deps.txt
   - pip install .
 
 
@@ -48,10 +44,13 @@ before_script:
 
 
 script:
-  - if [ ${PYTHON:0:1} == "2" ]; then
-    make lint;
-    fi
+  - make lint
   - if [ $DOCTESTS == 'true' ];
-    then nosetests --with-doctest;
-    else nosetests;
+    then make coverage;
+    else make unittests;
     fi
+
+
+after_success:
+    - pip install codecov
+    - codecov
