@@ -1,13 +1,11 @@
 import nose.tools as nt
-import numpy.testing as npt
 import matplotlib.pyplot as plt
 
-from . import PlotTestCase
 from .. import miscplot as misc
 from seaborn import color_palette
 
 
-class TestPalPlot(PlotTestCase):
+class TestPalPlot(object):
     """Test the function that visualizes a color palette."""
     def test_palplot_size(self):
 

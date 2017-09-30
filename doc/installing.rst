@@ -59,9 +59,9 @@ Testing
 ~~~~~~~
 
 To test seaborn, run ``make test`` in the root directory of the source
-distribution. This runs the unit test suite (which can also be exercised
-separately by running ``nosetests``). It also runs the example code in function
-docstrings to smoke-test a broader and more realistic range of example usage.
+distribution. This runs the unit test suite (using ``pytest``). It also runs
+the example code in function docstrings to smoke-test a broader and more
+realistic range of example usage.
 
 The full set of tests requires an internet connection to download the example
 datasets (if they haven't been previously cached), but the unit tests should

@@ -15,7 +15,6 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from . import PlotTestCase
 from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
@@ -29,7 +28,7 @@ old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
-class TestFacetGrid(PlotTestCase):
+class TestFacetGrid(object):
 
     df = pd.DataFrame(dict(x=rs.normal(size=60),
                            y=rs.gamma(4, size=60),
@@ -736,7 +735,7 @@ class TestFacetGrid(PlotTestCase):
             npt.assert_warns(UserWarning, g.map, pointplot, "b", "x")
 
 
-class TestPairGrid(PlotTestCase):
+class TestPairGrid(object):
 
     rs = np.random.RandomState(sum(map(ord, "PairGrid")))
     df = pd.DataFrame(dict(x=rs.normal(size=80),
@@ -1267,7 +1266,7 @@ class TestPairGrid(PlotTestCase):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
 
-class TestJointGrid(PlotTestCase):
+class TestJointGrid(object):
 
     rs = np.random.RandomState(sum(map(ord, "JointGrid")))
     x = rs.randn(100)
@@ -1408,7 +1407,7 @@ class TestJointGrid(PlotTestCase):
         nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
 
 
-class TestJointPlot(PlotTestCase):
+class TestJointPlot(object):
 
     rs = np.random.RandomState(sum(map(ord, "jointplot")))
     x = rs.randn(100)

@@ -1,8 +1,6 @@
 import numpy as np
-from scipy import stats
 from ..external.six.moves import range
 
-import numpy.testing as npt
 from numpy.testing import assert_array_equal
 import nose.tools
 from nose.tools import assert_equal, raises

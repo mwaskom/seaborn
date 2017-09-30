@@ -12,7 +12,6 @@ import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import categorical as cat
 from .. import palettes
 
@@ -21,7 +20,7 @@ pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_barplot_change = LooseVersion("2.0.1")
 
 
-class CategoricalFixture(PlotTestCase):
+class CategoricalFixture(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -2503,8 +2502,9 @@ class TestLVPlotter(CategoricalFixture):
 
     def test_box_ends_correct(self):
 
-        linear_data = np.arange(100)
-        expected_k = int(np.log2(100)) - int(np.log2(100 * 0.007)) + 1
+        n = 100
+        linear_data = np.arange(n)
+        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
         expected_edges = [self.edge_calc(i, linear_data)
                           for i in range(expected_k + 2, 1, -1)]
 

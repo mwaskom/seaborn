@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
-from . import PlotTestCase
 from .. import rcmod
 
 
@@ -176,7 +175,7 @@ class TestPlottingContext(RCParamTester):
         self.assert_rc_params(orig_params)
 
 
-class TestFonts(PlotTestCase):
+class TestFonts(object):
 
     def test_set_font(self):
 

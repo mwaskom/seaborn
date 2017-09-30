@@ -82,8 +82,8 @@ Testing
 
 [![Build Status](https://travis-ci.org/mwaskom/seaborn.png?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 
-To test seaborn, run `make test` in the source directory. This will run the
-unit-test and doctest suite (using `nose`).
+To test seaborn, run `make test` in the source directory. This will exercise the
+unit-test and doctest suite (using `pytest`).
 
  
 Development
