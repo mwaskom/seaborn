@@ -14,7 +14,7 @@ env:
 
 before_install:
   - sudo apt-get update -yq
-  - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
+  - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"  # TODO still needed?
   - sudo apt-get install msttcorefonts -qq
 
   # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
@@ -33,8 +33,6 @@ install:
   - conda update conda --yes
   - source activate testenv
   - conda install --yes --file testing/deps_${DEPS}.txt
-  - pip install pep8==1.5  # Later versions get stricter...
-  - pip install https://github.com/dcramer/pyflakes/tarball/master
   - pip install .
 
 
@@ -48,10 +46,8 @@ before_script:
 
 
 script:
-  - if [ ${PYTHON:0:1} == "2" ]; then
-    make lint;
-    fi
+  - make lint
   - if [ $DOCTESTS == 'true' ];
-    then nosetests --with-doctest;
-    else nosetests;
+    then make test;
+    else make test-nodoctest;
     fi
