@@ -2458,13 +2458,6 @@ class TestFactorPlot(CategoricalFixture):
         plt.close("all")
 
 
-def edge_calc(n, data):
-
-    q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
-    q = list(np.unique(q))
-    return np.percentile(data, q)
-
-
 class TestLVPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
@@ -2474,15 +2467,15 @@ class TestLVPlotter(CategoricalFixture):
                             k_depth='proportion', linewidth=None,
                             scale='exponential', outlier_prop=None)
 
-    expected_k = int(np.log2(100)) - int(np.log2(100 * 0.007)) + 1
-    expected_edges_l = [edge_calc(i, np.arange(100))
-                        for i in range(expected_k + 2, 1, -1)]
-    expected_edges_o = [edge_calc(i, np._c[np.arange(99), [200]])
-                        for i in range(expected_k + 2, 1, -1)]
-
     def ispatch(self, c):
 
         return isinstance(c, mpl.collections.PatchCollection)
+
+    def edge_calc(self, n, data):
+
+        q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
+        q = list(np.unique(q))
+        return np.percentile(data, q)
 
     def test_box_ends_finite(self):
         p = cat._LVPlotter(**self.default_kws)
@@ -2509,23 +2502,35 @@ class TestLVPlotter(CategoricalFixture):
         npt.assert_equal(np.sum(list(k_f)), len(k_vals))
 
     def test_box_ends_correct(self):
+
+        linear_data = np.arange(100)
+        expected_k = int(np.log2(100)) - int(np.log2(100 * 0.007)) + 1
+        expected_edges = [self.edge_calc(i, linear_data)
+                          for i in range(expected_k + 2, 1, -1)]
+
         p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(self.linear_data)
+        calc_edges, calc_k = p._lv_box_ends(linear_data)
 
-        npt.assert_equal(list(self.expected_edges_l), calc_edges)
-
-        npt.assert_equal(self.expected_k, calc_k)
+        npt.assert_equal(list(expected_edges), calc_edges)
+        npt.assert_equal(expected_k, calc_k)
 
     def test_outliers(self):
+
+        n = 100
+        outlier_data = np.append(np.arange(n - 1), 2 * n)
+        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_edges = [self.edge_calc(i, outlier_data)
+                          for i in range(expected_k + 2, 1, -1)]
+
         p = cat._LVPlotter(**self.default_kws)
-        calc_edges, calc_k = p._lv_box_ends(self.outlier_data)
+        calc_edges, calc_k = p._lv_box_ends(outlier_data)
 
-        npt.assert_equal(list(self.expected_edges_o), calc_edges)
+        npt.assert_equal(list(expected_edges), calc_edges)
 
-        npt.assert_equal(self.expected_k, calc_k)
+        npt.assert_equal(expected_k, calc_k)
 
-        out_calc = p._lv_outliers(self.outlier_data, calc_k)
-        out_exp = p._lv_outliers(self.outlier_data, self.expected_k)
+        out_calc = p._lv_outliers(outlier_data, calc_k)
+        out_exp = p._lv_outliers(outlier_data, expected_k)
 
         npt.assert_equal(out_exp, out_calc)
 
