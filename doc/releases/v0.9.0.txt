@@ -1,0 +1,5 @@
+
+v0.9.0 (Unreleased)
+-------------------
+
+- Updated the testing infrastructure to execute tests with `pytest <https://docs.pytest.org/en/latest/>` (although many individual tests still use nose assertion).
