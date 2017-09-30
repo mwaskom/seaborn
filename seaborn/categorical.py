@@ -769,19 +769,25 @@ class _ViolinPlotter(_CategoricalPlotter):
     def scale_count(self, density, counts, scale_hue):
         """Scale each density curve by the number of observations."""
         if self.hue_names is None:
-            for count, d in zip(counts, density):
-                d /= d.max()
-                d *= count / counts.max()
+            if counts.max() == 0:
+                d = 0
+            else:
+                for count, d in zip(counts, density):
+                    d /= d.max()
+                    d *= count / counts.max()
         else:
             for i, group in enumerate(density):
                 for j, d in enumerate(group):
-                    count = counts[i, j]
-                    if scale_hue:
-                        scaler = count / counts[i].max()
+                    if counts[i].max() == 0:
+                        d = 0
                     else:
-                        scaler = count / counts.max()
-                    d /= d.max()
-                    d *= scaler
+                        count = counts[i, j]
+                        if scale_hue:
+                            scaler = count / counts[i].max()
+                        else:
+                            scaler = count / counts.max()
+                        d /= d.max()
+                        d *= scaler
 
     @property
     def dwidth(self):
