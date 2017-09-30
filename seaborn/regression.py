@@ -1,15 +1,12 @@
 """Plotting functions for linear models (broadly construed)."""
 from __future__ import division
 import copy
-import itertools
 from textwrap import dedent
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-import warnings
 
 try:
     import statsmodels
@@ -19,11 +16,9 @@ except ImportError:
     _has_statsmodels = False
 
 from .external.six import string_types
-from .external.six.moves import range
 
 from . import utils
 from . import algorithms as algo
-from .palettes import color_palette
 from .axisgrid import FacetGrid, _facet_docs
 
 
@@ -1042,231 +1037,4 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
     scatter_kws = {} if scatter_kws is None else scatter_kws
     line_kws = {} if line_kws is None else line_kws
     plotter.plot(ax, scatter_kws, line_kws)
-    return ax
-
-
-def coefplot(formula, data, groupby=None, intercept=False, ci=95,
-             palette="husl"):
-    """Plot the coefficients from a linear model.
-
-    Parameters
-    ----------
-    formula : string
-        patsy formula for ols model
-    data : dataframe
-        data for the plot; formula terms must appear in columns
-    groupby : grouping object, optional
-        object to group data with to fit conditional models
-    intercept : bool, optional
-        if False, strips the intercept term before plotting
-    ci : float, optional
-        size of confidence intervals
-    palette : seaborn color palette, optional
-        palette for the horizonal plots
-
-    """
-    msg = (
-        "The `coefplot` function has been deprecated and will be removed "
-        "in a future version."
-    )
-    warnings.warn(msg, UserWarning)
-    if not _has_statsmodels:
-        raise ImportError("The `coefplot` function requires statsmodels")
-    import statsmodels.formula.api as sf
-
-    alpha = 1 - ci / 100
-    if groupby is None:
-        coefs = sf.ols(formula, data).fit().params
-        cis = sf.ols(formula, data).fit().conf_int(alpha)
-    else:
-        grouped = data.groupby(groupby)
-        coefs = grouped.apply(lambda d: sf.ols(formula, d).fit().params).T
-        cis = grouped.apply(lambda d: sf.ols(formula, d).fit().conf_int(alpha))
-
-    # Possibly ignore the intercept
-    if not intercept:
-        coefs = coefs.ix[1:]
-
-    n_terms = len(coefs)
-
-    # Plot seperately depending on groupby
-    def hsize(n):
-        return n * (h / 2)
-
-    def wsize(n):
-        return n * (w / (4 * (n / 5)))
-
-    w, h = mpl.rcParams["figure.figsize"]
-    if groupby is None:
-        colors = itertools.cycle(color_palette(palette, n_terms))
-        f, ax = plt.subplots(1, 1, figsize=(wsize(n_terms), hsize(1)))
-        for i, term in enumerate(coefs.index):
-            color = next(colors)
-            low, high = cis.ix[term]
-            ax.plot([i, i], [low, high], c=color,
-                    solid_capstyle="round", lw=2.5)
-            ax.plot(i, coefs.ix[term], "o", c=color, ms=8)
-        ax.set_xlim(-.5, n_terms - .5)
-        ax.axhline(0, ls="--", c="dimgray")
-        ax.set_xticks(range(n_terms))
-        ax.set_xticklabels(coefs.index)
-
-    else:
-        n_groups = len(coefs.columns)
-        f, axes = plt.subplots(n_terms, 1, sharex=True,
-                               figsize=(wsize(n_groups), hsize(n_terms)))
-        if n_terms == 1:
-            axes = [axes]
-        colors = itertools.cycle(color_palette(palette, n_groups))
-        for ax, term in zip(axes, coefs.index):
-            for i, group in enumerate(coefs.columns):
-                color = next(colors)
-                low, high = cis.ix[(group, term)]
-                ax.plot([i, i], [low, high], c=color,
-                        solid_capstyle="round", lw=2.5)
-                ax.plot(i, coefs.loc[term, group], "o", c=color, ms=8)
-            ax.set_xlim(-.5, n_groups - .5)
-            ax.axhline(0, ls="--", c="dimgray")
-            ax.set_title(term)
-        ax.set_xlabel(groupby)
-        ax.set_xticks(range(n_groups))
-        ax.set_xticklabels(coefs.columns)
-
-
-def interactplot(x1, x2, y, data=None, filled=False, cmap="RdBu_r",
-                 colorbar=True, levels=30, logistic=False,
-                 contour_kws=None, scatter_kws=None, ax=None, **kwargs):
-    """Visualize a continuous two-way interaction with a contour plot.
-
-    Parameters
-    ----------
-    x1, x2, y, strings or array-like
-        Either the two independent variables and the dependent variable,
-        or keys to extract them from `data`
-    data : DataFrame
-        Pandas DataFrame with the data in the columns.
-    filled : bool
-        Whether to plot with filled or unfilled contours
-    cmap : matplotlib colormap
-        Colormap to represent yhat in the countour plot.
-    colorbar : bool
-        Whether to draw the colorbar for interpreting the color values.
-    levels : int or sequence
-        Number or position of contour plot levels.
-    logistic : bool
-        Fit a logistic regression model instead of linear regression.
-    contour_kws : dictionary
-        Keyword arguments for contour[f]().
-    scatter_kws : dictionary
-        Keyword arguments for plot().
-    ax : matplotlib axis
-        Axis to draw plot in.
-
-    Returns
-    -------
-    ax : Matplotlib axis
-        Axis with the contour plot.
-
-    """
-    msg = (
-        "The `interactplot` function has been deprecated and will be removed "
-        "in a future version."
-    )
-    warnings.warn(msg, UserWarning)
-    if not _has_statsmodels:
-        raise ImportError("The `interactplot` function requires statsmodels")
-    from statsmodels.regression.linear_model import OLS
-    from statsmodels.genmod.generalized_linear_model import GLM
-    from statsmodels.genmod.families import Binomial
-
-    # Handle the form of the data
-    if data is not None:
-        x1 = data[x1]
-        x2 = data[x2]
-        y = data[y]
-    if hasattr(x1, "name"):
-        xlabel = x1.name
-    else:
-        xlabel = None
-    if hasattr(x2, "name"):
-        ylabel = x2.name
-    else:
-        ylabel = None
-    if hasattr(y, "name"):
-        clabel = y.name
-    else:
-        clabel = None
-    x1 = np.asarray(x1)
-    x2 = np.asarray(x2)
-    y = np.asarray(y)
-
-    # Initialize the scatter keyword dictionary
-    if scatter_kws is None:
-        scatter_kws = {}
-    if not ("color" in scatter_kws or "c" in scatter_kws):
-        scatter_kws["color"] = "#222222"
-    if "alpha" not in scatter_kws:
-        scatter_kws["alpha"] = 0.75
-
-    # Intialize the contour keyword dictionary
-    if contour_kws is None:
-        contour_kws = {}
-
-    # Initialize the axis
-    if ax is None:
-        ax = plt.gca()
-
-    # Plot once to let matplotlib sort out the axis limits
-    ax.plot(x1, x2, "o", **scatter_kws)
-
-    # Find the plot limits
-    x1min, x1max = ax.get_xlim()
-    x2min, x2max = ax.get_ylim()
-
-    # Make the grid for the contour plot
-    x1_points = np.linspace(x1min, x1max, 100)
-    x2_points = np.linspace(x2min, x2max, 100)
-    xx1, xx2 = np.meshgrid(x1_points, x2_points)
-
-    # Fit the model with an interaction
-    X = np.c_[np.ones(x1.size), x1, x2, x1 * x2]
-    if logistic:
-        lm = GLM(y, X, family=Binomial()).fit()
-    else:
-        lm = OLS(y, X).fit()
-
-    # Evaluate the model on the grid
-    eval = np.vectorize(lambda x1_, x2_: lm.predict([1, x1_, x2_, x1_ * x2_]))
-    yhat = eval(xx1, xx2)
-
-    # Default color limits put the midpoint at mean(y)
-    y_bar = y.mean()
-    c_min = min(np.percentile(y, 2), yhat.min())
-    c_max = max(np.percentile(y, 98), yhat.max())
-    delta = max(c_max - y_bar, y_bar - c_min)
-    c_min, c_max = y_bar - delta, y_bar + delta
-    contour_kws.setdefault("vmin", c_min)
-    contour_kws.setdefault("vmax", c_max)
-
-    # Draw the contour plot
-    func_name = "contourf" if filled else "contour"
-    contour = getattr(ax, func_name)
-    c = contour(xx1, xx2, yhat, levels, cmap=cmap, **contour_kws)
-
-    # Draw the scatter again so it's visible
-    ax.plot(x1, x2, "o", **scatter_kws)
-
-    # Draw a colorbar, maybe
-    if colorbar:
-        bar = plt.colorbar(c)
-
-    # Label the axes
-    if xlabel is not None:
-        ax.set_xlabel(xlabel)
-    if ylabel is not None:
-        ax.set_ylabel(ylabel)
-    if clabel is not None and colorbar:
-        clabel = "P(%s)" % clabel if logistic else clabel
-        bar.set_label(clabel, labelpad=15, rotation=270)
-
     return ax
