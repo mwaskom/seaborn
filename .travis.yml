@@ -23,11 +23,12 @@ before_install:
 
 
 install:
-  - conda update conda --yes
-  - conda create -n testenv --yes pip python=$PYTHON
-  - conda update conda --yes
+  - conda update conda
+  - conda create -n testenv pip python=$PYTHON
+  - conda update conda
   - source activate testenv
-  - conda install --yes --file testing/deps_${DEPS}.txt
+  - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
+  - conda install --file deps.txt
   - pip install .
 
 
@@ -43,6 +44,11 @@ before_script:
 script:
   - make lint
   - if [ $DOCTESTS == 'true' ];
-    then make test;
-    else make test-nodoctest;
+    then make coverage;
+    else make unittests;
     fi
+
+
+after_success:
+    - pip install codecov
+    - codecov

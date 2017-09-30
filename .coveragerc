@@ -1,3 +1,5 @@
 [run]
-include = seaborn/*
-omit = *external* *widgets.py
+omit =
+    seaborn/widgets.py
+    seaborn/external/*
+    seaborn/tests/*

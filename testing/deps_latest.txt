@@ -3,6 +3,3 @@ scipy
 matplotlib
 pandas
 statsmodels
-pytest
-flake8
-nose

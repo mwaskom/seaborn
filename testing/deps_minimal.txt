@@ -2,6 +2,3 @@ numpy
 scipy
 matplotlib
 pandas
-pytest
-flake8
-nose
