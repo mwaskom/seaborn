@@ -334,7 +334,8 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         ax.set_ylim(0, max(ax.get_ylim()[1], (1 + ymargin) * y.max()))
 
     # Draw the legend here
-    if legend:
+    handles, labels = ax.get_legend_handles_labels()
+    if legend and handles:
         ax.legend(loc="best")
 
     return ax
