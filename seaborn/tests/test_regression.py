@@ -359,7 +359,8 @@ class TestRegressionPlotter(object):
         y = self.df.x > self.df.x.mean()
         p = lm._RegressionPlotter("x", y, data=self.df,
                                   logistic=True, n_boot=10)
-        _, yhat, _ = p.fit_regression(x_range=(-3, 3))
+        with np.errstate(all="ignore"):
+            _, yhat, _ = p.fit_regression(x_range=(-3, 3))
         nt.assert_true(np.isnan(yhat).all())
 
     @skipif(_no_statsmodels)
