@@ -44,20 +44,20 @@ class _BasicPlotter(object):
             # We will assign the index to x, the values to y,
             # and the columns names to both hue and style
 
+            # TODO accept a dict and try to coerce to a dataframe?
+
             if isinstance(data, pd.DataFrame):
 
                 # Enforce numeric values
                 try:
                     data.astype(np.float)
                 except ValueError:
-                    raise ValueError("A wide-form dataframe must have only "
-                                     "numeric values.")
+                    err = "A wide-form input must have only numeric values."
+                    raise ValueError(err)
 
                 plot_data = pd.melt(data.assign(x=data.index), "x",
                                     var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
-
-            # TODO accept a dict and try to coerce to a dataframe?
 
             # Option 1b:
             # The input data is an array or list
@@ -65,7 +65,14 @@ class _BasicPlotter(object):
 
             else:
 
-                if hasattr(data, "shape"):
+                if np.isscalar(data[0]):
+
+                    # The input data is a flat list(like):
+                    # We assign a numeric index for x and use the values for y
+
+                    plot_data = pd.DataFrame(dict(x=np.arange(len(data)),
+                                                  y=data))
+                elif hasattr(data, "shape"):
 
                     # The input data is an array(like):
                     # We assign a numeric index to x, the values to y, and
@@ -77,18 +84,10 @@ class _BasicPlotter(object):
                                         var_name="hue", value_name="y")
                     plot_data["style"] = plot_data["hue"]
 
-                elif np.isscalar(data[0]):
-
-                    # The input data is a flat list(like):
-                    # We assign a numeric index for x and use the values for y
-
-                    plot_data = pd.DataFrame(dict(x=np.arange(len(data)),
-                                                  y=data))
-
                 else:
 
                     # The input data is a nested list: We will assign a numeric
-                    # index for x, use the values for, y and use numieric
+                    # index for x, use the values for, y and use numeric
                     # hue/style identifiers for each entry.
 
                     plot_data = pd.concat([
@@ -382,13 +381,10 @@ class _LinePlotter(_BasicPlotter):
 
         for hue, style, size in self.attributes:
 
-            rows = (
-                all_true
-                & (all_true if hue is None else data["hue"] == hue)
-                & (all_true if style is None else data["style"] == style)
-                & (all_true if size is None else data["size"] == size)
-            )
-
+            hue_rows = all_true if hue is None else data["hue"] == hue
+            style_rows = all_true if style is None else data["style"] == style
+            size_rows = all_true if size is None else data["size"] == size
+            rows = hue_rows & style_rows & size_rows
             subset_data = data.loc[rows, ["x", "y"]].dropna()
 
             # TODO dumb way to handle shared attributes
