@@ -2474,15 +2474,10 @@ class TestLVPlotter(CategoricalFixture):
                             k_depth='proportion', linewidth=None,
                             scale='exponential', outlier_prop=None)
 
-    linear_data = np.arange(101)
-    n = len(linear_data)
-    expected_k = int(np.log2(n)) - int(np.log2(n*0.007)) + 1
-
-    expected_edges_l = [edge_calc(i, linear_data)
+    expected_k = int(np.log2(100)) - int(np.log2(100 * 0.007)) + 1
+    expected_edges_l = [edge_calc(i, np.arange(100))
                         for i in range(expected_k + 2, 1, -1)]
-
-    outlier_data = np.concatenate((np.arange(100), [200]))
-    expected_edges_o = [edge_calc(i, outlier_data)
+    expected_edges_o = [edge_calc(i, np._c[np.arange(99), [200]])
                         for i in range(expected_k + 2, 1, -1)]
 
     def ispatch(self, c):
