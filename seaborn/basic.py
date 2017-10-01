@@ -12,7 +12,7 @@ from .external.six import string_types
 from . import utils
 from .utils import categorical_order, hue_type, get_color_cycle
 from .algorithms import bootstrap
-from .palettes import color_palette, husl_palette
+from .palettes import color_palette
 
 
 __all__ = ["lineplot"]
@@ -223,17 +223,17 @@ class _LinePlotter(_BasicPlotter):
                            .format(missing))
                     raise ValueError(msg)
 
-            elif palette is None:
-
-                if n_colors <= len(get_color_cycle()):
-                    colors = color_palette(n_colors=n_colors)
-                else:
-                    colors = husl_palette(n_colors, l=.7)
-
             else:
-                colors = color_palette(palette, n_colors)
 
-            palette = dict(zip(hue_levels, colors))
+                if palette is None:
+                    if n_colors <= len(get_color_cycle()):
+                        colors = color_palette(None, n_colors)
+                    else:
+                        colors = color_palette("husl", n_colors)
+                else:
+                    colors = color_palette(palette, n_colors)
+
+                palette = dict(zip(hue_levels, colors))
 
         # -- Option 2: sequential color palette
 
@@ -250,6 +250,12 @@ class _LinePlotter(_BasicPlotter):
             # at the extremes of the colormap against the background?
 
             # -- Option 2a: a discrete colormap
+            # TODO is there any real reason to separate discrete/continuous?
+            # Originally I think the idea was to have the former in a legend
+            # and the latter in a colorbar. But doing colorbars adds a lot of
+            # complexity ... perhaps it's easier just to do both in a legend.
+            # Note that there are also some considerations for using this
+            # in scatterplot too...
 
             if palette_type == "discrete":
 
