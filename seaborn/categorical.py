@@ -3743,7 +3743,7 @@ lvplot.__doc__ = dedent("""\
         assumptions about the number of outliers and leverages different
         statistical properties.
     {linewidth}
-    scale : "linear" | "exonential" | "area"
+    scale : "linear" | "exponential" | "area"
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
