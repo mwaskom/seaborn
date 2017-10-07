@@ -1,3 +1,4 @@
+from __future__ import division
 from itertools import product
 from textwrap import dedent
 
@@ -10,7 +11,7 @@ from matplotlib.collections import LineCollection
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, hue_type, get_color_cycle
+from .utils import categorical_order, get_color_cycle
 from .algorithms import bootstrap
 from .palettes import color_palette
 
@@ -144,6 +145,17 @@ class _BasicPlotter(object):
 
         self.plot_data = plot_data
 
+    def _attribute_type(self, data):
+
+        if self.input_format == "wide":
+            return "categorical"
+        else:
+            try:
+                data.astype(np.float)
+                return "numeric"
+            except ValueError:
+                return "categorical"
+
 
 class _LinePlotter(_BasicPlotter):
 
@@ -171,9 +183,6 @@ class _LinePlotter(_BasicPlotter):
                              markers=None, dashes=None, style_order=None,
                              size_limits=None):
 
-        # TODO going to need some way to specify attribute order
-        # TODO also should things generally be expected to take dicts
-        # as the most direct way of exact specification?
         # TODO also need better names! Naming things is hard.
 
         self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
@@ -187,39 +196,34 @@ class _LinePlotter(_BasicPlotter):
                                   self.size_levels)
 
     def parse_hue(self, data, palette, hue_order, hue_limits):
-        """Determine what color palette to use given data characteristics."""
-
+        """Determine what colors to use given data characteristics."""
         if data.isnull().all():
 
-            # -- Set default values when not using a hue mapping
-
+            # Set default values when not using a hue mapping
             hue_levels = [None]
             palette = {}
-            palette_type = None
+            hue_type = None
             cmap = None
 
         else:
 
-            # -- Determine what kind of hue mapping we want
-
-            # (Default to categorical for wide-form inputs because the hue
-            # variable will usually be default integer index values)
-
-            if self.input_format == "wide":
-                palette_type = "categorical"
-            else:
-                palette_type = hue_type(data)
+            # Determine what kind of hue mapping we want
+            hue_type = self._attribute_type(data)
 
         # -- Option 1: categorical color palette
 
-        if palette_type == "categorical":
+        if hue_type == "categorical":
 
+            # -- Identify the order and name of the levels
+
+            cmap = None
             if hue_order is None:
                 hue_levels = categorical_order(data)
             else:
                 hue_levels = hue_order
             n_colors = len(hue_levels)
-            cmap = None
+
+            # -- Identify the set of colors to use
 
             if isinstance(palette, dict):
 
@@ -243,58 +247,41 @@ class _LinePlotter(_BasicPlotter):
 
         # -- Option 2: sequential color palette
 
-        elif palette_type is not None:
+        elif hue_type == "numeric":
 
+            # Identify the colormap to use
             if palette is None:
                 cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
             elif isinstance(palette, mpl.colors.Colormap):
                 cmap = palette
             else:
-                cmap = mpl.cm.get_cmap(palette)
+                try:
+                    cmap = mpl.cm.get_cmap(palette)
+                except (TypeError, ValueError):
+                    cmap = mpl.colors.ListedColormap(color_palette(palette))
 
             # TODO do we want to do something complicated to ensure contrast
             # at the extremes of the colormap against the background?
 
-            # -- Option 2a: a discrete colormap
-            # TODO is there any real reason to separate discrete/continuous?
-            # Originally I think the idea was to have the former in a legend
-            # and the latter in a colorbar. But doing colorbars adds a lot of
-            # complexity ... perhaps it's easier just to do both in a legend.
-            # Note that there are also some considerations for using this
-            # in scatterplot too...
+            if hue_limits is None:
+                hue_limits = data.min(), data.max()
+            else:
+                hue_min, hue_max = hue_limits
+                hue_min = data.min() if hue_min is None else hue_min
+                hue_max = data.max() if hue_max is None else hue_max
+                hue_limits = hue_min, hue_max
 
-            if palette_type == "discrete":
-
-                if hue_limits is None:
-                    # TODO make sure this is handled properly in a
-                    # faceted context
-                    hue_levels = np.arange(data.min(), data.max() + 1)
-                else:
-                    hue_levels = np.arange(hue_limits[0], hue_limits[1] + 1)
-
-                vals = np.linspace(0, 1, len(hue_levels))
-                colors = cmap(vals)
-                palette = dict(zip(hue_levels, colors))
-
-            # -- Option 2b: a continuous colormap
-
-            elif palette_type == "continuous":
-
-                hue_levels = data.unique()
-                vals = mpl.colors.Normalize(*hue_limits)(data)
-                colors = cmap(vals)
-                palette = dict(zip(hue_levels, colors))
+            hue_levels = list(np.sort(data.unique()))
+            norm = mpl.colors.Normalize(*hue_limits)
+            palette = {level: cmap(norm(level)) for level in hue_levels}
 
         self.hue_levels = hue_levels
+        self.hue_limits = hue_limits
         self.palette = palette
-        self.palette_type = palette_type
+        self.hue_type = hue_type
         self.cmap = cmap
 
     def parse_size(self, data, size_limits):
-
-        # TODO note that as currently written, size_limits and hue_limits are
-        # different size_limits is specified in marker units while hue_limits
-        # is specified in data units. This needs to be remedied (not sure how).
 
         if data.isnull().all():
             size_levels = [None]
@@ -306,7 +293,7 @@ class _LinePlotter(_BasicPlotter):
 
             if size_limits is None:
                 # TODO ensure that this works properly in faceted context
-                smin, smax = 1, 3
+                smin, smax = data.min(), data.max()
             else:
                 smin, smax = size_limits
             smax -= smin
