@@ -56,7 +56,9 @@ class _BasicPlotter(object):
                     err = "A wide-form input must have only numeric values."
                     raise ValueError(err)
 
-                plot_data = pd.melt(data.assign(x=data.index), "x",
+                plot_data = data.copy()
+                plot_data.loc[:, "x"] = data.index
+                plot_data = pd.melt(plot_data, "x",
                                     var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
 
