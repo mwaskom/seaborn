@@ -346,7 +346,7 @@ class _LinePlotter(_BasicPlotter):
 
         def bootstrapped_cis(vals):
             if len(vals) == 1:
-                return None
+                return pd.Series(index=["low", "high"], dtype=np.float)
             boots = bootstrap(vals, func=func, n_boot=n_boot)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
