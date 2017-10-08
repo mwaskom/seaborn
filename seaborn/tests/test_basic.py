@@ -213,8 +213,14 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.establish_variables(x="x", y="not_in_df", data=long_df)
 
-        with pytest.raises(ValueError):
-            p.establish_variables(data=np.array([[], []]))
+    def test_empty_input(self):
+
+        p = basic._BasicPlotter()
+
+        p.establish_variables(data=[])
+        p.establish_variables(data=np.array([]))
+        p.establish_variables(data=pd.DataFrame())
+        p.establish_variables(x=[], y=[])
 
 
 class TestLinePlotter(TestBasicPlotter):
@@ -347,3 +353,7 @@ class TestLinePlotter(TestBasicPlotter):
         palette = "not_a_valid_palette"
         with pytest.raises(ValueError):
             p.parse_hue(p.plot_data.hue, palette, None, None)
+
+    def test_parse_size(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", hue="s", data=long_df)

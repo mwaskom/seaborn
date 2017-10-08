@@ -68,7 +68,11 @@ class _BasicPlotter(object):
 
             else:
 
-                if np.isscalar(data[0]):
+                if not len(data):
+
+                    plot_data = pd.DataFrame(columns=["x", "y"])
+
+                elif np.isscalar(data[0]):
 
                     # The input data is a flat list(like):
                     # We assign a numeric index for x and use the values for y
@@ -141,10 +145,6 @@ class _BasicPlotter(object):
             if attr not in plot_data:
                 plot_data[attr] = None
 
-        if not plot_data.size:
-            err = "Input data (after processing) was empty"
-            raise ValueError(err)
-
         self.plot_data = plot_data
 
     def _attribute_type(self, data):
@@ -188,8 +188,8 @@ class _LinePlotter(_BasicPlotter):
         # TODO also need better names! Naming things is hard.
 
         self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_style(self.plot_data["style"], markers, dashes, style_order)
         self.parse_size(self.plot_data["size"], size_limits)
+        self.parse_style(self.plot_data["style"], markers, dashes, style_order)
 
         # TODO This doesn't work when attributes share a variable
         # (but it is kind of handled in plot())
@@ -282,14 +282,14 @@ class _LinePlotter(_BasicPlotter):
             if cmap is not None:
 
                 if hue_limits is None:
-                    hue_limits = data.min(), data.max()
+                    hue_min, hue_max = data.min(), data.max()
                 else:
                     hue_min, hue_max = hue_limits
                     hue_min = data.min() if hue_min is None else hue_min
                     hue_max = data.max() if hue_max is None else hue_max
-                    hue_limits = hue_min, hue_max
 
-                norm = mpl.colors.Normalize(*hue_limits)
+                hue_limits = hue_min, hue_max
+                norm = mpl.colors.Normalize(hue_min, hue_max)
                 palette = {level: cmap(norm(level)) for level in hue_levels}
 
         self.hue_levels = hue_levels
