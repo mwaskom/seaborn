@@ -229,9 +229,8 @@ class _LinePlotter(_BasicPlotter):
 
                 missing = set(hue_levels) - set(palette)
                 if any(missing):
-                    msg = ("The palette dictionary is missing keys: {}"
-                           .format(missing))
-                    raise ValueError(msg)
+                    err = "The palette dictionary is missing keys: {}"
+                    raise ValueError(err.format(missing))
 
             else:
 
@@ -249,31 +248,47 @@ class _LinePlotter(_BasicPlotter):
 
         elif hue_type == "numeric":
 
+            hue_levels = list(np.sort(data.unique()))
+
+            # TODO do we want to do something complicated to ensure contrast
+            # at the extremes of the colormap against the background?
+
             # Identify the colormap to use
             if palette is None:
                 cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
+            elif isinstance(palette, dict):
+                missing = set(hue_levels) - set(palette)
+                if any(missing):
+                    err = "The palette dictionary is missing keys: {}"
+                    raise ValueError(err.format(missing))
+                cmap = None
+            elif isinstance(palette, list):
+                if len(palette) != len(hue_levels):
+                    err = "The palette has the wrong number of colors"
+                    raise ValueError(err)
+                palette = dict(zip(hue_levels, palette))
+                cmap = None
             elif isinstance(palette, mpl.colors.Colormap):
                 cmap = palette
             else:
                 try:
                     cmap = mpl.cm.get_cmap(palette)
-                except (TypeError, ValueError):
-                    cmap = mpl.colors.ListedColormap(color_palette(palette))
+                except (ValueError, TypeError):
+                    err = "Palette {} not understood"
+                    raise ValueError(err)
 
-            # TODO do we want to do something complicated to ensure contrast
-            # at the extremes of the colormap against the background?
+            if cmap is not None:
 
-            if hue_limits is None:
-                hue_limits = data.min(), data.max()
-            else:
-                hue_min, hue_max = hue_limits
-                hue_min = data.min() if hue_min is None else hue_min
-                hue_max = data.max() if hue_max is None else hue_max
-                hue_limits = hue_min, hue_max
+                if hue_limits is None:
+                    hue_limits = data.min(), data.max()
+                else:
+                    hue_min, hue_max = hue_limits
+                    hue_min = data.min() if hue_min is None else hue_min
+                    hue_max = data.max() if hue_max is None else hue_max
+                    hue_limits = hue_min, hue_max
 
-            hue_levels = list(np.sort(data.unique()))
-            norm = mpl.colors.Normalize(*hue_limits)
-            palette = {level: cmap(norm(level)) for level in hue_levels}
+                norm = mpl.colors.Normalize(*hue_limits)
+                palette = {level: cmap(norm(level)) for level in hue_levels}
 
         self.hue_levels = hue_levels
         self.hue_limits = hue_limits
