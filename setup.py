@@ -77,7 +77,8 @@ if __name__ == "__main__":
         version=VERSION,
         download_url=DOWNLOAD_URL,
         install_requires=install_requires,
-        packages=['seaborn', 'seaborn.external', 'seaborn.tests'],
+        packages=['seaborn', 'seaborn.colors',
+                  'seaborn.external', 'seaborn.tests'],
         classifiers=[
                      'Intended Audience :: Science/Research',
                      'Programming Language :: Python :: 2.7',
