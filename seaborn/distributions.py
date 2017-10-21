@@ -329,9 +329,9 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     # Set the density axis minimum to 0
     xmargin, ymargin = ax.margins()
     if vertical:
-        ax.set_xlim(0, max(ax.get_xlim()[1], (1 + xmargin) * x.max()))
+        ax.set_xlim(0, auto=None)
     else:
-        ax.set_ylim(0, max(ax.get_ylim()[1], (1 + ymargin) * y.max()))
+        ax.set_ylim(0, auto=None)
 
     # Draw the legend here
     handles, labels = ax.get_legend_handles_labels()
