@@ -472,6 +472,10 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
              estimator=np.mean, ci=95, n_boot=1000, units=None,
              sort=True, errstyle="band", ax=None, **kwargs):
 
+    # TODO add a "brief_legend" or similar that handles many legend entries
+    # using a matplotlib ticker ... maybe have it take threshold where you
+    # flip from itemizing levels to showing level ticks
+
     p = _LinePlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
@@ -495,5 +499,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 estimator=None, ci=95, n_boot=1000, units=None,
                 errstyle="bars", alpha="auto", x_jitter=None, y_jitter=None,
                 ax=None, **kwargs):
+
+    # TODO auto alpha
 
     pass
