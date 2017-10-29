@@ -318,17 +318,17 @@ class TestLinePlotter(TestBasicPlotter):
         assert p.hue_limits == hue_limits
 
         # Test default colormap values
-        min, max = p.plot_data.hue.min(), p.plot_data.hue.max()
+        hmin, hmax = p.plot_data.hue.min(), p.plot_data.hue.max()
         p.parse_hue(p.plot_data.hue, None, None, None)
-        assert p.palette[min] == pytest.approx(p.cmap(0.0))
-        assert p.palette[max] == pytest.approx(p.cmap(1.0))
+        assert p.palette[hmin] == pytest.approx(p.cmap(0.0))
+        assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
         # Test specified colormap values
-        hue_limits = min - 1, max - 1
+        hue_limits = hmin - 1, hmax - 1
         p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        norm_min = (min - hue_limits[0]) / (hue_limits[1] - hue_limits[0])
-        assert p.palette[min] == pytest.approx(p.cmap(norm_min))
-        assert p.palette[max] == pytest.approx(p.cmap(1.0))
+        norm_min = (hmin - hue_limits[0]) / (hue_limits[1] - hue_limits[0])
+        assert p.palette[hmin] == pytest.approx(p.cmap(norm_min))
+        assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
         # Test list of colors
         hue_levels = list(np.sort(long_df.s.unique()))
@@ -356,4 +356,35 @@ class TestLinePlotter(TestBasicPlotter):
 
     def test_parse_size(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", hue="s", data=long_df)
+        p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
+
+        # Test default size limits and range
+        default_linewidth = mpl.rcParams["lines.linewidth"]
+        default_limits = p.plot_data["size"].min(), p.plot_data["size"].max()
+        default_range = .5 * default_linewidth, 2 * default_linewidth
+        p.parse_size(p.plot_data["size"], None, None)
+        assert p.size_limits == default_limits
+        assert p.size_range == default_range
+
+        # Test specified size limits
+        size_limits = (1, 5)
+        p.parse_size(p.plot_data["size"], size_limits, None)
+        assert p.size_limits == size_limits
+        assert p.size_range == default_range
+
+        # Test specified size range
+        size_range = (.1, .5)
+        p.parse_size(p.plot_data["size"], None, size_range)
+        assert p.size_limits == default_limits
+        assert p.size_range == size_range
+
+        # Test size values
+        size_limits = (1, 10)
+        size_range = (1, 5)
+        p.parse_size(p.plot_data["size"], size_limits, size_range)
+        normalize = mpl.colors.Normalize(*size_limits, clip=False)
+        for level, width in p.sizes.items():
+            assert width == size_range[0] + size_range[1] * normalize(level)
+
+        with pytest.raises(ValueError):
+            basic._LinePlotter(x="x", y="y", size="a", data=long_df)

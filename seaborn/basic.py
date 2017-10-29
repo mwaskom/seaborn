@@ -147,6 +147,11 @@ class _BasicPlotter(object):
 
         self.plot_data = plot_data
 
+    def _empty_data(self, data):
+
+        empty_data = data.isnull().all()
+        return empty_data
+
     def _attribute_type(self, data):
 
         if self.input_format == "wide":
@@ -165,14 +170,14 @@ class _LinePlotter(_BasicPlotter):
                  x=None, y=None, hue=None, style=None, size=None, data=None,
                  palette=None, hue_order=None, hue_limits=None,
                  dashes=None, markers=None, style_order=None,
-                 size_limits=None,
+                 size_limits=None, size_range=None,
                  estimator=None, ci=None, n_boot=None, units=None,
                  sort=True, errstyle=None):
 
         self.establish_variables(x, y, hue, style, size, data)
         self.determine_attributes(palette, hue_order, hue_limits,
                                   markers, dashes, style_order,
-                                  size_limits)
+                                  size_limits, size_range)
 
         self.sort = sort
         self.estimator = estimator
@@ -183,12 +188,12 @@ class _LinePlotter(_BasicPlotter):
     def determine_attributes(self,
                              palette=None, hue_order=None, hue_limits=None,
                              markers=None, dashes=None, style_order=None,
-                             size_limits=None):
+                             size_limits=None, size_range=None):
 
         # TODO also need better names! Naming things is hard.
 
         self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(self.plot_data["size"], size_limits)
+        self.parse_size(self.plot_data["size"], size_limits, size_range)
         self.parse_style(self.plot_data["style"], markers, dashes, style_order)
 
         # TODO This doesn't work when attributes share a variable
@@ -199,7 +204,7 @@ class _LinePlotter(_BasicPlotter):
 
     def parse_hue(self, data, palette, hue_order, hue_limits):
         """Determine what colors to use given data characteristics."""
-        if data.isnull().all():
+        if self._empty_data(data):
 
             # Set default values when not using a hue mapping
             hue_levels = [None]
@@ -289,8 +294,8 @@ class _LinePlotter(_BasicPlotter):
                     hue_max = data.max() if hue_max is None else hue_max
 
                 hue_limits = hue_min, hue_max
-                norm = mpl.colors.Normalize(hue_min, hue_max)
-                palette = {level: cmap(norm(level)) for level in hue_levels}
+                normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
+                palette = {l: cmap(normalize(l)) for l in hue_levels}
 
         self.hue_levels = hue_levels
         self.hue_limits = hue_limits
@@ -298,31 +303,52 @@ class _LinePlotter(_BasicPlotter):
         self.hue_type = hue_type
         self.cmap = cmap
 
-    def parse_size(self, data, size_limits):
+    def parse_size(self, data, size_limits, size_range):
 
-        if data.isnull().all():
+        if self._empty_data(data):
             size_levels = [None]
             sizes = {}
 
         else:
 
+            if self._attribute_type(data) == "categorical":
+                err = "The variable that determines size must be numeric."
+                raise ValueError(err)
+
             size_levels = categorical_order(data)
 
-            if size_limits is None:
-                # TODO ensure that this works properly in faceted context
-                smin, smax = data.min(), data.max()
+            if size_range is None:
+                default = plt.rcParams["lines.linewidth"]
+                min_width, max_width = default * .5, default * 2
             else:
-                smin, smax = size_limits
-            smax -= smin
-            norm = mpl.colors.Normalize(data.min(), data.max())
-            sizes = {s: smin + (norm(s) * smax) for s in size_levels}
+                min_width, max_width = size_range
+
+            if size_limits is None:
+                s_min, s_max = data.min(), data.max()
+            else:
+                s_min, s_max = size_limits
+                s_min = data.min() if s_min is None else s_min
+                s_max = data.max() if s_max is None else s_max
+
+            size_limits = s_min, s_max
+            size_range = min_width, max_width
+            normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
+            sizes = {l: min_width + (normalize(l) * max_width)
+                     for l in size_levels}
 
         self.size_levels = size_levels
+        self.size_limits = size_limits
+        self.size_range = size_range
         self.sizes = sizes
 
     def parse_style(self, data, markers, dashes, style_order):
 
-        if data.isnull().all():
+        try:
+            empty_data = data.isnull().all()
+        except AttributeError:
+            empty_data = False
+
+        if empty_data:
             style_levels = [None]
             dashes = {}
             markers = {}
@@ -468,7 +494,8 @@ _basic_docs = dict(
 
 def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
-             dashes=True, markers=None, style_order=None, size_limits=None,
+             dashes=True, markers=None, style_order=None,
+             size_limits=None, size_range=None,
              estimator=np.mean, ci=95, n_boot=1000, units=None,
              sort=True, errstyle="band", ax=None, **kwargs):
 
@@ -480,8 +507,8 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
         dashes=dashes, markers=markers, style_order=style_order,
-        size_limits=size_limits,
-        estimator=estimator, ci=ci, n_boot=n_boot, units=None,
+        size_range=size_range, size_limits=size_limits,
+        estimator=estimator, ci=ci, n_boot=n_boot, units=units,
         sort=sort, errstyle=errstyle
     )
 
@@ -495,9 +522,12 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, hue_order=None, hue_limits=None,
-                markers=None, size_limits=None, x_bins=None, y_bins=None,
+                markers=None, style_order=None,
+                size_range=None, size_limits=None,
+                x_bins=None, y_bins=None,
                 estimator=None, ci=95, n_boot=1000, units=None,
-                errstyle="bars", alpha="auto", x_jitter=None, y_jitter=None,
+                errstyle="bars", alpha="auto",
+                x_jitter=None, y_jitter=None,
                 ax=None, **kwargs):
 
     # TODO auto alpha
