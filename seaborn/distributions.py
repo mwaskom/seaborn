@@ -327,7 +327,6 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
             ax.fill_between(x, 0, y, **shade_kws)
 
     # Set the density axis minimum to 0
-    xmargin, ymargin = ax.margins()
     if vertical:
         ax.set_xlim(0, auto=None)
     else:
