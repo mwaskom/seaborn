@@ -343,12 +343,18 @@ class _LinePlotter(_BasicPlotter):
 
     def parse_style(self, data, markers, dashes, style_order):
 
-        try:
-            empty_data = data.isnull().all()
-        except AttributeError:
-            empty_data = False
+        def _validate_style_dicts(levels, attrdict, attr):
 
-        if empty_data:
+            if len(levels) > len(attrdict):
+                err = "Too many levels in `style` for the {}"
+                raise ValueError(err.format(attr))
+
+            missing_levels = set(levels) - set(attrdict)
+            if any(missing_levels):
+                err = "These `style` levels are missing {}: {}"
+                raise ValueError(err.format(attr, missing_levels))
+
+        if self._empty_data(data):
             style_levels = [None]
             dashes = {}
             markers = {}
@@ -357,27 +363,29 @@ class _LinePlotter(_BasicPlotter):
 
             style_levels = categorical_order(data)
 
-            if dashes is True:
-                # TODO error on too many levels
-                dashes = dict(zip(style_levels, self.default_dashes))
-            elif dashes and isinstance(dashes, dict):
-                # TODO error on missing levels
-                pass
-            elif dashes:
-                dashes = dict(zip(style_levels, dashes))
-            else:
-                dashes = {}
-
             if markers is True:
-                # TODO error on too many levels
                 markers = dict(zip(style_levels, self.default_markers))
             elif markers and isinstance(markers, dict):
-                # TODO error on missing levels
                 pass
             elif markers:
                 markers = dict(zip(style_levels, markers))
+
+            if markers:
+                _validate_style_dicts(style_levels, markers, "markers")
             else:
                 markers = {}
+
+            if dashes is True:
+                dashes = dict(zip(style_levels, self.default_dashes))
+            elif dashes and isinstance(dashes, dict):
+                pass
+            elif dashes:
+                dashes = dict(zip(style_levels, dashes))
+
+            if dashes:
+                _validate_style_dicts(style_levels, dashes, "dashes")
+            else:
+                dashes = {}
 
         self.style_levels = style_levels
         self.dashes = dashes

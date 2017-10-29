@@ -388,3 +388,35 @@ class TestLinePlotter(TestBasicPlotter):
 
         with pytest.raises(ValueError):
             basic._LinePlotter(x="x", y="y", size="a", data=long_df)
+
+    def test_parse_style(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", style="a", data=long_df)
+
+        # Test defaults
+        markers, dashes = True, True
+        p.parse_style(p.plot_data["style"], markers, dashes, None)
+        assert p.markers == dict(zip(p.style_levels, p.default_markers))
+        assert p.dashes == dict(zip(p.style_levels, p.default_dashes))
+
+        # Test lists
+        markers, dashes = ["o", "s", "d"], [(1, 0), (1, 1), (2, 1, 3, 1)]
+        p.parse_style(p.plot_data["style"], markers, dashes, None)
+        assert p.markers == dict(zip(p.style_levels, markers))
+        assert p.dashes == dict(zip(p.style_levels, dashes))
+
+        # Test dicts
+        markers = dict(zip(p.style_levels, markers))
+        dashes = dict(zip(p.style_levels, dashes))
+        p.parse_style(p.plot_data["style"], markers, dashes, None)
+        assert p.markers == markers
+        assert p.dashes == dashes
+
+        # Test too many levels with defaults
+        markers, dashes = False, [(2, 1)]
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
+        markers, dashes = ["o", "s"], False
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
