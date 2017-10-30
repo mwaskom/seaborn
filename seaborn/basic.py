@@ -86,7 +86,7 @@ class _BasicPlotter(object):
                     # numeric values to both hue and style
 
                     plot_data = pd.DataFrame(data)
-                    plot_data = plot_data.assign(x=plot_data.index)
+                    plot_data.loc[:, "x"] = plot_data.index
                     plot_data = pd.melt(plot_data, "x",
                                         var_name="hue", value_name="y")
                     plot_data["style"] = plot_data["hue"]
