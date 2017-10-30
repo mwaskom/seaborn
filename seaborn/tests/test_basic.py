@@ -412,6 +412,13 @@ class TestLinePlotter(TestBasicPlotter):
         assert p.markers == markers
         assert p.dashes == dashes
 
+        # Test style order with defaults
+        style_order = np.take(p.style_levels, [1, 2, 0])
+        markers = dashes = True
+        p.parse_style(p.plot_data["style"], markers, dashes, style_order)
+        assert p.markers == dict(zip(style_order, p.default_markers))
+        assert p.dashes == dict(zip(style_order, p.default_dashes))
+
         # Test too many levels with style lists
         markers, dashes = ["o", "s"], False
         with pytest.raises(ValueError):

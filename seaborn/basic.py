@@ -351,13 +351,17 @@ class _LinePlotter(_BasicPlotter):
                 raise ValueError(err.format(attr, missing_levels))
 
         if self._empty_data(data):
+
             style_levels = [None]
             dashes = {}
             markers = {}
 
         else:
 
-            style_levels = categorical_order(data)
+            if style_order is None:
+                style_levels = categorical_order(data)
+            else:
+                style_levels = style_order
 
             if markers is True:
                 markers = dict(zip(style_levels, self.default_markers))
