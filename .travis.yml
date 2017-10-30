@@ -30,7 +30,7 @@ install:
   - conda update conda
   - source activate testenv
   - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
-  - conda install -c conda-forge --file deps.txt
+  - conda install --file deps.txt
   - pip install .
 
 
