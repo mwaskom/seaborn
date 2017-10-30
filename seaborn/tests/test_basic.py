@@ -412,11 +412,20 @@ class TestLinePlotter(TestBasicPlotter):
         assert p.markers == markers
         assert p.dashes == dashes
 
-        # Test too many levels with defaults
+        # Test too many levels with style lists
+        markers, dashes = ["o", "s"], False
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
         markers, dashes = False, [(2, 1)]
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
 
-        markers, dashes = ["o", "s"], False
+        # Test too many levels with style dicts
+        markers, dashes = {"a": "o", "b": "s"}, False
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
+        markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)

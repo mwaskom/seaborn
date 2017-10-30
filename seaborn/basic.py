@@ -345,10 +345,6 @@ class _LinePlotter(_BasicPlotter):
 
         def _validate_style_dicts(levels, attrdict, attr):
 
-            if len(levels) > len(attrdict):
-                err = "Too many levels in `style` for the {}"
-                raise ValueError(err.format(attr))
-
             missing_levels = set(levels) - set(attrdict)
             if any(missing_levels):
                 err = "These `style` levels are missing {}: {}"
