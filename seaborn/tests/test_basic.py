@@ -49,7 +49,7 @@ class TestBasicPlotter(object):
     @pytest.fixture
     def null_column(self):
 
-        return pd.Series(index=pd.RangeIndex(0, 20))
+        return pd.Series(index=np.arange(20))
 
     def test_wide_df_variables(self, wide_df):
 
@@ -67,7 +67,7 @@ class TestBasicPlotter(object):
         assert np.array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.repeat(wide_df.columns, wide_df.shape[0])
+        expected_hue = np.repeat(wide_df.columns.values, wide_df.shape[0])
         assert np.array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
