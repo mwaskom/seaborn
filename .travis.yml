@@ -25,9 +25,7 @@ before_install:
 
 
 install:
-  - conda update conda
   - conda create -n testenv pip python=$PYTHON
-  - conda update conda
   - source activate testenv
   - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
   - conda install --file deps.txt
