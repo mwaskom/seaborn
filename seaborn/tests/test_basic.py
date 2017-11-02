@@ -14,7 +14,7 @@ class TestBasicPlotter(object):
     def wide_df(self):
 
         columns = list("abc")
-        index = np.arange(10, 50, 2)
+        index = pd.Int64Index(np.arange(10, 50, 2), name="wide_index")
         values = np.random.randn(len(index), len(columns))
         return pd.DataFrame(values, index=index, columns=columns)
 
@@ -76,6 +76,9 @@ class TestBasicPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
+        assert p.x_label == wide_df.index.name
+        assert p.y_label is None
+
     def test_wide_df_variables_check(self, wide_df):
 
         p = basic._BasicPlotter()
@@ -111,6 +114,9 @@ class TestBasicPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
+        assert p.x_label is None
+        assert p.y_label is None
+
     def test_flat_array_variables(self, flat_array):
 
         p = basic._BasicPlotter()
@@ -129,6 +135,9 @@ class TestBasicPlotter(object):
         assert p.plot_data["hue"].isnull().all()
         assert p.plot_data["style"].isnull().all()
         assert p.plot_data["size"].isnull().all()
+
+        assert p.x_label is None
+        assert p.y_label is None
 
     def test_wide_list_variables(self, wide_list):
 
@@ -157,6 +166,9 @@ class TestBasicPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
+        assert p.x_label is None
+        assert p.y_label is None
+
     def test_long_df(self, long_df):
 
         p = basic._BasicPlotter()
@@ -167,14 +179,17 @@ class TestBasicPlotter(object):
         assert np.array_equal(p.plot_data["y"], long_df["y"])
         for col in ["hue", "style", "size"]:
             assert p.plot_data[col].isnull().all()
+        assert (p.x_label, p.y_label) == ("x", "y")
 
         p.establish_variables(x=long_df.x, y="y", data=long_df)
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
+        assert (p.x_label, p.y_label) == ("x", "y")
 
         p.establish_variables(x="x", y=long_df.y, data=long_df)
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
+        assert (p.x_label, p.y_label) == ("x", "y")
 
         p.establish_variables(x="x", y="y", hue="a", data=long_df)
         assert np.array_equal(p.plot_data["hue"], long_df["a"])

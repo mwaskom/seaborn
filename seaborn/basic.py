@@ -31,6 +31,9 @@ class _BasicPlotter(object):
                             hue=None, style=None, size=None,
                             data=None):
 
+        # Initialize label variables
+        x_label = y_label = None
+
         # Option 1:
         # We have a wide-form datast
         # --------------------------
@@ -62,6 +65,8 @@ class _BasicPlotter(object):
                                     var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
 
+                x_label = getattr(data.index, "name", None)
+
             # Option 1b:
             # The input data is an array or list
             # ----------------------------------
@@ -79,6 +84,7 @@ class _BasicPlotter(object):
 
                     plot_data = pd.DataFrame(dict(x=np.arange(len(data)),
                                                   y=data))
+
                 elif hasattr(data, "shape"):
 
                     # The input data is an array(like):
@@ -125,6 +131,10 @@ class _BasicPlotter(object):
                     err = "Could not interpret input '{}'".format(input)
                     raise ValueError(err)
 
+            # Extract variable names
+            x_label = getattr(x, "name", None)
+            y_label = getattr(y, "name", None)
+
             # Reassemble into a DataFrame
             plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
             plot_data = pd.DataFrame(plot_data)
@@ -145,6 +155,8 @@ class _BasicPlotter(object):
             if attr not in plot_data:
                 plot_data[attr] = None
 
+        self.x_label = x_label
+        self.y_label = y_label
         self.plot_data = plot_data
 
     def _empty_data(self, data):
@@ -481,6 +493,12 @@ class _LinePlotter(_BasicPlotter):
                                            alpha=line_alpha)
                     ax.add_collection(lines)
                     ax.autoscale_view()
+
+        # TODO this should go in its own method?
+        if self.x_label is not None:
+            ax.set_xlabel(self.x_label)
+        if self.y_label is not None:
+            ax.set_ylabel(self.y_label)
 
 
 class _ScatterPlotter(_BasicPlotter):
