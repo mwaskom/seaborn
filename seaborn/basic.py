@@ -184,7 +184,7 @@ class _LinePlotter(_BasicPlotter):
                  dashes=None, markers=None, style_order=None,
                  size_limits=None, size_range=None,
                  estimator=None, ci=None, n_boot=None, units=None,
-                 sort=True, errstyle=None):
+                 sort=True, errstyle=None, legend=None):
 
         self.establish_variables(x, y, hue, style, size, data)
         self.determine_attributes(palette, hue_order, hue_limits,
@@ -316,7 +316,7 @@ class _LinePlotter(_BasicPlotter):
         self.cmap = cmap
 
     def parse_size(self, data, size_limits, size_range):
-
+        """Determine the widths of the lines."""
         if self._empty_data(data):
             size_levels = [None]
             sizes = {}
@@ -354,7 +354,7 @@ class _LinePlotter(_BasicPlotter):
         self.sizes = sizes
 
     def parse_style(self, data, markers, dashes, style_order):
-
+        """Determine the markers and line dashes."""
         def _validate_style_dicts(levels, attrdict, attr):
 
             missing_levels = set(levels) - set(attrdict)
@@ -428,7 +428,29 @@ class _LinePlotter(_BasicPlotter):
 
         return est.index, est, cis
 
-    def plot(self, ax, kws):
+    def add_legend_data(self, ax, legend):
+
+        if legend not in ["brief", "full"]:
+            err = "`legend` must be 'brief', 'full', or False"
+            raise ValueError(err)
+
+        for level in self.hue_levels:
+            if level is not None:
+                ax.plot([], [], color=self.palette[level], label=level)
+
+        for level in self.size_levels:
+            if level is not None:
+                ax.plot([], [], color=".2",
+                        linewidth=self.sizes[level], label=level)
+
+        for level in self.style_levels:
+            if level is not None:
+                marker = self.markers.get(level, "")
+                dashes = self.dashes.get(level, (np.inf, 0))
+                ax.plot([], [], color=".2",
+                        marker=marker, dashes=dashes, label=level)
+
+    def plot(self, ax, legend, kws):
 
         orig_color = kws.pop("color", None)
         orig_dashes = kws.pop("dashes", (np.inf, 1))
@@ -472,7 +494,7 @@ class _LinePlotter(_BasicPlotter):
 
             # TODO handle marker size adjustment
 
-            line, = ax.plot(x, y, **kws)
+            line, = ax.plot(x.values, y.values, **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
 
@@ -500,6 +522,11 @@ class _LinePlotter(_BasicPlotter):
         if self.y_label is not None:
             ax.set_ylabel(self.y_label)
 
+        # Add legend data
+        if legend:
+            self.add_legend_data(ax, legend)
+            ax.legend()
+
 
 class _ScatterPlotter(_BasicPlotter):
 
@@ -523,7 +550,8 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
              dashes=True, markers=None, style_order=None,
              size_limits=None, size_range=None,
              estimator=np.mean, ci=95, n_boot=1000, units=None,
-             sort=True, errstyle="band", ax=None, **kwargs):
+             sort=True, errstyle="band",
+             legend="brief", ax=None, **kwargs):
 
     # TODO add a "brief_legend" or similar that handles many legend entries
     # using a matplotlib ticker ... maybe have it take threshold where you
@@ -535,13 +563,13 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
         dashes=dashes, markers=markers, style_order=style_order,
         size_range=size_range, size_limits=size_limits,
         estimator=estimator, ci=ci, n_boot=n_boot, units=units,
-        sort=sort, errstyle=errstyle
+        sort=sort, errstyle=errstyle,
     )
 
     if ax is None:
         ax = plt.gca()
 
-    p.plot(ax, kwargs)
+    p.plot(ax, legend, kwargs)
 
     return ax
 
