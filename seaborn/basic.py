@@ -179,7 +179,7 @@ class _BasicPlotter(object):
 class _LinePlotter(_BasicPlotter):
 
     def __init__(self,
-                 x=None, y=None, hue=None, style=None, size=None, data=None,
+                 x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_limits=None,
                  dashes=None, markers=None, style_order=None,
                  size_limits=None, size_range=None,
@@ -539,7 +539,7 @@ _basic_docs = dict(
 )
 
 
-def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
+def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
              dashes=True, markers=None, style_order=None,
              size_limits=None, size_range=None,
@@ -552,7 +552,7 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
     # flip from itemizing levels to showing level ticks
 
     p = _LinePlotter(
-        x=x, y=y, hue=hue, style=style, size=size, data=data,
+        x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
         dashes=dashes, markers=markers, style_order=style_order,
         size_range=size_range, size_limits=size_limits,
