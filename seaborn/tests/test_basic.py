@@ -504,3 +504,73 @@ class TestLinePlotter(TestBasicPlotter):
         p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var3,
                                data=long_df)
         assert len(list(p.subset_data())) == n_subsets
+
+    def test_subset_data_keys(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue is None
+            assert size is None
+            assert style is None
+
+        # --
+
+        var = "a"
+
+        p = basic._LinePlotter(x="x", y="y", hue=var, data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue in long_df[var].values
+            assert size is None
+            assert style is None
+
+        p = basic._LinePlotter(x="x", y="y", style=var, data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue is None
+            assert size is None
+            assert style in long_df[var].values
+
+        p = basic._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue in long_df[var].values
+            assert size is None
+            assert style in long_df[var].values
+
+        var = "s"
+
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue is None
+            assert size in long_df[var].values
+            assert style is None
+
+        # --
+
+        var1, var2 = "a", "s"
+
+        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, data=long_df)
+        for (hue, size, style), _ in p.subset_data():
+            assert hue in long_df[var1].values
+            assert size in long_df[var2].values
+            assert style is None
+
+    def test_subset_data_values(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        _, data = next(p.subset_data())
+        assert np.array_equal(data.values, p.plot_data[["x", "y"]].values)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+        for (hue, _, _), data in p.subset_data():
+            expected = p.plot_data.loc[p.plot_data["hue"] == hue, ["x", "y"]]
+            assert np.array_equal(data.values, expected.values)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
+        for (hue, _, _), data in p.subset_data():
+            expected = p.plot_data.loc[p.plot_data["hue"] == hue, ["x", "y"]]
+            assert np.array_equal(data.values, expected.values)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
+        for (hue, size, _), data in p.subset_data():
+            rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
+            expected = p.plot_data.loc[rows, ["x", "y"]]
+            assert np.array_equal(data.values, expected.values)

@@ -479,8 +479,6 @@ class _LinePlotter(_BasicPlotter):
             else:
                 y_ci = None
 
-            # TODO convert from None to (inf, 0) for dash spec?
-
             kws["color"] = self.palette.get(hue, orig_color)
             kws["dashes"] = self.dashes.get(style, orig_dashes)
             kws["marker"] = self.markers.get(style, orig_marker)
@@ -512,9 +510,11 @@ class _LinePlotter(_BasicPlotter):
 
         # TODO this should go in its own method?
         if self.x_label is not None:
-            ax.set_xlabel(self.x_label)
+            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
+            ax.set_xlabel(self.x_label, visible=x_visible)
         if self.y_label is not None:
-            ax.set_ylabel(self.y_label)
+            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
+            ax.set_ylabel(self.y_label, visible=y_visible)
 
         # Add legend data
         if legend:
