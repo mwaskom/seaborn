@@ -28,7 +28,7 @@ class _BasicPlotter(object):
                       (3, 1, 1.5, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
 
     def establish_variables(self, x=None, y=None,
-                            hue=None, style=None, size=None,
+                            hue=None, size=None, style=None,
                             data=None):
 
         # Initialize label variables
@@ -122,11 +122,11 @@ class _BasicPlotter(object):
                 x = data.get(x, x)
                 y = data.get(y, y)
                 hue = data.get(hue, hue)
-                style = data.get(style, style)
                 size = data.get(size, size)
+                style = data.get(style, style)
 
             # Validate the inputs
-            for input in [x, y, hue, style, size]:
+            for input in [x, y, hue, size, style]:
                 if isinstance(input, string_types):
                     err = "Could not interpret input '{}'".format(input)
                     raise ValueError(err)
@@ -186,10 +186,11 @@ class _LinePlotter(_BasicPlotter):
                  units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle=None, legend=None):
 
-        self.establish_variables(x, y, hue, style, size, data)
-        self.determine_semantics(palette, hue_order, hue_limits,
-                                 markers, dashes, style_order,
-                                 size_limits, size_range)
+        self.establish_variables(x, y, hue, size, style, data)
+
+        self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(self.plot_data["size"], size_limits, size_range)
+        self.parse_style(self.plot_data["style"], markers, dashes, style_order)
 
         self.sort = sort
         self.estimator = estimator
@@ -197,20 +198,28 @@ class _LinePlotter(_BasicPlotter):
         self.n_boot = n_boot
         self.errstyle = errstyle
 
-    def determine_semantics(self,
-                            palette=None, hue_order=None, hue_limits=None,
-                            markers=None, dashes=None, style_order=None,
-                            size_limits=None, size_range=None):
+    def subset_data(self):
 
-        self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(self.plot_data["size"], size_limits, size_range)
-        self.parse_style(self.plot_data["style"], markers, dashes, style_order)
+        data = self.plot_data
+        all_true = pd.Series(True, data.index)
 
-        # TODO This doesn't work when attributes share a variable
-        # (but it is kind of handled in plot())
-        self.semantics = product(self.hue_levels,
-                                 self.style_levels,
-                                 self.size_levels)
+        iter_levels = product(self.hue_levels,
+                              self.size_levels,
+                              self.style_levels)
+
+        for hue, size, style in iter_levels:
+
+            hue_rows = all_true if hue is None else data["hue"] == hue
+            size_rows = all_true if size is None else data["size"] == size
+            style_rows = all_true if style is None else data["style"] == style
+
+            rows = hue_rows & size_rows & style_rows
+            subset_data = data.loc[rows, ["x", "y"]].dropna()
+
+            if not len(subset_data):
+                continue
+
+            yield (hue, size, style), subset_data
 
     def parse_hue(self, data, palette, hue_order, hue_limits):
         """Determine what colors to use given data characteristics."""
@@ -458,20 +467,7 @@ class _LinePlotter(_BasicPlotter):
         kws.setdefault("markeredgewidth", kws.pop("mew", .75))
         kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
 
-        data = self.plot_data
-        all_true = pd.Series(True, data.index)
-
-        for hue, style, size in self.attributes:
-
-            hue_rows = all_true if hue is None else data["hue"] == hue
-            style_rows = all_true if style is None else data["style"] == style
-            size_rows = all_true if size is None else data["size"] == size
-            rows = hue_rows & style_rows & size_rows
-            subset_data = data.loc[rows, ["x", "y"]].dropna()
-
-            # TODO dumb way to handle shared attributes
-            if not len(subset_data):
-                continue
+        for (hue, size, style), subset_data in self.subset_data():
 
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
