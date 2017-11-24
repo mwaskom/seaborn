@@ -435,28 +435,6 @@ class _LinePlotter(_BasicPlotter):
 
         return est.index, est, cis
 
-    def add_legend_data(self, ax, legend):
-
-        if legend not in ["brief", "full"]:
-            err = "`legend` must be 'brief', 'full', or False"
-            raise ValueError(err)
-
-        for level in self.hue_levels:
-            if level is not None:
-                ax.plot([], [], color=self.palette[level], label=level)
-
-        for level in self.size_levels:
-            if level is not None:
-                ax.plot([], [], color=".2",
-                        linewidth=self.sizes[level], label=level)
-
-        for level in self.style_levels:
-            if level is not None:
-                marker = self.markers.get(level, "")
-                dashes = self.dashes.get(level, "")
-                ax.plot([], [], color=".2",
-                        marker=marker, dashes=dashes, label=level)
-
     def plot(self, ax, legend, kws):
 
         orig_color = kws.pop("color", None)
@@ -520,6 +498,28 @@ class _LinePlotter(_BasicPlotter):
         if legend:
             self.add_legend_data(ax, legend)
             ax.legend()
+
+    def add_legend_data(self, ax, legend):
+
+        if legend not in ["brief", "full"]:
+            err = "`legend` must be 'brief', 'full', or False"
+            raise ValueError(err)
+
+        for level in self.hue_levels:
+            if level is not None:
+                ax.plot([], [], color=self.palette[level], label=level)
+
+        for level in self.size_levels:
+            if level is not None:
+                ax.plot([], [], color=".2",
+                        linewidth=self.sizes[level], label=level)
+
+        for level in self.style_levels:
+            if level is not None:
+                marker = self.markers.get(level, "")
+                dashes = self.dashes.get(level, "")
+                ax.plot([], [], color=".2",
+                        marker=marker, dashes=dashes, label=level)
 
 
 class _ScatterPlotter(_BasicPlotter):
