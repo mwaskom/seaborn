@@ -24,7 +24,7 @@ class _BasicPlotter(object):
     # TODO use different lists for mpl 1 and 2?
     default_markers = ["o", "s", "D", "v", "^", "p"]
     marker_scales = {"o": 1, "s": .85, "D": .9, "v": 1.3, "^": 1.3, "p": 1.25}
-    default_dashes = [(np.inf, 1), (4, 1.5), (1, 1),
+    default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
 
     def establish_variables(self, x=None, y=None,
@@ -453,7 +453,7 @@ class _LinePlotter(_BasicPlotter):
         for level in self.style_levels:
             if level is not None:
                 marker = self.markers.get(level, "")
-                dashes = self.dashes.get(level, (np.inf, 0))
+                dashes = self.dashes.get(level, "")
                 ax.plot([], [], color=".2",
                         marker=marker, dashes=dashes, label=level)
 
