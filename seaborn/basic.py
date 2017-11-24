@@ -410,21 +410,29 @@ class _LinePlotter(_BasicPlotter):
         self.dashes = dashes
         self.markers = markers
 
-    def estimate(self, vals, grouper, func, ci):
+    def aggregate(self, vals, grouper, func, ci):
 
         n_boot = self.n_boot
 
         # TODO rework this logic, which is a mess
         if callable(func):
             def f(x):
-                return func(x)
+                try:
+                    return x.apply(func)
+                except AttributeError:
+                    return func(x)
+
         else:
             def f(x):
                 return getattr(x, func)()
 
+        null_ci = pd.Series(index=["low", "high"], dtype=np.float)
+
         def bootstrapped_cis(vals):
+
             if len(vals) == 1:
-                return pd.Series(index=["low", "high"], dtype=np.float)
+                return null_ci
+
             boots = bootstrap(vals, func=f, n_boot=n_boot)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
@@ -468,7 +476,7 @@ class _LinePlotter(_BasicPlotter):
             x, y = subset_data["x"], subset_data["y"]
 
             if self.estimator is not None:
-                x, y, y_ci = self.estimate(y, x, self.estimator, self.ci)
+                x, y, y_ci = self.aggregate(y, x, self.estimator, self.ci)
             else:
                 y_ci = None
 

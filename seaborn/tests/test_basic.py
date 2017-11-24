@@ -574,3 +574,53 @@ class TestLinePlotter(TestBasicPlotter):
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             expected = p.plot_data.loc[rows, ["x", "y"]]
             assert np.array_equal(data.values, expected.values)
+
+    def test_aggregate(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p.n_boot = 10000
+        p.sort = False
+
+        x = pd.Series(np.tile([1, 2], 100))
+        y = pd.Series(np.random.randn(200))
+        y_mean = y.groupby(x).mean()
+
+        def sem(x):
+            return np.std(x) / np.sqrt(len(x))
+
+        y_sem = y.groupby(x).apply(sem)
+        y_cis = pd.DataFrame(dict(low=y_mean - y_sem,
+                                  high=y_mean + y_sem),
+                             columns=["low", "high"])
+
+        index, est, cis = p.aggregate(y, x, "mean", 68)
+        assert np.array_equal(index.values, x.unique())
+        assert est.index.equals(index)
+        assert est.values == pytest.approx(y_mean.values)
+        assert cis.values == pytest.approx(y_cis.values, 4)
+
+        index, est, cis = p.aggregate(y, x, np.mean, 68)
+        assert np.array_equal(index.values, x.unique())
+        assert est.index.equals(index)
+        assert est.values == pytest.approx(y_mean.values)
+        assert cis.values == pytest.approx(y_cis.values, 4)
+
+        y_std = y.groupby(x).std()
+        y_cis = pd.DataFrame(dict(low=y_mean - y_std,
+                                  high=y_mean + y_std),
+                             columns=["low", "high"])
+
+        index, est, cis = p.aggregate(y, x, "mean", "sd")
+        assert np.array_equal(index.values, x.unique())
+        assert est.index.equals(index)
+        assert est.values == pytest.approx(y_mean.values)
+        assert cis.values == pytest.approx(y_cis.values)
+
+        index, est, cis = p.aggregate(y, x, "mean", None)
+        assert cis is None
+
+        x, y = pd.Series([1, 2, 3]), pd.Series([4, 3, 2])
+        index, est, cis = p.aggregate(y, x, "mean", 68)
+        assert np.array_equal(index.values, x)
+        assert np.array_equal(est.values, y)
+        assert cis is None
