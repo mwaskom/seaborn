@@ -414,20 +414,35 @@ class _LinePlotter(_BasicPlotter):
 
         n_boot = self.n_boot
 
+        # TODO rework this logic, which is a mess
+        if callable(func):
+            def f(x):
+                return func(x)
+        else:
+            def f(x):
+                return getattr(x, func)()
+
         def bootstrapped_cis(vals):
             if len(vals) == 1:
                 return pd.Series(index=["low", "high"], dtype=np.float)
-            boots = bootstrap(vals, func=func, n_boot=n_boot)
+            boots = bootstrap(vals, func=f, n_boot=n_boot)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
-        # TODO handle ci="sd"
-
         grouped = vals.groupby(grouper, sort=self.sort)
-        est = grouped.apply(func)
+
+        est = f(grouped)
+
         if ci is None:
             return est.index, est, None
-        cis = grouped.apply(bootstrapped_cis)
+        elif ci == "sd":
+            sd = grouped.std()
+            cis = pd.DataFrame(np.c_[est - sd, est + sd],
+                               index=est.index,
+                               columns=["low", "high"]).stack()
+        else:
+            cis = grouped.apply(bootstrapped_cis)
+
         if cis.notnull().any():
             cis = cis.unstack()
         else:
@@ -547,7 +562,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
              dashes=True, markers=None, style_order=None,
              size_limits=None, size_range=None,
-             units=None, estimator=np.mean, ci=95, n_boot=1000,
+             units=None, estimator="mean", ci=95, n_boot=1000,
              sort=True, errstyle="band",
              legend="brief", ax=None, **kwargs):
 
