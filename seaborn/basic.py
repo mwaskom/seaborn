@@ -497,9 +497,13 @@ class _LinePlotter(_BasicPlotter):
         # Add legend data
         if legend:
             self.add_legend_data(ax, legend)
-            ax.legend()
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend()
 
     def add_legend_data(self, ax, legend):
+
+        # TODO doesn't handle overlapping keys (i.e. hue="a", style="a") well
 
         if legend not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
