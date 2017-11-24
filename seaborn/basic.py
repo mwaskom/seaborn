@@ -183,13 +183,13 @@ class _LinePlotter(_BasicPlotter):
                  palette=None, hue_order=None, hue_limits=None,
                  dashes=None, markers=None, style_order=None,
                  size_limits=None, size_range=None,
-                 estimator=None, ci=None, n_boot=None, units=None,
+                 units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle=None, legend=None):
 
         self.establish_variables(x, y, hue, style, size, data)
-        self.determine_attributes(palette, hue_order, hue_limits,
-                                  markers, dashes, style_order,
-                                  size_limits, size_range)
+        self.determine_semantics(palette, hue_order, hue_limits,
+                                 markers, dashes, style_order,
+                                 size_limits, size_range)
 
         self.sort = sort
         self.estimator = estimator
@@ -197,12 +197,10 @@ class _LinePlotter(_BasicPlotter):
         self.n_boot = n_boot
         self.errstyle = errstyle
 
-    def determine_attributes(self,
-                             palette=None, hue_order=None, hue_limits=None,
-                             markers=None, dashes=None, style_order=None,
-                             size_limits=None, size_range=None):
-
-        # TODO also need better names! Naming things is hard.
+    def determine_semantics(self,
+                            palette=None, hue_order=None, hue_limits=None,
+                            markers=None, dashes=None, style_order=None,
+                            size_limits=None, size_range=None):
 
         self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
         self.parse_size(self.plot_data["size"], size_limits, size_range)
@@ -210,9 +208,9 @@ class _LinePlotter(_BasicPlotter):
 
         # TODO This doesn't work when attributes share a variable
         # (but it is kind of handled in plot())
-        self.attributes = product(self.hue_levels,
-                                  self.style_levels,
-                                  self.size_levels)
+        self.semantics = product(self.hue_levels,
+                                 self.style_levels,
+                                 self.size_levels)
 
     def parse_hue(self, data, palette, hue_order, hue_limits):
         """Determine what colors to use given data characteristics."""
@@ -549,7 +547,7 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
              dashes=True, markers=None, style_order=None,
              size_limits=None, size_range=None,
-             estimator=np.mean, ci=95, n_boot=1000, units=None,
+             units=None, estimator=np.mean, ci=95, n_boot=1000,
              sort=True, errstyle="band",
              legend="brief", ax=None, **kwargs):
 
@@ -562,7 +560,7 @@ def lineplot(x=None, y=None, hue=None, style=None, size=None, data=None,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
         dashes=dashes, markers=markers, style_order=style_order,
         size_range=size_range, size_limits=size_limits,
-        estimator=estimator, ci=ci, n_boot=n_boot, units=units,
+        units=units, estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle,
     )
 
