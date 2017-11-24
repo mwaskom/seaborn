@@ -451,3 +451,56 @@ class TestLinePlotter(TestBasicPlotter):
         markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
+
+    def test_subset_data_quantities(self, long_df):
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        assert len(list(p.subset_data())) == 1
+
+        # --
+
+        var = "a"
+        n_subsets = len(long_df[var].unique())
+
+        p = basic._LinePlotter(x="x", y="y", hue=var, data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        p = basic._LinePlotter(x="x", y="y", style=var, data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        var = "s"
+        n_subsets = len(long_df[var].unique())
+
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        # --
+
+        var = "a"
+        n_subsets = len(long_df[var].unique())
+
+        p = basic._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        # --
+
+        var1, var2 = "a", "s"
+        n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
+
+        p = basic._LinePlotter(x="x", y="y", hue=var1, style=var2,
+                               data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var1,
+                               data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
+
+        # --
+
+        var1, var2, var3 = "a", "s", "b"
+        cols = [var1, var2, var3]
+        n_subsets = len(set(list(map(tuple, long_df[cols].values))))
+
+        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var3,
+                               data=long_df)
+        assert len(list(p.subset_data())) == n_subsets
