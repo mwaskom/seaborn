@@ -282,15 +282,15 @@ class _LinePlotter(_BasicPlotter):
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_limits=None,
+                 sizes=None, size_order=None, size_limits=None,
                  dashes=None, markers=None, style_order=None,
-                 size_limits=None, size_range=None, size_order=None,
                  units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle=None, legend=None):
 
         plot_data = self.establish_variables(x, y, hue, size, style, data)
 
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(plot_data["size"], size_limits, size_range, size_order)
+        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
         self.sort = sort
@@ -300,7 +300,7 @@ class _LinePlotter(_BasicPlotter):
         self.errstyle = errstyle
 
     def subset_data(self):
-
+        """Return (x, y) data for each subset defined by semantics."""
         data = self.plot_data
         all_true = pd.Series(True, data.index)
 
@@ -360,45 +360,66 @@ class _LinePlotter(_BasicPlotter):
         self.palette = palette
         self.cmap = cmap
 
-    def parse_size(self, data, size_limits, size_range, size_order):
-        """Determine the widths of the lines."""
+    def parse_size(self, data, sizes, order, limits):
+        """Determine the linewidths given data characteristics."""
         if self._empty_data(data):
-            size_levels = [None]
+            levels = [None]
             sizes = {}
 
         else:
 
-            if self._attribute_type(data) == "categorical":
-                # TODO be more flexible, it could be fine to do heavy and light
-                # lines for categorical variables
-                err = "The variable that determines size must be numeric."
-                raise ValueError(err)
+            var_type = self._attribute_type(data)
+            if var_type == "categorical":
+                levels = categorical_order(data)
+                numbers = np.arange(0, len(levels))
+            elif var_type == "numeric":
+                levels = numbers = np.sort(data.unique())
 
-            size_levels = categorical_order(data)
+            if isinstance(sizes, (dict, list)):
 
-            if size_range is None:
-                default = plt.rcParams["lines.linewidth"]
-                min_width, max_width = default * .5, default * 2
+                # Use literal size values
+                if isinstance(sizes, list):
+                    if len(sizes) != len(levels):
+                        err = "The `sizes` list has wrong number of levels"
+                        raise ValueError(err)
+                    sizes = dict(zip(levels, sizes))
+
+                missing = set(levels) - set(sizes)
+                if any(missing):
+                    err = "Missing sizes for the following levels: {}"
+                    raise ValueError(err.format(missing))
+
             else:
-                min_width, max_width = size_range
 
-            if size_limits is None:
-                s_min, s_max = data.min(), data.max()
-            else:
-                s_min, s_max = size_limits
-                s_min = data.min() if s_min is None else s_min
-                s_max = data.max() if s_max is None else s_max
+                # Infer the range of sizes to use
+                if sizes is None:
+                    default = plt.rcParams["lines.linewidth"]
+                    min_width, max_width = default * .5, default * 2
+                else:
+                    try:
+                        min_width, max_width = sizes
+                    except (TypeError, ValueError):
+                        err = "sizes argument {} not understood".format(sizes)
+                        raise ValueError(err)
 
-            size_limits = s_min, s_max
-            size_range = min_width, max_width
-            normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
-            sizes = {l: min_width + (normalize(l) * max_width)
-                     for l in size_levels}
+                # Infer the range of numeric values to map to sizes
+                if limits is None:
+                    s_min, s_max = numbers.min(), numbers.max()
+                else:
+                    s_min, s_max = limits
+                    s_min = numbers.min() if s_min is None else s_min
+                    s_max = numbers.max() if s_max is None else s_max
 
-        self.size_levels = size_levels
-        self.size_limits = size_limits
-        self.size_range = size_range
+                # Map the numeric labels into the range of sizes
+                limits = s_min, s_max
+                normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
+                width_range = max_width - min_width
+                sizes = {l: min_width + (normalize(n) * width_range)
+                         for l, n in zip(levels, numbers)}
+
         self.sizes = sizes
+        self.size_levels = levels
+        self.size_limits = limits
 
     def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
@@ -586,8 +607,8 @@ _basic_docs = dict(
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
+             sizes=None, size_order=None, size_limits=None,
              dashes=True, markers=None, style_order=None,
-             size_limits=None, size_range=None, size_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
              sort=True, errstyle="band",
              legend="brief", ax=None, **kwargs):
@@ -599,8 +620,8 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     p = _LinePlotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
+        sizes=sizes, size_order=size_order, size_limits=size_limits,
         dashes=dashes, markers=markers, style_order=style_order,
-        size_limits=size_limits, size_range=size_range, size_order=size_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle,
     )
@@ -616,7 +637,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, hue_order=None, hue_limits=None,
                 markers=None, style_order=None,
-                size_range=None, size_limits=None,
+                sizes=None, size_order=None, size_limits=None,
                 x_bins=None, y_bins=None,
                 estimator=None, ci=95, n_boot=1000, units=None,
                 errstyle="bars", alpha="auto",

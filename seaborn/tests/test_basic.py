@@ -379,30 +379,57 @@ class TestLinePlotter(TestBasicPlotter):
         default_range = .5 * default_linewidth, 2 * default_linewidth
         p.parse_size(p.plot_data["size"], None, None, None)
         assert p.size_limits == default_limits
-        assert p.size_range == default_range
+        size_range = min(p.sizes.values()), max(p.sizes.values())
+        assert size_range == default_range
 
         # Test specified size limits
         size_limits = (1, 5)
-        p.parse_size(p.plot_data["size"], size_limits, None, None)
+        p.parse_size(p.plot_data["size"], None, None, size_limits)
         assert p.size_limits == size_limits
-        assert p.size_range == default_range
 
         # Test specified size range
-        size_range = (.1, .5)
-        p.parse_size(p.plot_data["size"], None, size_range, None)
+        sizes = (.1, .5)
+        p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.size_limits == default_limits
-        assert p.size_range == size_range
 
-        # Test size values
+        # Test size values inferred from ranges
+        sizes = (1, 5)
         size_limits = (1, 10)
-        size_range = (1, 5)
-        p.parse_size(p.plot_data["size"], size_limits, size_range, None)
+        p.parse_size(p.plot_data["size"], sizes, None, size_limits)
         normalize = mpl.colors.Normalize(*size_limits, clip=False)
         for level, width in p.sizes.items():
-            assert width == size_range[0] + size_range[1] * normalize(level)
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
 
+        # Test list of sizes
+        var = "a"
+        levels = categorical_order(long_df[var])
+        sizes = list(np.random.rand(len(levels)))
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p.parse_size(p.plot_data["size"], sizes, None, None)
+        assert p.sizes == dict(zip(levels, sizes))
+
+        # Test dict of sizes
+        var = "a"
+        levels = categorical_order(long_df[var])
+        sizes = dict(zip(levels, np.random.rand(len(levels))))
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p.parse_size(p.plot_data["size"], sizes, None, None)
+        assert p.sizes == sizes
+
+        # Test sizes list with wrong length
+        sizes = list(np.random.rand(len(levels) + 1))
         with pytest.raises(ValueError):
-            basic._LinePlotter(x="x", y="y", size="a", data=long_df)
+            p.parse_size(p.plot_data["size"], sizes, None, None)
+
+        # Test sizes dict with missing levels
+        sizes = dict(zip(levels, np.random.rand(len(levels) - 1)))
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], sizes, None, None)
+
+        # Test bad sizes argument
+        sizes = "bad_size"
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], sizes, None, None)
 
     def test_parse_style(self, long_df):
 
@@ -468,7 +495,6 @@ class TestLinePlotter(TestBasicPlotter):
         p = basic._LinePlotter(x="x", y="y", style=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
-        var = "s"
         n_subsets = len(long_df[var].unique())
 
         p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
@@ -535,8 +561,6 @@ class TestLinePlotter(TestBasicPlotter):
             assert size is None
             assert style in long_df[var].values
 
-        var = "s"
-
         p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
@@ -598,12 +622,14 @@ class TestLinePlotter(TestBasicPlotter):
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values, 4)
+        assert list(cis.columns) == ["low", "high"]
 
         index, est, cis = p.aggregate(y, x, np.mean, 68)
         assert np.array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values, 4)
+        assert list(cis.columns) == ["low", "high"]
 
         y_std = y.groupby(x).std()
         y_cis = pd.DataFrame(dict(low=y_mean - y_std,
@@ -615,6 +641,7 @@ class TestLinePlotter(TestBasicPlotter):
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values)
+        assert list(cis.columns) == ["low", "high"]
 
         index, est, cis = p.aggregate(y, x, "mean", None)
         assert cis is None
