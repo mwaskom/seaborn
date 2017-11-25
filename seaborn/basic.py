@@ -22,6 +22,7 @@ __all__ = ["lineplot"]
 class _BasicPlotter(object):
 
     # TODO use different lists for mpl 1 and 2?
+    # We could use "line art glyphs" (e.g. "P") on mpl 2
     default_markers = ["o", "s", "D", "v", "^", "p"]
     marker_scales = {"o": 1, "s": .85, "D": .9, "v": 1.3, "^": 1.3, "p": 1.25}
     default_dashes = ["", (4, 1.5), (1, 1),
@@ -30,7 +31,7 @@ class _BasicPlotter(object):
     def establish_variables(self, x=None, y=None,
                             hue=None, size=None, style=None,
                             data=None):
-
+        """Parse the inputs to define data for plotting."""
         # Initialize label variables
         x_label = y_label = None
 
@@ -162,7 +163,7 @@ class _BasicPlotter(object):
         return plot_data
 
     def categorical_to_palette(self, data, order, palette):
-
+        """Determine colors when the hue variable is qualitative."""
         # -- Identify the order and name of the levels
 
         if order is None:
@@ -195,7 +196,7 @@ class _BasicPlotter(object):
         return levels, palette
 
     def numeric_to_palette(self, data, order, palette, limits):
-
+        """Determine colors when the hue variable is quantitative."""
         levels = list(np.sort(data.unique()))
 
         # TODO do we want to do something complicated to ensure contrast
@@ -239,6 +240,25 @@ class _BasicPlotter(object):
             palette = {l: cmap(normalize(l)) for l in levels}
 
         return levels, palette, cmap, limits
+
+    def style_to_attributes(self, levels, style, defaults, name):
+        """Convert a style argument to a dict of matplotlib attributes."""
+        if style is True:
+            attrdict = dict(zip(levels, defaults))
+        elif style and isinstance(style, dict):
+            attrdict = style
+        elif style:
+            attrdict = dict(zip(levels, style))
+        else:
+            attrdict = {}
+
+        if attrdict:
+            missing_levels = set(levels) - set(attrdict)
+            if any(missing_levels):
+                err = "These `style` levels are missing {}: {}"
+                raise ValueError(err.format(name, missing_levels))
+
+        return attrdict
 
     def _empty_data(self, data):
 
@@ -380,53 +400,31 @@ class _LinePlotter(_BasicPlotter):
         self.size_range = size_range
         self.sizes = sizes
 
-    def parse_style(self, data, markers, dashes, style_order):
+    def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
-        def _validate_style_dicts(levels, attrdict, attr):
-
-            missing_levels = set(levels) - set(attrdict)
-            if any(missing_levels):
-                err = "These `style` levels are missing {}: {}"
-                raise ValueError(err.format(attr, missing_levels))
 
         if self._empty_data(data):
 
-            style_levels = [None]
+            levels = [None]
             dashes = {}
             markers = {}
 
         else:
 
-            if style_order is None:
-                style_levels = categorical_order(data)
+            if order is None:
+                levels = categorical_order(data)
             else:
-                style_levels = style_order
+                levels = order
 
-            if markers is True:
-                markers = dict(zip(style_levels, self.default_markers))
-            elif markers and isinstance(markers, dict):
-                pass
-            elif markers:
-                markers = dict(zip(style_levels, markers))
+            markers = self.style_to_attributes(
+                levels, markers, self.default_markers, "markers"
+            )
 
-            if markers:
-                _validate_style_dicts(style_levels, markers, "markers")
-            else:
-                markers = {}
+            dashes = self.style_to_attributes(
+                levels, dashes, self.default_dashes, "dashes"
+            )
 
-            if dashes is True:
-                dashes = dict(zip(style_levels, self.default_dashes))
-            elif dashes and isinstance(dashes, dict):
-                pass
-            elif dashes:
-                dashes = dict(zip(style_levels, dashes))
-
-            if dashes:
-                _validate_style_dicts(style_levels, dashes, "dashes")
-            else:
-                dashes = {}
-
-        self.style_levels = style_levels
+        self.style_levels = levels
         self.dashes = dashes
         self.markers = markers
 
@@ -602,7 +600,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
         dashes=dashes, markers=markers, style_order=style_order,
-        size_range=size_range, size_limits=size_limits, size_order=size_order,
+        size_limits=size_limits, size_range=size_range, size_order=size_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle,
     )
