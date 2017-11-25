@@ -377,26 +377,26 @@ class TestLinePlotter(TestBasicPlotter):
         default_linewidth = mpl.rcParams["lines.linewidth"]
         default_limits = p.plot_data["size"].min(), p.plot_data["size"].max()
         default_range = .5 * default_linewidth, 2 * default_linewidth
-        p.parse_size(p.plot_data["size"], None, None)
+        p.parse_size(p.plot_data["size"], None, None, None)
         assert p.size_limits == default_limits
         assert p.size_range == default_range
 
         # Test specified size limits
         size_limits = (1, 5)
-        p.parse_size(p.plot_data["size"], size_limits, None)
+        p.parse_size(p.plot_data["size"], size_limits, None, None)
         assert p.size_limits == size_limits
         assert p.size_range == default_range
 
         # Test specified size range
         size_range = (.1, .5)
-        p.parse_size(p.plot_data["size"], None, size_range)
+        p.parse_size(p.plot_data["size"], None, size_range, None)
         assert p.size_limits == default_limits
         assert p.size_range == size_range
 
         # Test size values
         size_limits = (1, 10)
         size_range = (1, 5)
-        p.parse_size(p.plot_data["size"], size_limits, size_range)
+        p.parse_size(p.plot_data["size"], size_limits, size_range, None)
         normalize = mpl.colors.Normalize(*size_limits, clip=False)
         for level, width in p.sizes.items():
             assert width == size_range[0] + size_range[1] * normalize(level)

@@ -159,6 +159,87 @@ class _BasicPlotter(object):
         self.y_label = y_label
         self.plot_data = plot_data
 
+        return plot_data
+
+    def categorical_to_palette(self, data, order, palette):
+
+        # -- Identify the order and name of the levels
+
+        if order is None:
+            levels = categorical_order(data)
+        else:
+            levels = order
+        n_colors = len(levels)
+
+        # -- Identify the set of colors to use
+
+        if isinstance(palette, dict):
+
+            missing = set(levels) - set(palette)
+            if any(missing):
+                err = "The palette dictionary is missing keys: {}"
+                raise ValueError(err.format(missing))
+
+        else:
+
+            if palette is None:
+                if n_colors <= len(get_color_cycle()):
+                    colors = color_palette(None, n_colors)
+                else:
+                    colors = color_palette("husl", n_colors)
+            else:
+                colors = color_palette(palette, n_colors)
+
+            palette = dict(zip(levels, colors))
+
+        return levels, palette
+
+    def numeric_to_palette(self, data, order, palette, limits):
+
+        levels = list(np.sort(data.unique()))
+
+        # TODO do we want to do something complicated to ensure contrast
+        # at the extremes of the colormap against the background?
+
+        # Identify the colormap to use
+        if palette is None:
+            cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
+        elif isinstance(palette, dict):
+            missing = set(levels) - set(palette)
+            if any(missing):
+                err = "The palette dictionary is missing keys: {}"
+                raise ValueError(err.format(missing))
+            cmap = None
+        elif isinstance(palette, list):
+            if len(palette) != len(levels):
+                err = "The palette has the wrong number of colors"
+                raise ValueError(err)
+            palette = dict(zip(levels, palette))
+            cmap = None
+        elif isinstance(palette, mpl.colors.Colormap):
+            cmap = palette
+        else:
+            try:
+                cmap = mpl.cm.get_cmap(palette)
+            except (ValueError, TypeError):
+                err = "Palette {} not understood"
+                raise ValueError(err)
+
+        if cmap is not None:
+
+            if limits is None:
+                hue_min, hue_max = data.min(), data.max()
+            else:
+                hue_min, hue_max = limits
+                hue_min = data.min() if hue_min is None else hue_min
+                hue_max = data.max() if hue_max is None else hue_max
+
+            limits = hue_min, hue_max
+            normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
+            palette = {l: cmap(normalize(l)) for l in levels}
+
+        return levels, palette, cmap, limits
+
     def _empty_data(self, data):
 
         empty_data = data.isnull().all()
@@ -182,15 +263,15 @@ class _LinePlotter(_BasicPlotter):
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_limits=None,
                  dashes=None, markers=None, style_order=None,
-                 size_limits=None, size_range=None,
+                 size_limits=None, size_range=None, size_order=None,
                  units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle=None, legend=None):
 
-        self.establish_variables(x, y, hue, size, style, data)
+        plot_data = self.establish_variables(x, y, hue, size, style, data)
 
-        self.parse_hue(self.plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(self.plot_data["size"], size_limits, size_range)
-        self.parse_style(self.plot_data["style"], markers, dashes, style_order)
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(plot_data["size"], size_limits, size_range, size_order)
+        self.parse_style(plot_data["style"], markers, dashes, style_order)
 
         self.sort = sort
         self.estimator = estimator
@@ -221,108 +302,45 @@ class _LinePlotter(_BasicPlotter):
 
             yield (hue, size, style), subset_data
 
-    def parse_hue(self, data, palette, hue_order, hue_limits):
+    def parse_hue(self, data, palette, order, limits):
         """Determine what colors to use given data characteristics."""
         if self._empty_data(data):
 
             # Set default values when not using a hue mapping
-            hue_levels = [None]
+            levels = [None]
             palette = {}
-            hue_type = None
+            var_type = None
             cmap = None
 
         else:
 
             # Determine what kind of hue mapping we want
-            hue_type = self._attribute_type(data)
+            var_type = self._attribute_type(data)
 
         # -- Option 1: categorical color palette
 
-        if hue_type == "categorical":
-
-            # -- Identify the order and name of the levels
+        if var_type == "categorical":
 
             cmap = None
-            if hue_order is None:
-                hue_levels = categorical_order(data)
-            else:
-                hue_levels = hue_order
-            n_colors = len(hue_levels)
-
-            # -- Identify the set of colors to use
-
-            if isinstance(palette, dict):
-
-                missing = set(hue_levels) - set(palette)
-                if any(missing):
-                    err = "The palette dictionary is missing keys: {}"
-                    raise ValueError(err.format(missing))
-
-            else:
-
-                if palette is None:
-                    if n_colors <= len(get_color_cycle()):
-                        colors = color_palette(None, n_colors)
-                    else:
-                        colors = color_palette("husl", n_colors)
-                else:
-                    colors = color_palette(palette, n_colors)
-
-                palette = dict(zip(hue_levels, colors))
+            levels, palette = self.categorical_to_palette(
+                data, order, palette
+            )
 
         # -- Option 2: sequential color palette
 
-        elif hue_type == "numeric":
+        elif var_type == "numeric":
 
-            hue_levels = list(np.sort(data.unique()))
+            levels, palette, cmap, limits = self.numeric_to_palette(
+                data, order, palette, limits
+            )
 
-            # TODO do we want to do something complicated to ensure contrast
-            # at the extremes of the colormap against the background?
-
-            # Identify the colormap to use
-            if palette is None:
-                cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
-            elif isinstance(palette, dict):
-                missing = set(hue_levels) - set(palette)
-                if any(missing):
-                    err = "The palette dictionary is missing keys: {}"
-                    raise ValueError(err.format(missing))
-                cmap = None
-            elif isinstance(palette, list):
-                if len(palette) != len(hue_levels):
-                    err = "The palette has the wrong number of colors"
-                    raise ValueError(err)
-                palette = dict(zip(hue_levels, palette))
-                cmap = None
-            elif isinstance(palette, mpl.colors.Colormap):
-                cmap = palette
-            else:
-                try:
-                    cmap = mpl.cm.get_cmap(palette)
-                except (ValueError, TypeError):
-                    err = "Palette {} not understood"
-                    raise ValueError(err)
-
-            if cmap is not None:
-
-                if hue_limits is None:
-                    hue_min, hue_max = data.min(), data.max()
-                else:
-                    hue_min, hue_max = hue_limits
-                    hue_min = data.min() if hue_min is None else hue_min
-                    hue_max = data.max() if hue_max is None else hue_max
-
-                hue_limits = hue_min, hue_max
-                normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
-                palette = {l: cmap(normalize(l)) for l in hue_levels}
-
-        self.hue_levels = hue_levels
-        self.hue_limits = hue_limits
+        self.hue_levels = levels
+        self.hue_limits = limits
+        self.hue_type = var_type
         self.palette = palette
-        self.hue_type = hue_type
         self.cmap = cmap
 
-    def parse_size(self, data, size_limits, size_range):
+    def parse_size(self, data, size_limits, size_range, size_order):
         """Determine the widths of the lines."""
         if self._empty_data(data):
             size_levels = [None]
@@ -331,6 +349,8 @@ class _LinePlotter(_BasicPlotter):
         else:
 
             if self._attribute_type(data) == "categorical":
+                # TODO be more flexible, it could be fine to do heavy and light
+                # lines for categorical variables
                 err = "The variable that determines size must be numeric."
                 raise ValueError(err)
 
@@ -569,7 +589,7 @@ _basic_docs = dict(
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_limits=None,
              dashes=True, markers=None, style_order=None,
-             size_limits=None, size_range=None,
+             size_limits=None, size_range=None, size_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
              sort=True, errstyle="band",
              legend="brief", ax=None, **kwargs):
@@ -582,7 +602,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
         dashes=dashes, markers=markers, style_order=style_order,
-        size_range=size_range, size_limits=size_limits,
+        size_range=size_range, size_limits=size_limits, size_order=size_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, errstyle=errstyle,
     )
