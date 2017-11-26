@@ -5,7 +5,6 @@ env:
   - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
   - PYTHON=2.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.4 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=qtagg DOCTESTS=true
