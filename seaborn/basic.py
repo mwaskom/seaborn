@@ -534,9 +534,6 @@ class _LinePlotter(_BasicPlotter):
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
 
-            label = self.semantics_to_label(semantics)
-            kws.setdefault("label", label)
-
             line, = ax.plot(x.values, y.values, **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
@@ -582,21 +579,39 @@ class _LinePlotter(_BasicPlotter):
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
 
+        keys = []
+        legend_data = {}
+
+        def add_legend_data(var_name, val_name, **kws):
+
+            key = var_name, val_name
+            if key in legend_data:
+                legend_data[key].update(**kws)
+            else:
+                keys.append(key)
+                legend_data[key] = dict(**kws)
+
         for level in self.hue_levels:
             if level is not None:
-                ax.plot([], [], color=self.palette[level], label=level)
+                add_legend_data(self.hue_label, level,
+                                color=self.palette[level])
 
         for level in self.size_levels:
             if level is not None:
-                ax.plot([], [], color=".2",
-                        linewidth=self.sizes[level], label=level)
+                add_legend_data(self.size_label, level,
+                                linewidth=self.sizes[level])
 
         for level in self.style_levels:
             if level is not None:
-                marker = self.markers.get(level, "")
-                dashes = self.dashes.get(level, "")
-                ax.plot([], [], color=".2",
-                        marker=marker, dashes=dashes, label=level)
+                add_legend_data(self.style_label, level,
+                                marker=self.markers.get(level, ""),
+                                dashes=self.dashes.get(level, ""))
+
+        for key in keys:
+            _, label = key
+            kws = legend_data[key]
+            kws.setdefault("color", ".2")
+            ax.plot([], [], label=label, **kws)
 
 
 class _ScatterPlotter(_BasicPlotter):
