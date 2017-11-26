@@ -2168,7 +2168,7 @@ _categorical_docs = dict(
     """),
     ax_out=dedent("""\
     ax : matplotlib Axes
-        Returns the Axes object with the boxplot drawn onto it.\
+        Returns the Axes object with the plot drawn onto it.\
     """),
 
     # Shared see also

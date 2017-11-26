@@ -702,8 +702,109 @@ class _ScatterPlotter(_BasicPlotter):
 
 _basic_docs = dict(
 
+    # ---  Introductory prose
     main_api_narrative=dedent("""\
+
+    ### TODO ###
+
     """),
+
+    # --- Shared function parameters
+    data_vars=dedent("""\
+    x, y : names of variables in ``data`` or vector data, optional
+        Input data variables; must be numeric. Can pass data directly or
+        reference columns in ``data``.\
+    """),
+    data=dedent("""\
+    data : DataFrame, array, or list of arrays, optional
+        Input data structure. If ``x`` and ``y`` are specified as names, this
+        should be a "long-form" DataFrame containing those columns. Otherwise
+        it is treated as "wide-form" data and grouping variables are ignored.
+        See the examples for the various ways this parameter can be specified
+        and the different effects of each.\
+    """),
+    palette=dedent("""\
+    palette : string, list, dict, or matplotlib colormap
+        An object that determines how colors are chosen when ``hue`` is used.
+        It can be the name of a seaborn palette or matplotlib colormap, a list
+        of colors (anything matplotlib understands), a dict mapping levels
+        of the ``hue`` variable to colors, or a matplotlib colormap object.\
+    """),
+    hue_order=dedent("""\
+    hue_order : list, optional
+        Specified order for the appearance of the ``hue`` variable levels,
+        otherwise they are determined from the data. Not relevant when the
+        ``hue`` variable is numeric.\
+    """),
+    hue_limits=dedent("""\
+    hue_limits : tuple, optional
+        Limits in data units to use for the colormap applied to the ``hue``
+        variable when it is numeric. Not relevant if it is categorical.\
+    """),
+    sizes=dedent("""
+    sizes : list, dict, or tuple, optional
+        An object that determines how sizes are chosen when ``size`` is used.
+        It can always be a list of size values or a dict mapping levels of the
+        ``size`` variable to sizes. When ``size``  is numeric, it can also be
+        a tuple specifying the minimum and maximum size to use such that other
+        values are normalized within this range.\
+    """),
+    size_order=dedent("""\
+    size_order : list, optional
+        Specified order for appearance of the ``size`` variable levels,
+        otherwise they are determined from the data. Not relevant when the
+        ``size`` variable is numeric.\
+    """),
+    size_limits=dedent("""\
+    size_limits : tuple, optional
+        Limits in data units to use for the size normalization when the
+        ``size`` variable is numeric.\
+    """),
+    style_order=dedent("""\
+    style_order : list, optional
+        Specified order for appearance of the ``style`` variable levels
+        otherwise they are determined from the data. Not relevant when the
+        ``style`` variable is numeric.\
+    """),
+    units=dedent("""\
+    units : {long_form_var}
+        Grouping variable identifying sampling units. Currently has no effect.\
+    """),
+    estimator=dedent("""\
+    estimator : name of pandas method or callable or None, optional
+        Method for aggregating across multiple observations of the ``y``
+        variable at the same ``x`` level. If ``None``, all observations will
+        be drawn.\
+    """),
+    ci=dedent("""\
+    ci : int or "sd" or None, optional
+        Size of the confidence interval to draw when aggregating with an
+        estimator. "sd" means to draw the standard deviation of the data.
+        Setting to ``None`` will skip bootstrapping.\
+    """),
+    n_boot=dedent("""\
+    n_boot : int, optional
+        Number of bootstraps to use for computing the confidence interval.\
+    """),
+    legend=dedent("""\
+    legend : "brief", "full", or False, optional
+        How to draw the legend. If "brief", numeric ``hue`` and ``size``
+        variables will be represented with a sample of evenly spaced values.
+        If "full", every group will get an entry in the legend. If ``False``,
+        no legend data is added and no legend is drawn.\
+    """),
+    ax_in=dedent("""\
+    ax : matplotlib Axes, optional
+        Axes object to draw the plot onto, otherwise uses the current Axes.\
+    """),
+    ax_out=dedent("""\
+    ax : matplotlib Axes
+        Returns the Axes object with the plot drawn onto it.\
+    """),
+
+    # --- Repeated phrases
+    long_form_var="name of variables in ``data`` or vector data, optional",
+
 
 )
 
@@ -731,6 +832,73 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     p.plot(ax, kwargs)
 
     return ax
+
+
+lineplot.__doc__ = dedent("""\
+    Draw a line plot with numeric data.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {data_vars}
+    hue : {long_form_var}
+        Grouping variable that will produce lines with different colors.
+        Can be either categorical or numeric, although color mapping will
+        behave differently in latter case.
+    size : {long_form_var}
+        Gropuing variable that will produce lines with different widths.
+        Can be either categorical or numeric, although size mapping will
+        behave differently in latter case.
+    style : {long_form_var}
+        Grouping variable that will produce lines with different dashes
+        and/or markers. Can have a numeric dtype but will always be treated
+        as categorical.
+    {data}
+    {palette}
+    {hue_order}
+    {hue_limits}
+    {sizes}
+    {size_order}
+    {size_limits}
+    dashes : boolean, list, or dictionary, optional
+        Object determining how to draw the lines for different levels of the
+        ``style`` variable. Dashes are specified as in matplotlib: a tuple of
+        ``(segment, gap)`` lengths, or an empty string to draw a solid line.
+    markers : boolean, list, or dictionary, optional
+        Object determining how to draw the markers for different levels of the
+        ``style`` variable. Markers are specified as in matplotlib.
+    {style_order}
+    {units}
+    {estimator}
+    {ci}
+    {n_boot}
+    sort : boolean, optional
+        If True, the data will be sorted by the x and y variables, otherwise
+        lines will connect points in the order they appear in the dataset.
+    errstyle : "band" or "bars", optional
+        Whether to draw the confidence intervals with translucent error bands
+        or discrete error bars.
+    {legend}
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed down to ``plt.plot`` at draw time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+
+    ### TODO ###
+
+    Examples
+    --------
+
+    ### TODO ###
+
+    """).format(**_basic_docs)
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
