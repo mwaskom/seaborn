@@ -444,6 +444,7 @@ class _LinePlotter(_BasicPlotter):
                     s_max = numbers.max() if s_max is None else s_max
 
                 # Map the numeric labels into the range of sizes
+                # TODO rework to use size_lookup from above
                 limits = s_min, s_max
                 normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
                 sizes = {l: min_width + normalize(n) * (max_width - min_width)
@@ -533,13 +534,29 @@ class _LinePlotter(_BasicPlotter):
 
     def plot(self, ax, legend, kws):
 
-        orig_color = kws.pop("color", None)
-        orig_dashes = kws.pop("dashes", (np.inf, 1))
-        orig_marker = kws.pop("marker", None)
-        orig_linewidth = kws.pop("linewidth", kws.pop("lw", None))
+        # Draw a test line, using the passed in kwargs. The goal here is to
+        # honor both (a) the current state of the plot cycler and (b) the
+        # specified kwargs on all the lines we will draw, overriding when
+        # relevant with the lineplot semantics. Note that we won't cycle
+        # internally; in other words, if ``hue`` is not used, all lines
+        # will have the same color, but they will have the color that
+        # ax.plot() would have used, and will advance the color cycle.
+
+        scout, = ax.plot([], [], **kws)
+
+        orig_color = kws.pop("color", scout.get_color())
+        orig_marker = kws.pop("marker", scout.get_marker())
+        orig_linewidth = kws.pop("linewidth",
+                                 kws.pop("lw", scout.get_linewidth()))
+
+        orig_dashes = kws.pop("dashes", "")
 
         kws.setdefault("markeredgewidth", kws.pop("mew", .75))
         kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
+
+        scout.remove()
+
+        # Loop over the semantic subsets and draw a line for each
 
         for semantics, subset_data in self.subset_data():
 
@@ -557,9 +574,16 @@ class _LinePlotter(_BasicPlotter):
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
 
+            # --- Draw the main line
+
+            # TODO when not estimating, use units to get multiple lines
+            # with the same semantics?
+
             line, = ax.plot(x.values, y.values, **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
+
+            # --- Draw the confidence intervals
 
             if y_ci is not None:
 
@@ -596,8 +620,6 @@ class _LinePlotter(_BasicPlotter):
 
     def add_legend_data(self, ax, legend):
 
-        # TODO doesn't handle overlapping keys (i.e. hue="a", style="a") well
-
         if legend not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
@@ -616,7 +638,7 @@ class _LinePlotter(_BasicPlotter):
 
         ticker = mpl.ticker.MaxNLocator(3)
 
-        # --
+        # -- Add a legend for hue semantics
 
         if legend == "brief" and self.hue_type == "numeric":
             hue_levels = (ticker.tick_values(*self.hue_limits)
@@ -629,7 +651,8 @@ class _LinePlotter(_BasicPlotter):
                 color = self.color_lookup(level)
                 add_legend_data(self.hue_label, level, color=color)
 
-        # --
+        # -- Add a legend for size semantics
+
         if legend == "brief" and self.size_type == "numeric":
             size_levels = (ticker.tick_values(*self.size_limits)
                                  .astype(self.plot_data["size"].dtype))
@@ -641,7 +664,7 @@ class _LinePlotter(_BasicPlotter):
                 linewidth = self.size_lookup(level)
                 add_legend_data(self.size_label, level, linewidth=linewidth)
 
-        # --
+        # -- Add a legend for style semantics
 
         for level in self.style_levels:
             if level is not None:
@@ -699,7 +722,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
     p.plot(ax, legend, kwargs)
 
-    return ax, p
+    return ax
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
