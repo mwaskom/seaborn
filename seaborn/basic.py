@@ -249,6 +249,23 @@ class _BasicPlotter(object):
 
         return levels, palette, cmap, limits
 
+    def color_lookup(self, key):
+
+        if self.hue_type == "numeric":
+            norm = mpl.colors.Normalize(*self.hue_limits, clip=True)
+            return self.cmap(norm(key))
+        elif self.hue_type == "categorical":
+            return self.palette[key]
+
+    def size_lookup(self, key):
+
+        if self.size_type == "numeric":
+            norm = mpl.colors.Normalize(*self.size_limits, clip=True)
+            min_size, max_size = self.size_range
+            return min_size + norm(key) * (max_size - min_size)
+        elif self.size_type == "categorical":
+            return self.sizes[key]
+
     def style_to_attributes(self, levels, style, defaults, name):
         """Convert a style argument to a dict of matplotlib attributes."""
         if style is True:
@@ -376,6 +393,8 @@ class _LinePlotter(_BasicPlotter):
         if self._empty_data(data):
             levels = [None]
             sizes = {}
+            var_type = None
+            width_range = None
 
         else:
 
@@ -400,6 +419,8 @@ class _LinePlotter(_BasicPlotter):
                     err = "Missing sizes for the following levels: {}"
                     raise ValueError(err.format(missing))
 
+                width_range = min(sizes.values()), max(sizes.values())
+
             else:
 
                 # Infer the range of sizes to use
@@ -412,6 +433,7 @@ class _LinePlotter(_BasicPlotter):
                     except (TypeError, ValueError):
                         err = "sizes argument {} not understood".format(sizes)
                         raise ValueError(err)
+                width_range = min_width, max_width
 
                 # Infer the range of numeric values to map to sizes
                 if limits is None:
@@ -424,13 +446,14 @@ class _LinePlotter(_BasicPlotter):
                 # Map the numeric labels into the range of sizes
                 limits = s_min, s_max
                 normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
-                width_range = max_width - min_width
-                sizes = {l: min_width + (normalize(n) * width_range)
+                sizes = {l: min_width + normalize(n) * (max_width - min_width)
                          for l, n in zip(levels, numbers)}
 
         self.sizes = sizes
+        self.size_type = var_type
         self.size_levels = levels
         self.size_limits = limits
+        self.size_range = width_range
 
     def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
@@ -564,7 +587,7 @@ class _LinePlotter(_BasicPlotter):
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
             ax.set_ylabel(self.y_label, visible=y_visible)
 
-        # Add legend data
+        # Add legend
         if legend:
             self.add_legend_data(ax, legend)
             handles, _ = ax.get_legend_handles_labels()
@@ -591,15 +614,34 @@ class _LinePlotter(_BasicPlotter):
                 keys.append(key)
                 legend_data[key] = dict(**kws)
 
-        for level in self.hue_levels:
-            if level is not None:
-                add_legend_data(self.hue_label, level,
-                                color=self.palette[level])
+        ticker = mpl.ticker.MaxNLocator(3)
 
-        for level in self.size_levels:
+        # --
+
+        if legend == "brief" and self.hue_type == "numeric":
+            hue_levels = (ticker.tick_values(*self.hue_limits)
+                                .astype(self.plot_data["hue"].dtype))
+        else:
+            hue_levels = self.hue_levels
+
+        for level in hue_levels:
             if level is not None:
-                add_legend_data(self.size_label, level,
-                                linewidth=self.sizes[level])
+                color = self.color_lookup(level)
+                add_legend_data(self.hue_label, level, color=color)
+
+        # --
+        if legend == "brief" and self.size_type == "numeric":
+            size_levels = (ticker.tick_values(*self.size_limits)
+                                 .astype(self.plot_data["size"].dtype))
+        else:
+            size_levels = self.size_levels
+
+        for level in size_levels:
+            if level is not None:
+                linewidth = self.size_lookup(level)
+                add_legend_data(self.size_label, level, linewidth=linewidth)
+
+        # --
 
         for level in self.style_levels:
             if level is not None:
