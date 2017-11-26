@@ -324,6 +324,8 @@ class _LinePlotter(_BasicPlotter):
         self.n_boot = n_boot
         self.errstyle = errstyle
 
+        self.legend = legend
+
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
         data = self.plot_data
@@ -540,7 +542,8 @@ class _LinePlotter(_BasicPlotter):
         # relevant with the lineplot semantics. Note that we won't cycle
         # internally; in other words, if ``hue`` is not used, all lines
         # will have the same color, but they will have the color that
-        # ax.plot() would have used, and will advance the color cycle.
+        # ax.plot() would have used for a single line, and calling lineplot
+        # will advance the axes property cycle.
 
         scout, = ax.plot([], [], **kws)
 
@@ -612,15 +615,16 @@ class _LinePlotter(_BasicPlotter):
             ax.set_ylabel(self.y_label, visible=y_visible)
 
         # Add legend
-        if legend:
-            self.add_legend_data(ax, legend)
+        if self.legend:
+            self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
                 ax.legend()
 
-    def add_legend_data(self, ax, legend):
+    def add_legend_data(self, ax):
 
-        if legend not in ["brief", "full"]:
+        verbosity = self.legend
+        if verbosity not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
 
@@ -640,7 +644,7 @@ class _LinePlotter(_BasicPlotter):
 
         # -- Add a legend for hue semantics
 
-        if legend == "brief" and self.hue_type == "numeric":
+        if verbosity == "brief" and self.hue_type == "numeric":
             hue_levels = (ticker.tick_values(*self.hue_limits)
                                 .astype(self.plot_data["hue"].dtype))
         else:
@@ -653,7 +657,7 @@ class _LinePlotter(_BasicPlotter):
 
         # -- Add a legend for size semantics
 
-        if legend == "brief" and self.size_type == "numeric":
+        if verbosity == "brief" and self.size_type == "numeric":
             size_levels = (ticker.tick_values(*self.size_limits)
                                  .astype(self.plot_data["size"].dtype))
         else:
@@ -720,7 +724,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     if ax is None:
         ax = plt.gca()
 
-    p.plot(ax, legend, kwargs)
+    p.plot(ax, kwargs)
 
     return ax
 
