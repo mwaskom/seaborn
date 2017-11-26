@@ -33,7 +33,7 @@ class _BasicPlotter(object):
                             data=None):
         """Parse the inputs to define data for plotting."""
         # Initialize label variables
-        x_label = y_label = None
+        x_label = y_label = hue_label = size_label = style_label = None
 
         # Option 1:
         # We have a wide-form datast
@@ -67,6 +67,8 @@ class _BasicPlotter(object):
                 plot_data["style"] = plot_data["hue"]
 
                 x_label = getattr(data.index, "name", None)
+                hue_label = style_label = getattr(plot_data.columns,
+                                                  "name", None)
 
             # Option 1b:
             # The input data is an array or list
@@ -135,6 +137,9 @@ class _BasicPlotter(object):
             # Extract variable names
             x_label = getattr(x, "name", None)
             y_label = getattr(y, "name", None)
+            hue_label = getattr(hue, "name", None)
+            size_label = getattr(size, "name", None)
+            style_label = getattr(style, "name", None)
 
             # Reassemble into a DataFrame
             plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
@@ -158,6 +163,9 @@ class _BasicPlotter(object):
 
         self.x_label = x_label
         self.y_label = y_label
+        self.hue_label = hue_label
+        self.size_label = size_label
+        self.style_label = style_label
         self.plot_data = plot_data
 
         return plot_data
@@ -507,7 +515,9 @@ class _LinePlotter(_BasicPlotter):
         kws.setdefault("markeredgewidth", kws.pop("mew", .75))
         kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
 
-        for (hue, size, style), subset_data in self.subset_data():
+        for semantics, subset_data in self.subset_data():
+
+            hue, size, style = semantics
 
             if self.sort:
                 subset_data = subset_data.sort_values(["x", "y"])
@@ -524,7 +534,8 @@ class _LinePlotter(_BasicPlotter):
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
 
-            # TODO handle marker size adjustment
+            label = self.semantics_to_label(semantics)
+            kws.setdefault("label", label)
 
             line, = ax.plot(x.values, y.values, **kws)
             line_color = line.get_color()
@@ -631,7 +642,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
     p.plot(ax, legend, kwargs)
 
-    return ax
+    return ax, p
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
