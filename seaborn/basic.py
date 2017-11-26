@@ -528,13 +528,13 @@ class _LinePlotter(_BasicPlotter):
             cis = grouped.apply(bootstrapped_cis)
 
         if cis.notnull().any():
-            cis = cis.unstack()
+            cis = cis.unstack().reindex(est.index)
         else:
             cis = None
 
         return est.index, est, cis
 
-    def plot(self, ax, legend, kws):
+    def plot(self, ax, kws):
 
         # Draw a test line, using the passed in kwargs. The goal here is to
         # honor both (a) the current state of the plot cycler and (b) the
@@ -605,6 +605,10 @@ class _LinePlotter(_BasicPlotter):
                                            alpha=line_alpha)
                     ax.add_collection(lines)
                     ax.autoscale_view()
+
+                else:
+                    err = "`errstyle` must by 'band' or 'bars', not {}"
+                    raise ValueError(err.format(self.errstyle))
 
         # TODO this should go in its own method?
         if self.x_label is not None:

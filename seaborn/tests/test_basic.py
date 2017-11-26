@@ -1,4 +1,5 @@
 from __future__ import division
+from itertools import product
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -692,6 +693,10 @@ class TestLinePlotter(TestBasicPlotter):
         assert np.array_equal(est.values, y)
         assert cis is None
 
+        x, y = pd.Series([1, 1, 2]), pd.Series([2, 3, 4])
+        index, est, cis = p.aggregate(y, x, "mean", 68)
+        assert cis.loc[2].isnull().all()
+
     def test_legend_data(self, long_df):
 
         f, ax = plt.subplots()
@@ -700,12 +705,6 @@ class TestLinePlotter(TestBasicPlotter):
         p.add_legend_data(ax)
         handles, _ = ax.get_legend_handles_labels()
         assert handles == []
-
-        # TODO test elsewhere in own function from lineplot() entrypoint
-        # ax.clear()
-        # p.plot(ax, "full", {"label": "test"})
-        # _, labels = ax.get_legend_handles_labels()
-        # assert labels == ["test"]
 
         # --
 
@@ -798,3 +797,152 @@ class TestLinePlotter(TestBasicPlotter):
         p.legend = "bad_value"
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
+
+    def test_plot(self, long_df):
+
+        f, ax = plt.subplots()
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df,
+                               sort=False, estimator=None)
+        p.plot(ax, {})
+        line, = ax.lines
+        assert np.array_equal(line.get_xdata(), long_df.x.values)
+        assert np.array_equal(line.get_ydata(), long_df.y.values)
+
+        ax.clear()
+        p.plot(ax, {"color": "k", "label": "test"})
+        line, = ax.lines
+        assert line.get_color() == "k"
+        assert line.get_label() == "test"
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df,
+                               sort=True, estimator=None)
+
+        ax.clear()
+        p.plot(ax, {})
+        line, = ax.lines
+        sorted_data = long_df.sort_values(["x", "y"])
+        assert np.array_equal(line.get_xdata(), sorted_data.x.values)
+        assert np.array_equal(line.get_ydata(), sorted_data.y.values)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(p.hue_levels)
+        for line, level in zip(ax.lines, p.hue_levels):
+            assert line.get_color() == p.palette[level]
+
+        p = basic._LinePlotter(x="x", y="y", size="a", data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(p.size_levels)
+        for line, level in zip(ax.lines, p.size_levels):
+            assert line.get_linewidth() == p.sizes[level]
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", style="a",
+                               markers=True, data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(p.hue_levels) == len(p.style_levels)
+        for line, level in zip(ax.lines, p.hue_levels):
+            assert line.get_color() == p.palette[level]
+            assert line.get_marker() == p.markers[level]
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", style="b",
+                               markers=True, data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        levels = product(p.hue_levels, p.style_levels)
+        assert len(ax.lines) == (len(p.hue_levels) * len(p.style_levels))
+        for line, (hue, style) in zip(ax.lines, levels):
+            assert line.get_color() == p.palette[hue]
+            assert line.get_marker() == p.markers[style]
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df,
+                               estimator="mean", errstyle="band", ci="sd",
+                               sort=True)
+
+        ax.clear()
+        p.plot(ax, {})
+        line, = ax.lines
+        expected_data = long_df.groupby("x").y.mean()
+        assert np.array_equal(line.get_xdata(), expected_data.index.values)
+        assert np.allclose(line.get_ydata(), expected_data.values)
+        assert len(ax.collections) == 1
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               estimator="mean", errstyle="band", ci="sd")
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(ax.collections) == len(p.hue_levels)
+        for c in ax.collections:
+            assert isinstance(c, mpl.collections.PolyCollection)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               estimator="mean", errstyle="bars", ci="sd")
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(ax.collections) == len(p.hue_levels)
+        for c in ax.collections:
+            assert isinstance(c, mpl.collections.LineCollection)
+
+    def test_lineplot_axes(self, wide_df):
+
+        f1, ax1 = plt.subplots()
+        f2, ax2 = plt.subplots()
+
+        ax = basic.lineplot(data=wide_df)
+        assert ax is ax2
+
+        ax = basic.lineplot(data=wide_df, ax=ax1)
+        assert ax is ax1
+
+    def test_lineplot_smoke(self, wide_list, flat_array, wide_array,
+                            wide_df, long_df):
+
+        f, ax = plt.subplots()
+
+        basic.lineplot(data=wide_list)
+        ax.clear()
+
+        basic.lineplot(data=flat_array)
+        ax.clear()
+
+        basic.lineplot(data=wide_array)
+        ax.clear()
+
+        basic.lineplot(data=wide_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x=long_df.x, y=long_df.y)
+        ax.clear()
+
+        basic.lineplot(x=long_df.x, y="y", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y=long_df.y.values, data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", style="a", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", style="b", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", size="a", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", size="s", data=long_df)
+        ax.clear()
