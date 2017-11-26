@@ -328,6 +328,9 @@ class _LinePlotter(_BasicPlotter):
             if not len(subset_data):
                 continue
 
+            if self.sort:
+                subset_data = subset_data.sort_values(["x", "y"])
+
             yield (hue, size, style), subset_data
 
     def parse_hue(self, data, palette, order, limits):
@@ -518,9 +521,6 @@ class _LinePlotter(_BasicPlotter):
         for semantics, subset_data in self.subset_data():
 
             hue, size, style = semantics
-
-            if self.sort:
-                subset_data = subset_data.sort_values(["x", "y"])
 
             x, y = subset_data["x"], subset_data["y"]
 

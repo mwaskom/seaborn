@@ -602,22 +602,40 @@ class TestLinePlotter(TestBasicPlotter):
 
         p = basic._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
-        assert np.array_equal(data.values, p.plot_data[["x", "y"]].values)
+        expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
+        assert np.array_equal(data.values, expected)
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df, sort=False)
+        _, data = next(p.subset_data())
+        expected = p.plot_data.loc[:, ["x", "y"]]
+        assert np.array_equal(data.values, expected)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
-            expected = p.plot_data.loc[p.plot_data["hue"] == hue, ["x", "y"]]
+            rows = p.plot_data["hue"] == hue
+            cols = ["x", "y"]
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
+            assert np.array_equal(data.values, expected.values)
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
+        for (hue, _, _), data in p.subset_data():
+            rows = p.plot_data["hue"] == hue
+            cols = ["x", "y"]
+            expected = p.plot_data.loc[rows, cols]
             assert np.array_equal(data.values, expected.values)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
-            expected = p.plot_data.loc[p.plot_data["hue"] == hue, ["x", "y"]]
+            rows = p.plot_data["hue"] == hue
+            cols = ["x", "y"]
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
-            expected = p.plot_data.loc[rows, ["x", "y"]]
+            cols = ["x", "y"]
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
     def test_aggregate(self, long_df):
