@@ -892,6 +892,21 @@ class TestLinePlotter(TestBasicPlotter):
         for c in ax.collections:
             assert isinstance(c, mpl.collections.LineCollection)
 
+    def test_axis_labels(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+
+        p.plot(ax1, {})
+        assert ax1.get_xlabel() == "x"
+        assert ax1.get_ylabel() == "y"
+
+        p.plot(ax2, {})
+        assert ax2.get_xlabel() == "x"
+        assert ax2.get_ylabel() == "y"
+        assert not ax2.yaxis.label.get_visible()
+
     def test_lineplot_axes(self, wide_df):
 
         f1, ax1 = plt.subplots()
