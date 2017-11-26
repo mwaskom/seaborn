@@ -39,6 +39,14 @@ def remove_na(arr):
     return arr[pd.notnull(arr)]
 
 
+def sort_df(df, *args, **kwargs):
+    """Wrapper to handle different pandas sorting API pre/post 0.17."""
+    try:
+        return df.sort_values(*args, **kwargs)
+    except AttributeError:
+        return df.sort(*args, **kwargs)
+
+
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
 

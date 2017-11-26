@@ -604,7 +604,7 @@ class TestLinePlotter(TestBasicPlotter):
 
         p = basic._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
-        expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
+        expected = basic.sort_df(p.plot_data.loc[:, ["x", "y"]], ["x", "y"])
         assert np.array_equal(data.values, expected)
 
         p = basic._LinePlotter(x="x", y="y", data=long_df, sort=False)
@@ -616,7 +616,7 @@ class TestLinePlotter(TestBasicPlotter):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = p.plot_data.loc[rows, cols].sort_values(cols)
+            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
@@ -630,14 +630,14 @@ class TestLinePlotter(TestBasicPlotter):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = p.plot_data.loc[rows, cols].sort_values(cols)
+            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]
-            expected = p.plot_data.loc[rows, cols].sort_values(cols)
+            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
     def test_aggregate(self, long_df):
@@ -821,7 +821,7 @@ class TestLinePlotter(TestBasicPlotter):
         ax.clear()
         p.plot(ax, {})
         line, = ax.lines
-        sorted_data = long_df.sort_values(["x", "y"])
+        sorted_data = basic.sort_df(long_df, ["x", "y"])
         assert np.array_equal(line.get_xdata(), sorted_data.x.values)
         assert np.array_equal(line.get_ydata(), sorted_data.y.values)
 

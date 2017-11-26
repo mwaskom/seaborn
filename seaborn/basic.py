@@ -11,7 +11,7 @@ from matplotlib.collections import LineCollection
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, get_color_cycle
+from .utils import categorical_order, get_color_cycle, sort_df
 from .algorithms import bootstrap
 from .palettes import color_palette
 
@@ -348,7 +348,7 @@ class _LinePlotter(_BasicPlotter):
                 continue
 
             if self.sort:
-                subset_data = subset_data.sort_values(["x", "y"])
+                subset_data = sort_df(subset_data, ["x", "y"])
 
             yield (hue, size, style), subset_data
 
