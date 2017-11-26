@@ -718,7 +718,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         sizes=sizes, size_order=size_order, size_limits=size_limits,
         dashes=dashes, markers=markers, style_order=style_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
-        sort=sort, errstyle=errstyle,
+        sort=sort, errstyle=errstyle, legend=legend,
     )
 
     if ax is None:
