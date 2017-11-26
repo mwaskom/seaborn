@@ -422,6 +422,10 @@ class _LinePlotter(_BasicPlotter):
                     raise ValueError(err.format(missing))
 
                 width_range = min(sizes.values()), max(sizes.values())
+                try:
+                    limits = min(sizes.keys()), max(sizes.keys())
+                except TypeError:
+                    pass
 
             else:
 
