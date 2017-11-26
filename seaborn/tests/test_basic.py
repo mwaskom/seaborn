@@ -2,6 +2,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 import pytest
 from .. import basic
 from ..palettes import color_palette
@@ -690,3 +691,103 @@ class TestLinePlotter(TestBasicPlotter):
         assert np.array_equal(index.values, x)
         assert np.array_equal(est.values, y)
         assert cis is None
+
+    def test_legend_data(self, long_df):
+
+        f, ax = plt.subplots()
+
+        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p.add_legend_data(ax, "full")
+        handles, _ = ax.get_legend_handles_labels()
+        assert handles == []
+
+        # TODO test elsewhere in own function from lineplot() entrypoint
+        # ax.clear()
+        # p.plot(ax, "full", {"label": "test"})
+        # _, labels = ax.get_legend_handles_labels()
+        # assert labels == ["test"]
+
+        # --
+
+        ax.clear()
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        assert labels == p.hue_levels
+        assert colors == [p.palette[l] for l in labels]
+
+        # --
+
+        ax.clear()
+        p = basic._LinePlotter(x="x", y="y", hue="a", style="a",
+                               markers=True, data=long_df)
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        markers = [h.get_marker() for h in handles]
+        assert labels == p.hue_levels == p.style_levels
+        assert colors == [p.palette[l] for l in labels]
+        assert markers == [p.markers[l] for l in labels]
+
+        # --
+
+        ax.clear()
+        p = basic._LinePlotter(x="x", y="y", hue="a", style="b",
+                               markers=True, data=long_df)
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        markers = [h.get_marker() for h in handles]
+        expected_colors = ([p.palette[l] for l in p.hue_levels]
+                           + [".2" for _ in p.style_levels])
+        expected_markers = (["None" for _ in p.hue_levels]
+                            + [p.markers[l] for l in p.style_levels])
+        assert labels == p.hue_levels + p.style_levels
+        assert colors == expected_colors
+        assert markers == expected_markers
+
+        # --
+
+        ax.clear()
+        p = basic._LinePlotter(x="x", y="y", hue="a", size="a", data=long_df)
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        widths = [h.get_linewidth() for h in handles]
+        assert labels == p.hue_levels == p.size_levels
+        assert colors == [p.palette[l] for l in labels]
+        assert widths == [p.sizes[l] for l in labels]
+
+        # --
+
+        x, y = np.random.randn(2, 40)
+        z = np.tile(np.arange(20), 2)
+
+        p = basic._LinePlotter(x=x, y=y, hue=z)
+
+        ax.clear()
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == [str(l) for l in p.hue_levels]
+
+        ax.clear()
+        p.add_legend_data(ax, "brief")
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) == 4
+
+        p = basic._LinePlotter(x=x, y=y, size=z)
+
+        ax.clear()
+        p.add_legend_data(ax, "full")
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == [str(l) for l in p.size_levels]
+
+        ax.clear()
+        p.add_legend_data(ax, "brief")
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) == 4
+
+        ax.clear()
+        with pytest.raises(ValueError):
+            p.add_legend_data(ax,  legend="bad_value")

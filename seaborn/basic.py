@@ -627,7 +627,7 @@ class _LinePlotter(_BasicPlotter):
         keys = []
         legend_data = {}
 
-        def add_legend_data(var_name, val_name, **kws):
+        def update(var_name, val_name, **kws):
 
             key = var_name, val_name
             if key in legend_data:
@@ -636,7 +636,7 @@ class _LinePlotter(_BasicPlotter):
                 keys.append(key)
                 legend_data[key] = dict(**kws)
 
-        ticker = mpl.ticker.MaxNLocator(3)
+        ticker = mpl.ticker.MaxNLocator(nbins=3)
 
         # -- Add a legend for hue semantics
 
@@ -649,7 +649,7 @@ class _LinePlotter(_BasicPlotter):
         for level in hue_levels:
             if level is not None:
                 color = self.color_lookup(level)
-                add_legend_data(self.hue_label, level, color=color)
+                update(self.hue_label, level, color=color)
 
         # -- Add a legend for size semantics
 
@@ -662,15 +662,15 @@ class _LinePlotter(_BasicPlotter):
         for level in size_levels:
             if level is not None:
                 linewidth = self.size_lookup(level)
-                add_legend_data(self.size_label, level, linewidth=linewidth)
+                update(self.size_label, level, linewidth=linewidth)
 
         # -- Add a legend for style semantics
 
         for level in self.style_levels:
             if level is not None:
-                add_legend_data(self.style_label, level,
-                                marker=self.markers.get(level, ""),
-                                dashes=self.dashes.get(level, ""))
+                update(self.style_label, level,
+                       marker=self.markers.get(level, ""),
+                       dashes=self.dashes.get(level, ""))
 
         for key in keys:
             _, label = key
