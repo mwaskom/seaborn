@@ -403,7 +403,7 @@ class _LinePlotter(_BasicPlotter):
             var_type = self._attribute_type(data)
             if var_type == "categorical":
                 levels = categorical_order(data)
-                numbers = np.arange(0, len(levels))
+                numbers = np.arange(0, len(levels))[::-1]
             elif var_type == "numeric":
                 levels = numbers = np.sort(data.unique())
 
@@ -711,10 +711,6 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
              sort=True, errstyle="band",
              legend="brief", ax=None, **kwargs):
-
-    # TODO add a "brief_legend" or similar that handles many legend entries
-    # using a matplotlib ticker ... maybe have it take threshold where you
-    # flip from itemizing levels to showing level ticks
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
