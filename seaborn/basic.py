@@ -1030,7 +1030,7 @@ lineplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> x, y = np.random.randn(2, 5000).cumsum(axis=1)
-        >>> sns.lineplot(x=x, y=y, sort=False, lw=1)
+        >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
 
     """).format(**_basic_docs)
