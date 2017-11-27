@@ -50,7 +50,7 @@ class Grid(object):
             Title for the legend. The default reads from ``self._hue_var``.
         label_order : list of labels, optional
             The order that the legend entries should appear in. The default
-            reads from ``self.hue_names`` or sorts the keys in ``legend_data``.
+            reads from ``self.hue_names``.
         kwargs : key, value pairings
             Other keyword arguments are passed to the underlying legend methods
             on the Figure or Axes object.
@@ -65,7 +65,7 @@ class Grid(object):
         legend_data = self._legend_data if legend_data is None else legend_data
         if label_order is None:
             if self.hue_names is None:
-                label_order = np.sort(list(legend_data.keys()))
+                label_order = list(legend_data.keys())
             else:
                 label_order = list(map(utils.to_utf8, self.hue_names))
 
