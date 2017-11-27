@@ -353,7 +353,7 @@ class TestLinePlotter(TestBasicPlotter):
         assert p.palette == expected_palette
 
         # Test list palette
-        palette = color_palette("Reds", wide_df.shape[1] + 2)
+        palette = color_palette("Reds", wide_df.shape[1])
         p.parse_hue(p.plot_data.hue, palette, None, None)
         expected_palette = dict(zip(wide_df.columns, palette))
         assert p.palette == expected_palette
@@ -366,6 +366,11 @@ class TestLinePlotter(TestBasicPlotter):
 
         # Test dict with missing keys
         palette = dict(zip(wide_df.columns[:-1], colors))
+        with pytest.raises(ValueError):
+            p.parse_hue(p.plot_data.hue, palette, None, None)
+
+        # Test list with wrong number of colors
+        palette = colors[:-1]
         with pytest.raises(ValueError):
             p.parse_hue(p.plot_data.hue, palette, None, None)
 

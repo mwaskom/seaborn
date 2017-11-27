@@ -199,6 +199,11 @@ class _BasicPlotter(object):
                     colors = color_palette(None, n_colors)
                 else:
                     colors = color_palette("husl", n_colors)
+            elif isinstance(palette, list):
+                if len(palette) != n_colors:
+                    err = "The palette list has the wrong number of colors."
+                    raise ValueError(err)
+                colors = palette
             else:
                 colors = color_palette(palette, n_colors)
 
@@ -216,18 +221,6 @@ class _BasicPlotter(object):
         # Identify the colormap to use
         if palette is None:
             cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
-        elif isinstance(palette, dict):
-            missing = set(levels) - set(palette)
-            if any(missing):
-                err = "The palette dictionary is missing keys: {}"
-                raise ValueError(err.format(missing))
-            cmap = None
-        elif isinstance(palette, list):
-            if len(palette) != len(levels):
-                err = "The palette has the wrong number of colors"
-                raise ValueError(err)
-            palette = dict(zip(levels, palette))
-            cmap = None
         elif isinstance(palette, mpl.colors.Colormap):
             cmap = palette
         else:
@@ -237,18 +230,16 @@ class _BasicPlotter(object):
                 err = "Palette {} not understood"
                 raise ValueError(err)
 
-        if cmap is not None:
+        if limits is None:
+            limits = data.min(), data.max()
 
-            if limits is None:
-                hue_min, hue_max = data.min(), data.max()
-            else:
-                hue_min, hue_max = limits
-                hue_min = data.min() if hue_min is None else hue_min
-                hue_max = data.max() if hue_max is None else hue_max
+        hue_min, hue_max = limits
+        hue_min = data.min() if hue_min is None else hue_min
+        hue_max = data.max() if hue_max is None else hue_max
 
-            limits = hue_min, hue_max
-            normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
-            palette = {l: cmap(normalize(l)) for l in levels}
+        limits = hue_min, hue_max
+        normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
+        palette = {l: cmap(normalize(l)) for l in levels}
 
         return levels, palette, cmap, limits
 
@@ -368,7 +359,11 @@ class _LinePlotter(_BasicPlotter):
         else:
 
             # Determine what kind of hue mapping we want
-            var_type = self._attribute_type(data)
+            var_type = self._semantic_type(data)
+
+            # Override depending on the type of the palette argument
+            if isinstance(palette, (dict, list)):
+                var_type = "categorical"
 
         # -- Option 1: categorical color palette
 
@@ -403,7 +398,7 @@ class _LinePlotter(_BasicPlotter):
 
         else:
 
-            var_type = self._attribute_type(data)
+            var_type = self._semantic_type(data)
             if var_type == "categorical":
                 levels = categorical_order(data)
                 numbers = np.arange(0, len(levels))[::-1]
