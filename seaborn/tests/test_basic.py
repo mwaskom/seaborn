@@ -233,7 +233,7 @@ class TestBasicPlotter(object):
 
         hue = p.plot_data["hue"]
         expected_hue = np.concatenate([
-            np.full(len(s), s.name) for s in wide_list_of_series
+            np.full(len(s), s.name, object) for s in wide_list_of_series
         ])
         assert np.array_equal(hue, expected_hue)
 
