@@ -705,7 +705,7 @@ _basic_docs = dict(
     # ---  Introductory prose
     main_api_narrative=dedent("""\
 
-    ### TODO ###
+    TODO
 
     """),
 
@@ -891,12 +891,129 @@ lineplot.__doc__ = dedent("""\
     See Also
     --------
 
-    ### TODO ###
+    TODO
 
     Examples
     --------
 
-    ### TODO ###
+    Draw a single line plot with error bands showing a confidence interval:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set()
+        >>> fmri = sns.load_dataset("fmri")
+        >>> ax = sns.lineplot(x="timepoint", y="signal", data=fmri)
+
+    Group by another variable and show the groups with different colors:
+
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
+        ...                   data=fmri)
+
+    Show the grouping variable with both color and line dashing:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal",
+        ...                   hue="event", style="event", data=fmri)
+
+    Use color and line dashing to represent two different grouping variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal",
+        ...                   hue="region", style="event", data=fmri)
+
+    Change the markers used instead of the dashes to identify groups:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal",
+        ...                   hue="event", style="event",
+        ...                   markers=True, dashes=False, data=fmri)
+
+    Show error bars instead of error bands and plot the standard error:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
+        ...                   errstyle="bars", ci=68, data=fmri)
+
+    Use a quantitative color mapping:
+
+    .. plot::
+        :context: close-figs
+
+        >>> dots = sns.load_dataset("dots").query("align == 'dots'")
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   hue="coherence", style="choice",
+        ...                   data=dots)
+
+    Change the data limits over which the colormap is normalized:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   hue="coherence", style="choice",
+        ...                   hue_limits=(0, 100), data=dots)
+
+    Show an entry for every line in the legend and use a different palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   hue="coherence", style="choice",
+        ...                   palette="BuGn", legend="full", data=dots)
+
+    Change the width of the lines with a quantitative variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   size="coherence", style="choice",
+        ...                   legend="full", data=dots)
+
+    Change the range of line widths used to normalize the size variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   size="coherence", style="choice",
+        ...                   sizes=(.2, 1), data=dots)
+
+    Plot from a wide-form DataFrame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import pandas as pd
+        >>> index = pd.date_range("1 1 2000", periods=100,
+        ...                       freq="m", name="date")
+        >>> data = np.random.randn(100, 4).cumsum(axis=0)
+        >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
+        >>> ax = sns.lineplot(data=wide_df)
+
+    Draw lines at points as they appear in the dataset:
+
+    .. plot::
+        :context: close-figs
+
+        >>> x, y = np.random.randn(2, 5000).cumsum(axis=1)
+        >>> sns.lineplot(x=x, y=y, sort=False, lw=1)
+
 
     """).format(**_basic_docs)
 

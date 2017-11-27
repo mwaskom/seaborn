@@ -3775,7 +3775,7 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set_style("whitegrid")
+        >>> sns.set(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.lvplot(x=tips["total_bill"])
 
