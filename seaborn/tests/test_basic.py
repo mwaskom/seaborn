@@ -31,9 +31,21 @@ class TestBasicPlotter(object):
         return np.random.randn(20)
 
     @pytest.fixture
+    def flat_series(self):
+
+        index = pd.Int64Index(np.arange(10, 30), name="t")
+        return pd.Series(np.random.randn(20), index, name="s")
+
+    @pytest.fixture
     def wide_list(self):
 
         return [np.random.randn(20), np.random.randn(10)]
+
+    @pytest.fixture
+    def wide_list_of_series(self):
+
+        return [pd.Series(np.random.randn(20), np.arange(20), name="a"),
+                pd.Series(np.random.randn(10), np.arange(5, 15), name="b")]
 
     @pytest.fixture
     def long_df(self):
@@ -150,6 +162,27 @@ class TestBasicPlotter(object):
         assert p.size_label is None
         assert p.style_label is None
 
+    def test_flat_series_variables(self, flat_series):
+
+        p = basic._BasicPlotter()
+        p.establish_variables(data=flat_series)
+        assert p.input_format == "wide"
+        assert len(p.plot_data) == len(flat_series)
+
+        x = p.plot_data["x"]
+        expected_x = flat_series.index
+        assert np.array_equal(x, expected_x)
+
+        y = p.plot_data["y"]
+        expected_y = flat_series
+        assert np.array_equal(y, expected_y)
+
+        assert p.x_label is None
+        assert p.y_label is None
+        assert p.hue_label is None
+        assert p.size_label is None
+        assert p.style_label is None
+
     def test_wide_list_variables(self, wide_list):
 
         p = basic._BasicPlotter()
@@ -168,6 +201,39 @@ class TestBasicPlotter(object):
         hue = p.plot_data["hue"]
         expected_hue = np.concatenate([
             np.ones_like(l) * i for i, l in enumerate(wide_list)
+        ])
+        assert np.array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert np.array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.x_label is None
+        assert p.y_label is None
+        assert p.hue_label is None
+        assert p.size_label is None
+        assert p.style_label is None
+
+    def test_wide_list_of_series_variables(self, wide_list_of_series):
+
+        p = basic._BasicPlotter()
+        p.establish_variables(data=wide_list_of_series)
+        assert p.input_format == "wide"
+        assert len(p.plot_data) == sum(len(l) for l in wide_list_of_series)
+
+        x = p.plot_data["x"]
+        expected_x = np.concatenate([s.index for s in wide_list_of_series])
+        assert np.array_equal(x, expected_x)
+
+        y = p.plot_data["y"]
+        expected_y = np.concatenate(wide_list_of_series)
+        assert np.array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.concatenate([
+            np.full(len(s), s.name) for s in wide_list_of_series
         ])
         assert np.array_equal(hue, expected_hue)
 
@@ -918,18 +984,25 @@ class TestLinePlotter(TestBasicPlotter):
         ax = basic.lineplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
-    def test_lineplot_smoke(self, wide_list, flat_array, wide_array,
+    def test_lineplot_smoke(self, flat_array, flat_series,
+                            wide_array, wide_list, wide_list_of_series,
                             wide_df, long_df):
 
         f, ax = plt.subplots()
 
-        basic.lineplot(data=wide_list)
-        ax.clear()
-
         basic.lineplot(data=flat_array)
         ax.clear()
 
+        basic.lineplot(data=flat_series)
+        ax.clear()
+
         basic.lineplot(data=wide_array)
+        ax.clear()
+
+        basic.lineplot(data=wide_list)
+        ax.clear()
+
+        basic.lineplot(data=wide_list_of_series)
         ax.clear()
 
         basic.lineplot(data=wide_df)

@@ -80,37 +80,40 @@ class _BasicPlotter(object):
 
                     plot_data = pd.DataFrame(columns=["x", "y"])
 
-                elif np.isscalar(data[0]):
+                elif np.isscalar(np.asarray(data)[0]):
 
                     # The input data is a flat list(like):
                     # We assign a numeric index for x and use the values for y
 
-                    plot_data = pd.DataFrame(dict(x=np.arange(len(data)),
-                                                  y=data))
+                    x = getattr(data, "index", np.arange(len(data)))
+                    plot_data = pd.DataFrame(dict(x=x, y=data))
 
                 elif hasattr(data, "shape"):
 
                     # The input data is an array(like):
-                    # We assign a numeric index to x, the values to y, and
-                    # numeric values to both hue and style
+                    # We either use the index or assign a numeric index to x,
+                    # the values to y, and id keys to both hue and style
 
                     plot_data = pd.DataFrame(data)
                     plot_data.loc[:, "x"] = plot_data.index
                     plot_data = pd.melt(plot_data, "x",
-                                        var_name="hue", value_name="y")
+                                        var_name="hue",
+                                        value_name="y")
                     plot_data["style"] = plot_data["hue"]
 
                 else:
 
-                    # The input data is a nested list: We will assign a numeric
-                    # index for x, use the values for, y and use numeric
-                    # hue/style identifiers for each entry.
+                    # The input data is a nested list: We will either use the
+                    # index or assign a numeric index for x, use the values
+                    # for y, and use numeric hue/style identifiers.
 
-                    plot_data = pd.concat([
-                        pd.DataFrame(dict(x=np.arange(len(data_i)),
-                                          y=data_i, hue=i, style=i, size=None))
-                        for i, data_i in enumerate(data)
-                    ])
+                    plot_data = []
+                    for i, data_i in enumerate(data):
+                        x = getattr(data_i, "index", np.arange(len(data_i)))
+                        n = getattr(data_i, "name", i)
+                        data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
+                        plot_data.append(pd.DataFrame(data_i))
+                    plot_data = pd.concat(plot_data)
 
         # Option 2:
         # We have long-form data
@@ -146,7 +149,7 @@ class _BasicPlotter(object):
             plot_data = pd.DataFrame(plot_data)
 
         # Option 3:
-        # Only one variable arugment
+        # Only one variable argument
         # --------------------------
 
         else:
@@ -1005,6 +1008,21 @@ lineplot.__doc__ = dedent("""\
         >>> data = np.random.randn(100, 4).cumsum(axis=0)
         >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
         >>> ax = sns.lineplot(data=wide_df)
+
+    Plot from a list of Series:
+
+    .. plot::
+        :context: close-figs
+
+        >>> list_data = [wide_df.loc[:"2005", "a"], wide_df.loc["2003":, "b"]]
+        >>> ax = sns.lineplot(data=list_data)
+
+    Plot a single Series, pass kwargs to ``plt.plot``:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(data=wide_df["a"], color="coral", label="line")
 
     Draw lines at points as they appear in the dataset:
 
