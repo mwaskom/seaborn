@@ -901,8 +901,8 @@ lineplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns
-        >>> sns.set()
+        >>> import seaborn as sns; sns.set()
+        >>> import matplotlib.pyplot as plt
         >>> fmri = sns.load_dataset("fmri")
         >>> ax = sns.lineplot(x="timepoint", y="signal", data=fmri)
 
@@ -999,7 +999,7 @@ lineplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> import pandas as pd
+        >>> import numpy as np, pandas as pd; plt.close("all")
         >>> index = pd.date_range("1 1 2000", periods=100,
         ...                       freq="m", name="date")
         >>> data = np.random.randn(100, 4).cumsum(axis=0)
