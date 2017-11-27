@@ -244,7 +244,7 @@ class _BasicPlotter(object):
         return levels, palette, cmap, limits
 
     def color_lookup(self, key):
-
+        """Return the color corresponding to the hue level."""
         if self.hue_type == "numeric":
             norm = mpl.colors.Normalize(*self.hue_limits, clip=True)
             return self.cmap(norm(key))
@@ -252,7 +252,7 @@ class _BasicPlotter(object):
             return self.palette[key]
 
     def size_lookup(self, key):
-
+        """Return the size corresponding to the size level."""
         if self.size_type == "numeric":
             norm = mpl.colors.Normalize(*self.size_limits, clip=True)
             min_size, max_size = self.size_range
@@ -280,12 +280,11 @@ class _BasicPlotter(object):
         return attrdict
 
     def _empty_data(self, data):
+        """Test if a series is completely missing."""
+        return data.isnull().all()
 
-        empty_data = data.isnull().all()
-        return empty_data
-
-    def _attribute_type(self, data):
-
+    def _semantic_type(self, data):
+        """Determine if data should considered numeric or categorical."""
         if self.input_format == "wide":
             return "categorical"
         else:
@@ -489,9 +488,10 @@ class _LinePlotter(_BasicPlotter):
         self.markers = markers
 
     def aggregate(self, vals, grouper, func, ci):
-
+        """Compute an estimate and confidence interval using grouper."""
         n_boot = self.n_boot
 
+        # Define a function that might call an object method for aggregation
         # TODO rework this logic, which is a mess
         if callable(func):
             def f(x):
@@ -504,8 +504,10 @@ class _LinePlotter(_BasicPlotter):
             def f(x):
                 return getattr(x, func)()
 
+        # Define a "null" CI for when we only have one value
         null_ci = pd.Series(index=["low", "high"], dtype=np.float)
 
+        # Function to bootstrap in the context of a pandas group by
         def bootstrapped_cis(vals):
 
             if len(vals) == 1:
@@ -515,13 +517,16 @@ class _LinePlotter(_BasicPlotter):
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
+        # Group and get the aggregation estimate
         grouped = vals.groupby(grouper, sort=self.sort)
-
         est = f(grouped)
 
+        # Exit early if we don't want a confidence interval
         if ci is None:
             return est.index, est, None
-        elif ci == "sd":
+
+        # Compute the error bar extents
+        if ci == "sd":
             sd = grouped.std()
             cis = pd.DataFrame(np.c_[est - sd, est + sd],
                                index=est.index,
@@ -529,6 +534,7 @@ class _LinePlotter(_BasicPlotter):
         else:
             cis = grouped.apply(bootstrapped_cis)
 
+        # Unpack the CIs into "wide" format for plotting
         if cis.notnull().any():
             cis = cis.unstack().reindex(est.index)
         else:
@@ -537,6 +543,7 @@ class _LinePlotter(_BasicPlotter):
         return est.index, est, cis
 
     def plot(self, ax, kws):
+        """Draw the plot onto an axes, passing matplotlib kwargs."""
 
         # Draw a test line, using the passed in kwargs. The goal here is to
         # honor both (a) the current state of the plot cycler and (b) the
@@ -628,7 +635,7 @@ class _LinePlotter(_BasicPlotter):
                 ax.legend()
 
     def add_legend_data(self, ax):
-
+        """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
         if verbosity not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
@@ -702,9 +709,14 @@ _basic_docs = dict(
 
     # ---  Introductory prose
     main_api_narrative=dedent("""\
-
-    TODO
-
+    The relationship between ``x`` and ``y`` can be shown for different subsets
+    of the data using the ``hue``, ``size``, and ``style`` parameters. These
+    parameters control what visual semantics are used to identify the different
+    subsets. It is possible to show up to three dimensions independently by
+    using all three semantic types, but this style of plot can be hard to
+    interpret and is often ineffective. Using redundant semantics (i.e. both
+    ``hue`` and ``style`` for the same variable) can be helpful for making
+    graphics more accessible.\
     """),
 
     # --- Shared function parameters
@@ -833,9 +845,13 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
 
 lineplot.__doc__ = dedent("""\
-    Draw a line plot with numeric data.
+    Draw a plot with numeric x and y values where the points are connected.
 
     {main_api_narrative}
+
+    By default, the plot aggregates over multiple ``y`` values at each value of
+    ``x`` and shows an estimate of the central tendency and a confidence
+    interval for that estimate.
 
     Parameters
     ----------
@@ -861,11 +877,17 @@ lineplot.__doc__ = dedent("""\
     {size_limits}
     dashes : boolean, list, or dictionary, optional
         Object determining how to draw the lines for different levels of the
-        ``style`` variable. Dashes are specified as in matplotlib: a tuple of
-        ``(segment, gap)`` lengths, or an empty string to draw a solid line.
+        ``style`` variable. Setting to ``True`` will use default dash codes, or
+        you can pass a list of dash codes or a dictionary mapping levels of the
+        ``style`` variable to dash codes. Setting to ``False`` will use solid
+        lines for all subsets. Dashes are specified as in matplotlib: a tuple
+        of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
     markers : boolean, list, or dictionary, optional
         Object determining how to draw the markers for different levels of the
-        ``style`` variable. Markers are specified as in matplotlib.
+        ``style`` variable. Setting to ``True`` will use default markers, or
+        you can pass a list of markers or a dictionary mapping levels of the
+        ``style`` variable to markers. Setting to ``False`` will draw
+        marker-less lines.  Markers are specified as in matplotlib.
     {style_order}
     {units}
     {estimator}
@@ -888,8 +910,10 @@ lineplot.__doc__ = dedent("""\
 
     See Also
     --------
-
-    TODO
+    scatterplot : Show the relationship between two variables without
+                  emphasizing continuity of the ``x`` variable.
+    pointplot : Show the relationship between two variables when one is
+                categorical.
 
     Examples
     --------
@@ -929,7 +953,7 @@ lineplot.__doc__ = dedent("""\
         >>> ax = sns.lineplot(x="timepoint", y="signal",
         ...                   hue="region", style="event", data=fmri)
 
-    Change the markers used instead of the dashes to identify groups:
+    Use markers instead of the dashes to identify groups:
 
     .. plot::
         :context: close-figs
@@ -965,14 +989,24 @@ lineplot.__doc__ = dedent("""\
         ...                   hue="coherence", style="choice",
         ...                   hue_limits=(0, 100), data=dots)
 
-    Show an entry for every line in the legend and use a different palette:
+    Use a different color palette:
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   palette="BuGn", legend="full", data=dots)
+        ...                   palette="viridis_r", data=dots)
+
+    Use specific color values, treating the hue variable as categorical:
+
+    .. plot::
+        :context: close-figs
+
+        >>> palette = sns.color_palette("mako_r", 6)
+        >>> ax = sns.lineplot(x="time", y="firing_rate",
+        ...                   hue="coherence", style="choice",
+        ...                   palette=palette, data=dots)
 
     Change the width of the lines with a quantitative variable:
 
