@@ -6,7 +6,7 @@ _thumb: .5, .45
 
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set(style="darkgrid")
 
 # Load an example dataset with long-form data
 fmri = sns.load_dataset("fmri")
