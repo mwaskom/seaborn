@@ -18,6 +18,7 @@ Plotting functions
 .. toctree::
    :maxdepth: 2
 
+   tutorial/basic
    tutorial/distributions
    tutorial/categorical
    tutorial/regression
