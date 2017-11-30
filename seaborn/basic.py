@@ -1001,7 +1001,7 @@ lineplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
-        ...                   size="coherence", style="choice",
+        ...                   size="coherence", hue="choice",
         ...                   legend="full", data=dots)
 
     Change the range of line widths used to normalize the size variable:
@@ -1010,7 +1010,7 @@ lineplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
-        ...                   size="coherence", style="choice",
+        ...                   size="coherence", hue="choice",
         ...                   sizes=(.2, 1), data=dots)
 
     Plot from a wide-form DataFrame:
