@@ -177,8 +177,8 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
     """
     msg = (
-        "The tsplot function is deprecated and will be removed or replaced "
-        "(in a substantially altered version) in a future release."
+        "The `tsplot` function is deprecated and will be removed in a future "
+        "release. Please update your code to use the new `lineplot` function."
     )
     warnings.warn(msg, UserWarning)
 

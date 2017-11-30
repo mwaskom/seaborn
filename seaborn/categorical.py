@@ -2168,7 +2168,7 @@ _categorical_docs = dict(
     """),
     ax_out=dedent("""\
     ax : matplotlib Axes
-        Returns the Axes object with the boxplot drawn onto it.\
+        Returns the Axes object with the plot drawn onto it.\
     """),
 
     # Shared see also
@@ -3775,7 +3775,7 @@ lvplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set_style("whitegrid")
+        >>> sns.set(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.lvplot(x=tips["total_bill"])
 

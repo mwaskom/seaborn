@@ -4,6 +4,7 @@ generated/
 examples/
 example_thumbs/
 aesthetics.rst
+basic.rst
 color_palettes.rst
 distributions.rst
 regression.rst

@@ -2,16 +2,17 @@ import numpy as np
 from ..external.six.moves import range
 
 from numpy.testing import assert_array_equal
-import nose.tools
-from nose.tools import assert_equal, raises
+import pytest
 
 from .. import algorithms as algo
 
-rs = np.random.RandomState(sum(map(ord, "test_algorithms")))
-a_norm = rs.randn(100)
+
+@pytest.fixture
+def random():
+    np.random.seed(sum(map(ord, "test_algorithms")))
 
 
-def test_bootstrap():
+def test_bootstrap(random):
     """Test that bootstrapping gives the right answer in dumb cases."""
     a_ones = np.ones(10)
     n_boot = 5
@@ -21,71 +22,79 @@ def test_bootstrap():
     assert_array_equal(out2, np.ones(n_boot))
 
 
-def test_bootstrap_length():
+def test_bootstrap_length(random):
     """Test that we get a bootstrap array of the right shape."""
+    a_norm = np.random.randn(1000)
     out = algo.bootstrap(a_norm)
-    assert_equal(len(out), 10000)
+    assert len(out) == 10000
 
     n_boot = 100
     out = algo.bootstrap(a_norm, n_boot=n_boot)
-    assert_equal(len(out), n_boot)
+    assert len(out) == n_boot
 
 
-def test_bootstrap_range():
+def test_bootstrap_range(random):
     """Test that boostrapping a random array stays within the right range."""
-    min, max = a_norm.min(), a_norm.max()
+    a_norm = np.random.randn(1000)
+    amin, amax = a_norm.min(), a_norm.max()
     out = algo.bootstrap(a_norm)
-    nose.tools.assert_less(min, out.min())
-    nose.tools.assert_greater_equal(max, out.max())
+    assert amin <= out.min()
+    assert amax >= out.max()
 
 
-def test_bootstrap_multiarg():
+def test_bootstrap_multiarg(random):
     """Test that bootstrap works with multiple input arrays."""
     x = np.vstack([[1, 10] for i in range(10)])
     y = np.vstack([[5, 5] for i in range(10)])
 
-    test_func = lambda x, y: np.vstack((x, y)).max(axis=0)
-    out_actual = algo.bootstrap(x, y, n_boot=2, func=test_func)
+    def f(x, y):
+        return np.vstack((x, y)).max(axis=0)
+
+    out_actual = algo.bootstrap(x, y, n_boot=2, func=f)
     out_wanted = np.array([[5, 10], [5, 10]])
     assert_array_equal(out_actual, out_wanted)
 
 
-def test_bootstrap_axis():
+def test_bootstrap_axis(random):
     """Test axis kwarg to bootstrap function."""
-    x = rs.randn(10, 20)
+    x = np.random.randn(10, 20)
     n_boot = 100
+
     out_default = algo.bootstrap(x, n_boot=n_boot)
-    assert_equal(out_default.shape, (n_boot,))
+    assert out_default.shape == (n_boot,)
+
     out_axis = algo.bootstrap(x, n_boot=n_boot, axis=0)
-    assert_equal(out_axis.shape, (n_boot, 20))
+    assert out_axis.shape, (n_boot, x.shape[1])
 
 
-def test_bootstrap_random_seed():
+def test_bootstrap_random_seed(random):
     """Test that we can get reproducible resamples by seeding the RNG."""
-    data = rs.randn(50)
+    data = np.random.randn(50)
     seed = 42
     boots1 = algo.bootstrap(data, random_seed=seed)
     boots2 = algo.bootstrap(data, random_seed=seed)
     assert_array_equal(boots1, boots2)
 
 
-def test_smooth_bootstrap():
+def test_smooth_bootstrap(random):
     """Test smooth bootstrap."""
-    x = rs.randn(15)
+    x = np.random.randn(15)
     n_boot = 100
     out_smooth = algo.bootstrap(x, n_boot=n_boot,
                                 smooth=True, func=np.median)
-    assert(not np.median(out_smooth) in x)
+    assert not np.median(out_smooth) in x
 
 
-def test_bootstrap_ols():
+def test_bootstrap_ols(random):
     """Test bootstrap of OLS model fit."""
-    ols_fit = lambda X, y: np.dot(np.dot(np.linalg.inv(
-                                  np.dot(X.T, X)), X.T), y)
-    X = np.column_stack((rs.randn(50, 4), np.ones(50)))
+    def ols_fit(X, y):
+        XtXinv = np.linalg.inv(np.dot(X.T, X))
+        return XtXinv.dot(X.T).dot(y)
+
+    X = np.column_stack((np.random.randn(50, 4), np.ones(50)))
     w = [2, 4, 0, 3, 5]
-    y_noisy = np.dot(X, w) + rs.randn(50) * 20
-    y_lownoise = np.dot(X, w) + rs.randn(50)
+    y_noisy = np.dot(X, w) + np.random.randn(50) * 20
+    y_lownoise = np.dot(X, w) + np.random.randn(50)
 
     n_boot = 500
     w_boot_noisy = algo.bootstrap(X, y_noisy,
@@ -95,34 +104,42 @@ def test_bootstrap_ols():
                                      n_boot=n_boot,
                                      func=ols_fit)
 
-    assert_equal(w_boot_noisy.shape, (n_boot, 5))
-    assert_equal(w_boot_lownoise.shape, (n_boot, 5))
-    nose.tools.assert_greater(w_boot_noisy.std(),
-                              w_boot_lownoise.std())
+    assert w_boot_noisy.shape == (n_boot, 5)
+    assert w_boot_lownoise.shape == (n_boot, 5)
+    assert w_boot_noisy.std() > w_boot_lownoise.std()
 
 
-def test_bootstrap_units():
+def test_bootstrap_units(random):
     """Test that results make sense when passing unit IDs to bootstrap."""
-    data = rs.randn(50)
+    data = np.random.randn(50)
     ids = np.repeat(range(10), 5)
-    bwerr = rs.normal(0, 2, 10)
+    bwerr = np.random.normal(0, 2, 10)
     bwerr = bwerr[ids]
     data_rm = data + bwerr
     seed = 77
 
     boots_orig = algo.bootstrap(data_rm, random_seed=seed)
     boots_rm = algo.bootstrap(data_rm, units=ids, random_seed=seed)
-    nose.tools.assert_greater(boots_rm.std(), boots_orig.std())
+    assert boots_rm.std() > boots_orig.std()
 
 
-@raises(ValueError)
 def test_bootstrap_arglength():
     """Test that different length args raise ValueError."""
-    algo.bootstrap(np.arange(5), np.arange(10))
+    with pytest.raises(ValueError):
+        algo.bootstrap(np.arange(5), np.arange(10))
 
 
-@raises(TypeError)
-def test_bootstrap_noncallable():
-    """Test that we get a TypeError with noncallable algo.unc."""
-    non_func = "mean"
-    algo.bootstrap(a_norm, 100, non_func)
+def test_bootstrap_string_func():
+    """Test that named numpy methods are the same as the numpy function."""
+    x = np.random.randn(100)
+
+    res_a = algo.bootstrap(x, func="mean", random_seed=0)
+    res_b = algo.bootstrap(x, func=np.mean, random_seed=0)
+    assert np.array_equal(res_a, res_b)
+
+    res_a = algo.bootstrap(x, func="std", random_seed=0)
+    res_b = algo.bootstrap(x, func=np.std, random_seed=0)
+    assert np.array_equal(res_a, res_b)
+
+    with pytest.raises(AttributeError):
+        algo.bootstrap(x, func="not_a_method_name")

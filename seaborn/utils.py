@@ -39,6 +39,14 @@ def remove_na(arr):
     return arr[pd.notnull(arr)]
 
 
+def sort_df(df, *args, **kwargs):
+    """Wrapper to handle different pandas sorting API pre/post 0.17."""
+    try:
+        return df.sort_values(*args, **kwargs)
+    except AttributeError:
+        return df.sort(*args, **kwargs)
+
+
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
 
@@ -522,6 +530,7 @@ def categorical_order(values, order=None):
 
 
 def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle."""
     if mpl_ge_150:
         cyl = mpl.rcParams['axes.prop_cycle']
         # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
@@ -531,6 +540,7 @@ def get_color_cycle():
             return [x['color'] for x in cyl]
         except KeyError:
             pass  # just return axes.color style below
+
     return mpl.rcParams['axes.color_cycle']
 
 

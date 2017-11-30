@@ -2,6 +2,8 @@
 from __future__ import division
 import numpy as np
 from scipy import stats
+import warnings
+from .external.six import string_types
 from .external.six.moves import range
 
 
@@ -24,8 +26,9 @@ def bootstrap(*args, **kwargs):
             If True, performs a smoothed bootstrap (draws samples from a kernel
             destiny estimate); only works for one-dimensional inputs and cannot
             be used `units` is present.
-        func : callable, default np.mean
-            Function to call on the args that are passed in.
+        func : string or callable, default np.mean
+            Function to call on the args that are passed in. If string, tries
+            to use as named method on numpy array.
         random_seed : int | None, default None
             Seed for the random number generator; useful if you want
             reproducible resamples.
@@ -61,19 +64,28 @@ def bootstrap(*args, **kwargs):
     if units is not None:
         units = np.asarray(units)
 
+    # Allow for a function that is the name of a method on an array
+    if isinstance(func, string_types):
+        def f(x):
+            return getattr(x, func)()
+    else:
+        f = func
+
     # Do the bootstrap
     if smooth:
-        return _smooth_bootstrap(args, n_boot, func, func_kwargs)
+        msg = "Smooth bootstraps are deprecated and will be removed."
+        warnings.warn(msg)
+        return _smooth_bootstrap(args, n_boot, f, func_kwargs)
 
     if units is not None:
-        return _structured_bootstrap(args, n_boot, units, func,
+        return _structured_bootstrap(args, n_boot, units, f,
                                      func_kwargs, rs)
 
     boot_dist = []
     for i in range(int(n_boot)):
         resampler = rs.randint(0, n, n)
         sample = [a.take(resampler, axis=0) for a in args]
-        boot_dist.append(func(*sample, **func_kwargs))
+        boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
 
 

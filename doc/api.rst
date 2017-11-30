@@ -21,6 +21,17 @@ Axis grids
     JointGrid
     jointplot
 
+
+.. _basic_api:
+
+Basic plots
+-----------
+
+.. autosummary::
+    :toctree: generated
+
+    lineplot
+
 .. _categorical_api:
 
 Categorical plots
