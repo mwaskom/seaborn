@@ -491,19 +491,6 @@ class _LinePlotter(_BasicPlotter):
         """Compute an estimate and confidence interval using grouper."""
         n_boot = self.n_boot
 
-        # Define a function that might call an object method for aggregation
-        # TODO rework this logic, which is a mess
-        if callable(func):
-            def f(x):
-                try:
-                    return x.apply(func)
-                except AttributeError:
-                    return func(x)
-
-        else:
-            def f(x):
-                return getattr(x, func)()
-
         # Define a "null" CI for when we only have one value
         null_ci = pd.Series(index=["low", "high"], dtype=np.float)
 
@@ -513,13 +500,13 @@ class _LinePlotter(_BasicPlotter):
             if len(vals) == 1:
                 return null_ci
 
-            boots = bootstrap(vals, func=f, n_boot=n_boot)
+            boots = bootstrap(vals, func=func, n_boot=n_boot)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
         # Group and get the aggregation estimate
         grouped = vals.groupby(grouper, sort=self.sort)
-        est = f(grouped)
+        est = grouped.agg(func)
 
         # Exit early if we don't want a confidence interval
         if ci is None:
