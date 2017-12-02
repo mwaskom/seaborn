@@ -18,9 +18,10 @@ Plotting functions
 .. toctree::
    :maxdepth: 2
 
+   tutorial/basic
    tutorial/distributions
-   tutorial/regression
    tutorial/categorical
+   tutorial/regression
 
 Structured grids
 ----------------

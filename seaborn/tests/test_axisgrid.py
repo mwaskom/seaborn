@@ -10,15 +10,16 @@ from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
-import pandas.util.testing as tm
+try:
+    import pandas.testing as tm
+except ImportError:
+    import pandas.util.testing as tm
 
-from . import PlotTestCase
 from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
-from ..distributions import kdeplot
+from ..distributions import kdeplot, _freedman_diaconis_bins
 from ..categorical import pointplot
-from ..linearmodels import pairplot
 from ..utils import categorical_order
 
 rs = np.random.RandomState(0)
@@ -27,7 +28,7 @@ old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
-class TestFacetGrid(PlotTestCase):
+class TestFacetGrid(object):
 
     df = pd.DataFrame(dict(x=rs.normal(size=60),
                            y=rs.gamma(4, size=60),
@@ -473,7 +474,7 @@ class TestFacetGrid(PlotTestCase):
 
         x, y = np.arange(10), np.arange(10)
         df = pd.DataFrame(np.c_[x, y], columns=["x", "y"])
-        g = ag.FacetGrid(df).map(pointplot, "x", "y")
+        g = ag.FacetGrid(df).map(pointplot, "x", "y", order=x)
         g.set_xticklabels(step=2)
         got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
         npt.assert_array_equal(x[::2], got_x)
@@ -725,8 +726,16 @@ class TestFacetGrid(PlotTestCase):
 
         nt.assert_equal(g.axes.shape, (len(df['a'].cat.categories),))
 
+    def test_categorical_warning(self):
 
-class TestPairGrid(PlotTestCase):
+        g = ag.FacetGrid(self.df, col="b")
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("always")
+            npt.assert_warns(UserWarning, g.map, pointplot, "b", "x")
+
+
+class TestPairGrid(object):
 
     rs = np.random.RandomState(sum(map(ord, "PairGrid")))
     df = pd.DataFrame(dict(x=rs.normal(size=80),
@@ -933,6 +942,37 @@ class TestPairGrid(PlotTestCase):
                 nt.assert_equal(ptch.fill, False)
 
     @skipif(old_matplotlib)
+    def test_map_diag_color(self):
+
+        color = "red"
+        rgb_color = mpl.colors.colorConverter.to_rgba(color)
+
+        g1 = ag.PairGrid(self.df)
+        g1.map_diag(plt.hist, color=color)
+
+        for ax in g1.diag_axes:
+            for patch in ax.patches:
+                nt.assert_equals(patch.get_facecolor(), rgb_color)
+
+        g2 = ag.PairGrid(self.df)
+        g2.map_diag(kdeplot, color='red')
+
+        for ax in g2.diag_axes:
+            for line in ax.lines:
+                nt.assert_equals(line.get_color(), color)
+
+    @skipif(old_matplotlib)
+    def test_map_diag_palette(self):
+
+        pal = color_palette(n_colors=len(self.df.a.unique()))
+        g = ag.PairGrid(self.df, hue="a")
+        g.map_diag(kdeplot)
+
+        for ax in g.diag_axes:
+            for line, color in zip(ax.lines, pal):
+                nt.assert_equals(line.get_color(), color)
+
+    @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
         vars = ["x", "y", "z"]
@@ -1124,7 +1164,7 @@ class TestPairGrid(PlotTestCase):
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]
-        g = pairplot(self.df)
+        g = ag.pairplot(self.df)
 
         for ax in g.diag_axes:
             nt.assert_equal(len(ax.patches), 10)
@@ -1153,7 +1193,7 @@ class TestPairGrid(PlotTestCase):
     def test_pairplot_reg(self):
 
         vars = ["x", "y", "z"]
-        g = pairplot(self.df, kind="reg")
+        g = ag.pairplot(self.df, kind="reg")
 
         for ax in g.diag_axes:
             nt.assert_equal(len(ax.patches), 10)
@@ -1188,7 +1228,7 @@ class TestPairGrid(PlotTestCase):
     def test_pairplot_kde(self):
 
         vars = ["x", "y", "z"]
-        g = pairplot(self.df, diag_kind="kde")
+        g = ag.pairplot(self.df, diag_kind="kde")
 
         for ax in g.diag_axes:
             nt.assert_equal(len(ax.lines), 1)
@@ -1218,15 +1258,15 @@ class TestPairGrid(PlotTestCase):
 
         vars = ["x", "y", "z"]
         markers = ["o", "x", "s", "d"]
-        g = pairplot(self.df, hue="a", vars=vars, markers=markers)
+        g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers)
         nt.assert_equal(g.hue_kws["marker"], markers)
         plt.close("all")
 
         with nt.assert_raises(ValueError):
-            g = pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
+            g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
 
 
-class TestJointGrid(PlotTestCase):
+class TestJointGrid(object):
 
     rs = np.random.RandomState(sum(map(ord, "JointGrid")))
     x = rs.randn(100)
@@ -1253,6 +1293,11 @@ class TestJointGrid(PlotTestCase):
         g = ag.JointGrid("x", "y", self.data)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
+
+    def test_margin_grid_from_dataframe_bad_variable(self):
+
+        with nt.assert_raises(ValueError):
+            g = ag.JointGrid("x", "bad_column", self.data)
 
     def test_margin_grid_axis_labels(self):
 
@@ -1360,3 +1405,108 @@ class TestJointGrid(PlotTestCase):
 
         nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
         nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
+
+
+class TestJointPlot(object):
+
+    rs = np.random.RandomState(sum(map(ord, "jointplot")))
+    x = rs.randn(100)
+    y = rs.randn(100)
+    data = pd.DataFrame(dict(x=x, y=y))
+
+    def test_scatter(self):
+
+        g = ag.jointplot("x", "y", self.data)
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+
+        x, y = g.ax_joint.collections[0].get_offsets().T
+        npt.assert_array_equal(self.x, x)
+        npt.assert_array_equal(self.y, y)
+
+        x_bins = _freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = _freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+    def test_reg(self):
+
+        g = ag.jointplot("x", "y", self.data, kind="reg")
+        nt.assert_equal(len(g.ax_joint.collections), 2)
+
+        x, y = g.ax_joint.collections[0].get_offsets().T
+        npt.assert_array_equal(self.x, x)
+        npt.assert_array_equal(self.y, y)
+
+        x_bins = _freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = _freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+        nt.assert_equal(len(g.ax_joint.lines), 1)
+        nt.assert_equal(len(g.ax_marg_x.lines), 1)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+    def test_resid(self):
+
+        g = ag.jointplot("x", "y", self.data, kind="resid")
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+        nt.assert_equal(len(g.ax_joint.lines), 1)
+        nt.assert_equal(len(g.ax_marg_x.lines), 0)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+    def test_hex(self):
+
+        g = ag.jointplot("x", "y", self.data, kind="hex")
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+
+        x_bins = _freedman_diaconis_bins(self.x)
+        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+
+        y_bins = _freedman_diaconis_bins(self.y)
+        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+
+    def test_kde(self):
+
+        g = ag.jointplot("x", "y", self.data, kind="kde")
+
+        nt.assert_true(len(g.ax_joint.collections) > 0)
+        nt.assert_equal(len(g.ax_marg_x.collections), 1)
+        nt.assert_equal(len(g.ax_marg_y.collections), 1)
+
+        nt.assert_equal(len(g.ax_marg_x.lines), 1)
+        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+
+    def test_color(self):
+
+        g = ag.jointplot("x", "y", self.data, color="purple")
+
+        purple = mpl.colors.colorConverter.to_rgb("purple")
+        scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
+        nt.assert_equal(tuple(scatter_color), purple)
+
+        hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
+        nt.assert_equal(hist_color, purple)
+
+    def test_annotation(self):
+
+        g = ag.jointplot("x", "y", self.data)
+        nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
+
+        g = ag.jointplot("x", "y", self.data, stat_func=None)
+        nt.assert_is(g.ax_joint.legend_, None)
+
+    def test_hex_customise(self):
+
+        # test that default gridsize can be overridden
+        g = ag.jointplot("x", "y", self.data, kind="hex",
+                         joint_kws=dict(gridsize=5))
+        nt.assert_equal(len(g.ax_joint.collections), 1)
+        a = g.ax_joint.collections[0].get_array()
+        nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
+
+    def test_bad_kind(self):
+
+        with nt.assert_raises(ValueError):
+            ag.jointplot("x", "y", self.data, kind="not_a_kind")

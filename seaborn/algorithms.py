@@ -2,6 +2,8 @@
 from __future__ import division
 import numpy as np
 from scipy import stats
+import warnings
+from .external.six import string_types
 from .external.six.moves import range
 
 
@@ -24,8 +26,9 @@ def bootstrap(*args, **kwargs):
             If True, performs a smoothed bootstrap (draws samples from a kernel
             destiny estimate); only works for one-dimensional inputs and cannot
             be used `units` is present.
-        func : callable, default np.mean
-            Function to call on the args that are passed in.
+        func : string or callable, default np.mean
+            Function to call on the args that are passed in. If string, tries
+            to use as named method on numpy array.
         random_seed : int | None, default None
             Seed for the random number generator; useful if you want
             reproducible resamples.
@@ -61,19 +64,28 @@ def bootstrap(*args, **kwargs):
     if units is not None:
         units = np.asarray(units)
 
+    # Allow for a function that is the name of a method on an array
+    if isinstance(func, string_types):
+        def f(x):
+            return getattr(x, func)()
+    else:
+        f = func
+
     # Do the bootstrap
     if smooth:
-        return _smooth_bootstrap(args, n_boot, func, func_kwargs)
+        msg = "Smooth bootstraps are deprecated and will be removed."
+        warnings.warn(msg)
+        return _smooth_bootstrap(args, n_boot, f, func_kwargs)
 
     if units is not None:
-        return _structured_bootstrap(args, n_boot, units, func,
+        return _structured_bootstrap(args, n_boot, units, f,
                                      func_kwargs, rs)
 
     boot_dist = []
     for i in range(int(n_boot)):
         resampler = rs.randint(0, n, n)
         sample = [a.take(resampler, axis=0) for a in args]
-        boot_dist.append(func(*sample, **func_kwargs))
+        boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
 
 
@@ -106,99 +118,3 @@ def _smooth_bootstrap(args, n_boot, func, func_kwargs):
         sample = [a.resample(n).T for a in kde]
         boot_dist.append(func(*sample, **func_kwargs))
     return np.array(boot_dist)
-
-
-def randomize_corrmat(a, tail="both", corrected=True, n_iter=1000,
-                      random_seed=None, return_dist=False):
-    """Test the significance of set of correlations with permutations.
-
-    By default this corrects for multiple comparisons across one side
-    of the matrix.
-
-    Parameters
-    ----------
-    a : n_vars x n_obs array
-        array with variables as rows
-    tail : both | upper | lower
-        whether test should be two-tailed, or which tail to integrate over
-    corrected : boolean
-        if True reports p values with respect to the max stat distribution
-    n_iter : int
-        number of permutation iterations
-    random_seed : int or None
-        seed for RNG
-    return_dist : bool
-        if True, return n_vars x n_vars x n_iter
-
-    Returns
-    -------
-    p_mat : float
-        array of probabilites for actual correlation from null CDF
-
-    """
-    if tail not in ["upper", "lower", "both"]:
-        raise ValueError("'tail' must be 'upper', 'lower', or 'both'")
-
-    rs = np.random.RandomState(random_seed)
-
-    a = np.asarray(a, np.float)
-    flat_a = a.ravel()
-    n_vars, n_obs = a.shape
-
-    # Do the permutations to establish a null distribution
-    null_dist = np.empty((n_vars, n_vars, n_iter))
-    for i_i in range(n_iter):
-        perm_i = np.concatenate([rs.permutation(n_obs) + (v * n_obs)
-                                 for v in range(n_vars)])
-        a_i = flat_a[perm_i].reshape(n_vars, n_obs)
-        null_dist[..., i_i] = np.corrcoef(a_i)
-
-    # Get the observed correlation values
-    real_corr = np.corrcoef(a)
-
-    # Figure out p values based on the permutation distribution
-    p_mat = np.zeros((n_vars, n_vars))
-    upper_tri = np.triu_indices(n_vars, 1)
-
-    if corrected:
-        if tail == "both":
-            max_dist = np.abs(null_dist[upper_tri]).max(axis=0)
-        elif tail == "lower":
-            max_dist = null_dist[upper_tri].min(axis=0)
-        elif tail == "upper":
-            max_dist = null_dist[upper_tri].max(axis=0)
-
-        cdf = lambda x: stats.percentileofscore(max_dist, x) / 100.
-
-        for i, j in zip(*upper_tri):
-            observed = real_corr[i, j]
-            if tail == "both":
-                p_ij = 1 - cdf(abs(observed))
-            elif tail == "lower":
-                p_ij = cdf(observed)
-            elif tail == "upper":
-                p_ij = 1 - cdf(observed)
-            p_mat[i, j] = p_ij
-
-    else:
-        for i, j in zip(*upper_tri):
-
-            null_corrs = null_dist[i, j]
-            cdf = lambda x: stats.percentileofscore(null_corrs, x) / 100.
-
-            observed = real_corr[i, j]
-            if tail == "both":
-                p_ij = 2 * (1 - cdf(abs(observed)))
-            elif tail == "lower":
-                p_ij = cdf(observed)
-            elif tail == "upper":
-                p_ij = 1 - cdf(observed)
-            p_mat[i, j] = p_ij
-
-    # Make p matrix symettrical with nans on the diagonal
-    p_mat += p_mat.T
-    p_mat[np.diag_indices(n_vars)] = np.nan
-
-    if return_dist:
-        return p_mat, null_dist
-    return p_mat

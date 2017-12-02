@@ -5,7 +5,10 @@ import pandas as pd
 
 import nose.tools as nt
 import numpy.testing as npt
-import pandas.util.testing as pdt
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
 from nose import SkipTest
 
@@ -15,16 +18,13 @@ try:
 except ImportError:
     _no_statsmodels = True
 
-from . import PlotTestCase
-from .. import linearmodels as lm
-from .. import algorithms as algo
-from .. import utils
+from .. import regression as lm
 from ..palettes import color_palette
 
 rs = np.random.RandomState(0)
 
 
-class TestLinearPlotter(PlotTestCase):
+class TestLinearPlotter(object):
 
     rs = np.random.RandomState(77)
     df = pd.DataFrame(dict(x=rs.normal(size=60),
@@ -88,7 +88,7 @@ class TestLinearPlotter(PlotTestCase):
         pdt.assert_series_equal(p.y_na, self.df.y_na[mask])
 
 
-class TestRegressionPlotter(PlotTestCase):
+class TestRegressionPlotter(object):
 
     rs = np.random.RandomState(49)
 
@@ -154,6 +154,10 @@ class TestRegressionPlotter(PlotTestCase):
         p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci=68)
         nt.assert_equal(p.ci, 95)
         nt.assert_equal(p.x_ci, 68)
+
+        p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci="sd")
+        nt.assert_equal(p.ci, 95)
+        nt.assert_equal(p.x_ci, "sd")
 
     @skipif(_no_statsmodels)
     def test_fast_regression(self):
@@ -355,7 +359,8 @@ class TestRegressionPlotter(PlotTestCase):
         y = self.df.x > self.df.x.mean()
         p = lm._RegressionPlotter("x", y, data=self.df,
                                   logistic=True, n_boot=10)
-        _, yhat, _ = p.fit_regression(x_range=(-3, 3))
+        with np.errstate(all="ignore"):
+            _, yhat, _ = p.fit_regression(x_range=(-3, 3))
         nt.assert_true(np.isnan(yhat).all())
 
     @skipif(_no_statsmodels)
@@ -406,7 +411,7 @@ class TestRegressionPlotter(PlotTestCase):
         nt.assert_equal(grid.max(), self.df.x.max())
 
 
-class TestRegressionPlots(PlotTestCase):
+class TestRegressionPlots(object):
 
     rs = np.random.RandomState(56)
     df = pd.DataFrame(dict(x=rs.randn(90),

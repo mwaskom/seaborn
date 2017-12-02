@@ -1,0 +1,28 @@
+
+v0.8.1 (September 2017)
+-----------------------
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.883859.svg
+   :target: https://doi.org/10.5281/zenodo.883859
+
+- Added a warning in :class:`FacetGrid` when passing a categorical plot function without specifying ``order`` (or ``hue_order`` when ``hue`` is used), which is likely to produce a plot that is incorrect.
+
+- Improved compatibility between :class:`FacetGrid` or :class:`PairGrid` and interactive matplotlib backends so that the legend no longer remains inside the figure when using ``legend_out=True``.
+
+- Changed categorical plot functions with small plot elements to use :func:`dark_palette` instead of :func:`light_palette` when generating a sequential palette from a specified color.
+
+- Improved robustness of :func:`kdeplot` and :func:`distplot` to data with fewer than two observations.
+
+- Fixed a bug in :func:`clustermap` when using ``yticklabels=False``.
+
+- Fixed a bug in :func:`pointplot` where colors were wrong if exactly three points were being drawn.
+
+- Fixed a bug in :func:`pointplot` where legend entries for missing data appeared with empty markers.
+
+- Fixed a bug in :func:`clustermap` where an error was raised when annotating the main heatmap and showing category colors.
+
+- Fixed a bug in :func:`clustermap` where row labels were not being properly rotated when they overlapped.
+
+- Fixed a bug in :func:`kdeplot` where the maximum limit on the density axes was not being updated when multiple densities were drawn.
+
+- Improved compatibility with future versions of pandas.

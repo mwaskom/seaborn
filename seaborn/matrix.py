@@ -1,4 +1,5 @@
 """Functions to visualize matrices of data."""
+from __future__ import division
 import itertools
 
 import matplotlib as mpl
@@ -7,13 +8,14 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 import pandas as pd
-from scipy.spatial import distance
 from scipy.cluster import hierarchy
 
+from . import cm
 from .axisgrid import Grid
-from .palettes import cubehelix_palette
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
                     to_utf8)
+
+from .external.six import string_types
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -110,16 +112,11 @@ class _HeatMapper(object):
         # Validate the mask and convet to DataFrame
         mask = _matrix_mask(data, mask)
 
-        # Reverse the rows so the plot looks like the matrix
-        plot_data = plot_data[::-1]
-        data = data.iloc[::-1]
-        mask = mask.iloc[::-1]
-
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
 
         # Get good names for the rows and columns
         xtickevery = 1
-        if isinstance(xticklabels, int) and xticklabels > 1:
+        if isinstance(xticklabels, int):
             xtickevery = xticklabels
             xticklabels = _index_to_ticklabels(data.columns)
         elif xticklabels is True:
@@ -128,34 +125,36 @@ class _HeatMapper(object):
             xticklabels = []
 
         ytickevery = 1
-        if isinstance(yticklabels, int) and yticklabels > 1:
+        if isinstance(yticklabels, int):
             ytickevery = yticklabels
             yticklabels = _index_to_ticklabels(data.index)
         elif yticklabels is True:
             yticklabels = _index_to_ticklabels(data.index)
         elif yticklabels is False:
             yticklabels = []
-        else:
-            yticklabels = yticklabels[::-1]
 
         # Get the positions and used label for the ticks
         nx, ny = data.T.shape
 
-        if xticklabels == []:
+        if not len(xticklabels):
             self.xticks = []
             self.xticklabels = []
+        elif isinstance(xticklabels, string_types) and xticklabels == "auto":
+            self.xticks = "auto"
+            self.xticklabels = _index_to_ticklabels(data.columns)
         else:
-            xstart, xend, xstep = 0, nx, xtickevery
-            self.xticks = np.arange(xstart, xend, xstep) + .5
-            self.xticklabels = xticklabels[xstart:xend:xstep]
+            self.xticks, self.xticklabels = self._skip_ticks(xticklabels,
+                                                             xtickevery)
 
-        if yticklabels == []:
+        if not len(yticklabels):
             self.yticks = []
             self.yticklabels = []
+        elif isinstance(yticklabels, string_types) and yticklabels == "auto":
+            self.yticks = "auto"
+            self.yticklabels = _index_to_ticklabels(data.index)
         else:
-            ystart, yend, ystep = (ny - 1) % ytickevery, ny, ytickevery
-            self.yticks = np.arange(ystart, yend, ystep) + .5
-            self.yticklabels = yticklabels[ystart:yend:ystep]
+            self.yticks, self.yticklabels = self._skip_ticks(yticklabels,
+                                                             ytickevery)
 
         # Get good names for the axis labels
         xlabel = _index_to_label(data.columns)
@@ -178,9 +177,9 @@ class _HeatMapper(object):
                 annot_data = None
         else:
             try:
-                annot_data = annot.values[::-1]
+                annot_data = annot.values
             except AttributeError:
-                annot_data = annot[::-1]
+                annot_data = annot
             if annot.shape != plot_data.shape:
                 raise ValueError('Data supplied to "annot" must be the same '
                                  'shape as the data to plot.')
@@ -207,39 +206,34 @@ class _HeatMapper(object):
             vmin = np.percentile(calc_data, 2) if robust else calc_data.min()
         if vmax is None:
             vmax = np.percentile(calc_data, 98) if robust else calc_data.max()
-
-        # Simple heuristics for whether these data should  have a divergent map
-        divergent = ((vmin < 0) and (vmax > 0)) or center is not None
-
-        # Now set center to 0 so math below makes sense
-        if center is None:
-            center = 0
-
-        # A divergent map should be symmetric around the center value
-        if divergent:
-            vlim = max(abs(vmin - center), abs(vmax - center))
-            vmin, vmax = -vlim, vlim
-        self.divergent = divergent
-
-        # Now add in the centering value and set the limits
-        vmin += center
-        vmax += center
-        self.vmin = vmin
-        self.vmax = vmax
+        self.vmin, self.vmax = vmin, vmax
 
         # Choose default colormaps if not provided
         if cmap is None:
-            if divergent:
-                self.cmap = "RdBu_r"
+            if center is None:
+                self.cmap = cm.rocket
             else:
-                self.cmap = cubehelix_palette(light=.95, as_cmap=True)
+                self.cmap = cm.icefire
+        elif isinstance(cmap, string_types):
+            self.cmap = mpl.cm.get_cmap(cmap)
+        elif isinstance(cmap, list):
+            self.cmap = mpl.colors.ListedColormap(cmap)
         else:
             self.cmap = cmap
+
+        # Recenter a divergent colormap
+        if center is not None:
+            vrange = max(vmax - center, center - vmin)
+            normlize = mpl.colors.Normalize(center - vrange, center + vrange)
+            cmin, cmax = normlize([vmin, vmax])
+            cc = np.linspace(cmin, cmax, 256)
+            self.cmap = mpl.colors.ListedColormap(self.cmap(cc))
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
         mesh.update_scalarmappable()
-        xpos, ypos = np.meshgrid(ax.get_xticks(), ax.get_yticks())
+        height, width = self.annot_data.shape
+        xpos, ypos = np.meshgrid(np.arange(width) + .5, np.arange(height) + .5)
         for x, y, m, color, val in zip(xpos.flat, ypos.flat,
                                        mesh.get_array(), mesh.get_facecolors(),
                                        self.annot_data.flat):
@@ -250,6 +244,35 @@ class _HeatMapper(object):
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
                 ax.text(x, y, annotation, **text_kwargs)
+
+    def _skip_ticks(self, labels, tickevery):
+        """Return ticks and labels at evenly spaced intervals."""
+        n = len(labels)
+        if tickevery == 0:
+            ticks, labels = [], []
+        elif tickevery == 1:
+            ticks, labels = np.arange(n) + .5, labels
+        else:
+            start, end, step = 0, n, tickevery
+            ticks = np.arange(start, end, step) + .5
+            labels = labels[start:end:step]
+        return ticks, labels
+
+    def _auto_ticks(self, ax, labels, axis):
+        """Determine ticks and ticklabels that minimize overlap."""
+        transform = ax.figure.dpi_scale_trans.inverted()
+        bbox = ax.get_window_extent().transformed(transform)
+        size = [bbox.width, bbox.height][axis]
+        axis = [ax.xaxis, ax.yaxis][axis]
+        tick, = axis.set_ticks([0])
+        fontsize = tick.label.get_size()
+        max_ticks = int(size // (fontsize / 72))
+        if max_ticks < 1:
+            return [], []
+        tick_every = len(labels) // max_ticks + 1
+        tick_every = 1 if tick_every == 0 else tick_every
+        ticks, labels = self._skip_ticks(labels, tick_every)
+        return ticks, labels
 
     def plot(self, ax, cax, kws):
         """Draw the heatmap on the provided Axes."""
@@ -263,13 +286,32 @@ class _HeatMapper(object):
         # Set the axis limits
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
 
+        # Possibly add a colorbar
+        if self.cbar:
+            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
+            cb.outline.set_linewidth(0)
+            # If rasterized is passed to pcolormesh, also rasterize the
+            # colorbar to avoid white lines on the PDF rendering
+            if kws.get('rasterized', False):
+                cb.solids.set_rasterized(True)
+
         # Add row and column labels
-        ax.set(xticks=self.xticks, yticks=self.yticks)
-        xtl = ax.set_xticklabels(self.xticklabels)
-        ytl = ax.set_yticklabels(self.yticklabels, rotation="vertical")
+        if isinstance(self.xticks, string_types) and self.xticks == "auto":
+            xticks, xticklabels = self._auto_ticks(ax, self.xticklabels, 0)
+        else:
+            xticks, xticklabels = self.xticks, self.xticklabels
+
+        if isinstance(self.yticks, string_types) and self.yticks == "auto":
+            yticks, yticklabels = self._auto_ticks(ax, self.yticklabels, 1)
+        else:
+            yticks, yticklabels = self.yticks, self.yticklabels
+
+        ax.set(xticks=xticks, yticks=yticks)
+        xtl = ax.set_xticklabels(xticklabels)
+        ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
 
         # Possibly rotate them if they overlap
-        plt.draw()
+        ax.figure.draw(ax.figure.canvas.get_renderer())
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
         if axis_ticklabels_overlap(ytl):
@@ -282,28 +324,17 @@ class _HeatMapper(object):
         if self.annot:
             self._annotate_heatmap(ax, mesh)
 
-        # Possibly add a colorbar
-        if self.cbar:
-            cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
-            cb.outline.set_linewidth(0)
-            # If rasterized is passed to pcolormesh, also rasterize the
-            # colorbar to avoid white lines on the PDF rendering
-            if kws.get('rasterized', False):
-                cb.solids.set_rasterized(True)
+        # Invert the y axis to show the plot in matrix form
+        ax.invert_yaxis()
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
             annot=None, fmt=".2g", annot_kws=None,
             linewidths=0, linecolor="white",
             cbar=True, cbar_kws=None, cbar_ax=None,
-            square=False, ax=None, xticklabels=True, yticklabels=True,
-            mask=None,
-            **kwargs):
+            square=False, xticklabels="auto", yticklabels="auto",
+            mask=None, ax=None, **kwargs):
     """Plot rectangular data as a color-encoded matrix.
-
-    This function tries to infer a good colormap to use from the data, but
-    this is not guaranteed to work, so take care to make sure the kind of
-    colormap (sequential or diverging) and its limits are appropriate.
 
     This is an Axes-level function and will draw the heatmap into the
     currently-active Axes if none is provided to the ``ax`` argument.  Part of
@@ -318,15 +349,14 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         columns and rows.
     vmin, vmax : floats, optional
         Values to anchor the colormap, otherwise they are inferred from the
-        data and other keyword arguments. When a diverging dataset is inferred,
-        one of these values may be ignored.
-    cmap : matplotlib colormap name or object, optional
-        The mapping from data values to color space. If not provided, this
-        will be either a cubehelix map (if the function infers a sequential
-        dataset) or ``RdBu_r`` (if the function infers a diverging dataset).
+        data and other keyword arguments.
+    cmap : matplotlib colormap name or object, or list of colors, optional
+        The mapping from data values to color space. If not provided, the
+        default will depend on whether ``center`` is set.
     center : float, optional
-        The value at which to center the colormap. Passing this value implies
-        use of a diverging colormap.
+        The value at which to center the colormap when plotting divergant data.
+        Using this parameter will change the default ``cmap`` if none is
+        specified.
     robust : bool, optional
         If True and ``vmin`` or ``vmax`` are absent, the colormap range is
         computed with robust quantiles instead of the extreme values.
@@ -352,22 +382,17 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     square : boolean, optional
         If True, set the Axes aspect to "equal" so each cell will be
         square-shaped.
-    ax : matplotlib Axes, optional
-        Axes in which to draw the plot, otherwise use the currently-active
-        Axes.
-    xticklabels : list-like, int, or bool, optional
+    xticklabels, yticklabels : "auto", bool, list-like, or int, optional
         If True, plot the column names of the dataframe. If False, don't plot
         the column names. If list-like, plot these alternate labels as the
         xticklabels. If an integer, use the column names but plot only every
-        n label.
-    yticklabels : list-like, int, or bool, optional
-        If True, plot the row names of the dataframe. If False, don't plot
-        the row names. If list-like, plot these alternate labels as the
-        yticklabels. If an integer, use the index names but plot only every
-        n label.
+        n label. If "auto", try to densely plot non-overlapping labels.
     mask : boolean array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
+    ax : matplotlib Axes, optional
+        Axes in which to draw the plot, otherwise use the currently-active
+        Axes.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``ax.pcolormesh``.
 
@@ -375,6 +400,11 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     -------
     ax : matplotlib Axes
         Axes object with the heatmap.
+
+    See also
+    --------
+    clustermap : Plot a matrix using hierachical clustering to arrange the
+                 rows and columns.
 
     Examples
     --------
@@ -396,13 +426,13 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 
         >>> ax = sns.heatmap(uniform_data, vmin=0, vmax=1)
 
-    Plot a heatmap for data centered on 0:
+    Plot a heatmap for data centered on 0 with a diverging colormap:
 
     .. plot::
         :context: close-figs
 
         >>> normal_data = np.random.randn(10, 12)
-        >>> ax = sns.heatmap(normal_data)
+        >>> ax = sns.heatmap(normal_data, center=0)
 
     Plot a dataframe with meaningful row and column labels:
 
@@ -568,17 +598,15 @@ class _DendrogramPlotter(object):
         if np.product(self.shape) >= 10000:
             UserWarning('This will be slow... (gentle suggestion: '
                         '"pip install fastcluster")')
-
-        pairwise_dists = distance.pdist(self.array, metric=self.metric)
-        linkage = hierarchy.linkage(pairwise_dists, method=self.method)
-        del pairwise_dists
+        linkage = hierarchy.linkage(self.array, method=self.method,
+                                    metric=self.metric)
         return linkage
 
     def _calculate_linkage_fastcluster(self):
         import fastcluster
         # Fastcluster has a memory-saving vectorized version, but only
         # with certain linkage methods, and mostly with euclidean metric
-        vector_methods = ('single', 'centroid', 'median', 'ward')
+        # vector_methods = ('single', 'centroid', 'median', 'ward')
         euclidean_methods = ('centroid', 'median', 'ward')
         euclidean = self.metric == 'euclidean' and self.method in \
             euclidean_methods
@@ -587,9 +615,8 @@ class _DendrogramPlotter(object):
                                               method=self.method,
                                               metric=self.metric)
         else:
-            pairwise_dists = distance.pdist(self.array, metric=self.metric)
-            linkage = fastcluster.linkage(pairwise_dists, method=self.method)
-            del pairwise_dists
+            linkage = fastcluster.linkage(self.array, method=self.method,
+                                          metric=self.metric)
             return linkage
 
     @property
@@ -669,7 +696,7 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        plt.draw()
+        ax.figure.draw(ax.figure.canvas.get_renderer())
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
@@ -796,6 +823,7 @@ class ClusterGrid(Grid):
                     colors = colors.ix[data.columns]
 
                 # Replace na's with background color
+                # TODO We should set these to transparent instead
                 colors = colors.fillna('white')
 
                 # Extract color values and labels from frame/series
@@ -803,7 +831,10 @@ class ClusterGrid(Grid):
                     labels = list(colors.columns)
                     colors = colors.T.values
                 else:
-                    labels = [colors.name]
+                    if colors.name is None:
+                        labels = [""]
+                    else:
+                        labels = [colors.name]
                     colors = colors.values
 
             colors = _convert_colors(colors)
@@ -1016,10 +1047,14 @@ class ClusterGrid(Grid):
         kws = kws.copy()
         kws.pop('cmap', None)
         kws.pop('center', None)
+        kws.pop('annot', None)
         kws.pop('vmin', None)
         kws.pop('vmax', None)
+        kws.pop('robust', None)
         kws.pop('xticklabels', None)
         kws.pop('yticklabels', None)
+
+        # Plot the row colors
         if self.row_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.row_colors, yind, axis=0)
@@ -1039,6 +1074,7 @@ class ClusterGrid(Grid):
         else:
             despine(self.ax_row_colors, left=True, bottom=True)
 
+        # Plot the column colors
         if self.col_colors is not None:
             matrix, cmap = self.color_list_to_matrix_and_cmap(
                 self.col_colors, xind, axis=1)
@@ -1064,12 +1100,12 @@ class ClusterGrid(Grid):
         self.mask = self.mask.iloc[yind, xind]
 
         # Try to reorganize specified tick labels, if provided
-        xtl = kws.pop("xticklabels", True)
+        xtl = kws.pop("xticklabels", "auto")
         try:
             xtl = np.asarray(xtl)[xind]
         except (TypeError, IndexError):
             pass
-        ytl = kws.pop("yticklabels", True)
+        ytl = kws.pop("yticklabels", "auto")
         try:
             ytl = np.asarray(ytl)[yind]
         except (TypeError, IndexError):
@@ -1078,8 +1114,14 @@ class ClusterGrid(Grid):
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=self.mask,
                 xticklabels=xtl, yticklabels=ytl, **kws)
+
+        ytl = self.ax_heatmap.get_yticklabels()
+        ytl_rot = None if not ytl else ytl[0].get_rotation()
         self.ax_heatmap.yaxis.set_ticks_position('right')
         self.ax_heatmap.yaxis.set_label_position('right')
+        if ytl_rot is not None:
+            ytl = self.ax_heatmap.get_yticklabels()
+            plt.setp(ytl, rotation=ytl_rot)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
              row_linkage, col_linkage, **kws):
@@ -1105,11 +1147,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None, **kwargs):
-    """Plot a hierarchically clustered heatmap of a pandas DataFrame
+    """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters
     ----------
-    data: pandas.DataFrame
+    data: 2D array-like
         Rectangular data for clustering. Cannot contain NAs.
     pivot_kws : dict, optional
         If `data` is a tidy dataframe, can provide keyword arguments for
@@ -1181,64 +1223,69 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
-        >>> flights = sns.load_dataset("flights")
-        >>> flights = flights.pivot("month", "year", "passengers")
-        >>> g = sns.clustermap(flights)
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> iris = sns.load_dataset("iris")
+        >>> species = iris.pop("species")
+        >>> g = sns.clustermap(iris)
 
-    Don't cluster one of the axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(flights, col_cluster=False)
-
-    Use a different colormap and add lines to separate the cells:
+    Use a different similarity metric:
 
     .. plot::
         :context: close-figs
 
-        >>> cmap = sns.cubehelix_palette(as_cmap=True, rot=-.3, light=1)
-        >>> g = sns.clustermap(flights, cmap=cmap, linewidths=.5)
-
-    Use a different figure size:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(flights, cmap=cmap, figsize=(7, 5))
-
-    Standardize the data across the columns:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(flights, standard_scale=1)
-
-    Normalize the data across the rows:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(flights, z_score=0)
+        >>> g = sns.clustermap(iris, metric="correlation")
 
     Use a different clustering method:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(flights, method="single", metric="cosine")
+        >>> g = sns.clustermap(iris, method="single")
 
-    Add colored labels on one of the axes:
+    Use a different colormap and ignore outliers in colormap limits:
 
     .. plot::
         :context: close-figs
 
-        >>> season_colors = (sns.color_palette("BuPu", 3) +
-        ...                  sns.color_palette("RdPu", 3) +
-        ...                  sns.color_palette("YlGn", 3) +
-        ...                  sns.color_palette("OrRd", 3))
-        >>> g = sns.clustermap(flights, row_colors=season_colors)
+        >>> g = sns.clustermap(iris, cmap="mako", robust=True)
+
+    Change the size of the figure:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, figsize=(6, 7))
+
+    Plot one of the axes in its original organization:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, col_cluster=False)
+
+    Add colored labels:
+
+    .. plot::
+        :context: close-figs
+
+        >>> lut = dict(zip(species.unique(), "rbg"))
+        >>> row_colors = species.map(lut)
+        >>> g = sns.clustermap(iris, row_colors=row_colors)
+
+    Standardize the data within the columns:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, standard_scale=1)
+
+    Normalize the data within the rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, z_score=0)
+
 
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,

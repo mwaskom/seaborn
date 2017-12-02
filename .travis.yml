@@ -1,28 +1,19 @@
 language: python
 
-env:
-  - PYTHON=2.7 DEPS=modern
-  - PYTHON=2.7 DEPS=minimal
-  - PYTHON=3.4 DEPS=modern
-  - PYTHON=3.5 DEPS=modern
 
-install:
-  - conda update conda --yes
-  - conda create -n testenv --yes pip python=$PYTHON
-  - conda update conda --yes
-  - source activate testenv
-  - conda install --yes --file testing/deps_${DEPS}_${PYTHON}.txt
-  - pip install pep8==1.5  # Later versions get stricter...
-  - pip install https://github.com/dcramer/pyflakes/tarball/master
-  - pip install .
-  - cp testing/matplotlibrc .
+env:
+  - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
+  - PYTHON=2.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.6 DEPS=minimal BACKEND=agg DOCTESTS=false
+
 
 before_install:
   - sudo apt-get update -yq
-  - sudo sh -c "echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections"
-  - sudo apt-get install msttcorefonts -qq
-
-  # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
+  - sudo sh testing/getmsfonts.sh
   - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -31,12 +22,32 @@ before_install:
   - conda update -q conda
   - conda info -a
 
+
+install:
+  - conda create -n testenv pip python=$PYTHON
+  - source activate testenv
+  - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
+  - conda install --file deps.txt
+  - pip install .
+
+
 before_script:
-  - if [ ${PYTHON:0:1} == "2" ]; then
-    make lint;
+  - cp testing/matplotlibrc_${BACKEND} matplotlibrc
+  - if [ $BACKEND == "qtagg" ]; then
+    export DISPLAY=:99.0;
+    sh -e /etc/init.d/xvfb start;
+    sleep 3;
     fi
+
+
 script:
-  - if [ $DEPS == 'modern' ];
-    then nosetests --with-doctest;
-    else nosetests;
+  - make lint
+  - if [ $DOCTESTS == 'true' ];
+    then make coverage;
+    else make unittests;
     fi
+
+
+after_success:
+    - pip install codecov
+    - codecov

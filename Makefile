@@ -1,23 +1,13 @@
 export SHELL := /bin/bash
 
 test:
+	pytest --doctest-modules seaborn
 
-	cp testing/matplotlibrc .
-	nosetests --with-doctest
-	rm matplotlibrc
-
+unittests:
+	pytest seaborn
 
 coverage:
-
-	cp testing/matplotlibrc .
-	nosetests --cover-erase --with-coverage --cover-html --cover-package seaborn
-	rm matplotlibrc
+	pytest --doctest-modules --cov=seaborn --cov-config=.coveragerc seaborn
 
 lint:
-
-	pyflakes -x W -X seaborn/external/six.py seaborn
-	pep8 --exclude external seaborn
-
-hexstrip:
-
-	make -C examples hexstrip
+	flake8 --ignore E121,E123,E126,E226,E24,E704,E741,W503,W504 --exclude seaborn/__init__.py,seaborn/colors/__init__.py,seaborn/cm.py,seaborn/tests,seaborn/external seaborn

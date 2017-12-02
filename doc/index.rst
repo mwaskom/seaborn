@@ -19,7 +19,7 @@
 
     </style>
 
-Seaborn: statistical data visualization
+seaborn: statistical data visualization
 =======================================
 
 .. raw:: html
@@ -33,9 +33,9 @@ Seaborn: statistical data visualization
             <img src="_static/anscombes_quartet_thumb.png">
           </div>
         </a>
-        <a href="examples/many_pairwise_correlations.html">
+        <a href="examples/multiple_regression.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/many_pairwise_correlations_thumb.png">
+            <img src="_static/multiple_regression_thumb.png">
           </div>
         </a>
         <a href="examples/many_facets.html">
@@ -43,19 +43,19 @@ Seaborn: statistical data visualization
             <img src="_static/many_facets_thumb.png">
           </div>
         </a>
+        <a href="examples/structured_heatmap.html">
+          <div class="col-md-2 thumbnail">
+            <img src="_static/structured_heatmap_thumb.png">
+          </div>
+        </a>
         <a href="examples/scatterplot_matrix.html">
           <div class="col-md-2 thumbnail">
             <img src="_static/scatterplot_matrix_thumb.png">
           </div>
         </a>
-        <a href="examples/hexbin_marginals.html">
+        <a href="examples/horizontal_boxplot.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/hexbin_marginals_thumb.png">
-          </div>
-        </a>
-        <a href="examples/scatterplot_categorical.html">
-          <div class="col-md-2 thumbnail">
-            <img src="_static/scatterplot_categorical_thumb.png">
+            <img src="_static/horizontal_boxplot_thumb.png">
           </div>
         </a>
       </div>
@@ -92,8 +92,8 @@ To see the code or report a bug, please visit the `github repository
    whatsnew
    installing
    examples/index
-   api
    tutorial
+   api
 
 .. raw:: html
 
@@ -104,8 +104,8 @@ To see the code or report a bug, please visit the `github repository
 * Style functions: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
 * Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
 * Distribution plots: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
-* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
 * Categorical plots: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
+* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
 * Axis grid objects: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
  
 .. raw:: html

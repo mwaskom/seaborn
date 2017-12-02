@@ -1,5 +1,4 @@
 """Tests for plotting utilities."""
-import warnings
 import tempfile
 import shutil
 
@@ -11,21 +10,22 @@ import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
 import numpy.testing as npt
-import pandas.util.testing as pdt
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
-from pandas.util.testing import network
 
 try:
     from bs4 import BeautifulSoup
 except ImportError:
     BeautifulSoup = None
 
-from . import PlotTestCase
 from .. import utils, rcmod
-from ..utils import get_dataset_names, load_dataset
+from ..utils import get_dataset_names, load_dataset, _network
 
 
 a_norm = np.random.randn(100)
@@ -119,7 +119,7 @@ def test_str_to_utf8():
     assert_equal(type(u), type(u"\u01ff\u02ff"))
 
 
-class TestSpineUtils(PlotTestCase):
+class TestSpineUtils(object):
 
     sides = ["left", "right", "bottom", "top"]
     outer_sides = ["top", "right"]
@@ -232,43 +232,6 @@ class TestSpineUtils(PlotTestCase):
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
 
-    def test_offset_spines_warns(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-
-            f, ax = plt.subplots()
-            utils.offset_spines(offset=self.offset)
-            nt.assert_true('deprecated' in str(w[0].message))
-            nt.assert_true(issubclass(w[0].category, UserWarning))
-
-    def test_offset_spines(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-            f, ax = plt.subplots()
-
-            for side in self.sides:
-                nt.assert_equal(ax.spines[side].get_position(),
-                                self.original_position)
-
-            utils.offset_spines(offset=self.offset)
-
-            for side in self.sides:
-                nt.assert_equal(ax.spines[side].get_position(),
-                                self.offset_position)
-
-    def test_offset_spines_specific_axes(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always", category=UserWarning)
-            f, (ax1, ax2) = plt.subplots(2, 1)
-
-            utils.offset_spines(offset=self.offset, ax=ax2)
-
-            for side in self.sides:
-                nt.assert_equal(ax1.spines[side].get_position(),
-                                self.original_position)
-                nt.assert_equal(ax2.spines[side].get_position(),
-                                self.offset_position)
-
 
 def test_ticklabels_overlap():
 
@@ -359,7 +322,7 @@ if LooseVersion(pd.__version__) >= "0.15":
         finally:
             shutil.rmtree(tmpdir)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_get_dataset_names():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")
@@ -367,7 +330,7 @@ if LooseVersion(pd.__version__) >= "0.15":
         assert(len(names) > 0)
         assert(u"titanic" in names)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_load_datasets():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")
@@ -379,7 +342,7 @@ if LooseVersion(pd.__version__) >= "0.15":
             # yield check_load_dataset, name
             check_load_dataset(name)
 
-    @network(url="https://github.com/mwaskom/seaborn-data")
+    @_network(url="https://github.com/mwaskom/seaborn-data")
     def test_load_cached_datasets():
         if not BeautifulSoup:
             raise nose.SkipTest("No BeautifulSoup available for parsing html")
@@ -409,3 +372,14 @@ def test_relative_luminance():
 
     for lum1, lum2 in zip(lums1, lums2):
         nose.tools.assert_almost_equal(lum1, lum2)
+
+
+def test_remove_na():
+
+    a_array = np.array([1, 2, np.nan, 3])
+    a_array_rm = utils.remove_na(a_array)
+    npt.assert_array_equal(a_array_rm, np.array([1, 2, 3]))
+
+    a_series = pd.Series([1, 2, np.nan, 3])
+    a_series_rm = utils.remove_na(a_series)
+    pdt.assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))

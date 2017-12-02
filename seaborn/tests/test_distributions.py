@@ -3,11 +3,11 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import distributions as dist
 
 try:
@@ -18,7 +18,10 @@ except ImportError:
     _no_statsmodels = True
 
 
-class TestKDE(PlotTestCase):
+_old_matplotlib = LooseVersion(mpl.__version__) < "1.5"
+
+
+class TestKDE(object):
 
     rs = np.random.RandomState(0)
     x = rs.randn(50)
@@ -110,107 +113,12 @@ class TestKDE(PlotTestCase):
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
 
+    @skipif(_old_matplotlib)
+    def test_bivariate_kde_colorbar(self):
 
-class TestJointPlot(PlotTestCase):
-
-    rs = np.random.RandomState(sum(map(ord, "jointplot")))
-    x = rs.randn(100)
-    y = rs.randn(100)
-    data = pd.DataFrame(dict(x=x, y=y))
-
-    def test_scatter(self):
-
-        g = dist.jointplot("x", "y", self.data)
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-
-        x, y = g.ax_joint.collections[0].get_offsets().T
-        npt.assert_array_equal(self.x, x)
-        npt.assert_array_equal(self.y, y)
-
-        x_bins = dist._freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
-
-        y_bins = dist._freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
-
-    def test_reg(self):
-
-        g = dist.jointplot("x", "y", self.data, kind="reg")
-        nt.assert_equal(len(g.ax_joint.collections), 2)
-
-        x, y = g.ax_joint.collections[0].get_offsets().T
-        npt.assert_array_equal(self.x, x)
-        npt.assert_array_equal(self.y, y)
-
-        x_bins = dist._freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
-
-        y_bins = dist._freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
-
-        nt.assert_equal(len(g.ax_joint.lines), 1)
-        nt.assert_equal(len(g.ax_marg_x.lines), 1)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
-
-    def test_resid(self):
-
-        g = dist.jointplot("x", "y", self.data, kind="resid")
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-        nt.assert_equal(len(g.ax_joint.lines), 1)
-        nt.assert_equal(len(g.ax_marg_x.lines), 0)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
-
-    def test_hex(self):
-
-        g = dist.jointplot("x", "y", self.data, kind="hex")
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-
-        x_bins = dist._freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
-
-        y_bins = dist._freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
-
-    def test_kde(self):
-
-        g = dist.jointplot("x", "y", self.data, kind="kde")
-
-        nt.assert_true(len(g.ax_joint.collections) > 0)
-        nt.assert_equal(len(g.ax_marg_x.collections), 1)
-        nt.assert_equal(len(g.ax_marg_y.collections), 1)
-
-        nt.assert_equal(len(g.ax_marg_x.lines), 1)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
-
-    def test_color(self):
-
-        g = dist.jointplot("x", "y", self.data, color="purple")
-
-        purple = mpl.colors.colorConverter.to_rgb("purple")
-        scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
-        nt.assert_equal(tuple(scatter_color), purple)
-
-        hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
-        nt.assert_equal(hist_color, purple)
-
-    def test_annotation(self):
-
-        g = dist.jointplot("x", "y", self.data)
-        nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
-
-        g = dist.jointplot("x", "y", self.data, stat_func=None)
-        nt.assert_is(g.ax_joint.legend_, None)
-
-    def test_hex_customise(self):
-
-        # test that default gridsize can be overridden
-        g = dist.jointplot("x", "y", self.data, kind="hex",
-                           joint_kws=dict(gridsize=5))
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-        a = g.ax_joint.collections[0].get_array()
-        nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
-
-    def test_bad_kind(self):
-
-        with nt.assert_raises(ValueError):
-            dist.jointplot("x", "y", self.data, kind="not_a_kind")
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y,
+                     cbar=True, cbar_kws=dict(label="density"),
+                     ax=ax)
+        nt.assert_equal(len(f.axes), 2)
+        nt.assert_equal(f.axes[1].get_ylabel(), "density")

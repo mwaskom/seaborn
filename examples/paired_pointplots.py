@@ -1,6 +1,6 @@
 """
-Paired discrete plots
-=====================
+Paired categorical plots
+========================
 
 """
 import seaborn as sns

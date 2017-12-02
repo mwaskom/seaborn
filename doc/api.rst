@@ -5,6 +5,50 @@
 API reference
 =============
 
+.. _grid_api:
+
+Axis grids
+----------
+
+.. autosummary::
+   :toctree: generated/
+
+    FacetGrid
+    factorplot
+    lmplot
+    PairGrid
+    pairplot
+    JointGrid
+    jointplot
+
+
+.. _basic_api:
+
+Basic plots
+-----------
+
+.. autosummary::
+    :toctree: generated
+
+    lineplot
+
+.. _categorical_api:
+
+Categorical plots
+-----------------
+
+.. autosummary::
+    :toctree: generated/
+
+    stripplot
+    swarmplot
+    boxplot
+    violinplot
+    lvplot
+    pointplot
+    barplot
+    countplot
+
 .. _distribution_api:
 
 Distribution plots
@@ -13,8 +57,6 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
-    jointplot
-    pairplot
     distplot
     kdeplot
     rugplot
@@ -27,28 +69,8 @@ Regression plots
 .. autosummary::
     :toctree: generated/
 
-    lmplot
     regplot
     residplot
-    interactplot
-    coefplot
-
-.. _categorical_api:
-
-Categorical plots
------------------
-
-.. autosummary::
-    :toctree: generated/
-
-    factorplot
-    boxplot
-    violinplot
-    stripplot
-    swarmplot
-    pointplot
-    barplot
-    countplot
 
 .. _matrix_api:
 
@@ -76,18 +98,6 @@ Miscellaneous plots
     :toctree: generated/
 
     palplot
-
-.. _grid_api:
-
-Axis grids
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-    FacetGrid
-    PairGrid
-    JointGrid
 
 .. _style_api:
 

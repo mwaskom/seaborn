@@ -1,0 +1,9 @@
+
+v0.9.0 (Unreleased)
+-------------------
+
+- Added the :func:`lineplot` function for representing relationships between numeric ``x`` and ``y`` variables with lines, potentially subsetting by up to three other variables and semantically mapping those subsets with the color, size, or style of the lines. This function replaces :func:`tsplot`, but with an API that is more consistent with other modern seaborn functions and has both more flexibility (more dimensions of semantic mapping, better handling of dates) and less flexibility (fewer options for visual representing uncertainty). There is considerable new API documentation and a new tutorial TODO.
+
+- Final removal of the previously-deprecated ``coefplot`` and ``interactplot`` functions.
+
+- Updated the testing infrastructure to execute tests with `pytest <https://docs.pytest.org/en/latest/>` (although many individual tests still use nose assertion).

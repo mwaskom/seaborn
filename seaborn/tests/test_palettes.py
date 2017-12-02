@@ -8,8 +8,7 @@ import numpy.testing as npt
 
 from .. import palettes, utils, rcmod
 from ..external import husl
-from ..xkcd_rgb import xkcd_rgb
-from ..crayons import crayons
+from ..colors import xkcd_rgb, crayons
 
 
 class TestColorPalettes(object):

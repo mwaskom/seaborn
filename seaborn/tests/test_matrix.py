@@ -10,10 +10,12 @@ from scipy.cluster import hierarchy
 
 import nose.tools as nt
 import numpy.testing as npt
-import pandas.util.testing as pdt
+try:
+    import pandas.testing as pdt
+except ImportError:
+    import pandas.util.testing as pdt
 from numpy.testing.decorators import skipif
 
-from . import PlotTestCase
 from .. import matrix as mat
 from .. import color_palette
 from ..external.six.moves import range
@@ -27,7 +29,7 @@ except ImportError:
     _no_fastcluster = True
 
 
-class TestHeatmap(PlotTestCase):
+class TestHeatmap(object):
     rs = np.random.RandomState(sum(map(ord, "heatmap")))
 
     x_norm = rs.randn(4, 8)
@@ -44,11 +46,11 @@ class TestHeatmap(PlotTestCase):
     def test_ndarray_input(self):
 
         p = mat._HeatMapper(self.x_norm, **self.default_kws)
-        npt.assert_array_equal(p.plot_data, self.x_norm[::-1])
-        pdt.assert_frame_equal(p.data, pd.DataFrame(self.x_norm).ix[::-1])
+        npt.assert_array_equal(p.plot_data, self.x_norm)
+        pdt.assert_frame_equal(p.data, pd.DataFrame(self.x_norm))
 
         npt.assert_array_equal(p.xticklabels, np.arange(8))
-        npt.assert_array_equal(p.yticklabels, np.arange(4)[::-1])
+        npt.assert_array_equal(p.yticklabels, np.arange(4))
 
         nt.assert_equal(p.xlabel, "")
         nt.assert_equal(p.ylabel, "")
@@ -56,11 +58,11 @@ class TestHeatmap(PlotTestCase):
     def test_df_input(self):
 
         p = mat._HeatMapper(self.df_norm, **self.default_kws)
-        npt.assert_array_equal(p.plot_data, self.x_norm[::-1])
-        pdt.assert_frame_equal(p.data, self.df_norm.ix[::-1])
+        npt.assert_array_equal(p.plot_data, self.x_norm)
+        pdt.assert_frame_equal(p.data, self.df_norm)
 
         npt.assert_array_equal(p.xticklabels, np.arange(8))
-        npt.assert_array_equal(p.yticklabels, ["D", "C", "B", "A"])
+        npt.assert_array_equal(p.yticklabels, self.letters.values)
 
         nt.assert_equal(p.xlabel, "")
         nt.assert_equal(p.ylabel, "letters")
@@ -76,12 +78,13 @@ class TestHeatmap(PlotTestCase):
 
         p = mat._HeatMapper(df, **self.default_kws)
 
-        npt.assert_array_equal(p.yticklabels, ["D-4", "C-3", "B-2", "A-1"])
+        combined_tick_labels = ["A-1", "B-2", "C-3", "D-4"]
+        npt.assert_array_equal(p.yticklabels, combined_tick_labels)
         nt.assert_equal(p.ylabel, "letter-number")
 
         p = mat._HeatMapper(df.T, **self.default_kws)
 
-        npt.assert_array_equal(p.xticklabels, ["A-1", "B-2", "C-3", "D-4"])
+        npt.assert_array_equal(p.xticklabels, combined_tick_labels)
         nt.assert_equal(p.xlabel, "letter-number")
 
     def test_mask_input(self):
@@ -92,24 +95,15 @@ class TestHeatmap(PlotTestCase):
         p = mat._HeatMapper(self.x_norm, **kws)
         plot_data = np.ma.masked_where(mask, self.x_norm)
 
-        npt.assert_array_equal(p.plot_data, plot_data[::-1])
+        npt.assert_array_equal(p.plot_data, plot_data)
 
-    def test_default_sequential_vlims(self):
+    def test_default_vlims(self):
 
         p = mat._HeatMapper(self.df_unif, **self.default_kws)
         nt.assert_equal(p.vmin, self.x_unif.min())
         nt.assert_equal(p.vmax, self.x_unif.max())
-        nt.assert_true(not p.divergent)
 
-    def test_default_diverging_vlims(self):
-
-        p = mat._HeatMapper(self.df_norm, **self.default_kws)
-        vlim = max(abs(self.x_norm.min()), abs(self.x_norm.max()))
-        nt.assert_equal(p.vmin, -vlim)
-        nt.assert_equal(p.vmax, vlim)
-        nt.assert_true(p.divergent)
-
-    def test_robust_sequential_vlims(self):
+    def test_robust_vlims(self):
 
         kws = self.default_kws.copy()
         kws["robust"] = True
@@ -133,9 +127,10 @@ class TestHeatmap(PlotTestCase):
         kws = self.default_kws.copy()
         kws["vmin"] = -4
         kws["vmax"] = 5
+        kws["center"] = 0
         p = mat._HeatMapper(self.df_norm, **kws)
 
-        nt.assert_equal(p.vmin, -5)
+        nt.assert_equal(p.vmin, -4)
         nt.assert_equal(p.vmax, 5)
 
     def test_array_with_nans(self):
@@ -169,7 +164,7 @@ class TestHeatmap(PlotTestCase):
         kws = self.default_kws.copy()
         kws["cmap"] = "BuGn"
         p = mat._HeatMapper(self.df_unif, **kws)
-        nt.assert_equal(p.cmap, "BuGn")
+        nt.assert_equal(p.cmap, mpl.cm.BuGn)
 
     def test_centered_vlims(self):
 
@@ -178,8 +173,33 @@ class TestHeatmap(PlotTestCase):
 
         p = mat._HeatMapper(self.df_unif, **kws)
 
-        nt.assert_true(p.divergent)
-        nt.assert_equal(p.vmax - .5, .5 - p.vmin)
+        nt.assert_equal(p.vmin, self.df_unif.values.min())
+        nt.assert_equal(p.vmax, self.df_unif.values.max())
+
+    def test_default_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        cvals = np.linspace(0, 1, 9)
+        npt.assert_array_almost_equal(fc, cmap(cvals), 2)
+
+    def test_custom_vlim_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], vmin=0, cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        npt.assert_array_almost_equal(fc, cmap(vals), 2)
+
+    def test_custom_center_colors(self):
+
+        vals = np.linspace(.2, 1, 9)
+        cmap = mpl.cm.binary
+        ax = mat.heatmap([vals], center=.5, cmap=cmap)
+        fc = ax.collections[0].get_facecolors()
+        npt.assert_array_almost_equal(fc, cmap(vals), 2)
 
     def test_tickabels_off(self):
         kws = self.default_kws.copy()
@@ -197,29 +217,29 @@ class TestHeatmap(PlotTestCase):
         kws['yticklabels'] = yticklabels
         p = mat._HeatMapper(self.df_norm, **kws)
         nt.assert_equal(p.xticklabels, xticklabels)
-        nt.assert_equal(p.yticklabels, yticklabels[::-1])
+        nt.assert_equal(p.yticklabels, yticklabels)
 
     def test_custom_ticklabel_interval(self):
 
         kws = self.default_kws.copy()
-        kws['xticklabels'] = 2
-        kws['yticklabels'] = 3
+        xstep, ystep = 2, 3
+        kws['xticklabels'] = xstep
+        kws['yticklabels'] = ystep
         p = mat._HeatMapper(self.df_norm, **kws)
 
         nx, ny = self.df_norm.T.shape
-        ystart = (ny - 1) % 3
-        npt.assert_array_equal(p.xticks, np.arange(0, nx, 2) + .5)
-        npt.assert_array_equal(p.yticks, np.arange(ystart, ny, 3) + .5)
+        npt.assert_array_equal(p.xticks, np.arange(0, nx, xstep) + .5)
+        npt.assert_array_equal(p.yticks, np.arange(0, ny, ystep) + .5)
         npt.assert_array_equal(p.xticklabels,
-                               self.df_norm.columns[::2])
+                               self.df_norm.columns[0:nx:xstep])
         npt.assert_array_equal(p.yticklabels,
-                               self.df_norm.index[::-1][ystart:ny:3])
+                               self.df_norm.index[0:ny:ystep])
 
     def test_heatmap_annotation(self):
 
         ax = mat.heatmap(self.df_norm, annot=True, fmt=".1f",
                          annot_kws={"fontsize": 14})
-        for val, text in zip(self.x_norm[::-1].flat, ax.texts):
+        for val, text in zip(self.x_norm.flat, ax.texts):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
             nt.assert_equal(text.get_fontsize(), 14)
 
@@ -241,8 +261,8 @@ class TestHeatmap(PlotTestCase):
         mask = np.isnan(df.values)
         df_masked = np.ma.masked_where(mask, df)
         ax = mat.heatmap(df, annot=True, fmt='.1f', mask=mask)
-        nt.assert_equal(len(df_masked[::-1].compressed()), len(ax.texts))
-        for val, text in zip(df_masked[::-1].compressed(), ax.texts):
+        nt.assert_equal(len(df_masked.compressed()), len(ax.texts))
+        for val, text in zip(df_masked.compressed(), ax.texts):
             nt.assert_equal("{:.1f}".format(val), text.get_text())
 
     def test_heatmap_annotation_mesh_colors(self):
@@ -259,9 +279,15 @@ class TestHeatmap(PlotTestCase):
         ax = mat.heatmap(self.df_norm, annot=annot_data, fmt=".1f",
                          annot_kws={"fontsize": 14})
 
-        for val, text in zip(annot_data.values[::-1].flat, ax.texts):
+        for val, text in zip(annot_data.values.flat, ax.texts):
             nt.assert_equal(text.get_text(), "{:.1f}".format(val))
             nt.assert_equal(text.get_fontsize(), 14)
+
+    def test_heatmap_annotation_with_limited_ticklabels(self):
+        ax = mat.heatmap(self.df_norm, fmt=".2f", annot=True,
+                         xticklabels=False, yticklabels=False)
+        for val, text in zip(self.x_norm.flat, ax.texts):
+            nt.assert_equal(text.get_text(), "{:.2f}".format(val))
 
     def test_heatmap_cbar(self):
 
@@ -287,18 +313,18 @@ class TestHeatmap(PlotTestCase):
         xtl = [int(l.get_text()) for l in ax.get_xticklabels()]
         nt.assert_equal(xtl, list(self.df_norm.columns))
         ytl = [l.get_text() for l in ax.get_yticklabels()]
-        nt.assert_equal(ytl, list(self.df_norm.index[::-1]))
+        nt.assert_equal(ytl, list(self.df_norm.index))
 
         nt.assert_equal(ax.get_xlabel(), "")
         nt.assert_equal(ax.get_ylabel(), "letters")
 
         nt.assert_equal(ax.get_xlim(), (0, 8))
-        nt.assert_equal(ax.get_ylim(), (0, 4))
+        nt.assert_equal(ax.get_ylim(), (4, 0))
 
     def test_heatmap_ticklabel_rotation(self):
 
         f, ax = plt.subplots(figsize=(2, 2))
-        mat.heatmap(self.df_norm, ax=ax)
+        mat.heatmap(self.df_norm, xticklabels=1, yticklabels=1, ax=ax)
 
         for t in ax.get_xticklabels():
             nt.assert_equal(t.get_rotation(), 0)
@@ -313,7 +339,7 @@ class TestHeatmap(PlotTestCase):
         df.index = [i * 10 for i in df.index]
 
         f, ax = plt.subplots(figsize=(2, 2))
-        mat.heatmap(df, ax=ax)
+        mat.heatmap(df, xticklabels=1, yticklabels=1, ax=ax)
 
         for t in ax.get_xticklabels():
             nt.assert_equal(t.get_rotation(), 90)
@@ -372,7 +398,7 @@ class TestHeatmap(PlotTestCase):
         plt.close(f)
 
 
-class TestDendrogram(PlotTestCase):
+class TestDendrogram(object):
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -613,7 +639,7 @@ class TestDendrogram(PlotTestCase):
         plt.close(f)
 
 
-class TestClustermap(PlotTestCase):
+class TestClustermap(object):
     rs = np.random.RandomState(sum(map(ord, "clustermap")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -893,7 +919,7 @@ class TestClustermap(PlotTestCase):
         col_labels = [l.get_text() for l in
                       cm.ax_col_colors.get_yticklabels()]
         nt.assert_equal(cm.col_color_labels, ['col_1', 'col_2'])
-        nt.assert_equal(col_labels[::-1], cm.col_color_labels)
+        nt.assert_equal(col_labels, cm.col_color_labels)
 
     def test_row_col_colors_df_shuffled(self):
         # Tests if colors are properly matched, even if given in wrong order
@@ -962,7 +988,7 @@ class TestClustermap(PlotTestCase):
         col_labels = [l.get_text() for l in
                       cm2.ax_col_colors.get_yticklabels()]
         nt.assert_equal(cm2.col_color_labels, ['col_1', 'col_2'])
-        nt.assert_equal(col_labels[::-1], cm2.col_color_labels)
+        nt.assert_equal(col_labels, cm2.col_color_labels)
 
     def test_row_col_colors_series(self):
         kws = self.default_kws.copy()
@@ -1053,7 +1079,20 @@ class TestClustermap(PlotTestCase):
         ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
 
         xtl_want = xtl[g.dendrogram_col.reordered_ind].astype("<U1")
-        ytl_want = ytl[g.dendrogram_row.reordered_ind].astype("<U1")[::-1]
+        ytl_want = ytl[g.dendrogram_row.reordered_ind].astype("<U1")
 
         npt.assert_array_equal(xtl_actual, xtl_want)
         npt.assert_array_equal(ytl_actual, ytl_want)
+
+    def test_noticklabels(self):
+
+        kws = self.default_kws.copy()
+        kws["xticklabels"] = False
+        kws["yticklabels"] = False
+
+        g = mat.clustermap(self.df_norm, **kws)
+
+        xtl_actual = [t.get_text() for t in g.ax_heatmap.get_xticklabels()]
+        ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
+        nt.assert_equal(xtl_actual, [])
+        nt.assert_equal(ytl_actual, [])

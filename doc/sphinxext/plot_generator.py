@@ -124,7 +124,7 @@ Example gallery
 
 
 def create_thumbnail(infile, thumbfile,
-                     width=300, height=300,
+                     width=275, height=275,
                      cx=0.5, cy=0.5, border=4):
     baseout, extout = op.splitext(thumbfile)
 
@@ -242,7 +242,8 @@ class ExampleGenerator(object):
 
         docstring = ''
         first_par = ''
-        tokens = tokenize.generate_tokens(lambda: next(lines.__iter__()))
+        line_iter = lines.__iter__()
+        tokens = tokenize.generate_tokens(lambda: next(line_iter))
         for tok_type, tok_content, _, (erow, _), _ in tokens:
             tok_type = token.tok_name[tok_type]
             if tok_type in ('NEWLINE', 'COMMENT', 'NL', 'INDENT', 'DEDENT'):

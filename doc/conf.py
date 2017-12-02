@@ -125,12 +125,14 @@ html_theme = 'bootstrap'
 # documentation.
 html_theme_options = {
     'source_link_position': "footer",
-    'bootswatch_theme': "flatly",
+    'bootswatch_theme': "paper",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
-    'navbar_links': [("API", "api"),
+    'navbar_links': [
+                     ("Gallery", "examples/index"),
                      ("Tutorial", "tutorial"),
-                     ("Gallery", "examples/index")],
+                     ("API", "api"),
+                     ],
 
     }
 
@@ -151,7 +153,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = "favicon.ico"
+html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -183,7 +185,7 @@ html_static_path = ['_static', 'example_thumbs']
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True

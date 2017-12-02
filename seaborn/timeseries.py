@@ -6,6 +6,8 @@ from scipy import stats, interpolate
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import warnings
+
 from .external.six import string_types
 
 from . import utils
@@ -61,10 +63,11 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         Names of ways to plot uncertainty across units from set of
         {ci_band, ci_bars, boot_traces, boot_kde, unit_traces, unit_points}.
         Can use one or more than one method.
-    ci : float or list of floats in [0, 100]
-        Confidence interval size(s). If a list, it will stack the error
-        plots for each confidence interval. Only relevant for error styles
-        with "ci" in the name.
+    ci : float or list of floats in [0, 100] or "sd" or None
+        Confidence interval size(s). If a list, it will stack the error plots
+        for each confidence interval. If ``"sd"``, show standard deviation of
+        the observations instead of boostrapped confidence intervals. Only
+        relevant for error styles with "ci" in the name.
     interpolate : boolean
         Whether to do a linear interpolation between each timepoint when
         plotting. The value of this parameter also determines the marker
@@ -143,6 +146,13 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
 
         >>> ax = sns.tsplot(data=data, ci=[68, 95], color="m")
 
+    Show the standard deviation of the observations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.tsplot(data=data, ci="sd")
+
     Use a different estimator:
 
     .. plot::
@@ -166,6 +176,12 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         >>> ax = sns.tsplot(data=data, err_style="unit_traces")
 
     """
+    msg = (
+        "The `tsplot` function is deprecated and will be removed in a future "
+        "release. Please update your code to use the new `lineplot` function."
+    )
+    warnings.warn(msg, UserWarning)
+
     # Sort out default values for the parameters
     if ax is None:
         ax = plt.gca()
@@ -274,15 +290,22 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
             colors = [color] * n_cond
 
     # Do a groupby with condition and plot each trace
+    c = None
     for c, (cond, df_c) in enumerate(data.groupby(condition, sort=False)):
 
         df_c = df_c.pivot(unit, time, value)
         x = df_c.columns.values.astype(np.float)
 
         # Bootstrap the data for confidence intervals
-        boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
-                                   axis=0, func=estimator)
-        cis = [utils.ci(boot_data, v, axis=0) for v in ci]
+        if "sd" in ci:
+            est = estimator(df_c.values, axis=0)
+            sd = np.std(df_c.values, axis=0)
+            cis = [(est - sd, est + sd)]
+            boot_data = df_c.values
+        else:
+            boot_data = algo.bootstrap(df_c.values, n_boot=n_boot,
+                                       axis=0, func=estimator)
+            cis = [utils.ci(boot_data, v, axis=0) for v in ci]
         central_data = estimator(df_c.values, axis=0)
 
         # Get the color for this condition
@@ -326,6 +349,9 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
         kwargs.setdefault("linestyle", ls)
         label = cond if legend else "_nolegend_"
         ax.plot(x, central_data, color=color, label=label, **kwargs)
+
+    if c is None:
+        raise RuntimeError("Invalid input data for tsplot.")
 
     # Pad the sides of the plot only when not interpolating
     ax.set_xlim(x.min(), x.max())

@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012-2016 Michael Waskom
+# Copyright (C) 2012-2017 Michael Waskom
 import os
 # temporarily redirect config directory to prevent matplotlib importing
 # testing that for writeable directory which results in sandbox error in
@@ -24,11 +24,11 @@ Some of the features that seaborn offers are
 
 DISTNAME = 'seaborn'
 MAINTAINER = 'Michael Waskom'
-MAINTAINER_EMAIL = 'mwaskom@stanford.edu'
-URL = 'http://seaborn.stanford.edu'
+MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
+URL = 'http://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.8.dev'
+VERSION = '0.9.dev'
 
 try:
     from setuptools import setup
@@ -77,12 +77,14 @@ if __name__ == "__main__":
         version=VERSION,
         download_url=DOWNLOAD_URL,
         install_requires=install_requires,
-        packages=['seaborn', 'seaborn.external', 'seaborn.tests'],
+        packages=['seaborn', 'seaborn.colors',
+                  'seaborn.external', 'seaborn.tests'],
         classifiers=[
                      'Intended Audience :: Science/Research',
                      'Programming Language :: Python :: 2.7',
-                     'Programming Language :: Python :: 3.3',
                      'Programming Language :: Python :: 3.4',
+                     'Programming Language :: Python :: 3.5',
+                     'Programming Language :: Python :: 3.6',
                      'License :: OSI Approved :: BSD License',
                      'Topic :: Scientific/Engineering :: Visualization',
                      'Topic :: Multimedia :: Graphics',

@@ -1,7 +1,6 @@
 """Small plotting-related utility functions."""
 from __future__ import print_function, division
 import colorsys
-import warnings
 import os
 
 import numpy as np
@@ -11,14 +10,41 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from .external.six.moves.urllib.request import urlopen, urlretrieve
+from .external.six.moves.http_client import HTTPException
+
 from distutils.version import LooseVersion
 pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
-from .external.six.moves.urllib.request import urlopen, urlretrieve
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "load_dataset"]
+
+
+def remove_na(arr):
+    """Helper method for removing NA values from array-like.
+
+    Parameters
+    ----------
+    arr : array-like
+        The array-like from which to remove NA values.
+
+    Returns
+    -------
+    clean_arr : array-like
+        The original array with NA values removed.
+
+    """
+    return arr[pd.notnull(arr)]
+
+
+def sort_df(df, *args, **kwargs):
+    """Wrapper to handle different pandas sorting API pre/post 0.17."""
+    try:
+        return df.sort_values(*args, **kwargs)
+    except AttributeError:
+        return df.sort(*args, **kwargs)
 
 
 def ci_to_errsize(cis, heights):
@@ -242,44 +268,6 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = yticks.compress(yticks <= lasttick)
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_yticks(newticks)
-
-
-def offset_spines(offset=10, fig=None, ax=None):
-    """Simple function to offset spines away from axes.
-
-    Use this immediately after creating figure and axes objects.
-    Offsetting spines after plotting or manipulating the axes
-    objects may result in loss of labels, ticks, and formatting.
-
-    Parameters
-    ----------
-    offset : int, optional
-        Absolute distance, in points, spines should be moved away
-        from the axes (negative values move spines inward).
-    fig : matplotlib figure, optional
-        Figure to despine all axes of, default uses current figure.
-    ax : matplotlib axes, optional
-        Specific axes object to despine
-
-    Returns
-    -------
-    None
-
-    """
-    warn_msg = "`offset_spines` is deprecated and will be removed in v0.5"
-    warnings.warn(warn_msg, UserWarning)
-
-    # Get references to the axes we want
-    if fig is None and ax is None:
-        axes = plt.gcf().axes
-    elif fig is not None:
-        axes = fig.axes
-    elif ax is not None:
-        axes = [ax]
-
-    for ax_i in axes:
-        for spine in ax_i.spines.values():
-            _set_spine_position(spine, ('outward', offset))
 
 
 def _set_spine_position(spine, position):
@@ -542,6 +530,7 @@ def categorical_order(values, order=None):
 
 
 def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle."""
     if mpl_ge_150:
         cyl = mpl.rcParams['axes.prop_cycle']
         # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
@@ -551,6 +540,7 @@ def get_color_cycle():
             return [x['color'] for x in cyl]
         except KeyError:
             pass  # just return axes.color style below
+
     return mpl.rcParams['axes.color_cycle']
 
 
@@ -624,3 +614,29 @@ def to_utf8(obj):
             return obj.decode("utf-8")
         else:
             return obj.__str__()
+
+
+def _network(t=None, url='http://google.com'):
+    """
+    Decorator that will skip a test if `url` is unreachable.
+
+    Parameters
+    ----------
+    t : function, optional
+    url : str, optional
+    """
+    import nose
+
+    if t is None:
+        return lambda x: _network(x, url=url)
+
+    def wrapper(*args, **kwargs):
+        # attempt to connect
+        try:
+            f = urlopen(url)
+        except (IOError, HTTPException):
+            raise nose.SkipTest()
+        else:
+            f.close()
+            return t(*args, **kwargs)
+    return wrapper
