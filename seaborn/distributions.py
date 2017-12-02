@@ -281,8 +281,8 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
             msg = "Kernel other than `gau` requires statsmodels."
             warnings.warn(msg, UserWarning)
         if cumulative:
-            raise ImportError("Cumulative distributions are currently"
-                              "only implemented in statsmodels."
+            raise ImportError("Cumulative distributions are currently "
+                              "only implemented in statsmodels. "
                               "Please install statsmodels.")
         x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
 
