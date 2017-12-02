@@ -1677,10 +1677,13 @@ class JointGrid(object):
         # Set up the subplot grid
         if subplot_spec:
             if type(subplot_spec) == plt.Subplot:
-                raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`. You passed in a subplot,' +
-                                 'most likely due to using plt.subplots() instead of mpl.gridspec.GridSpec()')
+                raise ValueError(
+                    'subplot_spec must be of type `gridspec.SubplotSpec`. You '
+                    'passed in a subplot, most likely due to using '
+                    'plt.subplots() instead of mpl.gridspec.GridSpec()')
             if not type(subplot_spec) == gridspec.SubplotSpec:
-                raise ValueError('subplot_spec must be of type `gridspec.SubplotSpec`')
+                raise ValueError('subplot_spec must be of type '
+                                 '`gridspec.SubplotSpec`')
 
             # look for fig with gcf. If no fig, make one.
             if type(fig) is plt.Figure:
@@ -1693,7 +1696,9 @@ class JointGrid(object):
                     f = plt.figure(figsize=(size, size))
             else:
                 raise ValueError('fig must be either None or a matplotlib Figure')
-            gs = gridspec.GridSpecFromSubplotSpec(ratio + 1, ratio + 1, hspace=space, wspace=space, subplot_spec=subplot_spec)
+            gs = gridspec.GridSpecFromSubplotSpec(ratio + 1, ratio + 1,
+                                                  hspace=space, wspace=space,
+                                                  subplot_spec=subplot_spec)
 
         else:
             f = plt.figure(figsize=(size, size))
@@ -2135,7 +2140,8 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
 def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
               color=None, size=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
-              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
+              joint_kws=None, marginal_kws=None, annot_kws=None,
+              fig=None, subplot_spec=None, **kwargs):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
     This function provides a convenient interface to the :class:`JointGrid`
@@ -2288,7 +2294,8 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     # Initialize the JointGrid object
     grid = JointGrid(x, y, data, dropna=dropna,
                      size=size, ratio=ratio, space=space,
-                     xlim=xlim, ylim=ylim)
+                     xlim=xlim, ylim=ylim,
+                     fig=fig,  subplot_spec=subplot_spec)
 
     # Plot the data using the grid
     if kind == "scatter":
