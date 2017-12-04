@@ -97,8 +97,8 @@ class Grid(object):
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            figure_width = self.fig.get_figwidth()
-            self.fig.set_figwidth(figure_width + legend_width, forward=True)
+            figure_width, fig_height = self.fig.get_size_inches()
+            self.fig.set_size_inches(figure_width + legend_width,fig_height )
 
             # Draw the plot again to get the new transformations
             self.fig.draw(self.fig.canvas.get_renderer())
