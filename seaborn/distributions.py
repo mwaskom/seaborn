@@ -71,9 +71,11 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Color to plot everything but the fitted curve in.
     vertical : bool, optional
         If True, oberved values are on y-axis.
-    norm_hist : bool, optional
+    norm_hist : bool, or str, optional
         If True, the histogram height shows a density rather than a count.
         This is implied if a KDE or fitted density is plotted.
+        If 'mass', the histogram height shows a mass and the height of
+        all bars will sum up to 1.
     axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
         from a.namel if False, do not set a label.
@@ -175,7 +177,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         a = a.squeeze()
 
     # Decide if the hist is normed
-    norm_hist = norm_hist or kde or (fit is not None)
+    if norm_hist != 'mass':
+        norm_hist = norm_hist or kde or (fit is not None)
 
     # Handle dictionary defaults
     if hist_kws is None:
@@ -211,7 +214,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if bins is None:
             bins = min(_freedman_diaconis_bins(a), 50)
         hist_kws.setdefault("alpha", 0.4)
-        hist_kws.setdefault("normed", norm_hist)
+        if norm_hist == 'mass':
+            hist_kws.setdefault("weights", np.ones_like(a) / len(a))
+        else:
+            hist_kws.setdefault("normed", norm_hist)
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
         ax.hist(a, bins, orientation=orientation,
