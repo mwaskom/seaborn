@@ -2633,7 +2633,7 @@ stripplot.__doc__ = dedent("""\
         it is easier to see the distribution. You can specify the amount
         of jitter (half the width of the uniform random variable support),
         or just use ``True`` for a good default.
-    split : bool, optional
+    dodge : bool, optional
         When using ``hue`` nesting, setting this to ``True`` will separate
         the strips for different hue levels along the categorical axis.
         Otherwise, the points for each level will be plotted on top of
