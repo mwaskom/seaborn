@@ -1682,12 +1682,6 @@ class JointGrid(object):
                 err = "Could not interpret input '{}'".format(var)
                 raise ValueError(err)
 
-        # Possibly drop NA
-        if dropna:
-            not_na = pd.notnull(x) & pd.notnull(y)
-            x = x[not_na]
-            y = y[not_na]
-
         # Find the names of the variables
         if hasattr(x, "name"):
             xlabel = x.name
@@ -1696,9 +1690,18 @@ class JointGrid(object):
             ylabel = y.name
             ax_joint.set_ylabel(ylabel)
 
-        # Convert the x and y data to arrays for plotting
-        self.x = np.asarray(x)
-        self.y = np.asarray(y)
+        # Convert the x and y data to arrays for indexing and plotting
+        x_array = np.asarray(x)
+        y_array = np.asarray(y)
+
+        # Possibly drop NA
+        if dropna:
+            not_na = pd.notnull(x_array) & pd.notnull(y_array)
+            x_array = x_array[not_na]
+            y_array = y_array[not_na]
+
+        self.x = x_array
+        self.y = y_array
 
         if xlim is not None:
             ax_joint.set_xlim(xlim)

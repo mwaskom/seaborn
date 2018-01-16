@@ -2670,9 +2670,11 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> import matplotlib.pyplot as plt
         >>> import seaborn as sns
         >>> sns.set_style("whitegrid")
         >>> tips = sns.load_dataset("tips")
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x=tips["total_bill"])
 
     Group the strips by a categorical variable:
@@ -2680,6 +2682,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
     Add jitter to bring out the distribution of values:
@@ -2687,6 +2690,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
     Use a smaller amount of jitter:
@@ -2694,6 +2698,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=0.05)
 
     Draw horizontal strips:
@@ -2701,6 +2706,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
         ...                    jitter=True)
 
@@ -2709,6 +2715,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
         ...                    jitter=True, linewidth=1)
 
@@ -2717,6 +2724,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
         ...                    data=tips, jitter=True)
 
@@ -2726,6 +2734,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
         ...                    data=tips, jitter=True,
         ...                    palette="Set2", dodge=True)
@@ -2735,6 +2744,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.stripplot(x="time", y="tip", data=tips,
         ...                    order=["Dinner", "Lunch"])
 
@@ -2743,6 +2753,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax =  sns.stripplot("day", "total_bill", "smoker", data=tips,
         ...                    palette="Set2", size=20, marker="D",
         ...                    edgecolor="gray", alpha=.25)
@@ -2752,6 +2763,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
         >>> ax = sns.stripplot(x="tip", y="day", data=tips,
         ...                    jitter=True, color=".3")
@@ -2761,6 +2773,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
         ...                     inner=None, color=".8")
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
@@ -2773,6 +2786,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="strip",
@@ -3224,9 +3238,11 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> import matplotlib.pyplot as plt
         >>> import seaborn as sns
         >>> sns.set_style("darkgrid")
         >>> tips = sns.load_dataset("tips")
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="total_bill", data=tips)
 
     Draw a set of vertical points with nested grouping by a two variables:
@@ -3234,6 +3250,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips)
 
@@ -3242,6 +3259,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, dodge=True)
 
@@ -3250,6 +3268,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips,
         ...                    markers=["o", "x"],
@@ -3260,6 +3279,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="tip", y="day", data=tips)
 
     Don't draw a line connecting each point:
@@ -3267,6 +3287,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="tip", y="day", data=tips, join=False)
 
     Use a different color for a single-layer plot:
@@ -3274,6 +3295,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot("time", y="total_bill", data=tips,
         ...                    color="#bb3f3f")
 
@@ -3282,6 +3304,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="total_bill", hue="smoker",
         ...                    data=tips, palette="Set2")
 
@@ -3290,6 +3313,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="time", y="tip", data=tips,
         ...                    order=["Dinner", "Lunch"])
 
@@ -3298,6 +3322,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> from numpy import median
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, estimator=median)
 
@@ -3306,6 +3331,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci=68)
 
     Show standard deviation of observations instead of a confidence interval:
@@ -3313,6 +3339,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, ci="sd")
 
     Add "caps" to the error bars:
@@ -3320,6 +3347,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
 
     Use :func:`factorplot` to combine a :func:`barplot` and a
@@ -3330,6 +3358,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> test_figure = plt.figure()
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="point",
