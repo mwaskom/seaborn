@@ -914,8 +914,8 @@ class ClusterGrid(Grid):
 
         >>> import numpy as np
         >>> d = np.arange(5, 8, 0.5)
-        >>> ClusterGrid.standard_scale(d)
-        array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
+        >>> ClusterGrid.standard_scale(d).tolist()
+        [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
         """
         # Normalize these values to range from 0 to 1
         if axis == 1:
