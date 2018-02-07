@@ -117,7 +117,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         >>> x = pd.Series(x, name="x variable")
         >>> ax = sns.distplot(x)
 
-    Plot the distribution with a kenel density estimate and rug plot:
+    Plot the distribution with a kernel density estimate and rug plot:
 
     .. plot::
         :context: close-figs
