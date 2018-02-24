@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import warnings
+from distutils.version import LooseVersion
 
 from six import string_types
 
@@ -211,7 +212,11 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if bins is None:
             bins = min(_freedman_diaconis_bins(a), 50)
         hist_kws.setdefault("alpha", 0.4)
-        hist_kws.setdefault("normed", norm_hist)
+        if LooseVersion(mpl.__version__) < LooseVersion("2.2"):
+            hist_kws.setdefault("normed", norm_hist)
+        else:
+            hist_kws.setdefault("density", norm_hist)
+  
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
         ax.hist(a, bins, orientation=orientation,
