@@ -1330,9 +1330,18 @@ class PairGrid(Grid):
             for i, (var, ax) in enumerate(zip(self.x_vars,
                                               np.diag(self.axes))):
                 if i and self.diag_sharey:
-                    diag_ax = ax._make_twin_axes(sharex=ax,
-                                                 sharey=diag_axes[0],
-                                                 frameon=False)
+                    if LooseVersion(mpl.__version__) < LooseVersion("2.2"):
+                        diag_ax = ax._make_twin_axes(sharex=ax,
+                                                     sharey=diag_axes[0],
+                                                     frameon=False)
+                    else:
+                        try:
+                            diag_ax = ax._make_twin_axes(sharey=diag_axes[0],
+                                                         frameon=False)
+                        except:
+                            diag_ax = ax._make_twin_axes(sharex=ax,
+                                                         sharey=diag_axes[0],
+                                                         frameon=False)
                 else:
                     diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
                 diag_ax.set_axis_off()
