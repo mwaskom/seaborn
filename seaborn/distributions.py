@@ -216,7 +216,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             hist_kws.setdefault("normed", norm_hist)
         else:
             hist_kws.setdefault("density", norm_hist)
-  
+
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
         ax.hist(a, bins, orientation=orientation,
