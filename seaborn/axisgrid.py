@@ -890,7 +890,6 @@ class FacetGrid(Grid):
                     labels = labels[::step]
                     ax.set_xticks(xticks)
             ax.set_xticklabels(labels, **kwargs)
-        self.fig.tight_layout()
         return self
 
     def set_yticklabels(self, labels=None, **kwargs):
@@ -899,7 +898,6 @@ class FacetGrid(Grid):
             if labels is None:
                 labels = [l.get_text() for l in ax.get_yticklabels()]
             ax.set_yticklabels(labels, **kwargs)
-        self.fig.tight_layout()
         return self
 
     def set_titles(self, template=None, row_template=None,  col_template=None,

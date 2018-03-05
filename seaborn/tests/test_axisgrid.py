@@ -467,7 +467,7 @@ class TestFacetGrid(object):
         g.set_xticklabels(xlab)
         g.set_yticklabels(rotation=90)
 
-        got_x = [l.get_text() + "h" for l in g.axes[1, 1].get_xticklabels()]
+        got_x = [l.get_text() for l in g.axes[1, 1].get_xticklabels()]
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
