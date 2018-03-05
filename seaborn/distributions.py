@@ -266,7 +266,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
 
 def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
-                        clip, legend, ax, cumulative=False, **kwargs):
+                        clip, legend, snap_axis, ax, cumulative=False, **kwargs):
     """Plot a univariate kernel density estimate on one of the axes."""
 
     # Sort out the clipping
@@ -332,11 +332,12 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
             ax.fill_between(x, 0, y, **shade_kws)
 
     # Set the density axis minimum to 0
-    xmargin, ymargin = ax.margins()
-    if vertical:
-        ax.set_xlim(0, max(ax.get_xlim()[1], (1 + xmargin) * x.max()))
-    else:
-        ax.set_ylim(0, max(ax.get_ylim()[1], (1 + ymargin) * y.max()))
+    if snap_axis:
+        xmargin, ymargin = ax.margins()
+        if vertical:
+            ax.set_xlim(0, max(ax.get_xlim()[1], (1 + xmargin) * x.max()))
+        else:
+            ax.set_ylim(0, max(ax.get_ylim()[1], (1 + ymargin) * y.max()))
 
     # Draw the legend here
     handles, labels = ax.get_legend_handles_labels()
@@ -471,8 +472,8 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
             bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-            cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
-            cbar_kws=None, ax=None, **kwargs):
+            cumulative=False, shade_lowest=True, snap_axis=True, cbar=False,
+            cbar_ax=None, cbar_kws=None, ax=None, **kwargs):
     """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
@@ -508,6 +509,9 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         relevant when drawing a univariate plot or when ``shade=False``.
         Setting this to ``False`` can be useful when you want multiple
         densities on the same Axes.
+    snap_axis : bool, optional
+        If True and drawing a univariate KDE, adjust the value axis to zero to
+        prevent whitespace between the KDE line and the axis spine.
     cbar : bool, optional
         If True and drawing a bivariate KDE plot, add a colorbar.
     cbar_ax : matplotlib axes, optional
@@ -662,7 +666,7 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
                                 cbar, cbar_ax, cbar_kws, ax, **kwargs)
     else:
         ax = _univariate_kdeplot(data, shade, vertical, kernel, bw,
-                                 gridsize, cut, clip, legend, ax,
+                                 gridsize, cut, clip, legend, snap_axis, ax,
                                  cumulative=cumulative, **kwargs)
 
     return ax
