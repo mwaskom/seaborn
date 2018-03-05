@@ -321,7 +321,7 @@ class _CategoricalPlotter(object):
 
         def is_categorical(s):
             try:
-                # Correct way, but doesnt exist in older Pandas
+                # Correct way, but does not exist in older Pandas
                 try:
                     return pd.api.types.is_categorical_dtype(s)
                 except AttributeError:
@@ -414,7 +414,7 @@ class _CategoricalPlotter(object):
                 leg.set_title(self.hue_title)
 
                 # Set the title size a roundabout way to maintain
-                # compatability with matplotlib 1.1
+                # compatibility with matplotlib 1.1
                 try:
                     title_size = mpl.rcParams["axes.labelsize"] * .85
                 except TypeError:  # labelsize is something like "large"
@@ -1303,7 +1303,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             offsets = np.abs(candidates[:, 0] - midline)
             candidates = candidates[np.argsort(offsets)]
 
-            # Find the first candidate that doesn't overlap any neighbours
+            # Find the first candidate that does not overlap any neighbours
             new_xy_i = self.first_non_overlapping_candidate(candidates,
                                                             neighbors, d)
 
@@ -1338,7 +1338,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         # and then convert back to data coordinates and replot
         orig_xy = ax.transData.transform(points.get_offsets())
 
-        # Order the variables so that x is the caegorical axis
+        # Order the variables so that x is the categorical axis
         if self.orient == "h":
             orig_xy = orig_xy[:, [1, 0]]
 
@@ -1815,7 +1815,7 @@ class _LVPlotter(_CategoricalPlotter):
                  orient, color, palette, saturation,
                  width, dodge, k_depth, linewidth, scale, outlier_prop):
 
-        # TODO assigning variables for None is unceccesary
+        # TODO assigning variables for None is unneccesary
         if width is None:
             width = .8
         self.width = width
@@ -3743,13 +3743,13 @@ lvplot.__doc__ = dedent("""\
         assumptions about the number of outliers and leverages different
         statistical properties.
     {linewidth}
-    scale : "linear" | "exonential" | "area"
+    scale : "linear" | "exponential" | "area"
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
     outlier_prop : float, optional
-        Proportion of data believed to be outliers. Is used in conjuction with
+        Proportion of data believed to be outliers. Used in conjunction with
         k_depth to determine the number of percentiles to draw. Defaults to
         0.007 as a proportion of outliers. Should be in range [0, 1].
     {ax_in}
