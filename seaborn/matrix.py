@@ -912,10 +912,6 @@ class ClusterGrid(Grid):
             Noramlized data with a mean of 0 and variance of 1 across the
             specified axis.
 
-        >>> import numpy as np
-        >>> d = np.arange(5, 8, 0.5)
-        >>> ClusterGrid.standard_scale(d)
-        array([ 0. ,  0.2,  0.4,  0.6,  0.8,  1. ])
         """
         # Normalize these values to range from 0 to 1
         if axis == 1:
