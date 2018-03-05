@@ -1160,6 +1160,9 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         Distance metric to use for the data. See
         scipy.spatial.distance.pdist documentation for more options
         http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+        To use different metrics (or methods) for rows and columns, you may
+        construct each linkage matrix yourself and provide them as
+        {row,col}_linkage.
     z_score : int or None, optional
         Either 0 (rows) or 1 (columns). Whether or not to calculate z-scores
         for the rows or the columns. Z scores are: z = (x - mean)/std, so
