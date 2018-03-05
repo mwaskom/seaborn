@@ -1276,6 +1276,12 @@ class TestJointGrid(object):
     x_na[20] = np.nan
     data = pd.DataFrame(dict(x=x, y=y, x_na=x_na))
 
+    def test_margin_grid_from_lists(self):
+
+        g = ag.JointGrid(self.x.tolist(), self.y.tolist())
+        npt.assert_array_equal(g.x, self.x)
+        npt.assert_array_equal(g.y, self.y)
+
     def test_margin_grid_from_arrays(self):
 
         g = ag.JointGrid(self.x, self.y)
@@ -1297,7 +1303,7 @@ class TestJointGrid(object):
     def test_margin_grid_from_dataframe_bad_variable(self):
 
         with nt.assert_raises(ValueError):
-            g = ag.JointGrid("x", "bad_column", self.data)
+            ag.JointGrid("x", "bad_column", self.data)
 
     def test_margin_grid_axis_labels(self):
 
