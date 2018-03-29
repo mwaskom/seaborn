@@ -777,11 +777,11 @@ class ClusterGrid(Grid):
 
         width_ratios = self.dim_ratios(self.row_colors,
                                        figsize=figsize,
-                                       axis=1)
+                                       axis=0)
 
         height_ratios = self.dim_ratios(self.col_colors,
                                         figsize=figsize,
-                                        axis=0)
+                                        axis=1)
         nrows = 3 if self.col_colors is None else 4
         ncols = 3 if self.row_colors is None else 4
 
