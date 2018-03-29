@@ -928,29 +928,35 @@ class ClusterGrid(Grid):
         else:
             return standardized.T
 
-    def dim_ratios(self, side_colors, axis, figsize, side_colors_ratio=0.05):
+    def dim_ratios(self, side_colors, axis, figsize):
         """Get the proportions of the figure taken up by each axes
         """
         figdim = figsize[axis]
+
+        expected_size_for_dendrogram = 1.0  # Inches
+        expected_size_for_side_colors = 0.25  # Inches
+
         # Get resizing proportion of this figure for the dendrogram and
         # colorbar, so only the heatmap gets bigger but the dendrogram stays
         # the same size.
-        dendrogram = min(2. / figdim, .2)
+        dendrogram = expected_size_for_dendrogram / figdim
 
         # add the colorbar
         colorbar_width = .8 * dendrogram
         colorbar_height = .2 * dendrogram
-        if axis == 0:
+        if axis == 1:
             ratios = [colorbar_width, colorbar_height]
         else:
             ratios = [colorbar_height, colorbar_width]
 
         if side_colors is not None:
+            side_colors_ratio = expected_size_for_side_colors / figdim
+
             # Add room for the colors
             ratios += [side_colors_ratio]
 
         # Add the ratio for the heatmap itself
-        ratios += [.8]
+        ratios.append(1 - sum(ratios))
 
         return ratios
 
