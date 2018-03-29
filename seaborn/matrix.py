@@ -810,7 +810,13 @@ class ClusterGrid(Grid):
         self.ax_heatmap = self.fig.add_subplot(self.gs[nrows - 1, ncols - 1])
 
         # colorbar for scale to left corner
-        self.cax = self.fig.add_subplot(self.gs[0, 0])
+
+        if self.col_colors is not None:
+            cbar_max = 3
+        else:
+            cbar_max = 2
+
+        self.cax = self.fig.add_subplot(self.gs[0:cbar_max, 0])
 
         self.dendrogram_row = None
         self.dendrogram_col = None
@@ -959,7 +965,7 @@ class ClusterGrid(Grid):
             # This happens when a series or a list is passed
             if len(colors_shape) <= 2:
                 n_colors = 1
-            # And this happens when a dataframe is passed
+            # And this happens when a dataframe is passed, the first dimension is number of colors
             else:
                 n_colors = colors_shape[0]
 
