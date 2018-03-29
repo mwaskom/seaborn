@@ -1177,7 +1177,10 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                z_score=None, standard_scale=None, figsize=None, cbar_kws=None,
                row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
-               row_colors=None, col_colors=None, mask=None, **kwargs):
+               row_colors=None, col_colors=None, mask=None,
+               expected_size_dendrogram=1.0,
+               expected_size_colors=0.25,
+               **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters
@@ -1230,6 +1233,10 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
         visualizing, not for calculating.
+    expected_size_dendrogram: float, optional
+        Size (in the same units as figsize) of the dendrogram size
+    expected_size_colors: float, optional
+        Size (in the same units as figsize) of size for row/col columns, if passed.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``sns.heatmap``
 
@@ -1325,7 +1332,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale,
-                          mask=mask)
+                          mask=mask, expected_size_dendrogram=expected_size_dendrogram,
+                          expected_size_colors=expected_size_colors)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=cbar_kws,
