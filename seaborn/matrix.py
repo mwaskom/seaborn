@@ -752,7 +752,9 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 
 class ClusterGrid(Grid):
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
-                 figsize=None, row_colors=None, col_colors=None, mask=None):
+                 figsize=None, row_colors=None, col_colors=None, mask=None,
+                 expected_size_dendrogram=1.0,
+                 expected_size_colors=0.25):
         """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
@@ -769,6 +771,9 @@ class ClusterGrid(Grid):
             width, height = 10, 10
             figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
+
+        self.expected_size_dendrogram = expected_size_dendrogram
+        self.expected_size_side_colors = expected_size_colors
 
         self.row_colors, self.row_color_labels = \
             self._preprocess_colors(data, row_colors, axis=0)
@@ -935,8 +940,8 @@ class ClusterGrid(Grid):
         """
         figdim = figsize[axis]
 
-        expected_size_for_dendrogram = 1.0  # Inches
-        expected_size_for_side_colors = 0.25  # Inches
+        expected_size_for_dendrogram = self.expected_size_dendrogram  # Inches
+        expected_size_for_side_colors = self.expected_size_side_colors  # Inches
 
         # Get resizing proportion of this figure for the dendrogram and
         # colorbar, so only the heatmap gets bigger but the dendrogram stays
@@ -952,6 +957,17 @@ class ClusterGrid(Grid):
             ratios = [colorbar_height, colorbar_width]
 
         if side_colors is not None:
+            colors_shape = np.asarray(side_colors).shape
+            # This happens when a series or a list is passed
+            if len(colors_shape) <= 2:
+                n_colors = 1
+            # And this happens when a dataframe is passed
+            else:
+                n_colors = colors_shape[0]
+
+            # Multiply side colors size by the number of colors
+            expected_size_for_side_colors = n_colors * expected_size_for_side_colors
+
             side_colors_ratio = expected_size_for_side_colors / figdim
 
             # Add room for the colors
