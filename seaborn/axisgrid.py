@@ -682,6 +682,10 @@ class FacetGrid(Grid):
             Column names in self.data that identify variables with data to
             plot. The data for each variable is passed to `func` in the
             order the variables are specified in the call.
+        numpify_args : boolean
+            Whether to pass pandas objects to func or convert them to numpy
+            arrays first. If func forwards its args to a matplotlib routine,
+            this may be required.
         kwargs : keyword arguments
             All keyword arguments are passed to the plotting function.
 
@@ -693,9 +697,11 @@ class FacetGrid(Grid):
         """
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
+        numpify_args = kwargs.pop("numpify_args", None)
 
         # Check for categorical plots without order information
-        if func.__module__ == "seaborn.categorical":
+        if hasattr(func, '__module__') \
+                and func.__module__ == "seaborn.categorical":
             if "order" not in kwargs:
                 warning = ("Using the {} function without specifying "
                            "`order` is likely to produce an incorrect "
@@ -735,9 +741,13 @@ class FacetGrid(Grid):
             plot_args = [v for k, v in plot_data.iteritems()]
 
             # Some matplotlib functions don't handle pandas objects correctly
-            if func.__module__ is not None:
-                if func.__module__.startswith("matplotlib"):
-                    plot_args = [v.values for v in plot_args]
+            if numpify_args is None and hasattr(func, '__module__'):
+                if func.__module__ is not None:
+                    if func.__module__.startswith("matplotlib"):
+                        plot_args = [v.values for v in plot_args]
+            # Allow the user to explictly request the above fix as well
+            elif numpify_args:
+                plot_args = [v.values for v in plot_args]
 
             # Draw the plot
             self._facet_plot(func, ax, plot_args, kwargs)
