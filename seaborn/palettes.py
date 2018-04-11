@@ -730,7 +730,7 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
 def xkcd_palette(colors):
     """Make a palette with color names from the xkcd color survey.
 
-    See xkcd for the full list of colors: http://xkcd.com/color/rgb/
+    See xkcd for the full list of colors: https://xkcd.com/color/rgb/
 
     This is just a simple wrapper around the ``seaborn.xkcd_rgb`` dictionary.
 
@@ -758,7 +758,7 @@ def crayon_palette(colors):
     """Make a palette with color names from Crayola crayons.
 
     Colors are taken from here:
-    http://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors
+    https://en.wikipedia.org/wiki/List_of_Crayola_crayon_colors
 
     This is just a simple wrapper around the ``seaborn.crayons`` dictionary.
 

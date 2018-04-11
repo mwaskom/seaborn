@@ -4,12 +4,12 @@ An introduction to seaborn
 ==========================
 
 Seaborn is a library for making attractive and informative statistical graphics
-in Python. It is built on top of `matplotlib <http://matplotlib.org/>`_ and
-tightly integrated with the `PyData <http://pydata.org/>`_ stack, including
+in Python. It is built on top of `matplotlib <https://matplotlib.org/>`_ and
+tightly integrated with the `PyData <https://pydata.org/>`_ stack, including
 support for `numpy <http://www.numpy.org/>`_ and `pandas
-<http://pandas.pydata.org/>`_ data structures and statistical routines from
-`scipy <http://scipy.org/>`_ and `statsmodels
-<http://statsmodels.sourceforge.net/>`_.
+<https://pandas.pydata.org/>`_ data structures and statistical routines from
+`scipy <https://www.scipy.org/>`_ and `statsmodels
+<https://www.statsmodels.org/>`_.
 
 Some of the features that seaborn offers are
 

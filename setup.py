@@ -25,7 +25,7 @@ Some of the features that seaborn offers are
 DISTNAME = 'seaborn'
 MAINTAINER = 'Michael Waskom'
 MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
-URL = 'http://seaborn.pydata.org'
+URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.9.dev'

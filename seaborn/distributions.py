@@ -25,7 +25,7 @@ __all__ = ["distplot", "kdeplot", "rugplot"]
 
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
-    # From http://stats.stackexchange.com/questions/798/
+    # From https://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
     if len(a) < 2:
         return 1

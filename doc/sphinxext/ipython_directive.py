@@ -80,7 +80,7 @@ An example usage of the directive is:
 
         In [3]: print(y)
 
-See http://matplotlib.org/sampledoc/ipython_directive.html for additional
+See https://matplotlib.org/sampledoc/ipython_directive.html for additional
 documentation.
 
 ToDo
@@ -947,11 +947,11 @@ x.startswith  x.strip
 """,
     r"""
 
-In [130]: url = 'http://ichart.finance.yahoo.com/table.csv?s=CROX\
+In [130]: url = 'https://ichart.finance.yahoo.com/table.csv?s=CROX\
    .....: &d=9&e=22&f=2009&g=d&a=1&br=8&c=2006&ignore=.csv'
 
 In [131]: print url.split('&')
-['http://ichart.finance.yahoo.com/table.csv?s=CROX', 'd=9', 'e=22', 'f=2009', 'g=d', 'a=1', 'b=8', 'c=2006', 'ignore=.csv']
+['https://ichart.finance.yahoo.com/table.csv?s=CROX', 'd=9', 'e=22', 'f=2009', 'g=d', 'a=1', 'b=8', 'c=2006', 'ignore=.csv']
 
 In [60]: import urllib
 

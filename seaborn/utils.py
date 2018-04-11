@@ -616,7 +616,7 @@ def to_utf8(obj):
             return obj.__str__()
 
 
-def _network(t=None, url='http://google.com'):
+def _network(t=None, url='https://google.com'):
     """
     Decorator that will skip a test if `url` is unreachable.
 

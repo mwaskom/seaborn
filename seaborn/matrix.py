@@ -1155,11 +1155,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     method : str, optional
         Linkage method to use for calculating clusters.
         See scipy.cluster.hierarchy.linkage documentation for more information:
-        http://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
     metric : str, optional
         Distance metric to use for the data. See
         scipy.spatial.distance.pdist documentation for more options
-        http://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
         To use different metrics (or methods) for rows and columns, you may
         construct each linkage matrix yourself and provide them as
         {row,col}_linkage.

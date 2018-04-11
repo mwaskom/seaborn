@@ -31,16 +31,16 @@ Mandatory dependencies
 
 -  `numpy <http://www.numpy.org/>`__
 
--  `scipy <http://www.scipy.org/>`__
+-  `scipy <https://www.scipy.org/>`__
 
--  `matplotlib <http://matplotlib.org>`__
+-  `matplotlib <https://matplotlib.org>`__
 
--  `pandas <http://pandas.pydata.org/>`__
+-  `pandas <https://pandas.pydata.org/>`__
 
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  `statsmodels <http://statsmodels.sourceforge.net/>`__
+-  `statsmodels <https://www.statsmodels.org/>`__
 
 The ``pip`` installation script will attempt to download the mandatory
 dependencies only if they do not exist at install-time.

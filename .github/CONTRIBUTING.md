@@ -4,7 +4,7 @@ Contributing to seaborn
 General support
 ---------------
 
-General support questions ("how do I do <x>?") are most at home on [StackOverflow](http://stackoverflow.com/), where they will be seen by more people and are more easily searchable. StackOverflow has a `[seaborn]` tag, which will bring the question to the attention of people who might be able to answer.
+General support questions ("how do I do <x>?") are most at home on [StackOverflow](https://stackoverflow.com/), where they will be seen by more people and are more easily searchable. StackOverflow has a `[seaborn]` tag, which will bring the question to the attention of people who might be able to answer.
 
 Reporting bugs
 --------------

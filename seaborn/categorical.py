@@ -3722,7 +3722,7 @@ lvplot.__doc__ = dedent("""\
     value plots and their properties, see Hadley Wickham's excellent paper on
     the topic:
 
-    http://vita.had.co.nz/papers/letter-value-plot.html
+    https://vita.had.co.nz/papers/letter-value-plot.html
 
     {main_api_narrative}
 
