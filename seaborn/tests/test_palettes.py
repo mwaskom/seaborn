@@ -1,14 +1,17 @@
-import warnings
 import colorsys
 import numpy as np
 import matplotlib as mpl
 
 import nose.tools as nt
 import numpy.testing as npt
+import matplotlib.pyplot as plt
 
 from .. import palettes, utils, rcmod
 from ..external import husl
 from ..colors import xkcd_rgb, crayons
+
+from distutils.version import LooseVersion
+mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 
 
 class TestColorPalettes(object):
@@ -290,8 +293,10 @@ class TestColorPalettes(object):
         nt.assert_equal(pal_in, pal_out)
 
     def test_get_color_cycle(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            result = utils.get_color_cycle()
-            expected = mpl.rcParams['axes.color_cycle']
-        nt.assert_equal(result, expected)
+
+        if mpl_ge_150:
+            colors = [(1., 0., 0.), (0, 1., 0.)]
+            prop_cycle = plt.cycler(color=colors)
+            with plt.rc_context({"axes.prop_cycle": prop_cycle}):
+                result = utils.get_color_cycle()
+                assert result == colors
