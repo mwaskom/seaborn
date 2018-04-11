@@ -700,7 +700,7 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        if mpl.get_backend().upper() == "pdf":
+        if mpl.get_backend().upper() == "PDF":
             # https://github.com/mwaskom/seaborn/issues/1262
             plt.draw()
         else:
