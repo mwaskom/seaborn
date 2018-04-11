@@ -694,8 +694,13 @@ class FacetGrid(Grid):
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
 
+        if hasattr(func, "__module__"):
+            func_module = str(func.__module__)
+        else:
+            func_module = ""
+
         # Check for categorical plots without order information
-        if func.__module__ == "seaborn.categorical":
+        if func_module == "seaborn.categorical":
             if "order" not in kwargs:
                 warning = ("Using the {} function without specifying "
                            "`order` is likely to produce an incorrect "
@@ -735,9 +740,8 @@ class FacetGrid(Grid):
             plot_args = [v for k, v in plot_data.iteritems()]
 
             # Some matplotlib functions don't handle pandas objects correctly
-            if func.__module__ is not None:
-                if func.__module__.startswith("matplotlib"):
-                    plot_args = [v.values for v in plot_args]
+            if func_module.startswith("matplotlib"):
+                plot_args = [v.values for v in plot_args]
 
             # Draw the plot
             self._facet_plot(func, ax, plot_args, kwargs)
