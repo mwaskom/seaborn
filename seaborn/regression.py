@@ -441,8 +441,8 @@ _regression_docs = dict(
     x_ci : "ci", "sd", int in [0, 100] or None, optional
         Size of the confidence interval used when plotting a central tendency
         for discrete values of ``x``. If ``"ci"``, defer to the value of the
-        ``ci`` parameter. If ``"sd"``, skip bootstrappig and show the standard
-        deviation of the observations in each bin.\
+        ``ci`` parameter. If ``"sd"``, skip bootstrapping and show the
+         standard deviation of the observations in each bin.\
     """),
     scatter=dedent("""\
     scatter : bool, optional
