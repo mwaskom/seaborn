@@ -5,6 +5,7 @@ from scipy import stats
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as tx
 import warnings
 from distutils.version import LooseVersion
 
@@ -681,7 +682,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     ax : matplotlib axes, optional
         Axes to draw plot into; otherwise grabs current axes.
     kwargs : key, value pairings
-        Other keyword arguments are passed to ``axvline`` or ``axhline``.
+        Other keyword arguments are passed to ``plot``.
 
     Returns
     -------
@@ -693,9 +694,15 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
         ax = plt.gca()
     a = np.asarray(a)
     vertical = kwargs.pop("vertical", axis == "y")
-    func = ax.axhline if vertical else ax.axvline
     kwargs.setdefault("linewidth", 1)
-    for pt in a:
-        func(pt, 0, height, **kwargs)
+
+    if vertical:
+        trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
+        ax.plot(np.tile([0, height, np.nan], len(a)), np.repeat(a, 3),
+                transform=trans, **kwargs)
+    else:
+        trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
+        ax.plot(np.repeat(a, 3), np.tile([0, height, np.nan], len(a)),
+                transform=trans, **kwargs)
 
     return ax
