@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
+from matplotlib.collections import LineCollection
 import warnings
 from distutils.version import LooseVersion
 
@@ -698,11 +699,14 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
 
     if vertical:
         trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
-        ax.plot(np.tile([0, height, np.nan], len(a)), np.repeat(a, 3),
-                transform=trans, **kwargs)
+        xy_pairs = np.column_stack([np.tile([0, height], len(a)),
+                                    np.repeat(a, 2)])
     else:
         trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
-        ax.plot(np.repeat(a, 3), np.tile([0, height, np.nan], len(a)),
-                transform=trans, **kwargs)
+        xy_pairs = np.column_stack([np.repeat(a, 2),
+                                    np.tile([0, height], len(a))])
+
+    line_segs = xy_pairs.reshape([len(a), 2, 2])
+    ax.add_collection(LineCollection(line_segs, transform=trans, **kwargs))
 
     return ax
