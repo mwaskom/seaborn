@@ -1596,7 +1596,7 @@ class _BarPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  orient, color, palette, saturation, errcolor,
-                 errwidth, capsize, dodge):
+                 errwidth, capsize, dodge, stacked):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1604,6 +1604,7 @@ class _BarPlotter(_CategoricalStatPlotter):
         self.estimate_statistic(estimator, ci, n_boot)
 
         self.dodge = dodge
+        self.stacked = stacked
 
         self.errcolor = errcolor
         self.errwidth = errwidth
@@ -1630,7 +1631,7 @@ class _BarPlotter(_CategoricalStatPlotter):
                                self.errwidth,
                                self.capsize)
 
-        else:
+        elif self.plot_hues and self.stacked is False:
 
             for j, hue_level in enumerate(self.hue_names):
 
@@ -1650,6 +1651,27 @@ class _BarPlotter(_CategoricalStatPlotter):
                                        errcolors,
                                        self.errwidth,
                                        self.capsize)
+
+        else:
+
+            bottoms = np.zeros(self.statistic.shape)
+            bottoms[:, 1:] = np.cumsum(self.statistic, axis=1)[:, :-1]
+            for j, hue_level in enumerate(self.hue_names):
+                
+                heights = self.statistic[:, j]
+                bottom = bottoms[:, j]
+                barfunc(barpos, heights, self.width, bottom, color=self.colors[j],
+                        align="center", label=hue_level, **kws)
+
+                if self.confint.size:
+                    confint = self.confint[:, j] + bottom[:, None]
+                    errcolors = [self.errcolor] * len(heights)
+                    self.draw_confints(ax,
+                                       barpos,
+                                       confint,
+                                       errcolors,
+                                       self.errwidth,
+                                       self.capsize)           
 
     def plot(self, ax, bar_kws):
         """Make the plot."""
@@ -2960,12 +2982,12 @@ def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             estimator=np.mean, ci=95, n_boot=1000, units=None,
             orient=None, color=None, palette=None, saturation=.75,
             errcolor=".26", errwidth=None, capsize=None, dodge=True,
-            ax=None, **kwargs):
+            ax=None, stacked=False, **kwargs):
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units,
                           orient, color, palette, saturation,
-                          errcolor, errwidth, capsize, dodge)
+                          errcolor, errwidth, capsize, dodge, stacked)
 
     if ax is None:
         ax = plt.gca()
