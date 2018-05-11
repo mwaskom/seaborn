@@ -560,10 +560,7 @@ class _DendrogramPlotter(object):
         self.label = label
         self.rotate = rotate
 
-        if line_kws is None:
-            self.line_kws = {}
-        else:
-            self.line_kws = line_kws
+        self.line_kws = {} if line_kws is None else line_kws
         defaults = dict(linewidths=.5, colors='k')
         [self.line_kws.setdefault(k, v) for k, v in defaults.items()]
 
