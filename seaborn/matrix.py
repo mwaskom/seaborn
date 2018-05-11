@@ -559,7 +559,13 @@ class _DendrogramPlotter(object):
         self.axis = axis
         self.label = label
         self.rotate = rotate
-        self.line_kws = line_kws      
+
+        if line_kws is None:
+            self.line_kws = {}
+        else:
+            self.line_kws = line_kws
+        defaults = dict(linewidths=.5, colors='k')
+        [self.line_kws.setdefault(k, v) for k, v in defaults.items()]
 
         if linkage is None:
             self.linkage = self.calculated_linkage
@@ -648,18 +654,6 @@ class _DendrogramPlotter(object):
     def reordered_ind(self):
         """Indices of the matrix, reordered by the dendrogram"""
         return self.dendrogram['leaves']
-
-    @property
-    def line_kws(self):
-        return self._line_kws
-    
-    @line_kws.setter
-    def line_kws(self, line_kws):
-        if line_kws is None:
-            line_kws = {}
-        defaults = dict(linewidths=.5, colors='k')
-        [line_kws.setdefault(*kv) for kv in defaults.items()]
-        self._line_kws = line_kws
 
     def plot(self, ax):
         """Plots a dendrogram of the similarities between data on the axes
@@ -1024,7 +1018,7 @@ class ClusterGrid(Grid):
         self.fig.savefig(*args, **kwargs)
 
     def plot_dendrograms(self, row_cluster, col_cluster, metric, method,
-                         row_linkage, col_linkage, line_kws):
+                         row_linkage, col_linkage, line_kws=None):
         # Plot the row dendrogram
         if row_cluster:
             self.dendrogram_row = dendrogram(
@@ -1135,7 +1129,7 @@ class ClusterGrid(Grid):
             plt.setp(ytl, rotation=ytl_rot)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
-             row_linkage, col_linkage, line_kws, **kws):
+             row_linkage, col_linkage, line_kws=None, **kws):
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage,
