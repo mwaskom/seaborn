@@ -532,7 +532,7 @@ class _DendrogramPlotter(object):
     """Object for drawing tree of similarities between data rows/columns"""
 
     def __init__(self, data, linkage, metric, method, axis, label, rotate,
-                 line_kws):
+                 line_kws=None):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
