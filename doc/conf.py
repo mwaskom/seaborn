@@ -21,7 +21,7 @@ mpl.use("Agg")
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
-# -- General configuration -----------------------------------------------------
+# -- General configuration ---------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
@@ -29,17 +29,16 @@ mpl.use("Agg")
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 sys.path.insert(0, os.path.abspath('sphinxext'))
-extensions = ['sphinx.ext.autodoc',
-              'sphinx.ext.doctest',
-              'sphinx.ext.coverage',
-              'sphinx.ext.mathjax',
-              'sphinx.ext.autosummary',
-              'plot_generator',
-              'plot_directive',
-              'numpydoc',
-              'ipython_directive',
-              'ipython_console_highlighting',
-              ]
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.autosummary',
+    'matplotlib.sphinxext.plot_directive',
+    'gallery_generator',
+    'numpydoc',
+]
 
 # Generate the API documentation when building
 autosummary_generate = True
