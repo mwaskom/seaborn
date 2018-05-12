@@ -24,48 +24,35 @@ Another option would be to to clone the `github repository
 Dependencies
 ~~~~~~~~~~~~
 
--  Python 2.7 or 3.4+
+-  Python 2.7 or 3.5+
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <http://www.numpy.org/>`__
+-  `numpy <http://www.numpy.org/>`__ (>= 1.9.3)
 
--  `scipy <https://www.scipy.org/>`__
+-  `scipy <https://www.scipy.org/>`__ (>= 0.14.0)
 
--  `matplotlib <https://matplotlib.org>`__
+-  `matplotlib <https://matplotlib.org>`__ (>= 1.4.3)
 
--  `pandas <https://pandas.pydata.org/>`__
+-  `pandas <https://pandas.pydata.org/>`__ (>= 0.15.2)
 
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  `statsmodels <https://www.statsmodels.org/>`__
-
-The ``pip`` installation script will attempt to download the mandatory
-dependencies only if they do not exist at install-time.
-
-There are not hard minimum version requirements for the dependencies. Unit
-tests aim to keep seaborn importable and generally functional on the versions
-available through the stable Debian channels, which are relatively old. There
-are some known bugs when using older versions of matplotlib (generally meaning
-1.3 or earlier), so you should in general try to use a modern version.  For
-most use cases, though, older versions of matplotlib will work fine.
-
-Seaborn is also tested on the most recent versions offered through ``conda``.
-
+-  `statsmodels <https://www.statsmodels.org/>`__ (>= 0.5.0)
 
 Testing
 ~~~~~~~
 
 To test seaborn, run ``make test`` in the root directory of the source
-distribution. This runs the unit test suite (using ``pytest``). It also runs
-the example code in function docstrings to smoke-test a broader and more
-realistic range of example usage.
+distribution. This runs the unit test suite (using ``pytest``, but many older
+tests use ``nose`` asserts). It also runs the example code in function
+docstrings to smoke-test a broader and more realistic range of example usage.
 
 The full set of tests requires an internet connection to download the example
 datasets (if they haven't been previously cached), but the unit tests should
-be able to run offline.
+be possible to run offline.
 
 
 Bugs
@@ -75,9 +62,9 @@ Please report any bugs you encounter through the github `issue tracker
 <https://github.com/mwaskom/seaborn/issues/new>`_. It will be most helpful to
 include a reproducible example on one of the example datasets (accessed through
 :func:`load_dataset`). It is difficult debug any issues without knowing the
-versions of seaborn and matplotlib you are using, as well as what matplotlib
-backend you are using to draw the plots, so please include those in your bug
-report.
+versions of seaborn and matplotlib you are using, as well as what `matplotlib
+backend <https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you
+are using to draw the plots, so please include those in your bug report.
 
 
 Known issues
