@@ -133,9 +133,9 @@ class _BasicPlotter(object):
                 units = data.get(units, units)
 
             # Validate the inputs
-            for input in [x, y, hue, size, style]:
-                if isinstance(input, string_types):
-                    err = "Could not interpret input '{}'".format(input)
+            for var in [x, y, hue, size, style, units]:
+                if isinstance(var, string_types):
+                    err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
             # Extract variable names
