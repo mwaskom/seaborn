@@ -729,14 +729,17 @@ class TestLinePlotter(TestBasicPlotter):
                                   high=y_mean + y_sem),
                              columns=["low", "high"])
 
-        index, est, cis = p.aggregate(y, x, "mean", 68)
+        p.ci = 68
+        p.estimator = "mean"
+        index, est, cis = p.aggregate(y, x)
         assert np.array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values, 4)
         assert list(cis.columns) == ["low", "high"]
 
-        index, est, cis = p.aggregate(y, x, np.mean, 68)
+        p.estimator = np.mean
+        index, est, cis = p.aggregate(y, x)
         assert np.array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
@@ -748,24 +751,27 @@ class TestLinePlotter(TestBasicPlotter):
                                   high=y_mean + y_std),
                              columns=["low", "high"])
 
-        index, est, cis = p.aggregate(y, x, "mean", "sd")
+        p.ci = "sd"
+        index, est, cis = p.aggregate(y, x)
         assert np.array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values)
         assert list(cis.columns) == ["low", "high"]
 
-        index, est, cis = p.aggregate(y, x, "mean", None)
+        p.ci = None
+        index, est, cis = p.aggregate(y, x)
         assert cis is None
 
+        p.ci = 68
         x, y = pd.Series([1, 2, 3]), pd.Series([4, 3, 2])
-        index, est, cis = p.aggregate(y, x, "mean", 68)
+        index, est, cis = p.aggregate(y, x)
         assert np.array_equal(index.values, x)
         assert np.array_equal(est.values, y)
         assert cis is None
 
         x, y = pd.Series([1, 1, 2]), pd.Series([2, 3, 4])
-        index, est, cis = p.aggregate(y, x, "mean", 68)
+        index, est, cis = p.aggregate(y, x)
         assert cis.loc[2].isnull().all()
 
     def test_legend_data(self, long_df):
