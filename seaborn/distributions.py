@@ -683,7 +683,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     ax : matplotlib axes, optional
         Axes to draw plot into; otherwise grabs current axes.
     kwargs : key, value pairings
-        Other keyword arguments are passed to ``plot``.
+        Other keyword arguments are passed to ``LineCollection``.
 
     Returns
     -------
