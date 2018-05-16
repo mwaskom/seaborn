@@ -563,10 +563,11 @@ class _ViolinPlotter(_CategoricalPlotter):
         self.dodge = dodge
 
         if inner is not None:
-            if not any([inner.startswith("quart"),
-                        inner.startswith("box"),
-                        inner.startswith("stick"),
-                        inner.startswith("point")]):
+          
+            if not any(['quart' in inner,
+                        'box' in inner,
+                        'stick' in inner,
+                        'point' in inner]):
                 err = "Inner style '{}' not recognized".format(inner)
                 raise ValueError(err)
         self.inner = inner
@@ -840,19 +841,19 @@ class _ViolinPlotter(_CategoricalPlotter):
                 violin_data = remove_na(group_data)
 
                 # Draw box and whisker information
-                if self.inner.startswith("box"):
+                if 'box' in self.inner:
                     self.draw_box_lines(ax, violin_data, support, density, i)
 
                 # Draw quartile lines
-                elif self.inner.startswith("quart"):
+                elif 'quart' in self.inner:
                     self.draw_quartiles(ax, violin_data, support, density, i)
 
                 # Draw stick observations
-                elif self.inner.startswith("stick"):
+                elif 'stick' in self.inner:
                     self.draw_stick_lines(ax, violin_data, support, density, i)
 
                 # Draw point observations
-                elif self.inner.startswith("point"):
+                elif 'pint' in self.inner:
                     self.draw_points(ax, violin_data, i)
 
             # Option 2: we have nested grouping by a hue variable
@@ -909,13 +910,13 @@ class _ViolinPlotter(_CategoricalPlotter):
                         violin_data = remove_na(group_data[hue_mask])
 
                         # Draw quartile lines
-                        if self.inner.startswith("quart"):
+                        if 'quart' in self.inner:
                             self.draw_quartiles(ax, violin_data,
                                                 support, density, i,
                                                 ["left", "right"][j])
 
                         # Draw stick observations
-                        elif self.inner.startswith("stick"):
+                        elif 'stick' in self.inner:
                             self.draw_stick_lines(ax, violin_data,
                                                   support, density, i,
                                                   ["left", "right"][j])
@@ -929,12 +930,12 @@ class _ViolinPlotter(_CategoricalPlotter):
                         violin_data = remove_na(group_data)
 
                         # Draw box and whisker information
-                        if self.inner.startswith("box"):
+                        if 'box' in self.inner:
                             self.draw_box_lines(ax, violin_data,
                                                 support, density, i)
 
                         # Draw point observations
-                        elif self.inner.startswith("point"):
+                        elif 'point' in self.inner:
                             self.draw_points(ax, violin_data, i)
 
                     # Option 2b: we are drawing full nested violins
@@ -956,25 +957,25 @@ class _ViolinPlotter(_CategoricalPlotter):
                         violin_data = remove_na(group_data[hue_mask])
 
                         # Draw box and whisker information
-                        if self.inner.startswith("box"):
+                        if 'box' in self.inner:
                             self.draw_box_lines(ax, violin_data,
                                                 support, density,
                                                 i + offsets[j])
 
                         # Draw quartile lines
-                        elif self.inner.startswith("quart"):
+                        elif 'quart' in self.inner:
                             self.draw_quartiles(ax, violin_data,
                                                 support, density,
                                                 i + offsets[j])
 
                         # Draw stick observations
-                        elif self.inner.startswith("stick"):
+                        elif 'stick' in self.inner:
                             self.draw_stick_lines(ax, violin_data,
                                                   support, density,
                                                   i + offsets[j])
 
                         # Draw point observations
-                        elif self.inner.startswith("point"):
+                        elif 'point' in self.inner:
                             self.draw_points(ax, violin_data, i + offsets[j])
 
     def draw_single_observation(self, ax, at_group, at_quant, density):
