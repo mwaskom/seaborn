@@ -30,7 +30,7 @@ class _BasicPlotter(object):
 
     def establish_variables(self, x=None, y=None,
                             hue=None, size=None, style=None,
-                            data=None):
+                            units=None, data=None):
         """Parse the inputs to define data for plotting."""
         # Initialize label variables
         x_label = y_label = hue_label = size_label = style_label = None
@@ -130,11 +130,12 @@ class _BasicPlotter(object):
                 hue = data.get(hue, hue)
                 size = data.get(size, size)
                 style = data.get(style, style)
+                units = data.get(units, units)
 
             # Validate the inputs
-            for input in [x, y, hue, size, style]:
-                if isinstance(input, string_types):
-                    err = "Could not interpret input '{}'".format(input)
+            for var in [x, y, hue, size, style, units]:
+                if isinstance(var, string_types):
+                    err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
             # Extract variable names
@@ -145,7 +146,11 @@ class _BasicPlotter(object):
             style_label = getattr(style, "name", None)
 
             # Reassemble into a DataFrame
-            plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
+            plot_data = dict(
+                x=x, y=y,
+                hue=hue, style=style, size=size,
+                units=units
+            )
             plot_data = pd.DataFrame(plot_data)
 
         # Option 3:
@@ -160,7 +165,7 @@ class _BasicPlotter(object):
         # ---- Post-processing
 
         # Assign default values for missing attribute variables
-        for attr in ["hue", "style", "size"]:
+        for attr in ["hue", "style", "size", "units"]:
             if attr not in plot_data:
                 plot_data[attr] = None
 
@@ -305,7 +310,9 @@ class _LinePlotter(_BasicPlotter):
                  units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, errstyle=None, legend=None):
 
-        plot_data = self.establish_variables(x, y, hue, size, style, data)
+        plot_data = self.establish_variables(
+            x, y, hue, size, style, units, data
+        )
 
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
@@ -316,6 +323,7 @@ class _LinePlotter(_BasicPlotter):
         self.ci = ci
         self.n_boot = n_boot
         self.errstyle = errstyle
+        self.units = units
 
         self.legend = legend
 
@@ -335,13 +343,17 @@ class _LinePlotter(_BasicPlotter):
             style_rows = all_true if style is None else data["style"] == style
 
             rows = hue_rows & size_rows & style_rows
-            subset_data = data.loc[rows, ["x", "y"]].dropna()
+            data["units"] = data.units.fillna("")
+            subset_data = data.loc[rows, ["units", "x", "y"]].dropna()
 
             if not len(subset_data):
                 continue
 
             if self.sort:
-                subset_data = sort_df(subset_data, ["x", "y"])
+                subset_data = sort_df(subset_data, ["units", "x", "y"])
+
+            if self.units is None:
+                subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
 
@@ -487,8 +499,10 @@ class _LinePlotter(_BasicPlotter):
         self.dashes = dashes
         self.markers = markers
 
-    def aggregate(self, vals, grouper, func, ci):
+    def aggregate(self, vals, grouper, units=None):
         """Compute an estimate and confidence interval using grouper."""
+        func = self.estimator
+        ci = self.ci
         n_boot = self.n_boot
 
         # Define a "null" CI for when we only have one value
@@ -557,14 +571,16 @@ class _LinePlotter(_BasicPlotter):
 
         # Loop over the semantic subsets and draw a line for each
 
-        for semantics, subset_data in self.subset_data():
+        for semantics, data in self.subset_data():
 
             hue, size, style = semantics
-
-            x, y = subset_data["x"], subset_data["y"]
+            x, y, units = data["x"], data["y"], data.get("units", None)
 
             if self.estimator is not None:
-                x, y, y_ci = self.aggregate(y, x, self.estimator, self.ci)
+                if self.units is not None:
+                    err = "estimator must be None when specifying units"
+                    raise ValueError(err)
+                x, y, y_ci = self.aggregate(y, x, units)
             else:
                 y_ci = None
 
@@ -575,12 +591,20 @@ class _LinePlotter(_BasicPlotter):
 
             # --- Draw the main line
 
-            # TODO when not estimating, use units to get multiple lines
-            # with the same semantics?
-
-            line, = ax.plot(x.values, y.values, **kws)
+            line, = ax.plot([], [], **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
+            line_capstyle = line.get_solid_capstyle()
+            line.remove()
+
+            if self.units is None:
+
+                line, = ax.plot(x.values, y.values, **kws)
+
+            else:
+
+                for u in units.unique():
+                    ax.plot(x[units == u].values, y[units == u].values, **kws)
 
             # --- Draw the confidence intervals
 
@@ -599,6 +623,10 @@ class _LinePlotter(_BasicPlotter):
                     lines = LineCollection(ci_xy,
                                            color=line_color,
                                            alpha=line_alpha)
+                    try:
+                        lines.set_capstyle(line_capstyle)
+                    except AttributeError:
+                        pass
                     ax.add_collection(lines)
                     ax.autoscale_view()
 
@@ -624,6 +652,7 @@ class _LinePlotter(_BasicPlotter):
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
+        # TODO Use False or None?
         if verbosity not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
@@ -765,7 +794,10 @@ _basic_docs = dict(
     """),
     units=dedent("""\
     units : {long_form_var}
-        Grouping variable identifying sampling units. Currently has no effect.\
+        Grouping variable identifying sampling units. When used, a separate
+        line will be drawn for each unit with appropriate semantics, but no
+        legend entry will be added. Useful for showing distribution of
+        experimental replicates when exact identities are not needed.
     """),
     estimator=dedent("""\
     estimator : name of pandas method or callable or None, optional
@@ -956,6 +988,14 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
         ...                   errstyle="bars", ci=68, data=fmri)
+
+    Show experimental replicates instead of aggregating:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
+        ...                   units="subject", estimator=None, data=fmri)
 
     Use a quantitative color mapping:
 
