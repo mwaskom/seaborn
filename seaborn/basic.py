@@ -791,8 +791,10 @@ _basic_docs = dict(
     """),
     units=dedent("""\
     units : {long_form_var}
-        TODO
-        Grouping variable identifying sampling units. Currently has no effect.\
+        Grouping variable identifying sampling units. When used, a separate
+        line will be drawn for each unit with appropriate semantics, but no
+        legend entry will be added. Useful for showing distribution of
+        experimental replicates when exact identities are not needed.
     """),
     estimator=dedent("""\
     estimator : name of pandas method or callable or None, optional
@@ -983,6 +985,14 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
         ...                   errstyle="bars", ci=68, data=fmri)
+
+    Show experimental replicates instead of aggregating:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
+        ...                   units="subject", estimator=None, data=fmri)
 
     Use a quantitative color mapping:
 

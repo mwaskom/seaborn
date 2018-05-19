@@ -61,6 +61,18 @@ class TestBasicPlotter(object):
         ))
 
     @pytest.fixture
+    def repeated_df(self):
+
+        n = 100
+        rs = np.random.RandomState()
+        return pd.DataFrame(dict(
+            x=np.tile(np.arange(n // 2), 2),
+            y=rs.randn(n),
+            a=np.take(list("abc"), rs.randint(0, 3, n)),
+            u=np.repeat(np.arange(2), n // 2),
+        ))
+
+    @pytest.fixture
     def null_column(self):
 
         return pd.Series(index=np.arange(20))
@@ -325,6 +337,12 @@ class TestBasicPlotter(object):
         p.establish_variables(data=np.array([]))
         p.establish_variables(data=pd.DataFrame())
         p.establish_variables(x=[], y=[])
+
+    def test_units(self, repeated_df):
+
+        p = basic._BasicPlotter()
+        p.establish_variables(x="x", y="y", units="u", data=repeated_df)
+        assert np.array_equal(p.plot_data["units"], repeated_df["u"])
 
 
 class TestLinePlotter(TestBasicPlotter):
@@ -875,7 +893,7 @@ class TestLinePlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
 
-    def test_plot(self, long_df):
+    def test_plot(self, long_df, repeated_df):
 
         f, ax = plt.subplots()
 
@@ -968,6 +986,22 @@ class TestLinePlotter(TestBasicPlotter):
         assert len(ax.lines) == len(ax.collections) == len(p.hue_levels)
         for c in ax.collections:
             assert isinstance(c, mpl.collections.LineCollection)
+
+        p = basic._LinePlotter(x="x", y="y", data=repeated_df,
+                               units="u", estimator=None)
+
+        ax.clear()
+        p.plot(ax, {})
+        n_units = len(repeated_df["u"].unique())
+        assert len(ax.lines) == n_units
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=repeated_df,
+                               units="u", estimator=None)
+
+        ax.clear()
+        p.plot(ax, {})
+        n_units *= len(repeated_df["a"].unique())
+        assert len(ax.lines) == n_units
 
     def test_axis_labels(self, long_df):
 
