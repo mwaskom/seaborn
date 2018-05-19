@@ -1003,6 +1003,10 @@ class TestLinePlotter(TestBasicPlotter):
         n_units *= len(repeated_df["a"].unique())
         assert len(ax.lines) == n_units
 
+        p.estimator = "mean"
+        with pytest.raises(ValueError):
+            p.plot(ax, {})
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)

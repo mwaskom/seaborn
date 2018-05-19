@@ -577,6 +577,9 @@ class _LinePlotter(_BasicPlotter):
             x, y, units = data["x"], data["y"], data.get("units", None)
 
             if self.estimator is not None:
+                if self.units is not None:
+                    err = "estimator must be None when specifying units"
+                    raise ValueError(err)
                 x, y, y_ci = self.aggregate(y, x, units)
             else:
                 y_ci = None
