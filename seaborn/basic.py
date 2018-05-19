@@ -591,6 +591,7 @@ class _LinePlotter(_BasicPlotter):
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
+            line_capstyle = line.get_solid_capstyle()
             line.remove()
 
             if self.units is None:
@@ -619,6 +620,10 @@ class _LinePlotter(_BasicPlotter):
                     lines = LineCollection(ci_xy,
                                            color=line_color,
                                            alpha=line_alpha)
+                    try:
+                        lines.set_capstyle(line_capstyle)
+                    except AttributeError:
+                        pass
                     ax.add_collection(lines)
                     ax.autoscale_view()
 
@@ -644,6 +649,7 @@ class _LinePlotter(_BasicPlotter):
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
+        # TODO Use False or None?
         if verbosity not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
