@@ -344,9 +344,6 @@ class TestBasicPlotter(object):
         p.establish_variables(x="x", y="y", units="u", data=repeated_df)
         assert np.array_equal(p.plot_data["units"], repeated_df["u"])
 
-
-class TestLinePlotter(TestBasicPlotter):
-
     def test_parse_hue_null(self, wide_df, null_column):
 
         p = basic._LinePlotter(data=wide_df)
@@ -728,6 +725,9 @@ class TestLinePlotter(TestBasicPlotter):
             cols = ["x", "y"]
             expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
+
+
+class TestLinePlotter(TestBasicPlotter):
 
     def test_aggregate(self, long_df):
 

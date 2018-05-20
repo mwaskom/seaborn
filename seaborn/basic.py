@@ -284,49 +284,6 @@ class _BasicPlotter(object):
 
         return attrdict
 
-    def _empty_data(self, data):
-        """Test if a series is completely missing."""
-        return data.isnull().all()
-
-    def _semantic_type(self, data):
-        """Determine if data should considered numeric or categorical."""
-        if self.input_format == "wide":
-            return "categorical"
-        else:
-            try:
-                data.astype(np.float)
-                return "numeric"
-            except ValueError:
-                return "categorical"
-
-
-class _LinePlotter(_BasicPlotter):
-
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_limits=None,
-                 sizes=None, size_order=None, size_limits=None,
-                 dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
-                 sort=True, errstyle=None, legend=None):
-
-        plot_data = self.establish_variables(
-            x, y, hue, size, style, units, data
-        )
-
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
-        self.parse_style(plot_data["style"], markers, dashes, style_order)
-
-        self.sort = sort
-        self.estimator = estimator
-        self.ci = ci
-        self.n_boot = n_boot
-        self.errstyle = errstyle
-        self.units = units
-
-        self.legend = legend
-
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
         data = self.plot_data
@@ -498,6 +455,49 @@ class _LinePlotter(_BasicPlotter):
         self.style_levels = levels
         self.dashes = dashes
         self.markers = markers
+
+    def _empty_data(self, data):
+        """Test if a series is completely missing."""
+        return data.isnull().all()
+
+    def _semantic_type(self, data):
+        """Determine if data should considered numeric or categorical."""
+        if self.input_format == "wide":
+            return "categorical"
+        else:
+            try:
+                data.astype(np.float)
+                return "numeric"
+            except ValueError:
+                return "categorical"
+
+
+class _LinePlotter(_BasicPlotter):
+
+    def __init__(self,
+                 x=None, y=None, hue=None, size=None, style=None, data=None,
+                 palette=None, hue_order=None, hue_limits=None,
+                 sizes=None, size_order=None, size_limits=None,
+                 dashes=None, markers=None, style_order=None,
+                 units=None, estimator=None, ci=None, n_boot=None,
+                 sort=True, errstyle=None, legend=None):
+
+        plot_data = self.establish_variables(
+            x, y, hue, size, style, units, data
+        )
+
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_style(plot_data["style"], markers, dashes, style_order)
+
+        self.sort = sort
+        self.estimator = estimator
+        self.ci = ci
+        self.n_boot = n_boot
+        self.errstyle = errstyle
+        self.units = units
+
+        self.legend = legend
 
     def aggregate(self, vals, grouper, units=None):
         """Compute an estimate and confidence interval using grouper."""
@@ -714,11 +714,49 @@ class _LinePlotter(_BasicPlotter):
 
 class _ScatterPlotter(_BasicPlotter):
 
-    def __init__(self):
-        pass
+    def __init__(self,
+                 x=None, y=None, hue=None, size=None, style=None, data=None,
+                 palette=None, hue_order=None, hue_limits=None,
+                 sizes=None, size_order=None, size_limits=None,
+                 markers=None, style_order=None,
+                 x_bins=None, y_bins=None,
+                 units=None, estimator=None, ci=None, n_boot=None,
+                 alpha=None, x_jitter=None, y_jitter=None,
+                 legend=None):
 
-    def plot(self, ax=None):
-        pass
+        plot_data = self.establish_variables(
+            x, y, hue, size, style, units, data
+        )
+
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_style(plot_data["style"], markers, None, style_order)
+        self.units = units
+
+        self.legend = legend
+
+    def plot(self, ax, kws):
+
+        kws.setdefault("linewidth", .75)  # TODO scale with marker size?
+        kws.setdefault("edgecolor", "w")
+
+        data = self.plot_data
+
+        c = None if not self.palette else data["hue"].map(self.palette)
+        s = None if not self.sizes else data["size"].map(self.sizes)
+
+        points = ax.scatter(data["x"], data["y"], s=s, c=c, **kws)
+
+        paths = {}
+        for key, marker in self.markers.items():
+            # TODO move to parse style?
+            if not isinstance(marker, mpl.markers.MarkerStyle):
+                marker = mpl.markers.MarkerStyle(marker)
+            path = marker.get_path().transformed(marker.get_transform())
+            paths[key] = path
+
+        if paths:
+            points.set_paths(data["style"].map(paths))
 
 
 _basic_docs = dict(
@@ -1094,14 +1132,26 @@ lineplot.__doc__ = dedent("""\
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, hue_order=None, hue_limits=None,
-                markers=None, style_order=None,
                 sizes=None, size_order=None, size_limits=None,
+                markers=True, style_order=None,
                 x_bins=None, y_bins=None,
-                estimator=None, ci=95, n_boot=1000, units=None,
-                errstyle="bars", alpha="auto",
-                x_jitter=None, y_jitter=None,
+                units=None, estimator=None, ci=95, n_boot=1000,
+                alpha="auto", x_jitter=None, y_jitter=None,
                 ax=None, **kwargs):
 
-    # TODO auto alpha
+    p = _ScatterPlotter(
+        x=x, y=y, hue=hue, style=style, size=size, data=data,
+        palette=palette, hue_order=hue_order, hue_limits=hue_limits,
+        sizes=sizes, size_order=size_order,
+        markers=markers, style_order=style_order,
+        x_bins=x_bins, y_bins=y_bins,
+        estimator=estimator, ci=ci, n_boot=n_boot,
+        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter
+    )
 
-    pass
+    if ax is None:
+        ax = plt.gca()
+
+    p.plot(ax, kwargs)
+
+    return p, ax
