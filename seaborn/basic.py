@@ -397,8 +397,7 @@ class _BasicPlotter(object):
 
                 # Infer the range of sizes to use
                 if sizes is None:
-                    default = plt.rcParams["lines.linewidth"]
-                    min_width, max_width = default * .5, default * 2
+                    min_width, max_width = self._default_size_range
                 else:
                     try:
                         min_width, max_width = sizes
@@ -486,6 +485,10 @@ class _LinePlotter(_BasicPlotter):
             x, y, hue, size, style, units, data
         )
 
+        self._default_size_range = (
+            np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
+        )
+
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
@@ -546,14 +549,14 @@ class _LinePlotter(_BasicPlotter):
     def plot(self, ax, kws):
         """Draw the plot onto an axes, passing matplotlib kwargs."""
 
-        # Draw a test line, using the passed in kwargs. The goal here is to
+        # Draw a test plot, using the passed in kwargs. The goal here is to
         # honor both (a) the current state of the plot cycler and (b) the
         # specified kwargs on all the lines we will draw, overriding when
-        # relevant with the lineplot semantics. Note that we won't cycle
-        # internally; in other words, if ``hue`` is not used, all lines
-        # will have the same color, but they will have the color that
-        # ax.plot() would have used for a single line, and calling lineplot
-        # will advance the axes property cycle.
+        # relevant with the data semantics. Note that we won't cycle
+        # internally; in other words, if ``hue`` is not used, all elements will
+        # have the same color, but they will have the color that you would have
+        # gotten from the corresponding matplotlib function, and calling the
+        # function will advance the axes property cycle.
 
         scout, = ax.plot([], [], **kws)
 
@@ -728,6 +731,10 @@ class _ScatterPlotter(_BasicPlotter):
             x, y, hue, size, style, units, data
         )
 
+        self._default_size_range = (
+            np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
+        )
+
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, None, style_order)
@@ -735,17 +742,103 @@ class _ScatterPlotter(_BasicPlotter):
 
         self.legend = legend
 
+    def add_legend_data(self, ax):
+        """Add labeled artists to represent the different plot semantics."""
+        # TODO duplicating from LinePlotter; this can be substantially
+        # abstracted but it will be slightly trikcy
+        verbosity = self.legend
+        # TODO Use False or None?
+        if verbosity not in ["brief", "full"]:
+            err = "`legend` must be 'brief', 'full', or False"
+            raise ValueError(err)
+
+        keys = []
+        legend_data = {}
+
+        def update(var_name, val_name, **kws):
+
+            key = var_name, val_name
+            if key in legend_data:
+                legend_data[key].update(**kws)
+            else:
+                keys.append(key)
+                legend_data[key] = dict(**kws)
+
+        ticker = mpl.ticker.MaxNLocator(nbins=3)
+
+        # -- Add a legend for hue semantics
+
+        if verbosity == "brief" and self.hue_type == "numeric":
+            hue_levels = (ticker.tick_values(*self.hue_limits)
+                                .astype(self.plot_data["hue"].dtype))
+        else:
+            hue_levels = self.hue_levels
+
+        for level in hue_levels:
+            if level is not None:
+                color = self.color_lookup(level)
+                update(self.hue_label, level, color=color)
+
+        # -- Add a legend for size semantics
+
+        if verbosity == "brief" and self.size_type == "numeric":
+            size_levels = (ticker.tick_values(*self.size_limits)
+                                 .astype(self.plot_data["size"].dtype))
+        else:
+            size_levels = self.size_levels
+
+        for level in size_levels:
+            if level is not None:
+                s = self.size_lookup(level)
+                update(self.size_label, level, s=s)
+
+        # -- Add a legend for style semantics
+
+        for level in self.style_levels:
+            if level is not None:
+                update(self.style_label, level,
+                       marker=self.markers.get(level, ""))
+
+        for key in keys:
+            _, label = key
+            kws = legend_data[key]
+            kws.setdefault("color", ".2")
+            ax.scatter([], [], label=label, **kws)
+
     def plot(self, ax, kws):
+
+        # Draw a test plot, using the passed in kwargs. The goal here is to
+        # honor both (a) the current state of the plot cycler and (b) the
+        # specified kwargs on all the lines we will draw, overriding when
+        # relevant with the data semantics. Note that we won't cycle
+        # internally; in other words, if ``hue`` is not used, all elements will
+        # have the same color, but they will have the color that you would have
+        # gotten from the corresponding matplotlib function, and calling the
+        # function will advance the axes property cycle.
+
+        scout = ax.scatter([], [], **kws)
+        orig_s = kws.pop("s", scout.get_sizes())
+        orig_c = kws.pop("c", scout.get_facecolors())
+        scout.remove()
 
         kws.setdefault("linewidth", .75)  # TODO scale with marker size?
         kws.setdefault("edgecolor", "w")
 
+        # Assign arguments for plt.scatter and draw the plot
+
         data = self.plot_data
 
-        c = None if not self.palette else data["hue"].map(self.palette)
-        s = None if not self.sizes else data["size"].map(self.sizes)
+        x = data["x"]
+        y = data["y"]
+        c = orig_c if not self.palette else data["hue"].map(self.palette)
+        s = orig_s if not self.sizes else data["size"].map(self.sizes)
 
-        points = ax.scatter(data["x"], data["y"], s=s, c=c, **kws)
+        args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
+        points = ax.scatter(*args, **kws)
+
+        # Update the paths to get different marker shapes. This has to be
+        # done here because plt.scatter allows varying sizes and colors
+        # but only a single marker shape per call.
 
         paths = {}
         for key, marker in self.markers.items():
@@ -757,6 +850,23 @@ class _ScatterPlotter(_BasicPlotter):
 
         if paths:
             points.set_paths(data["style"].map(paths))
+
+        # Finalize the axes details
+
+        # TODO this should definitely go in its own method; see also lineplot
+        if self.x_label is not None:
+            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
+            ax.set_xlabel(self.x_label, visible=x_visible)
+        if self.y_label is not None:
+            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
+            ax.set_ylabel(self.y_label, visible=y_visible)
+
+        # Add legend
+        if self.legend:
+            self.add_legend_data(ax)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend()
 
 
 _basic_docs = dict(
@@ -1137,7 +1247,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 x_bins=None, y_bins=None,
                 units=None, estimator=None, ci=95, n_boot=1000,
                 alpha="auto", x_jitter=None, y_jitter=None,
-                ax=None, **kwargs):
+                legend="brief", ax=None, **kwargs):
 
     p = _ScatterPlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
@@ -1146,7 +1256,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
-        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter
+        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
     )
 
     if ax is None:
