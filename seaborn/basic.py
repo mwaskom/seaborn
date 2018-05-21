@@ -473,6 +473,15 @@ class _BasicPlotter(object):
             except ValueError:
                 return "categorical"
 
+    def label_axes(self, ax):
+        """Set x and y labels with visibility that matches the ticklabels."""
+        if self.x_label is not None:
+            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
+            ax.set_xlabel(self.x_label, visible=x_visible)
+        if self.y_label is not None:
+            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
+            ax.set_ylabel(self.y_label, visible=y_visible)
+
 
 class _LinePlotter(_BasicPlotter):
 
@@ -640,15 +649,8 @@ class _LinePlotter(_BasicPlotter):
                     err = "`errstyle` must by 'band' or 'bars', not {}"
                     raise ValueError(err.format(self.errstyle))
 
-        # TODO this should go in its own method?
-        if self.x_label is not None:
-            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.x_label, visible=x_visible)
-        if self.y_label is not None:
-            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.y_label, visible=y_visible)
-
-        # Add legend
+        # Finalize the axes details
+        self.label_axes(ax)
         if self.legend:
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
@@ -855,16 +857,7 @@ class _ScatterPlotter(_BasicPlotter):
             points.set_paths(data["style"].map(paths))
 
         # Finalize the axes details
-
-        # TODO this should definitely go in its own method; see also lineplot
-        if self.x_label is not None:
-            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.x_label, visible=x_visible)
-        if self.y_label is not None:
-            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.y_label, visible=y_visible)
-
-        # Add legend
+        self.label_axes(ax)
         if self.legend:
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
