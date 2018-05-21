@@ -854,7 +854,7 @@ class _ScatterPlotter(_BasicPlotter):
             paths[key] = path
 
         if paths:
-            points.set_paths(data["style"].map(paths))
+            points.set_paths(np.asarray(data["style"].map(paths)))
 
         # Finalize the axes details
         self.label_axes(ax)
