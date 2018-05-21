@@ -1,6 +1,7 @@
 from __future__ import division
 from itertools import product
 from textwrap import dedent
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -16,17 +17,19 @@ from .algorithms import bootstrap
 from .palettes import color_palette
 
 
-__all__ = ["lineplot"]
+__all__ = ["lineplot", "scatterplot"]
 
 
 class _BasicPlotter(object):
 
-    # TODO use different lists for mpl 1 and 2?
     # We could use "line art glyphs" (e.g. "P") on mpl 2
-    default_markers = ["o", "s", "D", "v", "^", "p"]
-    marker_scales = {"o": 1, "s": .85, "D": .9, "v": 1.3, "^": 1.3, "p": 1.25}
+    if LooseVersion(mpl.__version__) >= "2.0":
+        default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
+    else:
+        default_markers = ["o", "s", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
-                      (3, 1, 1.5, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
+                      (3, 1, 1.5, 1), (5, 1, 1, 1),
+                      (5, 1, 2, 1, 2, 1)]
 
     def establish_variables(self, x=None, y=None,
                             hue=None, size=None, style=None,
