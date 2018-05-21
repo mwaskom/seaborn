@@ -745,14 +745,14 @@ class _ScatterPlotter(_BasicPlotter):
         self.parse_style(plot_data["style"], markers, None, style_order)
         self.units = units
 
+        self.alpha = alpha
+
         self.legend = legend
 
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         # TODO duplicating from LinePlotter; this can be substantially
-        # abstracted but it will be slightly trikcy
         verbosity = self.legend
-        # TODO Use False or None?
         if verbosity not in ["brief", "full"]:
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
@@ -826,8 +826,12 @@ class _ScatterPlotter(_BasicPlotter):
         orig_c = kws.pop("c", scout.get_facecolors())
         scout.remove()
 
+        kws.pop("color", None)  # TODO is this optimal?
+
         kws.setdefault("linewidth", .75)  # TODO scale with marker size?
         kws.setdefault("edgecolor", "w")
+
+        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha  # TODO
 
         # Assign arguments for plt.scatter and draw the plot
 
