@@ -7,12 +7,11 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
 
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, get_color_cycle, sort_df
+from .utils import categorical_order, get_color_cycle, ci_to_errsize, sort_df
 from .algorithms import bootstrap
 from .palettes import color_palette
 
@@ -604,46 +603,48 @@ class _LinePlotter(_BasicPlotter):
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
 
-            # --- Draw the main line
-
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
             line_alpha = line.get_alpha()
             line_capstyle = line.get_solid_capstyle()
             line.remove()
 
-            if self.units is None:
+            # --- Draw the main line
 
-                line, = ax.plot(x.values, y.values, **kws)
+            x, y = np.asarray(x), np.asarray(y)
+
+            if self.units is None:
+                line, = ax.plot(x, y, **kws)
 
             else:
-
                 for u in units.unique():
-                    ax.plot(x[units == u].values, y[units == u].values, **kws)
+                    rows = np.asarray(units == u)
+                    ax.plot(x[rows], y[rows], **kws)
 
             # --- Draw the confidence intervals
+            # TODO we want some way to get kwargs to the error plotters
 
             if y_ci is not None:
 
+                low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
+
                 if self.errstyle == "band":
 
-                    ax.fill_between(x, y_ci["low"], y_ci["high"],
-                                    color=line_color, alpha=.2)
+                    ax.fill_between(x, low, high, color=line_color, alpha=.2)
 
                 elif self.errstyle == "bars":
 
-                    ci_xy = np.empty((len(x), 2, 2))
-                    ci_xy[:, :, 0] = x[:, np.newaxis]
-                    ci_xy[:, :, 1] = y_ci.values
-                    lines = LineCollection(ci_xy,
-                                           color=line_color,
-                                           alpha=line_alpha)
-                    try:
-                        lines.set_capstyle(line_capstyle)
-                    except AttributeError:
-                        pass
-                    ax.add_collection(lines)
-                    ax.autoscale_view()
+                    y_err = ci_to_errsize((low, high), y)
+                    ebars = ax.errorbar(x, y, y_err, linestyle="",
+                                        color=line_color, alpha=line_alpha)
+
+                    # Set the capstyle properly on the error bars
+                    for obj in ebars.get_children():
+                        try:
+                            obj.set_capstyle(line_capstyle)
+                        except AttributeError:
+                            # Does not exist on mpl < 2.2
+                            pass
 
                 else:
                     err = "`errstyle` must by 'band' or 'bars', not {}"
@@ -1012,7 +1013,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
 
 lineplot.__doc__ = dedent("""\
-    Draw a plot with numeric x and y values where the points are connected.
+    Draw a line plot with up to several semantic groupings.
 
     {main_api_narrative}
 
