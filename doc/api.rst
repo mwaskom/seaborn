@@ -31,6 +31,7 @@ Basic plots
     :toctree: generated
 
     lineplot
+    scatterplot
 
 .. _categorical_api:
 

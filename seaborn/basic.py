@@ -875,7 +875,7 @@ _basic_docs = dict(
         Limits in data units to use for the colormap applied to the ``hue``
         variable when it is numeric. Not relevant if it is categorical.\
     """),
-    sizes=dedent("""
+    sizes=dedent("""\
     sizes : list, dict, or tuple, optional
         An object that determines how sizes are chosen when ``size`` is used.
         It can always be a list of size values or a dict mapping levels of the
@@ -893,6 +893,14 @@ _basic_docs = dict(
     size_limits : tuple, optional
         Limits in data units to use for the size normalization when the
         ``size`` variable is numeric.\
+    """),
+    markers=dedent("""\
+    markers : boolean, list, or dictionary, optional
+        Object determining how to draw the markers for different levels of the
+        ``style`` variable. Setting to ``True`` will use default markers, or
+        you can pass a list of markers or a dictionary mapping levels of the
+        ``style`` variable to markers. Setting to ``False`` will draw
+        marker-less lines.  Markers are specified as in matplotlib.\
     """),
     style_order=dedent("""\
     style_order : list, optional
@@ -972,7 +980,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
 
 lineplot.__doc__ = dedent("""\
-    Draw a line plot with up to several semantic groupings.
+    Draw a line plot with possibility of several semantic groupings.
 
     {main_api_narrative}
 
@@ -988,7 +996,7 @@ lineplot.__doc__ = dedent("""\
         Can be either categorical or numeric, although color mapping will
         behave differently in latter case.
     size : {long_form_var}
-        Gropuing variable that will produce lines with different widths.
+        Grouping variable that will produce lines with different widths.
         Can be either categorical or numeric, although size mapping will
         behave differently in latter case.
     style : {long_form_var}
@@ -1009,12 +1017,7 @@ lineplot.__doc__ = dedent("""\
         ``style`` variable to dash codes. Setting to ``False`` will use solid
         lines for all subsets. Dashes are specified as in matplotlib: a tuple
         of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
-    markers : boolean, list, or dictionary, optional
-        Object determining how to draw the markers for different levels of the
-        ``style`` variable. Setting to ``True`` will use default markers, or
-        you can pass a list of markers or a dictionary mapping levels of the
-        ``style`` variable to markers. Setting to ``False`` will draw
-        marker-less lines.  Markers are specified as in matplotlib.
+    {markers}
     {style_order}
     {units}
     {estimator}
@@ -1228,11 +1231,191 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
 
 scatterplot.__doc__ = dedent("""\
-    Draw a scatterplot with up to several semantic groupings.
+    Draw a scatter plot with possibility of several semantic groupings.
 
     {main_api_narrative}
 
     Parameters
     ----------
+    {data_vars}
+    hue : {long_form_var}
+        Grouping variable that will produce points with different colors.
+        Can be either categorical or numeric, although color mapping will
+        behave differently in latter case.
+    size : {long_form_var}
+        Grouping variable that will produce points with different sizes.
+        Can be either categorical or numeric, although size mapping will
+        behave differently in latter case.
+    style : {long_form_var}
+        Grouping variable that will produce points with different markers.
+        Can have a numeric dtype but will always be treated as categorical.
+    {data}
+    {palette}
+    {hue_order}
+    {hue_limits}
+    {sizes}
+    {size_order}
+    {size_limits}
+    {markers}
+    {style_order}
+    {{x,y}}_bins : lists or arrays or functions
+        *Currently non-functional.*
+    {units}
+        *Currently non-functional.*
+    {estimator}
+        *Currently non-functional.*
+    {ci}
+        *Currently non-functional.*
+    {n_boot}
+        *Currently non-functional.*
+    alpha : float
+        Proportional opacity of the points.
+    {{x,y}}_jitter : booleans or floats
+        *Currently non-functional.*
+    {legend}
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed down to ``plt.scatter`` at draw
+        time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    lineplot : Show the relationship between two variables connected with
+               lines to emphasize continuity.
+    swarmplot : Draw a scatter plot with one categorical variable, arranging
+                the points to show the distribution of values.
+
+    Examples
+    --------
+
+    Draw a simple scatter plot between two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> import matplotlib.pyplot as plt
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", data=tips)
+
+    Group by another variable and show the groups with different colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", hue="time",
+        ...                      data=tips)
+
+    Show the grouping variable by varying both color and marker:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="time", style="time", data=tips)
+
+    Vary colors and markers to show two different grouping variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="day", style="time", data=tips)
+
+    Show a quantitative variable by varying the size of the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", size="size",
+        ...                      data=tips)
+
+    Also show the quantitative variable by also using continuous colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      data=tips)
+
+    Use a different continuous color map:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      palette=cmap,
+        ...                      data=tips)
+
+    Change the minimum and maximum point size and show all sizes in legend:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      sizes=(20, 200), palette=cmap,
+        ...                      legend="full", data=tips)
+
+    Use a narrower range of color map intensities:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      sizes=(20, 200), hue_limits=(0, 7),
+        ...                      legend="full", data=tips)
+
+    Vary the size with a categorical variable, and use a different palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="day", size="smoker",
+        ...                      palette="Set2",
+        ...                      data=tips)
+
+    Use a specific set of markers:
+
+    .. plot::
+        :context: close-figs
+
+        >>> markers = {{"Lunch": "s", "Dinner": "X"}}
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", style="time",
+        ...                      markers=markers,
+        ...                      data=tips)
+
+    Pass data vectors instead of names in a data frame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> ax = sns.scatterplot(x=iris.sepal_length, y=iris.sepal_width,
+        ...                      hue=iris.species, style=iris.species)
+
+    Pass a wide-form dataset and plot against its index:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np, pandas as pd; plt.close("all")
+        >>> index = pd.date_range("1 1 2000", periods=100,
+        ...                       freq="m", name="date")
+        >>> data = np.random.randn(100, 4).cumsum(axis=0)
+        >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
+        >>> ax = sns.scatterplot(data=wide_df)
 
     """).format(**_basic_docs)
