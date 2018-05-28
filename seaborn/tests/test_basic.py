@@ -984,7 +984,7 @@ class TestLinePlotter(TestBasicPlotter):
         ax.clear()
         p.plot(ax, {})
         # assert len(ax.lines) / 2 == len(ax.collections) == len(p.hue_levels)
-        # The # of lines is different on mpl 1.4 but I can't install to debug
+        # The lines are different on mpl 1.4 but I can't install to debug
         assert len(ax.collections) == len(p.hue_levels)
         for c in ax.collections:
             assert isinstance(c, mpl.collections.LineCollection)
@@ -1085,3 +1085,134 @@ class TestLinePlotter(TestBasicPlotter):
 
         basic.lineplot(x="x", y="y", hue="a", size="s", data=long_df)
         ax.clear()
+
+
+class TestScatterPlotter(TestBasicPlotter):
+
+    def scatter_rgbs(self, collections):
+        rgbs = []
+        for col in collections:
+            rgb = tuple(col.get_facecolor().squeeze()[:3])
+            rgbs.append(rgb)
+        return rgbs
+
+    def colors_equal(self, *args):
+
+        equal = True
+        for c1, c2 in zip(*args):
+            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            equal &= c1 == c2
+        return equal
+
+    def paths_equal(self, *args):
+
+        equal = True
+        for p1, p2 in zip(*args):
+            equal &= np.array_equal(p1.vertices, p2.vertices)
+            equal &= np.array_equal(p1.codes, p2.codes)
+        return equal
+
+    def test_legend_data(self, long_df):
+
+        m = mpl.markers.MarkerStyle("o")
+        default_marker = m.get_path().transformed(m.get_transform())
+
+        f, ax = plt.subplots()
+
+        p = basic._ScatterPlotter(x="x", y="y", data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, _ = ax.get_legend_handles_labels()
+        assert handles == []
+
+        # --
+
+        ax.clear()
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", data=long_df,
+                                  legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_facecolors()[0] for h in handles]
+        assert labels == p.hue_levels
+        assert self.colors_equal(colors, [p.palette[l] for l in labels])
+
+        # --
+
+        ax.clear()
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="a",
+                                  markers=True, legend="full", data=long_df)
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_facecolors()[0] for h in handles]
+        paths = [h.get_paths()[0] for h in handles]
+        assert labels == p.hue_levels == p.style_levels
+        assert self.colors_equal(colors, [p.palette[l] for l in labels])
+        assert self.paths_equal(paths, [p.paths[l] for l in labels])
+
+        # --
+
+        ax.clear()
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="b",
+                                  markers=True, legend="full", data=long_df)
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_facecolors()[0] for h in handles]
+        paths = [h.get_paths()[0] for h in handles]
+        expected_colors = ([p.palette[l] for l in p.hue_levels]
+                           + [".2" for _ in p.style_levels])
+        expected_paths = ([default_marker for _ in p.hue_levels]
+                          + [p.paths[l] for l in p.style_levels])
+        assert labels == p.hue_levels + p.style_levels
+        assert self.colors_equal(colors, expected_colors)
+        assert self.paths_equal(paths, expected_paths)
+
+        # --
+
+        ax.clear()
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", size="a",
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_facecolors()[0] for h in handles]
+        sizes = [h.get_sizes()[0] for h in handles]
+        assert labels == p.hue_levels == p.size_levels
+        assert self.colors_equal(colors, [p.palette[l] for l in labels])
+        assert sizes == [p.sizes[l] for l in labels]
+
+        # --
+
+        x, y = np.random.randn(2, 40)
+        z = np.tile(np.arange(20), 2)
+
+        p = basic._ScatterPlotter(x=x, y=y, hue=z)
+
+        ax.clear()
+        p.legend = "full"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == [str(l) for l in p.hue_levels]
+
+        ax.clear()
+        p.legend = "brief"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) == 4
+
+        p = basic._ScatterPlotter(x=x, y=y, size=z)
+
+        ax.clear()
+        p.legend = "full"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == [str(l) for l in p.size_levels]
+
+        ax.clear()
+        p.legend = "brief"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) == 4
+
+        ax.clear()
+        p.legend = "bad_value"
+        with pytest.raises(ValueError):
+            p.add_legend_data(ax)
