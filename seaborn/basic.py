@@ -481,8 +481,77 @@ class _BasicPlotter(object):
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
             ax.set_ylabel(self.y_label, visible=y_visible)
 
+    def add_legend_data(self, ax):
+        """Add labeled artists to represent the different plot semantics."""
+        verbosity = self.legend
+        if verbosity not in ["brief", "full"]:
+            err = "`legend` must be 'brief', 'full', or False"
+            raise ValueError(err)
+
+        keys = []
+        legend_data = {}
+
+        def update(var_name, val_name, **kws):
+
+            key = var_name, val_name
+            if key in legend_data:
+                legend_data[key].update(**kws)
+            else:
+                keys.append(key)
+                legend_data[key] = dict(**kws)
+
+        ticker = mpl.ticker.MaxNLocator(nbins=3)
+
+        # -- Add a legend for hue semantics
+
+        if verbosity == "brief" and self.hue_type == "numeric":
+            hue_levels = (ticker.tick_values(*self.hue_limits)
+                                .astype(self.plot_data["hue"].dtype))
+        else:
+            hue_levels = self.hue_levels
+
+        for level in hue_levels:
+            if level is not None:
+                color = self.color_lookup(level)
+                update(self.hue_label, level, color=color)
+
+        # -- Add a legend for size semantics
+
+        if verbosity == "brief" and self.size_type == "numeric":
+            size_levels = (ticker.tick_values(*self.size_limits)
+                                 .astype(self.plot_data["size"].dtype))
+        else:
+            size_levels = self.size_levels
+
+        for level in size_levels:
+            if level is not None:
+                size = self.size_lookup(level)
+                update(self.size_label, level, linewidth=size, s=size)
+
+        # -- Add a legend for style semantics
+
+        for level in self.style_levels:
+            if level is not None:
+                update(self.style_label, level,
+                       marker=self.markers.get(level, ""),
+                       dashes=self.dashes.get(level, ""))
+
+        func = getattr(ax, self._legend_func)
+        for key in keys:
+            _, label = key
+            kws = legend_data[key]
+            kws.setdefault("color", ".2")
+            use_kws = {}
+            for attr in self._legend_attributes:
+                if attr in kws:
+                    use_kws[attr] = kws[attr]
+            func([], [], label=label, **use_kws)
+
 
 class _LinePlotter(_BasicPlotter):
+
+    _legend_attributes = ["color", "linewidth", "marker", "dashes"]
+    _legend_func = "plot"
 
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
@@ -658,70 +727,11 @@ class _LinePlotter(_BasicPlotter):
             if handles:
                 ax.legend()
 
-    def add_legend_data(self, ax):
-        """Add labeled artists to represent the different plot semantics."""
-        verbosity = self.legend
-        # TODO Use False or None?
-        if verbosity not in ["brief", "full"]:
-            err = "`legend` must be 'brief', 'full', or False"
-            raise ValueError(err)
-
-        keys = []
-        legend_data = {}
-
-        def update(var_name, val_name, **kws):
-
-            key = var_name, val_name
-            if key in legend_data:
-                legend_data[key].update(**kws)
-            else:
-                keys.append(key)
-                legend_data[key] = dict(**kws)
-
-        ticker = mpl.ticker.MaxNLocator(nbins=3)
-
-        # -- Add a legend for hue semantics
-
-        if verbosity == "brief" and self.hue_type == "numeric":
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
-        else:
-            hue_levels = self.hue_levels
-
-        for level in hue_levels:
-            if level is not None:
-                color = self.color_lookup(level)
-                update(self.hue_label, level, color=color)
-
-        # -- Add a legend for size semantics
-
-        if verbosity == "brief" and self.size_type == "numeric":
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
-        else:
-            size_levels = self.size_levels
-
-        for level in size_levels:
-            if level is not None:
-                linewidth = self.size_lookup(level)
-                update(self.size_label, level, linewidth=linewidth)
-
-        # -- Add a legend for style semantics
-
-        for level in self.style_levels:
-            if level is not None:
-                update(self.style_label, level,
-                       marker=self.markers.get(level, ""),
-                       dashes=self.dashes.get(level, ""))
-
-        for key in keys:
-            _, label = key
-            kws = legend_data[key]
-            kws.setdefault("color", ".2")
-            ax.plot([], [], label=label, **kws)
-
 
 class _ScatterPlotter(_BasicPlotter):
+
+    _legend_attributes = ["color", "s", "marker"]
+    _legend_func = "scatter"
 
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
@@ -749,67 +759,6 @@ class _ScatterPlotter(_BasicPlotter):
         self.alpha = alpha
 
         self.legend = legend
-
-    def add_legend_data(self, ax):
-        """Add labeled artists to represent the different plot semantics."""
-        # TODO duplicating from LinePlotter; this can be substantially
-        verbosity = self.legend
-        if verbosity not in ["brief", "full"]:
-            err = "`legend` must be 'brief', 'full', or False"
-            raise ValueError(err)
-
-        keys = []
-        legend_data = {}
-
-        def update(var_name, val_name, **kws):
-
-            key = var_name, val_name
-            if key in legend_data:
-                legend_data[key].update(**kws)
-            else:
-                keys.append(key)
-                legend_data[key] = dict(**kws)
-
-        ticker = mpl.ticker.MaxNLocator(nbins=3)
-
-        # -- Add a legend for hue semantics
-
-        if verbosity == "brief" and self.hue_type == "numeric":
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
-        else:
-            hue_levels = self.hue_levels
-
-        for level in hue_levels:
-            if level is not None:
-                color = self.color_lookup(level)
-                update(self.hue_label, level, color=color)
-
-        # -- Add a legend for size semantics
-
-        if verbosity == "brief" and self.size_type == "numeric":
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
-        else:
-            size_levels = self.size_levels
-
-        for level in size_levels:
-            if level is not None:
-                s = self.size_lookup(level)
-                update(self.size_label, level, s=s)
-
-        # -- Add a legend for style semantics
-
-        for level in self.style_levels:
-            if level is not None:
-                update(self.style_label, level,
-                       marker=self.markers.get(level, ""))
-
-        for key in keys:
-            _, label = key
-            kws = legend_data[key]
-            kws.setdefault("color", ".2")
-            ax.scatter([], [], label=label, **kws)
 
     def plot(self, ax, kws):
 
