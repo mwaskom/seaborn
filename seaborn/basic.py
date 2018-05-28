@@ -453,9 +453,16 @@ class _BasicPlotter(object):
                 levels, dashes, self.default_dashes, "dashes"
             )
 
+        paths = {}
+        for k, m in markers.items():
+            if not isinstance(m, mpl.markers.MarkerStyle):
+                m = mpl.markers.MarkerStyle(m)
+            paths[k] = m.get_path().transformed(m.get_transform())
+
         self.style_levels = levels
         self.dashes = dashes
         self.markers = markers
+        self.paths = paths
 
     def _empty_data(self, data):
         """Test if a series is completely missing."""
@@ -799,16 +806,8 @@ class _ScatterPlotter(_BasicPlotter):
         # done here because plt.scatter allows varying sizes and colors
         # but only a single marker shape per call.
 
-        paths = {}
-        for key, marker in self.markers.items():
-            # TODO move to parse style?
-            if not isinstance(marker, mpl.markers.MarkerStyle):
-                marker = mpl.markers.MarkerStyle(marker)
-            path = marker.get_path().transformed(marker.get_transform())
-            paths[key] = path
-
-        if paths:
-            points.set_paths(np.asarray(data["style"].map(paths)))
+        if self.paths:
+            points.set_paths(np.asarray(data["style"].map(self.paths)))
 
         # Finalize the axes details
         self.label_axes(ax)
