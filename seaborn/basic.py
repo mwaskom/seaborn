@@ -796,7 +796,18 @@ class _ScatterPlotter(_BasicPlotter):
 
         x = data["x"]
         y = data["y"]
+
         c = orig_c if not self.palette else data["hue"].map(self.palette)
+        if LooseVersion(mpl.__version__) < "2.0":
+
+            # The runs into some problems on older mpls because a Series full
+            # of (float) tuples gets propagated to an object array and mpl
+            # raises a variety of errors on older versions Seems sorted out in
+            # mpl 2+, and can be removed when dropping support for mpl 1.x
+
+            if isinstance(c, pd.Series):
+                c = c.map(mpl.colors.colorConverter.to_rgb)
+                c = np.array([rgb for rgb in c])
         s = orig_s if not self.sizes else data["size"].map(self.sizes)
 
         args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
