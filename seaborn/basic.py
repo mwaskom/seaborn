@@ -1213,4 +1213,15 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
     p.plot(ax, kwargs)
 
-    return p, ax
+    return ax
+
+
+scatterplot.__doc__ = dedent("""\
+    Draw a scatterplot with up to several semantic groupings.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+
+    """).format(**_basic_docs)

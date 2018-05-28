@@ -1216,3 +1216,132 @@ class TestScatterPlotter(TestBasicPlotter):
         p.legend = "bad_value"
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
+
+    def test_plot(self, long_df, repeated_df):
+
+        f, ax = plt.subplots()
+
+        p = basic._ScatterPlotter(x="x", y="y", data=long_df)
+
+        p.plot(ax, {})
+        points = ax.collections[0]
+        assert np.array_equal(points.get_offsets(), long_df[["x", "y"]].values)
+
+        ax.clear()
+        p.plot(ax, {"color": "k", "label": "test"})
+        points = ax.collections[0]
+        assert self.colors_equal(points.get_facecolor(), "k")
+        assert points.get_label() == "test"
+
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        points = ax.collections[0]
+        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        assert self.colors_equal(points.get_facecolors(), expected_colors)
+
+        p = basic._ScatterPlotter(x="x", y="y", size="a", data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        points = ax.collections[0]
+        expected_sizes = [p.size_lookup(k) for k in p.plot_data["size"]]
+        assert np.array_equal(points.get_sizes(), expected_sizes)
+
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="a",
+                                  markers=True, data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        expected_paths = [p.paths[k] for k in p.plot_data["style"]]
+        assert self.colors_equal(points.get_facecolors(), expected_colors)
+        assert self.paths_equal(points.get_paths(), expected_paths)
+
+        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="b",
+                                  markers=True, data=long_df)
+
+        ax.clear()
+        p.plot(ax, {})
+        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        expected_paths = [p.paths[k] for k in p.plot_data["style"]]
+        assert self.colors_equal(points.get_facecolors(), expected_colors)
+        assert self.paths_equal(points.get_paths(), expected_paths)
+
+    def test_axis_labels(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+
+        p = basic._ScatterPlotter(x="x", y="y", data=long_df)
+
+        p.plot(ax1, {})
+        assert ax1.get_xlabel() == "x"
+        assert ax1.get_ylabel() == "y"
+
+        p.plot(ax2, {})
+        assert ax2.get_xlabel() == "x"
+        assert ax2.get_ylabel() == "y"
+        assert not ax2.yaxis.label.get_visible()
+
+    def test_scatterplot_axes(self, wide_df):
+
+        f1, ax1 = plt.subplots()
+        f2, ax2 = plt.subplots()
+
+        ax = basic.scatterplot(data=wide_df)
+        assert ax is ax2
+
+        ax = basic.scatterplot(data=wide_df, ax=ax1)
+        assert ax is ax1
+
+    def test_scatterplot_smoke(self, flat_array, flat_series,
+                               wide_array, wide_list, wide_list_of_series,
+                               wide_df, long_df):
+
+        f, ax = plt.subplots()
+
+        basic.scatterplot(data=flat_array)
+        ax.clear()
+
+        basic.scatterplot(data=flat_series)
+        ax.clear()
+
+        basic.scatterplot(data=wide_array)
+        ax.clear()
+
+        basic.scatterplot(data=wide_list)
+        ax.clear()
+
+        basic.scatterplot(data=wide_list_of_series)
+        ax.clear()
+
+        basic.scatterplot(data=wide_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x=long_df.x, y=long_df.y)
+        ax.clear()
+
+        basic.scatterplot(x=long_df.x, y="y", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y=long_df.y.values, data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", style="a", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", style="b", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", size="a", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", size="s", data=long_df)
+        ax.clear()
