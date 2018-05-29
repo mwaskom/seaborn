@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, get_color_cycle, ci_to_errsize, sort_df
+from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
+                    remove_na)
 from .algorithms import bootstrap
 from .palettes import color_palette
 
@@ -171,12 +172,20 @@ class _BasicPlotter(object):
             if attr not in plot_data:
                 plot_data[attr] = None
 
+        # Determine which semantics have (some) data
+        plot_valid = plot_data.notnull().any()
+        semantics = [
+            name for name in ["x", "y", "hue", "size", "style"]
+            if plot_valid[name]
+        ]
+
         self.x_label = x_label
         self.y_label = y_label
         self.hue_label = hue_label
         self.size_label = size_label
         self.style_label = style_label
         self.plot_data = plot_data
+        self.semantics = semantics
 
         return plot_data
 
@@ -220,7 +229,7 @@ class _BasicPlotter(object):
 
     def numeric_to_palette(self, data, order, palette, limits):
         """Determine colors when the hue variable is quantitative."""
-        levels = list(np.sort(data.unique()))
+        levels = list(np.sort(remove_na(data.unique())))
 
         # TODO do we want to do something complicated to ensure contrast
         # at the extremes of the colormap against the background?
@@ -373,7 +382,7 @@ class _BasicPlotter(object):
                 levels = categorical_order(data)
                 numbers = np.arange(0, len(levels))[::-1]
             elif var_type == "numeric":
-                levels = numbers = np.sort(data.unique())
+                levels = numbers = np.sort(remove_na(data.unique()))
 
             if isinstance(sizes, (dict, list)):
 
@@ -476,7 +485,7 @@ class _BasicPlotter(object):
             try:
                 data.astype(np.float)
                 return "numeric"
-            except ValueError:
+            except (ValueError, TypeError):
                 return "categorical"
 
     def label_axes(self, ax):
@@ -779,8 +788,8 @@ class _ScatterPlotter(_BasicPlotter):
         # function will advance the axes property cycle.
 
         scout = ax.scatter([], [], **kws)
-        orig_s = kws.pop("s", scout.get_sizes())
-        orig_c = kws.pop("c", scout.get_facecolors())
+        s = kws.pop("s", scout.get_sizes())
+        c = kws.pop("c", scout.get_facecolors())
         scout.remove()
 
         kws.pop("color", None)  # TODO is this optimal?
@@ -788,27 +797,24 @@ class _ScatterPlotter(_BasicPlotter):
         kws.setdefault("linewidth", .75)  # TODO scale with marker size?
         kws.setdefault("edgecolor", "w")
 
-        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha  # TODO
+        # TODO this makes it impossible to vary alpha with hue which might
+        # otherwise be useful? Should we just pass None?
+        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
 
         # Assign arguments for plt.scatter and draw the plot
 
-        data = self.plot_data
+        data = self.plot_data[self.semantics].dropna()
+        if not data.size:
+            return
 
         x = data["x"]
         y = data["y"]
 
-        c = orig_c if not self.palette else data["hue"].map(self.palette)
-        if LooseVersion(mpl.__version__) < "2.0":
+        if self.palette:
+            c = [self.palette.get(x) for x in data["hue"]]
 
-            # The runs into some problems on older mpls because a Series full
-            # of (float) tuples gets propagated to an object array and mpl
-            # raises a variety of errors on older versions Seems sorted out in
-            # mpl 2+, and can be removed when dropping support for mpl 1.x
-
-            if isinstance(c, pd.Series):
-                c = c.map(mpl.colors.colorConverter.to_rgb)
-                c = np.array([rgb for rgb in c])
-        s = orig_s if not self.sizes else data["size"].map(self.sizes)
+        if self.sizes:
+            s = [self.sizes.get(x) for x in data["size"]]
 
         args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
         points = ax.scatter(*args, **kws)
@@ -818,7 +824,8 @@ class _ScatterPlotter(_BasicPlotter):
         # but only a single marker shape per call.
 
         if self.paths:
-            points.set_paths(np.asarray(data["style"].map(self.paths)))
+            p = [self.paths.get(x) for x in data["style"]]
+            points.set_paths(p)
 
         # Finalize the axes details
         self.label_axes(ax)
@@ -1106,7 +1113,8 @@ lineplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
-        ...                   units="subject", estimator=None, data=fmri)
+        ...                   units="subject", estimator=None, lw=1,
+        ...                   data=fmri.query("region == 'frontal'"))
 
     Use a quantitative color mapping:
 

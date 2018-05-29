@@ -73,6 +73,23 @@ class TestBasicPlotter(object):
         ))
 
     @pytest.fixture
+    def missing_df(self):
+
+        n = 100
+        rs = np.random.RandomState()
+        df = pd.DataFrame(dict(
+            x=rs.randint(0, 20, n),
+            y=rs.randn(n),
+            a=np.take(list("abc"), rs.randint(0, 3, n)),
+            b=np.take(list("mnop"), rs.randint(0, 4, n)),
+            s=np.take([2, 4, 8], rs.randint(0, 3, n)),
+        ))
+        for col in df:
+            idx = rs.permutation(df.index)[:10]
+            df.loc[idx, col] = np.nan
+        return df
+
+    @pytest.fixture
     def null_column(self):
 
         return pd.Series(index=np.arange(20))
@@ -82,6 +99,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=wide_df)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_df.shape)
 
         x = p.plot_data["x"]
@@ -121,6 +139,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=wide_array)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_array.shape)
 
         nrow, ncol = wide_array.shape
@@ -154,6 +173,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=flat_array)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y"]
         assert len(p.plot_data) == np.product(flat_array.shape)
 
         x = p.plot_data["x"]
@@ -179,6 +199,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=flat_series)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y"]
         assert len(p.plot_data) == len(flat_series)
 
         x = p.plot_data["x"]
@@ -200,6 +221,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=wide_list)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == sum(len(l) for l in wide_list)
 
         x = p.plot_data["x"]
@@ -233,6 +255,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(data=wide_list_of_series)
         assert p.input_format == "wide"
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == sum(len(l) for l in wide_list_of_series)
 
         x = p.plot_data["x"]
@@ -266,6 +289,7 @@ class TestBasicPlotter(object):
         p = basic._BasicPlotter()
         p.establish_variables(x="x", y="y", data=long_df)
         assert p.input_format == "long"
+        assert p.semantics == ["x", "y"]
 
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
@@ -277,16 +301,19 @@ class TestBasicPlotter(object):
         assert p.style_label is None
 
         p.establish_variables(x=long_df.x, y="y", data=long_df)
+        assert p.semantics == ["x", "y"]
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
         assert (p.x_label, p.y_label) == ("x", "y")
 
         p.establish_variables(x="x", y=long_df.y, data=long_df)
+        assert p.semantics == ["x", "y"]
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
         assert (p.x_label, p.y_label) == ("x", "y")
 
         p.establish_variables(x="x", y="y", hue="a", data=long_df)
+        assert p.semantics == ["x", "y", "hue"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         for col in ["style", "size"]:
             assert p.plot_data[col].isnull().all()
@@ -294,6 +321,7 @@ class TestBasicPlotter(object):
         assert p.size_label is None and p.style_label is None
 
         p.establish_variables(x="x", y="y", hue="a", style="a", data=long_df)
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         assert np.array_equal(p.plot_data["style"], long_df["a"])
         assert p.plot_data["size"].isnull().all()
@@ -301,11 +329,13 @@ class TestBasicPlotter(object):
         assert p.size_label is None
 
         p.establish_variables(x="x", y="y", hue="a", style="b", data=long_df)
+        assert p.semantics == ["x", "y", "hue", "style"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         assert np.array_equal(p.plot_data["style"], long_df["b"])
         assert p.plot_data["size"].isnull().all()
 
         p.establish_variables(x="x", y="y", size="y", data=long_df)
+        assert p.semantics == ["x", "y", "size"]
         assert np.array_equal(p.plot_data["size"], long_df["y"])
         assert p.size_label == "y"
         assert p.hue_label is None and p.style_label is None
@@ -1037,7 +1067,7 @@ class TestLinePlotter(TestBasicPlotter):
 
     def test_lineplot_smoke(self, flat_array, flat_series,
                             wide_array, wide_list, wide_list_of_series,
-                            wide_df, long_df):
+                            wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
 
@@ -1080,10 +1110,22 @@ class TestLinePlotter(TestBasicPlotter):
         basic.lineplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
+        basic.lineplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        ax.clear()
+
         basic.lineplot(x="x", y="y", hue="a", size="a", data=long_df)
         ax.clear()
 
         basic.lineplot(x="x", y="y", hue="a", size="s", data=long_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        ax.clear()
+
+        basic.lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
 
 
@@ -1297,7 +1339,7 @@ class TestScatterPlotter(TestBasicPlotter):
 
     def test_scatterplot_smoke(self, flat_array, flat_series,
                                wide_array, wide_list, wide_list_of_series,
-                               wide_df, long_df):
+                               wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
 
@@ -1340,8 +1382,20 @@ class TestScatterPlotter(TestBasicPlotter):
         basic.scatterplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
+        basic.scatterplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        ax.clear()
+
         basic.scatterplot(x="x", y="y", hue="a", size="a", data=long_df)
         ax.clear()
 
         basic.scatterplot(x="x", y="y", hue="a", size="s", data=long_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        ax.clear()
+
+        basic.scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
