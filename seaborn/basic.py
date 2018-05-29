@@ -811,10 +811,10 @@ class _ScatterPlotter(_BasicPlotter):
         y = data["y"]
 
         if self.palette:
-            c = [self.palette.get(x) for x in data["hue"]]
+            c = [self.palette.get(val) for val in data["hue"]]
 
         if self.sizes:
-            s = [self.sizes.get(x) for x in data["size"]]
+            s = [self.sizes.get(val) for val in data["size"]]
 
         args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
         points = ax.scatter(*args, **kws)
@@ -824,7 +824,7 @@ class _ScatterPlotter(_BasicPlotter):
         # but only a single marker shape per call.
 
         if self.paths:
-            p = [self.paths.get(x) for x in data["style"]]
+            p = [self.paths.get(val) for val in data["style"]]
             points.set_paths(p)
 
         # Finalize the axes details
