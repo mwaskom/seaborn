@@ -6,7 +6,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
-from matplotlib.cbook import normalize_kwargs
 from matplotlib.collections import LineCollection
 import warnings
 from distutils.version import LooseVersion
@@ -697,10 +696,10 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     a = np.asarray(a)
     vertical = kwargs.pop("vertical", axis == "y")
 
-    alias_map = dict(
-        linewidth=["lw"], linestyle=["ls"], color=["c"]
-    )
-    kwargs = normalize_kwargs(kwargs, alias_mapping=alias_map)
+    alias_map = dict(linewidth="lw", linestyle="ls", color="c")
+    for attr, alias in alias_map.items():
+        if alias in kwargs:
+            kwargs[attr] = kwargs.pop(alias)
     kwargs.setdefault("linewidth", 1)
 
     if vertical:
