@@ -176,3 +176,13 @@ class TestRugPlot(object):
         dist.rugplot(data, vertical=True)
         c1, c2 = ax.collections
         assert np.array_equal(c1.get_segments(), c2.get_segments())
+        plt.close(f)
+
+        f, ax = plt.subplots()
+        dist.rugplot(data)
+        dist.rugplot(data, lw=2)
+        dist.rugplot(data, linewidth=3, alpha=.5)
+        for c, lw in zip(ax.collections, [1, 2, 3]):
+            assert np.squeeze(c.get_linewidth()).item() == lw
+        assert c.get_alpha() == .5
+        plt.close(f)
