@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
+from matplotlib.cbook import normalize_kwargs
 from matplotlib.collections import LineCollection
 import warnings
 from distutils.version import LooseVersion
@@ -695,6 +696,11 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
         ax = plt.gca()
     a = np.asarray(a)
     vertical = kwargs.pop("vertical", axis == "y")
+
+    alias_map = dict(
+        linewidth=["lw"], linestyle=["ls"], color=["c"]
+    )
+    kwargs = normalize_kwargs(kwargs, alias_mapping=alias_map)
     kwargs.setdefault("linewidth", 1)
 
     if vertical:
@@ -705,8 +711,8 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
         trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
         xy_pairs = np.column_stack([np.repeat(a, 2),
                                     np.tile([0, height], len(a))])
-
     line_segs = xy_pairs.reshape([len(a), 2, 2])
     ax.add_collection(LineCollection(line_segs, transform=trans, **kwargs))
+    ax.autoscale_view()
 
     return ax
