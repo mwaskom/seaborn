@@ -3557,7 +3557,8 @@ factorplot.__doc__ = dedent("""\
 
     The default plot that is shown is a point plot, but other seaborn
     categorical plots can be chosen with the ``kind`` parameter, including
-    box plots, violin plots, bar plots, or strip plots.
+    box plots, violin plots, bar plots, strip plots, count plots, swarm plots,
+    and lvplots.
 
     It is important to choose how variables get mapped to the plot structure
     such that the most important comparisons are easiest to make. As a general
@@ -3594,7 +3595,8 @@ factorplot.__doc__ = dedent("""\
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
-    kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``}}
+    kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``,
+             ``swarm``, ``lv``}}
         The kind of plot to draw.
     {size}
     {aspect}
