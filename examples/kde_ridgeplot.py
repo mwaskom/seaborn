@@ -1,6 +1,6 @@
 """
-Overlapping densities ('joy plot')
-==================================
+Overlapping densities ('ridge plot')
+====================================
 
 
 """
@@ -27,11 +27,13 @@ g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
 g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw=.2)
 g.map(plt.axhline, y=0, lw=2, clip_on=False)
 
+
 # Define and use a simple function to label the plot in axes coordinates
 def label(x, color, label):
     ax = plt.gca()
-    ax.text(0, .2, label, fontweight="bold", color=color, 
+    ax.text(0, .2, label, fontweight="bold", color=color,
             ha="left", va="center", transform=ax.transAxes)
+
 
 g.map(label, "x")
 

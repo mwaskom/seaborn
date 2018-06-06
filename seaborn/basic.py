@@ -1,36 +1,39 @@
 from __future__ import division
 from itertools import product
 from textwrap import dedent
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
 
 from .external.six import string_types
 
 from . import utils
-from .utils import categorical_order, get_color_cycle, sort_df
+from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
+                    remove_na)
 from .algorithms import bootstrap
 from .palettes import color_palette
 
 
-__all__ = ["lineplot"]
+__all__ = ["lineplot", "scatterplot"]
 
 
 class _BasicPlotter(object):
 
-    # TODO use different lists for mpl 1 and 2?
     # We could use "line art glyphs" (e.g. "P") on mpl 2
-    default_markers = ["o", "s", "D", "v", "^", "p"]
-    marker_scales = {"o": 1, "s": .85, "D": .9, "v": 1.3, "^": 1.3, "p": 1.25}
+    if LooseVersion(mpl.__version__) >= "2.0":
+        default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
+    else:
+        default_markers = ["o", "s", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
-                      (3, 1, 1.5, 1), (5, 1, 1, 1), (5, 1, 2, 1, 2, 1)]
+                      (3, 1, 1.5, 1), (5, 1, 1, 1),
+                      (5, 1, 2, 1, 2, 1)]
 
     def establish_variables(self, x=None, y=None,
                             hue=None, size=None, style=None,
-                            data=None):
+                            units=None, data=None):
         """Parse the inputs to define data for plotting."""
         # Initialize label variables
         x_label = y_label = hue_label = size_label = style_label = None
@@ -130,11 +133,12 @@ class _BasicPlotter(object):
                 hue = data.get(hue, hue)
                 size = data.get(size, size)
                 style = data.get(style, style)
+                units = data.get(units, units)
 
             # Validate the inputs
-            for input in [x, y, hue, size, style]:
-                if isinstance(input, string_types):
-                    err = "Could not interpret input '{}'".format(input)
+            for var in [x, y, hue, size, style, units]:
+                if isinstance(var, string_types):
+                    err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
             # Extract variable names
@@ -145,7 +149,11 @@ class _BasicPlotter(object):
             style_label = getattr(style, "name", None)
 
             # Reassemble into a DataFrame
-            plot_data = dict(x=x, y=y, hue=hue, style=style, size=size)
+            plot_data = dict(
+                x=x, y=y,
+                hue=hue, style=style, size=size,
+                units=units
+            )
             plot_data = pd.DataFrame(plot_data)
 
         # Option 3:
@@ -160,9 +168,16 @@ class _BasicPlotter(object):
         # ---- Post-processing
 
         # Assign default values for missing attribute variables
-        for attr in ["hue", "style", "size"]:
+        for attr in ["hue", "style", "size", "units"]:
             if attr not in plot_data:
                 plot_data[attr] = None
+
+        # Determine which semantics have (some) data
+        plot_valid = plot_data.notnull().any()
+        semantics = [
+            name for name in ["x", "y", "hue", "size", "style"]
+            if plot_valid[name]
+        ]
 
         self.x_label = x_label
         self.y_label = y_label
@@ -170,6 +185,7 @@ class _BasicPlotter(object):
         self.size_label = size_label
         self.style_label = style_label
         self.plot_data = plot_data
+        self.semantics = semantics
 
         return plot_data
 
@@ -213,7 +229,7 @@ class _BasicPlotter(object):
 
     def numeric_to_palette(self, data, order, palette, limits):
         """Determine colors when the hue variable is quantitative."""
-        levels = list(np.sort(data.unique()))
+        levels = list(np.sort(remove_na(data.unique())))
 
         # TODO do we want to do something complicated to ensure contrast
         # at the extremes of the colormap against the background?
@@ -279,46 +295,6 @@ class _BasicPlotter(object):
 
         return attrdict
 
-    def _empty_data(self, data):
-        """Test if a series is completely missing."""
-        return data.isnull().all()
-
-    def _semantic_type(self, data):
-        """Determine if data should considered numeric or categorical."""
-        if self.input_format == "wide":
-            return "categorical"
-        else:
-            try:
-                data.astype(np.float)
-                return "numeric"
-            except ValueError:
-                return "categorical"
-
-
-class _LinePlotter(_BasicPlotter):
-
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_limits=None,
-                 sizes=None, size_order=None, size_limits=None,
-                 dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
-                 sort=True, errstyle=None, legend=None):
-
-        plot_data = self.establish_variables(x, y, hue, size, style, data)
-
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
-        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
-        self.parse_style(plot_data["style"], markers, dashes, style_order)
-
-        self.sort = sort
-        self.estimator = estimator
-        self.ci = ci
-        self.n_boot = n_boot
-        self.errstyle = errstyle
-
-        self.legend = legend
-
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
         data = self.plot_data
@@ -335,13 +311,17 @@ class _LinePlotter(_BasicPlotter):
             style_rows = all_true if style is None else data["style"] == style
 
             rows = hue_rows & size_rows & style_rows
-            subset_data = data.loc[rows, ["x", "y"]].dropna()
+            data["units"] = data.units.fillna("")
+            subset_data = data.loc[rows, ["units", "x", "y"]].dropna()
 
             if not len(subset_data):
                 continue
 
             if self.sort:
-                subset_data = sort_df(subset_data, ["x", "y"])
+                subset_data = sort_df(subset_data, ["units", "x", "y"])
+
+            if self.units is None:
+                subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
 
@@ -402,7 +382,7 @@ class _LinePlotter(_BasicPlotter):
                 levels = categorical_order(data)
                 numbers = np.arange(0, len(levels))[::-1]
             elif var_type == "numeric":
-                levels = numbers = np.sort(data.unique())
+                levels = numbers = np.sort(remove_na(data.unique()))
 
             if isinstance(sizes, (dict, list)):
 
@@ -428,8 +408,7 @@ class _LinePlotter(_BasicPlotter):
 
                 # Infer the range of sizes to use
                 if sizes is None:
-                    default = plt.rcParams["lines.linewidth"]
-                    min_width, max_width = default * .5, default * 2
+                    min_width, max_width = self._default_size_range
                 else:
                     try:
                         min_width, max_width = sizes
@@ -483,143 +462,40 @@ class _LinePlotter(_BasicPlotter):
                 levels, dashes, self.default_dashes, "dashes"
             )
 
+        paths = {}
+        for k, m in markers.items():
+            if not isinstance(m, mpl.markers.MarkerStyle):
+                m = mpl.markers.MarkerStyle(m)
+            paths[k] = m.get_path().transformed(m.get_transform())
+
         self.style_levels = levels
         self.dashes = dashes
         self.markers = markers
+        self.paths = paths
 
-    def aggregate(self, vals, grouper, func, ci):
-        """Compute an estimate and confidence interval using grouper."""
-        n_boot = self.n_boot
+    def _empty_data(self, data):
+        """Test if a series is completely missing."""
+        return data.isnull().all()
 
-        # Define a "null" CI for when we only have one value
-        null_ci = pd.Series(index=["low", "high"], dtype=np.float)
-
-        # Function to bootstrap in the context of a pandas group by
-        def bootstrapped_cis(vals):
-
-            if len(vals) == 1:
-                return null_ci
-
-            boots = bootstrap(vals, func=func, n_boot=n_boot)
-            cis = utils.ci(boots, ci)
-            return pd.Series(cis, ["low", "high"])
-
-        # Group and get the aggregation estimate
-        grouped = vals.groupby(grouper, sort=self.sort)
-        est = grouped.agg(func)
-
-        # Exit early if we don't want a confidence interval
-        if ci is None:
-            return est.index, est, None
-
-        # Compute the error bar extents
-        if ci == "sd":
-            sd = grouped.std()
-            cis = pd.DataFrame(np.c_[est - sd, est + sd],
-                               index=est.index,
-                               columns=["low", "high"]).stack()
+    def _semantic_type(self, data):
+        """Determine if data should considered numeric or categorical."""
+        if self.input_format == "wide":
+            return "categorical"
         else:
-            cis = grouped.apply(bootstrapped_cis)
+            try:
+                data.astype(np.float)
+                return "numeric"
+            except (ValueError, TypeError):
+                return "categorical"
 
-        # Unpack the CIs into "wide" format for plotting
-        if cis.notnull().any():
-            cis = cis.unstack().reindex(est.index)
-        else:
-            cis = None
-
-        return est.index, est, cis
-
-    def plot(self, ax, kws):
-        """Draw the plot onto an axes, passing matplotlib kwargs."""
-
-        # Draw a test line, using the passed in kwargs. The goal here is to
-        # honor both (a) the current state of the plot cycler and (b) the
-        # specified kwargs on all the lines we will draw, overriding when
-        # relevant with the lineplot semantics. Note that we won't cycle
-        # internally; in other words, if ``hue`` is not used, all lines
-        # will have the same color, but they will have the color that
-        # ax.plot() would have used for a single line, and calling lineplot
-        # will advance the axes property cycle.
-
-        scout, = ax.plot([], [], **kws)
-
-        orig_color = kws.pop("color", scout.get_color())
-        orig_marker = kws.pop("marker", scout.get_marker())
-        orig_linewidth = kws.pop("linewidth",
-                                 kws.pop("lw", scout.get_linewidth()))
-
-        orig_dashes = kws.pop("dashes", "")
-
-        kws.setdefault("markeredgewidth", kws.pop("mew", .75))
-        kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
-
-        scout.remove()
-
-        # Loop over the semantic subsets and draw a line for each
-
-        for semantics, subset_data in self.subset_data():
-
-            hue, size, style = semantics
-
-            x, y = subset_data["x"], subset_data["y"]
-
-            if self.estimator is not None:
-                x, y, y_ci = self.aggregate(y, x, self.estimator, self.ci)
-            else:
-                y_ci = None
-
-            kws["color"] = self.palette.get(hue, orig_color)
-            kws["dashes"] = self.dashes.get(style, orig_dashes)
-            kws["marker"] = self.markers.get(style, orig_marker)
-            kws["linewidth"] = self.sizes.get(size, orig_linewidth)
-
-            # --- Draw the main line
-
-            # TODO when not estimating, use units to get multiple lines
-            # with the same semantics?
-
-            line, = ax.plot(x.values, y.values, **kws)
-            line_color = line.get_color()
-            line_alpha = line.get_alpha()
-
-            # --- Draw the confidence intervals
-
-            if y_ci is not None:
-
-                if self.errstyle == "band":
-
-                    ax.fill_between(x, y_ci["low"], y_ci["high"],
-                                    color=line_color, alpha=.2)
-
-                elif self.errstyle == "bars":
-
-                    ci_xy = np.empty((len(x), 2, 2))
-                    ci_xy[:, :, 0] = x[:, np.newaxis]
-                    ci_xy[:, :, 1] = y_ci.values
-                    lines = LineCollection(ci_xy,
-                                           color=line_color,
-                                           alpha=line_alpha)
-                    ax.add_collection(lines)
-                    ax.autoscale_view()
-
-                else:
-                    err = "`errstyle` must by 'band' or 'bars', not {}"
-                    raise ValueError(err.format(self.errstyle))
-
-        # TODO this should go in its own method?
+    def label_axes(self, ax):
+        """Set x and y labels with visibility that matches the ticklabels."""
         if self.x_label is not None:
             x_visible = any(t.get_visible() for t in ax.get_xticklabels())
             ax.set_xlabel(self.x_label, visible=x_visible)
         if self.y_label is not None:
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
             ax.set_ylabel(self.y_label, visible=y_visible)
-
-        # Add legend
-        if self.legend:
-            self.add_legend_data(ax)
-            handles, _ = ax.get_legend_handles_labels()
-            if handles:
-                ax.legend()
 
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
@@ -665,8 +541,8 @@ class _LinePlotter(_BasicPlotter):
 
         for level in size_levels:
             if level is not None:
-                linewidth = self.size_lookup(level)
-                update(self.size_label, level, linewidth=linewidth)
+                size = self.size_lookup(level)
+                update(self.size_label, level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
@@ -676,20 +552,288 @@ class _LinePlotter(_BasicPlotter):
                        marker=self.markers.get(level, ""),
                        dashes=self.dashes.get(level, ""))
 
+        func = getattr(ax, self._legend_func)
         for key in keys:
             _, label = key
             kws = legend_data[key]
             kws.setdefault("color", ".2")
-            ax.plot([], [], label=label, **kws)
+            use_kws = {}
+            for attr in self._legend_attributes:
+                if attr in kws:
+                    use_kws[attr] = kws[attr]
+            func([], [], label=label, **use_kws)
+
+
+class _LinePlotter(_BasicPlotter):
+
+    _legend_attributes = ["color", "linewidth", "marker", "dashes"]
+    _legend_func = "plot"
+
+    def __init__(self,
+                 x=None, y=None, hue=None, size=None, style=None, data=None,
+                 palette=None, hue_order=None, hue_limits=None,
+                 sizes=None, size_order=None, size_limits=None,
+                 dashes=None, markers=None, style_order=None,
+                 units=None, estimator=None, ci=None, n_boot=None,
+                 sort=True, errstyle=None, legend=None):
+
+        plot_data = self.establish_variables(
+            x, y, hue, size, style, units, data
+        )
+
+        self._default_size_range = (
+            np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
+        )
+
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_style(plot_data["style"], markers, dashes, style_order)
+
+        self.sort = sort
+        self.estimator = estimator
+        self.ci = ci
+        self.n_boot = n_boot
+        self.errstyle = errstyle
+        self.units = units
+
+        self.legend = legend
+
+    def aggregate(self, vals, grouper, units=None):
+        """Compute an estimate and confidence interval using grouper."""
+        func = self.estimator
+        ci = self.ci
+        n_boot = self.n_boot
+
+        # Define a "null" CI for when we only have one value
+        null_ci = pd.Series(index=["low", "high"], dtype=np.float)
+
+        # Function to bootstrap in the context of a pandas group by
+        def bootstrapped_cis(vals):
+
+            if len(vals) == 1:
+                return null_ci
+
+            boots = bootstrap(vals, func=func, n_boot=n_boot)
+            cis = utils.ci(boots, ci)
+            return pd.Series(cis, ["low", "high"])
+
+        # Group and get the aggregation estimate
+        grouped = vals.groupby(grouper, sort=self.sort)
+        est = grouped.agg(func)
+
+        # Exit early if we don't want a confidence interval
+        if ci is None:
+            return est.index, est, None
+
+        # Compute the error bar extents
+        if ci == "sd":
+            sd = grouped.std()
+            cis = pd.DataFrame(np.c_[est - sd, est + sd],
+                               index=est.index,
+                               columns=["low", "high"]).stack()
+        else:
+            cis = grouped.apply(bootstrapped_cis)
+
+        # Unpack the CIs into "wide" format for plotting
+        if cis.notnull().any():
+            cis = cis.unstack().reindex(est.index)
+        else:
+            cis = None
+
+        return est.index, est, cis
+
+    def plot(self, ax, kws):
+        """Draw the plot onto an axes, passing matplotlib kwargs."""
+
+        # Draw a test plot, using the passed in kwargs. The goal here is to
+        # honor both (a) the current state of the plot cycler and (b) the
+        # specified kwargs on all the lines we will draw, overriding when
+        # relevant with the data semantics. Note that we won't cycle
+        # internally; in other words, if ``hue`` is not used, all elements will
+        # have the same color, but they will have the color that you would have
+        # gotten from the corresponding matplotlib function, and calling the
+        # function will advance the axes property cycle.
+
+        scout, = ax.plot([], [], **kws)
+
+        orig_color = kws.pop("color", scout.get_color())
+        orig_marker = kws.pop("marker", scout.get_marker())
+        orig_linewidth = kws.pop("linewidth",
+                                 kws.pop("lw", scout.get_linewidth()))
+
+        orig_dashes = kws.pop("dashes", "")
+
+        kws.setdefault("markeredgewidth", kws.pop("mew", .75))
+        kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
+
+        scout.remove()
+
+        # Loop over the semantic subsets and draw a line for each
+
+        for semantics, data in self.subset_data():
+
+            hue, size, style = semantics
+            x, y, units = data["x"], data["y"], data.get("units", None)
+
+            if self.estimator is not None:
+                if self.units is not None:
+                    err = "estimator must be None when specifying units"
+                    raise ValueError(err)
+                x, y, y_ci = self.aggregate(y, x, units)
+            else:
+                y_ci = None
+
+            kws["color"] = self.palette.get(hue, orig_color)
+            kws["dashes"] = self.dashes.get(style, orig_dashes)
+            kws["marker"] = self.markers.get(style, orig_marker)
+            kws["linewidth"] = self.sizes.get(size, orig_linewidth)
+
+            line, = ax.plot([], [], **kws)
+            line_color = line.get_color()
+            line_alpha = line.get_alpha()
+            line_capstyle = line.get_solid_capstyle()
+            line.remove()
+
+            # --- Draw the main line
+
+            x, y = np.asarray(x), np.asarray(y)
+
+            if self.units is None:
+                line, = ax.plot(x, y, **kws)
+
+            else:
+                for u in units.unique():
+                    rows = np.asarray(units == u)
+                    ax.plot(x[rows], y[rows], **kws)
+
+            # --- Draw the confidence intervals
+            # TODO we want some way to get kwargs to the error plotters
+
+            if y_ci is not None:
+
+                low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
+
+                if self.errstyle == "band":
+
+                    ax.fill_between(x, low, high, color=line_color, alpha=.2)
+
+                elif self.errstyle == "bars":
+
+                    y_err = ci_to_errsize((low, high), y)
+                    ebars = ax.errorbar(x, y, y_err, linestyle="",
+                                        color=line_color, alpha=line_alpha)
+
+                    # Set the capstyle properly on the error bars
+                    for obj in ebars.get_children():
+                        try:
+                            obj.set_capstyle(line_capstyle)
+                        except AttributeError:
+                            # Does not exist on mpl < 2.2
+                            pass
+
+                else:
+                    err = "`errstyle` must by 'band' or 'bars', not {}"
+                    raise ValueError(err.format(self.errstyle))
+
+        # Finalize the axes details
+        self.label_axes(ax)
+        if self.legend:
+            self.add_legend_data(ax)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend()
 
 
 class _ScatterPlotter(_BasicPlotter):
 
-    def __init__(self):
-        pass
+    _legend_attributes = ["color", "s", "marker"]
+    _legend_func = "scatter"
 
-    def plot(self, ax=None):
-        pass
+    def __init__(self,
+                 x=None, y=None, hue=None, size=None, style=None, data=None,
+                 palette=None, hue_order=None, hue_limits=None,
+                 sizes=None, size_order=None, size_limits=None,
+                 markers=None, style_order=None,
+                 x_bins=None, y_bins=None,
+                 units=None, estimator=None, ci=None, n_boot=None,
+                 alpha=None, x_jitter=None, y_jitter=None,
+                 legend=None):
+
+        plot_data = self.establish_variables(
+            x, y, hue, size, style, units, data
+        )
+
+        self._default_size_range = (
+            np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
+        )
+
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_style(plot_data["style"], markers, None, style_order)
+        self.units = units
+
+        self.alpha = alpha
+
+        self.legend = legend
+
+    def plot(self, ax, kws):
+
+        # Draw a test plot, using the passed in kwargs. The goal here is to
+        # honor both (a) the current state of the plot cycler and (b) the
+        # specified kwargs on all the lines we will draw, overriding when
+        # relevant with the data semantics. Note that we won't cycle
+        # internally; in other words, if ``hue`` is not used, all elements will
+        # have the same color, but they will have the color that you would have
+        # gotten from the corresponding matplotlib function, and calling the
+        # function will advance the axes property cycle.
+
+        scout = ax.scatter([], [], **kws)
+        s = kws.pop("s", scout.get_sizes())
+        c = kws.pop("c", scout.get_facecolors())
+        scout.remove()
+
+        kws.pop("color", None)  # TODO is this optimal?
+
+        kws.setdefault("linewidth", .75)  # TODO scale with marker size?
+        kws.setdefault("edgecolor", "w")
+
+        # TODO this makes it impossible to vary alpha with hue which might
+        # otherwise be useful? Should we just pass None?
+        kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
+
+        # Assign arguments for plt.scatter and draw the plot
+
+        data = self.plot_data[self.semantics].dropna()
+        if not data.size:
+            return
+
+        x = data["x"]
+        y = data["y"]
+
+        if self.palette:
+            c = [self.palette.get(val) for val in data["hue"]]
+
+        if self.sizes:
+            s = [self.sizes.get(val) for val in data["size"]]
+
+        args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
+        points = ax.scatter(*args, **kws)
+
+        # Update the paths to get different marker shapes. This has to be
+        # done here because plt.scatter allows varying sizes and colors
+        # but only a single marker shape per call.
+
+        if self.paths:
+            p = [self.paths.get(val) for val in data["style"]]
+            points.set_paths(p)
+
+        # Finalize the axes details
+        self.label_axes(ax)
+        if self.legend:
+            self.add_legend_data(ax)
+            handles, _ = ax.get_legend_handles_labels()
+            if handles:
+                ax.legend()
 
 
 _basic_docs = dict(
@@ -738,7 +882,7 @@ _basic_docs = dict(
         Limits in data units to use for the colormap applied to the ``hue``
         variable when it is numeric. Not relevant if it is categorical.\
     """),
-    sizes=dedent("""
+    sizes=dedent("""\
     sizes : list, dict, or tuple, optional
         An object that determines how sizes are chosen when ``size`` is used.
         It can always be a list of size values or a dict mapping levels of the
@@ -757,6 +901,14 @@ _basic_docs = dict(
         Limits in data units to use for the size normalization when the
         ``size`` variable is numeric.\
     """),
+    markers=dedent("""\
+    markers : boolean, list, or dictionary, optional
+        Object determining how to draw the markers for different levels of the
+        ``style`` variable. Setting to ``True`` will use default markers, or
+        you can pass a list of markers or a dictionary mapping levels of the
+        ``style`` variable to markers. Setting to ``False`` will draw
+        marker-less lines.  Markers are specified as in matplotlib.\
+    """),
     style_order=dedent("""\
     style_order : list, optional
         Specified order for appearance of the ``style`` variable levels
@@ -765,7 +917,10 @@ _basic_docs = dict(
     """),
     units=dedent("""\
     units : {long_form_var}
-        Grouping variable identifying sampling units. Currently has no effect.\
+        Grouping variable identifying sampling units. When used, a separate
+        line will be drawn for each unit with appropriate semantics, but no
+        legend entry will be added. Useful for showing distribution of
+        experimental replicates when exact identities are not needed.
     """),
     estimator=dedent("""\
     estimator : name of pandas method or callable or None, optional
@@ -832,7 +987,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
 
 lineplot.__doc__ = dedent("""\
-    Draw a plot with numeric x and y values where the points are connected.
+    Draw a line plot with possibility of several semantic groupings.
 
     {main_api_narrative}
 
@@ -848,7 +1003,7 @@ lineplot.__doc__ = dedent("""\
         Can be either categorical or numeric, although color mapping will
         behave differently in latter case.
     size : {long_form_var}
-        Gropuing variable that will produce lines with different widths.
+        Grouping variable that will produce lines with different widths.
         Can be either categorical or numeric, although size mapping will
         behave differently in latter case.
     style : {long_form_var}
@@ -869,12 +1024,7 @@ lineplot.__doc__ = dedent("""\
         ``style`` variable to dash codes. Setting to ``False`` will use solid
         lines for all subsets. Dashes are specified as in matplotlib: a tuple
         of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
-    markers : boolean, list, or dictionary, optional
-        Object determining how to draw the markers for different levels of the
-        ``style`` variable. Setting to ``True`` will use default markers, or
-        you can pass a list of markers or a dictionary mapping levels of the
-        ``style`` variable to markers. Setting to ``False`` will draw
-        marker-less lines.  Markers are specified as in matplotlib.
+    {markers}
     {style_order}
     {units}
     {estimator}
@@ -956,6 +1106,15 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
         ...                   errstyle="bars", ci=68, data=fmri)
+
+    Show experimental replicates instead of aggregating:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
+        ...                   units="subject", estimator=None, lw=1,
+        ...                   data=fmri.query("region == 'frontal'"))
 
     Use a quantitative color mapping:
 
@@ -1054,14 +1213,217 @@ lineplot.__doc__ = dedent("""\
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, hue_order=None, hue_limits=None,
-                markers=None, style_order=None,
                 sizes=None, size_order=None, size_limits=None,
+                markers=True, style_order=None,
                 x_bins=None, y_bins=None,
-                estimator=None, ci=95, n_boot=1000, units=None,
-                errstyle="bars", alpha="auto",
-                x_jitter=None, y_jitter=None,
-                ax=None, **kwargs):
+                units=None, estimator=None, ci=95, n_boot=1000,
+                alpha="auto", x_jitter=None, y_jitter=None,
+                legend="brief", ax=None, **kwargs):
 
-    # TODO auto alpha
+    p = _ScatterPlotter(
+        x=x, y=y, hue=hue, style=style, size=size, data=data,
+        palette=palette, hue_order=hue_order, hue_limits=hue_limits,
+        sizes=sizes, size_order=size_order,
+        markers=markers, style_order=style_order,
+        x_bins=x_bins, y_bins=y_bins,
+        estimator=estimator, ci=ci, n_boot=n_boot,
+        alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
+    )
 
-    pass
+    if ax is None:
+        ax = plt.gca()
+
+    p.plot(ax, kwargs)
+
+    return ax
+
+
+scatterplot.__doc__ = dedent("""\
+    Draw a scatter plot with possibility of several semantic groupings.
+
+    {main_api_narrative}
+
+    Parameters
+    ----------
+    {data_vars}
+    hue : {long_form_var}
+        Grouping variable that will produce points with different colors.
+        Can be either categorical or numeric, although color mapping will
+        behave differently in latter case.
+    size : {long_form_var}
+        Grouping variable that will produce points with different sizes.
+        Can be either categorical or numeric, although size mapping will
+        behave differently in latter case.
+    style : {long_form_var}
+        Grouping variable that will produce points with different markers.
+        Can have a numeric dtype but will always be treated as categorical.
+    {data}
+    {palette}
+    {hue_order}
+    {hue_limits}
+    {sizes}
+    {size_order}
+    {size_limits}
+    {markers}
+    {style_order}
+    {{x,y}}_bins : lists or arrays or functions
+        *Currently non-functional.*
+    {units}
+        *Currently non-functional.*
+    {estimator}
+        *Currently non-functional.*
+    {ci}
+        *Currently non-functional.*
+    {n_boot}
+        *Currently non-functional.*
+    alpha : float
+        Proportional opacity of the points.
+    {{x,y}}_jitter : booleans or floats
+        *Currently non-functional.*
+    {legend}
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed down to ``plt.scatter`` at draw
+        time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    lineplot : Show the relationship between two variables connected with
+               lines to emphasize continuity.
+    swarmplot : Draw a scatter plot with one categorical variable, arranging
+                the points to show the distribution of values.
+
+    Examples
+    --------
+
+    Draw a simple scatter plot between two variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns; sns.set()
+        >>> import matplotlib.pyplot as plt
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", data=tips)
+
+    Group by another variable and show the groups with different colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", hue="time",
+        ...                      data=tips)
+
+    Show the grouping variable by varying both color and marker:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="time", style="time", data=tips)
+
+    Vary colors and markers to show two different grouping variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="day", style="time", data=tips)
+
+    Show a quantitative variable by varying the size of the points:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", size="size",
+        ...                      data=tips)
+
+    Also show the quantitative variable by also using continuous colors:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      data=tips)
+
+    Use a different continuous color map:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      palette=cmap,
+        ...                      data=tips)
+
+    Change the minimum and maximum point size and show all sizes in legend:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      sizes=(20, 200), palette=cmap,
+        ...                      legend="full", data=tips)
+
+    Use a narrower range of color map intensities:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="size", size="size",
+        ...                      sizes=(20, 200), hue_limits=(0, 7),
+        ...                      legend="full", data=tips)
+
+    Vary the size with a categorical variable, and use a different palette:
+
+    .. plot::
+        :context: close-figs
+
+        >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      hue="day", size="smoker",
+        ...                      palette="Set2",
+        ...                      data=tips)
+
+    Use a specific set of markers:
+
+    .. plot::
+        :context: close-figs
+
+        >>> markers = {{"Lunch": "s", "Dinner": "X"}}
+        >>> ax = sns.scatterplot(x="total_bill", y="tip", style="time",
+        ...                      markers=markers,
+        ...                      data=tips)
+
+    Pass data vectors instead of names in a data frame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> ax = sns.scatterplot(x=iris.sepal_length, y=iris.sepal_width,
+        ...                      hue=iris.species, style=iris.species)
+
+    Pass a wide-form dataset and plot against its index:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np, pandas as pd; plt.close("all")
+        >>> index = pd.date_range("1 1 2000", periods=100,
+        ...                       freq="m", name="date")
+        >>> data = np.random.randn(100, 4).cumsum(axis=0)
+        >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
+        >>> ax = sns.scatterplot(data=wide_df)
+
+    """).format(**_basic_docs)

@@ -76,7 +76,7 @@ For a brief introduction to the ideas behind the package, you can read the
 :ref:`example gallery <example_gallery>` to get a sense for what you can do with seaborn and then check out the :ref:`tutorial <tutorial>` and :ref:`API reference <api_ref>` to find out how.
 
 To see the code or report a bug, please visit the `github repository
-<https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `stackoverflow <http://stackoverflow.com/>`_, where there is a seaborn tag.
+<https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `stackoverflow <https://stackoverflow.com/>`_, where there is a seaborn tag.
    
 
 .. raw:: html

@@ -2,28 +2,28 @@ seaborn: statistical data visualization
 =======================================
 
 <div class="row">
-<a href=http://seaborn.pydata.org/examples/anscombes_quartet.html>
-<img src="http://seaborn.pydata.org/_static/anscombes_quartet_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/anscombes_quartet.html>
+<img src="https://seaborn.pydata.org/_static/anscombes_quartet_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/multiple_regression.html>
-<img src="http://seaborn.pydata.org/_static/multiple_regression_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/multiple_regression.html>
+<img src="https://seaborn.pydata.org/_static/multiple_regression_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/many_facets.html>
-<img src="http://seaborn.pydata.org/_static/many_facets_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/many_facets.html>
+<img src="https://seaborn.pydata.org/_static/many_facets_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/structured_heatmap.html>
-<img src="http://seaborn.pydata.org/_static/structured_heatmap_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/structured_heatmap.html>
+<img src="https://seaborn.pydata.org/_static/structured_heatmap_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/scatterplot_matrix.html>
-<img src="http://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/scatterplot_matrix.html>
+<img src="https://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/horizontal_boxplot.html>
-<img src="http://seaborn.pydata.org/_static/horizontal_boxplot_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/horizontal_boxplot.html>
+<img src="https://seaborn.pydata.org/_static/horizontal_boxplot_thumb.png" height="135" width="135">
 </a>
 
 </div>
@@ -44,7 +44,7 @@ Documentation
 
 Online documentation is available at [seaborn.pydata.org](https://seaborn.pydata.org).
 
-The docs include a [tutorial](http://seaborn.pydata.org/tutorial.html), [example gallery](http://seaborn.pydata.org/examples/index.html), [API reference](http://seaborn.pydata.org/api.html), and other useful information.
+The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [example gallery](https://seaborn.pydata.org/examples/index.html), [API reference](https://seaborn.pydata.org/api.html), and other useful information.
 
 
 Dependencies
@@ -52,7 +52,7 @@ Dependencies
 
 Seaborn supports Python 2.7 and 3.4+.
 
-Installation requires [numpy](http://www.numpy.org/), [scipy](http://www.scipy.org/), [pandas](http://pandas.pydata.org/), and [matplotlib](http://matplotlib.org/). Some functions will optionally use [statsmodels](http://statsmodels.sourceforge.net/) if it is installed.
+Installation requires [numpy](http://www.numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
 
 
 Installation

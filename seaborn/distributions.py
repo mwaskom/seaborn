@@ -5,6 +5,8 @@ from scipy import stats
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.transforms as tx
+from matplotlib.collections import LineCollection
 import warnings
 from distutils.version import LooseVersion
 
@@ -25,7 +27,7 @@ __all__ = ["distplot", "kdeplot", "rugplot"]
 
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
-    # From http://stats.stackexchange.com/questions/798/
+    # From https://stats.stackexchange.com/questions/798/
     a = np.asarray(a)
     if len(a) < 2:
         return 1
@@ -681,7 +683,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     ax : matplotlib axes, optional
         Axes to draw plot into; otherwise grabs current axes.
     kwargs : key, value pairings
-        Other keyword arguments are passed to ``axvline`` or ``axhline``.
+        Other keyword arguments are passed to ``LineCollection``.
 
     Returns
     -------
@@ -693,9 +695,23 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
         ax = plt.gca()
     a = np.asarray(a)
     vertical = kwargs.pop("vertical", axis == "y")
-    func = ax.axhline if vertical else ax.axvline
+
+    alias_map = dict(linewidth="lw", linestyle="ls", color="c")
+    for attr, alias in alias_map.items():
+        if alias in kwargs:
+            kwargs[attr] = kwargs.pop(alias)
     kwargs.setdefault("linewidth", 1)
-    for pt in a:
-        func(pt, 0, height, **kwargs)
+
+    if vertical:
+        trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
+        xy_pairs = np.column_stack([np.tile([0, height], len(a)),
+                                    np.repeat(a, 2)])
+    else:
+        trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
+        xy_pairs = np.column_stack([np.repeat(a, 2),
+                                    np.tile([0, height], len(a))])
+    line_segs = xy_pairs.reshape([len(a), 2, 2])
+    ax.add_collection(LineCollection(line_segs, transform=trans, **kwargs))
+    ax.autoscale_view()
 
     return ax
