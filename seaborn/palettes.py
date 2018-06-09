@@ -168,7 +168,9 @@ def color_palette(palette=None, n_colors=None, desat=None):
         elif palette == "husl":
             palette = husl_palette(n_colors)
         elif palette.lower() == "jet":
-            raise ValueError("No.")
+            raise ValueError("The jet color map is not supported by seaborn, "
+                "since it is a bad color map due to its problematic"
+                " luminance profile and various other reasons.")
         elif palette in SEABORN_PALETTES:
             palette = SEABORN_PALETTES[palette]
         else:
