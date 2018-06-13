@@ -8,7 +8,7 @@ v0.9.0 (Unreleased)
 
 - Final removal of the previously-deprecated ``coefplot`` and ``interactplot`` functions.
 
-- Fixed :func:`jointplot`/:class:`JointGrid` so that they now accept list inputs.
+- Fixed :func:`jointplot`/:class:`JointGrid` and :func:`regplot` so that they now accept list inputs.
 
 - Changed :func:`rugplot` to plot a matplotlib ``LineCollection`` instead of many ``Line2D`` objects, providing a big speedup for large arrays.
 
