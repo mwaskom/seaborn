@@ -45,6 +45,8 @@ class _LinearPlotter(object):
         for var, val in kws.items():
             if isinstance(val, string_types):
                 setattr(self, var, data[val])
+            elif isinstance(val, list):
+                setattr(self, var, np.asarray(val))
             else:
                 setattr(self, var, val)
 

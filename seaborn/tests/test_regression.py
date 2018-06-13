@@ -61,6 +61,16 @@ class TestLinearPlotter(object):
         npt.assert_array_equal(p.y, self.df.y)
         nt.assert_is(p.data, None)
 
+    def test_establish_variables_from_lists(self):
+
+        p = lm._LinearPlotter()
+        p.establish_variables(None,
+                              x=self.df.x.values.tolist(),
+                              y=self.df.y.values.tolist())
+        npt.assert_array_equal(p.x, self.df.x)
+        npt.assert_array_equal(p.y, self.df.y)
+        nt.assert_is(p.data, None)
+
     def test_establish_variables_from_mix(self):
 
         p = lm._LinearPlotter()
