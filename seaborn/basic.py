@@ -552,6 +552,8 @@ class _BasicPlotter(object):
 
         keys = []
         legend_kwargs = {}
+        legend_data = {}
+        titles = []
 
         def update(var_name, val_name, **kws):
 
@@ -560,7 +562,9 @@ class _BasicPlotter(object):
                 legend_kwargs[key].update(**kws)
             else:
                 keys.append(key)
+
                 legend_kwargs[key] = dict(**kws)
+                titles.append(None)
 
         # -- Add a legend for hue semantics
 
@@ -573,6 +577,10 @@ class _BasicPlotter(object):
                                 .astype(self.plot_data["hue"].dtype))
         else:
             hue_levels = self.hue_levels
+
+        if self.hue_label is not None:
+            titles.append(self.hue_label)
+            keys.append(None)
 
         for level in hue_levels:
             if level is not None:
@@ -591,12 +599,20 @@ class _BasicPlotter(object):
         else:
             size_levels = self.size_levels
 
+        if self.size_label is not None:
+            titles.append(self.size_label)
+            keys.append(None)
+
         for level in size_levels:
             if level is not None:
                 size = self.size_lookup(level)
                 update(self.size_label, level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
+
+        if self.style_label is not None:
+            titles.append(self.style_label)
+            keys.append(None)
 
         for level in self.style_levels:
             if level is not None:
@@ -609,7 +625,11 @@ class _BasicPlotter(object):
         legend_data = {}
         legend_order = []
 
-        for key in keys:
+        for title, key in zip(titles, keys):
+            if title is not None:
+                func([], [], label=title, visible=False)
+                continue
+
             _, label = key
             kws = legend_kwargs[key]
             kws.setdefault("color", ".2")
@@ -625,6 +645,8 @@ class _BasicPlotter(object):
 
         self.legend_data = legend_data
         self.legend_order = legend_order
+
+        return titles
 
 
 class _LinePlotter(_BasicPlotter):
@@ -808,10 +830,13 @@ class _LinePlotter(_BasicPlotter):
         # Finalize the axes details
         self.label_axes(ax)
         if self.legend:
-            self.add_legend_data(ax)
+            titles = self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend()
+                legend = ax.legend()
+                texts = legend.get_texts()[-len(titles):]
+                for title, text in zip(titles, texts):
+                    text.set_horizontal_alignment("right")
 
 
 class _ScatterPlotter(_BasicPlotter):
