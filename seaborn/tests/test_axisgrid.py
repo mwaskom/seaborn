@@ -113,6 +113,9 @@ class TestFacetGrid(object):
         g_missing_wrap = ag.FacetGrid(df, col="d", col_wrap=4)
         nt.assert_equal(g_missing_wrap.axes.shape, (9,))
 
+        g = ag.FacetGrid(self.df, col="d", col_wrap=1)
+        assert len(list(g.facet_data())) == len(self.df.d.unique())
+
     def test_normal_axes(self):
 
         null = np.empty(0, object).flat

@@ -644,22 +644,22 @@ class FacetGrid(Grid):
         data = self.data
 
         # Construct masks for the row variable
-        if self._nrow == 1 or self._col_wrap is not None:
-            row_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.row_names:
             row_masks = [data[self._row_var] == n for n in self.row_names]
+        else:
+            row_masks = [np.repeat(True, len(self.data))]
 
         # Construct masks for the column variable
-        if self._ncol == 1:
-            col_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.col_names:
             col_masks = [data[self._col_var] == n for n in self.col_names]
+        else:
+            col_masks = [np.repeat(True, len(self.data))]
 
         # Construct masks for the hue variable
-        if len(self._colors) == 1:
-            hue_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.hue_names:
             hue_masks = [data[self._hue_var] == n for n in self.hue_names]
+        else:
+            hue_masks = [np.repeat(True, len(self.data))]
 
         # Here is the main generator loop
         for (i, row), (j, col), (k, hue) in product(enumerate(row_masks),
@@ -2238,7 +2238,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     if color is None:
         color = color_palette()[0]
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
-    colors = [utils.set_hls_values(color_rgb, l=l)
+    colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
               for l in np.linspace(1, 0, 12)]
     cmap = blend_palette(colors, as_cmap=True)
 

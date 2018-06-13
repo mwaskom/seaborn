@@ -10,6 +10,8 @@ v0.9.0 (Unreleased)
 
 - Fixed :func:`jointplot`/:class:`JointGrid` so that they now accept list inputs.
 
+- Fixed a bug in :class:`FacetGrid` when using a single row/column level or using ``col_wrap=1``.
+
 - Changed :func:`rugplot` to plot a matplotlib ``LineCollection`` instead of many ``Line2D`` objects, providing a big speedup for large arrays.
 
 - Changed the install infrastructure to explicitly declare dependencies in a way that ``pip`` is aware of. This means that ``pip install seaborn`` will now work in an empty environment. Additionally, the dependencies are specified with strict minimal versions.
