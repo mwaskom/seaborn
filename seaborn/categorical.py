@@ -403,10 +403,10 @@ class _CategoricalPlotter(object):
 
         if self.orient == "v":
             ax.xaxis.grid(False)
-            ax.set_xlim(-.5, len(self.plot_data) - .5)
+            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
         else:
             ax.yaxis.grid(False)
-            ax.set_ylim(-.5, len(self.plot_data) - .5)
+            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
 
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
@@ -1368,9 +1368,9 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
         # Set the categorical axes limits here for the swarm math
         if self.orient == "v":
-            ax.set_xlim(-.5, len(self.plot_data) - .5)
+            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
         else:
-            ax.set_ylim(-.5, len(self.plot_data) - .5)
+            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
 
         # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
