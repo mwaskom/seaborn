@@ -238,8 +238,8 @@ class _HeatMapper(object):
                                        mesh.get_array(), mesh.get_facecolors(),
                                        self.annot_data.flat):
             if m is not np.ma.masked:
-                l = relative_luminance(color)
-                text_color = ".15" if l > .408 else "w"
+                lum = relative_luminance(color)
+                text_color = ".15" if lum > .408 else "w"
                 annotation = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
