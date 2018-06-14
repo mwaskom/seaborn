@@ -286,6 +286,9 @@ class _HeatMapper(object):
         # Set the axis limits
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
 
+        # Invert the y axis to show the plot in matrix form
+        ax.invert_yaxis()
+
         # Possibly add a colorbar
         if self.cbar:
             cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
@@ -323,9 +326,6 @@ class _HeatMapper(object):
         # Annotate the cells with the formatted values
         if self.annot:
             self._annotate_heatmap(ax, mesh)
-
-        # Invert the y axis to show the plot in matrix form
-        ax.invert_yaxis()
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
