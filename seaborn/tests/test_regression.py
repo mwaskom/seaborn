@@ -532,9 +532,10 @@ class TestRegressionPlots(object):
         g = lm.lmplot("x", "y", data=self.df, hue="h",
                       fit_reg=False, markers=["o", "+"])
         c = g.axes[0, 0].collections
-        nt.assert_equal(c[0].get_linewidths()[0], 0)
-        rclw = mpl.rcParams["lines.linewidth"]
-        nt.assert_equal(c[1].get_linewidths()[0], rclw)
+        nt.assert_equal(c[0].get_linewidths()[0],
+                        mpl.rcParams["patch.linewidth"])
+        nt.assert_equal(c[1].get_linewidths()[0],
+                        mpl.rcParams["lines.linewidth"])
 
     def test_lmplot_facets(self):
 
