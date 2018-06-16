@@ -988,7 +988,7 @@ class TestLinePlotter(TestBasicPlotter):
             assert line.get_marker() == p.markers[style]
 
         p = basic._LinePlotter(x="x", y="y", data=long_df,
-                               estimator="mean", errstyle="band", ci="sd",
+                               estimator="mean", err_style="band", ci="sd",
                                sort=True)
 
         ax.clear()
@@ -1000,7 +1000,7 @@ class TestLinePlotter(TestBasicPlotter):
         assert len(ax.collections) == 1
 
         p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", errstyle="band", ci="sd")
+                               estimator="mean", err_style="band", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1009,7 +1009,7 @@ class TestLinePlotter(TestBasicPlotter):
             assert isinstance(c, mpl.collections.PolyCollection)
 
         p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", errstyle="bars", ci="sd")
+                               estimator="mean", err_style="bars", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1036,6 +1036,26 @@ class TestLinePlotter(TestBasicPlotter):
         assert len(ax.lines) == n_units
 
         p.estimator = "mean"
+        with pytest.raises(ValueError):
+            p.plot(ax, {})
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               err_style="band", err_kws={"alpha": .5})
+
+        ax.clear()
+        p.plot(ax, {})
+        for band in ax.collections:
+            assert band.get_alpha() == .5
+
+        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               err_style="bars", err_kws={"elinewidth": 2})
+
+        ax.clear()
+        p.plot(ax, {})
+        for lines in ax.collections:
+            assert lines.get_linestyles() == 2
+
+        p.err_style = "invalid"
         with pytest.raises(ValueError):
             p.plot(ax, {})
 

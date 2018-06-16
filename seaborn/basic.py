@@ -575,7 +575,7 @@ class _LinePlotter(_BasicPlotter):
                  sizes=None, size_order=None, size_limits=None,
                  dashes=None, markers=None, style_order=None,
                  units=None, estimator=None, ci=None, n_boot=None,
-                 sort=True, errstyle=None, legend=None):
+                 sort=True, err_style=None, err_kws=None, legend=None):
 
         plot_data = self.establish_variables(
             x, y, hue, size, style, units, data
@@ -589,12 +589,13 @@ class _LinePlotter(_BasicPlotter):
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
-        self.sort = sort
+        self.units = units
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
-        self.errstyle = errstyle
-        self.units = units
+        self.sort = sort
+        self.err_style = err_style
+        self.err_kws = {} if err_kws is None else err_kws
 
         self.legend = legend
 
@@ -668,6 +669,16 @@ class _LinePlotter(_BasicPlotter):
 
         scout.remove()
 
+        # Set default error kwargs
+        err_kws = self.err_kws.copy()
+        if self.err_style == "band":
+            err_kws.setdefault("alpha", .2)
+        elif self.err_style == "bars":
+            pass
+        elif self.err_style is not None:
+            err = "`err_style` must be 'band' or 'bars', not {}"
+            raise ValueError(err.format(self.err_style))
+
         # Loop over the semantic subsets and draw a line for each
 
         for semantics, data in self.subset_data():
@@ -707,21 +718,21 @@ class _LinePlotter(_BasicPlotter):
                     ax.plot(x[rows], y[rows], **kws)
 
             # --- Draw the confidence intervals
-            # TODO we want some way to get kwargs to the error plotters
 
             if y_ci is not None:
 
                 low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
 
-                if self.errstyle == "band":
+                if self.err_style == "band":
 
-                    ax.fill_between(x, low, high, color=line_color, alpha=.2)
+                    ax.fill_between(x, low, high, color=line_color, **err_kws)
 
-                elif self.errstyle == "bars":
+                elif self.err_style == "bars":
 
                     y_err = ci_to_errsize((low, high), y)
                     ebars = ax.errorbar(x, y, y_err, linestyle="",
-                                        color=line_color, alpha=line_alpha)
+                                        color=line_color, alpha=line_alpha,
+                                        **err_kws)
 
                     # Set the capstyle properly on the error bars
                     for obj in ebars.get_children():
@@ -730,10 +741,6 @@ class _LinePlotter(_BasicPlotter):
                         except AttributeError:
                             # Does not exist on mpl < 2.2
                             pass
-
-                else:
-                    err = "`errstyle` must by 'band' or 'bars', not {}"
-                    raise ValueError(err.format(self.errstyle))
 
         # Finalize the axes details
         self.label_axes(ax)
@@ -966,7 +973,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              sizes=None, size_order=None, size_limits=None,
              dashes=True, markers=None, style_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
-             sort=True, errstyle="band",
+             sort=True, err_style="band", err_kws=None,
              legend="brief", ax=None, **kwargs):
 
     p = _LinePlotter(
@@ -975,7 +982,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         sizes=sizes, size_order=size_order, size_limits=size_limits,
         dashes=dashes, markers=markers, style_order=style_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
-        sort=sort, errstyle=errstyle, legend=legend,
+        sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
     if ax is None:
@@ -1033,9 +1040,13 @@ lineplot.__doc__ = dedent("""\
     sort : boolean, optional
         If True, the data will be sorted by the x and y variables, otherwise
         lines will connect points in the order they appear in the dataset.
-    errstyle : "band" or "bars", optional
+    err_style : "band" or "bars", optional
         Whether to draw the confidence intervals with translucent error bands
         or discrete error bars.
+    err_band : dict of keyword arguments
+        Additional paramters to control the aesthetics of the error bars. The
+        kwargs are passed either to ``ax.fill_between`` or ``ax.errorbar``,
+        depending on the ``err_style``.
     {legend}
     {ax_in}
     kwargs : key, value mappings
@@ -1105,7 +1116,7 @@ lineplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.lineplot(x="timepoint", y="signal", hue="event",
-        ...                   errstyle="bars", ci=68, data=fmri)
+        ...                   err_style="bars", ci=68, data=fmri)
 
     Show experimental replicates instead of aggregating:
 
