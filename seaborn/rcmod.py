@@ -69,7 +69,7 @@ _context_keys = (
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, color_codes=False, rc=None):
+        font="sans-serif", font_scale=1, color_codes=True, rc=None):
     """Set aesthetic parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -488,4 +488,7 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
         mpl.rcParams["axes.color_cycle"] = list(colors)
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
-        palettes.set_color_codes(palette)
+        try:
+            palettes.set_color_codes(palette)
+        except KeyError:
+            pass
