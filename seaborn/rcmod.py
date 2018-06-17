@@ -60,9 +60,7 @@ _context_keys = (
 
     "grid.linewidth",
     "lines.linewidth",
-    "patch.linewidth",
     "lines.markersize",
-    "lines.markeredgewidth",
 
     "xtick.major.width",
     "ytick.major.width",
@@ -353,9 +351,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
 
             "grid.linewidth": 1,
             "lines.linewidth": 1.75,
-            "patch.linewidth": .3,
             "lines.markersize": 7,
-            "lines.markeredgewidth": 0,
 
             "xtick.major.width": 1,
             "ytick.major.width": 1,
@@ -376,13 +372,6 @@ def plotting_context(context=None, font_scale=1, rc=None):
                      "xtick.labelsize", "ytick.labelsize", "font.size"]
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)
-
-    # Implement hack workaround for matplotlib bug
-    # See https://github.com/mwaskom/seaborn/issues/344
-    # There is a bug in matplotlib 1.4.2 that makes points invisible when
-    # they don't have an edgewidth. It will supposedly be fixed in 1.4.3.
-    if mpl.__version__ == "1.4.2":
-        context_dict["lines.markeredgewidth"] = 0.01
 
     # Override these settings with the provided rc dictionary
     if rc is not None:
