@@ -38,10 +38,6 @@ _style_keys = (
     "xtick.minor.size",
     "ytick.minor.size",
 
-    "legend.frameon",
-    "legend.numpoints",
-    "legend.scatterpoints",
-
     "lines.solid_capstyle",
 
     "image.cmap",
@@ -172,9 +168,6 @@ def axes_style(style=None, rc=None):
             "figure.facecolor": "white",
             "text.color": dark_gray,
             "axes.labelcolor": dark_gray,
-            "legend.frameon": False,
-            "legend.numpoints": 1,
-            "legend.scatterpoints": 1,
             "xtick.direction": "out",
             "ytick.direction": "out",
             "xtick.color": dark_gray,
