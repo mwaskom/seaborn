@@ -314,7 +314,8 @@ class _HeatMapper(object):
         ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
 
         # Possibly rotate them if they overlap
-        ax.figure.draw(ax.figure.canvas.get_renderer())
+        if hasattr(ax.figure.canvas, "get_renderer"):
+            ax.figure.draw(ax.figure.canvas.get_renderer())
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
         if axis_ticklabels_overlap(ytl):
@@ -696,7 +697,8 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        ax.figure.draw(ax.figure.canvas.get_renderer())
+        if hasattr(ax.figure.canvas, "get_renderer"):
+            ax.figure.draw(ax.figure.canvas.get_renderer())
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
