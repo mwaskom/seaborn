@@ -1073,7 +1073,7 @@ class PairGrid(Grid):
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
                  diag_sharey=True, size=2.5, aspect=1,
-                 despine=True, dropna=True):
+                 despine=True, dropna=True, subplot_kws=None):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1106,6 +1106,8 @@ class PairGrid(Grid):
             Remove the top and right spines from the plots.
         dropna : boolean, optional
             Drop missing values from the data before plotting.
+        subplot_kws : dict, optional
+            Additional keyword arguments to pass to ``plt.subplots``.
 
         See Also
         --------
@@ -1232,10 +1234,13 @@ class PairGrid(Grid):
         # Create the figure and the array of subplots
         figsize = len(x_vars) * size * aspect, len(y_vars) * size
 
+        all_subplot_kws = dict(sharex="col", sharey="row")
+        if subplot_kws is not None:
+            all_subplot_kws.update(subplot_kws)
+
         fig, axes = plt.subplots(len(y_vars), len(x_vars),
-                                 figsize=figsize,
-                                 sharex="col", sharey="row",
-                                 squeeze=False)
+                                 figsize=figsize, squeeze=False,
+                                 subplot_kw=all_subplot_kws)
 
         self.fig = fig
         self.axes = axes
