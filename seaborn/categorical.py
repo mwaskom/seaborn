@@ -2344,7 +2344,7 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
-    Use :func:`factorplot` to combine a :func:`boxplot` and a
+    Use :func:`factorplot` to combine a :func:`pointplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
     variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
