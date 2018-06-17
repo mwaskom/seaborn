@@ -271,7 +271,7 @@ class _CategoricalPlotter(object):
             if n_colors <= len(current_palette):
                 colors = color_palette(n_colors=n_colors)
             else:
-                colors = husl_palette(n_colors, l=.7)
+                colors = husl_palette(n_colors, l=.7)  # noqa
 
         elif palette is None:
             # When passing a specific color, the interpretation depends
@@ -308,8 +308,8 @@ class _CategoricalPlotter(object):
 
         # Determine the gray color to use for the lines framing the plot
         light_vals = [colorsys.rgb_to_hls(*c)[1] for c in rgb_colors]
-        l = min(light_vals) * .6
-        gray = mpl.colors.rgb2hex((l, l, l))
+        lum = min(light_vals) * .6
+        gray = mpl.colors.rgb2hex((lum, lum, lum))
 
         # Assign object attributes
         self.colors = rgb_colors
