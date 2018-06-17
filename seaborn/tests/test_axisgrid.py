@@ -1133,13 +1133,6 @@ class TestPairGrid(object):
 
         plt.close("all")
 
-    def test_subplot_kws(self):
-
-        g = ag.PairGrid(self.df, despine=False,
-                        subplot_kws=dict(projection="polar"))
-        for ax in g.axes.flat:
-            assert "PolarAxesSubplot" in str(type(ax))
-
     def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")
