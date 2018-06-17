@@ -18,6 +18,8 @@ v0.9.0 (Unreleased)
 
 - Fixed functions that set axis limits so that they preserve auto-scaling state on matplotlib 2.0.
 
+- Avoided an error when using matplotlib backends that cannot render a canvas (e.g. PDF).
+
 - Changed the install infrastructure to explicitly declare dependencies in a way that ``pip`` is aware of. This means that ``pip install seaborn`` will now work in an empty environment. Additionally, the dependencies are specified with strict minimal versions.
 
 - Updated the testing infrastructure to execute tests with `pytest <https://docs.pytest.org/en/latest/>` (although many individual tests still use nose assertion).
