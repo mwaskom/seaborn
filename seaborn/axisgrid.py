@@ -183,7 +183,7 @@ _facet_docs = dict(
         span multiple rows. Incompatible with a ``row`` facet.\
     """),
     share_xy=dedent("""\
-    share{x,y} : bool, optional
+    share{x,y} : bool, 'col', or 'row' optional
         If true, the facets will share y axes across columns and/or x axes
         across rows.\
     """),
@@ -1708,9 +1708,9 @@ class JointGrid(object):
         self.y = y_array
 
         if xlim is not None:
-            ax_joint.set_xlim(xlim)
+            ax_joint.set_xlim(xlim, auto=None)
         if ylim is not None:
-            ax_joint.set_ylim(ylim)
+            ax_joint.set_ylim(ylim, auto=None)
 
         # Make the grid look nice
         utils.despine(f)

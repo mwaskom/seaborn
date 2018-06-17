@@ -271,7 +271,7 @@ class _CategoricalPlotter(object):
             if n_colors <= len(current_palette):
                 colors = color_palette(n_colors=n_colors)
             else:
-                colors = husl_palette(n_colors, l=.7)
+                colors = husl_palette(n_colors, l=.7)  # noqa
 
         elif palette is None:
             # When passing a specific color, the interpretation depends
@@ -308,8 +308,8 @@ class _CategoricalPlotter(object):
 
         # Determine the gray color to use for the lines framing the plot
         light_vals = [colorsys.rgb_to_hls(*c)[1] for c in rgb_colors]
-        l = min(light_vals) * .6
-        gray = mpl.colors.rgb2hex((l, l, l))
+        lum = min(light_vals) * .6
+        gray = mpl.colors.rgb2hex((lum, lum, lum))
 
         # Assign object attributes
         self.colors = rgb_colors
@@ -403,10 +403,10 @@ class _CategoricalPlotter(object):
 
         if self.orient == "v":
             ax.xaxis.grid(False)
-            ax.set_xlim(-.5, len(self.plot_data) - .5)
+            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
         else:
             ax.yaxis.grid(False)
-            ax.set_ylim(-.5, len(self.plot_data) - .5)
+            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
 
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
@@ -1368,9 +1368,9 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
         # Set the categorical axes limits here for the swarm math
         if self.orient == "v":
-            ax.set_xlim(-.5, len(self.plot_data) - .5)
+            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
         else:
-            ax.set_ylim(-.5, len(self.plot_data) - .5)
+            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
 
         # Plot each swarm
         for i, group_data in enumerate(self.plot_data):
@@ -2344,7 +2344,7 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
-    Use :func:`factorplot` to combine a :func:`boxplot` and a
+    Use :func:`factorplot` to combine a :func:`pointplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
     variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:

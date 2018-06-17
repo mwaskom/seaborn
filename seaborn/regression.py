@@ -396,7 +396,7 @@ class _RegressionPlotter(_LinearPlotter):
         ax.plot(grid, yhat, **kws)
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
-        ax.set_xlim(*xlim)
+        ax.set_xlim(*xlim, auto=None)
 
 
 _regression_docs = dict(
