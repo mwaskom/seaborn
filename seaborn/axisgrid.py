@@ -1707,9 +1707,9 @@ class JointGrid(object):
         self.y = y_array
 
         if xlim is not None:
-            ax_joint.set_xlim(xlim, auto=None)
+            ax_joint.set_xlim(xlim)
         if ylim is not None:
-            ax_joint.set_ylim(ylim, auto=None)
+            ax_joint.set_ylim(ylim)
 
         # Make the grid look nice
         utils.despine(f)
