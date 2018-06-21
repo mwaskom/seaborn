@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from . import utils
 from .palettes import color_palette, blend_palette
 from .external.six import string_types
+from .basic import scatterplot
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
@@ -85,12 +86,7 @@ class Grid(object):
             figlegend = self.fig.legend(handles, label_order, "center right",
                                         **kwargs)
             self._legend = figlegend
-            figlegend.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            figlegend._legend_title_box._text.set_font_properties(prop)
+            figlegend.set_title(title, prop={"size": title_size})
 
             # Draw the plot to set the bounding boxes correctly
             if hasattr(self.fig.canvas, "get_renderer"):
@@ -119,12 +115,7 @@ class Grid(object):
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
             leg = ax.legend(handles, label_order, loc="best", **kwargs)
-            leg.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            leg._legend_title_box._text.set_font_properties(prop)
+            leg.set_title(title, prop={"size": title_size})
 
         return self
 
@@ -1282,7 +1273,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1324,10 +1316,9 @@ class PairGrid(Grid):
         Parameters
         ----------
         func : callable plotting function
-            Must take an x array as a positional arguments and draw onto the
-            "currently active" matplotlib Axes. There is a special case when
-            using a ``hue`` variable and ``plt.hist``; the histogram will be
-            plotted with stacked bars.
+            Must take an x array as a positional argument and draw onto the
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         # Add special diagonal axes for the univariate plot
@@ -1351,42 +1342,22 @@ class PairGrid(Grid):
             ax = self.diag_axes[i]
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
-            # Special-case plt.hist with stacked bars
-            if func is plt.hist:
-                plt.sca(ax)
+            plt.sca(ax)
 
-                vals = []
-                for label in self.hue_names:
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        vals.append(np.asarray(hue_grouped.get_group(label)))
-                    except KeyError:
-                        vals.append(np.array([]))
+            for k, label_k in enumerate(self.hue_names):
 
-                color = self.palette if fixed_color is None else fixed_color
+                # Attempt to get data for this level, allowing for empty
+                try:
+                    data_k = np.asarray(hue_grouped.get_group(label_k))
+                except KeyError:
+                    data_k = np.array([])
 
-                if "histtype" in kwargs:
-                    func(vals, color=color, **kwargs)
+                if fixed_color is None:
+                    color = self.palette[k]
                 else:
-                    func(vals, color=color, histtype="barstacked", **kwargs)
+                    color = fixed_color
 
-            else:
-                plt.sca(ax)
-
-                for k, label_k in enumerate(self.hue_names):
-
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        data_k = hue_grouped.get_group(label_k)
-                    except KeyError:
-                        data_k = np.array([])
-
-                    if fixed_color is None:
-                        color = self.palette[k]
-                    else:
-                        color = fixed_color
-
-                    func(data_k, label=label_k, color=color, **kwargs)
+                func(data_k, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
 
@@ -1401,7 +1372,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1446,7 +1418,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1492,7 +1465,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
 
@@ -1882,7 +1856,7 @@ class JointGrid(object):
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist", markers=None,
+             kind="scatter", diag_kind="kde", markers=None,
              size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
@@ -2064,10 +2038,12 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
+    diag_kws = diag_kws.copy()
     if grid.square_grid:
         if diag_kind == "hist":
             grid.map_diag(plt.hist, **diag_kws)
         elif diag_kind == "kde":
+            diag_kws.setdefault("shade", True)
             diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
@@ -2078,8 +2054,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         plotter = grid.map
 
     if kind == "scatter":
-        plot_kws.setdefault("edgecolor", "white")
-        plotter(plt.scatter, **plot_kws)
+        plotter(scatterplot, **plot_kws)
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import
         plotter(regplot, **plot_kws)
