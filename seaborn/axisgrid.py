@@ -1351,42 +1351,22 @@ class PairGrid(Grid):
             ax = self.diag_axes[i]
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
-            # Special-case plt.hist with stacked bars
-            if func is plt.hist:
-                plt.sca(ax)
+            plt.sca(ax)
 
-                vals = []
-                for label in self.hue_names:
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        vals.append(np.asarray(hue_grouped.get_group(label)))
-                    except KeyError:
-                        vals.append(np.array([]))
+            for k, label_k in enumerate(self.hue_names):
 
-                color = self.palette if fixed_color is None else fixed_color
+                # Attempt to get data for this level, allowing for empty
+                try:
+                    data_k = hue_grouped.get_group(label_k)
+                except KeyError:
+                    data_k = np.array([])
 
-                if "histtype" in kwargs:
-                    func(vals, color=color, **kwargs)
+                if fixed_color is None:
+                    color = self.palette[k]
                 else:
-                    func(vals, color=color, histtype="barstacked", **kwargs)
+                    color = fixed_color
 
-            else:
-                plt.sca(ax)
-
-                for k, label_k in enumerate(self.hue_names):
-
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        data_k = hue_grouped.get_group(label_k)
-                    except KeyError:
-                        data_k = np.array([])
-
-                    if fixed_color is None:
-                        color = self.palette[k]
-                    else:
-                        color = fixed_color
-
-                    func(data_k, label=label_k, color=color, **kwargs)
+                func(data_k, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
 
