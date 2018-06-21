@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from . import utils
 from .palettes import color_palette, blend_palette
 from .external.six import string_types
+from .basic import scatterplot
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
@@ -1862,7 +1863,7 @@ class JointGrid(object):
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist", markers=None,
+             kind="scatter", diag_kind="kde", markers=None,
              size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
@@ -2044,10 +2045,12 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
+    diag_kws = diag_kws.copy()
     if grid.square_grid:
         if diag_kind == "hist":
             grid.map_diag(plt.hist, **diag_kws)
         elif diag_kind == "kde":
+            diag_kws.setdefault("shade", True)
             diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
@@ -2058,8 +2061,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         plotter = grid.map
 
     if kind == "scatter":
-        plot_kws.setdefault("edgecolor", "white")
-        plotter(plt.scatter, **plot_kws)
+        plotter(scatterplot, **plot_kws)
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import
         plotter(regplot, **plot_kws)

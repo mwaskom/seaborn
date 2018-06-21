@@ -16,6 +16,8 @@ v0.9.0 (Unreleased)
 
 - Added the ``subplot_kws`` parameter to :class:`PairGrid` for more flexibility.
 
+- Changed the default diagonal plots in :func:`pairplot` to use :func:`kdeplot` and changed the default off-diagonal plots to use :func:`scatterplot`.
+
 - Removed a special case in :class:`PairGrid` that defaulted to drawing stacked histograms on the diagonal axes.
 
 - Fixed functions that set axis limits so that they preserve auto-scaling state on matplotlib 2.0.
