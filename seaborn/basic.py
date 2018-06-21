@@ -1487,6 +1487,15 @@ scatterplot.__doc__ = dedent("""\
         ...                      markers=markers,
         ...                      data=tips)
 
+    Control plot attributes using matplotlib parameters:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      s=100, color=".2", marker="+",
+        ...                      data=tips)
+
     Pass data vectors instead of names in a data frame:
 
     .. plot::
