@@ -114,7 +114,7 @@ To see the code or report a bug, please visit the `github repository
 * Categorical plots: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
 * Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
 * Multi-plot grids: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
-* Style functions: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
+* Style control: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
 * Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
  
 .. raw:: html
