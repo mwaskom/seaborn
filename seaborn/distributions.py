@@ -712,6 +712,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
                                     np.tile([0, height], len(a))])
     line_segs = xy_pairs.reshape([len(a), 2, 2])
     ax.add_collection(LineCollection(line_segs, transform=trans, **kwargs))
-    ax.autoscale_view()
+
+    ax.autoscale_view(scalex=not vertical, scaley=vertical)
 
     return ax
