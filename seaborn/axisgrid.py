@@ -86,12 +86,7 @@ class Grid(object):
             figlegend = self.fig.legend(handles, label_order, "center right",
                                         **kwargs)
             self._legend = figlegend
-            figlegend.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            figlegend._legend_title_box._text.set_font_properties(prop)
+            figlegend.set_title(title, prop={"size": title_size})
 
             # Draw the plot to set the bounding boxes correctly
             if hasattr(self.fig.canvas, "get_renderer"):
@@ -120,12 +115,7 @@ class Grid(object):
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
             leg = ax.legend(handles, label_order, loc="best", **kwargs)
-            leg.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            leg._legend_title_box._text.set_font_properties(prop)
+            leg.set_title(title, prop={"size": title_size})
 
         return self
 
