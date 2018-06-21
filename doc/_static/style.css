@@ -30,6 +30,14 @@ code {
     background-color: #ffffff !important;
 }
 
+ul {
+    padding-left: 20px !important;  
+}
+
+ul.dropdown-menu {
+    padding-left: 0px !important;
+}
+
 .alert-info {
     background-color: #adb8cb !important;
     border-color: #adb8cb !important;

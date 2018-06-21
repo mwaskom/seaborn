@@ -24,28 +24,17 @@ seaborn: statistical data visualization
 
 .. raw:: html
 
-
     <div style="clear: both"></div>
     <div class="container-fluid hidden-xs hidden-sm">
       <div class="row">
-        <a href="examples/anscombes_quartet.html">
+        <a href="examples/different_scatter_variables.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/anscombes_quartet_thumb.png">
+            <img src="_static/different_scatter_variables_thumb.png">
           </div>
         </a>
-        <a href="examples/multiple_regression.html">
+        <a href="examples/errorband_lineplots.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/multiple_regression_thumb.png">
-          </div>
-        </a>
-        <a href="examples/many_facets.html">
-          <div class="col-md-2 thumbnail">
-            <img src="_static/many_facets_thumb.png">
-          </div>
-        </a>
-        <a href="examples/structured_heatmap.html">
-          <div class="col-md-2 thumbnail">
-            <img src="_static/structured_heatmap_thumb.png">
+            <img src="_static/errorband_lineplots_thumb.png">
           </div>
         </a>
         <a href="examples/scatterplot_matrix.html">
@@ -58,17 +47,26 @@ seaborn: statistical data visualization
             <img src="_static/horizontal_boxplot_thumb.png">
           </div>
         </a>
+        <a href="examples/regression_marginals.html">
+          <div class="col-md-2 thumbnail">
+            <img src="_static/regression_marginals_thumb.png">
+          </div>
+        </a>
+        <a href="examples/many_facets.html">
+          <div class="col-md-2 thumbnail">
+            <img src="_static/many_facets_thumb.png">
+          </div>
+        </a>
       </div>
     </div>
     <br>
 
    <div class="container-fluid">
-   <div class="row">
-   <div class="col-md-6">
-   <br>
+     <div class="row">
+       <div class="col-md-6">
 
-Seaborn is a Python visualization library based on matplotlib. It provides a
-high-level interface for drawing attractive statistical graphics.
+Seaborn is a Python visualization library based on `matplotlib <https://matplotlib.org>`_. It provides a
+high-level interface for drawing attractive and informative statistical graphics.
 
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the
@@ -81,9 +79,13 @@ To see the code or report a bug, please visit the `github repository
 
 .. raw:: html
 
-   </div>
-   <div class="col-md-3">
-   <h2>Documentation</h2>
+       </div>
+       <div class="col-md-3">
+         <div class="panel panel-default">   
+           <div class="panel-heading">
+             <h3 class="panel-title">Documentation</h3>
+           </div>
+       <div class="panel-body">
 
 .. toctree::
    :maxdepth: 1
@@ -97,9 +99,15 @@ To see the code or report a bug, please visit the `github repository
 
 .. raw:: html
 
+       </div>
+     </div>
    </div>
    <div class="col-md-3">
-   <h2>Features</h2>
+     <div class="panel panel-default">   
+       <div class="panel-heading">
+         <h3 class="panel-title">Features</h3>
+       </div>
+       <div class="panel-body">
 
 * Style functions: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
 * Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
@@ -110,6 +118,8 @@ To see the code or report a bug, please visit the `github repository
  
 .. raw:: html
 
+       </div>
+     </div>
    </div>
    </div>
    </div>
