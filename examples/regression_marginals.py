@@ -9,4 +9,4 @@ sns.set(style="darkgrid", color_codes=True)
 
 tips = sns.load_dataset("tips")
 g = sns.jointplot("total_bill", "tip", data=tips, kind="reg",
-                  xlim=(0, 60), ylim=(0, 12), color="r", size=7)
+                  xlim=(0, 60), ylim=(0, 12), color="m", size=7)

@@ -1,6 +1,6 @@
 """
-Timeseries plots with error bands
-=================================
+Timeseries plot with error bands
+================================
 
 _thumb: .5, .45
 
