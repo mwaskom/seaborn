@@ -5,23 +5,6 @@
 API reference
 =============
 
-.. _grid_api:
-
-Axis grids
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-    FacetGrid
-    factorplot
-    lmplot
-    PairGrid
-    pairplot
-    JointGrid
-    jointplot
-
-
 .. _basic_api:
 
 Basic plots
@@ -84,6 +67,22 @@ Matrix plots
 
     heatmap
     clustermap
+
+.. _grid_api:
+
+Multi-plot grids
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+    FacetGrid
+    factorplot
+    lmplot
+    PairGrid
+    pairplot
+    JointGrid
+    jointplot
 
 .. _style_api:
 

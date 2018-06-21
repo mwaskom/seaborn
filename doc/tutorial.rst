@@ -32,7 +32,7 @@ Tutorial
         <div class="row">
           <div class="panel panel-default">   
             <div class="panel-heading">
-              <h3 class="panel-title">Structrued grids</h3>
+              <h3 class="panel-title">Multi-plot grids</h3>
             </div>
             <div class="panel-body">
 
