@@ -1273,7 +1273,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1315,10 +1316,9 @@ class PairGrid(Grid):
         Parameters
         ----------
         func : callable plotting function
-            Must take an x array as a positional arguments and draw onto the
-            "currently active" matplotlib Axes. There is a special case when
-            using a ``hue`` variable and ``plt.hist``; the histogram will be
-            plotted with stacked bars.
+            Must take an x array as a positional argument and draw onto the
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         # Add special diagonal axes for the univariate plot
@@ -1372,7 +1372,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1417,7 +1418,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1463,7 +1465,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
 
