@@ -1501,7 +1501,7 @@ class TestJointPlot(object):
 
     def test_annotation(self):
 
-        g = ag.jointplot("x", "y", self.data)
+        g = ag.jointplot("x", "y", self.data, stat_func=stats.pearsonr)
         nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
 
         g = ag.jointplot("x", "y", self.data, stat_func=None)
