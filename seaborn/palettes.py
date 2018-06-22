@@ -950,10 +950,10 @@ def _parse_cube_args(argstr):
 
     all_args = argstr.split(",")
 
-    args = [float(a) for a in all_args if "=" not in a]
+    args = [float(a.strip(" ")) for a in all_args if "=" not in a]
 
     kwargs = [a.split("=") for a in all_args if "=" in a]
-    kwargs = {k: float(v) for k, v in kwargs}
+    kwargs = {k.strip(" "): float(v.strip(" ")) for k, v in kwargs}
 
     return args, kwargs
 
