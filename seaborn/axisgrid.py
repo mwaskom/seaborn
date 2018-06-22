@@ -1771,6 +1771,8 @@ class JointGrid(object):
     def annotate(self, func, template=None, stat=None, loc="best", **kwargs):
         """Annotate the plot with a statistic about the relationship.
 
+        *Deprecated and will be removed in a future version*.
+
         Parameters
         ----------
         func : callable
@@ -1794,6 +1796,10 @@ class JointGrid(object):
             Returns `self`.
 
         """
+        msg = ("JointGrid annotation is deprecated and will be removed "
+               "in a future release.")
+        warnings.warn(UserWarning(msg))
+
         default_template = "{stat} = {val:.2g}; p = {p:.2g}"
 
         # Call the function and determine the form of the return value(s)
@@ -2066,7 +2072,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     return grid
 
 
-def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
+def jointplot(x, y, data=None, kind="scatter", stat_func=None,
               color=None, size=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
               joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
@@ -2086,10 +2092,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
         Kind of plot to draw.
     stat_func : callable or None, optional
-        Function used to calculate a statistic about the relationship and
-        annotate the plot. Should map `x` and `y` either to a single value
-        or to a (value, p) tuple. Set to ``None`` if you don't want to
-        annotate the plot.
+        *Deprecated*
     color : matplotlib color, optional
         Color used for the plot elements.
     size : numeric, optional
@@ -2156,15 +2159,6 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         >>> g = sns.jointplot("sepal_width", "petal_length", data=iris,
         ...                   kind="kde", space=0, color="g")
 
-    Use a different statistic for the annotation:
-
-    .. plot::
-        :context: close-figs
-
-        >>> from scipy.stats import spearmanr
-        >>> g = sns.jointplot("size", "total_bill", data=tips,
-        ...                   stat_func=spearmanr, color="m")
-
     Draw a scatterplot, then add a joint density estimate:
 
     .. plot::
@@ -2180,7 +2174,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         :context: close-figs
 
         >>> x, y = np.random.randn(2, 300)
-        >>> g = (sns.jointplot(x, y, kind="hex", stat_func=None)
+        >>> g = (sns.jointplot(x, y, kind="hex")
         ...         .set_axis_labels("x", "y"))
 
     Draw a smaller figure with more space devoted to the marginal plots:
