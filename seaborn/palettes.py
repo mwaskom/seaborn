@@ -900,7 +900,28 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    cdict = mpl._cm.cubehelix(gamma, start, rot, hue)
+    def get_color_function(p0, p1):
+        # Copied from matplotlib because it lives in private module
+        def color(x):
+            # Apply gamma factor to emphasise low or high intensity values
+            xg = x ** gamma
+
+            # Calculate amplitude and angle of deviation from the black
+            # to white diagonal in the plane of constant
+            # perceived intensity.
+            a = hue * xg * (1 - xg) / 2
+
+            phi = 2 * np.pi * (start / 3 + rot * x)
+
+            return xg + a * (p0 * np.cos(phi) + p1 * np.sin(phi))
+        return color
+
+    cdict = {
+            "red": get_color_function(-0.14861, 1.78277),
+            "green": get_color_function(-0.29227, -0.90649),
+            "blue": get_color_function(1.97294, 0.0),
+    }
+
     cmap = mpl.colors.LinearSegmentedColormap("cubehelix", cdict)
 
     x = np.linspace(light, dark, n_colors)
