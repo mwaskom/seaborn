@@ -254,6 +254,18 @@ class TestColorPalettes(object):
         pal_reverse = cmap_rev(x[::-1]).tolist()
         nt.assert_list_equal(pal_forward, pal_reverse)
 
+    def test_cubehelix_code(self):
+
+        pal1 = palettes.color_palette("cube:", 8)
+        pal2 = palettes.color_palette(palettes.cubehelix_palette(8))
+        assert pal1 == pal2
+
+        pal1 = palettes.color_palette("cube:.5,-.25,hue=.5,light=.75", 8)
+        pal2 = palettes.color_palette(
+            palettes.cubehelix_palette(8, .5, -.25, hue=.5, light=.75)
+        )
+        assert pal1 == pal2
+
     def test_xkcd_palette(self):
 
         names = list(xkcd_rgb.keys())[10:15]

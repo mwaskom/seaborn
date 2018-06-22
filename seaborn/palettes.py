@@ -163,16 +163,30 @@ def color_palette(palette=None, n_colors=None, desat=None):
         if n_colors is None:
             n_colors = 6
 
-        if palette == "hls":
-            palette = hls_palette(n_colors)
-        elif palette == "husl":
-            palette = husl_palette(n_colors)
-        elif palette.lower() == "jet":
-            raise ValueError("No.")
-        elif palette in SEABORN_PALETTES:
+        if palette in SEABORN_PALETTES:
+            # Named "seaborn variant" of old matplotlib default palette
             palette = SEABORN_PALETTES[palette]
+
+        elif palette == "hls":
+            # Evenly spaced colors in cylindrical RGB
+            palette = hls_palette(n_colors)
+
+        elif palette == "husl":
+            # Evenly spaced colors in cylindrical Lab
+            palette = husl_palette(n_colors)
+
+        elif palette.lower() == "jet":
+            # Paternalism
+            raise ValueError("No.")
+
+        elif palette.startswith("cube:"):
+            # Cubehelix palette with params specified in string
+            args, kwargs = _parse_cube_args(palette)
+            palette = cubehelix_palette(n_colors, *args, **kwargs)
+
         else:
             try:
+                # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors)
             except ValueError:
                 raise ValueError("%s is not a valid palette name" % palette)
@@ -903,6 +917,24 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return cmap
     else:
         return _ColorPalette(pal)
+
+
+def _parse_cube_args(argstr):
+    """Turn stringified cubehelix params into args/kwargs."""
+    if argstr.startswith("cube:"):
+        argstr = argstr[5:]
+
+    if not argstr:
+        return [], {}
+
+    all_args = argstr.split(",")
+
+    args = [float(a) for a in all_args if "=" not in a]
+
+    kwargs = [a.split("=") for a in all_args if "=" in a]
+    kwargs = {k: float(v) for k, v in kwargs}
+
+    return args, kwargs
 
 
 def set_color_codes(palette="deep"):
