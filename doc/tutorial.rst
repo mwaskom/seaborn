@@ -18,8 +18,8 @@ Tutorial
    :maxdepth: 2
 
    tutorial/basic
-   tutorial/distributions
    tutorial/categorical
+   tutorial/distributions
    tutorial/regression
 
 .. raw:: html
