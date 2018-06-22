@@ -194,7 +194,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     return palette
 
 
-def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
+def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
     """Get a set of evenly spaced colors in HLS hue space.
 
     h, l, and s should be between 0 and 1
@@ -262,7 +262,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     return _ColorPalette(palette)
 
 
-def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
+def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
     """Get a set of evenly spaced colors in HUSL hue space.
 
     h, s, and l should be between 0 and 1
@@ -327,7 +327,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
     hues %= 1
     hues *= 359
     s *= 99
-    l *= 99
+    l *= 99  # noqa
     palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
     return _ColorPalette(palette)
 
@@ -585,7 +585,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
     """
     color = _color_to_rgb(color, input)
-    light = set_hls_values(color, l=.95)
+    light = set_hls_values(color, l=.95)  # noqa
     colors = [color, light] if reverse else [light, color]
     return blend_palette(colors, n_colors, as_cmap)
 
@@ -617,8 +617,8 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
-                      as_cmap=False):
+def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
+                      center="light", as_cmap=False):
     """Make a diverging palette between two HUSL colors.
 
     If you are using the IPython notebook, you can also choose this palette
