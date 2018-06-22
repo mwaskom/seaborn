@@ -73,7 +73,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
     vertical : bool, optional
-        If True, oberved values are on y-axis.
+        If True, observed values are on y-axis.
     norm_hist : bool, optional
         If True, the histogram height shows a density rather than a count.
         This is implied if a KDE or fitted density is plotted.
