@@ -14,7 +14,7 @@ from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
                     remove_na)
 from .algorithms import bootstrap
-from .palettes import color_palette
+from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
 
 
 __all__ = ["lineplot", "scatterplot"]
@@ -22,7 +22,6 @@ __all__ = ["lineplot", "scatterplot"]
 
 class _BasicPlotter(object):
 
-    # We could use "line art glyphs" (e.g. "P") on mpl 2
     if LooseVersion(mpl.__version__) >= "2.0":
         default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     else:
@@ -239,6 +238,9 @@ class _BasicPlotter(object):
             cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
         elif isinstance(palette, mpl.colors.Colormap):
             cmap = palette
+        elif str(palette).startswith("ch:"):
+            args, kwargs = _parse_cubehelix_args(palette)
+            cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
         else:
             try:
                 cmap = mpl.cm.get_cmap(palette)
