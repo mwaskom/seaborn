@@ -62,13 +62,14 @@ def color_palette(palette=None, n_colors=None, desat=None):
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
-        hls, husl, any named matplotlib palette, list of colors
+        name of matplotlib cmap, 'ch:<cubehelix arguments>', 'hls', 'husl',
+        or a list of colors in any format matplotlib accepts
 
     Calling this function with ``palette=None`` will return the current
     matplotlib color cycle.
 
     Matplotlib palettes can be specified as reversed palettes by appending
-    "_r" to the name or as dark palettes by appending "_d" to the name.
+    "_r" to the name or as "dark" palettes by appending "_d" to the name.
     (These options are mutually exclusive, but the resulting list of colors
     can also be reversed).
 
@@ -105,39 +106,51 @@ def color_palette(palette=None, n_colors=None, desat=None):
     Examples
     --------
 
-    Show one of the "seaborn palettes", which have the same basic order of hues
-    as the default matplotlib color cycle but more attractive colors.
+    Calling with no arguments returns the current default color cycle:
 
     .. plot::
         :context: close-figs
 
         >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.color_palette())
+
+    Show one of the other "seaborn palettes", which have the same basic order
+    of hues as the default matplotlib color cycle but more attractive colors:
+
+    .. plot::
+        :context: close-figs
+
         >>> sns.palplot(sns.color_palette("muted"))
 
-    Use discrete values from one of the built-in matplotlib colormaps.
+    Use discrete values from one of the built-in matplotlib colormaps:
 
     .. plot::
         :context: close-figs
 
         >>> sns.palplot(sns.color_palette("RdBu", n_colors=7))
 
-    Make a "dark" matplotlib sequential palette variant. (This can be good
-    when coloring multiple lines or points that correspond to an ordered
-    variable, where you don't want the lightest lines to be invisible).
+    Make a customized cubehelix color palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("Blues_d"))
+        >>> sns.palplot(sns.color_palette("ch:2.5,-.2,dark=.3"))
 
-    Use a categorical matplotlib palette, add some desaturation. (This can be
-    good when making plots with large patches, which look best with dimmer
-    colors).
+    Use a categorical matplotlib palette and add some desaturation:
 
     .. plot::
         :context: close-figs
 
         >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.5))
+
+    Make a "dark" matplotlib sequential palette variant. (This can be good
+    when coloring multiple lines or points that correspond to an ordered
+    variable, where you don't want the lightest lines to be invisible):
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("Blues_d"))
 
     Use as a context manager:
 
@@ -179,9 +192,9 @@ def color_palette(palette=None, n_colors=None, desat=None):
             # Paternalism
             raise ValueError("No.")
 
-        elif palette.startswith("cube:"):
+        elif palette.startswith("ch:"):
             # Cubehelix palette with params specified in string
-            args, kwargs = _parse_cube_args(palette)
+            args, kwargs = _parse_cubehelix_args(palette)
             palette = cubehelix_palette(n_colors, *args, **kwargs)
 
         else:
@@ -940,10 +953,10 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return _ColorPalette(pal)
 
 
-def _parse_cube_args(argstr):
+def _parse_cubehelix_args(argstr):
     """Turn stringified cubehelix params into args/kwargs."""
-    if argstr.startswith("cube:"):
-        argstr = argstr[5:]
+    if argstr.startswith("ch:"):
+        argstr = argstr[3:]
 
     if not argstr:
         return [], {}
