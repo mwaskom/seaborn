@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
-from .. import rcmod
+from .. import rcmod, palettes, utils
 
 
 class RCParamTester(object):
@@ -173,6 +173,23 @@ class TestPlottingContext(RCParamTester):
             self.assert_rc_params(context_params)
         func()
         self.assert_rc_params(orig_params)
+
+
+class TestPalette(object):
+
+    def test_set_palette(self):
+
+        rcmod.set_palette("deep")
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+
+        rcmod.set_palette("pastel6")
+        assert utils.get_color_cycle() == palettes.color_palette("pastel6", 6)
+
+        rcmod.set_palette("dark", 4)
+        assert utils.get_color_cycle() == palettes.color_palette("dark", 4)
+
+        rcmod.set_palette("Set2")
+        assert utils.get_color_cycle() == palettes.color_palette("Set2", 8)
 
 
 class TestFonts(object):

@@ -18,9 +18,9 @@ class TestColorPalettes(object):
 
     def test_current_palette(self):
 
-        pal = palettes.color_palette(["red", "blue", "green"], 3)
-        rcmod.set_palette(pal, 3)
-        nt.assert_equal(pal, utils.get_color_cycle())
+        pal = palettes.color_palette(["red", "blue", "green"])
+        rcmod.set_palette(pal)
+        assert pal == utils.get_color_cycle()
         rcmod.set()
 
     def test_palette_context(self):

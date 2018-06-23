@@ -47,6 +47,18 @@ SEABORN_PALETTES = dict(
     )
 
 
+MPL_QUAL_PALS = {
+    "tab10": 10, "tab20": 20, "tab20b": 20, "tab20c": 20,
+    "Set1": 9, "Set2": 8, "Set3": 12,
+    "Accent": 8, "Paired": 12,
+    "Pastel1": 9, "Pastel2": 8, "Dark2": 8,
+}
+
+
+QUAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
+QUAL_PALETTE_SIZES.update({k: len(v) for k, v in SEABORN_PALETTES.items()})
+
+
 class _ColorPalette(list):
     """Set the color palette in a with statement, otherwise be a list."""
     def __enter__(self):
@@ -118,7 +130,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
     Examples
     --------
 
-    Calling with no arguments returns the current default color cycle:
+    Calling with no arguments returns all colors from the current default
+    color cycle:
 
     .. plot::
         :context: close-figs
@@ -127,7 +140,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
         >>> sns.palplot(sns.color_palette())
 
     Show one of the other "seaborn palettes", which have the same basic order
-    of hues as the default matplotlib color cycle but more attractive colors:
+    of hues as the default matplotlib color cycle but more attractive colors.
+    Calling with the name of a palette will return 6 colors by default:
 
     .. plot::
         :context: close-figs
@@ -431,11 +445,6 @@ def mpl_palette(name, n_colors=6):
         >>> sns.palplot(sns.mpl_palette("GnBu_d"))
 
     """
-    mpl_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
-                     "Pastel1": 9, "Pastel2": 8,
-                     "Set1": 9, "Set2": 8, "Set3": 12,
-                     "tab10": 10, "tab20": 20, "tab20b": 20, "tab20c": 20}
-
     if name.endswith("_d"):
         pal = ["#333333"]
         pal.extend(color_palette(name.replace("_d", "_r"), 2))
@@ -444,8 +453,8 @@ def mpl_palette(name, n_colors=6):
         cmap = mpl.cm.get_cmap(name)
         if cmap is None:
             raise ValueError("{} is not a valid colormap".format(name))
-    if name in mpl_qual_pals:
-        bins = np.linspace(0, 1, mpl_qual_pals[name])[:n_colors]
+    if name in MPL_QUAL_PALS:
+        bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
