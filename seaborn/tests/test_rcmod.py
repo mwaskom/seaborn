@@ -230,8 +230,7 @@ class TestFonts(object):
             raise nose.SkipTest
 
         rcmod.set()
-        rcmod.set_style(rc={"font.sans-serif":
-                            ["Verdana"]})
+        rcmod.set_style(rc={"font.sans-serif": ["Verdana"]})
 
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
@@ -256,7 +255,7 @@ def has_verdana():
     import matplotlib.font_manager as mplfm
     try:
         verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
-    except:
+    except:  # noqa
         # if https://github.com/matplotlib/matplotlib/pull/3435
         # gets accepted
         return False
@@ -264,7 +263,7 @@ def has_verdana():
     try:
         unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
                                        fallback_to_default=False)
-    except:
+    except:  # noqa
         # if matched verdana but not unlikely, Verdana must exist
         return True
     # otherwise -- if they match, must be the same default
