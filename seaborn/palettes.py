@@ -32,7 +32,7 @@ SEABORN_PALETTES = dict(
             "#DEBB9B", "#FAB0E4", "#CFCFCF", "#FFFEA3", "#B9F2F0"],
     pastel6=["#A1C9F4", "#8DE5A1", "#FF9F9B",
              "#D0BBFF", "#FFFEA3", "#B9F2F0"],
-    bright=["#023EFF", "#FF6000", "#1AC938", "#E8000B", "#8B2BE2",
+    bright=["#023EFF", "#FF7C00", "#1AC938", "#E8000B", "#8B2BE2",
             "#9F4800", "#F14CC1", "#A3A3A3", "#FFC400", "#00D7FF"],
     bright6=["#023EFF", "#1AC938", "#E8000B",
              "#8B2BE2", "#FFC400", "#00D7FF"],
