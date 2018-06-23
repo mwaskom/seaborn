@@ -124,8 +124,8 @@ class TestColorPalettes(object):
         pal2 = pal2[3:] + pal2[:3]
         npt.assert_array_almost_equal(pal1, pal2)
 
-        pal_dark = palettes.hls_palette(5, l=.2)
-        pal_bright = palettes.hls_palette(5, l=.8)
+        pal_dark = palettes.hls_palette(5, l=.2)  # noqa
+        pal_bright = palettes.hls_palette(5, l=.8)  # noqa
         npt.assert_array_less(list(map(sum, pal_dark)),
                               list(map(sum, pal_bright)))
 
@@ -141,8 +141,8 @@ class TestColorPalettes(object):
         pal2 = pal2[3:] + pal2[:3]
         npt.assert_array_almost_equal(pal1, pal2)
 
-        pal_dark = palettes.husl_palette(5, l=.2)
-        pal_bright = palettes.husl_palette(5, l=.8)
+        pal_dark = palettes.husl_palette(5, l=.2)  # noqa
+        pal_bright = palettes.husl_palette(5, l=.8)  # noqa
         npt.assert_array_less(list(map(sum, pal_dark)),
                               list(map(sum, pal_bright)))
 
@@ -253,6 +253,18 @@ class TestColorPalettes(object):
         pal_forward = cmap(x).tolist()
         pal_reverse = cmap_rev(x[::-1]).tolist()
         nt.assert_list_equal(pal_forward, pal_reverse)
+
+    def test_cubehelix_code(self):
+
+        pal1 = palettes.color_palette("ch:", 8)
+        pal2 = palettes.color_palette(palettes.cubehelix_palette(8))
+        assert pal1 == pal2
+
+        pal1 = palettes.color_palette("ch:.5, -.25,hue = .5,light=.75", 8)
+        pal2 = palettes.color_palette(
+            palettes.cubehelix_palette(8, .5, -.25, hue=.5, light=.75)
+        )
+        assert pal1 == pal2
 
     def test_xkcd_palette(self):
 

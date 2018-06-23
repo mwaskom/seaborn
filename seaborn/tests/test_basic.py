@@ -462,6 +462,11 @@ class TestBasicPlotter(object):
         p.parse_hue(p.plot_data.hue, palette, None, None)
         assert p.cmap is palette
 
+        # Test cubehelix shorthand
+        palette = "ch:2,0,light=.2"
+        p.parse_hue(p.plot_data.hue, palette, None, None)
+        assert isinstance(p.cmap, mpl.colors.ListedColormap)
+
         # Test default hue limits
         p.parse_hue(p.plot_data.hue, None, None, None)
         assert p.hue_limits == (p.plot_data.hue.min(), p.plot_data.hue.max())

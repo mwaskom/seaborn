@@ -62,13 +62,14 @@ def color_palette(palette=None, n_colors=None, desat=None):
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
-        hls, husl, any named matplotlib palette, list of colors
+        name of matplotlib cmap, 'ch:<cubehelix arguments>', 'hls', 'husl',
+        or a list of colors in any format matplotlib accepts
 
     Calling this function with ``palette=None`` will return the current
     matplotlib color cycle.
 
     Matplotlib palettes can be specified as reversed palettes by appending
-    "_r" to the name or as dark palettes by appending "_d" to the name.
+    "_r" to the name or as "dark" palettes by appending "_d" to the name.
     (These options are mutually exclusive, but the resulting list of colors
     can also be reversed).
 
@@ -105,39 +106,51 @@ def color_palette(palette=None, n_colors=None, desat=None):
     Examples
     --------
 
-    Show one of the "seaborn palettes", which have the same basic order of hues
-    as the default matplotlib color cycle but more attractive colors.
+    Calling with no arguments returns the current default color cycle:
 
     .. plot::
         :context: close-figs
 
         >>> import seaborn as sns; sns.set()
+        >>> sns.palplot(sns.color_palette())
+
+    Show one of the other "seaborn palettes", which have the same basic order
+    of hues as the default matplotlib color cycle but more attractive colors:
+
+    .. plot::
+        :context: close-figs
+
         >>> sns.palplot(sns.color_palette("muted"))
 
-    Use discrete values from one of the built-in matplotlib colormaps.
+    Use discrete values from one of the built-in matplotlib colormaps:
 
     .. plot::
         :context: close-figs
 
         >>> sns.palplot(sns.color_palette("RdBu", n_colors=7))
 
-    Make a "dark" matplotlib sequential palette variant. (This can be good
-    when coloring multiple lines or points that correspond to an ordered
-    variable, where you don't want the lightest lines to be invisible).
+    Make a customized cubehelix color palette:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.color_palette("Blues_d"))
+        >>> sns.palplot(sns.color_palette("ch:2.5,-.2,dark=.3"))
 
-    Use a categorical matplotlib palette, add some desaturation. (This can be
-    good when making plots with large patches, which look best with dimmer
-    colors).
+    Use a categorical matplotlib palette and add some desaturation:
 
     .. plot::
         :context: close-figs
 
         >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.5))
+
+    Make a "dark" matplotlib sequential palette variant. (This can be good
+    when coloring multiple lines or points that correspond to an ordered
+    variable, where you don't want the lightest lines to be invisible):
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("Blues_d"))
 
     Use as a context manager:
 
@@ -163,16 +176,30 @@ def color_palette(palette=None, n_colors=None, desat=None):
         if n_colors is None:
             n_colors = 6
 
-        if palette == "hls":
-            palette = hls_palette(n_colors)
-        elif palette == "husl":
-            palette = husl_palette(n_colors)
-        elif palette.lower() == "jet":
-            raise ValueError("No.")
-        elif palette in SEABORN_PALETTES:
+        if palette in SEABORN_PALETTES:
+            # Named "seaborn variant" of old matplotlib default palette
             palette = SEABORN_PALETTES[palette]
+
+        elif palette == "hls":
+            # Evenly spaced colors in cylindrical RGB
+            palette = hls_palette(n_colors)
+
+        elif palette == "husl":
+            # Evenly spaced colors in cylindrical Lab
+            palette = husl_palette(n_colors)
+
+        elif palette.lower() == "jet":
+            # Paternalism
+            raise ValueError("No.")
+
+        elif palette.startswith("ch:"):
+            # Cubehelix palette with params specified in string
+            args, kwargs = _parse_cubehelix_args(palette)
+            palette = cubehelix_palette(n_colors, *args, **kwargs)
+
         else:
             try:
+                # Perhaps a named matplotlib colormap?
                 palette = mpl_palette(palette, n_colors)
             except ValueError:
                 raise ValueError("%s is not a valid palette name" % palette)
@@ -194,7 +221,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
     return palette
 
 
-def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
+def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
     """Get a set of evenly spaced colors in HLS hue space.
 
     h, l, and s should be between 0 and 1
@@ -262,7 +289,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):
     return _ColorPalette(palette)
 
 
-def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
+def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
     """Get a set of evenly spaced colors in HUSL hue space.
 
     h, s, and l should be between 0 and 1
@@ -327,7 +354,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):
     hues %= 1
     hues *= 359
     s *= 99
-    l *= 99
+    l *= 99  # noqa
     palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
     return _ColorPalette(palette)
 
@@ -585,7 +612,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
     """
     color = _color_to_rgb(color, input)
-    light = set_hls_values(color, l=.95)
+    light = set_hls_values(color, l=.95)  # noqa
     colors = [color, light] if reverse else [light, color]
     return blend_palette(colors, n_colors, as_cmap)
 
@@ -617,8 +644,8 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6, center="light",
-                      as_cmap=False):
+def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
+                      center="light", as_cmap=False):
     """Make a diverging palette between two HUSL colors.
 
     If you are using the IPython notebook, you can also choose this palette
@@ -886,7 +913,28 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    cdict = mpl._cm.cubehelix(gamma, start, rot, hue)
+    def get_color_function(p0, p1):
+        # Copied from matplotlib because it lives in private module
+        def color(x):
+            # Apply gamma factor to emphasise low or high intensity values
+            xg = x ** gamma
+
+            # Calculate amplitude and angle of deviation from the black
+            # to white diagonal in the plane of constant
+            # perceived intensity.
+            a = hue * xg * (1 - xg) / 2
+
+            phi = 2 * np.pi * (start / 3 + rot * x)
+
+            return xg + a * (p0 * np.cos(phi) + p1 * np.sin(phi))
+        return color
+
+    cdict = {
+            "red": get_color_function(-0.14861, 1.78277),
+            "green": get_color_function(-0.29227, -0.90649),
+            "blue": get_color_function(1.97294, 0.0),
+    }
+
     cmap = mpl.colors.LinearSegmentedColormap("cubehelix", cdict)
 
     x = np.linspace(light, dark, n_colors)
@@ -903,6 +951,24 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         return cmap
     else:
         return _ColorPalette(pal)
+
+
+def _parse_cubehelix_args(argstr):
+    """Turn stringified cubehelix params into args/kwargs."""
+    if argstr.startswith("ch:"):
+        argstr = argstr[3:]
+
+    if not argstr:
+        return [], {}
+
+    all_args = argstr.split(",")
+
+    args = [float(a.strip(" ")) for a in all_args if "=" not in a]
+
+    kwargs = [a.split("=") for a in all_args if "=" in a]
+    kwargs = {k.strip(" "): float(v.strip(" ")) for k, v in kwargs}
+
+    return args, kwargs
 
 
 def set_color_codes(palette="deep"):
