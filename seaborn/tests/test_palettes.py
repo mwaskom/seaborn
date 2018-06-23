@@ -51,8 +51,10 @@ class TestColorPalettes(object):
 
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
         for name in pals:
-            pal_out = palettes.color_palette(name)
-            nt.assert_equal(len(pal_out), 6)
+            full = palettes.color_palette(name, 10).as_hex()
+            short = palettes.color_palette(name + "6", 6).as_hex()
+            b, _, g, r, m, _, _, _, y, c = full
+            assert [b, g, r, m, y, c] == list(short)
 
     def test_hls_palette(self):
 
@@ -113,8 +115,8 @@ class TestColorPalettes(object):
 
     def test_palette_cycles(self):
 
-        deep = palettes.color_palette("deep")
-        double_deep = palettes.color_palette("deep", 12)
+        deep = palettes.color_palette("deep6")
+        double_deep = palettes.color_palette("deep6", 12)
         nt.assert_equal(double_deep, deep + deep)
 
     def test_hls_values(self):
@@ -285,7 +287,7 @@ class TestColorPalettes(object):
     def test_color_codes(self):
 
         palettes.set_color_codes("deep")
-        colors = palettes.color_palette("deep") + [".1"]
+        colors = palettes.color_palette("deep6") + [".1"]
         for code, color in zip("bgrmyck", colors):
             rgb_want = mpl.colors.colorConverter.to_rgb(color)
             rgb_got = mpl.colors.colorConverter.to_rgb(code)
