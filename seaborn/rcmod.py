@@ -350,11 +350,11 @@ def plotting_context(context=None, font_scale=1, rc=None):
         base_context = {
 
             "font.size": 12,
-            "axes.labelsize": 11,
+            "axes.labelsize": 12,
             "axes.titlesize": 12,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
-            "legend.fontsize": 10,
+            "xtick.labelsize": 11,
+            "ytick.labelsize": 11,
+            "legend.fontsize": 11,
 
             "grid.linewidth": 1,
             "lines.linewidth": 1.75,
@@ -371,7 +371,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
             }
 
         # Scale all the parameters by the same factor depending on the context
-        scaling = dict(paper=.8, notebook=1, talk=1.3, poster=1.6)[context]
+        scaling = dict(paper=.8, notebook=1, talk=1.5, poster=2)[context]
         context_dict = {k: v * scaling for k, v in base_context.items()}
 
         # Now independently scale the fonts
