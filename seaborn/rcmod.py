@@ -74,6 +74,7 @@ _context_keys = [
     "grid.linewidth",
     "lines.linewidth",
     "lines.markersize",
+    "patch.linewidth",
 
     "xtick.major.width",
     "ytick.major.width",
@@ -398,6 +399,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "grid.linewidth": 1,
             "lines.linewidth": 1.5,
             "lines.markersize": 6,
+            "patch.linewidth": 1,
 
             "xtick.major.width": 1.25,
             "ytick.major.width": 1.25,
