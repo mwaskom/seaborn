@@ -12,7 +12,7 @@ v0.9.0 (Unreleased)
 
 - Updated the seaborn palettes ("deep", "muted", "colorblind", etc.) to correspond with the new 10-color matplotlib default. The legacy palettes are now available at "deep6", "muted6", "colorblind6", etc. Additionally, a few individual colors were tweaked for better consistency, aesthetics, and accessibility.
 
-- Calling :func:`set_palette` with a named qualitative palettes (i.e. one of the seaborn palettes, the colorbrewer qualitative palettes, or the matplotlib matplotlib tableau-derived palettes) and no specified number of colors will use all of the colors in the palette. Note that this behavior is different from what :func:`color_palette` has and continues to do, which is to default to 6 colors for named palettes.
+- Calling :func:`color_palette` (or :func:`set_palette`) with a named qualitative palettes (i.e. one of the seaborn palettes, the colorbrewer qualitative palettes, or the matplotlib matplotlib tableau-derived palettes) and no specified number of colors will return all of the colors in the palette. This means that for some palettes, the returned list will have a different length than it did in previous versions.
 
 - Fixed :func:`jointplot`/:class:`JointGrid` and :func:`regplot` so that they now accept list inputs.
 

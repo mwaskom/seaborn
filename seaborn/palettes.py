@@ -200,18 +200,19 @@ def color_palette(palette=None, n_colors=None, desat=None):
     else:
 
         if n_colors is None:
-            n_colors = 6
+            # Use all colors in a qualitative palette or 6 of another kind
+            n_colors = QUAL_PALETTE_SIZES.get(palette, 6)
 
         if palette in SEABORN_PALETTES:
             # Named "seaborn variant" of old matplotlib default palette
             palette = SEABORN_PALETTES[palette]
 
         elif palette == "hls":
-            # Evenly spaced colors in cylindrical RGB
+            # Evenly spaced colors in cylindrical RGB space
             palette = hls_palette(n_colors)
 
         elif palette == "husl":
-            # Evenly spaced colors in cylindrical Lab
+            # Evenly spaced colors in cylindrical Lab space
             palette = husl_palette(n_colors)
 
         elif palette.lower() == "jet":

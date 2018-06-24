@@ -2,7 +2,6 @@
 from distutils.version import LooseVersion
 import functools
 import matplotlib as mpl
-from .external.six import string_types
 from . import palettes, _orig_rc_params
 
 
@@ -471,7 +470,7 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     Parameters
     ----------
-    palette : hls | husl | matplotlib colormap | seaborn color palette
+    palette : seaborn color paltte | matplotlib colormap | hls | husl
         Palette definition. Should be something that :func:`color_palette`
         can process.
     n_colors : int
@@ -498,8 +497,6 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     set_style : set the default parameters for figure style
 
     """
-    if n_colors is None and isinstance(palette, string_types):
-        n_colors = palettes.QUAL_PALETTE_SIZES.get(palette, None)
     colors = palettes.color_palette(palette, n_colors, desat)
     if mpl_ge_150:
         from cycler import cycler

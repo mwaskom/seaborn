@@ -47,6 +47,23 @@ class TestColorPalettes(object):
         # Reset default
         rcmod.set()
 
+    def test_palette_size(self):
+
+        pal = palettes.color_palette("deep")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["deep"]
+
+        pal = palettes.color_palette("pastel6")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["pastel6"]
+
+        pal = palettes.color_palette("Set3")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["Set3"]
+
+        pal = palettes.color_palette("husl")
+        assert len(pal) == 6
+
+        pal = palettes.color_palette("Greens")
+        assert len(pal) == 6
+
     def test_seaborn_palettes(self):
 
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
