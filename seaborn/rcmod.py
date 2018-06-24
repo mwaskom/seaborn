@@ -1,4 +1,4 @@
-"""Functions that alter the matplotlib rc dictionary on the fly."""
+"""Control plot style and scaling using the matplotlib rcParams interface."""
 from distutils.version import LooseVersion
 import functools
 import matplotlib as mpl
@@ -6,6 +6,7 @@ from . import palettes, _orig_rc_params
 
 
 mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
+mpl_ge_2 = LooseVersion(mpl.__version__) >= '2.0'
 
 
 __all__ = ["set", "reset_defaults", "reset_orig",
@@ -13,13 +14,12 @@ __all__ = ["set", "reset_defaults", "reset_orig",
            "set_palette"]
 
 
-_style_keys = (
+_style_keys = [
 
     "axes.facecolor",
     "axes.edgecolor",
     "axes.grid",
     "axes.axisbelow",
-    "axes.linewidth",
     "axes.labelcolor",
 
     "figure.facecolor",
@@ -33,22 +33,35 @@ _style_keys = (
     "ytick.color",
     "xtick.direction",
     "ytick.direction",
-    "xtick.major.size",
-    "ytick.major.size",
-    "xtick.minor.size",
-    "ytick.minor.size",
-
     "lines.solid_capstyle",
 
     "patch.edgecolor",
-    "patch.force_edgecolor",
 
     "image.cmap",
     "font.family",
     "font.sans-serif",
-    )
 
-_context_keys = (
+    ]
+
+if mpl_ge_2:
+
+    _style_keys.extend([
+
+        "patch.force_edgecolor",
+
+        "xtick.bottom",
+        "xtick.top",
+        "ytick.left",
+        "ytick.right",
+
+        "axes.spines.left",
+        "axes.spines.bottom",
+        "axes.spines.right",
+        "axes.spines.top",
+
+    ])
+
+_context_keys = [
 
     "font.size",
     "axes.labelsize",
@@ -57,6 +70,7 @@ _context_keys = (
     "ytick.labelsize",
     "legend.fontsize",
 
+    "axes.linewidth",
     "grid.linewidth",
     "lines.linewidth",
     "lines.markersize",
@@ -66,9 +80,12 @@ _context_keys = (
     "xtick.minor.width",
     "ytick.minor.width",
 
-    "xtick.major.pad",
-    "ytick.major.pad"
-    )
+    "xtick.major.size",
+    "ytick.major.size",
+    "xtick.minor.size",
+    "ytick.minor.size",
+
+    ]
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
@@ -193,6 +210,9 @@ def axes_style(style=None, rc=None):
 
             "image.cmap": "rocket",
 
+            "xtick.top": False,
+            "ytick.right": False,
+
             }
 
         # Set grid on or off
@@ -208,43 +228,61 @@ def axes_style(style=None, rc=None):
         # Set the color of the background, spines, and grids
         if style.startswith("dark"):
             style_dict.update({
+
                 "axes.facecolor": "#EAEAF2",
                 "axes.edgecolor": "white",
-                "axes.linewidth": 0,
                 "grid.color": "white",
+
+                "axes.spines.left": True,
+                "axes.spines.bottom": True,
+                "axes.spines.right": True,
+                "axes.spines.top": True,
+
                 })
 
         elif style == "whitegrid":
             style_dict.update({
+
                 "axes.facecolor": "white",
                 "axes.edgecolor": light_gray,
-                "axes.linewidth": 1,
                 "grid.color": light_gray,
+
+                "axes.spines.left": True,
+                "axes.spines.bottom": True,
+                "axes.spines.right": True,
+                "axes.spines.top": True,
+
                 })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
+
                 "axes.facecolor": "white",
                 "axes.edgecolor": dark_gray,
-                "axes.linewidth": 1.25,
                 "grid.color": light_gray,
+
+                "axes.spines.left": True,
+                "axes.spines.bottom": True,
+                "axes.spines.right": True,
+                "axes.spines.top": True,
+
                 })
 
         # Show or hide the axes ticks
         if style == "ticks":
             style_dict.update({
-                "xtick.major.size": 6,
-                "ytick.major.size": 6,
-                "xtick.minor.size": 3,
-                "ytick.minor.size": 3,
+                "xtick.bottom": True,
+                "ytick.left": True,
                 })
         else:
             style_dict.update({
-                "xtick.major.size": 0,
-                "ytick.major.size": 0,
-                "xtick.minor.size": 0,
-                "ytick.minor.size": 0,
+                "xtick.bottom": False,
+                "ytick.left": False,
                 })
+
+    # Remove entries that are not defined in the base list of valid keys
+    # This lets us handle matplotlib <=/> 2.0
+    style_dict = {k: v for k, v in style_dict.items() if k in _style_keys}
 
     # Override these settings with the provided rc dictionary
     if rc is not None:
@@ -356,17 +394,20 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "ytick.labelsize": 11,
             "legend.fontsize": 11,
 
+            "axes.linewidth": 1.25,
             "grid.linewidth": 1,
-            "lines.linewidth": 1.75,
-            "lines.markersize": 7,
+            "lines.linewidth": 1.5,
+            "lines.markersize": 6,
 
-            "xtick.major.width": 1,
-            "ytick.major.width": 1,
-            "xtick.minor.width": .5,
-            "ytick.minor.width": .5,
+            "xtick.major.width": 1.25,
+            "ytick.major.width": 1.25,
+            "xtick.minor.width": 1,
+            "ytick.minor.width": 1,
 
-            "xtick.major.pad": 7,
-            "ytick.major.pad": 7,
+            "xtick.major.size": 6,
+            "ytick.major.size": 6,
+            "xtick.minor.size": 4,
+            "ytick.minor.size": 4,
 
             }
 
