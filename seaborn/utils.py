@@ -155,7 +155,7 @@ def saturate(color):
     return set_hls_values(color, s=1)
 
 
-def set_hls_values(color, h=None, l=None, s=None):
+def set_hls_values(color, h=None, l=None, s=None):  # noqa
     """Independently manipulate the h, l, or s channels of a color.
 
     Parameters
@@ -233,15 +233,24 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                     val = offset
                 _set_spine_position(ax_i.spines[side], ('outward', val))
 
-        # Set the ticks appropriately
-        if bottom:
-            ax_i.xaxis.tick_top()
-        if top:
-            ax_i.xaxis.tick_bottom()
-        if left:
-            ax_i.yaxis.tick_right()
-        if right:
-            ax_i.yaxis.tick_left()
+        # Potentially move the ticks
+        if left and not right:
+            maj_on = any(t.tick1On for t in ax_i.yaxis.majorTicks)
+            min_on = any(t.tick1On for t in ax_i.yaxis.minorTicks)
+            ax_i.yaxis.set_ticks_position("right")
+            for t in ax_i.yaxis.majorTicks:
+                t.tick2On = maj_on
+            for t in ax_i.yaxis.minorTicks:
+                t.tick2On = min_on
+
+        if bottom and not top:
+            maj_on = any(t.tick1On for t in ax_i.xaxis.majorTicks)
+            min_on = any(t.tick1On for t in ax_i.xaxis.minorTicks)
+            ax_i.xaxis.set_ticks_position("top")
+            for t in ax_i.xaxis.majorTicks:
+                t.tick2On = maj_on
+            for t in ax_i.xaxis.minorTicks:
+                t.tick2On = min_on
 
         if trim:
             # clip off the parts of the spines that extend past major ticks
