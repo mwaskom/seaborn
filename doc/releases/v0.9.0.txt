@@ -24,7 +24,9 @@ v0.9.0 (Unreleased)
 
 - Enhanced :func:`color_palette` to accept a parameterized specification of a cubehelix palette in in a string, prefixed with ``"ch:"`` (e.g. ``"ch:-.1,.2,light=.7"``). This will be accepted by any seaborn function with a ``palette=`` parameter.
 
-- Changed the default diagonal plots in :func:`pairplot` to use :func:`kdeplot` and changed the default off-diagonal plots to use :func:`scatterplot`.
+- Changed the default diagonal plots in :func:`pairplot` to use `func`:kdeplot` when a ``"hue"`` dimension is used.
+
+- Changed the default off-diagonal plots to use :func:`scatterplot`. (Note that the ``"hue"`` currently draws three separate scatterplots instead of using the hue semantic of the scatterplot function.
 
 - Removed a special case in :class:`PairGrid` that defaulted to drawing stacked histograms on the diagonal axes.
 

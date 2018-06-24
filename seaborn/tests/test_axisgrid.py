@@ -1174,8 +1174,7 @@ class TestPairGrid(object):
         g = ag.pairplot(self.df)
 
         for ax in g.diag_axes:
-            assert len(ax.lines) == 1
-            assert len(ax.collections) == 1
+            assert len(ax.patches) > 1
 
         for i, j in zip(*np.triu_indices_from(g.axes, 1)):
             ax = g.axes[i, j]
@@ -1196,6 +1195,13 @@ class TestPairGrid(object):
         for i, j in zip(*np.diag_indices_from(g.axes)):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
+
+        g = ag.pairplot(self.df, hue="a")
+        n = len(self.df.a.unique())
+
+        for ax in g.diag_axes:
+            assert len(ax.lines) == n
+            assert len(ax.collections) == n
 
     @skipif(old_matplotlib)
     def test_pairplot_reg(self):
