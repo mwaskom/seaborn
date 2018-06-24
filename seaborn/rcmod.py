@@ -40,6 +40,9 @@ _style_keys = (
 
     "lines.solid_capstyle",
 
+    "patch.edgecolor",
+    "patch.force_edgecolor",
+
     "image.cmap",
     "font.family",
     "font.sans-serif",
@@ -165,20 +168,31 @@ def axes_style(style=None, rc=None):
 
         # Common parameters
         style_dict = {
+
             "figure.facecolor": "white",
-            "text.color": dark_gray,
             "axes.labelcolor": dark_gray,
+
             "xtick.direction": "out",
             "ytick.direction": "out",
             "xtick.color": dark_gray,
             "ytick.color": dark_gray,
+
             "axes.axisbelow": True,
-            "image.cmap": "rocket",
+            "grid.linestyle": "-",
+
+
+            "text.color": dark_gray,
             "font.family": ["sans-serif"],
             "font.sans-serif": ["Arial", "DejaVu Sans", "Liberation Sans",
                                 "Bitstream Vera Sans", "sans-serif"],
-            "grid.linestyle": "-",
+
+
             "lines.solid_capstyle": "round",
+            "patch.edgecolor": "w",
+            "patch.force_edgecolor": True,
+
+            "image.cmap": "rocket",
+
             }
 
         # Set grid on or off
