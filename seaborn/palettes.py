@@ -20,19 +20,43 @@ __all__ = ["color_palette", "hls_palette", "husl_palette", "mpl_palette",
 
 
 SEABORN_PALETTES = dict(
-    deep=["#4C72B0", "#55A868", "#C44E52",
-          "#8172B2", "#CCB974", "#64B5CD"],
-    muted=["#4878CF", "#6ACC65", "#D65F5F",
-           "#B47CC7", "#C4AD66", "#77BEDB"],
-    pastel=["#92C6FF", "#97F0AA", "#FF9F9A",
-            "#D0BBFF", "#FFFEA3", "#B0E0E6"],
-    bright=["#003FFF", "#03ED3A", "#E8000B",
-            "#8A2BE2", "#FFC400", "#00D7FF"],
-    dark=["#001C7F", "#017517", "#8C0900",
-          "#7600A1", "#B8860B", "#006374"],
-    colorblind=["#0072B2", "#009E73", "#D55E00",
-                "#CC79A7", "#F0E442", "#56B4E9"]
+    deep=["#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B3",
+          "#937860", "#DA8BC3", "#8C8C8C", "#CCB974", "#64B5CD"],
+    deep6=["#4C72B0", "#55A868", "#C44E52",
+           "#8172B3", "#CCB974", "#64B5CD"],
+    muted=["#4878D0", "#EE854A", "#6ACC64", "#D65F5F", "#956CB4",
+           "#8C613C", "#DC7EC0", "#797979", "#D5BB67", "#82C6E2"],
+    muted6=["#4878D0", "#6ACC64", "#D65F5F",
+            "#956CB4", "#D5BB67", "#82C6E2"],
+    pastel=["#A1C9F4", "#FFB482", "#8DE5A1", "#FF9F9B", "#D0BBFF",
+            "#DEBB9B", "#FAB0E4", "#CFCFCF", "#FFFEA3", "#B9F2F0"],
+    pastel6=["#A1C9F4", "#8DE5A1", "#FF9F9B",
+             "#D0BBFF", "#FFFEA3", "#B9F2F0"],
+    bright=["#023EFF", "#FF7C00", "#1AC938", "#E8000B", "#8B2BE2",
+            "#9F4800", "#F14CC1", "#A3A3A3", "#FFC400", "#00D7FF"],
+    bright6=["#023EFF", "#1AC938", "#E8000B",
+             "#8B2BE2", "#FFC400", "#00D7FF"],
+    dark=["#001C7F", "#B1400D", "#12711C", "#8C0800", "#591E71",
+          "#592F0D", "#A23582", "#3C3C3C", "#B8850A", "#006374"],
+    dark6=["#001C7F", "#12711C", "#8C0800",
+           "#591E71", "#B8850A", "#006374"],
+    colorblind=["#0173B2", "#DE8F05", "#029E73", "#D55E00", "#CC78BC",
+                "#CA9161", "#FBAFE4", "#949494", "#ECE133", "#56B4E9"],
+    colorblind6=["#0173B2", "#029E73", "#D55E00",
+                 "#CC78BC", "#ECE133", "#56B4E9"]
     )
+
+
+MPL_QUAL_PALS = {
+    "tab10": 10, "tab20": 20, "tab20b": 20, "tab20c": 20,
+    "Set1": 9, "Set2": 8, "Set3": 12,
+    "Accent": 8, "Paired": 12,
+    "Pastel1": 9, "Pastel2": 8, "Dark2": 8,
+}
+
+
+QUAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
+QUAL_PALETTE_SIZES.update({k: len(v) for k, v in SEABORN_PALETTES.items()})
 
 
 class _ColorPalette(list):
@@ -106,7 +130,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
     Examples
     --------
 
-    Calling with no arguments returns the current default color cycle:
+    Calling with no arguments returns all colors from the current default
+    color cycle:
 
     .. plot::
         :context: close-figs
@@ -115,7 +140,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
         >>> sns.palplot(sns.color_palette())
 
     Show one of the other "seaborn palettes", which have the same basic order
-    of hues as the default matplotlib color cycle but more attractive colors:
+    of hues as the default matplotlib color cycle but more attractive colors.
+    Calling with the name of a palette will return 6 colors by default:
 
     .. plot::
         :context: close-figs
@@ -174,18 +200,19 @@ def color_palette(palette=None, n_colors=None, desat=None):
     else:
 
         if n_colors is None:
-            n_colors = 6
+            # Use all colors in a qualitative palette or 6 of another kind
+            n_colors = QUAL_PALETTE_SIZES.get(palette, 6)
 
         if palette in SEABORN_PALETTES:
             # Named "seaborn variant" of old matplotlib default palette
             palette = SEABORN_PALETTES[palette]
 
         elif palette == "hls":
-            # Evenly spaced colors in cylindrical RGB
+            # Evenly spaced colors in cylindrical RGB space
             palette = hls_palette(n_colors)
 
         elif palette == "husl":
-            # Evenly spaced colors in cylindrical Lab
+            # Evenly spaced colors in cylindrical Lab space
             palette = husl_palette(n_colors)
 
         elif palette.lower() == "jet":
@@ -419,11 +446,6 @@ def mpl_palette(name, n_colors=6):
         >>> sns.palplot(sns.mpl_palette("GnBu_d"))
 
     """
-    mpl_qual_pals = {"Accent": 8, "Dark2": 8, "Paired": 12,
-                     "Pastel1": 9, "Pastel2": 8,
-                     "Set1": 9, "Set2": 8, "Set3": 12,
-                     "tab10": 10, "tab20": 20, "tab20b": 20, "tab20c": 20}
-
     if name.endswith("_d"):
         pal = ["#333333"]
         pal.extend(color_palette(name.replace("_d", "_r"), 2))
@@ -432,8 +454,8 @@ def mpl_palette(name, n_colors=6):
         cmap = mpl.cm.get_cmap(name)
         if cmap is None:
             raise ValueError("{} is not a valid colormap".format(name))
-    if name in mpl_qual_pals:
-        bins = np.linspace(0, 1, mpl_qual_pals[name])[:n_colors]
+    if name in MPL_QUAL_PALS:
+        bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, n_colors + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
@@ -1015,7 +1037,9 @@ def set_color_codes(palette="deep"):
     if palette == "reset":
         colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
-    else:
+    elif palette in SEABORN_PALETTES:
+        if not palette.endswith("6"):
+            palette = palette + "6"
         colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
     for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
