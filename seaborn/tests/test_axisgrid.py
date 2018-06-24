@@ -282,29 +282,19 @@ class TestFacetGrid(object):
     @skipif(old_matplotlib)
     def test_gridspec_kws(self):
         ratios = [3, 1, 2]
-        sizes = [0.46, 0.15, 0.31]
 
-        gskws = dict(width_ratios=ratios, height_ratios=ratios)
+        gskws = dict(width_ratios=ratios)
         g = ag.FacetGrid(self.df, col='c', row='a', gridspec_kws=gskws)
 
-        # clear out all ticks
         for ax in g.axes.flat:
             ax.set_xticks([])
             ax.set_yticks([])
 
         g.fig.tight_layout()
-        widths, heights = np.meshgrid(sizes, sizes)
-        for n, ax in enumerate(g.axes.flat):
-            npt.assert_almost_equal(
-                ax.get_position().width,
-                widths.flatten()[n],
-                decimal=2
-            )
-            npt.assert_almost_equal(
-                ax.get_position().height,
-                heights.flatten()[n],
-                decimal=2
-            )
+
+        for (l, m, r) in g.axes:
+            assert l.get_position().width > m.get_position().width
+            assert r.get_position().width > m.get_position().width
 
     @skipif(old_matplotlib)
     def test_gridspec_kws_col_wrap(self):
