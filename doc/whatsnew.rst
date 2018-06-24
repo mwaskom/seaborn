@@ -2,8 +2,10 @@
 
 .. currentmodule:: seaborn
 
-What's new in the package
-=========================
+Release notes
+=============
+
+.. include:: releases/v0.9.0.txt
 
 .. include:: releases/v0.8.1.txt
 
