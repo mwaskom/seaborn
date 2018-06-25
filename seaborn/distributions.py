@@ -451,7 +451,7 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
 def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using scipy."""
     data = np.c_[x, y]
-    kde = stats.gaussian_kde(data.T)
+    kde = stats.gaussian_kde(data.T, bw_method=bw)
     data_std = data.std(axis=0, ddof=1)
     if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
