@@ -65,13 +65,3 @@ include a reproducible example on one of the example datasets (accessed through
 versions of seaborn and matplotlib you are using, as well as what `matplotlib
 backend <https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you
 are using to draw the plots, so please include those in your bug report.
-
-
-Known issues
-~~~~~~~~~~~~
-
-An unfortunate consequence of how the matplotlib marker styles work is that
-line-art markers (e.g. ``"+"``) or markers with ``facecolor`` set to ``"none"``
-will be invisible when the default seaborn style is in effect. This can be
-changed by using a different ``markeredgewidth`` (aliased to ``mew``) either in
-the function call or globally in the ``rcParams``.

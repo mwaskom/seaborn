@@ -1862,7 +1862,7 @@ class JointGrid(object):
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="kde", markers=None,
+             kind="scatter", diag_kind="auto", markers=None,
              size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
@@ -1900,8 +1900,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         columns of the figure; i.e. to make a non-square plot.
     kind : {'scatter', 'reg'}, optional
         Kind of plot for the non-identity relationships.
-    diag_kind : {'hist', 'kde'}, optional
-        Kind of plot for the diagonal subplots.
+    diag_kind : {'auto', 'hist', 'kde'}, optional
+        Kind of plot for the diagonal subplots. The default depends on whether
+        ``"hue"`` is used or not.
     markers : single matplotlib marker code or list, optional
         Either the marker to use for all datapoints or a list of markers with
         a length the same as the number of levels in the hue variable so that
@@ -2044,6 +2045,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
+    if diag_kind == "auto":
+        diag_kind = "hist" if hue is None else "kde"
+
     diag_kws = diag_kws.copy()
     if grid.square_grid:
         if diag_kind == "hist":

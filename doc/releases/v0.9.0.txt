@@ -14,6 +14,12 @@ v0.9.0 (Unreleased)
 
 - Calling :func:`color_palette` (or :func:`set_palette`) with a named qualitative palettes (i.e. one of the seaborn palettes, the colorbrewer qualitative palettes, or the matplotlib matplotlib tableau-derived palettes) and no specified number of colors will return all of the colors in the palette. This means that for some palettes, the returned list will have a different length than it did in previous versions.
 
+- Reorganized and updated some :func:`axes_style`/:func:`plotting_context` parameters to take advantage of improvements in the `matplotlib2 update <https://matplotlib.org/users/dflt_style_changes.html>`_. The biggest change involves using several new params in the "style" spec while moving parameters that used to implement the corresponding aesthetics to the "context" spec. For example, axes spines and ticks are now off instead of having their width/length zeroed out for the darkgrid style. That means the width/length of these elements can now be scaled in different contexts. The effect is a more cohesive appearance of the plots, especially in larger contexts. These changes include only minimal support for the 1.x matplotlib series. Users who are stuck on matplotlib 1.5 but wish to use seaborn styling may want to use the seaborn parameters that can be accessed through the `matplotlib stylesheet interface <https://matplotlib.org/users/style_sheets.html>`_.
+
+- Slightly increased the base font sizes in :func:`plotting_context` and increased the scaling factors for ``"talk"`` and ``"poster"`` contexts.
+
+- Calling :func:`set` will now call :func:`set_color_codes` to re-assign the single letter color codes by default
+
 - Fixed :func:`jointplot`/:class:`JointGrid` and :func:`regplot` so that they now accept list inputs.
 
 - Fixed a bug in :class:`FacetGrid` when using a single row/column level or using ``col_wrap=1``.
@@ -24,7 +30,9 @@ v0.9.0 (Unreleased)
 
 - Enhanced :func:`color_palette` to accept a parameterized specification of a cubehelix palette in in a string, prefixed with ``"ch:"`` (e.g. ``"ch:-.1,.2,light=.7"``). This will be accepted by any seaborn function with a ``palette=`` parameter.
 
-- Changed the default diagonal plots in :func:`pairplot` to use :func:`kdeplot` and changed the default off-diagonal plots to use :func:`scatterplot`.
+- Changed the default diagonal plots in :func:`pairplot` to use `func`:kdeplot` when a ``"hue"`` dimension is used.
+
+- Changed the default off-diagonal plots to use :func:`scatterplot`. (Note that the ``"hue"`` currently draws three separate scatterplots instead of using the hue semantic of the scatterplot function.
 
 - Removed a special case in :class:`PairGrid` that defaulted to drawing stacked histograms on the diagonal axes.
 
@@ -34,4 +42,4 @@ v0.9.0 (Unreleased)
 
 - Changed the install infrastructure to explicitly declare dependencies in a way that ``pip`` is aware of. This means that ``pip install seaborn`` will now work in an empty environment. Additionally, the dependencies are specified with strict minimal versions.
 
-- Updated the testing infrastructure to execute tests with `pytest <https://docs.pytest.org/en/latest/>` (although many individual tests still use nose assertion).
+- Updated the testing infrastructure to execute tests with `pytest <https://docs.pytest.org/en/latest/>`_ (although many individual tests still use nose assertion).
