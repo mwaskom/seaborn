@@ -3603,9 +3603,10 @@ factorplot.__doc__ = dedent("""\
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
-    kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``,
-             ``swarm``, ``lv``}}
-        The kind of plot to draw.
+    kind : string, optional
+        The kind of plot to draw (corresponds to the name of a categorical
+        plotting function. Options are: "point", "bar", "strip", "swarm",
+        "box", "violin", or "lv".
     {height}
     {aspect}
     {orient}
