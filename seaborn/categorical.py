@@ -2126,7 +2126,7 @@ _categorical_docs = dict(
     """),
     color=dedent("""\
     color : matplotlib color, optional
-        Color for all of the elements, or seed for a gradient palette.
+        Color for all of the elements, or seed for a gradient palette.\
     """),
     palette=dedent("""\
     palette : palette name, list, or dict, optional
