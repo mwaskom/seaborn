@@ -1236,7 +1236,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
     p = _ScatterPlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, hue_order=hue_order, hue_limits=hue_limits,
-        sizes=sizes, size_order=size_order,
+        sizes=sizes, size_order=size_order, size_limits=size_limits,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
