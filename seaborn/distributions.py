@@ -19,7 +19,7 @@ except ImportError:
     _has_statsmodels = False
 
 from .utils import iqr, _kde_support
-from .palettes import color_palette, blend_palette
+from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
 __all__ = ["distplot", "kdeplot", "rugplot"]
@@ -396,7 +396,18 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
-    cmap = kwargs.get("cmap", "BuGn" if filled else "BuGn_d")
+
+    scout, = ax.plot([], [])
+    default_color = scout.get_color()
+    scout.remove()
+
+    color = kwargs.pop("color", default_color)
+    cmap = kwargs.pop("cmap", None)
+    if cmap is None:
+        if filled:
+            cmap = light_palette(color, as_cmap=True)
+        else:
+            cmap = dark_palette(color, as_cmap=True)
     if isinstance(cmap, string_types):
         if cmap.endswith("_d"):
             pal = ["#333333"]
@@ -404,6 +415,8 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
             cmap = blend_palette(pal, as_cmap=True)
         else:
             cmap = mpl.cm.get_cmap(cmap)
+
+    label = kwargs.pop("label", None)
 
     kwargs["cmap"] = cmap
     contour_func = ax.contourf if filled else ax.contour
@@ -421,6 +434,13 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
         ax.set_xlabel(x.name)
     if hasattr(y, "name") and axlabel:
         ax.set_ylabel(y.name)
+
+    if label is not None:
+        legend_color = cmap(.95) if color is None else color
+        if filled:
+            ax.fill_between([], [], color=legend_color, label=label)
+        else:
+            ax.plot([], [], color=legend_color, label=label)
 
     return ax
 
