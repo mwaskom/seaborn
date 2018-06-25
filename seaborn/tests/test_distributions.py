@@ -124,6 +124,37 @@ class TestKDE(object):
         nt.assert_equal(len(f.axes), 2)
         nt.assert_equal(f.axes[1].get_ylabel(), "density")
 
+    def test_legend(self):
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, label="test1")
+        line = ax.lines[-1]
+        assert line.get_label() == "test1"
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, label="test2")
+        fill = ax.collections[-1]
+        assert fill.get_label() == "test2"
+
+    def test_contour_color(self):
+
+        rgb = (.1, .5, .7)
+        f, ax = plt.subplots()
+
+        dist.kdeplot(self.x, self.y, color=rgb)
+        contour = ax.collections[-1]
+        assert np.array_equal(contour.get_color()[0, :3], rgb)
+        low = ax.collections[0].get_color().mean()
+        high = ax.collections[-1].get_color().mean()
+        assert low < high
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, color=rgb)
+        contour = ax.collections[-1]
+        low = ax.collections[0].get_facecolor().mean()
+        high = ax.collections[-1].get_facecolor().mean()
+        assert low > high
+
 
 class TestRugPlot(object):
 
