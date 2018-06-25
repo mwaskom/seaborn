@@ -512,7 +512,11 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
         gaussian kernel.
     bw : {'scott' | 'silverman' | scalar | pair of scalars }, optional
         Name of reference method to determine kernel size, scalar factor,
-        or scalar for each dimension of the bivariate plot.
+        or scalar for each dimension of the bivariate plot. Note that the
+        underlying computational libraries have different interperetations
+        for this parameter: ``statsmodels`` uses it directly, but ``scipy``
+        treats it as a scaling factor for the standard deviation of the
+        data.
     gridsize : int, optional
         Number of discrete points in the evaluation grid.
     cut : scalar, optional
