@@ -623,6 +623,11 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
 
+        # Test mixture of filled and unfilled markers
+        markers, dashes = ["o", "x", "s"], None
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
     def test_subset_data_quantities(self, long_df):
 
         p = basic._LinePlotter(x="x", y="y", data=long_df)

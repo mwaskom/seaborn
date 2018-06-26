@@ -465,10 +465,21 @@ class _BasicPlotter(object):
             )
 
         paths = {}
+        filled_markers = []
         for k, m in markers.items():
             if not isinstance(m, mpl.markers.MarkerStyle):
                 m = mpl.markers.MarkerStyle(m)
             paths[k] = m.get_path().transformed(m.get_transform())
+            filled_markers.append(m.is_filled())
+
+        # Mixture of filled and unfilled markers will show line art markers
+        # in the edge color, which defaults to white. This can be handled,
+        # but there would be additional complexity with specifying the
+        # weight of the line art markers without overwhelming the filled
+        # ones with the edges. So for now, we will disallow mixtures.
+        if not all(filled_markers) and any(filled_markers):
+            err = "Filled and line art markers cannot be mixed"
+            raise ValueError(err)
 
         self.style_levels = levels
         self.dashes = dashes
