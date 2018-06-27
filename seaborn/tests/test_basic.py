@@ -472,9 +472,18 @@ class TestBasicPlotter(object):
         assert p.hue_limits == (p.plot_data.hue.min(), p.plot_data.hue.max())
 
         # Test specified hue limits
-        hue_limits = 1, 4
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        assert p.hue_limits == hue_limits
+        hue_norm = 1, 4
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == hue_norm
+        assert isinstance(p.hue_norm, mpl.colors.Normalize)
+        assert p.hue_norm.vmin == hue_norm[0]
+        assert p.hue_norm.vmax == hue_norm[1]
+
+        # Test Normalize object
+        hue_norm = mpl.colors.PowerNorm(2, vmin=1, vmax=10)
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == (hue_norm.vmin, hue_norm.vmax)
+        assert p.hue_norm is hue_norm
 
         # Test default colormap values
         hmin, hmax = p.plot_data.hue.min(), p.plot_data.hue.max()
@@ -483,9 +492,9 @@ class TestBasicPlotter(object):
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
         # Test specified colormap values
-        hue_limits = hmin - 1, hmax - 1
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        norm_min = (hmin - hue_limits[0]) / (hue_limits[1] - hue_limits[0])
+        hue_norm = hmin - 1, hmax - 1
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        norm_min = (hmin - hue_norm[0]) / (hue_norm[1] - hue_norm[0])
         assert p.palette[hmin] == pytest.approx(p.cmap(norm_min))
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
