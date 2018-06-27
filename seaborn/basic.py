@@ -259,14 +259,20 @@ class _BasicPlotter(object):
         if not norm.scaled():
             norm(np.asarray(data.dropna()))
 
-        palette = {l: cmap(norm(l)) for l in levels}
+        # TODO this should also use color_lookup, but that needs the
+        # class attributes that get set after using this function...
+        palette = dict(zip(levels, cmap(norm(levels))))
+        # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
 
         return levels, palette, cmap, norm
 
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
         if self.hue_type == "numeric":
-            return self.cmap(self.hue_norm(key))
+            normed = self.hue_norm(key)
+            if np.ma.is_masked(normed):
+                normed = np.nan
+            return self.cmap(normed)
         elif self.hue_type == "categorical":
             return self.palette[key]
 
@@ -1159,14 +1165,15 @@ lineplot.__doc__ = dedent("""\
         ...                   hue="coherence", style="choice",
         ...                   data=dots)
 
-    Change the data limits over which the colormap is normalized:
+    Use a different normalization for the colormap:
 
     .. plot::
         :context: close-figs
 
+        >>> from matplotlib.colors import LogNorm
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   hue_norm=(0, 100), data=dots)
+        ...                   hue_norm=LogNorm(), data=dots)
 
     Use a different color palette:
 
@@ -1175,7 +1182,7 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   palette="viridis_r", data=dots)
+        ...                   palette="ch:2.5,.25", data=dots)
 
     Use specific color values, treating the hue variable as categorical:
 
@@ -1203,7 +1210,7 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   size="coherence", hue="choice",
-        ...                   sizes=(.2, 1), data=dots)
+        ...                   sizes=(.25, 2.5), data=dots)
 
     Plot from a wide-form DataFrame:
 
