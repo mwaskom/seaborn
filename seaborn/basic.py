@@ -226,7 +226,7 @@ class _BasicPlotter(object):
 
         return levels, palette
 
-    def numeric_to_palette(self, data, order, palette, limits):
+    def numeric_to_palette(self, data, order, palette, norm):
         """Determine colors when the hue variable is quantitative."""
         levels = list(np.sort(remove_na(data.unique())))
 
@@ -248,24 +248,25 @@ class _BasicPlotter(object):
                 err = "Palette {} not understood"
                 raise ValueError(err)
 
-        if limits is None:
-            limits = data.min(), data.max()
+        if norm is None:
+            norm = mpl.colors.Normalize()
+        elif isinstance(norm, tuple):
+            norm = mpl.colors.Normalize(*norm)
+        elif not isinstance(norm, mpl.colors.Normalize):
+            err = "``hue_norm`` must be None, tuple, or Normalize object."
+            raise ValueError(err)
 
-        hue_min, hue_max = limits
-        hue_min = data.min() if hue_min is None else hue_min
-        hue_max = data.max() if hue_max is None else hue_max
+        if not norm.scaled():
+            norm(np.asarray(data.dropna()))
 
-        limits = hue_min, hue_max
-        normalize = mpl.colors.Normalize(hue_min, hue_max, clip=True)
-        palette = {l: cmap(normalize(l)) for l in levels}
+        palette = {l: cmap(norm(l)) for l in levels}
 
-        return levels, palette, cmap, limits
+        return levels, palette, cmap, norm
 
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
         if self.hue_type == "numeric":
-            norm = mpl.colors.Normalize(*self.hue_limits, clip=True)
-            return self.cmap(norm(key))
+            return self.cmap(self.hue_norm(key))
         elif self.hue_type == "categorical":
             return self.palette[key]
 
@@ -327,12 +328,14 @@ class _BasicPlotter(object):
 
             yield (hue, size, style), subset_data
 
-    def parse_hue(self, data, palette, order, limits):
+    def parse_hue(self, data, palette, order, norm):
         """Determine what colors to use given data characteristics."""
         if self._empty_data(data):
 
             # Set default values when not using a hue mapping
             levels = [None]
+            limits = None
+            norm = None
             palette = {}
             var_type = None
             cmap = None
@@ -351,6 +354,7 @@ class _BasicPlotter(object):
         if var_type == "categorical":
 
             cmap = None
+            limits = None
             levels, palette = self.categorical_to_palette(
                 data, order, palette
             )
@@ -359,11 +363,13 @@ class _BasicPlotter(object):
 
         elif var_type == "numeric":
 
-            levels, palette, cmap, limits = self.numeric_to_palette(
-                data, order, palette, limits
+            levels, palette, cmap, norm = self.numeric_to_palette(
+                data, order, palette, norm
             )
+            limits = norm.vmin, norm.vmax
 
         self.hue_levels = levels
+        self.hue_norm = norm
         self.hue_limits = limits
         self.hue_type = var_type
         self.palette = palette
@@ -477,7 +483,7 @@ class _BasicPlotter(object):
         # but there would be additional complexity with specifying the
         # weight of the line art markers without overwhelming the filled
         # ones with the edges. So for now, we will disallow mixtures.
-        if not all(filled_markers) and any(filled_markers):
+        if any(filled_markers) and not all(filled_markers):
             err = "Filled and line art markers cannot be mixed"
             raise ValueError(err)
 
@@ -529,7 +535,10 @@ class _BasicPlotter(object):
                 keys.append(key)
                 legend_data[key] = dict(**kws)
 
-        ticker = mpl.ticker.MaxNLocator(nbins=3)
+        if isinstance(self.hue_norm, mpl.colors.LogNorm):
+            ticker = mpl.ticker.LogLocator(numticks=3)
+        else:
+            ticker = mpl.ticker.MaxNLocator(nbins=3)
 
         # -- Add a legend for hue semantics
 
@@ -584,7 +593,7 @@ class _LinePlotter(_BasicPlotter):
 
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_limits=None,
+                 palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_limits=None,
                  dashes=None, markers=None, style_order=None,
                  units=None, estimator=None, ci=None, n_boot=None,
@@ -598,7 +607,7 @@ class _LinePlotter(_BasicPlotter):
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
@@ -771,7 +780,7 @@ class _ScatterPlotter(_BasicPlotter):
 
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_limits=None,
+                 palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_limits=None,
                  markers=None, style_order=None,
                  x_bins=None, y_bins=None,
@@ -787,7 +796,7 @@ class _ScatterPlotter(_BasicPlotter):
             np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_limits)
+        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
         self.parse_size(plot_data["size"], sizes, size_order, size_limits)
         self.parse_style(plot_data["style"], markers, None, style_order)
         self.units = units
@@ -897,9 +906,9 @@ _basic_docs = dict(
         otherwise they are determined from the data. Not relevant when the
         ``hue`` variable is numeric.\
     """),
-    hue_limits=dedent("""\
-    hue_limits : tuple, optional
-        Limits in data units to use for the colormap applied to the ``hue``
+    hue_norm=dedent("""\
+    hue_norm : tuple or Normalize object, optional
+        Normalization in data units for colormap applied to the ``hue``
         variable when it is numeric. Not relevant if it is categorical.\
     """),
     sizes=dedent("""\
@@ -982,7 +991,7 @@ _basic_docs = dict(
 
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
-             palette=None, hue_order=None, hue_limits=None,
+             palette=None, hue_order=None, hue_norm=None,
              sizes=None, size_order=None, size_limits=None,
              dashes=True, markers=None, style_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
@@ -991,7 +1000,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
-        palette=palette, hue_order=hue_order, hue_limits=hue_limits,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_limits=size_limits,
         dashes=dashes, markers=markers, style_order=style_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
@@ -1033,7 +1042,7 @@ lineplot.__doc__ = dedent("""\
     {data}
     {palette}
     {hue_order}
-    {hue_limits}
+    {hue_norm}
     {sizes}
     {size_order}
     {size_limits}
@@ -1157,7 +1166,7 @@ lineplot.__doc__ = dedent("""\
 
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   hue_limits=(0, 100), data=dots)
+        ...                   hue_norm=(0, 100), data=dots)
 
     Use a different color palette:
 
@@ -1236,7 +1245,7 @@ lineplot.__doc__ = dedent("""\
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
-                palette=None, hue_order=None, hue_limits=None,
+                palette=None, hue_order=None, hue_norm=None,
                 sizes=None, size_order=None, size_limits=None,
                 markers=True, style_order=None,
                 x_bins=None, y_bins=None,
@@ -1246,7 +1255,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
 
     p = _ScatterPlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
-        palette=palette, hue_order=hue_order, hue_limits=hue_limits,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_limits=size_limits,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
@@ -1284,7 +1293,7 @@ scatterplot.__doc__ = dedent("""\
     {data}
     {palette}
     {hue_order}
-    {hue_limits}
+    {hue_norm}
     {sizes}
     {size_order}
     {size_limits}
@@ -1405,7 +1414,7 @@ scatterplot.__doc__ = dedent("""\
         >>> cmap = sns.cubehelix_palette(dark=.3, light=.8, as_cmap=True)
         >>> ax = sns.scatterplot(x="total_bill", y="tip",
         ...                      hue="size", size="size",
-        ...                      sizes=(20, 200), hue_limits=(0, 7),
+        ...                      sizes=(20, 200), hue_norm=(0, 7),
         ...                      legend="full", data=tips)
 
     Vary the size with a categorical variable, and use a different palette:
