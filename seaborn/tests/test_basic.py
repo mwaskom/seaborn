@@ -522,6 +522,11 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_hue(p.plot_data.hue, palette, None, None)
 
+        # Test bad norm argument
+        hue_norm = "not a norm"
+        with pytest.raises(ValueError):
+            p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+
     def test_parse_size(self, long_df):
 
         p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
@@ -545,13 +550,30 @@ class TestBasicPlotter(object):
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.size_limits == default_limits
 
-        # Test size values inferred from ranges
+        # Test size values with normalization range
         sizes = (1, 5)
-        size_limits = (1, 10)
-        p.parse_size(p.plot_data["size"], sizes, None, size_limits)
-        normalize = mpl.colors.Normalize(*size_limits, clip=False)
+        size_norm = (1, 10)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        normalize = mpl.colors.Normalize(*size_norm, clip=True)
         for level, width in p.sizes.items():
             assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
+
+        # Test size values with normalization object
+        sizes = (1, 5)
+        size_norm = mpl.colors.LogNorm(1, 10, clip=False)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        assert p.size_norm.clip
+        for level, width in p.sizes.items():
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * size_norm(level)
+
+        # Test specified size order
+        var = "a"
+        levels = long_df[var].unique()
+        sizes = [1, 4, 6]
+        size_order = [levels[1], levels[2], levels[0]]
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p.parse_size(p.plot_data["size"], sizes, size_order, None)
+        assert p.sizes == dict(zip(size_order, sizes))
 
         # Test list of sizes
         var = "a"
@@ -583,6 +605,12 @@ class TestBasicPlotter(object):
         sizes = "bad_size"
         with pytest.raises(ValueError):
             p.parse_size(p.plot_data["size"], sizes, None, None)
+
+        # Test bad norm argument
+        size_norm = "not a norm"
+        p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], None, None, size_norm)
 
     def test_parse_style(self, long_df):
 

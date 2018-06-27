@@ -279,9 +279,11 @@ class _BasicPlotter(object):
     def size_lookup(self, key):
         """Return the size corresponding to the size level."""
         if self.size_type == "numeric":
-            norm = mpl.colors.Normalize(*self.size_limits, clip=True)
             min_size, max_size = self.size_range
-            return min_size + norm(key) * (max_size - min_size)
+            val = self.size_norm(key)
+            if np.ma.is_masked(val):
+                return 0
+            return min_size + val * (max_size - min_size)
         elif self.size_type == "categorical":
             return self.sizes[key]
 
@@ -381,10 +383,15 @@ class _BasicPlotter(object):
         self.palette = palette
         self.cmap = cmap
 
-    def parse_size(self, data, sizes, order, limits):
+    def parse_size(self, data, sizes, order, norm):
         """Determine the linewidths given data characteristics."""
+
+        # TODO could break out two options like parse_hue does for clarity
+
         if self._empty_data(data):
             levels = [None]
+            limits = None
+            norm = None
             sizes = {}
             var_type = None
             width_range = None
@@ -393,8 +400,8 @@ class _BasicPlotter(object):
 
             var_type = self._semantic_type(data)
             if var_type == "categorical":
-                levels = categorical_order(data)
-                numbers = np.arange(0, len(levels))[::-1]
+                levels = categorical_order(data, order)
+                numbers = np.arange(1, 1 + len(levels))[::-1]
             elif var_type == "numeric":
                 levels = numbers = np.sort(remove_na(data.unique()))
 
@@ -431,24 +438,31 @@ class _BasicPlotter(object):
                         raise ValueError(err)
                 width_range = min_width, max_width
 
-                # Infer the range of numeric values to map to sizes
-                if limits is None:
-                    s_min, s_max = numbers.min(), numbers.max()
-                else:
-                    s_min, s_max = limits
-                    s_min = numbers.min() if s_min is None else s_min
-                    s_max = numbers.max() if s_max is None else s_max
+                if norm is None:
+                    norm = mpl.colors.Normalize()
+                elif isinstance(norm, tuple):
+                    norm = mpl.colors.Normalize(*norm)
+                elif not isinstance(norm, mpl.colors.Normalize):
+                    err = ("``size_norm`` must be None, tuple, "
+                           "or Normalize object.")
+                    raise ValueError(err)
 
-                # Map the numeric labels into the range of sizes
-                # TODO rework to use size_lookup from above
-                limits = s_min, s_max
-                normalize = mpl.colors.Normalize(s_min, s_max, clip=True)
-                sizes = {l: min_width + normalize(n) * (max_width - min_width)
-                         for l, n in zip(levels, numbers)}
+                norm.clip = True
+                if not norm.scaled():
+                    norm(np.asarray(numbers))
+                limits = norm.vmin, norm.vmax
+
+                scl = norm(numbers)
+                widths = np.asarray(min_width + scl * (max_width - min_width))
+                widths[scl.mask] = 0
+                sizes = dict(zip(levels, widths))
+                # sizes = {l: min_width + norm(n) * (max_width - min_width)
+                #          for l, n in zip(levels, numbers)}
 
         self.sizes = sizes
         self.size_type = var_type
         self.size_levels = levels
+        self.size_norm = norm
         self.size_limits = limits
         self.size_range = width_range
 
@@ -541,14 +555,13 @@ class _BasicPlotter(object):
                 keys.append(key)
                 legend_data[key] = dict(**kws)
 
-        if isinstance(self.hue_norm, mpl.colors.LogNorm):
-            ticker = mpl.ticker.LogLocator(numticks=3)
-        else:
-            ticker = mpl.ticker.MaxNLocator(nbins=3)
-
         # -- Add a legend for hue semantics
 
         if verbosity == "brief" and self.hue_type == "numeric":
+            if isinstance(self.hue_norm, mpl.colors.LogNorm):
+                ticker = mpl.ticker.LogLocator(numticks=3)
+            else:
+                ticker = mpl.ticker.MaxNLocator(nbins=3)
             hue_levels = (ticker.tick_values(*self.hue_limits)
                                 .astype(self.plot_data["hue"].dtype))
         else:
@@ -562,6 +575,10 @@ class _BasicPlotter(object):
         # -- Add a legend for size semantics
 
         if verbosity == "brief" and self.size_type == "numeric":
+            if isinstance(self.size_norm, mpl.colors.LogNorm):
+                ticker = mpl.ticker.LogLocator(numticks=3)
+            else:
+                ticker = mpl.ticker.MaxNLocator(nbins=3)
             size_levels = (ticker.tick_values(*self.size_limits)
                                  .astype(self.plot_data["size"].dtype))
         else:
@@ -600,7 +617,7 @@ class _LinePlotter(_BasicPlotter):
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_limits=None,
+                 sizes=None, size_order=None, size_norm=None,
                  dashes=None, markers=None, style_order=None,
                  units=None, estimator=None, ci=None, n_boot=None,
                  sort=True, err_style=None, err_kws=None, legend=None):
@@ -614,7 +631,7 @@ class _LinePlotter(_BasicPlotter):
         )
 
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
-        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
         self.units = units
@@ -787,7 +804,7 @@ class _ScatterPlotter(_BasicPlotter):
     def __init__(self,
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_limits=None,
+                 sizes=None, size_order=None, size_norm=None,
                  markers=None, style_order=None,
                  x_bins=None, y_bins=None,
                  units=None, estimator=None, ci=None, n_boot=None,
@@ -803,7 +820,7 @@ class _ScatterPlotter(_BasicPlotter):
         )
 
         self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
-        self.parse_size(plot_data["size"], sizes, size_order, size_limits)
+        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, None, style_order)
         self.units = units
 
@@ -931,9 +948,9 @@ _basic_docs = dict(
         otherwise they are determined from the data. Not relevant when the
         ``size`` variable is numeric.\
     """),
-    size_limits=dedent("""\
-    size_limits : tuple, optional
-        Limits in data units to use for the size normalization when the
+    size_norm=dedent("""\
+    size_norm : tuple or Normalize object, optional
+        Normalization in data units for scaling plot objects when the
         ``size`` variable is numeric.\
     """),
     markers=dedent("""\
@@ -998,7 +1015,7 @@ _basic_docs = dict(
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_norm=None,
-             sizes=None, size_order=None, size_limits=None,
+             sizes=None, size_order=None, size_norm=None,
              dashes=True, markers=None, style_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
              sort=True, err_style="band", err_kws=None,
@@ -1007,7 +1024,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     p = _LinePlotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_limits=size_limits,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
         units=units, estimator=estimator, ci=ci, n_boot=n_boot,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
@@ -1051,7 +1068,7 @@ lineplot.__doc__ = dedent("""\
     {hue_norm}
     {sizes}
     {size_order}
-    {size_limits}
+    {size_norm}
     dashes : boolean, list, or dictionary, optional
         Object determining how to draw the lines for different levels of the
         ``style`` variable. Setting to ``True`` will use default dash codes, or
@@ -1253,7 +1270,7 @@ lineplot.__doc__ = dedent("""\
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
                 palette=None, hue_order=None, hue_norm=None,
-                sizes=None, size_order=None, size_limits=None,
+                sizes=None, size_order=None, size_norm=None,
                 markers=True, style_order=None,
                 x_bins=None, y_bins=None,
                 units=None, estimator=None, ci=95, n_boot=1000,
@@ -1263,7 +1280,7 @@ def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
     p = _ScatterPlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_limits=size_limits,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
@@ -1303,7 +1320,7 @@ scatterplot.__doc__ = dedent("""\
     {hue_norm}
     {sizes}
     {size_order}
-    {size_limits}
+    {size_norm}
     {markers}
     {style_order}
     {{x,y}}_bins : lists or arrays or functions
