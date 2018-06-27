@@ -423,7 +423,7 @@ class _BasicPlotter(object):
                 try:
                     limits = min(sizes.keys()), max(sizes.keys())
                 except TypeError:
-                    pass
+                    limits = None
 
             else:
 
@@ -454,7 +454,8 @@ class _BasicPlotter(object):
 
                 scl = norm(numbers)
                 widths = np.asarray(min_width + scl * (max_width - min_width))
-                widths[scl.mask] = 0
+                if scl.mask.any():
+                    widths[scl.mask] = 0
                 sizes = dict(zip(levels, widths))
                 # sizes = {l: min_width + norm(n) * (max_width - min_width)
                 #          for l, n in zip(levels, numbers)}
@@ -525,7 +526,7 @@ class _BasicPlotter(object):
                 float_data = data.astype(np.float)
                 values = np.unique(float_data.dropna())
                 if np.array_equal(values, np.array([0., 1.])):
-                        return "categorical"
+                    return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
                 return "categorical"
