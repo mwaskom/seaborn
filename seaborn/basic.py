@@ -522,7 +522,10 @@ class _BasicPlotter(object):
             return "categorical"
         else:
             try:
-                data.astype(np.float)
+                float_data = data.astype(np.float)
+                values = np.unique(float_data.dropna())
+                if np.array_equal(values, np.array([0., 1.])):
+                        return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
                 return "categorical"

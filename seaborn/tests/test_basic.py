@@ -57,6 +57,7 @@ class TestBasicPlotter(object):
             y=rs.randn(n),
             a=np.take(list("abc"), rs.randint(0, 3, n)),
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
+            c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
 
@@ -443,6 +444,11 @@ class TestBasicPlotter(object):
         expected_colors = color_palette("husl", n_colors=len(levels))
         expected_palette = dict(zip(levels, expected_colors))
         assert p.palette == expected_palette
+
+        # Test binary data
+        p = basic._LinePlotter(x="x", y="y", hue="c", data=long_df)
+        assert p.hue_levels == [0, 1]
+        assert p.hue_type is "categorical"
 
     def test_parse_hue_numeric(self, long_df):
 
