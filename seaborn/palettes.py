@@ -969,7 +969,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         if reverse:
             x_256 = x_256[::-1]
         pal_256 = cmap(x_256)
-        cmap = mpl.colors.ListedColormap(pal_256)
+        cmap = mpl.colors.ListedColormap(pal_256, "seaborn_cubehelix")
         return cmap
     else:
         return _ColorPalette(pal)

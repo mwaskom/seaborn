@@ -456,7 +456,7 @@ class TestBasicPlotter(object):
         hue_levels = list(np.sort(long_df.s.unique()))
         assert p.hue_levels == hue_levels
         assert p.hue_type is "numeric"
-        assert p.cmap is mpl.cm.get_cmap(mpl.rcParams["image.cmap"])
+        assert p.cmap.name == "seaborn_cubehelix"
 
         # Test named colormap
         palette = "Purples"

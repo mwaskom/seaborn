@@ -234,9 +234,8 @@ class _BasicPlotter(object):
         # at the extremes of the colormap against the background?
 
         # Identify the colormap to use
-        if palette is None:
-            cmap = mpl.cm.get_cmap(plt.rcParams["image.cmap"])
-        elif isinstance(palette, mpl.colors.Colormap):
+        palette = "ch:" if palette is None else palette
+        if isinstance(palette, mpl.colors.Colormap):
             cmap = palette
         elif str(palette).startswith("ch:"):
             args, kwargs = _parse_cubehelix_args(palette)
