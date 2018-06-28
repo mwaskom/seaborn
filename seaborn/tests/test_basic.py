@@ -976,6 +976,22 @@ class TestLinePlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
 
+        ax.clear()
+        p = basic._LinePlotter(x=x, y=y, hue=z,
+                               hue_norm=mpl.colors.LogNorm(),
+                               legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = basic._LinePlotter(x=x, y=y, size=z,
+                               size_norm=mpl.colors.LogNorm(),
+                               legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
     def test_plot(self, long_df, repeated_df):
 
         f, ax = plt.subplots()
@@ -1143,6 +1159,9 @@ class TestLinePlotter(TestBasicPlotter):
                             wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
+
+        basic.lineplot([], [])
+        ax.clear()
 
         basic.lineplot(data=flat_array)
         ax.clear()
@@ -1415,6 +1434,9 @@ class TestScatterPlotter(TestBasicPlotter):
                                wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
+
+        basic.scatterplot([], [])
+        ax.clear()
 
         basic.scatterplot(data=flat_array)
         ax.clear()
