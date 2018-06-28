@@ -57,6 +57,7 @@ class TestBasicPlotter(object):
             y=rs.randn(n),
             a=np.take(list("abc"), rs.randint(0, 3, n)),
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
+            c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
 
@@ -444,13 +445,18 @@ class TestBasicPlotter(object):
         expected_palette = dict(zip(levels, expected_colors))
         assert p.palette == expected_palette
 
+        # Test binary data
+        p = basic._LinePlotter(x="x", y="y", hue="c", data=long_df)
+        assert p.hue_levels == [0, 1]
+        assert p.hue_type is "categorical"
+
     def test_parse_hue_numeric(self, long_df):
 
         p = basic._LinePlotter(x="x", y="y", hue="s", data=long_df)
         hue_levels = list(np.sort(long_df.s.unique()))
         assert p.hue_levels == hue_levels
         assert p.hue_type is "numeric"
-        assert p.cmap is mpl.cm.get_cmap(mpl.rcParams["image.cmap"])
+        assert p.cmap.name == "seaborn_cubehelix"
 
         # Test named colormap
         palette = "Purples"
@@ -472,9 +478,18 @@ class TestBasicPlotter(object):
         assert p.hue_limits == (p.plot_data.hue.min(), p.plot_data.hue.max())
 
         # Test specified hue limits
-        hue_limits = 1, 4
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        assert p.hue_limits == hue_limits
+        hue_norm = 1, 4
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == hue_norm
+        assert isinstance(p.hue_norm, mpl.colors.Normalize)
+        assert p.hue_norm.vmin == hue_norm[0]
+        assert p.hue_norm.vmax == hue_norm[1]
+
+        # Test Normalize object
+        hue_norm = mpl.colors.PowerNorm(2, vmin=1, vmax=10)
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == (hue_norm.vmin, hue_norm.vmax)
+        assert p.hue_norm is hue_norm
 
         # Test default colormap values
         hmin, hmax = p.plot_data.hue.min(), p.plot_data.hue.max()
@@ -483,9 +498,9 @@ class TestBasicPlotter(object):
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
         # Test specified colormap values
-        hue_limits = hmin - 1, hmax - 1
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        norm_min = (hmin - hue_limits[0]) / (hue_limits[1] - hue_limits[0])
+        hue_norm = hmin - 1, hmax - 1
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        norm_min = (hmin - hue_norm[0]) / (hue_norm[1] - hue_norm[0])
         assert p.palette[hmin] == pytest.approx(p.cmap(norm_min))
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
@@ -513,6 +528,11 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_hue(p.plot_data.hue, palette, None, None)
 
+        # Test bad norm argument
+        hue_norm = "not a norm"
+        with pytest.raises(ValueError):
+            p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+
     def test_parse_size(self, long_df):
 
         p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
@@ -536,13 +556,30 @@ class TestBasicPlotter(object):
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.size_limits == default_limits
 
-        # Test size values inferred from ranges
+        # Test size values with normalization range
         sizes = (1, 5)
-        size_limits = (1, 10)
-        p.parse_size(p.plot_data["size"], sizes, None, size_limits)
-        normalize = mpl.colors.Normalize(*size_limits, clip=False)
+        size_norm = (1, 10)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        normalize = mpl.colors.Normalize(*size_norm, clip=True)
         for level, width in p.sizes.items():
             assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
+
+        # Test size values with normalization object
+        sizes = (1, 5)
+        size_norm = mpl.colors.LogNorm(1, 10, clip=False)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        assert p.size_norm.clip
+        for level, width in p.sizes.items():
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * size_norm(level)
+
+        # Test specified size order
+        var = "a"
+        levels = long_df[var].unique()
+        sizes = [1, 4, 6]
+        size_order = [levels[1], levels[2], levels[0]]
+        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p.parse_size(p.plot_data["size"], sizes, size_order, None)
+        assert p.sizes == dict(zip(size_order, sizes))
 
         # Test list of sizes
         var = "a"
@@ -574,6 +611,12 @@ class TestBasicPlotter(object):
         sizes = "bad_size"
         with pytest.raises(ValueError):
             p.parse_size(p.plot_data["size"], sizes, None, None)
+
+        # Test bad norm argument
+        size_norm = "not a norm"
+        p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], None, None, size_norm)
 
     def test_parse_style(self, long_df):
 
@@ -620,6 +663,11 @@ class TestBasicPlotter(object):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
 
         markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
+        # Test mixture of filled and unfilled markers
+        markers, dashes = ["o", "x", "s"], None
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
 
@@ -928,6 +976,22 @@ class TestLinePlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
 
+        ax.clear()
+        p = basic._LinePlotter(x=x, y=y, hue=z,
+                               hue_norm=mpl.colors.LogNorm(),
+                               legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = basic._LinePlotter(x=x, y=y, size=z,
+                               size_norm=mpl.colors.LogNorm(),
+                               legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
     def test_plot(self, long_df, repeated_df):
 
         f, ax = plt.subplots()
@@ -1095,6 +1159,9 @@ class TestLinePlotter(TestBasicPlotter):
                             wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
+
+        basic.lineplot([], [])
+        ax.clear()
 
         basic.lineplot(data=flat_array)
         ax.clear()
@@ -1367,6 +1434,9 @@ class TestScatterPlotter(TestBasicPlotter):
                                wide_df, long_df, missing_df):
 
         f, ax = plt.subplots()
+
+        basic.scatterplot([], [])
+        ax.clear()
 
         basic.scatterplot(data=flat_array)
         ax.clear()
