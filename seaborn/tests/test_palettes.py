@@ -275,14 +275,23 @@ class TestColorPalettes(object):
 
     def test_cubehelix_code(self):
 
-        pal1 = palettes.color_palette("ch:", 8)
-        pal2 = palettes.color_palette(palettes.cubehelix_palette(8))
+        color_palette = palettes.color_palette
+        cubehelix_palette = palettes.cubehelix_palette
+
+        pal1 = color_palette("ch:", 8)
+        pal2 = color_palette(cubehelix_palette(8))
         assert pal1 == pal2
 
-        pal1 = palettes.color_palette("ch:.5, -.25,hue = .5,light=.75", 8)
-        pal2 = palettes.color_palette(
-            palettes.cubehelix_palette(8, .5, -.25, hue=.5, light=.75)
-        )
+        pal1 = color_palette("ch:.5, -.25,hue = .5,light=.75", 8)
+        pal2 = color_palette(cubehelix_palette(8, .5, -.25, hue=.5, light=.75))
+        assert pal1 == pal2
+
+        pal1 = color_palette("ch:h=1,r=.5", 9)
+        pal2 = color_palette(cubehelix_palette(9, hue=1, rot=.5))
+        assert pal1 == pal2
+
+        pal1 = color_palette("ch:_r", 6)
+        pal2 = color_palette(cubehelix_palette(6, reverse=True))
         assert pal1 == pal2
 
     def test_xkcd_palette(self):

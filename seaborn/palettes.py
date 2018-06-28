@@ -842,6 +842,10 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     user more control over the look of the palette and has a different set of
     defaults.
 
+    In addition to using this function, it is also possible to generate a
+    cubehelix palette generally in seaborn using a string-shorthand; see the
+    example below.
+
     Parameters
     ----------
     n_colors : int
@@ -934,6 +938,13 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
         >>> cmap = sns.cubehelix_palette(dark=0, light=1, as_cmap=True)
         >>> ax = sns.heatmap(x, cmap=cmap)
 
+    Use through the :func:`color_palette` interface:
+
+    .. plot::
+        :context: close-figs
+
+        >>> sns.palplot(sns.color_palette("ch:2,r=.2,l=.6"))
+
     """
     def get_color_function(p0, p1):
         # Copied from matplotlib because it lives in private module
@@ -977,11 +988,18 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
 def _parse_cubehelix_args(argstr):
     """Turn stringified cubehelix params into args/kwargs."""
+
     if argstr.startswith("ch:"):
         argstr = argstr[3:]
 
+    if argstr.endswith("_r"):
+        reverse = True
+        argstr = argstr[:-2]
+    else:
+        reverse = False
+
     if not argstr:
-        return [], {}
+        return [], {"reverse": reverse}
 
     all_args = argstr.split(",")
 
@@ -989,6 +1007,16 @@ def _parse_cubehelix_args(argstr):
 
     kwargs = [a.split("=") for a in all_args if "=" in a]
     kwargs = {k.strip(" "): float(v.strip(" ")) for k, v in kwargs}
+
+    kwarg_map = dict(
+        s="start", r="rot", g="gamma",
+        h="hue", l="light", d="dark",  # noqa: E741
+    )
+
+    kwargs = {kwarg_map.get(k, k): v for k, v in kwargs.items()}
+
+    if reverse:
+        kwargs["reverse"] = True
 
     return args, kwargs
 
