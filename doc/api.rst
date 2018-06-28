@@ -30,6 +30,7 @@ Basic plots
 .. autosummary::
     :toctree: generated
 
+    scatterplot
     lineplot
 
 .. _categorical_api:

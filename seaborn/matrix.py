@@ -238,8 +238,8 @@ class _HeatMapper(object):
                                        mesh.get_array(), mesh.get_facecolors(),
                                        self.annot_data.flat):
             if m is not np.ma.masked:
-                l = relative_luminance(color)
-                text_color = ".15" if l > .408 else "w"
+                lum = relative_luminance(color)
+                text_color = ".15" if lum > .408 else "w"
                 annotation = ("{:" + self.fmt + "}").format(val)
                 text_kwargs = dict(color=text_color, ha="center", va="center")
                 text_kwargs.update(self.annot_kws)
@@ -286,6 +286,9 @@ class _HeatMapper(object):
         # Set the axis limits
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))
 
+        # Invert the y axis to show the plot in matrix form
+        ax.invert_yaxis()
+
         # Possibly add a colorbar
         if self.cbar:
             cb = ax.figure.colorbar(mesh, cax, ax, **self.cbar_kws)
@@ -311,7 +314,8 @@ class _HeatMapper(object):
         ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
 
         # Possibly rotate them if they overlap
-        ax.figure.draw(ax.figure.canvas.get_renderer())
+        if hasattr(ax.figure.canvas, "get_renderer"):
+            ax.figure.draw(ax.figure.canvas.get_renderer())
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
         if axis_ticklabels_overlap(ytl):
@@ -323,9 +327,6 @@ class _HeatMapper(object):
         # Annotate the cells with the formatted values
         if self.annot:
             self._annotate_heatmap(ax, mesh)
-
-        # Invert the y axis to show the plot in matrix form
-        ax.invert_yaxis()
 
 
 def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
@@ -696,7 +697,8 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        ax.figure.draw(ax.figure.canvas.get_renderer())
+        if hasattr(ax.figure.canvas, "get_renderer"):
+            ax.figure.draw(ax.figure.canvas.get_renderer())
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):

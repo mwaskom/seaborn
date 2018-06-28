@@ -18,9 +18,9 @@ class TestColorPalettes(object):
 
     def test_current_palette(self):
 
-        pal = palettes.color_palette(["red", "blue", "green"], 3)
-        rcmod.set_palette(pal, 3)
-        nt.assert_equal(pal, utils.get_color_cycle())
+        pal = palettes.color_palette(["red", "blue", "green"])
+        rcmod.set_palette(pal)
+        assert pal == utils.get_color_cycle()
         rcmod.set()
 
     def test_palette_context(self):
@@ -47,12 +47,31 @@ class TestColorPalettes(object):
         # Reset default
         rcmod.set()
 
+    def test_palette_size(self):
+
+        pal = palettes.color_palette("deep")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["deep"]
+
+        pal = palettes.color_palette("pastel6")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["pastel6"]
+
+        pal = palettes.color_palette("Set3")
+        assert len(pal) == palettes.QUAL_PALETTE_SIZES["Set3"]
+
+        pal = palettes.color_palette("husl")
+        assert len(pal) == 6
+
+        pal = palettes.color_palette("Greens")
+        assert len(pal) == 6
+
     def test_seaborn_palettes(self):
 
         pals = "deep", "muted", "pastel", "bright", "dark", "colorblind"
         for name in pals:
-            pal_out = palettes.color_palette(name)
-            nt.assert_equal(len(pal_out), 6)
+            full = palettes.color_palette(name, 10).as_hex()
+            short = palettes.color_palette(name + "6", 6).as_hex()
+            b, _, g, r, m, _, _, _, y, c = full
+            assert [b, g, r, m, y, c] == list(short)
 
     def test_hls_palette(self):
 
@@ -113,8 +132,8 @@ class TestColorPalettes(object):
 
     def test_palette_cycles(self):
 
-        deep = palettes.color_palette("deep")
-        double_deep = palettes.color_palette("deep", 12)
+        deep = palettes.color_palette("deep6")
+        double_deep = palettes.color_palette("deep6", 12)
         nt.assert_equal(double_deep, deep + deep)
 
     def test_hls_values(self):
@@ -124,8 +143,8 @@ class TestColorPalettes(object):
         pal2 = pal2[3:] + pal2[:3]
         npt.assert_array_almost_equal(pal1, pal2)
 
-        pal_dark = palettes.hls_palette(5, l=.2)
-        pal_bright = palettes.hls_palette(5, l=.8)
+        pal_dark = palettes.hls_palette(5, l=.2)  # noqa
+        pal_bright = palettes.hls_palette(5, l=.8)  # noqa
         npt.assert_array_less(list(map(sum, pal_dark)),
                               list(map(sum, pal_bright)))
 
@@ -141,8 +160,8 @@ class TestColorPalettes(object):
         pal2 = pal2[3:] + pal2[:3]
         npt.assert_array_almost_equal(pal1, pal2)
 
-        pal_dark = palettes.husl_palette(5, l=.2)
-        pal_bright = palettes.husl_palette(5, l=.8)
+        pal_dark = palettes.husl_palette(5, l=.2)  # noqa
+        pal_bright = palettes.husl_palette(5, l=.8)  # noqa
         npt.assert_array_less(list(map(sum, pal_dark)),
                               list(map(sum, pal_bright)))
 
@@ -254,6 +273,27 @@ class TestColorPalettes(object):
         pal_reverse = cmap_rev(x[::-1]).tolist()
         nt.assert_list_equal(pal_forward, pal_reverse)
 
+    def test_cubehelix_code(self):
+
+        color_palette = palettes.color_palette
+        cubehelix_palette = palettes.cubehelix_palette
+
+        pal1 = color_palette("ch:", 8)
+        pal2 = color_palette(cubehelix_palette(8))
+        assert pal1 == pal2
+
+        pal1 = color_palette("ch:.5, -.25,hue = .5,light=.75", 8)
+        pal2 = color_palette(cubehelix_palette(8, .5, -.25, hue=.5, light=.75))
+        assert pal1 == pal2
+
+        pal1 = color_palette("ch:h=1,r=.5", 9)
+        pal2 = color_palette(cubehelix_palette(9, hue=1, rot=.5))
+        assert pal1 == pal2
+
+        pal1 = color_palette("ch:_r", 6)
+        pal2 = color_palette(cubehelix_palette(6, reverse=True))
+        assert pal1 == pal2
+
     def test_xkcd_palette(self):
 
         names = list(xkcd_rgb.keys())[10:15]
@@ -273,7 +313,7 @@ class TestColorPalettes(object):
     def test_color_codes(self):
 
         palettes.set_color_codes("deep")
-        colors = palettes.color_palette("deep") + [".1"]
+        colors = palettes.color_palette("deep6") + [".1"]
         for code, color in zip("bgrmyck", colors):
             rgb_want = mpl.colors.colorConverter.to_rgb(color)
             rgb_got = mpl.colors.colorConverter.to_rgb(code)

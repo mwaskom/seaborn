@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from . import utils
 from .palettes import color_palette, blend_palette
 from .external.six import string_types
+from .basic import scatterplot
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
@@ -85,15 +86,11 @@ class Grid(object):
             figlegend = self.fig.legend(handles, label_order, "center right",
                                         **kwargs)
             self._legend = figlegend
-            figlegend.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            figlegend._legend_title_box._text.set_font_properties(prop)
+            figlegend.set_title(title, prop={"size": title_size})
 
             # Draw the plot to set the bounding boxes correctly
-            self.fig.draw(self.fig.canvas.get_renderer())
+            if hasattr(self.fig.canvas, "get_renderer"):
+                self.fig.draw(self.fig.canvas.get_renderer())
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
@@ -101,7 +98,8 @@ class Grid(object):
             self.fig.set_figwidth(figure_width + legend_width)
 
             # Draw the plot again to get the new transformations
-            self.fig.draw(self.fig.canvas.get_renderer())
+            if hasattr(self.fig.canvas, "get_renderer"):
+                self.fig.draw(self.fig.canvas.get_renderer())
 
             # Now calculate how much space we need on the right side
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
@@ -117,12 +115,7 @@ class Grid(object):
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
             leg = ax.legend(handles, label_order, loc="best", **kwargs)
-            leg.set_title(title)
-
-            # Set the title size a roundabout way to maintain
-            # compatability with matplotlib 1.1
-            prop = mpl.font_manager.FontProperties(size=title_size)
-            leg._legend_title_box._text.set_font_properties(prop)
+            leg.set_title(title, prop={"size": title_size})
 
         return self
 
@@ -183,7 +176,7 @@ _facet_docs = dict(
         span multiple rows. Incompatible with a ``row`` facet.\
     """),
     share_xy=dedent("""\
-    share{x,y} : bool, optional
+    share{x,y} : bool, 'col', or 'row' optional
         If true, the facets will share y axes across columns and/or x axes
         across rows.\
     """),
@@ -644,22 +637,22 @@ class FacetGrid(Grid):
         data = self.data
 
         # Construct masks for the row variable
-        if self._nrow == 1 or self._col_wrap is not None:
-            row_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.row_names:
             row_masks = [data[self._row_var] == n for n in self.row_names]
+        else:
+            row_masks = [np.repeat(True, len(self.data))]
 
         # Construct masks for the column variable
-        if self._ncol == 1:
-            col_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.col_names:
             col_masks = [data[self._col_var] == n for n in self.col_names]
+        else:
+            col_masks = [np.repeat(True, len(self.data))]
 
         # Construct masks for the hue variable
-        if len(self._colors) == 1:
-            hue_masks = [np.repeat(True, len(self.data))]
-        else:
+        if self.hue_names:
             hue_masks = [data[self._hue_var] == n for n in self.hue_names]
+        else:
+            hue_masks = [np.repeat(True, len(self.data))]
 
         # Here is the main generator loop
         for (i, row), (j, col), (k, hue) in product(enumerate(row_masks),
@@ -1280,7 +1273,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1322,10 +1316,9 @@ class PairGrid(Grid):
         Parameters
         ----------
         func : callable plotting function
-            Must take an x array as a positional arguments and draw onto the
-            "currently active" matplotlib Axes. There is a special case when
-            using a ``hue`` variable and ``plt.hist``; the histogram will be
-            plotted with stacked bars.
+            Must take an x array as a positional argument and draw onto the
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         # Add special diagonal axes for the univariate plot
@@ -1349,42 +1342,22 @@ class PairGrid(Grid):
             ax = self.diag_axes[i]
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
-            # Special-case plt.hist with stacked bars
-            if func is plt.hist:
-                plt.sca(ax)
+            plt.sca(ax)
 
-                vals = []
-                for label in self.hue_names:
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        vals.append(np.asarray(hue_grouped.get_group(label)))
-                    except KeyError:
-                        vals.append(np.array([]))
+            for k, label_k in enumerate(self.hue_names):
 
-                color = self.palette if fixed_color is None else fixed_color
+                # Attempt to get data for this level, allowing for empty
+                try:
+                    data_k = np.asarray(hue_grouped.get_group(label_k))
+                except KeyError:
+                    data_k = np.array([])
 
-                if "histtype" in kwargs:
-                    func(vals, color=color, **kwargs)
+                if fixed_color is None:
+                    color = self.palette[k]
                 else:
-                    func(vals, color=color, histtype="barstacked", **kwargs)
+                    color = fixed_color
 
-            else:
-                plt.sca(ax)
-
-                for k, label_k in enumerate(self.hue_names):
-
-                    # Attempt to get data for this level, allowing for empty
-                    try:
-                        data_k = hue_grouped.get_group(label_k)
-                    except KeyError:
-                        data_k = np.array([])
-
-                    if fixed_color is None:
-                        color = self.palette[k]
-                    else:
-                        color = fixed_color
-
-                    func(data_k, label=label_k, color=color, **kwargs)
+                func(data_k, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
 
@@ -1399,7 +1372,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1444,7 +1418,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
         kw_color = kwargs.pop("color", None)
@@ -1490,7 +1465,8 @@ class PairGrid(Grid):
         ----------
         func : callable plotting function
             Must take x, y arrays as positional arguments and draw onto the
-            "currently active" matplotlib Axes.
+            "currently active" matplotlib Axes. Also needs to accept kwargs
+            called ``color`` and  ``label``.
 
         """
 
@@ -1708,9 +1684,9 @@ class JointGrid(object):
         self.y = y_array
 
         if xlim is not None:
-            ax_joint.set_xlim(xlim)
+            ax_joint.set_xlim(xlim, auto=None)
         if ylim is not None:
-            ax_joint.set_ylim(ylim)
+            ax_joint.set_ylim(ylim, auto=None)
 
         # Make the grid look nice
         utils.despine(f)
@@ -1795,6 +1771,8 @@ class JointGrid(object):
     def annotate(self, func, template=None, stat=None, loc="best", **kwargs):
         """Annotate the plot with a statistic about the relationship.
 
+        *Deprecated and will be removed in a future version*.
+
         Parameters
         ----------
         func : callable
@@ -1818,6 +1796,10 @@ class JointGrid(object):
             Returns `self`.
 
         """
+        msg = ("JointGrid annotation is deprecated and will be removed "
+               "in a future release.")
+        warnings.warn(UserWarning(msg))
+
         default_template = "{stat} = {val:.2g}; p = {p:.2g}"
 
         # Call the function and determine the form of the return value(s)
@@ -1880,7 +1862,7 @@ class JointGrid(object):
 
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="hist", markers=None,
+             kind="scatter", diag_kind="auto", markers=None,
              size=2.5, aspect=1, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None):
     """Plot pairwise relationships in a dataset.
@@ -1918,8 +1900,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         columns of the figure; i.e. to make a non-square plot.
     kind : {'scatter', 'reg'}, optional
         Kind of plot for the non-identity relationships.
-    diag_kind : {'hist', 'kde'}, optional
-        Kind of plot for the diagonal subplots.
+    diag_kind : {'auto', 'hist', 'kde'}, optional
+        Kind of plot for the diagonal subplots. The default depends on whether
+        ``"hue"`` is used or not.
     markers : single matplotlib marker code or list, optional
         Either the marker to use for all datapoints or a list of markers with
         a length the same as the number of levels in the hue variable so that
@@ -2062,10 +2045,15 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         grid.hue_kws = {"marker": markers}
 
     # Maybe plot on the diagonal
+    if diag_kind == "auto":
+        diag_kind = "hist" if hue is None else "kde"
+
+    diag_kws = diag_kws.copy()
     if grid.square_grid:
         if diag_kind == "hist":
             grid.map_diag(plt.hist, **diag_kws)
         elif diag_kind == "kde":
+            diag_kws.setdefault("shade", True)
             diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
@@ -2076,8 +2064,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         plotter = grid.map
 
     if kind == "scatter":
-        plot_kws.setdefault("edgecolor", "white")
-        plotter(plt.scatter, **plot_kws)
+        plotter(scatterplot, **plot_kws)
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import
         plotter(regplot, **plot_kws)
@@ -2089,7 +2076,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     return grid
 
 
-def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
+def jointplot(x, y, data=None, kind="scatter", stat_func=None,
               color=None, size=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
               joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
@@ -2109,10 +2096,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
         Kind of plot to draw.
     stat_func : callable or None, optional
-        Function used to calculate a statistic about the relationship and
-        annotate the plot. Should map `x` and `y` either to a single value
-        or to a (value, p) tuple. Set to ``None`` if you don't want to
-        annotate the plot.
+        *Deprecated*
     color : matplotlib color, optional
         Color used for the plot elements.
     size : numeric, optional
@@ -2179,15 +2163,6 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         >>> g = sns.jointplot("sepal_width", "petal_length", data=iris,
         ...                   kind="kde", space=0, color="g")
 
-    Use a different statistic for the annotation:
-
-    .. plot::
-        :context: close-figs
-
-        >>> from scipy.stats import spearmanr
-        >>> g = sns.jointplot("size", "total_bill", data=tips,
-        ...                   stat_func=spearmanr, color="m")
-
     Draw a scatterplot, then add a joint density estimate:
 
     .. plot::
@@ -2203,7 +2178,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
         :context: close-figs
 
         >>> x, y = np.random.randn(2, 300)
-        >>> g = (sns.jointplot(x, y, kind="hex", stat_func=None)
+        >>> g = (sns.jointplot(x, y, kind="hex")
         ...         .set_axis_labels("x", "y"))
 
     Draw a smaller figure with more space devoted to the marginal plots:
@@ -2238,7 +2213,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=stats.pearsonr,
     if color is None:
         color = color_palette()[0]
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
-    colors = [utils.set_hls_values(color_rgb, l=l)
+    colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
               for l in np.linspace(1, 0, 12)]
     cmap = blend_palette(colors, as_cmap=True)
 

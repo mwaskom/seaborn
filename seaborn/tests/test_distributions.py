@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import pytest
 from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
@@ -122,3 +123,97 @@ class TestKDE(object):
                      ax=ax)
         nt.assert_equal(len(f.axes), 2)
         nt.assert_equal(f.axes[1].get_ylabel(), "density")
+
+    def test_legend(self):
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, label="test1")
+        line = ax.lines[-1]
+        assert line.get_label() == "test1"
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, label="test2")
+        fill = ax.collections[-1]
+        assert fill.get_label() == "test2"
+
+    def test_contour_color(self):
+
+        rgb = (.1, .5, .7)
+        f, ax = plt.subplots()
+
+        dist.kdeplot(self.x, self.y, color=rgb)
+        contour = ax.collections[-1]
+        assert np.array_equal(contour.get_color()[0, :3], rgb)
+        low = ax.collections[0].get_color().mean()
+        high = ax.collections[-1].get_color().mean()
+        assert low < high
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, color=rgb)
+        contour = ax.collections[-1]
+        low = ax.collections[0].get_facecolor().mean()
+        high = ax.collections[-1].get_facecolor().mean()
+        assert low > high
+
+
+class TestRugPlot(object):
+
+    @pytest.fixture
+    def list_data(self):
+        return np.random.randn(20).tolist()
+
+    @pytest.fixture
+    def array_data(self):
+        return np.random.randn(20)
+
+    @pytest.fixture
+    def series_data(self):
+        return pd.Series(np.random.randn(20))
+
+    def test_rugplot(self, list_data, array_data, series_data):
+
+        h = .1
+
+        for data in [list_data, array_data, series_data]:
+
+            f, ax = plt.subplots()
+            dist.rugplot(data, h)
+            rug, = ax.collections
+            segments = np.array(rug.get_segments())
+
+            assert len(segments) == len(data)
+            assert np.array_equal(segments[:, 0, 0], data)
+            assert np.array_equal(segments[:, 1, 0], data)
+            assert np.array_equal(segments[:, 0, 1], np.zeros_like(data))
+            assert np.array_equal(segments[:, 1, 1], np.ones_like(data) * h)
+
+            plt.close(f)
+
+            f, ax = plt.subplots()
+            dist.rugplot(data, h, axis="y")
+            rug, = ax.collections
+            segments = np.array(rug.get_segments())
+
+            assert len(segments) == len(data)
+            assert np.array_equal(segments[:, 0, 1], data)
+            assert np.array_equal(segments[:, 1, 1], data)
+            assert np.array_equal(segments[:, 0, 0], np.zeros_like(data))
+            assert np.array_equal(segments[:, 1, 0], np.ones_like(data) * h)
+
+            plt.close(f)
+
+        f, ax = plt.subplots()
+        dist.rugplot(data, axis="y")
+        dist.rugplot(data, vertical=True)
+        c1, c2 = ax.collections
+        assert np.array_equal(c1.get_segments(), c2.get_segments())
+        plt.close(f)
+
+        f, ax = plt.subplots()
+        dist.rugplot(data)
+        dist.rugplot(data, lw=2)
+        dist.rugplot(data, linewidth=3, alpha=.5)
+        for c, lw in zip(ax.collections, [1, 2, 3]):
+            assert np.squeeze(c.get_linewidth()).item() == lw
+        assert c.get_alpha() == .5
+        plt.close(f)

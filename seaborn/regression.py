@@ -45,6 +45,8 @@ class _LinearPlotter(object):
         for var, val in kws.items():
             if isinstance(val, string_types):
                 setattr(self, var, data[val])
+            elif isinstance(val, list):
+                setattr(self, var, np.asarray(val))
             else:
                 setattr(self, var, val)
 
@@ -394,7 +396,7 @@ class _RegressionPlotter(_LinearPlotter):
         ax.plot(grid, yhat, **kws)
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
-        ax.set_xlim(*xlim)
+        ax.set_xlim(*xlim, auto=None)
 
 
 _regression_docs = dict(
@@ -441,8 +443,8 @@ _regression_docs = dict(
     x_ci : "ci", "sd", int in [0, 100] or None, optional
         Size of the confidence interval used when plotting a central tendency
         for discrete values of ``x``. If ``"ci"``, defer to the value of the
-        ``ci`` parameter. If ``"sd"``, skip bootstrappig and show the standard
-        deviation of the observations in each bin.\
+        ``ci`` parameter. If ``"sd"``, skip bootstrapping and show the
+         standard deviation of the observations in each bin.\
     """),
     scatter=dedent("""\
     scatter : bool, optional
