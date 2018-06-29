@@ -109,13 +109,13 @@ To see the code or report a bug, please visit the `github repository
        </div>
        <div class="panel-body">
 
-* Basic plots: :ref:`API <basic_api>` | :ref:`Tutorial <basic_tutorial>`
-* Distribution plots: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
-* Categorical plots: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
-* Regression plots: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
-* Multi-plot grids: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
-* Style control: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
-* Color palettes: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
+* Basic: :ref:`API <basic_api>` | :ref:`Tutorial <basic_tutorial>`
+* Categorical: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
+* Distribution: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
+* Regression: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
+* Multi-plot: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
+* Style: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
+* Color: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
  
 .. raw:: html
 

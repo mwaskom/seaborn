@@ -86,8 +86,8 @@ Multi-plot grids
 
 .. _style_api:
 
-Style frontend
---------------
+Style control 
+-------------
 
 .. autosummary::
     :toctree: generated/

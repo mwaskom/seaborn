@@ -1,7 +1,7 @@
 .. _introduction:
 
-An introduction to seaborn
-==========================
+Introduction
+============
 
 Seaborn is a library for making attractive and informative statistical graphics
 in Python. It is built on top of `matplotlib <https://matplotlib.org/>`_ and

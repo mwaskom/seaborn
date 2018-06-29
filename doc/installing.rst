@@ -1,7 +1,7 @@
 .. _installing:
 
-Installing and getting started
-------------------------------
+Installation
+------------
 
 To install the latest release of seaborn, you can use ``pip``::
 
