@@ -5,7 +5,6 @@ FacetGrid with custom projection
 _thumb: .33, .5
 
 """
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -25,4 +24,4 @@ g = sns.FacetGrid(df, col="speed", hue="speed",
                   sharex=False, sharey=False, despine=False)
 
 # Draw a scatterplot onto each axes in the grid
-g.map(plt.scatter, "theta", "r")
+g.map(sns.scatterplot, "theta", "r")
