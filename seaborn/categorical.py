@@ -1952,13 +1952,15 @@ class _LVPlotter(_CategoricalPlotter):
             # Calculate the outliers and plot
             outliers = self._lv_outliers(box_data, k)
 
+            if "alpha" not in kwargs.keys(): kwargs["alpha"] = .45
+
             if vert:
                 boxes = [vert_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
 
                 # Plot the medians
                 ax.plot([x - widths / 2, x + widths / 2], [y, y],
-                        c='.15', alpha=.45, **kws)
+                        c='.15', **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
                            marker='d', c=mpl.colors.rgb2hex(color), **kws)
@@ -1968,7 +1970,7 @@ class _LVPlotter(_CategoricalPlotter):
 
                 # Plot the medians
                 ax.plot([y, y], [x - widths / 2, x + widths / 2],
-                        c='.15', alpha=.45, **kws)
+                        c='.15', **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
                            marker='d', c=color, **kws)
