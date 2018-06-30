@@ -82,6 +82,9 @@ class Grid(object):
         kwargs.setdefault("scatterpoints", 1)
 
         if self._legend_out:
+
+            kwargs.setdefault("frameon", False)
+
             # Draw a full-figure legend outside the grid
             figlegend = self.fig.legend(handles, label_order, "center right",
                                         **kwargs)
