@@ -22,6 +22,9 @@ def convert_nb(nbname):
     sh(["jupyter", "nbconvert", "--to", "notebook", "--inplace",
         "--ClearOutputPreprocessor.enabled=True", nbname])
 
+    # Touch the .rst file so it has a later modify time than the source
+    sh(["touch", nbname + ".rst"])
+
 
 if __name__ == "__main__":
 
