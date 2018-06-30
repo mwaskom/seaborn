@@ -1503,3 +1503,33 @@ class TestScatterPlotter(TestBasicPlotter):
 
         basic.scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
+
+
+class TestRelPlotter(TestBasicPlotter):
+
+    def test_relplot_simple(self, long_df):
+
+        g = basic.relplot(x="x", y="y", kind="scatter", data=long_df)
+        x, y = g.ax.collections[0].get_offsets().T
+        assert np.array_equal(x, long_df["x"])
+        assert np.array_equal(y, long_df["y"])
+
+        g = basic.relplot(x="x", y="y", kind="line", data=long_df)
+        x, y = g.ax.lines[0].get_xydata().T
+        expected = long_df.groupby("x").y.mean()
+        assert np.array_equal(x, expected.index)
+        assert y == pytest.approx(expected.values)
+
+        with pytest.raises(ValueError):
+            g = basic.relplot(x="x", y="y", kind="not_a_kind", data=long_df)
+
+    def test_relplot_legend(self, long_df):
+
+        g = basic.relplot(x="x", y="y", data=long_df)
+        assert g._legend is None
+
+        g = basic.relplot(x="x", y="y", hue="a", data=long_df)
+        assert isinstance(g._legend, mpl.legend.Legend)
+
+        g = basic.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
+        assert g._legend is None

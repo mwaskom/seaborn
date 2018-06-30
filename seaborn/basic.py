@@ -1023,6 +1023,8 @@ _basic_docs = dict(
 
 )
 
+_basic_docs.update(_facet_docs)
+
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_norm=None,
@@ -1520,6 +1522,7 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         err = "Plot kind {} not recognized".format(kind)
         raise ValueError(err)
 
+    # Use the full dataset to establish how to draw the semantics
     p = plotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
@@ -1546,9 +1549,9 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     )
     plot_kws.update(kwargs)
     if kind == "scatter":
-        plot_kws.pop("dashes")  # TODO
+        plot_kws.pop("dashes")
 
-    # TODO need to get facetgrid size ... needs rename to height?
+    # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws
     g = FacetGrid(
         data=data, row=row, col=col, col_wrap=col_wrap,
@@ -1557,13 +1560,19 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         **facet_kws
     )
 
+    # Draw the plot
     g.map_dataframe(func, x, y,
                     hue=hue, size=size, style=style,
                     **plot_kws)
 
+    # Show the legend
     if legend and g._legend_data:
         g.add_legend()
 
-    g._plotter = p  # TODO
-
     return g
+
+
+relplot.__doc__ = dedent("""\
+    Draw a relational plot onto a FacetGrid.
+
+    """).format(**_basic_docs)
