@@ -853,6 +853,13 @@ class _ScatterPlotter(_BasicPlotter):
         kws.setdefault("linewidth", .75)  # TODO scale with marker size?
         kws.setdefault("edgecolor", "w")
 
+        if self.markers:
+            # Use a representative marker so scatter sets the edgecolor
+            # properly for line art markers. We currently enforce either
+            # all or none line art so this works.
+            example_marker = list(self.markers.values())[0]
+            kws.setdefault("marker", example_marker)
+
         # TODO this makes it impossible to vary alpha with hue which might
         # otherwise be useful? Should we just pass None?
         kws["alpha"] = 1 if self.alpha == "auto" else self.alpha

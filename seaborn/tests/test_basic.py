@@ -1375,6 +1375,15 @@ class TestScatterPlotter(TestBasicPlotter):
         expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
         assert self.colors_equal(points.get_facecolors(), expected_colors)
 
+        p = basic._ScatterPlotter(x="x", y="y", style="c",
+                                  markers=["+", "x"], data=long_df)
+
+        ax.clear()
+        color = (1, .3, .8)
+        p.plot(ax, {"color": color})
+        points = ax.collections[0]
+        assert self.colors_equal(points.get_edgecolors(), [color])
+
         p = basic._ScatterPlotter(x="x", y="y", size="a", data=long_df)
 
         ax.clear()
