@@ -7,8 +7,8 @@ API reference
 
 .. _basic_api:
 
-Basic plots
------------
+Relational plots
+----------------
 
 .. autosummary::
     :toctree: generated
@@ -25,6 +25,7 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
+    factorplot
     stripplot
     swarmplot
     boxplot
@@ -42,6 +43,8 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
+    jointplot
+    pairplot
     distplot
     kdeplot
     rugplot
@@ -54,6 +57,7 @@ Regression plots
 .. autosummary::
     :toctree: generated/
 
+    lmplot
     regplot
     residplot
 
@@ -77,12 +81,8 @@ Multi-plot grids
    :toctree: generated/
 
     FacetGrid
-    factorplot
-    lmplot
     PairGrid
-    pairplot
     JointGrid
-    jointplot
 
 .. _style_api:
 

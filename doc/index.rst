@@ -27,9 +27,9 @@ seaborn: statistical data visualization
     <div style="clear: both"></div>
     <div class="container-fluid hidden-xs hidden-sm">
       <div class="row">
-        <a href="examples/different_scatter_variables.html">
+        <a href="examples/scatterplot_matrix.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/different_scatter_variables_thumb.png">
+            <img src="_static/scatterplot_matrix_thumb.png">
           </div>
         </a>
         <a href="examples/errorband_lineplots.html">
@@ -37,9 +37,9 @@ seaborn: statistical data visualization
             <img src="_static/errorband_lineplots_thumb.png">
           </div>
         </a>
-        <a href="examples/scatterplot_matrix.html">
+        <a href="examples/different_scatter_variables.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/scatterplot_matrix_thumb.png">
+            <img src="_static/different_scatter_variables_thumb.png">
           </div>
         </a>
         <a href="examples/horizontal_boxplot.html">
@@ -109,11 +109,11 @@ To see the code or report a bug, please visit the `github repository
        </div>
        <div class="panel-body">
 
-* Basic: :ref:`API <basic_api>` | :ref:`Tutorial <basic_tutorial>`
+* Relational: :ref:`API <basic_api>` | :ref:`Tutorial <basic_tutorial>`
 * Categorical: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
-* Distribution: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
-* Regression: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
-* Multi-plot: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
+* Distributions: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
+* Regressions: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
+* Multiples: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
 * Style: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
 * Color: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
  

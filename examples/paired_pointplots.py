@@ -15,6 +15,6 @@ g = sns.PairGrid(titanic, y_vars="survived",
                  size=5, aspect=.5)
 
 # Draw a seaborn pointplot onto each Axes
-g.map(sns.pointplot, color=sns.xkcd_rgb["plum"])
+g.map(sns.pointplot, scale=1.3, errwidth=4, color="xkcd:plum")
 g.set(ylim=(0, 1))
 sns.despine(fig=g.fig, left=True)

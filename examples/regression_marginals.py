@@ -2,7 +2,7 @@
 Linear regression with marginal distributions
 =============================================
 
-_thumb: .5, .6
+_thumb: .65, .65
 """
 import seaborn as sns
 sns.set(style="darkgrid")
