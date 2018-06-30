@@ -174,8 +174,8 @@ class _BasicPlotter(object):
 
         # Determine which semantics have (some) data
         plot_valid = plot_data.notnull().any()
-        semantics = [
-            name for name in ["x", "y", "hue", "size", "style"]
+        semantics = ["x", "y"] + [
+            name for name in ["hue", "size", "style"]
             if plot_valid[name]
         ]
 
