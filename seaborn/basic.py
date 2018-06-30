@@ -15,9 +15,10 @@ from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
                     remove_na)
 from .algorithms import bootstrap
 from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
+from .axisgrid import FacetGrid, _facet_docs
 
 
-__all__ = ["lineplot", "scatterplot"]
+__all__ = ["relplot", "scatterplot", "lineplot"]
 
 
 class _BasicPlotter(object):
@@ -808,7 +809,7 @@ class _ScatterPlotter(_BasicPlotter):
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_norm=None,
-                 markers=None, style_order=None,
+                 dashes=None, markers=None, style_order=None,
                  x_bins=None, y_bins=None,
                  units=None, estimator=None, ci=None, n_boot=None,
                  alpha=None, x_jitter=None, y_jitter=None,
@@ -1487,3 +1488,75 @@ scatterplot.__doc__ = dedent("""\
         >>> ax = sns.scatterplot(data=wide_df)
 
     """).format(**_basic_docs)
+
+
+def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
+            row=None, col=None, col_wrap=None, row_order=None, col_order=None,
+            palette=None, hue_order=None, hue_norm=None,
+            sizes=None, size_order=None, size_norm=None,
+            markers=None, dashes=None, style_order=None,
+            legend="brief", kind="scatter", facet_kws=None, **kwargs):
+
+    if kind == "scatter":
+
+        plotter = _ScatterPlotter
+        func = scatterplot
+        markers = True if markers is None else markers
+
+    elif kind == "line":
+
+        plotter = _LinePlotter
+        func = lineplot
+        dashes = True if dashes is None else dashes
+
+    else:
+        err = "Plot kind {} not recognized".format(kind)
+        raise ValueError(err)
+
+    p = plotter(
+        x=x, y=y, hue=hue, size=size, style=style, data=data,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
+        markers=markers, dashes=dashes, style_order=style_order,
+    )
+
+    palette = p.palette if p.palette else None
+    hue_order = p.hue_levels if any(p.hue_levels) else None
+    hue_norm = p.hue_norm if p.hue_norm is not None else None
+
+    sizes = p.sizes if p.sizes else None
+    size_order = p.size_levels if any(p.size_levels) else None
+    size_norm = p.size_norm if p.size_norm is not None else None
+
+    markers = p.markers if p.markers else None
+    dashes = p.dashes if p.dashes else None
+    style_order = p.style_levels if any(p.style_levels) else None
+
+    plot_kws = dict(
+        palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=p.size_norm,
+        markers=markers, dashes=dashes, style_order=style_order,
+    )
+    plot_kws.update(kwargs)
+    if kind == "scatter":
+        plot_kws.pop("dashes")  # TODO
+
+    # TODO need to get facetgrid size ... needs rename to height?
+    facet_kws = {} if facet_kws is None else facet_kws
+    g = FacetGrid(
+        data=data, row=row, col=col, col_wrap=col_wrap,
+        row_order=row_order, col_order=col_order,
+        dropna=False,
+        **facet_kws
+    )
+
+    g.map_dataframe(func, x, y,
+                    hue=hue, size=size, style=style,
+                    **plot_kws)
+
+    if legend and g._legend_data:
+        g.add_legend()
+
+    g._plotter = p  # TODO
+
+    return g
