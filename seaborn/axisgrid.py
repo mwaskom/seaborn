@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from . import utils
 from .palettes import color_palette, blend_palette
 from .external.six import string_types
-from .basic import scatterplot
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
@@ -29,7 +28,6 @@ class Grid(object):
         """Set attributes on each subplot Axes."""
         for ax in self.axes.flat:
             ax.set(**kwargs)
-
         return self
 
     def savefig(self, *args, **kwargs):
@@ -2067,6 +2065,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         plotter = grid.map
 
     if kind == "scatter":
+        from .basic import scatterplot  # Avoid circular import
         plotter(scatterplot, **plot_kws)
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import
