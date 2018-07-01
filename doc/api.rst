@@ -30,6 +30,7 @@ Basic plots
 .. autosummary::
     :toctree: generated
 
+    relplot
     scatterplot
     lineplot
 

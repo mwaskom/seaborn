@@ -1577,4 +1577,127 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 relplot.__doc__ = dedent("""\
     Draw a relational plot onto a FacetGrid.
 
+    {main_api_narrative}
+
+    By default a :func:`scatterplot` is drawn, but it is also possible
+    to draw a :func:`lineplot` using ``kind='line'``.
+
+    After plotting, the :class:`FacetGrid` with the plot is returned and can
+    be used directly to tweak supporting plot details or add other layers.
+
+    Note that, unlike when using the underlying plotting functions directly,
+    data must be passed in a long-form DataFrame with variables specified by
+    passing strings to ``x``, ``y``, and other parameters.
+
+    Parameters
+    ----------
+    x, y : names of variables in ``data``
+        Input data variables; must be numeric.
+    hue : name in ``data``, optional
+        Grouping variable that will produce elements with different colors.
+        Can be either categorical or numeric, although color mapping will
+        behave differently in latter case.
+    size : name in ``data``, optional
+        Grouping variable that will produce elements with different sizes.
+        Can be either categorical or numeric, although size mapping will
+        behave differently in latter case.
+    style : name in ``data``, optional
+        Grouping variable that will produce elements with different styles.
+        Can have a numeric dtype but will always be treated as categorical.
+    {data}
+    row, col : names of variables in ``data``, optional
+        Categorical variables that will determine the faceting of the grid.
+    {col_wrap}
+    row_order, col_order : lists of strings, optional
+        Order to organize the rows and/or columns of the grid in, otherwise the
+        orders are inferred from the data objects.
+    {palette}
+    {hue_order}
+    {hue_norm}
+    {sizes}
+    {size_order}
+    {size_norm}
+    {legend}
+    kind : string, optional
+        Kind of plot to draw, corresponding to a seaborn relational plot.
+        Options are {{``scatter`` and ``line``}}.
+    {height}
+    {aspect}
+    facet_kws : dict, optional
+        Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
+    kwargs : key, value pairings
+        Other keyword arguments are passed through to the underlying plotting
+        function.
+
+    Returns
+    -------
+    g : :class:`FacetGrid`
+        Returns the :class:`FacetGrid` object with the plot on it for further
+        tweaking.
+
+    Examples
+    --------
+
+    Draw a single facet to use the :class:`FacetGrid` legend placement:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set(style="ticks")
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="day", data=tips)
+
+    Facet on the columns with another variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip",
+        ...                 hue="day", col="time", data=tips)
+
+    Facet on the columns and rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="day",
+        ...                 col="time", row="sex", data=tips)
+
+    "Wrap" many column facets into multiple rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="time",
+        ...                 col="day", col_wrap=2, data=tips)
+
+    Use multiple semantic variables on each facet with specified attributes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="time", size="size",
+        ...                 palette=["b", "r"], sizes=(10, 100),
+        ...                 col="time", data=tips)
+
+    Use a different kind of plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> fmri = sns.load_dataset("fmri")
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                 hue="event", style="event", col="region",
+        ...                 kind="line", data=fmri)
+
+    Change the size of each facet:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                 hue="event", style="event", col="region",
+        ...                 height=5, aspect=.7, kind="line", data=fmri)
+
     """).format(**_basic_docs)
