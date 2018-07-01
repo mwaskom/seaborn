@@ -95,8 +95,8 @@ class Grid(object):
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            figure_width = self.fig.get_figwidth()
-            self.fig.set_figwidth(figure_width + legend_width)
+            fig_width, fig_height = self.fig.get_size_inches()
+            self.fig.set_size_inches(fig_width + legend_width, fig_height)
 
             # Draw the plot again to get the new transformations
             if hasattr(self.fig.canvas, "get_renderer"):
@@ -104,7 +104,7 @@ class Grid(object):
 
             # Now calculate how much space we need on the right side
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            space_needed = legend_width / (figure_width + legend_width)
+            space_needed = legend_width / (fig_width + legend_width)
             margin = .04 if self._margin_titles else .01
             self._space_needed = margin + space_needed
             right = 1 - self._space_needed

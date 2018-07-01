@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pytest
 from .. import basic
 from ..palettes import color_palette
-from ..utils import categorical_order
+from ..utils import categorical_order, sort_df
 
 
 class TestBasicPlotter(object):
@@ -1551,7 +1551,7 @@ class TestRelPlotter(TestBasicPlotter):
 
         for sem in ["hue", "size", "style"]:
             g = basic.relplot(x="x", y="y", col="b", row="c",
-                              data=long_df.sort_values(["c", "b"]),
+                              data=sort_df(long_df, ["c", "b"]),
                               **{sem: "a"})
             grouped = long_df.groupby(["c", "b"])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):

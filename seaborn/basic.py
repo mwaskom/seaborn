@@ -1567,7 +1567,8 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
     # Show the legend
     if legend and g._legend_data:
-        g.add_legend()
+        _, labels = g.axes.flat[0].get_legend_handles_labels()
+        g.add_legend(label_order=labels)
 
     return g
 
