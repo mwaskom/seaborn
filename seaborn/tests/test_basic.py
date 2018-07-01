@@ -12,6 +12,30 @@ from ..utils import categorical_order, sort_df
 
 class TestBasicPlotter(object):
 
+    def scatter_rgbs(self, collections):
+        rgbs = []
+        for col in collections:
+            rgb = tuple(col.get_facecolor().squeeze()[:3])
+            rgbs.append(rgb)
+        return rgbs
+
+    def colors_equal(self, *args):
+
+        equal = True
+        for c1, c2 in zip(*args):
+            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            equal &= c1 == c2
+        return equal
+
+    def paths_equal(self, *args):
+
+        equal = True
+        for p1, p2 in zip(*args):
+            equal &= np.array_equal(p1.vertices, p2.vertices)
+            equal &= np.array_equal(p1.codes, p2.codes)
+        return equal
+
     @pytest.fixture
     def wide_df(self):
 
@@ -1223,30 +1247,6 @@ class TestLinePlotter(TestBasicPlotter):
 
 class TestScatterPlotter(TestBasicPlotter):
 
-    def scatter_rgbs(self, collections):
-        rgbs = []
-        for col in collections:
-            rgb = tuple(col.get_facecolor().squeeze()[:3])
-            rgbs.append(rgb)
-        return rgbs
-
-    def colors_equal(self, *args):
-
-        equal = True
-        for c1, c2 in zip(*args):
-            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
-            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
-            equal &= c1 == c2
-        return equal
-
-    def paths_equal(self, *args):
-
-        equal = True
-        for p1, p2 in zip(*args):
-            equal &= np.array_equal(p1.vertices, p2.vertices)
-            equal &= np.array_equal(p1.codes, p2.codes)
-        return equal
-
     def test_legend_data(self, long_df):
 
         m = mpl.markers.MarkerStyle("o")
@@ -1558,6 +1558,50 @@ class TestRelPlotter(TestBasicPlotter):
                 x, y = ax.collections[0].get_offsets().T
                 assert np.array_equal(x, grp_df["x"])
                 assert np.array_equal(y, grp_df["y"])
+
+    def test_relplot_hues(self, long_df):
+
+        palette = ["r", "b", "g"]
+        g = basic.relplot(x="x", y="y", hue="a", style="b", col="c",
+                          palette=palette, data=long_df)
+
+        palette = dict(zip(long_df["a"].unique(), palette))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_hues = [palette[val] for val in grp_df["a"]]
+            assert self.colors_equal(points.get_facecolors(), expected_hues)
+
+    def test_relplot_sizes(self, long_df):
+
+        sizes = [5, 12, 7]
+        g = basic.relplot(x="x", y="y", size="a", hue="b", col="c",
+                          sizes=sizes, data=long_df)
+
+        sizes = dict(zip(long_df["a"].unique(), sizes))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_sizes = [sizes[val] for val in grp_df["a"]]
+            assert np.array_equal(points.get_sizes(), expected_sizes)
+
+    def test_relplot_styles(self, long_df):
+
+        markers = ["o", "d", "s"]
+        g = basic.relplot(x="x", y="y", style="a", hue="b", col="c",
+                          markers=markers, data=long_df)
+
+        paths = []
+        for m in markers:
+            m = mpl.markers.MarkerStyle(m)
+            paths.append(m.get_path().transformed(m.get_transform()))
+        paths = dict(zip(long_df["a"].unique(), paths))
+
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_paths = [paths[val] for val in grp_df["a"]]
+            assert self.paths_equal(points.get_paths(), expected_paths)
 
     def test_relplot_legend(self, long_df):
 
