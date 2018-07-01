@@ -181,13 +181,13 @@ _facet_docs = dict(
         If true, the facets will share y axes across columns and/or x axes
         across rows.\
     """),
-    size=dedent("""\
-    size : scalar, optional
+    height=dedent("""\
+    height : scalar, optional
         Height (in inches) of each facet. See also: ``aspect``.\
     """),
     aspect=dedent("""\
     aspect : scalar, optional
-        Aspect ratio of each facet, so that ``aspect * size`` gives the width
+        Aspect ratio of each facet, so that ``aspect * height`` gives the width
         of each facet in inches.\
     """),
     palette=dedent("""\
@@ -214,14 +214,21 @@ class FacetGrid(Grid):
     """Subplot grid for plotting conditional relationships."""
 
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
-                 sharex=True, sharey=True, size=3, aspect=1, palette=None,
+                 sharex=True, sharey=True, height=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-                 gridspec_kws=None):
+                 gridspec_kws=None, size=None):
 
         MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
         OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
+
+        # Handle deprecations
+        if size is not None:
+            height = size
+            msg = ("The `size` paramter has been renamed to `height`; "
+                   "please update your code.")
+            warnings.warn(msg, UserWarning)
 
         # Determine the hue facet layer information
         hue_var = hue
@@ -274,7 +281,8 @@ class FacetGrid(Grid):
 
         # Calculate the base figure size
         # This can get stretched later by a legend
-        figsize = (ncol * size * aspect, nrow * size)
+        # TODO this doesn't account for axis labels
+        figsize = (ncol * height * aspect, nrow * height)
 
         # Validate some inputs
         if col_wrap is not None:
@@ -404,7 +412,7 @@ class FacetGrid(Grid):
             control the order of levels of this variable.
         {col_wrap}
         {share_xy}
-        {size}
+        {height}
         {aspect}
         {palette}
         {{row,col,hue}}_order : lists, optional
@@ -488,12 +496,12 @@ class FacetGrid(Grid):
             >>> g = (g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
             ...       .add_legend())
 
-        Change the size and aspect ratio of each facet:
+        Change the height and aspect ratio of each facet:
 
         .. plot::
             :context: close-figs
 
-            >>> g = sns.FacetGrid(tips, col="day", size=4, aspect=.5)
+            >>> g = sns.FacetGrid(tips, col="day", height=4, aspect=.5)
             >>> g = g.map(plt.hist, "total_bill", bins=bins)
 
         Specify the order for plot elements:
@@ -542,8 +550,8 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> attend = sns.load_dataset("attention")
-            >>> g = sns.FacetGrid(attend, col="subject", col_wrap=5, size=1.5)
+            >>> att = sns.load_dataset("attention")
+            >>> g = sns.FacetGrid(att, col="subject", col_wrap=5, height=1.5)
             >>> g = g.map(plt.plot, "solutions", "score", marker=".")
 
         Define a custom bivariate function to map onto the grid:
@@ -577,7 +585,7 @@ class FacetGrid(Grid):
             ...     ax = plt.gca()
             ...     data = kwargs.pop("data")
             ...     data.plot(x=x, y=y, ax=ax, grid=False, **kwargs)
-            >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, size=3.5)
+            >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, height=3.5)
             >>> g = g.map_dataframe(dateplot, "date", "val")
 
         Use different axes labels after plotting:
@@ -1066,8 +1074,8 @@ class PairGrid(Grid):
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 diag_sharey=True, size=2.5, aspect=1,
-                 despine=True, dropna=True):
+                 diag_sharey=True, height=2.5, aspect=1,
+                 despine=True, dropna=True, size=None):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1092,10 +1100,10 @@ class PairGrid(Grid):
         {x, y}_vars : lists of variable names, optional
             Variables within ``data`` to use separately for the rows and
             columns of the figure; i.e. to make a non-square plot.
-        size : scalar, optional
+        height : scalar, optional
             Height (in inches) of each facet.
         aspect : scalar, optional
-            Aspect * size gives the width (in inches) of each facet.
+            Aspect * height gives the width (in inches) of each facet.
         despine : boolean, optional
             Remove the top and right spines from the plots.
         dropna : boolean, optional
@@ -1202,6 +1210,13 @@ class PairGrid(Grid):
 
         """
 
+        # Handle deprecations
+        if size is not None:
+            height = size
+            msg = ("The `size` paramter has been renamed to `height`; "
+                   "please update your code.")
+            warnings.warn(UserWarning(msg))
+
         # Sort out the variables that define the grid
         if vars is not None:
             x_vars = list(vars)
@@ -1224,7 +1239,7 @@ class PairGrid(Grid):
         self.square_grid = self.x_vars == self.y_vars
 
         # Create the figure and the array of subplots
-        figsize = len(x_vars) * size * aspect, len(y_vars) * size
+        figsize = len(x_vars) * height * aspect, len(y_vars) * height
 
         fig, axes = plt.subplots(len(y_vars), len(x_vars),
                                  figsize=figsize,
@@ -1499,8 +1514,8 @@ class PairGrid(Grid):
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
 
-    def __init__(self, x, y, data=None, size=6, ratio=5, space=.2,
-                 dropna=True, xlim=None, ylim=None):
+    def __init__(self, x, y, data=None, height=6, ratio=5, space=.2,
+                 dropna=True, xlim=None, ylim=None, size=None):
         """Set up the grid of subplots.
 
         Parameters
@@ -1509,7 +1524,7 @@ class JointGrid(object):
             Data or names of variables in ``data``.
         data : DataFrame, optional
             DataFrame when ``x`` and ``y`` are variable names.
-        size : numeric
+        height : numeric
             Size of each side of the figure in inches (it will be square).
         ratio : numeric
             Ratio of joint axes size to marginal axes height.
@@ -1611,7 +1626,7 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
-            ...                   size=5, ratio=2)
+            ...                   height=5, ratio=2)
             >>> g = g.plot_joint(sns.kdeplot, cmap="Reds_d")
             >>> g = g.plot_marginals(sns.kdeplot, color="r", shade=True)
 
@@ -1626,8 +1641,15 @@ class JointGrid(object):
             >>> g = g.plot_marginals(sns.kdeplot, color="m", shade=True)
 
         """
+        # Handle deprecations
+        if size is not None:
+            height = size
+            msg = ("The `size` parameter has been renamed to `height`; "
+                   "pleaes update your code.")
+            warnings.warn(msg, UserWarning)
+
         # Set up the subplot grid
-        f = plt.figure(figsize=(size, size))
+        f = plt.figure(figsize=(height, height))
         gs = plt.GridSpec(ratio + 1, ratio + 1)
 
         ax_joint = f.add_subplot(gs[1:, :-1])
@@ -1864,8 +1886,8 @@ class JointGrid(object):
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
              kind="scatter", diag_kind="auto", markers=None,
-             size=2.5, aspect=1, dropna=True,
-             plot_kws=None, diag_kws=None, grid_kws=None):
+             height=2.5, aspect=1, dropna=True,
+             plot_kws=None, diag_kws=None, grid_kws=None, size=None):
     """Plot pairwise relationships in a dataset.
 
     By default, this function will create a grid of Axes such that each
@@ -1909,10 +1931,10 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         a length the same as the number of levels in the hue variable so that
         differently colored points will also have different scatterplot
         markers.
-    size : scalar, optional
+    height : scalar, optional
         Height (in inches) of each facet.
     aspect : scalar, optional
-        Aspect * size gives the width (in inches) of each facet.
+        Aspect * height gives the width (in inches) of each facet.
     dropna : boolean, optional
         Drop missing values from the data before plotting.
     {plot, diag, grid}_kws : dicts, optional
@@ -1975,7 +1997,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     .. plot::
         :context: close-figs
 
-        >>> g = sns.pairplot(iris, size=3,
+        >>> g = sns.pairplot(iris, height=3,
         ...                  vars=["sepal_width", "sepal_length"])
 
     Plot different variables in the rows and columns:
@@ -2012,6 +2034,13 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         ...                  diag_kws=dict(shade=True))
 
     """
+    # Handle deprecations
+    if size is not None:
+        height = size
+        msg = ("The `size` parameter has been renamed to `height`; "
+               "pleaes update your code.")
+        warnings.warn(msg, UserWarning)
+
     if not isinstance(data, pd.DataFrame):
         raise TypeError(
             "'data' must be pandas DataFrame object, not: {typefound}".format(
@@ -2029,7 +2058,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
                     hue_order=hue_order, palette=palette,
                     diag_sharey=diag_sharey,
-                    size=size, aspect=aspect, dropna=dropna, **grid_kws)
+                    height=height, aspect=aspect, dropna=dropna, **grid_kws)
 
     # Add the markers here as PairGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
@@ -2079,7 +2108,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
 
 
 def jointplot(x, y, data=None, kind="scatter", stat_func=None,
-              color=None, size=6, ratio=5, space=.2,
+              color=None, height=6, ratio=5, space=.2,
               dropna=True, xlim=None, ylim=None,
               joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
     """Draw a plot of two variables with bivariate and univariate graphs.
@@ -2101,10 +2130,10 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
         *Deprecated*
     color : matplotlib color, optional
         Color used for the plot elements.
-    size : numeric, optional
+    height : numeric, optional
         Size of the figure (it will be square).
     ratio : numeric, optional
-        Ratio of joint axes size to marginal axes height.
+        Ratio of joint axes height to marginal axes height.
     space : numeric, optional
         Space between the joint and marginal axes
     dropna : bool, optional
@@ -2189,7 +2218,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
         :context: close-figs
 
         >>> g = sns.jointplot("total_bill", "tip", data=tips,
-        ...                   size=5, ratio=3, color="g")
+        ...                   height=5, ratio=3, color="g")
 
     Pass keyword arguments down to the underlying plots:
 
@@ -2202,6 +2231,13 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
         ...                   s=40, edgecolor="w", linewidth=1)
 
     """
+    # Handle deprecations
+    if "size" in kwargs:
+        height = kwargs.pop("size")
+        msg = ("The `size` paramter has been renamed to `height`; "
+               "please update your code.")
+        warnings.warn(msg, UserWarning)
+
     # Set up empty default kwarg dicts
     if joint_kws is None:
         joint_kws = {}
@@ -2221,7 +2257,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
 
     # Initialize the JointGrid object
     grid = JointGrid(x, y, data, dropna=dropna,
-                     size=size, ratio=ratio, space=space,
+                     height=height, ratio=ratio, space=space,
                      xlim=xlim, ylim=ylim)
 
     # Plot the data using the grid

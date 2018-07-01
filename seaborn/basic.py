@@ -1504,7 +1504,8 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
             palette=None, hue_order=None, hue_norm=None,
             sizes=None, size_order=None, size_norm=None,
             markers=None, dashes=None, style_order=None,
-            legend="brief", kind="scatter", facet_kws=None, **kwargs):
+            legend="brief", kind="scatter",
+            height=4, aspect=1, facet_kws=None, **kwargs):
 
     if kind == "scatter":
 
@@ -1556,7 +1557,7 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     g = FacetGrid(
         data=data, row=row, col=col, col_wrap=col_wrap,
         row_order=row_order, col_order=col_order,
-        dropna=False,
+        height=height, aspect=aspect, dropna=False,
         **facet_kws
     )
 

@@ -168,20 +168,20 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(self.df, row="a", col="b")
         npt.assert_array_equal(g.fig.get_size_inches(), (6, 9))
 
-        g = ag.FacetGrid(self.df, row="a", col="b", size=6)
+        g = ag.FacetGrid(self.df, row="a", col="b", height=6)
         npt.assert_array_equal(g.fig.get_size_inches(), (12, 18))
 
-        g = ag.FacetGrid(self.df, col="c", size=4, aspect=.5)
+        g = ag.FacetGrid(self.df, col="c", height=4, aspect=.5)
         npt.assert_array_equal(g.fig.get_size_inches(), (6, 4))
 
     def test_figure_size_with_legend(self):
 
-        g1 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5)
+        g1 = ag.FacetGrid(self.df, col="a", hue="c", height=4, aspect=.5)
         npt.assert_array_equal(g1.fig.get_size_inches(), (6, 4))
         g1.add_legend()
         nt.assert_greater(g1.fig.get_size_inches()[0], 6)
 
-        g2 = ag.FacetGrid(self.df, col="a", hue="c", size=4, aspect=.5,
+        g2 = ag.FacetGrid(self.df, col="a", hue="c", height=4, aspect=.5,
                           legend_out=False)
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 4))
         g2.add_legend()
@@ -821,14 +821,14 @@ class TestPairGrid(object):
 
     def test_size(self):
 
-        g1 = ag.PairGrid(self.df, size=3)
+        g1 = ag.PairGrid(self.df, height=3)
         npt.assert_array_equal(g1.fig.get_size_inches(), (9, 9))
 
-        g2 = ag.PairGrid(self.df, size=4, aspect=.5)
+        g2 = ag.PairGrid(self.df, height=4, aspect=.5)
         npt.assert_array_equal(g2.fig.get_size_inches(), (6, 12))
 
         g3 = ag.PairGrid(self.df, y_vars=["z"], x_vars=["x", "y"],
-                         size=2, aspect=2)
+                         height=2, aspect=2)
         npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
 
     def test_map(self):
