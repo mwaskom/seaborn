@@ -1523,13 +1523,50 @@ class TestRelPlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             g = basic.relplot(x="x", y="y", kind="not_a_kind", data=long_df)
 
+    def test_relplot_complex(self, long_df):
+
+        for sem in ["hue", "size", "style"]:
+            g = basic.relplot(x="x", y="y", data=long_df, **{sem: "a"})
+            x, y = g.ax.collections[0].get_offsets().T
+            assert np.array_equal(x, long_df["x"])
+            assert np.array_equal(y, long_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = basic.relplot(x="x", y="y", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
+        for sem in ["size", "style"]:
+            g = basic.relplot(x="x", y="y", hue="b", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = basic.relplot(x="x", y="y", col="b", row="c",
+                              data=long_df.sort_values(["c", "b"]),
+                              **{sem: "a"})
+            grouped = long_df.groupby(["c", "b"])
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
     def test_relplot_legend(self, long_df):
 
         g = basic.relplot(x="x", y="y", data=long_df)
         assert g._legend is None
 
         g = basic.relplot(x="x", y="y", hue="a", data=long_df)
-        assert isinstance(g._legend, mpl.legend.Legend)
+        texts = [t.get_text() for t in g._legend.texts]
+        assert np.array_equal(texts, long_df["a"].unique())
 
         g = basic.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None
