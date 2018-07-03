@@ -48,9 +48,13 @@ clean:
 	-rm -rf tutorial/*.rst
 	-rm -rf generated/*
 
-notebooks:
-
+tutorials:
 	make -C tutorial
+
+introduction: introduction.ipynb
+	tools/nb_to_doc.py introduction
+
+notebooks: tutorials introduction
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
