@@ -14,4 +14,5 @@ iris = sns.load_dataset("iris")
 iris = pd.melt(iris, "species", var_name="measurement")
 
 # Draw a categorical scatterplot to show each observation
-sns.swarmplot(x="measurement", y="value", hue="species", data=iris)
+sns.swarmplot(x="measurement", y="value", hue="species",
+              palette=["r", "c", "y"], data=iris)

@@ -1,11 +1,6 @@
 #! /usr/bin/env python
 #
 # Copyright (C) 2012-2018 Michael Waskom
-import os
-# temporarily redirect config directory to prevent matplotlib importing
-# testing that for writeable directory which results in sandbox error in
-# certain easy_install versions
-os.environ["MPLCONFIGDIR"] = "."
 
 DESCRIPTION = "seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
@@ -47,9 +42,9 @@ PACKAGES = [
 CLASSIFIERS = [
     'Intended Audience :: Science/Research',
     'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',
