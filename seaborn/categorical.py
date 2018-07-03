@@ -415,6 +415,7 @@ class _CategoricalPlotter(object):
 
                 # Set the title size a roundabout way to maintain
                 # compatibility with matplotlib 1.1
+                # TODO no longer needed
                 try:
                     title_size = mpl.rcParams["axes.labelsize"] * .85
                 except TypeError:  # labelsize is something like "large"
@@ -2355,7 +2356,7 @@ boxplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="box",
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2951,7 +2952,7 @@ swarmplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="swarm",
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3135,7 +3136,7 @@ barplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="bar",
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3334,7 +3335,7 @@ pointplot.__doc__ = dedent("""\
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="point",
         ...                    dodge=True,
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3462,7 +3463,7 @@ countplot.__doc__ = dedent("""\
 
         >>> g = sns.factorplot(x="class", hue="who", col="survived",
         ...                    data=titanic, kind="count",
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3470,10 +3471,17 @@ countplot.__doc__ = dedent("""\
 def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
                units=None, order=None, hue_order=None, row_order=None,
-               col_order=None, kind="point", size=4, aspect=1,
+               col_order=None, kind="point", height=4, aspect=1,
                orient=None, color=None, palette=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
                margin_titles=False, facet_kws=None, **kwargs):
+
+    # Handle deprecations
+    if "size" in kwargs:
+        height = kwargs.pop("size")
+        msg = ("The `size` paramter has been renamed to `height`; "
+               "please update your code.")
+        warnings.warn(msg, UserWarning)
 
     # Determine the plotting function
     try:
@@ -3514,7 +3522,7 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     facet_kws.update(
         data=data, row=row, col=col,
         row_order=row_order, col_order=col_order,
-        col_wrap=col_wrap, size=size, aspect=aspect,
+        col_wrap=col_wrap, height=height, aspect=aspect,
         sharex=sharex, sharey=sharey,
         legend_out=legend_out, margin_titles=margin_titles,
         dropna=False,
@@ -3598,7 +3606,7 @@ factorplot.__doc__ = dedent("""\
     kind : {{``point``, ``bar``, ``count``, ``box``, ``violin``, ``strip``,
              ``swarm``, ``lv``}}
         The kind of plot to draw.
-    {size}
+    {height}
     {aspect}
     {orient}
     {color}
@@ -3649,14 +3657,14 @@ factorplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
         ...                    col="diet", data=exercise)
 
-    Use a different size and aspect ratio for the facets:
+    Use a different height and aspect ratio for the facets:
 
     .. plot::
         :context: close-figs
 
         >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
         ...                    col="diet", data=exercise,
-        ...                    size=5, aspect=.8)
+        ...                    height=5, aspect=.8)
 
     Make many column facets and wrap them into the rows of the grid:
 
@@ -3666,7 +3674,7 @@ factorplot.__doc__ = dedent("""\
         >>> titanic = sns.load_dataset("titanic")
         >>> g = sns.factorplot("alive", col="deck", col_wrap=4,
         ...                    data=titanic[titanic.deck.notnull()],
-        ...                    kind="count", size=2.5, aspect=.8)
+        ...                    kind="count", height=2.5, aspect=.8)
 
     Plot horizontally and pass other keyword arguments to the plot function:
 
@@ -3840,6 +3848,6 @@ lvplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="lv",
-        ...                    size=4, aspect=.7);
+        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)
