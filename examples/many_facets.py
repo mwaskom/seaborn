@@ -23,7 +23,7 @@ df = pd.DataFrame(np.c_[pos.flat, step, walk],
 
 # Initialize a grid of plots with an Axes for each walk
 grid = sns.FacetGrid(df, col="walk", hue="walk", palette="tab20c",
-                     col_wrap=4, size=1.5)
+                     col_wrap=4, height=1.5)
 
 # Draw a horizontal line to show the starting point
 grid.map(plt.axhline, y=0, ls=":", c=".5")

@@ -13,7 +13,7 @@ crashes = sns.load_dataset("car_crashes")
 # Make the PairGrid
 g = sns.PairGrid(crashes.sort_values("total", ascending=False),
                  x_vars=crashes.columns[:-3], y_vars=["abbrev"],
-                 size=10, aspect=.25)
+                 height=10, aspect=.25)
 
 # Draw a dot plot using the stripplot function
 g.map(sns.stripplot, size=10, orient="h",
