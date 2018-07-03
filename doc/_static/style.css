@@ -44,9 +44,11 @@ ul.dropdown-menu {
     color: #2c3e50 !important;
 }
 
-.function dt {
-    padding-top: 150px;
-    margin-top: -150px;
-    -webkit-background-clip: content-box;
-    background-clip: content-box;
+/* From https://github.com/twbs/bootstrap/issues/1768 */
+*[id]:before { 
+  display: block; 
+  content: " "; 
+  margin-top: -75px; 
+  height: 75px; 
+  visibility: hidden; 
 }
