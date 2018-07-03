@@ -2,8 +2,8 @@
 
 .. currentmodule:: seaborn
 
-Release notes
-=============
+What's new in each version
+==========================
 
 .. include:: releases/v0.9.0.txt
 

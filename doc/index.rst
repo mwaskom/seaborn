@@ -90,12 +90,12 @@ To see the code or report a bug, please visit the `github repository
 .. toctree::
    :maxdepth: 1
 
-   introduction
-   whatsnew
-   installing
-   examples/index
-   tutorial
-   api
+   Introduction <introduction>
+   Release notes <whatsnew>
+   Installing <installing>
+   Example gallery <examples/index>
+   Tutorial <tutorial>
+   API reference <api>
 
 .. raw:: html
 

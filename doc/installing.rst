@@ -1,7 +1,7 @@
 .. _installing:
 
-Installation
-------------
+Installing and getting started
+------------------------------
 
 To install the latest release of seaborn, you can use ``pip``::
 
@@ -16,10 +16,9 @@ Alternatively, you can use ``pip`` to install the development version directly f
     pip install git+https://github.com/mwaskom/seaborn.git
 
 Another option would be to to clone the `github repository
-<https://github.com/mwaskom/seaborn>`_ install from your local copy::
+<https://github.com/mwaskom/seaborn>`_ and install from your local copy::
 
     pip install .
-
 
 Dependencies
 ~~~~~~~~~~~~

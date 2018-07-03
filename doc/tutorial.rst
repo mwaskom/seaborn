@@ -1,7 +1,7 @@
 .. _tutorial:
 
-Tutorial
-========
+Official seaborn tutorial
+=========================
 
 .. raw:: html
 
