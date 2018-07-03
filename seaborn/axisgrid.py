@@ -996,7 +996,9 @@ class FacetGrid(Grid):
         if self.axes.shape == (1, 1):
             return self.axes[0, 0]
         else:
-            raise AttributeError
+            err = ("You must use the `.axes` attribute (an array) when "
+                   "there is more than one plot.")
+            raise AttributeError(err)
 
     @property
     def _inner_axes(self):
