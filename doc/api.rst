@@ -141,6 +141,7 @@ Utility functions
 .. autosummary::
     :toctree: generated/
 
+    load_dataset
     despine
     desaturate
     saturate
