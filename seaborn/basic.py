@@ -618,6 +618,8 @@ class _BasicPlotter(object):
                 if attr in kws:
                     use_kws[attr] = kws[attr]
             artist = func([], [], label=label, **use_kws)
+            if self._legend_func == "plot":
+                artist = artist[0]
             legend_data[label] = artist
             legend_order.append(label)
 
