@@ -1612,5 +1612,9 @@ class TestRelPlotter(TestBasicPlotter):
         texts = [t.get_text() for t in g._legend.texts]
         assert np.array_equal(texts, long_df["a"].unique())
 
+        g = basic.relplot(x="x", y="y", hue="s", size="s", data=long_df)
+        texts = [t.get_text() for t in g._legend.texts]
+        assert np.array_equal(texts, np.sort(texts))
+
         g = basic.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None

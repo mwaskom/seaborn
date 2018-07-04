@@ -399,6 +399,9 @@ class _BasicPlotter(object):
         else:
 
             var_type = self._semantic_type(data)
+
+            # TODO override for list/dict like in parse_hue?
+
             if var_type == "categorical":
                 levels = categorical_order(data, order)
                 numbers = np.arange(1, 1 + len(levels))[::-1]
@@ -548,16 +551,16 @@ class _BasicPlotter(object):
             raise ValueError(err)
 
         keys = []
-        legend_data = {}
+        legend_kwargs = {}
 
         def update(var_name, val_name, **kws):
 
             key = var_name, val_name
-            if key in legend_data:
-                legend_data[key].update(**kws)
+            if key in legend_kwargs:
+                legend_kwargs[key].update(**kws)
             else:
                 keys.append(key)
-                legend_data[key] = dict(**kws)
+                legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
 
@@ -602,15 +605,24 @@ class _BasicPlotter(object):
                        dashes=self.dashes.get(level, ""))
 
         func = getattr(ax, self._legend_func)
+
+        legend_data = {}
+        legend_order = []
+
         for key in keys:
             _, label = key
-            kws = legend_data[key]
+            kws = legend_kwargs[key]
             kws.setdefault("color", ".2")
             use_kws = {}
             for attr in self._legend_attributes:
                 if attr in kws:
                     use_kws[attr] = kws[attr]
-            func([], [], label=label, **use_kws)
+            artist = func([], [], label=label, **use_kws)
+            legend_data[label] = artist
+            legend_order.append(label)
+
+        self.legend_data = legend_data
+        self.legend_order = legend_order
 
 
 class _LinePlotter(_BasicPlotter):
@@ -1529,6 +1541,7 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
+        legend=legend,
     )
 
     palette = p.palette if p.palette else None
@@ -1547,6 +1560,7 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
         sizes=sizes, size_order=size_order, size_norm=p.size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
+        legend=False,
     )
     plot_kws.update(kwargs)
     if kind == "scatter":
@@ -1567,9 +1581,11 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
                     **plot_kws)
 
     # Show the legend
-    if legend and g._legend_data:
-        _, labels = g.axes.flat[0].get_legend_handles_labels()
-        g.add_legend(label_order=labels)
+    if legend:
+        p.add_legend_data(g.axes.flat[0])
+        if p.legend_data:
+            g.add_legend(legend_data=p.legend_data,
+                         label_order=p.legend_order)
 
     return g
 
