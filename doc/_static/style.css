@@ -25,9 +25,21 @@ blockquote {
     margin: 0 0 0px !important;
 }
 
+pre {
+    background-color: #f6f6f9 !important;
+}
+
 code {
     color: #49759c !important;
     background-color: #ffffff !important;
+}
+
+code.descclassname {
+    padding-right: 0px !important;
+}
+
+code.descname {
+    padding-left: 0px !important;
 }
 
 dt:target, span.highlighted {
