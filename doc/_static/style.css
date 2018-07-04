@@ -30,6 +30,10 @@ code {
     background-color: #ffffff !important;
 }
 
+dt:target, span.highlighted {
+    background-color: #ffffff !important;
+}
+
 ul {
     padding-left: 20px !important;  
 }

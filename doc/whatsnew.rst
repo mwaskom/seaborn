@@ -5,6 +5,10 @@
 What's new in each version
 ==========================
 
+.. raw:: html
+
+   <div class="col-md-9">
+
 .. include:: releases/v0.9.0.txt
 
 .. include:: releases/v0.8.1.txt
@@ -31,3 +35,6 @@ What's new in each version
 
 .. include:: releases/v0.2.0.txt
 
+.. raw:: html
+
+   </div>
