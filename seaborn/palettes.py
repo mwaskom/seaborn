@@ -1069,6 +1069,10 @@ def set_color_codes(palette="deep"):
         if not palette.endswith("6"):
             palette = palette + "6"
         colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
+    else:
+        err = "Cannot set colors with palette '{}'".format(palette)
+        raise ValueError(err)
+
     for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
         mpl.colors.colorConverter.colors[code] = rgb
