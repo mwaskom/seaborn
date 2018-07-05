@@ -2062,7 +2062,15 @@ class _LVPlotter(_CategoricalPlotter):
 _categorical_docs = dict(
 
     # Shared narrative docs
+    categorical_narrative=dedent("""\
+    This function always treats one of the variables as categorical and
+    draws data at ordinal positions (0, 1, ... n) on the relevant axis, even
+    when the data has a numeric or date type.
+
+    See the :ref:`tutorial <categorical_tutorial>` for more information.\
+    """),
     main_api_narrative=dedent("""\
+
     Input data can be passed in a variety of formats, including:
 
     - Vectors of data represented as lists, numpy arrays, or pandas Series
@@ -2070,7 +2078,7 @@ _categorical_docs = dict(
     - A "long-form" DataFrame, in which case the ``x``, ``y``, and ``hue``
       variables will determine how the data are plotted.
     - A "wide-form" DataFrame, such that each numeric column will be plotted.
-    - Anything accepted by ``plt.boxplot`` (e.g. a 2d array or list of vectors)
+    - An array or list of vectors.
 
     In most cases, it is possible to use numpy or Python objects, but pandas
     objects are preferable because the associated names will be used to
@@ -2238,6 +2246,8 @@ boxplot.__doc__ = dedent("""\
 
     {main_api_narrative}
 
+    {categorical_narrative}
+
     Parameters
     ----------
     {input_params}
@@ -2395,6 +2405,8 @@ violinplot.__doc__ = dedent("""\
     might look misleadingly smooth.
 
     {main_api_narrative}
+
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2623,6 +2635,8 @@ stripplot.__doc__ = dedent("""\
 
     {main_api_narrative}
 
+    {categorical_narrative}
+
     Parameters
     ----------
     {input_params}
@@ -2816,22 +2830,21 @@ swarmplot.__doc__ = dedent("""\
 
     This function is similar to :func:`stripplot`, but the points are adjusted
     (only along the categorical axis) so that they don't overlap. This gives a
-    better representation of the distribution of values, although it does not
-    scale as well to large numbers of observations (both in terms of the
-    ability to show all the points and in terms of the computation needed
-    to arrange them).
-
-    This style of plot is often called a "beeswarm".
+    better representation of the distribution of values, but it does not scale
+    well to large numbers of observations. This style of plot is sometimes
+    called a "beeswarm".
 
     A swarm plot can be drawn on its own, but it is also a good complement
     to a box or violin plot in cases where you want to show all observations
     along with some representation of the underlying distribution.
 
-    Note that arranging the points properly requires an accurate transformation
-    between data and point coordinates. This means that non-default axis limits
-    should be set *before* drawing the swarm plot.
+    Arranging the points properly requires an accurate transformation between
+    data and point coordinates. This means that non-default axis limits must
+    be set *before* drawing the plot.
 
     {main_api_narrative}
+
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -2996,6 +3009,8 @@ barplot.__doc__ = dedent("""\
     appropriate.
 
     {main_api_narrative}
+
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -3182,6 +3197,8 @@ pointplot.__doc__ = dedent("""\
     appropriate.
 
     {main_api_narrative}
+
+    {categorical_narrative}
 
     Parameters
     ----------
@@ -3386,6 +3403,8 @@ countplot.__doc__ = dedent("""\
 
     {main_api_narrative}
 
+    {categorical_narrative}
+
     Parameters
     ----------
     {input_params}
@@ -3561,35 +3580,27 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
 
 factorplot.__doc__ = dedent("""\
-    Draw a categorical plot onto a FacetGrid.
+    Figure-level function for drawing categorical plots onto a FacetGrid.
 
     The default plot that is shown is a point plot, but other seaborn
     categorical plots can be chosen with the ``kind`` parameter, including
-    box plots, violin plots, bar plots, strip plots, count plots, swarm plots,
-    and lvplots.
+    box plots, violin plots, lv plots, bar plots, count plots, strip plots,
+    or swarm plots.
 
-    It is important to choose how variables get mapped to the plot structure
-    such that the most important comparisons are easiest to make. As a general
-    rule, it is easier to compare positions that are closer together, so the
-    ``hue`` variable should be used for the most important comparisons. For
-    secondary comparisons, try to share the quantitative axis (so, use ``col``
-    for vertical plots and ``row`` for horizontal plots). Note that, although
-    it is possible to make rather complex plots using this function, in many
-    cases you may be better served by created several smaller and more focused
-    plots than by trying to stuff many comparisons into one figure.
+    Unlike when using the underlying plotting functions directly, data must be
+    passed in a long-form DataFrame with variables specified by passing strings
+    to ``x``, ``y``, ``hue``, etc.
+
+    As in the case with the underlying plot functions, if variables have a
+    ``categorical`` data type, the the levels of the categorical variables, and
+    their order will be inferred from the objects. Otherwise you may have to
+    use alter the dataframe sorting or use the function parameters (``orient``,
+    ``order``, ``hue_order``, etc.) to set up the plot correctly.
+
+    {categorical_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.
-
-    Note that, unlike when using the underlying plotting functions directly,
-    data must be passed in a long-form DataFrame with variables specified by
-    passing strings to ``x``, ``y``, ``hue``, and other parameters.
-
-    As in the case with the underlying plot functions, if variables have a
-    ``categorical`` data type, the correct orientation of the plot elements,
-    the levels of the categorical variables, and their order will be inferred
-    from the objects. Otherwise you may have to use the function parameters
-    (``orient``, ``order``, ``hue_order``, etc.) to set up the plot correctly.
 
     Parameters
     ----------
@@ -3685,7 +3696,7 @@ factorplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="age", y="embark_town",
         ...                    hue="sex", row="class",
         ...                    data=titanic[titanic.embark_town.notnull()],
-        ...                    orient="h", size=2, aspect=3.5, palette="Set3",
+        ...                    orient="h", height=2, aspect=3, palette="Set3",
         ...                    kind="violin", dodge=True, cut=0, bw=.2)
 
     Use methods on the returned :class:`FacetGrid` to tweak the presentation:
@@ -3731,11 +3742,11 @@ lvplot.__doc__ = dedent("""\
     fast to generate, directly interpretable in terms of the distribution of
     data, and easy to understand. For a more extensive explanation of letter
     value plots and their properties, see Hadley Wickham's excellent paper on
-    the topic:
-
-    https://vita.had.co.nz/papers/letter-value-plot.html
+    the topic: https://vita.had.co.nz/papers/letter-value-plot.html
 
     {main_api_narrative}
+
+    {categorical_narrative}
 
     Parameters
     ----------

@@ -100,6 +100,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
     This function can also be used in a ``with`` statement to temporarily
     set the color cycle for a plot or set of plots.
 
+    See the :ref:`tutorial <palette_tutorial>` for more information.
+
     Parameters
     ----------
     palette: None, string, or sequence, optional

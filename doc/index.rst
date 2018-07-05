@@ -65,13 +65,16 @@ seaborn: statistical data visualization
      <div class="row">
        <div class="col-md-6">
 
-Seaborn is a Python visualization library based on `matplotlib <https://matplotlib.org>`_. It provides a
-high-level interface for drawing attractive and informative statistical graphics.
+Seaborn is a Python data visualization library based on `matplotlib
+<https://matplotlib.org>`_. It provides a high-level interface for drawing
+attractive and informative statistical graphics.
 
-For a brief introduction to the ideas behind the package, you can read the
-:ref:`introductory notes <introduction>`. More practical information is on the
-:ref:`installation page <installing>`. You may also want to browse the
-:ref:`example gallery <example_gallery>` to get a sense for what you can do with seaborn and then check out the :ref:`tutorial <tutorial>` and :ref:`API reference <api_ref>` to find out how.
+For a brief introduction to the ideas behind the library, you can read the
+:ref:`introductory notes <introduction>`. Visit the :ref:`installation page
+<installing>` to see how you can download the package. You can browse the
+:ref:`example gallery <example_gallery>` to see what you can do with seaborn,
+and then check out the :ref:`tutorial <tutorial>` and :ref:`API reference
+<api_ref>` to find out how.
 
 To see the code or report a bug, please visit the `github repository
 <https://github.com/mwaskom/seaborn>`_. General support issues are most at home on `stackoverflow <https://stackoverflow.com/>`_, where there is a seaborn tag.
@@ -83,7 +86,7 @@ To see the code or report a bug, please visit the `github repository
        <div class="col-md-3">
          <div class="panel panel-default">   
            <div class="panel-heading">
-             <h3 class="panel-title">Documentation</h3>
+             <h3 class="panel-title">Contents</h3>
            </div>
        <div class="panel-body">
 

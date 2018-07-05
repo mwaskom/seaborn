@@ -211,8 +211,23 @@ _facet_docs = dict(
 
 
 class FacetGrid(Grid):
-    """Subplot grid for plotting conditional relationships."""
+    """Multi-plot grid for plotting conditional relationships.
 
+    This class maps a dataset onto multiple axes arrayed in a grid of rows and
+    columns that correspond to *levels* of variables in the dataset. The plots
+    it produces are often called "lattice", "trellis", or "small-multiple"
+    graphics.
+
+    It can also represent an additional level of conditionalization with the
+    ``hue`` parameter, which plots different subets of data in different
+    colors. This uses color to resolve elements on a third dimension, but
+    only draws subsets on top of each other and will not tailor the ``hue``
+    parameter for the specific visualization the way that axes-level functions
+    that accept ``hue`` will.
+
+    See the :ref:`tutorial <grid_tutorial>` for more information.
+
+    """
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, height=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
@@ -1072,7 +1087,23 @@ class FacetGrid(Grid):
 
 
 class PairGrid(Grid):
-    """Subplot grid for plotting pairwise relationships in a dataset."""
+    """Subplot grid for plotting pairwise relationships in a dataset.
+
+    This class maps each variable in a dataset onto a column and row in a
+    grid of multiple axes. Different axes-level plotting functions can be
+    used to draw bivariate plots in the upper and lower triangles, and the
+    the marginal distribution of each variable can be shown on the diagonal.
+
+    It can also represent an additional level of conditionalization with the
+    ``hue`` parameter, which plots different subets of data in different
+    colors. This uses color to resolve elements on a third dimension, but
+    only draws subsets on top of each other and will not tailor the ``hue``
+    parameter for the specific visualization the way that axes-level functions
+    that accept ``hue`` will.
+
+    See the :ref:`tutorial <grid_tutorial>` for more information.
+
+    """
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,

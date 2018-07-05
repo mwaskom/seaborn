@@ -924,7 +924,9 @@ _basic_docs = dict(
     using all three semantic types, but this style of plot can be hard to
     interpret and is often ineffective. Using redundant semantics (i.e. both
     ``hue`` and ``style`` for the same variable) can be helpful for making
-    graphics more accessible.\
+    graphics more accessible.
+
+    See the :ref:`tutorial <basic_tutorial>` for more information.\
     """),
 
     # --- Shared function parameters
