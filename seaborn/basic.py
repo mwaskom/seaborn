@@ -550,10 +550,10 @@ class _BasicPlotter(object):
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
 
-        keys = []
         legend_kwargs = {}
-        legend_data = {}
-        titles = []
+        keys = []
+
+        title_kws = dict(color="w", s=0, linewidth=0, marker="", dashes="")
 
         def update(var_name, val_name, **kws):
 
@@ -564,7 +564,6 @@ class _BasicPlotter(object):
                 keys.append(key)
 
                 legend_kwargs[key] = dict(**kws)
-                titles.append(None)
 
         # -- Add a legend for hue semantics
 
@@ -578,10 +577,11 @@ class _BasicPlotter(object):
         else:
             hue_levels = self.hue_levels
 
+        # Add the hue semantic subtitle
         if self.hue_label is not None:
-            titles.append(self.hue_label)
-            keys.append(None)
+            update((self.hue_label, "title"), self.hue_label, **title_kws)
 
+        # Add the hue semantic labels
         for level in hue_levels:
             if level is not None:
                 color = self.color_lookup(level)
@@ -599,10 +599,11 @@ class _BasicPlotter(object):
         else:
             size_levels = self.size_levels
 
+        # Add the size semantic subtitle
         if self.size_label is not None:
-            titles.append(self.size_label)
-            keys.append(None)
+            update((self.size_label, "title"), self.size_label, **title_kws)
 
+        # Add the size semantic labels
         for level in size_levels:
             if level is not None:
                 size = self.size_lookup(level)
@@ -610,10 +611,11 @@ class _BasicPlotter(object):
 
         # -- Add a legend for style semantics
 
+        # Add the style semantic title
         if self.style_label is not None:
-            titles.append(self.style_label)
-            keys.append(None)
+            update((self.style_label, "title"), self.style_label, **title_kws)
 
+        # Add the style semantic labels
         for level in self.style_levels:
             if level is not None:
                 update(self.style_label, level,
@@ -625,16 +627,13 @@ class _BasicPlotter(object):
         legend_data = {}
         legend_order = []
 
-        for title, key in zip(titles, keys):
-            if title is not None:
-                func([], [], label=title, visible=False)
-                continue
+        for key in keys:
 
             _, label = key
             kws = legend_kwargs[key]
             kws.setdefault("color", ".2")
             use_kws = {}
-            for attr in self._legend_attributes:
+            for attr in self._legend_attributes + ["visible"]:
                 if attr in kws:
                     use_kws[attr] = kws[attr]
             artist = func([], [], label=label, **use_kws)
@@ -645,8 +644,6 @@ class _BasicPlotter(object):
 
         self.legend_data = legend_data
         self.legend_order = legend_order
-
-        return titles
 
 
 class _LinePlotter(_BasicPlotter):
@@ -830,13 +827,10 @@ class _LinePlotter(_BasicPlotter):
         # Finalize the axes details
         self.label_axes(ax)
         if self.legend:
-            titles = self.add_legend_data(ax)
+            self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                legend = ax.legend()
-                texts = legend.get_texts()[-len(titles):]
-                for title, text in zip(titles, texts):
-                    text.set_horizontal_alignment("right")
+                ax.legend()
 
 
 class _ScatterPlotter(_BasicPlotter):
