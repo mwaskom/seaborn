@@ -2116,7 +2116,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         plotter = grid.map
 
     if kind == "scatter":
-        from .basic import scatterplot  # Avoid circular import
+        from .relational import scatterplot  # Avoid circular import
         plotter(scatterplot, **plot_kws)
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import

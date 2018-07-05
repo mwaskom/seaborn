@@ -5,7 +5,7 @@
 API reference
 =============
 
-.. _basic_api:
+.. _relational_api:
 
 Relational plots
 ----------------

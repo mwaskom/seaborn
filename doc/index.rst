@@ -112,7 +112,7 @@ To see the code or report a bug, please visit the `github repository
        </div>
        <div class="panel-body">
 
-* Relational: :ref:`API <basic_api>` | :ref:`Tutorial <basic_tutorial>`
+* Relational: :ref:`API <relational_api>` | :ref:`Tutorial <relational_tutorial>`
 * Categorical: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
 * Distributions: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
 * Regressions: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`

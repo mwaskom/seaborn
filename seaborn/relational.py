@@ -21,7 +21,7 @@ from .axisgrid import FacetGrid, _facet_docs
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _BasicPlotter(object):
+class _RelationalPlotter(object):
 
     if LooseVersion(mpl.__version__) >= "2.0":
         default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
@@ -646,7 +646,7 @@ class _BasicPlotter(object):
         self.legend_order = legend_order
 
 
-class _LinePlotter(_BasicPlotter):
+class _LinePlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
     _legend_func = "plot"
@@ -833,7 +833,7 @@ class _LinePlotter(_BasicPlotter):
                 ax.legend()
 
 
-class _ScatterPlotter(_BasicPlotter):
+class _ScatterPlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
@@ -932,7 +932,7 @@ class _ScatterPlotter(_BasicPlotter):
                 ax.legend()
 
 
-_basic_docs = dict(
+_relational_docs = dict(
 
     # ---  Introductory prose
     main_api_narrative=dedent("""\
@@ -945,7 +945,7 @@ _basic_docs = dict(
     ``hue`` and ``style`` for the same variable) can be helpful for making
     graphics more accessible.
 
-    See the :ref:`tutorial <basic_tutorial>` for more information.\
+    See the :ref:`tutorial <relational_tutorial>` for more information.\
     """),
 
     # --- Shared function parameters
@@ -1058,7 +1058,7 @@ _basic_docs = dict(
 
 )
 
-_basic_docs.update(_facet_docs)
+_relational_docs.update(_facet_docs)
 
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
@@ -1313,7 +1313,7 @@ lineplot.__doc__ = dedent("""\
         >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
 
-    """).format(**_basic_docs)
+    """).format(**_relational_docs)
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
@@ -1540,7 +1540,7 @@ scatterplot.__doc__ = dedent("""\
         >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
         >>> ax = sns.scatterplot(data=wide_df)
 
-    """).format(**_basic_docs)
+    """).format(**_relational_docs)
 
 
 def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
@@ -1748,4 +1748,4 @@ relplot.__doc__ = dedent("""\
         ...                 hue="event", style="event", col="region",
         ...                 height=5, aspect=.7, kind="line", data=fmri)
 
-    """).format(**_basic_docs)
+    """).format(**_relational_docs)
