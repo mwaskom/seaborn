@@ -77,12 +77,39 @@ Matrix plots
 Multi-plot grids
 ----------------
 
+Facet grids
+~~~~~~~~~~~
+
 .. autosummary::
    :toctree: generated/
 
     FacetGrid
+    FacetGrid.map
+    FacetGrid.map_dataframe
+
+Pair grids
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
     PairGrid
+    PairGrid.map
+    PairGrid.map_diag
+    PairGrid.map_offdiag
+    PairGrid.map_lower
+    PairGrid.map_upper
+
+Joint grids
+~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
     JointGrid
+    JointGrid.plot
+    JointGrid.plot_joint
+    JointGrid.plot_marginals
 
 .. _style_api:
 
