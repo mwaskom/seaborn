@@ -618,6 +618,8 @@ class _BasicPlotter(object):
                 if attr in kws:
                     use_kws[attr] = kws[attr]
             artist = func([], [], label=label, **use_kws)
+            if self._legend_func == "plot":
+                artist = artist[0]
             legend_data[label] = artist
             legend_order.append(label)
 
@@ -922,7 +924,9 @@ _basic_docs = dict(
     using all three semantic types, but this style of plot can be hard to
     interpret and is often ineffective. Using redundant semantics (i.e. both
     ``hue`` and ``style`` for the same variable) can be helpful for making
-    graphics more accessible.\
+    graphics more accessible.
+
+    See the :ref:`tutorial <basic_tutorial>` for more information.\
     """),
 
     # --- Shared function parameters
@@ -1485,6 +1489,15 @@ scatterplot.__doc__ = dedent("""\
         >>> markers = {{"Lunch": "s", "Dinner": "X"}}
         >>> ax = sns.scatterplot(x="total_bill", y="tip", style="time",
         ...                      markers=markers,
+        ...                      data=tips)
+
+    Control plot attributes using matplotlib parameters:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      s=100, color=".2", marker="+",
         ...                      data=tips)
 
     Pass data vectors instead of names in a data frame:

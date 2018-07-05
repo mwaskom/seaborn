@@ -100,6 +100,8 @@ def color_palette(palette=None, n_colors=None, desat=None):
     This function can also be used in a ``with`` statement to temporarily
     set the color cycle for a plot or set of plots.
 
+    See the :ref:`tutorial <palette_tutorial>` for more information.
+
     Parameters
     ----------
     palette: None, string, or sequence, optional
@@ -1069,6 +1071,10 @@ def set_color_codes(palette="deep"):
         if not palette.endswith("6"):
             palette = palette + "6"
         colors = SEABORN_PALETTES[palette] + [(.1, .1, .1)]
+    else:
+        err = "Cannot set colors with palette '{}'".format(palette)
+        raise ValueError(err)
+
     for code, color in zip("bgrmyck", colors):
         rgb = mpl.colors.colorConverter.to_rgb(color)
         mpl.colors.colorConverter.colors[code] = rgb

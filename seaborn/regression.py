@@ -404,25 +404,14 @@ _regression_docs = dict(
 
     model_api=dedent("""\
     There are a number of mutually exclusive options for estimating the
-    regression model: ``order``, ``logistic``, ``lowess``, ``robust``, and
-    ``logx``. See the parameter docs for more information on these options.\
+    regression model. See the :ref:`tutorial <regression_tutorial>` for more
+    information.\
     """),
-
     regplot_vs_lmplot=dedent("""\
-    Understanding the difference between :func:`regplot` and :func:`lmplot` can
-    be a bit tricky. In fact, they are closely related, as :func:`lmplot` uses
-    :func:`regplot` internally and takes most of its parameters. However,
-    :func:`regplot` is an axes-level function, so it draws directly onto an
-    axes (either the currently active axes or the one provided by the ``ax``
-    parameter), while :func:`lmplot` is a figure-level function and creates its
-    own figure, which is managed through a :class:`FacetGrid`. This has a few
-    consequences, namely that :func:`regplot` can happily coexist in a figure
-    with other kinds of plots and will follow the global matplotlib color
-    cycle. In contrast, :func:`lmplot` needs to occupy an entire figure, and
-    the size and color cycle are controlled through function parameters,
-    ignoring the global defaults.\
+    The :func:`regplot` and :func:`lmplot` functions are closely related, but
+    the former is an axes-level function while the latter is a figure-level
+    function that combines :func:`regplot` and :class:`FacetGrid`.\
     """),
-
     x_estimator=dedent("""\
     x_estimator : callable that maps vector -> scalar, optional
         Apply this function to each unique value of ``x`` and plot the
@@ -445,7 +434,7 @@ _regression_docs = dict(
         Size of the confidence interval used when plotting a central tendency
         for discrete values of ``x``. If ``"ci"``, defer to the value of the
         ``ci`` parameter. If ``"sd"``, skip bootstrapping and show the
-         standard deviation of the observations in each bin.\
+        standard deviation of the observations in each bin.\
     """),
     scatter=dedent("""\
     scatter : bool, optional
@@ -540,7 +529,7 @@ _regression_docs.update(_facet_docs)
 
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, height=5, aspect=1, markers="o", sharex=True,
+           col_wrap=None, height=4, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
            legend=True, legend_out=True, x_estimator=None, x_bins=None,
            x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,

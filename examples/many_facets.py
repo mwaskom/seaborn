@@ -2,7 +2,7 @@
 Plotting on a large number of facets
 ====================================
 
-_thumb: .35, .35
+_thumb: .4, .3
 
 """
 import numpy as np
@@ -22,13 +22,14 @@ df = pd.DataFrame(np.c_[pos.flat, step, walk],
                   columns=["position", "step", "walk"])
 
 # Initialize a grid of plots with an Axes for each walk
-grid = sns.FacetGrid(df, col="walk", hue="walk", col_wrap=5, size=1.5)
+grid = sns.FacetGrid(df, col="walk", hue="walk", palette="tab20c",
+                     col_wrap=4, height=1.5)
 
 # Draw a horizontal line to show the starting point
 grid.map(plt.axhline, y=0, ls=":", c=".5")
 
 # Draw a line plot to show the trajectory of each random walk
-grid.map(plt.plot, "step", "position", marker="o", ms=4)
+grid.map(plt.plot, "step", "position", marker="o")
 
 # Adjust the tick positions and labels
 grid.set(xticks=np.arange(5), yticks=[-3, 3],

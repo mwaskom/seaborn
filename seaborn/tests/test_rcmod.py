@@ -188,7 +188,7 @@ class TestPalette(object):
         rcmod.set_palette("dark", 4)
         assert utils.get_color_cycle() == palettes.color_palette("dark", 4)
 
-        rcmod.set_palette("Set2")
+        rcmod.set_palette("Set2", color_codes=True)
         assert utils.get_color_cycle() == palettes.color_palette("Set2", 8)
 
 

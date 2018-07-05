@@ -20,7 +20,7 @@ With the (in some cases new) API, these functions can all be drawn correctly by 
 
 Here are details on what has changed in the process of unifying these APIs:
 
-- Changes to :func:`boxplot` and :func:`violinplot` will probably be the most disruptive. Both functions maintain backwards-compatibility in terms of the kind of data they can accept, but the syntax has changed to be more similar to other seaborn functions. These functions are now invoked with ``x`` and/or ``y`` parameters that are either vectors of data or names of variables in a long-form DataFrame passed to the new ``data`` parameter. You can still pass wide-form DataFrames or arrays to ``data``, but it is no longer the first positional argument. See the `github pull request <https://github.com/mwaskom/seaborn/pull/410>`_ for more information on these changes and the logic behind them.
+- Changes to :func:`boxplot` and :func:`violinplot` will probably be the most disruptive. Both functions maintain backwards-compatibility in terms of the kind of data they can accept, but the syntax has changed to be more similar to other seaborn functions. These functions are now invoked with ``x`` and/or ``y`` parameters that are either vectors of data or names of variables in a long-form DataFrame passed to the new ``data`` parameter. You can still pass wide-form DataFrames or arrays to ``data``, but it is no longer the first positional argument. See the `github pull request (#410) <https://github.com/mwaskom/seaborn/pull/410>`_ for more information on these changes and the logic behind them.
 
 - As :func:`pointplot` and :func:`barplot` can now plot with the major categorical variable on the y axis, the ``x_order`` parameter has been renamed to ``order``.
 

@@ -5,27 +5,10 @@
 API reference
 =============
 
-.. _grid_api:
-
-Axis grids
-----------
-
-.. autosummary::
-   :toctree: generated/
-
-    FacetGrid
-    factorplot
-    lmplot
-    PairGrid
-    pairplot
-    JointGrid
-    jointplot
-
-
 .. _basic_api:
 
-Basic plots
------------
+Relational plots
+----------------
 
 .. autosummary::
     :toctree: generated
@@ -42,6 +25,7 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
+    factorplot
     stripplot
     swarmplot
     boxplot
@@ -59,6 +43,8 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
+    jointplot
+    pairplot
     distplot
     kdeplot
     rugplot
@@ -71,6 +57,7 @@ Regression plots
 .. autosummary::
     :toctree: generated/
 
+    lmplot
     regplot
     residplot
 
@@ -85,26 +72,49 @@ Matrix plots
     heatmap
     clustermap
 
-Timeseries plots
+.. _grid_api:
+
+Multi-plot grids
 ----------------
 
-.. autosummary::
-    :toctree: generated/
-
-    tsplot
-
-Miscellaneous plots
--------------------
+Facet grids
+~~~~~~~~~~~
 
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
-    palplot
+    FacetGrid
+    FacetGrid.map
+    FacetGrid.map_dataframe
+
+Pair grids
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+    PairGrid
+    PairGrid.map
+    PairGrid.map_diag
+    PairGrid.map_offdiag
+    PairGrid.map_lower
+    PairGrid.map_upper
+
+Joint grids
+~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+    JointGrid
+    JointGrid.plot
+    JointGrid.plot_joint
+    JointGrid.plot_marginals
 
 .. _style_api:
 
-Style frontend
---------------
+Style control 
+-------------
 
 .. autosummary::
     :toctree: generated/
@@ -158,6 +168,7 @@ Utility functions
 .. autosummary::
     :toctree: generated/
 
+    load_dataset
     despine
     desaturate
     saturate

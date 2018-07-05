@@ -2,6 +2,7 @@ import colorsys
 import numpy as np
 import matplotlib as mpl
 
+import pytest
 import nose.tools as nt
 import numpy.testing as npt
 import matplotlib.pyplot as plt
@@ -319,6 +320,9 @@ class TestColorPalettes(object):
             rgb_got = mpl.colors.colorConverter.to_rgb(code)
             nt.assert_equal(rgb_want, rgb_got)
         palettes.set_color_codes("reset")
+
+        with pytest.raises(ValueError):
+            palettes.set_color_codes("Set1")
 
     def test_as_hex(self):
 

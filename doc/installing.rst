@@ -1,7 +1,13 @@
 .. _installing:
 
+.. currentmodule:: seaborn
+
 Installing and getting started
 ------------------------------
+
+.. raw:: html
+
+   <div class="col-md-9">
 
 To install the latest release of seaborn, you can use ``pip``::
 
@@ -16,10 +22,9 @@ Alternatively, you can use ``pip`` to install the development version directly f
     pip install git+https://github.com/mwaskom/seaborn.git
 
 Another option would be to to clone the `github repository
-<https://github.com/mwaskom/seaborn>`_ install from your local copy::
+<https://github.com/mwaskom/seaborn>`_ and install from your local copy::
 
     pip install .
-
 
 Dependencies
 ~~~~~~~~~~~~
@@ -65,3 +70,7 @@ include a reproducible example on one of the example datasets (accessed through
 versions of seaborn and matplotlib you are using, as well as what `matplotlib
 backend <https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you
 are using to draw the plots, so please include those in your bug report.
+
+.. raw:: html
+
+   </div>

@@ -3,6 +3,7 @@ _build/
 generated/
 examples/
 example_thumbs/
+introduction.rst
 aesthetics.rst
 basic.rst
 color_palettes.rst

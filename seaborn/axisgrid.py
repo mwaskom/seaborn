@@ -211,8 +211,7 @@ _facet_docs = dict(
 
 
 class FacetGrid(Grid):
-    """Subplot grid for plotting conditional relationships."""
-
+    """Multi-plot grid for plotting conditional relationships."""
     def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
                  sharex=True, sharey=True, height=3, aspect=1, palette=None,
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
@@ -380,20 +379,23 @@ class FacetGrid(Grid):
     __init__.__doc__ = dedent("""\
         Initialize the matplotlib figure and FacetGrid object.
 
-        The :class:`FacetGrid` is an object that links a Pandas DataFrame to
-        a matplotlib figure with a particular structure.
+        This class maps a dataset onto multiple axes arrayed in a grid of rows
+        and columns that correspond to *levels* of variables in the dataset.
+        The plots it produces are often called "lattice", "trellis", or
+        "small-multiple" graphics.
 
-        In particular, :class:`FacetGrid` is used to draw plots with multiple
-        Axes where each Axes shows the same relationship conditioned on
-        different levels of some variable. It's possible to condition on up to
-        three variables by assigning variables to the rows and columns of the
-        grid and using different colors for the plot elements.
+        It can also represent levels of a third varaible with the ``hue``
+        parameter, which plots different subets of data in different colors.
+        This uses color to resolve elements on a third dimension, but only
+        draws subsets on top of each other and will not tailor the ``hue``
+        parameter for the specific visualization the way that axes-level
+        functions that accept ``hue`` will.
 
-        The general approach to plotting here is called "small multiples",
-        where the same kind of plot is repeated multiple times, and the
-        specific use of small multiples to display the same relationship
-        conditioned on one ore more other variables is often called a "trellis
-        plot".
+        When using seaborn functions that infer semantic mappings from a
+        dataset, care must be taken to synchronize those mappings across
+        facets. In most cases, it will be better to use a figure-level function
+        (e.g. :func:`relplot` or :func:`factorplot`) than to use
+        :class:`FacetGrid` directly.
 
         The basic workflow is to initialize the :class:`FacetGrid` object with
         the dataset and the variables that are used to structure the grid. Then
@@ -402,6 +404,8 @@ class FacetGrid(Grid):
         plot can be tweaked with other methods to do things like change the
         axis labels, use different ticks, or add a legend. See the detailed
         code examples below for more information.
+
+        See the :ref:`tutorial <grid_tutorial>` for more information.
 
         Parameters
         ----------
@@ -754,7 +758,7 @@ class FacetGrid(Grid):
         return self
 
     def map_dataframe(self, func, *args, **kwargs):
-        """Like `map` but passes args as strings and inserts data in kwargs.
+        """Like ``.map`` but passes args as strings and inserts data in kwargs.
 
         This method is suitable for plotting with functions that accept a
         long-form DataFrame as a `data` keyword argument and access the
@@ -996,7 +1000,9 @@ class FacetGrid(Grid):
         if self.axes.shape == (1, 1):
             return self.axes[0, 0]
         else:
-            raise AttributeError
+            err = ("You must use the `.axes` attribute (an array) when "
+                   "there is more than one plot.")
+            raise AttributeError(err)
 
     @property
     def _inner_axes(self):
@@ -1070,7 +1076,23 @@ class FacetGrid(Grid):
 
 
 class PairGrid(Grid):
-    """Subplot grid for plotting pairwise relationships in a dataset."""
+    """Subplot grid for plotting pairwise relationships in a dataset.
+
+    This class maps each variable in a dataset onto a column and row in a
+    grid of multiple axes. Different axes-level plotting functions can be
+    used to draw bivariate plots in the upper and lower triangles, and the
+    the marginal distribution of each variable can be shown on the diagonal.
+
+    It can also represent an additional level of conditionalization with the
+    ``hue`` parameter, which plots different subets of data in different
+    colors. This uses color to resolve elements on a third dimension, but
+    only draws subsets on top of each other and will not tailor the ``hue``
+    parameter for the specific visualization the way that axes-level functions
+    that accept ``hue`` will.
+
+    See the :ref:`tutorial <grid_tutorial>` for more information.
+
+    """
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
@@ -1707,9 +1729,9 @@ class JointGrid(object):
         self.y = y_array
 
         if xlim is not None:
-            ax_joint.set_xlim(xlim, auto=None)
+            ax_joint.set_xlim(xlim)
         if ylim is not None:
-            ax_joint.set_ylim(ylim, auto=None)
+            ax_joint.set_ylim(ylim)
 
         # Make the grid look nice
         utils.despine(f)
