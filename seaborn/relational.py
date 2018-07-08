@@ -1549,7 +1549,7 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
             sizes=None, size_order=None, size_norm=None,
             markers=None, dashes=None, style_order=None,
             legend="brief", kind="scatter",
-            height=4, aspect=1, facet_kws=None, **kwargs):
+            height=5, aspect=1, facet_kws=None, **kwargs):
 
     if kind == "scatter":
 

@@ -2366,7 +2366,7 @@ boxplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="box",
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2593,7 +2593,7 @@ violinplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="violin", split=True,
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2792,7 +2792,7 @@ stripplot.__doc__ = dedent("""\
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="strip",
         ...                    jitter=True,
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2965,7 +2965,7 @@ swarmplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="swarm",
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3151,7 +3151,7 @@ barplot.__doc__ = dedent("""\
         >>> g = sns.factorplot(x="sex", y="total_bill",
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="bar",
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3352,7 +3352,7 @@ pointplot.__doc__ = dedent("""\
         ...                    hue="smoker", col="time",
         ...                    data=tips, kind="point",
         ...                    dodge=True,
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3482,7 +3482,7 @@ countplot.__doc__ = dedent("""\
 
         >>> g = sns.factorplot(x="class", hue="who", col="survived",
         ...                    data=titanic, kind="count",
-        ...                    height=4, aspect=.7);
+        ...                    height=6, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3490,7 +3490,7 @@ countplot.__doc__ = dedent("""\
 def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
                col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
                units=None, order=None, hue_order=None, row_order=None,
-               col_order=None, kind="point", height=4, aspect=1,
+               col_order=None, kind="point", height=5, aspect=1,
                orient=None, color=None, palette=None,
                legend=True, legend_out=True, sharex=True, sharey=True,
                margin_titles=False, facet_kws=None, **kwargs):

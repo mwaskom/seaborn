@@ -529,7 +529,7 @@ _regression_docs.update(_facet_docs)
 
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, height=4, aspect=1, markers="o", sharex=True,
+           col_wrap=None, height=5, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
            legend=True, legend_out=True, x_estimator=None, x_bins=None,
            x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
