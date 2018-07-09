@@ -5,7 +5,7 @@ examples/
 example_thumbs/
 introduction.rst
 aesthetics.rst
-basic.rst
+relational.rst
 color_palettes.rst
 distributions.rst
 regression.rst

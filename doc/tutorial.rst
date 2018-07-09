@@ -17,7 +17,7 @@ Official seaborn tutorial
 .. toctree::
    :maxdepth: 2
 
-   tutorial/basic
+   tutorial/relational
    tutorial/categorical
    tutorial/distributions
    tutorial/regression
