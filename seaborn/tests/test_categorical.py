@@ -380,7 +380,8 @@ class TestCategoricalPlotter(CategoricalFixture):
             p = cat._CategoricalPlotter()
             p.establish_variables("g", "y", data=self.df)
             p.establish_colors(None, None, 1)
-            npt.assert_array_equal(p.colors, palettes.husl_palette(3, l=.7))
+            npt.assert_array_equal(p.colors,
+                                   palettes.husl_palette(3, l=.7))  # noqa
 
     def test_specific_color(self):
 
@@ -2159,15 +2160,15 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.lines),
                         len(p.plot_data) * len(p.hue_names) + len(p.hue_names))
 
-        for points, stats, color in zip(ax.collections,
-                                        p.statistic.T,
-                                        p.colors):
+        for points, numbers, color in zip(ax.collections,
+                                          p.statistic.T,
+                                          p.colors):
 
             nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
 
             x, y = points.get_offsets().T
             npt.assert_array_equal(x, np.arange(len(p.plot_data)))
-            npt.assert_array_equal(y, stats)
+            npt.assert_array_equal(y, numbers)
 
             for got_color in points.get_facecolors():
                 npt.assert_array_equal(got_color[:-1], color)
@@ -2185,14 +2186,14 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.lines),
                         len(p.plot_data) * len(p.hue_names) + len(p.hue_names))
 
-        for points, stats, color in zip(ax.collections,
-                                        p.statistic.T,
-                                        p.colors):
+        for points, numbers, color in zip(ax.collections,
+                                          p.statistic.T,
+                                          p.colors):
 
             nt.assert_equal(len(points.get_offsets()), len(p.plot_data))
 
             x, y = points.get_offsets().T
-            npt.assert_array_equal(x, stats)
+            npt.assert_array_equal(x, numbers)
             npt.assert_array_equal(y, np.arange(len(p.plot_data)))
 
             for got_color in points.get_facecolors():
@@ -2460,11 +2461,11 @@ class TestFactorPlot(CategoricalFixture):
 class TestLVPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
-                            order=None, hue_order=None,
-                            orient=None, color=None, palette=None,
-                            saturation=.75, width=.8, dodge=True,
-                            k_depth='proportion', linewidth=None,
-                            scale='exponential', outlier_prop=None)
+                       order=None, hue_order=None,
+                       orient=None, color=None, palette=None,
+                       saturation=.75, width=.8, dodge=True,
+                       k_depth='proportion', linewidth=None,
+                       scale='exponential', outlier_prop=None)
 
     def ispatch(self, c):
 
@@ -2597,7 +2598,6 @@ class TestLVPlotter(CategoricalFixture):
         y[-2:] = np.nan
 
         ax = cat.lvplot(x, y)
-        patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(ax.lines), 3)
 
         plt.close("all")
