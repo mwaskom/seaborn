@@ -2584,7 +2584,7 @@ violinplot.__doc__ = dedent("""\
 
     Use :func:`catplot` to combine a :func:`violinplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
@@ -2782,7 +2782,7 @@ stripplot.__doc__ = dedent("""\
 
     Use :func:`catplot` to combine a :func:`stripplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
@@ -3498,8 +3498,13 @@ def factorplot(*args, **kwargs):
     )
     warnings.warn(msg)
 
+    if "size" in kwargs:
+        kwargs["height"] = kwargs.pop("size")
+        msg = ("The `size` paramter has been renamed to `height`; "
+               "please update your code.")
+        warnings.warn(msg, UserWarning)
+
     kwargs.setdefault("kind", "point")
-    kwargs.setdefault("size", 4)
 
     return catplot(*args, **kwargs)
 
@@ -3599,10 +3604,29 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 catplot.__doc__ = dedent("""\
     Figure-level function for drawing categorical plots onto a FacetGrid.
 
-    The default plot that is shown is a point plot, but other seaborn
-    categorical plots can be chosen with the ``kind`` parameter, including
-    box plots, violin plots, lv plots, bar plots, count plots, strip plots,
-    or swarm plots.
+    The default plot that is shown is a strip plot, but other seaborn
+    categorical plots can be chosen with the ``kind`` parameter. These are
+    best thought of in three categories:
+
+    Categorical scatterplots:
+
+    - ``strip`` (using :func:`stripplot`)
+    - ``swarm`` (using :func:`swarmplot`)
+
+    Categorical distribution plots:
+
+    - ``box`` (using :func:`boxplot`)
+    - ``violin`` (using :func:`violinplot`)
+    - ``lv`` (using :func:`lvplot`)
+
+    Categorical estimate plots:
+
+    - ``point`` (using :func:`pointplot`)
+    - ``bar`` (using :func:`barplot`)
+    - ``count`` (using :func:`countplot`)
+
+    Extra keyword arguments are passed to the underlying function, so you
+    should refer to the documentation for each to see kind-specific options.
 
     Unlike when using the underlying plotting functions directly, data must be
     passed in a long-form DataFrame with variables specified by passing strings
@@ -3868,7 +3892,7 @@ lvplot.__doc__ = dedent("""\
 
     Use :func:`catplot` to combine a :func:`lvplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using
-    :func:`factorplot` is safer than using :class:`FacetGrid` directly, as it
+    :func:`catplot` is safer than using :class:`FacetGrid` directly, as it
     ensures synchronization of variable order across facets:
 
     .. plot::

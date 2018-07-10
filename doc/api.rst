@@ -25,7 +25,7 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
-    factorplot
+    catplot
     stripplot
     swarmplot
     boxplot

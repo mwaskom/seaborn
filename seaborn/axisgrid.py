@@ -394,7 +394,7 @@ class FacetGrid(Grid):
         When using seaborn functions that infer semantic mappings from a
         dataset, care must be taken to synchronize those mappings across
         facets. In most cases, it will be better to use a figure-level function
-        (e.g. :func:`relplot` or :func:`factorplot`) than to use
+        (e.g. :func:`relplot` or :func:`catplot`) than to use
         :class:`FacetGrid` directly.
 
         The basic workflow is to initialize the :class:`FacetGrid` object with
@@ -445,8 +445,9 @@ class FacetGrid(Grid):
         See Also
         --------
         PairGrid : Subplot grid for plotting pairwise relationships.
+        relplot : Combine a relational plot and a :class:`FacetGrid`.
+        catplot : Combine a categorical plot and a :class:`FacetGrid`.
         lmplot : Combine a regression plot and a :class:`FacetGrid`.
-        factorplot : Combine a categorical plot and a :class:`FacetGrid`.
 
         Examples
         --------
