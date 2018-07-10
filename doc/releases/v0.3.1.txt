@@ -7,7 +7,7 @@ This is a minor release from 0.3 with fixes for several bugs.
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
 
-- The size of the points in :func:`pointplot` and :func:`factorplot` are now scaled with the linewidth for better aesthetics across different plotting contexts.
+- The size of the points in :func:`pointplot` and ``factorplot`` are now scaled with the linewidth for better aesthetics across different plotting contexts.
 
 - The :func:`pointplot` glyphs for different levels of the hue variable are drawn at different z-orders so that they appear uniform.
 
