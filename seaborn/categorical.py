@@ -3602,33 +3602,34 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
 
 catplot.__doc__ = dedent("""\
-    Figure-level function for drawing categorical plots onto a FacetGrid.
+    Figure-level interface for drawing categorical plots onto a FacetGrid.
 
-    The default plot that is shown is a strip plot, but other seaborn
-    categorical plots can be chosen with the ``kind`` parameter. These are
-    best thought of in three categories:
+    This function provides access to several axes-level functions that
+    show the relationship between a numerical and one or more categorical
+    variables using one of several visual representations. The ``kind``
+    parameter selects the underlying axes-level function to use:
 
     Categorical scatterplots:
 
-    - ``strip`` (using :func:`stripplot`)
-    - ``swarm`` (using :func:`swarmplot`)
+    - :func:`stripplot` (with ``kind="strip"``; the default)
+    - :func:`swarmplot` (with ``kind="swarm"``)
 
     Categorical distribution plots:
 
-    - ``box`` (using :func:`boxplot`)
-    - ``violin`` (using :func:`violinplot`)
-    - ``lv`` (using :func:`lvplot`)
+    - :func:`boxplot` (with ``kind="box"``)
+    - :func:`violinplot` (with ``kind="violin"``)
+    - :func:`lvplot` (with ``kind="lv"``)
 
     Categorical estimate plots:
 
-    - ``point`` (using :func:`pointplot`)
-    - ``bar`` (using :func:`barplot`)
-    - ``count`` (using :func:`countplot`)
+    - :func:`pointplot` (with ``kind="point"``)
+    - :func:`barplot` (with ``kind="bar"``)
+    - :func:`countplot` (with ``kind="count"``)
 
     Extra keyword arguments are passed to the underlying function, so you
     should refer to the documentation for each to see kind-specific options.
 
-    Unlike when using the underlying plotting functions directly, data must be
+    Note that unlike when using the axes-level functions directly, data must be
     passed in a long-form DataFrame with variables specified by passing strings
     to ``x``, ``y``, ``hue``, etc.
 
