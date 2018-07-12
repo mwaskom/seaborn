@@ -1563,7 +1563,7 @@ class TestStripPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.stripplot("g", "y", data=self.df)
+        ax = cat.stripplot("g", "y", jitter=False, data=self.df)
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -1579,7 +1579,7 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", data=df)
+        ax = cat.stripplot("y", "g", jitter=False, data=df)
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -1606,7 +1606,8 @@ class TestStripPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.stripplot("g", "y", "h", data=self.df, dodge=True)
+        ax = cat.stripplot("g", "y", "h", data=self.df,
+                           jitter=False, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1624,7 +1625,8 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df, dodge=True)
+        ax = cat.stripplot("y", "g", "h", data=df,
+                           jitter=False, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1636,7 +1638,8 @@ class TestStripPlotter(CategoricalFixture):
     def test_nested_stripplot_vertical(self):
 
         # Test a simple vertical strip plot
-        ax = cat.stripplot("g", "y", "h", data=self.df, dodge=False)
+        ax = cat.stripplot("g", "y", "h", data=self.df,
+                           jitter=False, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -1650,7 +1653,8 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df, dodge=False)
+        ax = cat.stripplot("y", "g", "h", data=df,
+                           jitter=False, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T

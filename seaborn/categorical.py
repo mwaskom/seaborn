@@ -2599,7 +2599,7 @@ violinplot.__doc__ = dedent("""\
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, dodge=False, orient=None, color=None, palette=None,
+              jitter=True, dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
     if "split" in kwargs:
