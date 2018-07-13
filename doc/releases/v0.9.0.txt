@@ -8,6 +8,8 @@ v0.9.0 (Unreleased)
 
 - TODO change from factorplot to catplot
 
+- TODO change from lvplot to boxenplot
+
 - TODO default jitter in stripplot
 
 - Final removal of the previously-deprecated ``coefplot`` and ``interactplot`` functions.

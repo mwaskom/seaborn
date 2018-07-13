@@ -30,7 +30,7 @@ Categorical plots
     swarmplot
     boxplot
     violinplot
-    lvplot
+    boxenplot
     pointplot
     barplot
     countplot

@@ -2472,7 +2472,7 @@ class TestCatPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.lines), want_lines)
 
 
-class TestLVPlotter(CategoricalFixture):
+class TestBoxenPlotter(CategoricalFixture):
 
     default_kws = dict(x=None, y=None, hue=None, data=None,
                        order=None, hue_order=None,
@@ -2567,13 +2567,13 @@ class TestLVPlotter(CategoricalFixture):
 
     def test_axes_data(self):
 
-        ax = cat.lvplot("g", "y", data=self.df)
+        ax = cat.boxenplot("g", "y", data=self.df)
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 3)
 
         plt.close("all")
 
-        ax = cat.lvplot("g", "y", "h", data=self.df)
+        ax = cat.boxenplot("g", "y", "h", data=self.df)
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 6)
 
@@ -2581,14 +2581,14 @@ class TestLVPlotter(CategoricalFixture):
 
     def test_box_colors(self):
 
-        ax = cat.lvplot("g", "y", data=self.df, saturation=1)
+        ax = cat.boxenplot("g", "y", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=3)
         for patch, color in zip(ax.artists, pal):
             nt.assert_equal(patch.get_facecolor()[:3], color)
 
         plt.close("all")
 
-        ax = cat.lvplot("g", "y", "h", data=self.df, saturation=1)
+        ax = cat.boxenplot("g", "y", "h", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=2)
         for patch, color in zip(ax.artists, pal * 2):
             nt.assert_equal(patch.get_facecolor()[:3], color)
@@ -2597,8 +2597,8 @@ class TestLVPlotter(CategoricalFixture):
 
     def test_draw_missing_boxes(self):
 
-        ax = cat.lvplot("g", "y", data=self.df,
-                        order=["a", "b", "c", "d"])
+        ax = cat.boxenplot("g", "y", data=self.df,
+                           order=["a", "b", "c", "d"])
 
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 3)
@@ -2611,48 +2611,48 @@ class TestLVPlotter(CategoricalFixture):
         y = self.rs.randn(8)
         y[-2:] = np.nan
 
-        ax = cat.lvplot(x, y)
+        ax = cat.boxenplot(x, y)
         nt.assert_equal(len(ax.lines), 3)
 
         plt.close("all")
 
         y[-1] = 0
-        ax = cat.lvplot(x, y, h)
+        ax = cat.boxenplot(x, y, h)
         nt.assert_equal(len(ax.lines), 7)
 
         plt.close("all")
 
-    def test_lvplots(self):
+    def test_boxenplots(self):
 
-        # Smoke test the high level lvplot options
+        # Smoke test the high level boxenplot options
 
-        cat.lvplot("y", data=self.df)
+        cat.boxenplot("y", data=self.df)
         plt.close("all")
 
-        cat.lvplot(y="y", data=self.df)
+        cat.boxenplot(y="y", data=self.df)
         plt.close("all")
 
-        cat.lvplot("g", "y", data=self.df)
+        cat.boxenplot("g", "y", data=self.df)
         plt.close("all")
 
-        cat.lvplot("y", "g", data=self.df, orient="h")
+        cat.boxenplot("y", "g", data=self.df, orient="h")
         plt.close("all")
 
-        cat.lvplot("g", "y", "h", data=self.df)
+        cat.boxenplot("g", "y", "h", data=self.df)
         plt.close("all")
 
-        cat.lvplot("g", "y", "h", order=list("nabc"), data=self.df)
+        cat.boxenplot("g", "y", "h", order=list("nabc"), data=self.df)
         plt.close("all")
 
-        cat.lvplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        cat.boxenplot("g", "y", "h", hue_order=list("omn"), data=self.df)
         plt.close("all")
 
-        cat.lvplot("y", "g", "h", data=self.df, orient="h")
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h")
         plt.close("all")
 
     def test_axes_annotation(self):
 
-        ax = cat.lvplot("g", "y", data=self.df)
+        ax = cat.boxenplot("g", "y", data=self.df)
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         nt.assert_equal(ax.get_xlim(), (-.5, 2.5))
@@ -2662,7 +2662,7 @@ class TestLVPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.lvplot("g", "y", "h", data=self.df)
+        ax = cat.boxenplot("g", "y", "h", data=self.df)
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
@@ -2673,12 +2673,22 @@ class TestLVPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.lvplot("y", "g", data=self.df, orient="h")
+        ax = cat.boxenplot("y", "g", data=self.df, orient="h")
         nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         nt.assert_equal(ax.get_ylim(), (2.5, -.5))
         npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
         npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
                                ["a", "b", "c"])
+
+        plt.close("all")
+
+    def test_lvplot(self):
+
+        with pytest.warns(UserWarning):
+            ax = cat.lvplot("g", "y", data=self.df)
+
+        patches = filter(self.ispatch, ax.collections)
+        nt.assert_equal(len(list(patches)), 3)
 
         plt.close("all")
