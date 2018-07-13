@@ -1623,12 +1623,20 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
 
 
 relplot.__doc__ = dedent("""\
-    Draw a relational plot onto a FacetGrid.
+    Figure-level interface for drawing relational plots onto a FacetGrid.
+
+    This function provides access to several different axes-level functions
+    that show the relationship between two variables with semantic mappings
+    of subsets. The ``kind`` parameter selects the underlying axes-level
+    function to use:
+
+    - :func:`scatterplot` (with ``kind="scatter"``; the default)
+    - :func:`lineplot` (with ``kind="line"``)
+
+    Extra keyword arguments are passed to the underlying function, so you
+    should refer to the documentation for each to see kind-specific options.
 
     {main_api_narrative}
-
-    By default a :func:`scatterplot` is drawn, but it is also possible
-    to draw a :func:`lineplot` using ``kind='line'``.
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.

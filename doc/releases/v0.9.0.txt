@@ -6,13 +6,19 @@ v0.9.0 (Unreleased)
 
 - Added the :func:`lineplot` function for representing relationships between``x`` and ``y`` variables with lines, potentially after conditioning on up to three other variables and semantically mapping those conditions with the color, size, or style of the lines. This function replaces :func:`tsplot`, but with an API that is more consistent with other modern seaborn functions and has both more flexibility (more dimensions of semantic mapping, better handling of dates) and less flexibility (fewer options for visual representing uncertainty). There is considerable new API documentation and a few gallery examples.
 
+- TODO change from factorplot to catplot
+
+- TODO change from lvplot to boxenplot
+
+- TODO default jitter in stripplot
+
 - Final removal of the previously-deprecated ``coefplot`` and ``interactplot`` functions.
 
 - Deprecated the statistical annotation component of :class:`JointGrid`. The method is still available but will be removed in a future version.
 
 - Updated the seaborn palettes ("deep", "muted", "colorblind", etc.) to correspond with the new 10-color matplotlib default. The legacy palettes are now available at "deep6", "muted6", "colorblind6", etc. Additionally, a few individual colors were tweaked for better consistency, aesthetics, and accessibility.
 
-- Renamed the ``size`` parameter to ``height`` in multiplot grid objects (:class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid`) along with functions that use them (:func:`factorplot`, :func:`lmplot`, :func:`pairplot`, and :func:`jointplot`) to avoid conflicts with the ``size`` parameter that is used in ``scatterplot`` and ``lineplot`` (necessary to make :func:`relplot` work) and also makes the meaning of the parameter a bit more clear.
+- Renamed the ``size`` parameter to ``height`` in multiplot grid objects (:class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid`) along with functions that use them (``factorplot``, :func:`lmplot`, :func:`pairplot`, and :func:`jointplot`) to avoid conflicts with the ``size`` parameter that is used in ``scatterplot`` and ``lineplot`` (necessary to make :func:`relplot` work) and also makes the meaning of the parameter a bit more clear.
 
 - Calling :func:`color_palette` (or :func:`set_palette`) with a named qualitative palettes (i.e. one of the seaborn palettes, the colorbrewer qualitative palettes, or the matplotlib matplotlib tableau-derived palettes) and no specified number of colors will return all of the colors in the palette. This means that for some palettes, the returned list will have a different length than it did in previous versions.
 

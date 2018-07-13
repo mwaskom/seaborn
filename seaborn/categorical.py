@@ -20,8 +20,12 @@ from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
 
 
-__all__ = ["boxplot", "violinplot", "stripplot", "swarmplot", "lvplot",
-           "pointplot", "barplot", "countplot", "factorplot"]
+__all__ = [
+    "catplot", "factorplot",
+    "stripplot", "swarmplot",
+    "boxplot", "violinplot", "boxenplot", "lvplot",
+    "pointplot", "barplot", "countplot",
+]
 
 
 class _CategoricalPlotter(object):
@@ -2205,11 +2209,11 @@ _categorical_docs = dict(
     pointplot : Show point estimates and confidence intervals using scatterplot
                 glyphs.\
     """),
-    factorplot=dedent("""\
-    factorplot : Combine categorical plots and a class:`FacetGrid`.\
+    catplot=dedent("""\
+    catplot : Combine a categorical plot with a class:`FacetGrid`.\
     """),
-    lvplot=dedent("""\
-    lvplot : An extension of the boxplot for long-tailed and large data sets.
+    boxenplot=dedent("""\
+    boxenplot : An enhanced boxplot for larger datasets.\
     """),
 
     )
@@ -2355,18 +2359,18 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
-    Use :func:`factorplot` to combine a :func:`pointplot` and a
+    Use :func:`catplot` to combine a :func:`pointplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="box",
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="box",
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2582,24 +2586,187 @@ violinplot.__doc__ = dedent("""\
         >>> ax = sns.violinplot(x="day", y="total_bill", hue="weekend",
         ...                     data=tips, dodge=False)
 
-    Use :func:`factorplot` to combine a :func:`violinplot` and a
+    Use :func:`catplot` to combine a :func:`violinplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="violin", split=True,
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="violin", split=True,
+        ...                 height=4, aspect=.7);
+
+    """).format(**_categorical_docs)
+
+
+def lvplot(*args, **kwargs):
+    """Deprecated; please use `boxenplot`."""
+
+    msg = (
+        "The `lvplot` function has been renamed to `boxenplot`. The original "
+        "name will be removed in a future release. Please update your code. "
+    )
+    warnings.warn(msg)
+
+    return boxenplot(*args, **kwargs)
+
+
+def boxenplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
+              orient=None, color=None, palette=None, saturation=.75,
+              width=.8, dodge=True, k_depth='proportion', linewidth=None,
+              scale='exponential', outlier_prop=None, ax=None, **kwargs):
+
+    plotter = _LVPlotter(x, y, hue, data, order, hue_order,
+                         orient, color, palette, saturation,
+                         width, dodge, k_depth, linewidth, scale,
+                         outlier_prop)
+
+    if ax is None:
+        ax = plt.gca()
+
+    plotter.plot(ax, kwargs)
+    return ax
+
+
+boxenplot.__doc__ = dedent("""\
+    Draw an enhanced box plot for larger datasets.
+
+    This style of plot was originally named a "letter value" plot because it
+    shows a large number of quantiles that are defined as "letter values".  It
+    is similar to a box plot in plotting a nonparametric representation of a
+    distribution in which all features correspond to actual observations. By
+    plotting more quantiles, it provides more information about the shape of
+    the distribution, particularly in the tails. For a more extensive
+    explanation, you can read the paper that introduced the plot:
+
+    https://vita.had.co.nz/papers/letter-value-plot.html
+
+    {main_api_narrative}
+
+    {categorical_narrative}
+
+    Parameters
+    ----------
+    {input_params}
+    {categorical_data}
+    {order_vars}
+    {orient}
+    {color}
+    {palette}
+    {saturation}
+    {width}
+    {dodge}
+    k_depth : "proportion" | "tukey" | "trustworthy", optional
+        The number of boxes, and by extension number of percentiles, to draw.
+        All methods are detailed in Wickham's paper. Each makes different
+        assumptions about the number of outliers and leverages different
+        statistical properties.
+    {linewidth}
+    scale : "linear" | "exponential" | "area"
+        Method to use for the width of the letter value boxes. All give similar
+        results visually. "linear" reduces the width by a constant linear
+        factor, "exponential" uses the proportion of data not covered, "area"
+        is proportional to the percentage of data covered.
+    outlier_prop : float, optional
+        Proportion of data believed to be outliers. Used in conjunction with
+        k_depth to determine the number of percentiles to draw. Defaults to
+        0.007 as a proportion of outliers. Should be in range [0, 1].
+    {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.plot`` and
+        ``plt.scatter`` at draw time.
+
+    Returns
+    -------
+    {ax_out}
+
+    See Also
+    --------
+    {violinplot}
+    {boxplot}
+
+    Examples
+    --------
+
+    Draw a single horizontal boxen plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set(style="whitegrid")
+        >>> tips = sns.load_dataset("tips")
+        >>> ax = sns.boxenplot(x=tips["total_bill"])
+
+    Draw a vertical boxen plot grouped by a categorical variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
+
+    Draw a letter value plot with nested grouping by two categorical variables:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxenplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set3")
+
+    Draw a boxen plot with nested grouping when some bins are empty:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxenplot(x="day", y="total_bill", hue="time",
+        ...                    data=tips, linewidth=2.5)
+
+    Control box order by passing an explicit order:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxenplot(x="time", y="tip", data=tips,
+        ...                    order=["Dinner", "Lunch"])
+
+    Draw a boxen plot for each numeric variable in a DataFrame:
+
+    .. plot::
+        :context: close-figs
+
+        >>> iris = sns.load_dataset("iris")
+        >>> ax = sns.boxenplot(data=iris, orient="h", palette="Set2")
+
+    Use :func:`stripplot` to show the datapoints on top of the boxes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
+        ...                    size=4, jitter=True, color="gray")
+
+    Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
+    This allows grouping within additional categorical variables. Using
+    :func:`catplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of variable order across facets:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="boxen",
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
 
 def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=False, dodge=False, orient=None, color=None, palette=None,
+              jitter=True, dodge=False, orient=None, color=None, palette=None,
               size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
 
     if "split" in kwargs:
@@ -2780,19 +2947,19 @@ stripplot.__doc__ = dedent("""\
         ...                     inner=None, color=".8")
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
 
-    Use :func:`factorplot` to combine a :func:`stripplot` and a
+    Use :func:`catplot` to combine a :func:`stripplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="strip",
-        ...                    jitter=True,
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="strip",
+        ...                 jitter=True,
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -2878,7 +3045,7 @@ swarmplot.__doc__ = dedent("""\
     {boxplot}
     {violinplot}
     {stripplot}
-    {factorplot}
+    {catplot}
 
     Examples
     --------
@@ -2954,18 +3121,18 @@ swarmplot.__doc__ = dedent("""\
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips,
         ...                    color="white", edgecolor="gray")
 
-    Use :func:`factorplot` to combine a :func:`swarmplot` and a
+    Use :func:`catplot` to combine a :func:`swarmplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="swarm",
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="swarm",
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3040,7 +3207,7 @@ barplot.__doc__ = dedent("""\
     --------
     {countplot}
     {pointplot}
-    {factorplot}
+    {catplot}
 
     Examples
     --------
@@ -3140,18 +3307,18 @@ barplot.__doc__ = dedent("""\
         ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
         ...                  errcolor=".2", edgecolor=".2")
 
-    Use :func:`factorplot` to combine a :func:`barplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
+    Use :func:`catplot` to combine a :func:`barplot` and a :class:`FacetGrid`.
+    This allows grouping within additional categorical variables. Using
+    :func:`catplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="bar",
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="bar",
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3232,7 +3399,7 @@ pointplot.__doc__ = dedent("""\
     See Also
     --------
     {barplot}
-    {factorplot}
+    {catplot}
 
     Examples
     --------
@@ -3340,19 +3507,19 @@ pointplot.__doc__ = dedent("""\
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
 
-    Use :func:`factorplot` to combine a :func:`barplot` and a
+    Use :func:`catplot` to combine a :func:`barplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="point",
-        ...                    dodge=True,
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="sex", y="total_bill",
+        ...                 hue="smoker", col="time",
+        ...                 data=tips, kind="point",
+        ...                 dodge=True,
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
@@ -3426,7 +3593,7 @@ countplot.__doc__ = dedent("""\
     See Also
     --------
     {barplot}
-    {factorplot}
+    {catplot}
 
     Examples
     --------
@@ -3472,28 +3639,50 @@ countplot.__doc__ = dedent("""\
         ...                    linewidth=5,
         ...                    edgecolor=sns.color_palette("dark", 3))
 
-    Use :func:`factorplot` to combine a :func:`countplot` and a
+    Use :func:`catplot` to combine a :func:`countplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
+    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="class", hue="who", col="survived",
-        ...                    data=titanic, kind="count",
-        ...                    height=6, aspect=.7);
+        >>> g = sns.catplot(x="class", hue="who", col="survived",
+        ...                 data=titanic, kind="count",
+        ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
 
 
-def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
-               col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
-               units=None, order=None, hue_order=None, row_order=None,
-               col_order=None, kind="point", height=5, aspect=1,
-               orient=None, color=None, palette=None,
-               legend=True, legend_out=True, sharex=True, sharey=True,
-               margin_titles=False, facet_kws=None, **kwargs):
+def factorplot(*args, **kwargs):
+    """Deprecated; please use `catplot` instead."""
+
+    msg = (
+        "The `factorplot` function has been renamed to `catplot`. The "
+        "original name will be removed in a future release. Please update "
+        "your code. Note that the default `kind` in `factorplot` (`'point'`) "
+        "has changed `'strip'` in `catplot`."
+    )
+    warnings.warn(msg)
+
+    if "size" in kwargs:
+        kwargs["height"] = kwargs.pop("size")
+        msg = ("The `size` paramter has been renamed to `height`; "
+               "please update your code.")
+        warnings.warn(msg, UserWarning)
+
+    kwargs.setdefault("kind", "point")
+
+    return catplot(*args, **kwargs)
+
+
+def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
+            col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
+            units=None, order=None, hue_order=None, row_order=None,
+            col_order=None, kind="strip", height=5, aspect=1,
+            orient=None, color=None, palette=None,
+            legend=True, legend_out=True, sharex=True, sharey=True,
+            margin_titles=False, facet_kws=None, **kwargs):
 
     # Handle deprecations
     if "size" in kwargs:
@@ -3579,15 +3768,35 @@ def factorplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     return g
 
 
-factorplot.__doc__ = dedent("""\
-    Figure-level function for drawing categorical plots onto a FacetGrid.
+catplot.__doc__ = dedent("""\
+    Figure-level interface for drawing categorical plots onto a FacetGrid.
 
-    The default plot that is shown is a point plot, but other seaborn
-    categorical plots can be chosen with the ``kind`` parameter, including
-    box plots, violin plots, lv plots, bar plots, count plots, strip plots,
-    or swarm plots.
+    This function provides access to several axes-level functions that
+    show the relationship between a numerical and one or more categorical
+    variables using one of several visual representations. The ``kind``
+    parameter selects the underlying axes-level function to use:
 
-    Unlike when using the underlying plotting functions directly, data must be
+    Categorical scatterplots:
+
+    - :func:`stripplot` (with ``kind="strip"``; the default)
+    - :func:`swarmplot` (with ``kind="swarm"``)
+
+    Categorical distribution plots:
+
+    - :func:`boxplot` (with ``kind="box"``)
+    - :func:`violinplot` (with ``kind="violin"``)
+    - :func:`boxenplot` (with ``kind="boxen"``)
+
+    Categorical estimate plots:
+
+    - :func:`pointplot` (with ``kind="point"``)
+    - :func:`barplot` (with ``kind="bar"``)
+    - :func:`countplot` (with ``kind="count"``)
+
+    Extra keyword arguments are passed to the underlying function, so you
+    should refer to the documentation for each to see kind-specific options.
+
+    Note that unlike when using the axes-level functions directly, data must be
     passed in a long-form DataFrame with variables specified by passing strings
     to ``x``, ``y``, ``hue``, etc.
 
@@ -3617,7 +3826,7 @@ factorplot.__doc__ = dedent("""\
     kind : string, optional
         The kind of plot to draw (corresponds to the name of a categorical
         plotting function. Options are: "point", "bar", "strip", "swarm",
-        "box", "violin", or "lv".
+        "box", "violin", or "boxen".
     {height}
     {aspect}
     {orient}
@@ -3651,32 +3860,32 @@ factorplot.__doc__ = dedent("""\
         >>> import seaborn as sns
         >>> sns.set(style="ticks")
         >>> exercise = sns.load_dataset("exercise")
-        >>> g = sns.factorplot(x="time", y="pulse", hue="kind", data=exercise)
+        >>> g = sns.catplot(x="time", y="pulse", hue="kind", data=exercise)
 
     Use a different plot kind to visualize the same data:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
-        ...                    data=exercise, kind="violin")
+        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
+        ...                data=exercise, kind="violin")
 
     Facet along the columns to show a third categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
-        ...                    col="diet", data=exercise)
+        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
+        ...                 col="diet", data=exercise)
 
     Use a different height and aspect ratio for the facets:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="time", y="pulse", hue="kind",
-        ...                    col="diet", data=exercise,
-        ...                    height=5, aspect=.8)
+        >>> g = sns.catplot(x="time", y="pulse", hue="kind",
+        ...                 col="diet", data=exercise,
+        ...                 height=5, aspect=.8)
 
     Make many column facets and wrap them into the rows of the grid:
 
@@ -3684,182 +3893,34 @@ factorplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> titanic = sns.load_dataset("titanic")
-        >>> g = sns.factorplot("alive", col="deck", col_wrap=4,
-        ...                    data=titanic[titanic.deck.notnull()],
-        ...                    kind="count", height=2.5, aspect=.8)
+        >>> g = sns.catplot("alive", col="deck", col_wrap=4,
+        ...                 data=titanic[titanic.deck.notnull()],
+        ...                 kind="count", height=2.5, aspect=.8)
 
     Plot horizontally and pass other keyword arguments to the plot function:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="age", y="embark_town",
-        ...                    hue="sex", row="class",
-        ...                    data=titanic[titanic.embark_town.notnull()],
-        ...                    orient="h", height=2, aspect=3, palette="Set3",
-        ...                    kind="violin", dodge=True, cut=0, bw=.2)
+        >>> g = sns.catplot(x="age", y="embark_town",
+        ...                 hue="sex", row="class",
+        ...                 data=titanic[titanic.embark_town.notnull()],
+        ...                 orient="h", height=2, aspect=3, palette="Set3",
+        ...                 kind="violin", dodge=True, cut=0, bw=.2)
 
     Use methods on the returned :class:`FacetGrid` to tweak the presentation:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.factorplot(x="who", y="survived", col="class",
-        ...                    data=titanic, saturation=.5,
-        ...                    kind="bar", ci=None, aspect=.6)
+        >>> g = sns.catplot(x="who", y="survived", col="class",
+        ...                 data=titanic, saturation=.5,
+        ...                 kind="bar", ci=None, aspect=.6)
         >>> (g.set_axis_labels("", "Survival Rate")
         ...   .set_xticklabels(["Men", "Women", "Children"])
         ...   .set_titles("{{col_name}} {{col_var}}")
         ...   .set(ylim=(0, 1))
         ...   .despine(left=True))  #doctest: +ELLIPSIS
         <seaborn.axisgrid.FacetGrid object at 0x...>
-
-    """).format(**_categorical_docs)
-
-
-def lvplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-           orient=None, color=None, palette=None, saturation=.75,
-           width=.8, dodge=True, k_depth='proportion', linewidth=None,
-           scale='exponential', outlier_prop=None, ax=None, **kwargs):
-
-    plotter = _LVPlotter(x, y, hue, data, order, hue_order,
-                         orient, color, palette, saturation,
-                         width, dodge, k_depth, linewidth, scale, outlier_prop)
-
-    if ax is None:
-        ax = plt.gca()
-
-    plotter.plot(ax, kwargs)
-    return ax
-
-
-lvplot.__doc__ = dedent("""\
-    Draw a letter value plot to show distributions of large datasets.
-
-    Letter value (LV) plots are non-parametric estimates of the distribution of
-    a dataset, similar to boxplots. LV plots are also similar to violin plots
-    but without the need to fit a kernel density estimate. Thus, LV plots are
-    fast to generate, directly interpretable in terms of the distribution of
-    data, and easy to understand. For a more extensive explanation of letter
-    value plots and their properties, see Hadley Wickham's excellent paper on
-    the topic: https://vita.had.co.nz/papers/letter-value-plot.html
-
-    {main_api_narrative}
-
-    {categorical_narrative}
-
-    Parameters
-    ----------
-    {input_params}
-    {categorical_data}
-    {order_vars}
-    {orient}
-    {color}
-    {palette}
-    {saturation}
-    {width}
-    {dodge}
-    k_depth : "proportion" | "tukey" | "trustworthy", optional
-        The number of boxes, and by extension number of percentiles, to draw.
-        All methods are detailed in Wickham's paper. Each makes different
-        assumptions about the number of outliers and leverages different
-        statistical properties.
-    {linewidth}
-    scale : "linear" | "exponential" | "area"
-        Method to use for the width of the letter value boxes. All give similar
-        results visually. "linear" reduces the width by a constant linear
-        factor, "exponential" uses the proportion of data not covered, "area"
-        is proportional to the percentage of data covered.
-    outlier_prop : float, optional
-        Proportion of data believed to be outliers. Used in conjunction with
-        k_depth to determine the number of percentiles to draw. Defaults to
-        0.007 as a proportion of outliers. Should be in range [0, 1].
-    {ax_in}
-    kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.plot`` and
-        ``plt.scatter`` at draw time.
-
-    Returns
-    -------
-    {ax_out}
-
-    See Also
-    --------
-    {violinplot}
-    {boxplot}
-
-    Examples
-    --------
-
-    Draw a single horizontal letter value plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.lvplot(x=tips["total_bill"])
-
-    Draw a vertical letter value plot grouped by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
-
-    Draw a letter value plot with nested grouping by two categorical variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="day", y="total_bill", hue="smoker",
-        ...                 data=tips, palette="Set3")
-
-    Draw a letter value plot with nested grouping when some bins are empty:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="day", y="total_bill", hue="time",
-        ...                 data=tips, linewidth=2.5)
-
-    Control box order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="time", y="tip", data=tips,
-        ...                 order=["Dinner", "Lunch"])
-
-    Draw a letter value plot for each numeric variable in a DataFrame:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> ax = sns.lvplot(data=iris, orient="h", palette="Set2")
-
-    Use :func:`stripplot` to show the datapoints on top of the boxes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.lvplot(x="day", y="total_bill", data=tips)
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, color="gray")
-
-    Use :func:`factorplot` to combine a :func:`lvplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`factorplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.factorplot(x="sex", y="total_bill",
-        ...                    hue="smoker", col="time",
-        ...                    data=tips, kind="lv",
-        ...                    height=4, aspect=.7);
 
     """).format(**_categorical_docs)

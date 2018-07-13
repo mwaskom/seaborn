@@ -25,12 +25,12 @@ Categorical plots
 .. autosummary::
     :toctree: generated/
 
-    factorplot
+    catplot
     stripplot
     swarmplot
     boxplot
     violinplot
-    lvplot
+    boxenplot
     pointplot
     barplot
     countplot
