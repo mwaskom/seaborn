@@ -1672,7 +1672,7 @@ class _PointPlotter(_CategoricalStatPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  estimator, ci, n_boot, units,
                  markers, linestyles, dodge, join, scale,
-                 orient, color, palette, errwidth=None, capsize=None):
+                 orient, color, palette, errwidth=None, capsize=None, label=None):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
@@ -1702,6 +1702,7 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.linestyles = linestyles
 
         # Set the other plot components
+        self.label = label
         self.dodge = dodge
         self.join = join
         self.scale = scale
@@ -1736,10 +1737,10 @@ class _PointPlotter(_CategoricalStatPlotter):
                 ls = self.linestyles[0]
                 if self.orient == "h":
                     ax.plot(self.statistic, pointpos,
-                            color=color, ls=ls, lw=lw)
+                            color=color, ls=ls, lw=lw, label=self.label)
                 else:
                     ax.plot(pointpos, self.statistic,
-                            color=color, ls=ls, lw=lw)
+                            color=color, ls=ls, lw=lw, label=self.label)
 
             # Draw the confidence intervals
             self.draw_confints(ax, pointpos, self.confint, self.colors,
@@ -1812,6 +1813,8 @@ class _PointPlotter(_CategoricalStatPlotter):
         self.annotate_axes(ax)
         if self.orient == "h":
             ax.invert_yaxis()
+        if self.label is not None:
+            ax.legend(loc=1)
 
 
 class _LVPlotter(_CategoricalPlotter):
@@ -3327,12 +3330,12 @@ def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               estimator=np.mean, ci=95, n_boot=1000, units=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
               orient=None, color=None, palette=None, errwidth=None,
-              capsize=None, ax=None, **kwargs):
+              capsize=None, ax=None, label=None, **kwargs):
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units,
                             markers, linestyles, dodge, join, scale,
-                            orient, color, palette, errwidth, capsize)
+                            orient, color, palette, errwidth, capsize, label)
 
     if ax is None:
         ax = plt.gca()
