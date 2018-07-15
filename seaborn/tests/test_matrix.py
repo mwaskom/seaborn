@@ -934,11 +934,11 @@ class TestClustermap(object):
 
         row_colors = pd.DataFrame({'row_annot': list(self.row_colors)},
                                   index=self.df_norm.index)
-        kws['row_colors'] = row_colors.ix[shuffled_inds]
+        kws['row_colors'] = row_colors.loc[shuffled_inds]
 
         col_colors = pd.DataFrame({'col_annot': list(self.col_colors)},
                                   index=self.df_norm.columns)
-        kws['col_colors'] = col_colors.ix[shuffled_cols]
+        kws['col_colors'] = col_colors.loc[shuffled_cols]
 
         cm = mat.clustermap(self.df_norm, **kws)
         nt.assert_equal(list(cm.col_colors)[0], list(self.col_colors))
@@ -1022,11 +1022,11 @@ class TestClustermap(object):
 
         row_colors = pd.Series(list(self.row_colors), name='row_annot',
                                index=self.df_norm.index)
-        kws['row_colors'] = row_colors.ix[shuffled_inds]
+        kws['row_colors'] = row_colors.loc[shuffled_inds]
 
         col_colors = pd.Series(list(self.col_colors), name='col_annot',
                                index=self.df_norm.columns)
-        kws['col_colors'] = col_colors.ix[shuffled_cols]
+        kws['col_colors'] = col_colors.loc[shuffled_cols]
 
         cm = mat.clustermap(self.df_norm, **kws)
 
@@ -1070,7 +1070,7 @@ class TestClustermap(object):
         kws = self.default_kws.copy()
         xtl = np.arange(self.df_norm.shape[1])
         kws["xticklabels"] = list(xtl)
-        ytl = self.letters.ix[:self.df_norm.shape[0]]
+        ytl = self.letters.loc[:self.df_norm.shape[0]]
         kws["yticklabels"] = ytl
 
         g = mat.clustermap(self.df_norm, **kws)
