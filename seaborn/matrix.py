@@ -820,9 +820,9 @@ class ClusterGrid(Grid):
             if isinstance(colors, (pd.DataFrame, pd.Series)):
                 # Ensure colors match data indices
                 if axis == 0:
-                    colors = colors.ix[data.index]
+                    colors = colors.loc[data.index]
                 else:
-                    colors = colors.ix[data.columns]
+                    colors = colors[data.columns]
 
                 # Replace na's with background color
                 # TODO We should set these to transparent instead
