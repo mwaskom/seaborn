@@ -822,7 +822,7 @@ class ClusterGrid(Grid):
                 if axis == 0:
                     colors = colors.loc[data.index]
                 else:
-                    colors = colors[data.columns]
+                    colors = colors.loc[data.columns]
 
                 # Replace na's with background color
                 # TODO We should set these to transparent instead
