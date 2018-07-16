@@ -2,7 +2,8 @@ import nose.tools as nt
 import matplotlib.pyplot as plt
 
 from .. import miscplot as misc
-from seaborn import color_palette
+from ..palettes import color_palette
+from ..utils import _network
 
 
 class TestPalPlot(object):
@@ -23,3 +24,12 @@ class TestPalPlot(object):
         misc.palplot(palbig, 2)
         sizebig = plt.gcf().get_size_inches()
         nt.assert_equal(tuple(sizebig), (6, 2))
+
+
+class TestDogPlot(object):
+
+    @_network(url="https://github.com/mwaskom/seaborn-data")
+    def test_dogplot(self):
+        misc.dogplot()
+        ax = plt.gca()
+        assert len(ax.images) == 1
