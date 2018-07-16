@@ -4,20 +4,22 @@ v0.9.0 (July 2018)
 
 TODO add Zenodo badge
 
-This is a major release with several substantial and long-desired new features. There are also updates/modifications to the themes and color palettes that give better consistency with matplotlib 2.0 and some relatively large API changes that are important to be aware of.
+This is a major release with several substantial and long-desired new features. There are also updates/modifications to the themes and color palettes that give better consistency with matplotlib 2.0 and some notable API changes.
 
 New relational plots
 ~~~~~~~~~~~~~~~~~~~~
 
 Three completely new plotting functions have been added: :func:`catplot`, :func:`scatterplot`, and :func:`lineplot`. The first is a figure-level interface to the latter two that combines them with a :class:`FacetGrid`. The functions bring the high-level, dataset-oriented API of the seaborn categorical plotting functions to more general plots (scatter plots and line plots).
 
-These functions can visualize a relationship between two numeric variables while mapping up to three additional variables by modifying ``hue``, ``size``, and/or ``style semantics. The common high-level API is implemented differently in the two functions. For example, the size semantic scales the area of scatter plot points but the width of the line plot lines. But in both cases the API is dataset-oriented, meaning that you specify the name of a variable in your dataset rather than directly specifying the matplotlib parameters to use for point area or line width.
+These functions can visualize a relationship between two numeric variables while mapping up to three additional variables by modifying ``hue``, ``size``, and/or ``style`` semantics. The common high-level API is implemented differently in the two functions. For example, the size semantic in :func:`scatterplot` scales the area of scatter plot points, but in :func:`lineplot` it scales width of the line plot lines. The API is dataset-oriented, meaning that in both cases you pass the variable in your dataset rather than directly specifying the matplotlib parameters to use for point area or line width.
 
-The :func:`lineplot` function also has support for statistical estimation and is replacing the older ``tsplot`` function, which still exists but is marked for removal in a future release. :func:`lineplot` is better aligned with the API of the rest of the library and more flexible in showing relationships across additional variables by modifying the size and style semantics independently. It also has substantially improved support for date and time data, a major pain factor in ``tsplot``. The cost is that some of the more esoteric options in ``tsplot`` for representing uncertainty (e.g. a colormapped KDE of the bootstrap distribution) were not implemented in the new function, and most likely will not be.
+Another way the relational functions differ from existing seaborn functionality is that they have better support for using numeric variables for ``hue`` and ``size`` semantics. This functionality may be propagated to other functions that can add a ``hue`` semantic in future versions; it has not been in this release.
+
+The :func:`lineplot` function also has support for statistical estimation and is replacing the older ``tsplot`` function, which still exists but is marked for removal in a future release. :func:`lineplot` is better aligned with the API of the rest of the library and more flexible in showing relationships across additional variables by modifying the size and style semantics independently. It also has substantially improved support for date and time data, a major pain factor in ``tsplot``. The cost is that some of the more esoteric options in ``tsplot`` for representing uncertainty (e.g. a colormapped KDE of the bootstrap distribution) have not been implemented in the new function.
 
 There is quite a bit of new documentation that explains these new functions in more detail, including detailed examples of the various options in the :ref:`API reference <relational_api>` and a more verbose :ref:`tutorial <relational_tutorial>`.
 
-These functions should be considered beta versions. They have been thoroughly tested, but some unknown corner cases may remain to be found. The main features are in place but not all planned functionality has been implemented. Finally, some of the default behavior may change somewhat in future releases.
+These functions should be considered in a "stable beta" state. They have been thoroughly tested, but some unknown corner cases may remain to be found. The main features are in place, but not all planned functionality has been implemented. There are planned improvements to some elements, particularly the default legend, that are a little rough around the edges in this release. Finally, some of the default behavior (e.g. the default range of point/line sizes) may change somewhat in future releases.
 
 Updates to themes and palettes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,7 +32,7 @@ Several changes have been made to the seaborn style themes, context scaling, and
 
 - Calling :func:`color_palette` (or :func:`set_palette`) with a named qualitative palettes (i.e. one of the seaborn palettes, the colorbrewer qualitative palettes, or the matplotlib matplotlib tableau-derived palettes) and no specified number of colors will return all of the colors in the palette. This means that for some palettes, the returned list will have a different length than it did in previous versions.
 
-- Enhanced :func:`color_palette` to accept a parameterized specification of a cubehelix palette in in a string, prefixed with ``"ch:"`` (e.g. ``"ch:-.1,.2,l=.7"``). None that keyword arguments can be spelled out or referenced using only their first letter, except reversing the palette is accomplished by appending ``"_r"`` as with other matplotlib colormaps. This specification will be accepted by any seaborn function with a ``palette=`` parameter.
+- Enhanced :func:`color_palette` to accept a parameterized specification of a cubehelix palette in in a string, prefixed with ``"ch:"`` (e.g. ``"ch:-.1,.2,l=.7"``). Note that keyword arguments can be spelled out or referenced using only their first letter. Reversing the palette is accomplished by appending ``"_r"``, as with other matplotlib colormaps. This specification will be accepted by any seaborn function with a ``palette=`` parameter.
 
 - Slightly increased the base font sizes in :func:`plotting_context` and increased the scaling factors for ``"talk"`` and ``"poster"`` contexts.
 
@@ -45,9 +47,9 @@ A few functions have been renamed or have had changes to their default parameter
 
 - The other reason that the ``factorplot`` name was changed was to ease another alteration which is that the default ``kind`` in :func:`catplot` is now ``"strip"`` (corresponding to :func:`stripplot`). This plots a categorical scatter plot which is usually a much better place to start and is more consistent with the default in :func:`relplot`. The old default style in ``factorplot`` (``"point"``, corresponding to :func:`pointplot`) remains available if you want to show a statistical estimation.
 
-- The ``lvplot`` function has been renamed to :func:`boxenplot`. The "letter-value" terminology that was used to name the original kind of plot is obscure, and the abbreviation to ``lv`` did not help anything. The new name should make the plot more discoverable by describing its format ("boxen" is the plural of "box"). As with ``factorplot``, the ``lvplot`` function still exists to provide a relatively smooth transition.
+- The ``lvplot`` function has been renamed to :func:`boxenplot`. The "letter-value" terminology that was used to name the original kind of plot is obscure, and the abbreviation to ``lv`` did not help anything. The new name should make the plot more discoverable by describing its format (it plots multiple boxes, also known as "boxen"). As with ``factorplot``, the ``lvplot`` function still exists to provide a relatively smooth transition.
 
-- Renamed the ``size`` parameter to ``height`` in multiplot grid objects (:class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid`) along with functions that use them (``factorplot``, :func:`lmplot`, :func:`pairplot`, and :func:`jointplot`) to avoid conflicts with the ``size`` parameter that is used in ``scatterplot`` and ``lineplot`` (necessary to make :func:`relplot` work) and also makes the meaning of the parameter a bit more clear.
+- Renamed the ``size`` parameter to ``height`` in multi-plot grid objects (:class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid`) along with functions that use them (``factorplot``, :func:`lmplot`, :func:`pairplot`, and :func:`jointplot`) to avoid conflicts with the ``size`` parameter that is used in ``scatterplot`` and ``lineplot`` (necessary to make :func:`relplot` work) and also makes the meaning of the parameter a bit more clear.
 
 - Changed the default diagonal plots in :func:`pairplot` to use `func`:kdeplot` when a ``"hue"`` dimension is used.
 
@@ -58,26 +60,26 @@ A few functions have been renamed or have had changes to their default parameter
 Documentation improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There has been effort put into improving the documentation. The biggest change is that the :ref:`introduction to the library <introduction>` has been completely rewritten to provide much more information and, critically, examples. In addition to the high-level motivation, the introduction also covers some important topics that are often sources of confusion, like the distinction between figure-level and axes-level functions, how datasets should be formatted for use in seaborn, and how to customize the appearance of the plots.
+There has been some effort put into improving the documentation. The biggest change is that the :ref:`introduction to the library <introduction>` has been completely rewritten to provide much more information and, critically, examples. In addition to the high-level motivation, the introduction also covers some important topics that are often sources of confusion, like the distinction between figure-level and axes-level functions, how datasets should be formatted for use in seaborn, and how to customize the appearance of the plots.
 
 Other improvements have been made throughout, most notably a thorough re-write of the :ref:`categorical tutorial <categorical_tutorial>`.
 
 Other small enhancements and bug fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Fixed :func:`jointplot`/:class:`JointGrid` and :func:`regplot` so that they now accept list inputs.
-
-- Fixed a bug in :class:`FacetGrid` when using a single row/column level or using ``col_wrap=1``.
-
 - Changed :func:`rugplot` to plot a matplotlib ``LineCollection`` instead of many ``Line2D`` objects, providing a big speedup for large arrays.
 
-- Added the ``subplot_kws`` parameter to :class:`PairGrid` for more flexibility.
-
-- Changed the default off-diagonal plots to use :func:`scatterplot`. (Note that the ``"hue"`` currently draws three separate scatterplots instead of using the hue semantic of the scatterplot function.
+- Changed the default off-diagonal plots to use :func:`scatterplot`. (Note that the ``"hue"`` currently draws three separate scatterplots instead of using the hue semantic of the scatterplot function).
 
 - Changed color handling when using :func:`kdeplot` with two variables. The default colormap for the 2D density now follows the color cycle, and the function can use ``color`` and ``label`` kwargs, adding more flexibility and avoiding a warning when using with multi-plot grids.
 
+- Added the ``subplot_kws`` parameter to :class:`PairGrid` for more flexibility.
+
 - Removed a special case in :class:`PairGrid` that defaulted to drawing stacked histograms on the diagonal axes.
+
+- Fixed :func:`jointplot`/:class:`JointGrid` and :func:`regplot` so that they now accept list inputs.
+
+- Fixed a bug in :class:`FacetGrid` when using a single row/column level or using ``col_wrap=1``.
 
 - Fixed functions that set axis limits so that they preserve auto-scaling state on matplotlib 2.0.
 
