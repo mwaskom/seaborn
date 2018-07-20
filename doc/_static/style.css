@@ -64,7 +64,7 @@ ul.dropdown-menu {
 *[id]:before { 
   display: block; 
   content: " "; 
-  margin-top: -75px; 
-  height: 75px; 
+  margin-top: -60px; 
+  height: 60px; 
   visibility: hidden; 
 }
