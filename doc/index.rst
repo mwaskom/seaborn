@@ -72,8 +72,8 @@ attractive and informative statistical graphics.
 For a brief introduction to the ideas behind the library, you can read the
 :doc:`introductory notes <introduction>`. Visit the :doc:`installation page
 <installing>` to see how you can download the package. You can browse the
-:ref:`example gallery <example_gallery>` to see what you can do with seaborn,
-and then check out the :ref:`tutorial <tutorial>` and :doc:`API reference
+:doc:`example gallery <examples/index>` to see what you can do with seaborn,
+and then check out the :doc:`tutorial <tutorial>` and :doc:`API reference
 <api>` to find out how.
 
 To see the code or report a bug, please visit the `github repository
@@ -112,13 +112,13 @@ To see the code or report a bug, please visit the `github repository
        </div>
        <div class="panel-body">
 
-* Relational: :ref:`API <relational_api>` | :ref:`Tutorial <relational_tutorial>`
-* Categorical: :ref:`API <categorical_api>` | :ref:`Tutorial <categorical_tutorial>`
-* Distributions: :ref:`API <distribution_api>` | :ref:`Tutorial <distribution_tutorial>`
-* Regressions: :ref:`API <regression_api>` | :ref:`Tutorial <regression_tutorial>`
-* Multiples: :ref:`API <grid_api>` | :ref:`Tutorial <grid_tutorial>`
-* Style: :ref:`API <style_api>` | :ref:`Tutorial <aesthetics_tutorial>`
-* Color: :ref:`API <palette_api>` | :ref:`Tutorial <palette_tutorial>`
+* Relational: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
+* Categorical: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
+* Distributions: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
+* Regressions: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
+* Multiples: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
+* Style: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
+* Color: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`
  
 .. raw:: html
 
