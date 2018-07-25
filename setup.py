@@ -1,25 +1,23 @@
 #! /usr/bin/env python
 #
 # Copyright (C) 2012-2018 Michael Waskom
-import os
-# temporarily redirect config directory to prevent matplotlib importing
-# testing that for writeable directory which results in sandbox error in
-# certain easy_install versions
-os.environ["MPLCONFIGDIR"] = "."
 
 DESCRIPTION = "seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
-Seaborn is a library for making attractive and informative statistical graphics in Python. It is built on top of matplotlib and tightly integrated with the PyData stack, including support for numpy and pandas data structures and statistical routines from scipy and statsmodels.
+Seaborn is a library for making statistical graphics in Python. It is built on top of `matplotlib <https://matplotlib.org/>`_ and closely integrated with `pandas <https://pandas.pydata.org/>`_ data structures.
 
-Some of the features that seaborn offers are
+Here is some of the functionality that seaborn offers:
 
-- Several built-in themes that improve on the default matplotlib aesthetics
-- Tools for choosing color palettes to make beautiful plots that reveal patterns in your data
-- Functions for visualizing univariate and bivariate distributions or for comparing them between subsets of data
-- Tools that fit and visualize linear regression models for different kinds of independent and dependent variables
-- Functions that visualize matrices of data and use clustering algorithms to discover structure in those matrices
-- A function to plot statistical timeseries data with flexible estimation and representation of uncertainty around the estimate
-- High-level abstractions for structuring grids of plots that let you easily build complex visualizations
+- A dataset-oriented API for examining relationships between multiple variables
+- Specialized support for using categorical variables to show observations or aggregate statistics
+- Options for visualizing univariate or bivariate distributions and for comparing them between subsets of data
+- Automatic estimation and plotting of linear regression models for different kinds dependent variables
+- Convenient views onto the overall structure of complex datasets
+- High-level abstractions for structuring multi-plot grids that let you easily build complex visualizations
+- Concise control over matplotlib figure styling with several built-in themes
+- Tools for choosing color palettes that faithfully reveal patterns in your data
+
+Seaborn aims to make visualization a central part of exploring and understanding data. Its dataset-oriented plotting functions operate on dataframes and arrays containing whole datasets and internally perform the necessary semantic mapping and statistical aggregation to produce informative plots.
 """
 
 DISTNAME = 'seaborn'
@@ -28,7 +26,7 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.9.dev'
+VERSION = '0.9.0'
 
 INSTALL_REQUIRES = [
     'numpy>=1.9.3',
@@ -47,9 +45,9 @@ PACKAGES = [
 CLASSIFIERS = [
     'Intended Audience :: Science/Research',
     'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3.4',
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.7',
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',

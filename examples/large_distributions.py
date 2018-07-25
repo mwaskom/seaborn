@@ -6,8 +6,9 @@ Plotting large distributions
 import seaborn as sns
 sns.set(style="whitegrid")
 
-networks = sns.load_dataset("brain_networks", index_col=0, header=[0, 1, 2])
-networks = networks.T.groupby(level="network").mean().T
-order = networks.std().sort_values().index
+diamonds = sns.load_dataset("diamonds")
+clarity_ranking = ["I1", "SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF"]
 
-sns.lvplot(data=networks, order=order, scale="linear", palette="mako")
+sns.boxenplot(x="clarity", y="carat",
+              color="b", order=clarity_ranking,
+              scale="linear", data=diamonds)

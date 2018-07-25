@@ -25,9 +25,33 @@ blockquote {
     margin: 0 0 0px !important;
 }
 
+pre {
+    background-color: #f6f6f9 !important;
+}
+
 code {
     color: #49759c !important;
     background-color: #ffffff !important;
+}
+
+code.descclassname {
+    padding-right: 0px !important;
+}
+
+code.descname {
+    padding-left: 0px !important;
+}
+
+dt:target, span.highlighted {
+    background-color: #ffffff !important;
+}
+
+ul {
+    padding-left: 20px !important;  
+}
+
+ul.dropdown-menu {
+    padding-left: 0px !important;
 }
 
 .alert-info {
@@ -36,9 +60,11 @@ code {
     color: #2c3e50 !important;
 }
 
-.function dt {
-    padding-top: 150px;
-    margin-top: -150px;
-    -webkit-background-clip: content-box;
-    background-clip: content-box;
+/* From https://github.com/twbs/bootstrap/issues/1768 */
+*[id]:before { 
+  display: block; 
+  content: " "; 
+  margin-top: -75px; 
+  height: 75px; 
+  visibility: hidden; 
 }

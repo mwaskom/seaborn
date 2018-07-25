@@ -50,7 +50,7 @@ The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [exampl
 Dependencies
 ------------
 
-Seaborn supports Python 2.7 and 3.4+.
+Seaborn supports Python 2.7 and 3.5+.
 
 Installation requires [numpy](http://www.numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
 

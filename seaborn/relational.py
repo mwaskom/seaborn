@@ -15,12 +15,13 @@ from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
                     remove_na)
 from .algorithms import bootstrap
 from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
+from .axisgrid import FacetGrid, _facet_docs
 
 
-__all__ = ["lineplot", "scatterplot"]
+__all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _BasicPlotter(object):
+class _RelationalPlotter(object):
 
     if LooseVersion(mpl.__version__) >= "2.0":
         default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
@@ -173,8 +174,8 @@ class _BasicPlotter(object):
 
         # Determine which semantics have (some) data
         plot_valid = plot_data.notnull().any()
-        semantics = [
-            name for name in ["x", "y", "hue", "size", "style"]
+        semantics = ["x", "y"] + [
+            name for name in ["hue", "size", "style"]
             if plot_valid[name]
         ]
 
@@ -398,6 +399,9 @@ class _BasicPlotter(object):
         else:
 
             var_type = self._semantic_type(data)
+
+            # TODO override for list/dict like in parse_hue?
+
             if var_type == "categorical":
                 levels = categorical_order(data, order)
                 numbers = np.arange(1, 1 + len(levels))[::-1]
@@ -546,17 +550,20 @@ class _BasicPlotter(object):
             err = "`legend` must be 'brief', 'full', or False"
             raise ValueError(err)
 
+        legend_kwargs = {}
         keys = []
-        legend_data = {}
+
+        title_kws = dict(color="w", s=0, linewidth=0, marker="", dashes="")
 
         def update(var_name, val_name, **kws):
 
             key = var_name, val_name
-            if key in legend_data:
-                legend_data[key].update(**kws)
+            if key in legend_kwargs:
+                legend_kwargs[key].update(**kws)
             else:
                 keys.append(key)
-                legend_data[key] = dict(**kws)
+
+                legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
 
@@ -570,6 +577,11 @@ class _BasicPlotter(object):
         else:
             hue_levels = self.hue_levels
 
+        # Add the hue semantic subtitle
+        if self.hue_label is not None:
+            update((self.hue_label, "title"), self.hue_label, **title_kws)
+
+        # Add the hue semantic labels
         for level in hue_levels:
             if level is not None:
                 color = self.color_lookup(level)
@@ -587,6 +599,11 @@ class _BasicPlotter(object):
         else:
             size_levels = self.size_levels
 
+        # Add the size semantic subtitle
+        if self.size_label is not None:
+            update((self.size_label, "title"), self.size_label, **title_kws)
+
+        # Add the size semantic labels
         for level in size_levels:
             if level is not None:
                 size = self.size_lookup(level)
@@ -594,6 +611,11 @@ class _BasicPlotter(object):
 
         # -- Add a legend for style semantics
 
+        # Add the style semantic title
+        if self.style_label is not None:
+            update((self.style_label, "title"), self.style_label, **title_kws)
+
+        # Add the style semantic labels
         for level in self.style_levels:
             if level is not None:
                 update(self.style_label, level,
@@ -601,18 +623,30 @@ class _BasicPlotter(object):
                        dashes=self.dashes.get(level, ""))
 
         func = getattr(ax, self._legend_func)
+
+        legend_data = {}
+        legend_order = []
+
         for key in keys:
+
             _, label = key
-            kws = legend_data[key]
+            kws = legend_kwargs[key]
             kws.setdefault("color", ".2")
             use_kws = {}
-            for attr in self._legend_attributes:
+            for attr in self._legend_attributes + ["visible"]:
                 if attr in kws:
                     use_kws[attr] = kws[attr]
-            func([], [], label=label, **use_kws)
+            artist = func([], [], label=label, **use_kws)
+            if self._legend_func == "plot":
+                artist = artist[0]
+            legend_data[label] = artist
+            legend_order.append(label)
+
+        self.legend_data = legend_data
+        self.legend_order = legend_order
 
 
-class _LinePlotter(_BasicPlotter):
+class _LinePlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
     _legend_func = "plot"
@@ -799,7 +833,7 @@ class _LinePlotter(_BasicPlotter):
                 ax.legend()
 
 
-class _ScatterPlotter(_BasicPlotter):
+class _ScatterPlotter(_RelationalPlotter):
 
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
@@ -808,7 +842,7 @@ class _ScatterPlotter(_BasicPlotter):
                  x=None, y=None, hue=None, size=None, style=None, data=None,
                  palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_norm=None,
-                 markers=None, style_order=None,
+                 dashes=None, markers=None, style_order=None,
                  x_bins=None, y_bins=None,
                  units=None, estimator=None, ci=None, n_boot=None,
                  alpha=None, x_jitter=None, y_jitter=None,
@@ -852,6 +886,13 @@ class _ScatterPlotter(_BasicPlotter):
         kws.setdefault("linewidth", .75)  # TODO scale with marker size?
         kws.setdefault("edgecolor", "w")
 
+        if self.markers:
+            # Use a representative marker so scatter sets the edgecolor
+            # properly for line art markers. We currently enforce either
+            # all or none line art so this works.
+            example_marker = list(self.markers.values())[0]
+            kws.setdefault("marker", example_marker)
+
         # TODO this makes it impossible to vary alpha with hue which might
         # otherwise be useful? Should we just pass None?
         kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
@@ -891,7 +932,7 @@ class _ScatterPlotter(_BasicPlotter):
                 ax.legend()
 
 
-_basic_docs = dict(
+_relational_docs = dict(
 
     # ---  Introductory prose
     main_api_narrative=dedent("""\
@@ -902,7 +943,9 @@ _basic_docs = dict(
     using all three semantic types, but this style of plot can be hard to
     interpret and is often ineffective. Using redundant semantics (i.e. both
     ``hue`` and ``style`` for the same variable) can be helpful for making
-    graphics more accessible.\
+    graphics more accessible.
+
+    See the :ref:`tutorial <relational_tutorial>` for more information.\
     """),
 
     # --- Shared function parameters
@@ -1014,6 +1057,8 @@ _basic_docs = dict(
 
 
 )
+
+_relational_docs.update(_facet_docs)
 
 
 def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
@@ -1268,7 +1313,7 @@ lineplot.__doc__ = dedent("""\
         >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
 
-    """).format(**_basic_docs)
+    """).format(**_relational_docs)
 
 
 def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
@@ -1465,6 +1510,15 @@ scatterplot.__doc__ = dedent("""\
         ...                      markers=markers,
         ...                      data=tips)
 
+    Control plot attributes using matplotlib parameters:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.scatterplot(x="total_bill", y="tip",
+        ...                      s=100, color=".2", marker="+",
+        ...                      data=tips)
+
     Pass data vectors instead of names in a data frame:
 
     .. plot::
@@ -1486,4 +1540,220 @@ scatterplot.__doc__ = dedent("""\
         >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
         >>> ax = sns.scatterplot(data=wide_df)
 
-    """).format(**_basic_docs)
+    """).format(**_relational_docs)
+
+
+def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
+            row=None, col=None, col_wrap=None, row_order=None, col_order=None,
+            palette=None, hue_order=None, hue_norm=None,
+            sizes=None, size_order=None, size_norm=None,
+            markers=None, dashes=None, style_order=None,
+            legend="brief", kind="scatter",
+            height=5, aspect=1, facet_kws=None, **kwargs):
+
+    if kind == "scatter":
+
+        plotter = _ScatterPlotter
+        func = scatterplot
+        markers = True if markers is None else markers
+
+    elif kind == "line":
+
+        plotter = _LinePlotter
+        func = lineplot
+        dashes = True if dashes is None else dashes
+
+    else:
+        err = "Plot kind {} not recognized".format(kind)
+        raise ValueError(err)
+
+    # Use the full dataset to establish how to draw the semantics
+    p = plotter(
+        x=x, y=y, hue=hue, size=size, style=style, data=data,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
+        markers=markers, dashes=dashes, style_order=style_order,
+        legend=legend,
+    )
+
+    palette = p.palette if p.palette else None
+    hue_order = p.hue_levels if any(p.hue_levels) else None
+    hue_norm = p.hue_norm if p.hue_norm is not None else None
+
+    sizes = p.sizes if p.sizes else None
+    size_order = p.size_levels if any(p.size_levels) else None
+    size_norm = p.size_norm if p.size_norm is not None else None
+
+    markers = p.markers if p.markers else None
+    dashes = p.dashes if p.dashes else None
+    style_order = p.style_levels if any(p.style_levels) else None
+
+    plot_kws = dict(
+        palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=p.size_norm,
+        markers=markers, dashes=dashes, style_order=style_order,
+        legend=False,
+    )
+    plot_kws.update(kwargs)
+    if kind == "scatter":
+        plot_kws.pop("dashes")
+
+    # Set up the FacetGrid object
+    facet_kws = {} if facet_kws is None else facet_kws
+    g = FacetGrid(
+        data=data, row=row, col=col, col_wrap=col_wrap,
+        row_order=row_order, col_order=col_order,
+        height=height, aspect=aspect, dropna=False,
+        **facet_kws
+    )
+
+    # Draw the plot
+    g.map_dataframe(func, x, y,
+                    hue=hue, size=size, style=style,
+                    **plot_kws)
+
+    # Show the legend
+    if legend:
+        p.add_legend_data(g.axes.flat[0])
+        if p.legend_data:
+            g.add_legend(legend_data=p.legend_data,
+                         label_order=p.legend_order)
+
+    return g
+
+
+relplot.__doc__ = dedent("""\
+    Figure-level interface for drawing relational plots onto a FacetGrid.
+
+    This function provides access to several different axes-level functions
+    that show the relationship between two variables with semantic mappings
+    of subsets. The ``kind`` parameter selects the underlying axes-level
+    function to use:
+
+    - :func:`scatterplot` (with ``kind="scatter"``; the default)
+    - :func:`lineplot` (with ``kind="line"``)
+
+    Extra keyword arguments are passed to the underlying function, so you
+    should refer to the documentation for each to see kind-specific options.
+
+    {main_api_narrative}
+
+    After plotting, the :class:`FacetGrid` with the plot is returned and can
+    be used directly to tweak supporting plot details or add other layers.
+
+    Note that, unlike when using the underlying plotting functions directly,
+    data must be passed in a long-form DataFrame with variables specified by
+    passing strings to ``x``, ``y``, and other parameters.
+
+    Parameters
+    ----------
+    x, y : names of variables in ``data``
+        Input data variables; must be numeric.
+    hue : name in ``data``, optional
+        Grouping variable that will produce elements with different colors.
+        Can be either categorical or numeric, although color mapping will
+        behave differently in latter case.
+    size : name in ``data``, optional
+        Grouping variable that will produce elements with different sizes.
+        Can be either categorical or numeric, although size mapping will
+        behave differently in latter case.
+    style : name in ``data``, optional
+        Grouping variable that will produce elements with different styles.
+        Can have a numeric dtype but will always be treated as categorical.
+    {data}
+    row, col : names of variables in ``data``, optional
+        Categorical variables that will determine the faceting of the grid.
+    {col_wrap}
+    row_order, col_order : lists of strings, optional
+        Order to organize the rows and/or columns of the grid in, otherwise the
+        orders are inferred from the data objects.
+    {palette}
+    {hue_order}
+    {hue_norm}
+    {sizes}
+    {size_order}
+    {size_norm}
+    {legend}
+    kind : string, optional
+        Kind of plot to draw, corresponding to a seaborn relational plot.
+        Options are {{``scatter`` and ``line``}}.
+    {height}
+    {aspect}
+    facet_kws : dict, optional
+        Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
+    kwargs : key, value pairings
+        Other keyword arguments are passed through to the underlying plotting
+        function.
+
+    Returns
+    -------
+    g : :class:`FacetGrid`
+        Returns the :class:`FacetGrid` object with the plot on it for further
+        tweaking.
+
+    Examples
+    --------
+
+    Draw a single facet to use the :class:`FacetGrid` legend placement:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import seaborn as sns
+        >>> sns.set(style="ticks")
+        >>> tips = sns.load_dataset("tips")
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="day", data=tips)
+
+    Facet on the columns with another variable:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip",
+        ...                 hue="day", col="time", data=tips)
+
+    Facet on the columns and rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="day",
+        ...                 col="time", row="sex", data=tips)
+
+    "Wrap" many column facets into multiple rows:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="time",
+        ...                 col="day", col_wrap=2, data=tips)
+
+    Use multiple semantic variables on each facet with specified attributes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip", hue="time", size="size",
+        ...                 palette=["b", "r"], sizes=(10, 100),
+        ...                 col="time", data=tips)
+
+    Use a different kind of plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> fmri = sns.load_dataset("fmri")
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                 hue="event", style="event", col="region",
+        ...                 kind="line", data=fmri)
+
+    Change the size of each facet:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                 hue="event", style="event", col="region",
+        ...                 height=5, aspect=.7, kind="line", data=fmri)
+
+    """).format(**_relational_docs)

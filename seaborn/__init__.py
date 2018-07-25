@@ -6,7 +6,7 @@ _orig_rc_params = mpl.rcParams.copy()
 from .rcmod import *
 from .utils import *
 from .palettes import *
-from .basic import *
+from .relational import *
 from .regression import *
 from .categorical import *
 from .distributions import *
@@ -18,4 +18,4 @@ from .widgets import *
 from .colors import xkcd_rgb, crayons
 from . import cm
 
-__version__ = "0.9.dev"
+__version__ = "0.9.0"

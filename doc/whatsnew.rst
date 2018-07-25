@@ -2,8 +2,12 @@
 
 .. currentmodule:: seaborn
 
-Release notes
-=============
+What's new in each version
+==========================
+
+.. raw:: html
+
+   <div class="col-md-9">
 
 .. include:: releases/v0.9.0.txt
 
@@ -31,3 +35,6 @@ Release notes
 
 .. include:: releases/v0.2.0.txt
 
+.. raw:: html
+
+   </div>

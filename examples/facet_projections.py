@@ -5,7 +5,6 @@ FacetGrid with custom projection
 _thumb: .33, .5
 
 """
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -21,8 +20,8 @@ df = pd.melt(df, id_vars=['r'], var_name='speed', value_name='theta')
 
 # Set up a grid of axes with a polar projection
 g = sns.FacetGrid(df, col="speed", hue="speed",
-                  subplot_kws=dict(projection='polar'), size=4.5,
+                  subplot_kws=dict(projection='polar'), height=4.5,
                   sharex=False, sharey=False, despine=False)
 
 # Draw a scatterplot onto each axes in the grid
-g.map(plt.scatter, "theta", "r")
+g.map(sns.scatterplot, "theta", "r")

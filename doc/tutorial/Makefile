@@ -1,9 +1,6 @@
-notebooks:
+rst_files := $(patsubst %.ipynb,%.rst,$(wildcard *.ipynb))
 
-	tools/nb_to_doc.py aesthetics
-	tools/nb_to_doc.py color_palettes 
-	tools/nb_to_doc.py basic 
-	tools/nb_to_doc.py distributions
-	tools/nb_to_doc.py regression
-	tools/nb_to_doc.py categorical
-	tools/nb_to_doc.py axis_grids
+tutorial: ${rst_files}
+
+%.rst: %.ipynb
+	../tools/nb_to_doc.py $*
