@@ -2,6 +2,8 @@
 from __future__ import print_function, division
 import colorsys
 import os
+import collections
+import functools
 
 import numpy as np
 from scipy import stats
@@ -9,6 +11,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import VPacker, HPacker, TextArea
 
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 from .external.six.moves.http_client import HTTPException
@@ -19,7 +22,8 @@ mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
-           "despine", "get_dataset_names", "load_dataset"]
+           "despine", "get_dataset_names", "load_dataset",
+           "align_legend_subtitles"]
 
 
 def remove_na(arr):
@@ -649,3 +653,144 @@ def _network(t=None, url='https://google.com'):
             f.close()
             return t(*args, **kwargs)
     return wrapper
+
+
+def iter_entries(legend):
+    """Iterate over all entries in a legend
+    """
+    for hpack in legend.findobj(HPacker):
+        if len(hpack.get_children()) == 2:
+            yield hpack
+
+
+def gather_legend_layout(legend):
+    """Examines a legend and creates a legend_layout dictionary
+    subtitles in the legend_layout are labels with invisible handles
+    """
+    legend_layout = collections.OrderedDict()
+
+    cur_subtitle = None
+    for hpack in iter_entries(legend):
+        draw_area, text_area = hpack.get_children()
+        for handle in draw_area.get_children():
+            sizes_are_zero = all(x == 0 for x in handle.get_sizes())
+            if  handle.get_visible() is False or sizes_are_zero:
+                cur_subtitle = text_area
+                legend_layout[cur_subtitle] = []
+                break
+        else:  # If all handles in the DrawArea were visible, add the entry
+            legend_layout[cur_subtitle].append(hpack)
+    return legend_layout
+
+
+def create_legend_layout(legend, subtitle_format):
+    """Creates a new layout based on a format dictionary supplied by the user
+    """
+    entry_dict = {}  # dictionary of {Label: HPack entry}
+    for hpack in iter_entries(legend):
+        _, text_area = hpack.get_children()
+        label = text_area.get_text()
+        if label in entry_dict:
+            raise ValueError()
+        entry_dict[label] = hpack
+
+    label_prop = dict(
+        verticalalignment="baseline",
+        horizontalalignment="left",
+        fontproperties=legend.prop,
+    )
+
+    layout = collections.OrderedDict()
+    for subtitle, level_order in subtitle_format.items():
+        text_area = TextArea(subtitle, textprops=label_prop)
+        text_area.figure = legend.figure
+
+        level_layout = []
+        for level in level_order:
+            try:
+                level_layout.append(entry_dict[level])
+            except KeyError:
+                raise KeyError(
+                    "level %s not found in the legend labels %s"
+                    % (level, list(entry_dict.keys()))
+                )
+        layout[text_area] = level_layout
+    return layout
+
+def align_legend_subtitles(
+    legend,
+    align="left",
+    orient="v",
+    section_sep=1,
+    subtitle_format=None,
+    remove_subtitles=False,
+):
+    """Modifies the supplied legend in place to detect or add in subtitles
+    
+    Parameters
+    ----------
+    legend : matplotlib.legend.Legend, required
+    align : string, optional
+        string of {"left", "center", "right"} that changes the
+        alignment of the subtitles and sections in the supplied legend.
+    orient : string, optional
+        string of {"v", "h"} that determines if the subtitle sections
+        are laid out vertically or side by side
+    section_sep : int, optional
+        An integer that changes the separation between subtitle sections.
+        The integer multiplies the default sep in the legend to create
+        spacing, so a value of 1 keeps all of the spacing equal.
+    subtitle_format : dictionary, optional
+        A dictionary of {"subtitle": ["level1", "level2"], ...} to create
+        custom subtitle headers. The values of each subtitle in the 
+        dictionary must be a list of label names that already exist 
+        in the supplied legend.
+    remove_subtitles : bool, optional
+        Setting this kwarg to True will cause the legend to not show any 
+        subtitle headers
+        
+    Returns
+    -------
+    None, legend is modified in place.
+    """
+
+    if subtitle_format is None:
+        layout = gather_legend_layout(legend)
+    else:
+        layout = create_legend_layout(legend, subtitle_format)
+
+    sections = []
+    sep = legend.labelspacing * legend._fontsize
+
+    for subtitle, levels in layout.items():
+        subtitle_pack = VPacker(
+            pad=0, sep=sep, mode="fixed", children=[subtitle]
+        )
+        subtitle_pack.set_figure(legend.figure)
+
+        level_pack = VPacker(pad=0, sep=sep, mode="fixed", children=levels)
+        column_children = [subtitle_pack, level_pack]
+        if remove_subtitles is True:
+            column_children.pop(0)
+
+        column_pack = VPacker(
+            pad=0, sep=sep, mode="fixed", align=align, children=column_children
+        )
+        sections.append(column_pack)
+
+    orient = orient.lower()
+    if orient == "v":
+        section_packer = functools.partial(VPacker, align=align)
+    elif orient == "h":
+        section_packer = functools.partial(HPacker, align="right")
+    else:
+        raise ValueError(
+            "orient %s not in ['v', 'h'], please choose a proper orientation"
+            % orient
+        )
+
+    section_sep = sep * section_sep
+    column_box = section_packer(
+        pad=0, sep=section_sep, mode="fixed", children=sections
+    )
+    legend._legend_handle_box._children[-1] = column_box
