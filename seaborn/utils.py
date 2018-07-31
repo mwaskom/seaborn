@@ -674,7 +674,7 @@ def gather_legend_layout(legend):
         draw_area, text_area = hpack.get_children()
         for handle in draw_area.get_children():
             sizes_are_zero = all(x == 0 for x in handle.get_sizes())
-            if  handle.get_visible() is False or sizes_are_zero:
+            if handle.get_visible() is False or sizes_are_zero:
                 cur_subtitle = text_area
                 legend_layout[cur_subtitle] = []
                 break
@@ -717,6 +717,7 @@ def create_legend_layout(legend, subtitle_format):
         layout[text_area] = level_layout
     return layout
 
+
 def align_legend_subtitles(
     legend,
     align="left",
@@ -726,7 +727,7 @@ def align_legend_subtitles(
     remove_subtitles=False,
 ):
     """Modifies the supplied legend in place to detect or add in subtitles
-    
+
     Parameters
     ----------
     legend : matplotlib.legend.Legend, required
@@ -742,13 +743,13 @@ def align_legend_subtitles(
         spacing, so a value of 1 keeps all of the spacing equal.
     subtitle_format : dictionary, optional
         A dictionary of {"subtitle": ["level1", "level2"], ...} to create
-        custom subtitle headers. The values of each subtitle in the 
-        dictionary must be a list of label names that already exist 
+        custom subtitle headers. The values of each subtitle in the
+        dictionary must be a list of label names that already exist
         in the supplied legend.
     remove_subtitles : bool, optional
-        Setting this kwarg to True will cause the legend to not show any 
+        Setting this kwarg to True will cause the legend to not show any
         subtitle headers
-        
+
     Returns
     -------
     None, legend is modified in place.
