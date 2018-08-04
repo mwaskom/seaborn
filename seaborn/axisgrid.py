@@ -1668,7 +1668,7 @@ class JointGrid(object):
         if size is not None:
             height = size
             msg = ("The `size` parameter has been renamed to `height`; "
-                   "pleaes update your code.")
+                   "please update your code.")
             warnings.warn(msg, UserWarning)
 
         # Set up the subplot grid
@@ -2061,7 +2061,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     if size is not None:
         height = size
         msg = ("The `size` parameter has been renamed to `height`; "
-               "pleaes update your code.")
+               "please update your code.")
         warnings.warn(msg, UserWarning)
 
     if not isinstance(data, pd.DataFrame):
