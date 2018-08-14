@@ -177,12 +177,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     if a.ndim > 1:
         a = a.squeeze()
 
-    # Remove np.nans, warn user if present
+    # Remove np.nans
     nan_mask = np.isnan(a)
     if nan_mask.sum() > 0:
-        msg = ("a contains missing values, plotting "
-               "only those that are present.")
-        warnings.warn(msg, UserWarning)
         a = a[~nan_mask]
 
     # Decide if the hist is normed
