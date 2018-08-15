@@ -179,7 +179,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     # Remove np.nans
     nan_mask = np.isnan(a)
-    if nan_mask.sum() > 0:
+    if np.any(nan_mask):
         a = a[~nan_mask]
 
     # Decide if the hist is normed
