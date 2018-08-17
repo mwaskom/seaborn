@@ -1499,7 +1499,13 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         confint.append([np.nan, np.nan])
                         continue
 
-                    if ci == "sd":
+                    if callable(ci):
+
+                        estimate = estimator(stat_data)
+                        cival = ci(stat_data)
+                        confint.append((estimate - ci_val, estimate + ci_val))
+
+                    elif ci == "sd":
 
                         estimate = estimator(stat_data)
                         sd = np.std(stat_data)
@@ -1549,7 +1555,14 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             confint[i].append([np.nan, np.nan])
                             continue
 
-                        if ci == "sd":
+                        if callable(ci):
+
+                            estimate = estimator(stat_data)
+                            ci_val = ci(stat_data)
+                            confint.append((estimate - ci_val,
+                                            estimate + ci_val))
+
+                        elif ci == "sd":
 
                             estimate = estimator(stat_data)
                             sd = np.std(stat_data)
@@ -2117,11 +2130,12 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or "sd" or None, optional
+    ci : float or "sd" or function or None, optional
         Size of confidence intervals to draw around estimated values.  If
         "sd", skip bootstrapping and draw the standard deviation of the
-        observations. If ``None``, no bootstrapping will be performed, and
-        error bars will not be drawn.
+        observations. If a function, the function should take a vector and
+        return a single value.  If ``None``, no bootstrapping will be
+        performed, and error bars will not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals.
