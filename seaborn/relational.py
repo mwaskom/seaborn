@@ -714,6 +714,12 @@ class _LinePlotter(_RelationalPlotter):
             cis = pd.DataFrame(np.c_[est - sd, est + sd],
                                index=est.index,
                                columns=["low", "high"]).stack()
+        # Compute the worst case error limits
+        elif ci == "range":
+            frange = grouped.agg(["min", "max"]).values
+            cis = pd.DataFrame(frange,
+                               index=est.index,
+                               columns=["low", "high"]).stack()
         else:
             cis = grouped.apply(bootstrapped_cis)
 
