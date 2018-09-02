@@ -541,7 +541,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # Handle deprecations
     if size is not None:
         height = size
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
