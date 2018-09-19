@@ -324,7 +324,7 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Use the current color cycle state as a default
         if self.color is None:
-            lines, = plt.plot(self.x.mean(), self.y.mean())
+            lines, = ax.plot(self.x.mean(), self.y.mean())
             color = lines.get_color()
             lines.remove()
         else:
