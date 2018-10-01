@@ -357,6 +357,10 @@ class _RelationalPlotter(object):
             if isinstance(palette, (dict, list)):
                 var_type = "categorical"
 
+            # Override if data is pandas categorical series
+            if isinstance(data, pd.Series) and data.dtype.name == "category":
+                var_type = "categorical"
+
         # -- Option 1: categorical color palette
 
         if var_type == "categorical":
