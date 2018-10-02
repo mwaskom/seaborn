@@ -357,10 +357,6 @@ class _RelationalPlotter(object):
             if isinstance(palette, (dict, list)):
                 var_type = "categorical"
 
-            # Override if data is pandas categorical series
-            if isinstance(data, pd.Series) and data.dtype.name == "category":
-                var_type = "categorical"
-
         # -- Option 1: categorical color palette
 
         if var_type == "categorical":
@@ -527,6 +523,8 @@ class _RelationalPlotter(object):
     def _semantic_type(self, data):
         """Determine if data should considered numeric or categorical."""
         if self.input_format == "wide":
+            return "categorical"
+        elif isinstance(data, pd.Series) and data.dtype.name == "category":
             return "categorical"
         else:
             try:
