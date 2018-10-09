@@ -1,4 +1,4 @@
-seaborn: statistical data visualization
+Seaborn: Statistical Data Visualization
 =======================================
 
 <div class="row">

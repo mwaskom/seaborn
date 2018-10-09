@@ -1,5 +1,6 @@
 """Functions to visualize matrices of data."""
 from __future__ import division
+"""  ``__future__`` function is ued to  you can slowly be accustomed to ``incompatible changes or to such ones introducing new keywords``."""
 import itertools
 
 import matplotlib as mpl

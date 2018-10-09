@@ -1,5 +1,7 @@
 """Algorithms to support fitting routines in seaborn plotting functions."""
 from __future__ import division
+"""  ``__future__`` function is ued to  you can slowly be accustomed to ``incompatible changes or to such ones introducing new keywords``."""
+
 import numpy as np
 from scipy import stats
 import warnings
