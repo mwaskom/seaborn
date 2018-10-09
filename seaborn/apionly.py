@@ -1,3 +1,4 @@
+""" Functions to visualize and show warning signs"""
 import warnings
 from seaborn import *  # noqa
 reset_orig()  # noqa

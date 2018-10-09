@@ -1,3 +1,4 @@
+"""functions for Data Structuring and ploting """
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest

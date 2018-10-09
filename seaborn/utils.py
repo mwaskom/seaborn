@@ -1,5 +1,7 @@
 """Small plotting-related utility functions."""
 from __future__ import print_function, division
+"""  ``__future__`` function is ued to  you can slowly be accustomed to ``incompatible changes or to such ones introducing new keywords``."""
+
 import colorsys
 import os
 
