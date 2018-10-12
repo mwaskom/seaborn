@@ -557,7 +557,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  bw, cut, scale, scale_hue, gridsize,
                  width, inner, split, dodge, orient, linewidth,
-                 color, palette, saturation):
+                 inner_linewidth, linecolor, color, palette, saturation):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
@@ -584,6 +584,12 @@ class _ViolinPlotter(_CategoricalPlotter):
         if linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
+        if inner_linewidth is None:
+            inner_linewidth = mpl.rcParams["lines.linewidth"]
+        self.inner_linewidth = inner_linewidth
+        if linecolor is None:
+            linecolor = self.gray
+        self.linecolor = linecolor
 
     def estimate_densities(self, bw, cut, scale, scale_hue, gridsize):
         """Find the support and density for all of the data."""
@@ -809,7 +815,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         fill_func = ax.fill_betweenx if self.orient == "v" else ax.fill_between
         for i, group_data in enumerate(self.plot_data):
 
-            kws = dict(edgecolor=self.gray, linewidth=self.linewidth)
+            kws = dict(edgecolor=self.linecolor, linewidth=self.linewidth)
 
             # Option 1: we have a single level of grouping
             # --------------------------------------------
@@ -850,7 +856,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                 # Draw quartile lines
                 elif self.inner.startswith("quart"):
-                    self.draw_quartiles(ax, violin_data, support, density, i)
+                    self.draw_quartiles(ax, violin_data, support, density, i, self.linecolor)
 
                 # Draw stick observations
                 elif self.inner.startswith("stick"):
@@ -989,12 +995,12 @@ class _ViolinPlotter(_CategoricalPlotter):
             ax.plot([at_group - d_width, at_group + d_width],
                     [at_quant, at_quant],
                     color=self.gray,
-                    linewidth=self.linewidth)
+                    linewidth=self.inner_linewidth)
         else:
             ax.plot([at_quant, at_quant],
                     [at_group - d_width, at_group + d_width],
                     color=self.gray,
-                    linewidth=self.linewidth)
+                    linewidth=self.inner_linewidth)
 
     def draw_box_lines(self, ax, data, support, density, center):
         """Draw boxplot information at center of the density."""
@@ -1007,46 +1013,49 @@ class _ViolinPlotter(_CategoricalPlotter):
         # Draw a boxplot using lines and a point
         if self.orient == "v":
             ax.plot([center, center], [h1, h2],
-                    linewidth=self.linewidth,
+                    linewidth=self.inner_linewidth,
                     color=self.gray)
             ax.plot([center, center], [q25, q75],
-                    linewidth=self.linewidth * 3,
+                    linewidth=self.inner_linewidth * 3,
                     color=self.gray)
             ax.scatter(center, q50,
                        zorder=3,
                        color="white",
                        edgecolor=self.gray,
-                       s=np.square(self.linewidth * 2))
+                       s=np.square(self.inner_linewidth * 2))
         else:
             ax.plot([h1, h2], [center, center],
-                    linewidth=self.linewidth,
+                    linewidth=self.inner_linewidth,
                     color=self.gray)
             ax.plot([q25, q75], [center, center],
-                    linewidth=self.linewidth * 3,
+                    linewidth=self.inner_linewidth * 3,
                     color=self.gray)
             ax.scatter(q50, center,
                        zorder=3,
                        color="white",
                        edgecolor=self.gray,
-                       s=np.square(self.linewidth * 2))
+                       s=np.square(self.inner_linewidth * 2))
 
     def draw_quartiles(self, ax, data, support, density, center, split=False):
         """Draw the quartiles as lines at width of density."""
         q25, q50, q75 = np.percentile(data, [25, 50, 75])
 
         self.draw_to_density(ax, center, q25, support, density, split,
-                             linewidth=self.linewidth,
-                             dashes=[self.linewidth * 1.5] * 2)
+                             linewidth=self.inner_linewidth,
+                             color=self.linecolor,
+                             dashes=[self.inner_linewidth * 1.5] * 2)
         self.draw_to_density(ax, center, q50, support, density, split,
-                             linewidth=self.linewidth,
-                             dashes=[self.linewidth * 3] * 2)
+                             linewidth=self.inner_linewidth,
+                             color=self.linecolor,
+                             dashes=[self.inner_linewidth * 3] * 2)
         self.draw_to_density(ax, center, q75, support, density, split,
-                             linewidth=self.linewidth,
-                             dashes=[self.linewidth * 1.5] * 2)
+                             linewidth=self.inner_linewidth,
+                             color=self.linecolor,
+                             dashes=[self.inner_linewidth * 1.5] * 2)
 
     def draw_points(self, ax, data, center):
         """Draw individual observations as points at middle of the violin."""
-        kws = dict(s=np.square(self.linewidth * 2),
+        kws = dict(s=np.square(self.inner_linewidth * 2),
                    color=self.gray,
                    edgecolor=self.gray)
 
@@ -1062,14 +1071,15 @@ class _ViolinPlotter(_CategoricalPlotter):
         """Draw individual observations as sticks at width of density."""
         for val in data:
             self.draw_to_density(ax, center, val, support, density, split,
-                                 linewidth=self.linewidth * .5)
+                                 linewidth=self.inner_linewidth * .5)
 
     def draw_to_density(self, ax, center, val, support, density, split, **kws):
         """Draw a line orthogonal to the value axis at width of density."""
         idx = np.argmin(np.abs(support - val))
         width = self.dwidth * density[idx] * .99
 
-        kws["color"] = self.gray
+        if kws["color"] == 'grey':
+            kws["color"] = self.gray
 
         if self.orient == "v":
             if split == "left":
@@ -2378,13 +2388,14 @@ boxplot.__doc__ = dedent("""\
 def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
                width=.8, inner="box", split=False, dodge=True, orient=None,
-               linewidth=None, color=None, palette=None, saturation=.75,
-               ax=None, **kwargs):
+               linewidth=None, inner_linewidth=None, linecolor=None, color=None,
+               palette=None, saturation=.75, ax=None, **kwargs):
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
                              width, inner, split, dodge, orient, linewidth,
-                             color, palette, saturation)
+                             inner_linewidth, linecolor, color, palette,
+                             saturation)
 
     if ax is None:
         ax = plt.gca()
@@ -2453,7 +2464,13 @@ violinplot.__doc__ = dedent("""\
     {dodge}
     {orient}
     {linewidth}
+    inner_linewidth : float, optional
+        Width of the lines used do draw inner featues inside the violins.
     {color}
+    linecolor : matplotlib color, "gray" is special-cased, optional
+        Color of the lines around each point. If you pass ``"gray"``, the
+        brightness is determined by the color palette used for the body
+        of the points.
     {palette}
     {saturation}
     {ax_in}
