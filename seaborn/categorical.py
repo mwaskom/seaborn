@@ -1801,6 +1801,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                     x, y = offpos, statistic
                 if not len(remove_na(statistic)):
                     x, y = [], []
+                    point_colors = []
                 ax.scatter(x, y, label=hue_level,
                            c=point_colors, edgecolor=point_colors,
                            linewidth=mew, marker=marker, s=markersize,
