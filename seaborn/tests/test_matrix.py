@@ -390,7 +390,7 @@ class TestHeatmap(object):
     def test_cbar_ticks(self):
         max_n_ticks = 3
 
-        locator = mpl.ticker.MaxNLocator(max_n_ticks)
+        locator = mpl.ticker.LinearLocator(max_n_ticks)
         f, (ax1, ax2) = plt.subplots(2)
         mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
                     cbar_kws=dict(ticks=locator))
