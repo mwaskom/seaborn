@@ -3667,7 +3667,7 @@ def factorplot(*args, **kwargs):
 
     if "size" in kwargs:
         kwargs["height"] = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
@@ -3687,7 +3687,7 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
