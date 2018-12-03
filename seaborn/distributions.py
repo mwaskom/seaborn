@@ -14,6 +14,7 @@ from six import string_types
 
 try:
     import statsmodels.nonparametric.api as smnp
+    import statsmodels.distributions.empirical_distribution as smde
     _has_statsmodels = True
 except ImportError:
     _has_statsmodels = False
@@ -22,7 +23,7 @@ from .utils import iqr, _kde_support
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
-__all__ = ["distplot", "kdeplot", "rugplot"]
+__all__ = ["distplot", "kdeplot", "rugplot", "ecdfplot"]
 
 
 def _freedman_diaconis_bins(a):
@@ -39,10 +40,10 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
-             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, norm_hist=False, axlabel=None,
-             label=None, ax=None):
+def distplot(a, bins=None, hist=True, kde=True, rug=False, ecdf=False,
+             fit=None, hist_kws=None, kde_kws=None, rug_kws=None,
+             ecdf_kws=None, fit_kws=None, color=None, vertical=False,
+             norm_hist=False, axlabel=None, label=None, ax=None):
     """Flexibly plot a univariate distribution of observations.
 
     This function combines the matplotlib ``hist`` function (with automatic
@@ -64,11 +65,13 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Whether to plot a gaussian kernel density estimate.
     rug : bool, optional
         Whether to draw a rugplot on the support axis.
+    ecdf : bool, optional
+        Whether to plot an empirical cumulative density function.
     fit : random variable object, optional
         An object with `fit` method, returning a tuple that can be passed to a
         `pdf` method a positional arguments following an grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries, optional
+    {hist, kde, rug, ecdf, fit}_kws : dictionaries, optional
         Keyword arguments for underlying plotting functions.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
@@ -96,6 +99,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
               density estimate.
     rugplot : Draw small vertical lines to show each observation in a
               distribution.
+    ecdfplot : Show an empirical cumulative density function plot.
 
     Examples
     --------
@@ -187,6 +191,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         kde_kws = dict()
     if rug_kws is None:
         rug_kws = dict()
+    if ecdf_kws is None:
+        ecdf_kws = dict()
     if fit_kws is None:
         fit_kws = dict()
 
@@ -205,6 +211,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
             hist_kws["label"] = label
         elif kde:
             kde_kws["label"] = label
+        elif ecdf:
+            ecdf_kws["label"] = label
         elif rug:
             rug_kws["label"] = label
         elif fit:
@@ -238,6 +246,13 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
+
+    if ecdf:
+        ecdf_color = ecdf_kws.pop("color", color)
+        ecdfplot(a, fit=fit, vertical=vertical, ax=ax,
+                 color=ecdf_color, **ecdf_kws)
+        if ecdf_color != color:
+            ecdf_kws["color"] = ecdf_color
 
     if fit is not None:
 
@@ -740,3 +755,148 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
     ax.autoscale_view(scalex=not vertical, scaley=vertical)
 
     return ax
+
+
+def _ecdf(a):
+    """Compute an ECDF by hand (i.e. without statsmodels dependency)"""
+    n_observation = a.shape[0]
+    x = np.sort(np.concatenate(([-np.inf], a))) # match statsmodels result
+    y = np.arange(1, n_observation + 1) / float(n_observation)
+    return x, y
+
+
+def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
+             ax=None, **kwargs):
+    """Plot an empirical cumulative distribution of an array
+
+    Parameters
+    ----------
+    a : vector
+        1D array of observations.
+    step : bool, optional
+        Whether to plot as a step function (the true ECDF),
+        or linearly interpolate between values.
+    fit : random variable object, optional
+        An object with `fit` method, returning a tuple that can be passed to a
+        `cdf` method a positional arguments following an grid of values to
+        evaluate the cdf on.
+    fit_kws : dictionary, optional
+        Keyword arguments for underlying plotting functions.
+    shade : bool, optional
+        If True, shade in the area under the ECDF curve.
+    vertical : bool, optional
+        If True, observed values are on y-axis.
+    ax : matplotlib axes, optional
+        Axes to draw plot into; otherwise grabs current axes.
+    kwargs : key value pairings
+        Other keyword arguments passed to ``step`` or ``plot``
+
+    Returns
+    -------
+    ax : matplotlib axes
+        The Axes object with the plot on it.
+
+    See Also
+    --------
+    distplot: Flexibly plot a univariate distribution of observations.
+
+    Examples
+    --------
+
+    Plot a basic empirical cumulative distribution plot:
+
+    .. plot::
+        :context: close-figs
+
+        >>> import numpy as np; np.random.seed(10)
+        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> x = np.random.randn(100)
+        >>> ax = sns.ecdfplot(x)
+
+    Shade under the ECDF curve and use a different color:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.ecdfplot(x, shade=True, color="r")
+
+    Compare with a model cumulative distribution function
+
+    .. plot::
+        :context: close-figs
+
+        >>> from scipy.stats import norm
+        >>> ax = sns.ecdfplot(x, fit=norm)
+
+    """
+    if ax is None:
+        ax = plt.gca()
+    a = np.asarray(a)
+
+    if fit_kws is None:
+        fit_kws = dict()
+
+    alias_map = dict(linewidth="lw", linestyle="ls", color="c")
+    for attr, alias in alias_map.items():
+        if alias in kwargs:
+            kwargs[attr] = kwargs.pop(alias)
+
+    # Use statsmodels if we can
+    if _has_statsmodels:
+        ecdf = smde.ECDF(a)
+        x, y = ecdf.x, ecdf.y
+    else:
+        x, y = _ecdf(a)
+
+    if vertical:
+        x, y = y, x
+
+    # Use the active color cycle to find the plot color
+    facecolor = kwargs.pop("facecolor", None)
+    line, = ax.plot(x, y, **kwargs)
+    color = line.get_color()
+    line.remove()
+    kwargs.pop("color", None)
+    facecolor = color if facecolor is None else facecolor
+
+    if step:
+        ax.step(x, y, **kwargs)
+    else:
+        ax.plot(x, y, **kwargs)
+
+    shade_kws = dict(
+        facecolor=facecolor,
+        alpha=kwargs.get("alpha", 0.25),
+        clip_on=kwargs.get("clip_on", True),
+        zorder=kwargs.get("zorder", 1),
+        )
+    if shade:
+        if vertical:
+            ax.fill_betweenx(y, 0, x, **shade_kws)
+        else:
+            ax.fill_between(x, 0, y, **shade_kws)
+
+    # If a model for fitting exists, try to fit the CDF
+    if fit is not None:
+
+        def cdf(x):
+            return fit.cdf(x, *params)
+
+        fit_color = fit_kws.pop("color", "#282828")
+        gridsize = fit_kws.pop("gridsize", 200)
+        cut = fit_kws.pop("cut", 3)
+        clip = fit_kws.pop("clip", (-np.inf, np.inf))
+        bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
+        fit_x = _kde_support(a, bw, gridsize, cut, clip)
+        params = fit.fit(a)
+        fit_y = cdf(fit_x)
+        if vertical:
+            fit_x, fit_y = fit_y, fit_x
+
+        ax.plot(fit_x, fit_y, color=fit_color, **fit_kws)
+
+    # Set the y limits to support a CDF
+    ax.set_ylim(0, 1.01)
+
+    return ax
+
