@@ -860,9 +860,9 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
     facecolor = color if facecolor is None else facecolor
 
     if step:
-        ax.step(x, y, **kwargs)
+        ax.step(x, y, color=color, **kwargs)
     else:
-        ax.plot(x, y, **kwargs)
+        ax.plot(x, y, color=color, **kwargs)
 
     shade_kws = dict(
         facecolor=facecolor,
