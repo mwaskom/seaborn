@@ -850,6 +850,9 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
 
     if vertical:
         x, y = y, x
+        step_type='post'
+    else:
+        step_type='pre'
 
     # Use the active color cycle to find the plot color
     facecolor = kwargs.pop("facecolor", None)
@@ -860,7 +863,7 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
     facecolor = color if facecolor is None else facecolor
 
     if step:
-        ax.step(x, y, color=color, **kwargs)
+        ax.step(x, y, where=step_type, color=color, **kwargs)
     else:
         ax.plot(x, y, color=color, **kwargs)
 
@@ -871,10 +874,11 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
         zorder=kwargs.get("zorder", 1),
         )
     if shade:
+        step_type = 'pre' if step else None
         if vertical:
-            ax.fill_betweenx(y, 0, x, **shade_kws)
+            ax.fill_betweenx(y, 0, x, step=step_type, **shade_kws)
         else:
-            ax.fill_between(x, 0, y, **shade_kws)
+            ax.fill_between(x, 0, y, step=step_type, **shade_kws)
 
     # If a model for fitting exists, try to fit the CDF
     if fit is not None:
@@ -895,8 +899,11 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
 
         ax.plot(fit_x, fit_y, color=fit_color, **fit_kws)
 
-    # Set the y limits to support a CDF
-    ax.set_ylim(0, 1.01)
+    # Set the limits to support a CDF
+    if vertical:
+        ax.set_xlim(0, 1.01)
+    else:
+        ax.set_ylim(0, 1.01)
 
     return ax
 
