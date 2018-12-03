@@ -760,7 +760,7 @@ def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
 def _ecdf(a):
     """Compute an ECDF by hand (i.e. without statsmodels dependency)"""
     n_observation = a.shape[0]
-    x = np.sort(np.concatenate(([-np.inf], a))) # match statsmodels result
+    x = np.sort(np.concatenate(([-np.inf], a)))  # match statsmodels result
     y = np.arange(1, n_observation + 1) / float(n_observation)
     return x, y
 
@@ -850,9 +850,9 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
 
     if vertical:
         x, y = y, x
-        step_type='post'
+        step_type = 'post'
     else:
-        step_type='pre'
+        step_type = 'pre'
 
     # Use the active color cycle to find the plot color
     facecolor = kwargs.pop("facecolor", None)
@@ -906,4 +906,3 @@ def ecdfplot(a, step=True, fit=None, fit_kws=None, shade=False, vertical=False,
         ax.set_ylim(0, 1.01)
 
     return ax
-
