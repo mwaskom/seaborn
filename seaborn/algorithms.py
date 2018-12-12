@@ -82,10 +82,11 @@ def bootstrap(*args, **kwargs):
                                      func_kwargs, rs)
 
     boot_dist = []
-    for i in range(int(n_boot)):
-        resampler = rs.randint(0, n, n)
-        sample = [a.take(resampler, axis=0) for a in args]
-        boot_dist.append(f(*sample, **func_kwargs))
+    if n > 0:
+        for i in range(int(n_boot)):
+            resampler = rs.randint(0, n, n)
+            sample = [a.take(resampler, axis=0) for a in args]
+            boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
 
 
