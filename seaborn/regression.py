@@ -2,6 +2,7 @@
 from __future__ import division
 import copy
 from textwrap import dedent
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.spatial import distance
@@ -45,6 +46,8 @@ class _LinearPlotter(object):
         for var, val in kws.items():
             if isinstance(val, string_types):
                 setattr(self, var, data[val])
+            elif isinstance(val, list):
+                setattr(self, var, np.asarray(val))
             else:
                 setattr(self, var, val)
 
@@ -394,32 +397,21 @@ class _RegressionPlotter(_LinearPlotter):
         ax.plot(grid, yhat, **kws)
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
-        ax.set_xlim(*xlim)
+        ax.set_xlim(*xlim, auto=None)
 
 
 _regression_docs = dict(
 
     model_api=dedent("""\
     There are a number of mutually exclusive options for estimating the
-    regression model: ``order``, ``logistic``, ``lowess``, ``robust``, and
-    ``logx``. See the parameter docs for more information on these options.\
+    regression model. See the :ref:`tutorial <regression_tutorial>` for more
+    information.\
     """),
-
     regplot_vs_lmplot=dedent("""\
-    Understanding the difference between :func:`regplot` and :func:`lmplot` can
-    be a bit tricky. In fact, they are closely related, as :func:`lmplot` uses
-    :func:`regplot` internally and takes most of its parameters. However,
-    :func:`regplot` is an axes-level function, so it draws directly onto an
-    axes (either the currently active axes or the one provided by the ``ax``
-    parameter), while :func:`lmplot` is a figure-level function and creates its
-    own figure, which is managed through a :class:`FacetGrid`. This has a few
-    consequences, namely that :func:`regplot` can happily coexist in a figure
-    with other kinds of plots and will follow the global matplotlib color
-    cycle. In contrast, :func:`lmplot` needs to occupy an entire figure, and
-    the size and color cycle are controlled through function parameters,
-    ignoring the global defaults.\
+    The :func:`regplot` and :func:`lmplot` functions are closely related, but
+    the former is an axes-level function while the latter is a figure-level
+    function that combines :func:`regplot` and :class:`FacetGrid`.\
     """),
-
     x_estimator=dedent("""\
     x_estimator : callable that maps vector -> scalar, optional
         Apply this function to each unique value of ``x`` and plot the
@@ -441,8 +433,8 @@ _regression_docs = dict(
     x_ci : "ci", "sd", int in [0, 100] or None, optional
         Size of the confidence interval used when plotting a central tendency
         for discrete values of ``x``. If ``"ci"``, defer to the value of the
-        ``ci`` parameter. If ``"sd"``, skip bootstrappig and show the standard
-        deviation of the observations in each bin.\
+        ``ci`` parameter. If ``"sd"``, skip bootstrapping and show the
+        standard deviation of the observations in each bin.\
     """),
     scatter=dedent("""\
     scatter : bool, optional
@@ -537,13 +529,21 @@ _regression_docs.update(_facet_docs)
 
 
 def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, size=5, aspect=1, markers="o", sharex=True,
+           col_wrap=None, height=5, aspect=1, markers="o", sharex=True,
            sharey=True, hue_order=None, col_order=None, row_order=None,
            legend=True, legend_out=True, x_estimator=None, x_bins=None,
            x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
            units=None, order=1, logistic=False, lowess=False, robust=False,
            logx=False, x_partial=None, y_partial=None, truncate=False,
-           x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None):
+           x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None,
+           size=None):
+
+    # Handle deprecations
+    if size is not None:
+        height = size
+        msg = ("The `size` paramter has been renamed to `height`; "
+               "please update your code.")
+        warnings.warn(msg, UserWarning)
 
     # Reduce the dataframe to only needed columns
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
@@ -553,7 +553,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # Initialize the grid
     facets = FacetGrid(data, row, col, hue, palette=palette,
                        row_order=row_order, col_order=col_order,
-                       hue_order=hue_order, size=size, aspect=aspect,
+                       hue_order=hue_order, height=height, aspect=aspect,
                        col_wrap=col_wrap, sharex=sharex, sharey=sharey,
                        legend_out=legend_out)
 
@@ -624,7 +624,7 @@ lmplot.__doc__ = dedent("""\
         the order of levels of this variable.
     {palette}
     {col_wrap}
-    {size}
+    {height}
     {aspect}
     markers : matplotlib marker code or list of marker codes, optional
         Markers for the scatterplot. If a list, each marker in the list will be
@@ -724,13 +724,13 @@ lmplot.__doc__ = dedent("""\
 
         >>> g = sns.lmplot(x="total_bill", y="tip", col="smoker", data=tips)
 
-    Change the size and aspect ratio of the facets:
+    Change the height and aspect ratio of the facets:
 
     .. plot::
         :context: close-figs
 
         >>> g = sns.lmplot(x="size", y="total_bill", hue="day", col="day",
-        ...                data=tips, aspect=.4, x_jitter=.1)
+        ...                data=tips, height=6, aspect=.4, x_jitter=.1)
 
     Wrap the levels of the column variable into multiple rows:
 
@@ -738,7 +738,7 @@ lmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.lmplot(x="total_bill", y="tip", col="day", hue="day",
-        ...                data=tips, col_wrap=2, size=3)
+        ...                data=tips, col_wrap=2, height=3)
 
     Condition on two variables to make a full grid:
 
@@ -746,7 +746,7 @@ lmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
-        ...                data=tips, size=3)
+        ...                data=tips, height=3)
 
     Use methods on the returned :class:`FacetGrid` instance to further tweak
     the plot:
@@ -755,7 +755,7 @@ lmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> g = sns.lmplot(x="total_bill", y="tip", row="sex", col="time",
-        ...                data=tips, size=3)
+        ...                data=tips, height=3)
         >>> g = (g.set_axis_labels("Total bill (US Dollars)", "Tip")
         ...       .set(xlim=(0, 60), ylim=(0, 12),
         ...            xticks=[10, 30, 50], yticks=[2, 6, 10])

@@ -8,3 +8,4 @@ seaborn.egg-info/
 .coverage
 cover/
 .idea
+.pytest_cache/

@@ -5,12 +5,36 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
-from .. import basic
+from .. import relational as rel
 from ..palettes import color_palette
-from ..utils import categorical_order
+from ..utils import categorical_order, sort_df
 
 
-class TestBasicPlotter(object):
+class TestRelationalPlotter(object):
+
+    def scatter_rgbs(self, collections):
+        rgbs = []
+        for col in collections:
+            rgb = tuple(col.get_facecolor().squeeze()[:3])
+            rgbs.append(rgb)
+        return rgbs
+
+    def colors_equal(self, *args):
+
+        equal = True
+        for c1, c2 in zip(*args):
+            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            equal &= c1 == c2
+        return equal
+
+    def paths_equal(self, *args):
+
+        equal = True
+        for p1, p2 in zip(*args):
+            equal &= np.array_equal(p1.vertices, p2.vertices)
+            equal &= np.array_equal(p1.codes, p2.codes)
+        return equal
 
     @pytest.fixture
     def wide_df(self):
@@ -57,6 +81,7 @@ class TestBasicPlotter(object):
             y=rs.randn(n),
             a=np.take(list("abc"), rs.randint(0, 3, n)),
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
+            c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
 
@@ -96,7 +121,7 @@ class TestBasicPlotter(object):
 
     def test_wide_df_variables(self, wide_df):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=wide_df)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y", "hue", "style"]
@@ -128,7 +153,7 @@ class TestBasicPlotter(object):
 
     def test_wide_df_variables_check(self, wide_df):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         wide_df = wide_df.copy()
         wide_df.loc[:, "not_numeric"] = "a"
         with pytest.raises(ValueError):
@@ -136,7 +161,7 @@ class TestBasicPlotter(object):
 
     def test_wide_array_variables(self, wide_array):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=wide_array)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y", "hue", "style"]
@@ -170,7 +195,7 @@ class TestBasicPlotter(object):
 
     def test_flat_array_variables(self, flat_array):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=flat_array)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y"]
@@ -196,7 +221,7 @@ class TestBasicPlotter(object):
 
     def test_flat_series_variables(self, flat_series):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=flat_series)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y"]
@@ -218,7 +243,7 @@ class TestBasicPlotter(object):
 
     def test_wide_list_variables(self, wide_list):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=wide_list)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y", "hue", "style"]
@@ -252,7 +277,7 @@ class TestBasicPlotter(object):
 
     def test_wide_list_of_series_variables(self, wide_list_of_series):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(data=wide_list_of_series)
         assert p.input_format == "wide"
         assert p.semantics == ["x", "y", "hue", "style"]
@@ -286,7 +311,7 @@ class TestBasicPlotter(object):
 
     def test_long_df(self, long_df):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(x="x", y="y", data=long_df)
         assert p.input_format == "long"
         assert p.semantics == ["x", "y"]
@@ -342,7 +367,7 @@ class TestBasicPlotter(object):
 
     def test_bad_input(self, long_df):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
 
         with pytest.raises(ValueError):
             p.establish_variables(x=long_df.x)
@@ -361,7 +386,7 @@ class TestBasicPlotter(object):
 
     def test_empty_input(self):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
 
         p.establish_variables(data=[])
         p.establish_variables(data=np.array([]))
@@ -370,13 +395,13 @@ class TestBasicPlotter(object):
 
     def test_units(self, repeated_df):
 
-        p = basic._BasicPlotter()
+        p = rel._RelationalPlotter()
         p.establish_variables(x="x", y="y", units="u", data=repeated_df)
         assert np.array_equal(p.plot_data["units"], repeated_df["u"])
 
     def test_parse_hue_null(self, wide_df, null_column):
 
-        p = basic._LinePlotter(data=wide_df)
+        p = rel._LinePlotter(data=wide_df)
         p.parse_hue(null_column, "Blues", None, None)
         assert p.hue_levels == [None]
         assert p.palette == {}
@@ -385,7 +410,7 @@ class TestBasicPlotter(object):
 
     def test_parse_hue_categorical(self, wide_df, long_df):
 
-        p = basic._LinePlotter(data=wide_df)
+        p = rel._LinePlotter(data=wide_df)
         assert p.hue_levels == wide_df.columns.tolist()
         assert p.hue_type is "categorical"
         assert p.cmap is None
@@ -425,7 +450,7 @@ class TestBasicPlotter(object):
         assert p.hue_levels == hue_order
 
         # Test long data
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
         assert p.hue_levels == categorical_order(long_df.a)
         assert p.hue_type is "categorical"
         assert p.cmap is None
@@ -444,13 +469,18 @@ class TestBasicPlotter(object):
         expected_palette = dict(zip(levels, expected_colors))
         assert p.palette == expected_palette
 
+        # Test binary data
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=long_df)
+        assert p.hue_levels == [0, 1]
+        assert p.hue_type is "categorical"
+
     def test_parse_hue_numeric(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", hue="s", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="s", data=long_df)
         hue_levels = list(np.sort(long_df.s.unique()))
         assert p.hue_levels == hue_levels
         assert p.hue_type is "numeric"
-        assert p.cmap is mpl.cm.get_cmap(mpl.rcParams["image.cmap"])
+        assert p.cmap.name == "seaborn_cubehelix"
 
         # Test named colormap
         palette = "Purples"
@@ -462,14 +492,28 @@ class TestBasicPlotter(object):
         p.parse_hue(p.plot_data.hue, palette, None, None)
         assert p.cmap is palette
 
+        # Test cubehelix shorthand
+        palette = "ch:2,0,light=.2"
+        p.parse_hue(p.plot_data.hue, palette, None, None)
+        assert isinstance(p.cmap, mpl.colors.ListedColormap)
+
         # Test default hue limits
         p.parse_hue(p.plot_data.hue, None, None, None)
         assert p.hue_limits == (p.plot_data.hue.min(), p.plot_data.hue.max())
 
         # Test specified hue limits
-        hue_limits = 1, 4
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        assert p.hue_limits == hue_limits
+        hue_norm = 1, 4
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == hue_norm
+        assert isinstance(p.hue_norm, mpl.colors.Normalize)
+        assert p.hue_norm.vmin == hue_norm[0]
+        assert p.hue_norm.vmax == hue_norm[1]
+
+        # Test Normalize object
+        hue_norm = mpl.colors.PowerNorm(2, vmin=1, vmax=10)
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        assert p.hue_limits == (hue_norm.vmin, hue_norm.vmax)
+        assert p.hue_norm is hue_norm
 
         # Test default colormap values
         hmin, hmax = p.plot_data.hue.min(), p.plot_data.hue.max()
@@ -478,9 +522,9 @@ class TestBasicPlotter(object):
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
         # Test specified colormap values
-        hue_limits = hmin - 1, hmax - 1
-        p.parse_hue(p.plot_data.hue, None, None, hue_limits)
-        norm_min = (hmin - hue_limits[0]) / (hue_limits[1] - hue_limits[0])
+        hue_norm = hmin - 1, hmax - 1
+        p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+        norm_min = (hmin - hue_norm[0]) / (hue_norm[1] - hue_norm[0])
         assert p.palette[hmin] == pytest.approx(p.cmap(norm_min))
         assert p.palette[hmax] == pytest.approx(p.cmap(1.0))
 
@@ -508,9 +552,14 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_hue(p.plot_data.hue, palette, None, None)
 
+        # Test bad norm argument
+        hue_norm = "not a norm"
+        with pytest.raises(ValueError):
+            p.parse_hue(p.plot_data.hue, None, None, hue_norm)
+
     def test_parse_size(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", size="s", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size="s", data=long_df)
 
         # Test default size limits and range
         default_linewidth = mpl.rcParams["lines.linewidth"]
@@ -531,19 +580,36 @@ class TestBasicPlotter(object):
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.size_limits == default_limits
 
-        # Test size values inferred from ranges
+        # Test size values with normalization range
         sizes = (1, 5)
-        size_limits = (1, 10)
-        p.parse_size(p.plot_data["size"], sizes, None, size_limits)
-        normalize = mpl.colors.Normalize(*size_limits, clip=False)
+        size_norm = (1, 10)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        normalize = mpl.colors.Normalize(*size_norm, clip=True)
         for level, width in p.sizes.items():
             assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
+
+        # Test size values with normalization object
+        sizes = (1, 5)
+        size_norm = mpl.colors.LogNorm(1, 10, clip=False)
+        p.parse_size(p.plot_data["size"], sizes, None, size_norm)
+        assert p.size_norm.clip
+        for level, width in p.sizes.items():
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * size_norm(level)
+
+        # Test specified size order
+        var = "a"
+        levels = long_df[var].unique()
+        sizes = [1, 4, 6]
+        size_order = [levels[1], levels[2], levels[0]]
+        p = rel._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p.parse_size(p.plot_data["size"], sizes, size_order, None)
+        assert p.sizes == dict(zip(size_order, sizes))
 
         # Test list of sizes
         var = "a"
         levels = categorical_order(long_df[var])
         sizes = list(np.random.rand(len(levels)))
-        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size=var, data=long_df)
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.sizes == dict(zip(levels, sizes))
 
@@ -551,7 +617,7 @@ class TestBasicPlotter(object):
         var = "a"
         levels = categorical_order(long_df[var])
         sizes = dict(zip(levels, np.random.rand(len(levels))))
-        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size=var, data=long_df)
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.sizes == sizes
 
@@ -570,9 +636,15 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_size(p.plot_data["size"], sizes, None, None)
 
+        # Test bad norm argument
+        size_norm = "not a norm"
+        p = rel._LinePlotter(x="x", y="y", size="s", data=long_df)
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], None, None, size_norm)
+
     def test_parse_style(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", style="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", style="a", data=long_df)
 
         # Test defaults
         markers, dashes = True, True
@@ -618,9 +690,14 @@ class TestBasicPlotter(object):
         with pytest.raises(ValueError):
             p.parse_style(p.plot_data["style"], markers, dashes, None)
 
+        # Test mixture of filled and unfilled markers
+        markers, dashes = ["o", "x", "s"], None
+        with pytest.raises(ValueError):
+            p.parse_style(p.plot_data["style"], markers, dashes, None)
+
     def test_subset_data_quantities(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
         assert len(list(p.subset_data())) == 1
 
         # --
@@ -628,15 +705,15 @@ class TestBasicPlotter(object):
         var = "a"
         n_subsets = len(long_df[var].unique())
 
-        p = basic._LinePlotter(x="x", y="y", hue=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
-        p = basic._LinePlotter(x="x", y="y", style=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", style=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         n_subsets = len(long_df[var].unique())
 
-        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -644,7 +721,7 @@ class TestBasicPlotter(object):
         var = "a"
         n_subsets = len(long_df[var].unique())
 
-        p = basic._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -652,11 +729,11 @@ class TestBasicPlotter(object):
         var1, var2 = "a", "s"
         n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
 
-        p = basic._LinePlotter(x="x", y="y", hue=var1, style=var2,
+        p = rel._LinePlotter(x="x", y="y", hue=var1, style=var2,
                                data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
-        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var1,
+        p = rel._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var1,
                                data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
@@ -666,13 +743,13 @@ class TestBasicPlotter(object):
         cols = [var1, var2, var3]
         n_subsets = len(set(list(map(tuple, long_df[cols].values))))
 
-        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var3,
+        p = rel._LinePlotter(x="x", y="y", hue=var1, size=var2, style=var3,
                                data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
     def test_subset_data_keys(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
@@ -682,25 +759,25 @@ class TestBasicPlotter(object):
 
         var = "a"
 
-        p = basic._LinePlotter(x="x", y="y", hue=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
             assert style is None
 
-        p = basic._LinePlotter(x="x", y="y", style=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", style=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
             assert style in long_df[var].values
 
-        p = basic._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
             assert style in long_df[var].values
 
-        p = basic._LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size in long_df[var].values
@@ -710,7 +787,7 @@ class TestBasicPlotter(object):
 
         var1, var2 = "a", "s"
 
-        p = basic._LinePlotter(x="x", y="y", hue=var1, size=var2, data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue=var1, size=var2, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var1].values
             assert size in long_df[var2].values
@@ -718,50 +795,50 @@ class TestBasicPlotter(object):
 
     def test_subset_data_values(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
-        expected = basic.sort_df(p.plot_data.loc[:, ["x", "y"]], ["x", "y"])
+        expected = sort_df(p.plot_data.loc[:, ["x", "y"]], ["x", "y"])
         assert np.array_equal(data.values, expected)
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df, sort=False)
+        p = rel._LinePlotter(x="x", y="y", data=long_df, sort=False)
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]]
         assert np.array_equal(data.values, expected)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols]
             assert np.array_equal(data.values, expected.values)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]
-            expected = basic.sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = sort_df(p.plot_data.loc[rows, cols], cols)
             assert np.array_equal(data.values, expected.values)
 
 
-class TestLinePlotter(TestBasicPlotter):
+class TestLinePlotter(TestRelationalPlotter):
 
     def test_aggregate(self, long_df):
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
         p.n_boot = 10000
         p.sort = False
 
@@ -826,7 +903,7 @@ class TestLinePlotter(TestBasicPlotter):
 
         f, ax = plt.subplots()
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df, legend="full")
+        p = rel._LinePlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
         handles, _ = ax.get_legend_handles_labels()
         assert handles == []
@@ -834,63 +911,63 @@ class TestLinePlotter(TestBasicPlotter):
         # --
 
         ax.clear()
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
                                legend="full")
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
-        assert labels == p.hue_levels
-        assert colors == [p.palette[l] for l in labels]
+        assert labels == ["a"] + p.hue_levels
+        assert colors == ["w"] + [p.palette[l] for l in p.hue_levels]
 
         # --
 
         ax.clear()
-        p = basic._LinePlotter(x="x", y="y", hue="a", style="a",
+        p = rel._LinePlotter(x="x", y="y", hue="a", style="a",
                                markers=True, legend="full", data=long_df)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         markers = [h.get_marker() for h in handles]
-        assert labels == p.hue_levels == p.style_levels
-        assert colors == [p.palette[l] for l in labels]
-        assert markers == [p.markers[l] for l in labels]
+        assert labels == ["a"] + p.hue_levels == ["a"] + p.style_levels
+        assert colors == ["w"] + [p.palette[l] for l in p.hue_levels]
+        assert markers == [""] + [p.markers[l] for l in p.style_levels]
 
         # --
 
         ax.clear()
-        p = basic._LinePlotter(x="x", y="y", hue="a", style="b",
+        p = rel._LinePlotter(x="x", y="y", hue="a", style="b",
                                markers=True, legend="full", data=long_df)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         markers = [h.get_marker() for h in handles]
-        expected_colors = ([p.palette[l] for l in p.hue_levels]
-                           + [".2" for _ in p.style_levels])
-        expected_markers = (["None" for _ in p.hue_levels]
-                            + [p.markers[l] for l in p.style_levels])
-        assert labels == p.hue_levels + p.style_levels
+        expected_colors = (["w"] + [p.palette[l] for l in p.hue_levels]
+                           + ["w"] + [".2" for _ in p.style_levels])
+        expected_markers = ([""] + ["None" for _ in p.hue_levels]
+                            + [""] + [p.markers[l] for l in p.style_levels])
+        assert labels == ["a"] + p.hue_levels + ["b"] + p.style_levels
         assert colors == expected_colors
         assert markers == expected_markers
 
         # --
 
         ax.clear()
-        p = basic._LinePlotter(x="x", y="y", hue="a", size="a", data=long_df,
+        p = rel._LinePlotter(x="x", y="y", hue="a", size="a", data=long_df,
                                legend="full")
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         widths = [h.get_linewidth() for h in handles]
-        assert labels == p.hue_levels == p.size_levels
-        assert colors == [p.palette[l] for l in labels]
-        assert widths == [p.sizes[l] for l in labels]
+        assert labels == ["a"] + p.hue_levels == ["a"] + p.size_levels
+        assert colors == ["w"] + [p.palette[l] for l in p.hue_levels]
+        assert widths == [0] + [p.sizes[l] for l in p.size_levels]
 
         # --
 
         x, y = np.random.randn(2, 40)
         z = np.tile(np.arange(20), 2)
 
-        p = basic._LinePlotter(x=x, y=y, hue=z)
+        p = rel._LinePlotter(x=x, y=y, hue=z)
 
         ax.clear()
         p.legend = "full"
@@ -904,7 +981,7 @@ class TestLinePlotter(TestBasicPlotter):
         handles, labels = ax.get_legend_handles_labels()
         assert len(labels) == 4
 
-        p = basic._LinePlotter(x=x, y=y, size=z)
+        p = rel._LinePlotter(x=x, y=y, size=z)
 
         ax.clear()
         p.legend = "full"
@@ -923,11 +1000,27 @@ class TestLinePlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
 
+        ax.clear()
+        p = rel._LinePlotter(x=x, y=y, hue=z,
+                             hue_norm=mpl.colors.LogNorm(),
+                             legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = rel._LinePlotter(x=x, y=y, size=z,
+                             size_norm=mpl.colors.LogNorm(),
+                             legend="brief")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert float(labels[2]) / float(labels[1]) == 10
+
     def test_plot(self, long_df, repeated_df):
 
         f, ax = plt.subplots()
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df,
+        p = rel._LinePlotter(x="x", y="y", data=long_df,
                                sort=False, estimator=None)
         p.plot(ax, {})
         line, = ax.lines
@@ -940,17 +1033,17 @@ class TestLinePlotter(TestBasicPlotter):
         assert line.get_color() == "k"
         assert line.get_label() == "test"
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df,
+        p = rel._LinePlotter(x="x", y="y", data=long_df,
                                sort=True, estimator=None)
 
         ax.clear()
         p.plot(ax, {})
         line, = ax.lines
-        sorted_data = basic.sort_df(long_df, ["x", "y"])
+        sorted_data = sort_df(long_df, ["x", "y"])
         assert np.array_equal(line.get_xdata(), sorted_data.x.values)
         assert np.array_equal(line.get_ydata(), sorted_data.y.values)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -958,7 +1051,7 @@ class TestLinePlotter(TestBasicPlotter):
         for line, level in zip(ax.lines, p.hue_levels):
             assert line.get_color() == p.palette[level]
 
-        p = basic._LinePlotter(x="x", y="y", size="a", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", size="a", data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -966,7 +1059,7 @@ class TestLinePlotter(TestBasicPlotter):
         for line, level in zip(ax.lines, p.size_levels):
             assert line.get_linewidth() == p.sizes[level]
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", style="a",
+        p = rel._LinePlotter(x="x", y="y", hue="a", style="a",
                                markers=True, data=long_df)
 
         ax.clear()
@@ -976,7 +1069,7 @@ class TestLinePlotter(TestBasicPlotter):
             assert line.get_color() == p.palette[level]
             assert line.get_marker() == p.markers[level]
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", style="b",
+        p = rel._LinePlotter(x="x", y="y", hue="a", style="b",
                                markers=True, data=long_df)
 
         ax.clear()
@@ -987,8 +1080,8 @@ class TestLinePlotter(TestBasicPlotter):
             assert line.get_color() == p.palette[hue]
             assert line.get_marker() == p.markers[style]
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df,
-                               estimator="mean", errstyle="band", ci="sd",
+        p = rel._LinePlotter(x="x", y="y", data=long_df,
+                               estimator="mean", err_style="band", ci="sd",
                                sort=True)
 
         ax.clear()
@@ -999,8 +1092,8 @@ class TestLinePlotter(TestBasicPlotter):
         assert np.allclose(line.get_ydata(), expected_data.values)
         assert len(ax.collections) == 1
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", errstyle="band", ci="sd")
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               estimator="mean", err_style="band", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1008,8 +1101,8 @@ class TestLinePlotter(TestBasicPlotter):
         for c in ax.collections:
             assert isinstance(c, mpl.collections.PolyCollection)
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", errstyle="bars", ci="sd")
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               estimator="mean", err_style="bars", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1019,7 +1112,7 @@ class TestLinePlotter(TestBasicPlotter):
         for c in ax.collections:
             assert isinstance(c, mpl.collections.LineCollection)
 
-        p = basic._LinePlotter(x="x", y="y", data=repeated_df,
+        p = rel._LinePlotter(x="x", y="y", data=repeated_df,
                                units="u", estimator=None)
 
         ax.clear()
@@ -1027,7 +1120,7 @@ class TestLinePlotter(TestBasicPlotter):
         n_units = len(repeated_df["u"].unique())
         assert len(ax.lines) == n_units
 
-        p = basic._LinePlotter(x="x", y="y", hue="a", data=repeated_df,
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=repeated_df,
                                units="u", estimator=None)
 
         ax.clear()
@@ -1039,11 +1132,31 @@ class TestLinePlotter(TestBasicPlotter):
         with pytest.raises(ValueError):
             p.plot(ax, {})
 
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               err_style="band", err_kws={"alpha": .5})
+
+        ax.clear()
+        p.plot(ax, {})
+        for band in ax.collections:
+            assert band.get_alpha() == .5
+
+        p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
+                               err_style="bars", err_kws={"elinewidth": 2})
+
+        ax.clear()
+        p.plot(ax, {})
+        for lines in ax.collections:
+            assert lines.get_linestyles() == 2
+
+        p.err_style = "invalid"
+        with pytest.raises(ValueError):
+            p.plot(ax, {})
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
-        p = basic._LinePlotter(x="x", y="y", data=long_df)
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
 
         p.plot(ax1, {})
         assert ax1.get_xlabel() == "x"
@@ -1059,10 +1172,10 @@ class TestLinePlotter(TestBasicPlotter):
         f1, ax1 = plt.subplots()
         f2, ax2 = plt.subplots()
 
-        ax = basic.lineplot(data=wide_df)
+        ax = rel.lineplot(data=wide_df)
         assert ax is ax2
 
-        ax = basic.lineplot(data=wide_df, ax=ax1)
+        ax = rel.lineplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
     def test_lineplot_smoke(self, flat_array, flat_series,
@@ -1071,98 +1184,80 @@ class TestLinePlotter(TestBasicPlotter):
 
         f, ax = plt.subplots()
 
-        basic.lineplot(data=flat_array)
+        rel.lineplot([], [])
         ax.clear()
 
-        basic.lineplot(data=flat_series)
+        rel.lineplot(data=flat_array)
         ax.clear()
 
-        basic.lineplot(data=wide_array)
+        rel.lineplot(data=flat_series)
         ax.clear()
 
-        basic.lineplot(data=wide_list)
+        rel.lineplot(data=wide_array)
         ax.clear()
 
-        basic.lineplot(data=wide_list_of_series)
+        rel.lineplot(data=wide_list)
         ax.clear()
 
-        basic.lineplot(data=wide_df)
+        rel.lineplot(data=wide_list_of_series)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", data=long_df)
+        rel.lineplot(data=wide_df)
         ax.clear()
 
-        basic.lineplot(x=long_df.x, y=long_df.y)
+        rel.lineplot(x="x", y="y", data=long_df)
         ax.clear()
 
-        basic.lineplot(x=long_df.x, y="y", data=long_df)
+        rel.lineplot(x=long_df.x, y=long_df.y)
         ax.clear()
 
-        basic.lineplot(x="x", y=long_df.y.values, data=long_df)
+        rel.lineplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", data=long_df)
+        rel.lineplot(x="x", y=long_df.y.values, data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", style="a", data=long_df)
+        rel.lineplot(x="x", y="y", hue="a", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", style="b", data=long_df)
+        rel.lineplot(x="x", y="y", hue="a", style="a", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        rel.lineplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        rel.lineplot(x="x", y="y", hue="a", style="a", data=missing_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", size="a", data=long_df)
+        rel.lineplot(x="x", y="y", hue="a", style="b", data=missing_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", size="s", data=long_df)
+        rel.lineplot(x="x", y="y", hue="a", size="a", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        rel.lineplot(x="x", y="y", hue="a", size="s", data=long_df)
         ax.clear()
 
-        basic.lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        rel.lineplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        ax.clear()
+
+        rel.lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
 
 
-class TestScatterPlotter(TestBasicPlotter):
-
-    def scatter_rgbs(self, collections):
-        rgbs = []
-        for col in collections:
-            rgb = tuple(col.get_facecolor().squeeze()[:3])
-            rgbs.append(rgb)
-        return rgbs
-
-    def colors_equal(self, *args):
-
-        equal = True
-        for c1, c2 in zip(*args):
-            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
-            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
-            equal &= c1 == c2
-        return equal
-
-    def paths_equal(self, *args):
-
-        equal = True
-        for p1, p2 in zip(*args):
-            equal &= np.array_equal(p1.vertices, p2.vertices)
-            equal &= np.array_equal(p1.codes, p2.codes)
-        return equal
+class TestScatterPlotter(TestRelationalPlotter):
 
     def test_legend_data(self, long_df):
 
         m = mpl.markers.MarkerStyle("o")
-        default_marker = m.get_path().transformed(m.get_transform())
+        default_mark = m.get_path().transformed(m.get_transform())
+
+        m = mpl.markers.MarkerStyle("")
+        null_mark = m.get_path().transformed(m.get_transform())
 
         f, ax = plt.subplots()
 
-        p = basic._ScatterPlotter(x="x", y="y", data=long_df, legend="full")
+        p = rel._ScatterPlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
         handles, _ = ax.get_legend_handles_labels()
         assert handles == []
@@ -1170,63 +1265,68 @@ class TestScatterPlotter(TestBasicPlotter):
         # --
 
         ax.clear()
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", data=long_df,
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", data=long_df,
                                   legend="full")
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        assert labels == p.hue_levels
-        assert self.colors_equal(colors, [p.palette[l] for l in labels])
+        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
+        assert labels == ["a"] + p.hue_levels
+        assert self.colors_equal(colors, expected_colors)
 
         # --
 
         ax.clear()
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="a",
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", style="a",
                                   markers=True, legend="full", data=long_df)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
+        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
         paths = [h.get_paths()[0] for h in handles]
-        assert labels == p.hue_levels == p.style_levels
-        assert self.colors_equal(colors, [p.palette[l] for l in labels])
-        assert self.paths_equal(paths, [p.paths[l] for l in labels])
-
-        # --
-
-        ax.clear()
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="b",
-                                  markers=True, legend="full", data=long_df)
-        p.add_legend_data(ax)
-        handles, labels = ax.get_legend_handles_labels()
-        colors = [h.get_facecolors()[0] for h in handles]
-        paths = [h.get_paths()[0] for h in handles]
-        expected_colors = ([p.palette[l] for l in p.hue_levels]
-                           + [".2" for _ in p.style_levels])
-        expected_paths = ([default_marker for _ in p.hue_levels]
-                          + [p.paths[l] for l in p.style_levels])
-        assert labels == p.hue_levels + p.style_levels
+        expected_paths = [null_mark] + [p.paths[l] for l in p.style_levels]
+        assert labels == ["a"] + p.hue_levels == ["a"] + p.style_levels
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
         # --
 
         ax.clear()
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", size="a",
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", style="b",
+                                  markers=True, legend="full", data=long_df)
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_facecolors()[0] for h in handles]
+        paths = [h.get_paths()[0] for h in handles]
+        expected_colors = (["w"] + [p.palette[l] for l in p.hue_levels]
+                           + ["w"] + [".2" for _ in p.style_levels])
+        expected_paths = ([null_mark] + [default_mark for _ in p.hue_levels]
+                          + [null_mark] + [p.paths[l] for l in p.style_levels])
+        assert labels == ["a"] + p.hue_levels + ["b"] + p.style_levels
+        assert self.colors_equal(colors, expected_colors)
+        assert self.paths_equal(paths, expected_paths)
+
+        # --
+
+        ax.clear()
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", size="a",
                                   data=long_df, legend="full")
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
+        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
         sizes = [h.get_sizes()[0] for h in handles]
-        assert labels == p.hue_levels == p.size_levels
-        assert self.colors_equal(colors, [p.palette[l] for l in labels])
-        assert sizes == [p.sizes[l] for l in labels]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["a"] + p.hue_levels == ["a"] + p.size_levels
+        assert self.colors_equal(colors, expected_colors)
+        assert sizes == expected_sizes
 
         # --
 
         x, y = np.random.randn(2, 40)
         z = np.tile(np.arange(20), 2)
 
-        p = basic._ScatterPlotter(x=x, y=y, hue=z)
+        p = rel._ScatterPlotter(x=x, y=y, hue=z)
 
         ax.clear()
         p.legend = "full"
@@ -1240,7 +1340,7 @@ class TestScatterPlotter(TestBasicPlotter):
         handles, labels = ax.get_legend_handles_labels()
         assert len(labels) == 4
 
-        p = basic._ScatterPlotter(x=x, y=y, size=z)
+        p = rel._ScatterPlotter(x=x, y=y, size=z)
 
         ax.clear()
         p.legend = "full"
@@ -1263,7 +1363,7 @@ class TestScatterPlotter(TestBasicPlotter):
 
         f, ax = plt.subplots()
 
-        p = basic._ScatterPlotter(x="x", y="y", data=long_df)
+        p = rel._ScatterPlotter(x="x", y="y", data=long_df)
 
         p.plot(ax, {})
         points = ax.collections[0]
@@ -1275,7 +1375,7 @@ class TestScatterPlotter(TestBasicPlotter):
         assert self.colors_equal(points.get_facecolor(), "k")
         assert points.get_label() == "test"
 
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", data=long_df)
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1283,7 +1383,16 @@ class TestScatterPlotter(TestBasicPlotter):
         expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
         assert self.colors_equal(points.get_facecolors(), expected_colors)
 
-        p = basic._ScatterPlotter(x="x", y="y", size="a", data=long_df)
+        p = rel._ScatterPlotter(x="x", y="y", style="c",
+                                  markers=["+", "x"], data=long_df)
+
+        ax.clear()
+        color = (1, .3, .8)
+        p.plot(ax, {"color": color})
+        points = ax.collections[0]
+        assert self.colors_equal(points.get_edgecolors(), [color])
+
+        p = rel._ScatterPlotter(x="x", y="y", size="a", data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1291,7 +1400,7 @@ class TestScatterPlotter(TestBasicPlotter):
         expected_sizes = [p.size_lookup(k) for k in p.plot_data["size"]]
         assert np.array_equal(points.get_sizes(), expected_sizes)
 
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="a",
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", style="a",
                                   markers=True, data=long_df)
 
         ax.clear()
@@ -1301,7 +1410,7 @@ class TestScatterPlotter(TestBasicPlotter):
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
-        p = basic._ScatterPlotter(x="x", y="y", hue="a", style="b",
+        p = rel._ScatterPlotter(x="x", y="y", hue="a", style="b",
                                   markers=True, data=long_df)
 
         ax.clear()
@@ -1315,7 +1424,7 @@ class TestScatterPlotter(TestBasicPlotter):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
-        p = basic._ScatterPlotter(x="x", y="y", data=long_df)
+        p = rel._ScatterPlotter(x="x", y="y", data=long_df)
 
         p.plot(ax1, {})
         assert ax1.get_xlabel() == "x"
@@ -1331,10 +1440,10 @@ class TestScatterPlotter(TestBasicPlotter):
         f1, ax1 = plt.subplots()
         f2, ax2 = plt.subplots()
 
-        ax = basic.scatterplot(data=wide_df)
+        ax = rel.scatterplot(data=wide_df)
         assert ax is ax2
 
-        ax = basic.scatterplot(data=wide_df, ax=ax1)
+        ax = rel.scatterplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
     def test_scatterplot_smoke(self, flat_array, flat_series,
@@ -1343,59 +1452,178 @@ class TestScatterPlotter(TestBasicPlotter):
 
         f, ax = plt.subplots()
 
-        basic.scatterplot(data=flat_array)
+        rel.scatterplot([], [])
         ax.clear()
 
-        basic.scatterplot(data=flat_series)
+        rel.scatterplot(data=flat_array)
         ax.clear()
 
-        basic.scatterplot(data=wide_array)
+        rel.scatterplot(data=flat_series)
         ax.clear()
 
-        basic.scatterplot(data=wide_list)
+        rel.scatterplot(data=wide_array)
         ax.clear()
 
-        basic.scatterplot(data=wide_list_of_series)
+        rel.scatterplot(data=wide_list)
         ax.clear()
 
-        basic.scatterplot(data=wide_df)
+        rel.scatterplot(data=wide_list_of_series)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", data=long_df)
+        rel.scatterplot(data=wide_df)
         ax.clear()
 
-        basic.scatterplot(x=long_df.x, y=long_df.y)
+        rel.scatterplot(x="x", y="y", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x=long_df.x, y="y", data=long_df)
+        rel.scatterplot(x=long_df.x, y=long_df.y)
         ax.clear()
 
-        basic.scatterplot(x="x", y=long_df.y.values, data=long_df)
+        rel.scatterplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", data=long_df)
+        rel.scatterplot(x="x", y=long_df.y.values, data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", style="a", data=long_df)
+        rel.scatterplot(x="x", y="y", hue="a", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", style="b", data=long_df)
+        rel.scatterplot(x="x", y="y", hue="a", style="a", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", style="a", data=missing_df)
+        rel.scatterplot(x="x", y="y", hue="a", style="b", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", style="b", data=missing_df)
+        rel.scatterplot(x="x", y="y", hue="a", style="a", data=missing_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", size="a", data=long_df)
+        rel.scatterplot(x="x", y="y", hue="a", style="b", data=missing_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", size="s", data=long_df)
+        rel.scatterplot(x="x", y="y", hue="a", size="a", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", size="a", data=missing_df)
+        rel.scatterplot(x="x", y="y", hue="a", size="s", data=long_df)
         ax.clear()
 
-        basic.scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        rel.scatterplot(x="x", y="y", hue="a", size="a", data=missing_df)
         ax.clear()
+
+        rel.scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        ax.clear()
+
+
+class TestRelPlotter(TestRelationalPlotter):
+
+    def test_relplot_simple(self, long_df):
+
+        g = rel.relplot(x="x", y="y", kind="scatter", data=long_df)
+        x, y = g.ax.collections[0].get_offsets().T
+        assert np.array_equal(x, long_df["x"])
+        assert np.array_equal(y, long_df["y"])
+
+        g = rel.relplot(x="x", y="y", kind="line", data=long_df)
+        x, y = g.ax.lines[0].get_xydata().T
+        expected = long_df.groupby("x").y.mean()
+        assert np.array_equal(x, expected.index)
+        assert y == pytest.approx(expected.values)
+
+        with pytest.raises(ValueError):
+            g = rel.relplot(x="x", y="y", kind="not_a_kind", data=long_df)
+
+    def test_relplot_complex(self, long_df):
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", data=long_df, **{sem: "a"})
+            x, y = g.ax.collections[0].get_offsets().T
+            assert np.array_equal(x, long_df["x"])
+            assert np.array_equal(y, long_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
+        for sem in ["size", "style"]:
+            g = rel.relplot(x="x", y="y", hue="b", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", col="b", row="c",
+                              data=sort_df(long_df, ["c", "b"]),
+                              **{sem: "a"})
+            grouped = long_df.groupby(["c", "b"])
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert np.array_equal(x, grp_df["x"])
+                assert np.array_equal(y, grp_df["y"])
+
+    def test_relplot_hues(self, long_df):
+
+        palette = ["r", "b", "g"]
+        g = rel.relplot(x="x", y="y", hue="a", style="b", col="c",
+                          palette=palette, data=long_df)
+
+        palette = dict(zip(long_df["a"].unique(), palette))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_hues = [palette[val] for val in grp_df["a"]]
+            assert self.colors_equal(points.get_facecolors(), expected_hues)
+
+    def test_relplot_sizes(self, long_df):
+
+        sizes = [5, 12, 7]
+        g = rel.relplot(x="x", y="y", size="a", hue="b", col="c",
+                          sizes=sizes, data=long_df)
+
+        sizes = dict(zip(long_df["a"].unique(), sizes))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_sizes = [sizes[val] for val in grp_df["a"]]
+            assert np.array_equal(points.get_sizes(), expected_sizes)
+
+    def test_relplot_styles(self, long_df):
+
+        markers = ["o", "d", "s"]
+        g = rel.relplot(x="x", y="y", style="a", hue="b", col="c",
+                          markers=markers, data=long_df)
+
+        paths = []
+        for m in markers:
+            m = mpl.markers.MarkerStyle(m)
+            paths.append(m.get_path().transformed(m.get_transform()))
+        paths = dict(zip(long_df["a"].unique(), paths))
+
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_paths = [paths[val] for val in grp_df["a"]]
+            assert self.paths_equal(points.get_paths(), expected_paths)
+
+    def test_relplot_legend(self, long_df):
+
+        g = rel.relplot(x="x", y="y", data=long_df)
+        assert g._legend is None
+
+        g = rel.relplot(x="x", y="y", hue="a", data=long_df)
+        texts = [t.get_text() for t in g._legend.texts]
+        expected_texts = np.append(["a"], long_df["a"].unique())
+        assert np.array_equal(texts, expected_texts)
+
+        g = rel.relplot(x="x", y="y", hue="s", size="s", data=long_df)
+        texts = [t.get_text() for t in g._legend.texts]
+        assert np.array_equal(texts[1:], np.sort(texts[1:]))
+
+        g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
+        assert g._legend is None

@@ -1,8 +1,8 @@
 """
-Timeseries plots with error bands
-=================================
+Timeseries plot with error bands
+================================
 
-_thumb: .5, .45
+_thumb: .48, .45
 
 """
 import seaborn as sns

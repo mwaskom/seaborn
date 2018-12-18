@@ -4,7 +4,6 @@ Horizontal boxplot with observations
 
 _thumb: .7, .37
 """
-import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -19,7 +18,7 @@ planets = sns.load_dataset("planets")
 
 # Plot the orbital period with horizontal boxes
 sns.boxplot(x="distance", y="method", data=planets,
-            whis=np.inf, palette="vlag")
+            whis="range", palette="vlag")
 
 # Add in points to show each observation
 sns.swarmplot(x="distance", y="method", data=planets,

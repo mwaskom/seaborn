@@ -29,6 +29,7 @@ if six.PY3:
 
 
 RST_TEMPLATE = """
+
 .. _{sphinx_tag}:
 
 {docstring}
@@ -37,8 +38,17 @@ RST_TEMPLATE = """
 
 **Python source code:** :download:`[download source: {fname}]<{fname}>`
 
+.. raw:: html
+
+    <div class="col-md-9">
+
 .. literalinclude:: {fname}
     :lines: {end_line}-
+
+.. raw:: html
+
+    </div>
+
 """
 
 

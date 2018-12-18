@@ -2,16 +2,16 @@
 v0.5.0 (November 2014)
 --------------------------
 
-This is a major release from 0.4. Highlights include new functions for :ref:`plotting heatmaps <network_correlations>`, possibly while :ref:`applying clustering algorithms <structured_heatmap>` to discover structured relationships. These functions are complemented by new custom colormap functions and a full set of IPython widgets that allow interactive selection of colormap parameters. The :ref:`palette tutorial <palette_tutorial>` has been rewritten to cover these new tools and more generally provide guidance on how to use color in visualizations. There are also a number of smaller changes and bugfixes.
+This is a major release from 0.4. Highlights include new functions for plotting heatmaps, possibly while applying clustering algorithms to discover structured relationships. These functions are complemented by new custom colormap functions and a full set of IPython widgets that allow interactive selection of colormap parameters. The palette tutorial has been rewritten to cover these new tools and more generally provide guidance on how to use color in visualizations. There are also a number of smaller changes and bugfixes.
 
 Plotting functions
 ~~~~~~~~~~~~~~~~~~
 
-- Added the :func:`heatmap` function for visualizing a matrix of data by color-encoding the values. See the :ref:`docs <heatmap>` for more information.
+- Added the :func:`heatmap` function for visualizing a matrix of data by color-encoding the values. See the docs for more information.
 
-- Added the :func:`clustermap` function for clustering and visualizing a matrix of data, with options to label individual rows and columns by colors. See the :ref:`docs <clustermap>` for more information. This work was lead by Olga Botvinnik.
+- Added the :func:`clustermap` function for clustering and visualizing a matrix of data, with options to label individual rows and columns by colors. See the docs for more information. This work was lead by Olga Botvinnik.
 
-- :func:`lmplot` and :func:`pairplot` get a new keyword argument, ``markers``. This can be a single kind of marker or a list of different markers for each level of the ``hue`` variable. Using different markers for different hues should let plots be more comprehensible when reproduced to black-and-white (i.e. when printed). See the `github pull request <https://github.com/mwaskom/seaborn/pull/323>`_ for examples.
+- :func:`lmplot` and :func:`pairplot` get a new keyword argument, ``markers``. This can be a single kind of marker or a list of different markers for each level of the ``hue`` variable. Using different markers for different hues should let plots be more comprehensible when reproduced to black-and-white (i.e. when printed). See the `github pull request (#323) <https://github.com/mwaskom/seaborn/pull/323>`_ for examples.
 
 - More generally, there is a new keyword argument in :class:`FacetGrid` and :class:`PairGrid`, ``hue_kws``. This similarly lets plot aesthetics vary across the levels of the hue variable, but more flexibily. ``hue_kws`` should be a dictionary that maps the name of keyword arguments to lists of values that are as long as the number of levels of the hue variable.
 

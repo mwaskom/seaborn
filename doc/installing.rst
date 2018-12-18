@@ -1,7 +1,13 @@
 .. _installing:
 
+.. currentmodule:: seaborn
+
 Installing and getting started
 ------------------------------
+
+.. raw:: html
+
+   <div class="col-md-9">
 
 To install the latest release of seaborn, you can use ``pip``::
 
@@ -16,10 +22,9 @@ Alternatively, you can use ``pip`` to install the development version directly f
     pip install git+https://github.com/mwaskom/seaborn.git
 
 Another option would be to to clone the `github repository
-<https://github.com/mwaskom/seaborn>`_ install from your local copy::
+<https://github.com/mwaskom/seaborn>`_ and install from your local copy::
 
     pip install .
-
 
 Dependencies
 ~~~~~~~~~~~~
@@ -66,12 +71,6 @@ versions of seaborn and matplotlib you are using, as well as what `matplotlib
 backend <https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you
 are using to draw the plots, so please include those in your bug report.
 
+.. raw:: html
 
-Known issues
-~~~~~~~~~~~~
-
-An unfortunate consequence of how the matplotlib marker styles work is that
-line-art markers (e.g. ``"+"``) or markers with ``facecolor`` set to ``"none"``
-will be invisible when the default seaborn style is in effect. This can be
-changed by using a different ``markeredgewidth`` (aliased to ``mew``) either in
-the function call or globally in the ``rcParams``.
+   </div>

@@ -15,13 +15,9 @@ dots = sns.load_dataset("dots")
 palette = dict(zip(dots.coherence.unique(),
                    sns.color_palette("rocket_r", 6)))
 
-# Set up the FacetGrid with independent x axes
-g = sns.FacetGrid(dots, col="align",
-                  sharex=False, size=5, aspect=.75)
-
-# Draw the lineplot on each facet
-g.map_dataframe(sns.lineplot, "time", "firing_rate",
-                hue="coherence", size="choice",
-                size_order=["T1", "T2"],
-                palette=palette)
-g.add_legend()
+# Plot the lines on two facets
+sns.relplot(x="time", y="firing_rate",
+            hue="coherence", size="choice", col="align",
+            size_order=["T1", "T2"], palette=palette,
+            height=5, aspect=.75, facet_kws=dict(sharex=False),
+            kind="line", legend="full", data=dots)

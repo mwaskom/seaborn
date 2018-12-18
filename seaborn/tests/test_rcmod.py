@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import nose.tools as nt
 import numpy.testing as npt
 
-from .. import rcmod
+from .. import rcmod, palettes, utils
 
 
 class RCParamTester(object):
@@ -175,6 +175,23 @@ class TestPlottingContext(RCParamTester):
         self.assert_rc_params(orig_params)
 
 
+class TestPalette(object):
+
+    def test_set_palette(self):
+
+        rcmod.set_palette("deep")
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+
+        rcmod.set_palette("pastel6")
+        assert utils.get_color_cycle() == palettes.color_palette("pastel6", 6)
+
+        rcmod.set_palette("dark", 4)
+        assert utils.get_color_cycle() == palettes.color_palette("dark", 4)
+
+        rcmod.set_palette("Set2", color_codes=True)
+        assert utils.get_color_cycle() == palettes.color_palette("Set2", 8)
+
+
 class TestFonts(object):
 
     def test_set_font(self):
@@ -213,8 +230,7 @@ class TestFonts(object):
             raise nose.SkipTest
 
         rcmod.set()
-        rcmod.set_style(rc={"font.sans-serif":
-                            ["Verdana"]})
+        rcmod.set_style(rc={"font.sans-serif": ["Verdana"]})
 
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
@@ -239,7 +255,7 @@ def has_verdana():
     import matplotlib.font_manager as mplfm
     try:
         verdana_font = mplfm.findfont('Verdana', fallback_to_default=False)
-    except:
+    except:  # noqa
         # if https://github.com/matplotlib/matplotlib/pull/3435
         # gets accepted
         return False
@@ -247,7 +263,7 @@ def has_verdana():
     try:
         unlikely_font = mplfm.findfont("very_unlikely_to_exist1234",
                                        fallback_to_default=False)
-    except:
+    except:  # noqa
         # if matched verdana but not unlikely, Verdana must exist
         return True
     # otherwise -- if they match, must be the same default

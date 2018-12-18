@@ -15,7 +15,7 @@ Plotting functions
 
 - When using :class:`FacetGrid` with a ``hue`` variable, the legend is no longer drawn by default when you call :meth:`FacetGrid.map`. Instead, you have to call :meth:`FacetGrid.add_legend` manually. This should make it easier to layer multiple plots onto the grid without having duplicated legends.
 
-- Made some changes to :func:`factorplot` so that it behaves better when not all levels of the ``x`` variable are represented in each facet.
+- Made some changes to ``factorplot`` so that it behaves better when not all levels of the ``x`` variable are represented in each facet.
 
 - Added the ``logx`` option to :func:`regplot` for fitting the regression in log space.
 
