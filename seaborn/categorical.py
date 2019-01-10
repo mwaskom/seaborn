@@ -557,7 +557,7 @@ class _ViolinPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  bw, cut, scale, scale_hue, gridsize,
                  width, inner, split, dodge, orient, linewidth,
-                 color, palette, saturation):
+                 color, palette, saturation, nonsymmetrical):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
@@ -584,6 +584,8 @@ class _ViolinPlotter(_CategoricalPlotter):
         if linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
+
+        self.nonsymmetrical = nonsymmetrical
 
     def estimate_densities(self, bw, cut, scale, scale_hue, gridsize):
         """Find the support and density for all of the data."""
@@ -831,11 +833,25 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                 # Draw the violin for this group
                 grid = np.ones(self.gridsize) * i
-                fill_func(support,
-                          grid - density * self.dwidth,
-                          grid + density * self.dwidth,
-                          facecolor=self.colors[i],
-                          **kws)
+                if self.nonsymmetrical and (self.nonsymmetrical.startswith("left") or self.nonsymmetrical.startswith("top")):
+                    fill_func(support,
+                            grid - density * self.dwidth,
+                            grid,
+                            facecolor=self.colors[i],
+                            **kws)
+                elif self.nonsymmetrical and (self.nonsymmetrical.startswith("right") or self.nonsymmetrical.startswith("bottom")):
+                    fill_func(support,
+                            grid,
+                            grid + density * self.dwidth,
+                            facecolor=self.colors[i],
+                            **kws)
+                else:
+                    fill_func(support,
+                            grid - density * self.dwidth,
+                            grid + density * self.dwidth,
+                            facecolor=self.colors[i],
+                            **kws)
+
 
                 # Draw the interior representation of the data
                 if self.inner is None:
@@ -947,10 +963,21 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                     else:
                         grid = np.ones(self.gridsize) * (i + offsets[j])
-                        fill_func(support,
-                                  grid - density * self.dwidth,
-                                  grid + density * self.dwidth,
-                                  **kws)
+                        if self.nonsymmetrical and (self.nonsymmetrical.startswith("left") or self.nonsymmetrical.startswith("top")):
+                            fill_func(support,
+                                    grid - density * self.dwidth,
+                                    grid,
+                                    **kws)
+                        elif self.nonsymmetrical and (self.nonsymmetrical.startswith("right") or self.nonsymmetrical.startswith("bottom")):
+                            fill_func(support,
+                                    grid,
+                                    grid + density * self.dwidth,
+                                    **kws)
+                        else:
+                            fill_func(support,
+                                    grid - density * self.dwidth,
+                                    grid + density * self.dwidth,
+                                    **kws)
 
                         # Draw the interior representation
                         if self.inner is None:
@@ -2379,12 +2406,12 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
                width=.8, inner="box", split=False, dodge=True, orient=None,
                linewidth=None, color=None, palette=None, saturation=.75,
-               ax=None, **kwargs):
+               ax=None, nonsymmetrical=False, **kwargs):
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
                              width, inner, split, dodge, orient, linewidth,
-                             color, palette, saturation)
+                             color, palette, saturation, nonsymmetrical)
 
     if ax is None:
         ax = plt.gca()
