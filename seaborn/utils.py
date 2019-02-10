@@ -373,7 +373,7 @@ def get_dataset_names():
     # delayed import to not demand bs4 unless this function is actually used
     from bs4 import BeautifulSoup
     http = urlopen('https://github.com/mwaskom/seaborn-data/')
-    gh_list = BeautifulSoup(http)
+    gh_list = BeautifulSoup(http, 'html.parser')
 
     return [l.text.replace('.csv', '')
             for l in gh_list.find_all("a", {"class": "js-navigation-open"})
