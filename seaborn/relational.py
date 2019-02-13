@@ -525,13 +525,17 @@ class _RelationalPlotter(object):
         if self.input_format == "wide":
             return "categorical"
         else:
-            try:
-                float_data = data.astype(np.float)
-                values = np.unique(float_data.dropna())
-                if np.array_equal(values, np.array([0., 1.])):
+            if data.dtype in [bool] + np.sctypes['int'] + np.sctypes['uint'] + \
+                    np.sctypes['float'] + np.sctype['complex']:
+                try:
+                    float_data = data.astype(np.float)
+                    values = np.unique(float_data.dropna())
+                    if np.array_equal(values, np.array([0., 1.])):
+                        return "categorical"
+                    return "numeric"
+                except (ValueError, TypeError):
                     return "categorical"
-                return "numeric"
-            except (ValueError, TypeError):
+            else:
                 return "categorical"
 
     def label_axes(self, ax):
