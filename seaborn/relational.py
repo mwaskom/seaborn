@@ -526,7 +526,7 @@ class _RelationalPlotter(object):
             return "categorical"
         else:
             if data.dtype in [bool] + np.sctypes['int'] + np.sctypes['uint'] + \
-                    np.sctypes['float'] + np.sctype['complex']:
+                    np.sctypes['float'] + np.sctypes['complex']:
                 try:
                     float_data = data.astype(np.float)
                     values = np.unique(float_data.dropna())
