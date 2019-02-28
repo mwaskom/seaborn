@@ -3035,6 +3035,9 @@ swarmplot.__doc__ = dedent("""\
         of the points.
     {linewidth}
     {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.scatter`` at draw
+        time.
 
     Returns
     -------
