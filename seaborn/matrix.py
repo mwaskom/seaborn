@@ -265,7 +265,7 @@ class _HeatMapper(object):
         size = [bbox.width, bbox.height][axis]
         axis = [ax.xaxis, ax.yaxis][axis]
         tick, = axis.set_ticks([0])
-        fontsize = tick.label.get_size()
+        fontsize = tick.label1.get_size()
         max_ticks = int(size // (fontsize / 72))
         if max_ticks < 1:
             return [], []
