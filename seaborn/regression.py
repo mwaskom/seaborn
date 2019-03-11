@@ -819,7 +819,7 @@ regplot.__doc__ = dedent("""\
     {truncate}
     {xy_jitter}
     label : string
-        Label to apply to ether the scatterplot or regression line (if
+        Label to apply to either the scatterplot or regression line (if
         ``scatter`` is ``False``) for use in a legend.
     color : matplotlib color
         Color to apply to all plot elements; will be superseded by colors
