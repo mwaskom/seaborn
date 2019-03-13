@@ -477,7 +477,6 @@ class TestRelationalPlotter(object):
 
         # Test Timestamp data
         p = rel._LinePlotter(x="x", y="y", hue="d", data=long_df)
-        print p.hue_levels
         assert p.hue_levels == [pd.Timestamp('2005-02-25')]
         assert p.hue_type is "categorical"
 
