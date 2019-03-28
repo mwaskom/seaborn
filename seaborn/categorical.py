@@ -571,7 +571,8 @@ class _ViolinPlotter(_CategoricalPlotter):
             if not any([inner.startswith("quart"),
                         inner.startswith("box"),
                         inner.startswith("stick"),
-                        inner.startswith("point")]):
+                        inner.startswith("point"),
+                        inner.startswith("mean")]):
                 err = "Inner style '{}' not recognized".format(inner)
                 raise ValueError(err)
         self.inner = inner
@@ -860,6 +861,10 @@ class _ViolinPlotter(_CategoricalPlotter):
                 elif self.inner.startswith("point"):
                     self.draw_points(ax, violin_data, i)
 
+                # Draw mean line
+                elif self.inner.startswith("mean"):
+                    self.draw_mean_line(ax, violin_data, support, density, i)
+
             # Option 2: we have nested grouping by a hue variable
             # ---------------------------------------------------
 
@@ -925,6 +930,13 @@ class _ViolinPlotter(_CategoricalPlotter):
                                                   support, density, i,
                                                   ["left", "right"][j])
 
+                        # Draw mean line
+                        elif self.inner.startswith("mean"):
+                            self.draw_mean_line(ax, violin_data,
+                                                support, density, i,
+                                                ["left", "right"][j])
+
+
                         # The box and point interior plots are drawn for
                         # all data at the group level, so we just do that once
                         if not j:
@@ -977,6 +989,12 @@ class _ViolinPlotter(_CategoricalPlotter):
                             self.draw_stick_lines(ax, violin_data,
                                                   support, density,
                                                   i + offsets[j])
+
+                        # Draw mean line
+                        elif self.inner.startswith("mean"):
+                            self.draw_mean_line(ax, violin_data,
+                                                support, density,
+                                                i + offsets[j])                        
 
                         # Draw point observations
                         elif self.inner.startswith("point"):
@@ -1043,6 +1061,14 @@ class _ViolinPlotter(_CategoricalPlotter):
         self.draw_to_density(ax, center, q75, support, density, split,
                              linewidth=self.linewidth,
                              dashes=[self.linewidth * 1.5] * 2)
+
+    def draw_mean_line(self, ax, data, support, density, center, split=False):
+        """Draw the quartiles as lines at width of density."""
+        mean = np.mean(data)
+
+        self.draw_to_density(ax, center, mean, support, density, split,
+                             linewidth=self.linewidth,
+                             dashes=[self.linewidth * 3] * 2)
 
     def draw_points(self, ax, data, center):
         """Draw individual observations as points at middle of the violin."""
