@@ -1067,8 +1067,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         mean = np.mean(data)
 
         self.draw_to_density(ax, center, mean, support, density, split,
-                             linewidth=self.linewidth,
-                             dashes=[self.linewidth * 3] * 2)
+                             linewidth=self.linewidth)
 
     def draw_points(self, ax, data, center):
         """Draw individual observations as points at middle of the violin."""
