@@ -2370,7 +2370,7 @@ boxplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="box",
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -2597,7 +2597,7 @@ violinplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="violin", split=True,
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -2760,7 +2760,7 @@ boxenplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="boxen",
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -2959,7 +2959,7 @@ stripplot.__doc__ = dedent("""\
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="strip",
         ...                 jitter=True,
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -3132,7 +3132,7 @@ swarmplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="swarm",
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -3318,7 +3318,7 @@ barplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="bar",
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -3519,7 +3519,7 @@ pointplot.__doc__ = dedent("""\
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="point",
         ...                 dodge=True,
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
@@ -3649,7 +3649,7 @@ countplot.__doc__ = dedent("""\
 
         >>> g = sns.catplot(x="class", hue="who", col="survived",
         ...                 data=titanic, kind="count",
-        ...                 height=4, aspect=.7);
+        ...                 height=4, aspect=.7)
 
     """).format(**_categorical_docs)
 
