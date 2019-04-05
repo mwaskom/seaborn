@@ -13,10 +13,6 @@ import matplotlib.pyplot as plt
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 from .external.six.moves.http_client import HTTPException
 
-from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
-
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "load_dataset"]
@@ -432,9 +428,6 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
 
-    if not pandas_has_categoricals:
-        return df
-
     # Set some columns as a categorical type with ordered levels
 
     if name == "tips":
@@ -540,17 +533,14 @@ def categorical_order(values, order=None):
 
 def get_color_cycle():
     """Return the list of colors in the current matplotlib color cycle."""
-    if mpl_ge_150:
-        cyl = mpl.rcParams['axes.prop_cycle']
-        # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
-        # but no garuantee that there's a `color` key.
-        # so users could have a custom rcParmas w/ no color...
-        try:
-            return [x['color'] for x in cyl]
-        except KeyError:
-            pass  # just return axes.color style below
-
-    return mpl.rcParams['axes.color_cycle']
+    cyl = mpl.rcParams['axes.prop_cycle']
+    # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
+    # but no garuantee that there's a `color` key.
+    # so users could have a custom rcParmas w/ no color...
+    try:
+        return [x['color'] for x in cyl]
+    except KeyError:
+        return mpl.rcParams['axes.color_cycle']
 
 
 def relative_luminance(color):

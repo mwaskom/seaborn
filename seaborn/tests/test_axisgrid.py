@@ -10,7 +10,6 @@ from distutils.version import LooseVersion
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
 try:
     import pandas.testing as tm
 except ImportError:
@@ -24,9 +23,6 @@ from ..categorical import pointplot
 from ..utils import categorical_order
 
 rs = np.random.RandomState(0)
-
-old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 class TestFacetGrid(object):
@@ -279,7 +275,6 @@ class TestFacetGrid(object):
         for ax in g.axes.flat:
             nt.assert_true("PolarAxesSubplot" in str(type(ax)))
 
-    @skipif(old_matplotlib)
     def test_gridspec_kws(self):
         ratios = [3, 1, 2]
 
@@ -296,7 +291,6 @@ class TestFacetGrid(object):
             assert l.get_position().width > m.get_position().width
             assert r.get_position().width > m.get_position().width
 
-    @skipif(old_matplotlib)
     def test_gridspec_kws_col_wrap(self):
         ratios = [3, 1, 2, 1, 1]
 
@@ -306,17 +300,6 @@ class TestFacetGrid(object):
             warnings.simplefilter("always")
             npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='d',
                              col_wrap=5, gridspec_kws=gskws)
-
-    @skipif(not old_matplotlib)
-    def test_gridsic_kws_old_mpl(self):
-        ratios = [3, 1, 2]
-
-        gskws = dict(width_ratios=ratios, height_ratios=ratios)
-        with warnings.catch_warnings():
-            warnings.resetwarnings()
-            warnings.simplefilter("always")
-            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='c',
-                             row='a', gridspec_kws=gskws)
 
     def test_data_generator(self):
 
@@ -417,10 +400,10 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[1, 0].get_title(), "a = b | b = m")
 
         # Test a provided title
-        g.set_titles("{row_var} == {row_name} \/ {col_var} == {col_name}")
-        nt.assert_equal(g.axes[0, 0].get_title(), "a == a \/ b == m")
-        nt.assert_equal(g.axes[0, 1].get_title(), "a == a \/ b == n")
-        nt.assert_equal(g.axes[1, 0].get_title(), "a == b \/ b == m")
+        g.set_titles("{row_var} == {row_name} \\/ {col_var} == {col_name}")
+        nt.assert_equal(g.axes[0, 0].get_title(), "a == a \\/ b == m")
+        nt.assert_equal(g.axes[0, 1].get_title(), "a == a \\/ b == n")
+        nt.assert_equal(g.axes[1, 0].get_title(), "a == b \\/ b == m")
 
         # Test a single row
         g = ag.FacetGrid(self.df,  col="b")
@@ -713,7 +696,6 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, row="b")
         g = g.map(plt.plot, "x")
 
-    @skipif(not pandas_has_categoricals)
     def test_categorical_column_missing_categories(self):
 
         df = self.df.copy()
@@ -910,7 +892,6 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_map_diag(self):
 
         g1 = ag.PairGrid(self.df)
@@ -938,7 +919,6 @@ class TestPairGrid(object):
             for ptch in ax.patches:
                 nt.assert_equal(ptch.fill, False)
 
-    @skipif(old_matplotlib)
     def test_map_diag_color(self):
 
         color = "red"
@@ -958,7 +938,6 @@ class TestPairGrid(object):
             for line in ax.lines:
                 nt.assert_equals(line.get_color(), color)
 
-    @skipif(old_matplotlib)
     def test_map_diag_palette(self):
 
         pal = color_palette(n_colors=len(self.df.a.unique()))
@@ -969,7 +948,6 @@ class TestPairGrid(object):
             for line, color in zip(ax.lines, pal):
                 nt.assert_equals(line.get_color(), color)
 
-    @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
         vars = ["x", "y", "z"]
@@ -1039,7 +1017,6 @@ class TestPairGrid(object):
         for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
             nt.assert_equal(line.get_marker(), marker)
 
-    @skipif(old_matplotlib)
     def test_hue_order(self):
 
         order = list("dcab")
@@ -1083,7 +1060,6 @@ class TestPairGrid(object):
 
         plt.close("all")
 
-    @skipif(old_matplotlib)
     def test_hue_order_missing_level(self):
 
         order = list("dcaeb")
@@ -1157,7 +1133,6 @@ class TestPairGrid(object):
                 npt.assert_array_equal(x_in_k, x_out)
                 npt.assert_array_equal(y_in_k, y_out)
 
-    @skipif(old_matplotlib)
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]
@@ -1193,7 +1168,6 @@ class TestPairGrid(object):
             assert len(ax.lines) == n
             assert len(ax.collections) == n
 
-    @skipif(old_matplotlib)
     def test_pairplot_reg(self):
 
         vars = ["x", "y", "z"]
@@ -1228,7 +1202,6 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_pairplot_kde(self):
 
         vars = ["x", "y", "z"]
@@ -1257,7 +1230,6 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]
