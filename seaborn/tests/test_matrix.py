@@ -14,7 +14,7 @@ try:
     import pandas.testing as pdt
 except ImportError:
     import pandas.util.testing as pdt
-from numpy.testing.decorators import skipif
+import pytest
 
 from .. import matrix as mat
 from .. import color_palette
@@ -388,14 +388,11 @@ class TestHeatmap(object):
         npt.assert_array_equal(mask_out, [[True, True], [False, False]])
 
     def test_cbar_ticks(self):
-        max_n_ticks = 3
 
-        locator = mpl.ticker.MaxNLocator(max_n_ticks)
         f, (ax1, ax2) = plt.subplots(2)
         mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
-                    cbar_kws=dict(ticks=locator))
-        nt.assert_equal(len(ax2.yaxis.get_ticklabels()), max_n_ticks)
-        plt.close(f)
+                    cbar_kws=dict(drawedges=True))
+        assert len(ax2.collections) == 2
 
 
 class TestDendrogram(object):
@@ -557,7 +554,7 @@ class TestDendrogram(object):
 
         npt.assert_array_equal(scipy_linkage, linkage)
 
-    @skipif(_no_fastcluster)
+    @pytest.mark.skipif(_no_fastcluster, reason="fastcluster not installed")
     def test_fastcluster_other_method(self):
         import fastcluster
 
@@ -568,7 +565,7 @@ class TestDendrogram(object):
         p = mat._DendrogramPlotter(self.x_norm, **kws)
         npt.assert_array_equal(p.linkage, linkage)
 
-    @skipif(_no_fastcluster)
+    @pytest.mark.skipif(_no_fastcluster, reason="fastcluster not installed")
     def test_fastcluster_non_euclidean(self):
         import fastcluster
 
@@ -787,7 +784,7 @@ class TestClustermap(object):
         kws['z_score'] = True
         kws['standard_scale'] = True
         with nt.assert_raises(ValueError):
-            cm = mat.ClusterGrid(self.df_norm, **kws)
+            mat.ClusterGrid(self.df_norm, **kws)
 
     def test_color_list_to_matrix_and_cmap(self):
         matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
