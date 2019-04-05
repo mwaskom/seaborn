@@ -5,7 +5,6 @@ import pandas as pd
 from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from distutils.version import LooseVersion
 
 import pytest
 import nose.tools as nt
@@ -929,14 +928,14 @@ class TestPairGrid(object):
 
         for ax in g1.diag_axes:
             for patch in ax.patches:
-                nt.assert_equals(patch.get_facecolor(), rgb_color)
+                assert patch.get_facecolor() == rgb_color
 
         g2 = ag.PairGrid(self.df)
         g2.map_diag(kdeplot, color='red')
 
         for ax in g2.diag_axes:
             for line in ax.lines:
-                nt.assert_equals(line.get_color(), color)
+                assert line.get_color() == color
 
     def test_map_diag_palette(self):
 
@@ -946,7 +945,7 @@ class TestPairGrid(object):
 
         for ax in g.diag_axes:
             for line, color in zip(ax.lines, pal):
-                nt.assert_equals(line.get_color(), color)
+                assert line.get_color() == color
 
     def test_map_diag_and_offdiag(self):
 

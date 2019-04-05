@@ -1513,7 +1513,7 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
         for i, group_colors in enumerate(point_colors):
             nt.assert_equal(tuple(deep_colors[i]), tuple(group_colors[0]))
             for channel in group_colors.T:
-                nt.assert_equals(np.unique(channel).size, 1)
+                assert np.unique(channel).size == 1
 
     def test_hue_point_colors(self):
 
