@@ -824,8 +824,8 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                 # Handle special case of a single observation
                 elif support.size == 1:
-                    val = np.asscalar(support)
-                    d = np.asscalar(density)
+                    val = support.item()
+                    d = density.item()
                     self.draw_single_observation(ax, i, val, d)
                     continue
 
@@ -880,8 +880,8 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                     # Handle the special case where we have one observation
                     elif support.size == 1:
-                        val = np.asscalar(support)
-                        d = np.asscalar(density)
+                        val = support.item()
+                        d = density.item()
                         if self.split:
                             d = d / 2
                         at_group = i + offsets[j]
