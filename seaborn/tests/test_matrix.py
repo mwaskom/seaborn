@@ -389,11 +389,10 @@ class TestHeatmap(object):
 
     def test_cbar_ticks(self):
 
-        ticks = [-2, 1, 2]
         f, (ax1, ax2) = plt.subplots(2)
         mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
-                    cbar_kws=dict(ticks=ticks))
-        assert list(ax2.get_yticks()) == ticks
+                    cbar_kws=dict(drawedges=True))
+        assert len(ax2.collections) == 2
 
 
 class TestDendrogram(object):
