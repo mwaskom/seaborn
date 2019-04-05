@@ -9,7 +9,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set(style="whitegrid")
 
-# Load the example iris dataset
+# Load the example diamonds dataset
 diamonds = sns.load_dataset("diamonds")
 
 # Draw a scatter plot while assigning point colors and sizes to different
