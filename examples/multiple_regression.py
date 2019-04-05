@@ -10,7 +10,7 @@ sns.set()
 # Load the iris dataset
 iris = sns.load_dataset("iris")
 
-# Plot sepal with as a function of sepal_length across days
+# Plot sepal width as a function of sepal_length across days
 g = sns.lmplot(x="sepal_length", y="sepal_width", hue="species",
                truncate=True, height=5, data=iris)
 

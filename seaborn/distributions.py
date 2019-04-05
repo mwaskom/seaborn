@@ -81,9 +81,9 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Name for the support axis label. If None, will try to get it
         from a.namel if False, do not set a label.
     label : string, optional
-        Legend label for the relevent component of the plot
+        Legend label for the relevant component of the plot.
     ax : matplotlib axis, optional
-        if provided, plot on this axis
+        If provided, plot on this axis.
 
     Returns
     -------
@@ -288,8 +288,8 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
             msg = "Kernel other than `gau` requires statsmodels."
             warnings.warn(msg, UserWarning)
         if cumulative:
-            raise ImportError("Cumulative distributions are currently"
-                              "only implemented in statsmodels."
+            raise ImportError("Cumulative distributions are currently "
+                              "only implemented in statsmodels. "
                               "Please install statsmodels.")
         x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
 
