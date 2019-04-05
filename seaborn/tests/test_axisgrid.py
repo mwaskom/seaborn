@@ -638,6 +638,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, row=unicode_row_label)
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_with_row_and_column(self):
 
         df = self.df.copy()
@@ -657,6 +659,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, col="a", row="b")
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_no_rows(self):
 
         df = self.df.copy()
@@ -676,6 +680,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, col="a")
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_no_columns(self):
 
         df = self.df.copy()
