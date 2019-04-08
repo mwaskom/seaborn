@@ -892,23 +892,27 @@ class FacetGrid(Grid):
         return self
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):
-        """Set x axis tick labels on the bottom row of the grid."""
+        """Set x axis tick labels of the grid."""      
         for ax in self.axes.flat:
             if labels is None:
-                labels = [l.get_text() for l in ax.get_xticklabels()]
+                curr_labels = [l.get_text() for l in ax.get_xticklabels()]
                 if step is not None:
                     xticks = ax.get_xticks()[::step]
-                    labels = labels[::step]
+                    curr_labels = curr_labels[::step]
                     ax.set_xticks(xticks)
-            ax.set_xticklabels(labels, **kwargs)
+                ax.set_xticklabels(curr_labels, **kwargs)
+            else:
+                ax.set_xticklabels(labels, **kwargs)
         return self
 
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
         for ax in self.axes.flat:
             if labels is None:
-                labels = [l.get_text() for l in ax.get_yticklabels()]
-            ax.set_yticklabels(labels, **kwargs)
+                curr_labels = [l.get_text() for l in ax.get_yticklabels()]
+                ax.set_yticklabels(curr_labels, **kwargs)
+            else:
+                ax.set_yticklabels(labels, **kwargs)
         return self
 
     def set_titles(self, template=None, row_template=None,  col_template=None,
