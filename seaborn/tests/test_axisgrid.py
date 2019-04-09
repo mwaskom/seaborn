@@ -931,6 +931,9 @@ class TestPairGrid(object):
         g5 = ag.PairGrid(na_df, dropna=True)
         g5.map_diag(plt.hist)
 
+        g6 = ag.PairGrid(na_df, dropna=False)
+        nt.assert_raises(ValueError, g6.map_diag, plt.hist)
+
     def test_map_diag_color(self):
 
         color = "red"
