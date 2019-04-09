@@ -1398,7 +1398,9 @@ class PairGrid(Grid):
                     data_k = utils.remove_na(data_k)
                 else:
                     if np.sum(np.isnan(data_k), axis=0).sum() > 0:
-                        raise ValueError("Cannot plot histograms for data containing NAs. Please filter out NAs or pass `dropna=True`.")
+                        raise ValueError(("Cannot plot histograms for data",
+                                          " containing NAs. Please filter out",
+                                          "NAs or pass `dropna=True`."))
 
                 if fixed_color is None:
                     color = self.palette[k]
