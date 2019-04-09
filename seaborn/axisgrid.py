@@ -1273,6 +1273,9 @@ class PairGrid(Grid):
         self.axes = axes
         self.data = data
 
+        # Save dropna variable to dictate filtering steps when plotting
+        self._dropna = dropna
+
         # Save what we are going to do with the diagonal
         self.diag_sharey = diag_sharey
         self.diag_axes = None
@@ -1390,6 +1393,12 @@ class PairGrid(Grid):
                     data_k = np.asarray(hue_grouped.get_group(label_k))
                 except KeyError:
                     data_k = np.array([])
+
+                if self._dropna:
+                    data_k = utils.remove_na(data_k)
+                else:
+                    if np.sum(np.isnan(data_k), axis=0).sum() > 0:
+                        raise ValueError("Cannot plot histograms for data containing NAs. Please filter out NAs or pass `dropna=True`.")
 
                 if fixed_color is None:
                     color = self.palette[k]

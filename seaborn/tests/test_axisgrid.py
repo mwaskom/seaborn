@@ -924,6 +924,13 @@ class TestPairGrid(object):
             for ptch in ax.patches:
                 nt.assert_equal(ptch.fill, False)
 
+        na_df = self.df.copy()
+        for i, var in enumerate(self.df.columns.values):
+            na_df.iloc[np.random.randint(len(na_df)), i] = np.nan
+
+        g5 = ag.PairGrid(na_df, dropna=True)
+        g5.map_diag(plt.hist)
+
     def test_map_diag_color(self):
 
         color = "red"
