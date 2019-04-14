@@ -2,6 +2,7 @@ from __future__ import division
 from itertools import product
 from textwrap import dedent
 from distutils.version import LooseVersion
+from math import floor, log10
 
 import numpy as np
 import pandas as pd
@@ -265,6 +266,14 @@ class _RelationalPlotter(object):
         # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
 
         return levels, palette, cmap, norm
+
+    def ticker_to_legend_entries(self, ticker, limits, dtype):
+        """Return nice legend entries for numeric hue/size variables."""
+        levels = ticker.tick_values(*limits).astype(dtype)
+        if len(levels) > 1 and levels[1]-levels[0] < 1:
+            sig_digits=int(1-(floor(log10(levels[1]-levels[0]))))
+            levels = np.around(levels, decimals=sig_digits)
+        return levels
 
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
@@ -572,8 +581,8 @@ class _RelationalPlotter(object):
                 ticker = mpl.ticker.LogLocator(numticks=3)
             else:
                 ticker = mpl.ticker.MaxNLocator(nbins=3)
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
+            hue_levels = self.ticker_to_legend_entries(
+                ticker, self.hue_limits, self.plot_data["hue"].dtype)
         else:
             hue_levels = self.hue_levels
 
@@ -594,8 +603,8 @@ class _RelationalPlotter(object):
                 ticker = mpl.ticker.LogLocator(numticks=3)
             else:
                 ticker = mpl.ticker.MaxNLocator(nbins=3)
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
+            size_levels = self.ticker_to_legend_entries(
+                ticker, self.size_limits, self.plot_data["size"].dtype)
         else:
             size_levels = self.size_levels
 

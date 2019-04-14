@@ -83,6 +83,7 @@ class TestRelationalPlotter(object):
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
             c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
+            f=np.take(list([0.2, 0.3]), rs.randint(0, 2, n)),
         ))
 
     @pytest.fixture
@@ -1015,6 +1016,26 @@ class TestLinePlotter(TestRelationalPlotter):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", hue="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        ticker = mpl.ticker.MaxNLocator(nbins=3)
+        levels = ticker.tick_values(0.2,0.3)
+        str_levels = np.around(levels,decimals=2).astype(str).tolist()
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + str_levels
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", size="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        ticker = mpl.ticker.MaxNLocator(nbins=3)
+        levels = ticker.tick_values(0.2,0.3)
+        str_levels = np.around(levels,decimals=2).astype(str).tolist()
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + str_levels
 
     def test_plot(self, long_df, repeated_df):
 
