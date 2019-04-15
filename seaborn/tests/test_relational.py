@@ -476,6 +476,16 @@ class TestRelationalPlotter(object):
         assert p.hue_levels == [0, 1]
         assert p.hue_type is "categorical"
 
+        df=long_df[long_df["c"]==0]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [0]
+        assert p.hue_type is "categorical"
+
+        df=long_df[long_df["c"]==1]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [1]
+        assert p.hue_type is "categorical"
+
         # Test numeric data with category type
         p = rel._LinePlotter(x="x", y="y", hue="s_cat", data=long_df)
         assert p.hue_levels == categorical_order(long_df.s_cat)
