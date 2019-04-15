@@ -76,7 +76,7 @@ class TestRelationalPlotter(object):
 
         n = 100
         rs = np.random.RandomState()
-        return pd.DataFrame(dict(
+        df = pd.DataFrame(dict(
             x=rs.randint(0, 20, n),
             y=rs.randn(n),
             a=np.take(list("abc"), rs.randint(0, 3, n)),
@@ -84,6 +84,8 @@ class TestRelationalPlotter(object):
             c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
+        df["s_cat"] = df["s"].astype("category")
+        return df
 
     @pytest.fixture
     def repeated_df(self):
@@ -473,6 +475,12 @@ class TestRelationalPlotter(object):
         p = rel._LinePlotter(x="x", y="y", hue="c", data=long_df)
         assert p.hue_levels == [0, 1]
         assert p.hue_type is "categorical"
+
+        # Test numeric data with category type
+        p = rel._LinePlotter(x="x", y="y", hue="s_cat", data=long_df)
+        assert p.hue_levels == categorical_order(long_df.s_cat)
+        assert p.hue_type is "categorical"
+        assert p.cmap is None
 
     def test_parse_hue_numeric(self, long_df):
 
