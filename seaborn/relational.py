@@ -271,7 +271,7 @@ class _RelationalPlotter(object):
         """Return nice legend entries for numeric hue/size variables."""
         levels = ticker.tick_values(*limits).astype(dtype)
         if len(levels) > 1 and levels[1]-levels[0] < 1:
-            sig_digits=int(1-(floor(log10(levels[1]-levels[0]))))
+            sig_digits = int(1-(floor(log10(levels[1]-levels[0]))))
             levels = np.around(levels, decimals=sig_digits)
         return levels
 
