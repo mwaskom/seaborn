@@ -530,7 +530,8 @@ class _RelationalPlotter(object):
             try:
                 float_data = data.astype(np.float)
                 values = np.unique(float_data.dropna())
-                if np.all(np.isin(values, np.array([0., 1.]))):
+                # TODO replace with isin when pinned np version >= 1.13
+                if np.all(np.in1d(values, np.array([0., 1.]))):
                     return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
