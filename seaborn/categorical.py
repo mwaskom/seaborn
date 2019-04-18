@@ -2810,11 +2810,11 @@ stripplot.__doc__ = dedent("""\
     {categorical_data}
     {order_vars}
     jitter : float, ``True``/``1`` is special-cased, optional
-        Amount of jitter (only along the categorical axis) to apply. This
-        can be useful when you have many points and they overlap, so that
-        it is easier to see the distribution. You can specify the amount
-        of jitter (half the width of the uniform random variable support),
-        or just use ``True`` for a good default.
+        Amount of jitter (only along the categorical axis) to apply. Defaults
+        to ``True``. This can be useful when you have many points and they
+        overlap, so that it is easier to see the distribution. You can specify
+        the amount of jitter (half the width of the uniform random variable
+        support), or just leave untouched for a good default.
     dodge : bool, optional
         When using ``hue`` nesting, setting this to ``True`` will separate
         the strips for different hue levels along the categorical axis.
@@ -2824,7 +2824,7 @@ stripplot.__doc__ = dedent("""\
     {color}
     {palette}
     size : float, optional
-        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        Diameter of the markers, in points. Although ``plt.scatter`` is used
         to draw the points, the ``size`` argument here takes a "normal"
         markersize and not size^2 like ``plt.scatter``.
     edgecolor : matplotlib color, "gray" is special-cased, optional
@@ -2864,13 +2864,6 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
-    Add jitter to bring out the distribution of values:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
-
     Use a smaller amount of jitter:
 
     .. plot::
@@ -2883,8 +2876,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True)
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips)
 
     Draw outlines around the points:
 
@@ -2892,15 +2884,14 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True, linewidth=1)
+        ...                    linewidth=1)
 
     Nest the strips within a second categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
-        ...                    data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day", data=tips)
 
     Draw each level of the ``hue`` variable at different locations on the
     major categorical axis:
@@ -2909,8 +2900,7 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, jitter=True,
-        ...                    palette="Set2", dodge=True)
+        ...                    data=tips, palette="Set2", dodge=True)
 
     Control strip order by passing an explicit order:
 
@@ -2934,9 +2924,9 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> import numpy as np
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips,
-        ...                    jitter=True, color=".3")
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips, color=".3")
 
     Draw strips of observations on top of a violin plot:
 
@@ -2945,7 +2935,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
         ...                     inner=None, color=".8")
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
     Use :func:`catplot` to combine a :func:`stripplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
@@ -2958,7 +2948,6 @@ stripplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="strip",
-        ...                 jitter=True,
         ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
