@@ -2747,7 +2747,7 @@ boxenplot.__doc__ = dedent("""\
 
         >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, color="gray")
+        ...                    size=4, color="gray")
 
     Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using
@@ -2810,11 +2810,11 @@ stripplot.__doc__ = dedent("""\
     {categorical_data}
     {order_vars}
     jitter : float, ``True``/``1`` is special-cased, optional
-        Amount of jitter (only along the categorical axis) to apply. Defaults
-        to ``True``. This can be useful when you have many points and they
-        overlap, so that it is easier to see the distribution. You can specify
-        the amount of jitter (half the width of the uniform random variable
-        support), or just leave untouched for a good default.
+        Amount of jitter (only along the categorical axis) to apply. This
+        can be useful when you have many points and they overlap, so that
+        it is easier to see the distribution. You can specify the amount
+        of jitter (half the width of the uniform random variable support),
+        or just use ``True`` for a good default.
     dodge : bool, optional
         When using ``hue`` nesting, setting this to ``True`` will separate
         the strips for different hue levels along the categorical axis.
