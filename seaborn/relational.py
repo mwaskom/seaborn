@@ -658,7 +658,7 @@ class _LinePlotter(_RelationalPlotter):
                  palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_norm=None,
                  dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
+                 units=None, estimator=None, ci=None, n_boot=None, switch_axes=False,
                  sort=True, err_style=None, err_kws=None, legend=None):
 
         plot_data = self.establish_variables(
@@ -679,6 +679,7 @@ class _LinePlotter(_RelationalPlotter):
         self.n_boot = n_boot
         self.sort = sort
         self.err_style = err_style
+        self.switch_axes = switch_axes
         self.err_kws = {} if err_kws is None else err_kws
 
         self.legend = legend
@@ -774,9 +775,23 @@ class _LinePlotter(_RelationalPlotter):
                 if self.units is not None:
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                x, y, y_ci = self.aggregate(y, x, units)
+                if self.switch_axes:
+                    vals = x
+                    grouper = y
+                else:
+                    vals = y
+                    grouper = x 
+    
+                ind, est, ci = self.aggregate(vals, grouper, units)
+                
+                if self.switch_axes:
+                    x = est
+                    y = ind
+                else:
+                    y = est
+                    x = ind
             else:
-                y_ci = None
+                ci = None
 
             kws["color"] = self.palette.get(hue, orig_color)
             kws["dashes"] = self.dashes.get(style, orig_dashes)
@@ -803,13 +818,15 @@ class _LinePlotter(_RelationalPlotter):
 
             # --- Draw the confidence intervals
 
-            if y_ci is not None:
+            if ci is not None:
 
-                low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
+                low, high = np.asarray(ci["low"]), np.asarray(ci["high"])
 
                 if self.err_style == "band":
-
-                    ax.fill_between(x, low, high, color=line_color, **err_kws)
+                    if self.switch_axes:
+                        ax.fill_betweenx(y, low, high, color=line_color, **err_kws)
+                    else:
+                        ax.fill_between(x, low, high, color=line_color, **err_kws)
 
                 elif self.err_style == "bars":
 
@@ -1068,7 +1085,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              sizes=None, size_order=None, size_norm=None,
              dashes=True, markers=None, style_order=None,
              units=None, estimator="mean", ci=95, n_boot=1000,
-             sort=True, err_style="band", err_kws=None,
+             switch_axes=False, sort=True, err_style="band", err_kws=None,
              legend="brief", ax=None, **kwargs):
 
     p = _LinePlotter(
@@ -1076,7 +1093,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
-        units=units, estimator=estimator, ci=ci, n_boot=n_boot,
+        units=units, estimator=estimator, ci=ci, n_boot=n_boot, switch_axes=switch_axes,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
