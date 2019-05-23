@@ -296,7 +296,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     # Do this to remove 'weights' from kwargs before plotting.
     #    Not passing explicitly in case user has an old version of scipy,
     #    in which case passing weights=None would break
-    _ = kwargs.pop('weights', None)
+    kwargs.pop('weights', None)
 
     # Make sure the density is nonnegative
     y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
@@ -415,7 +415,7 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     # Do this to remove 'weights' from kwargs before plotting.
     #    Not passing explicitly in case user has an old version of scipy,
     #    in which case passing weights=None would break
-    _ = kwargs.pop('weights', None)
+    kwargs.pop('weights', None)
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
