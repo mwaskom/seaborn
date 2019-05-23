@@ -276,7 +276,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         clip = (-np.inf, np.inf)
 
     # Calculate the KDE
-    if _has_statsmodels:
+    if _has_statsmodels and not ('weights' in kwargs):
         # Prefer using statsmodels for kernel flexibility
         x, y = _statsmodels_univariate_kde(data, kernel, bw,
                                            gridsize, cut, clip,
@@ -291,7 +291,10 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
             raise ImportError("Cumulative distributions are currently "
                               "only implemented in statsmodels. "
                               "Please install statsmodels.")
-        x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
+        x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip, **kwargs)
+
+    #this is so that plotting function does not get weights in kwargs
+    weights = kwargs.pop('weights',None)
 
     # Make sure the density is nonnegative
     y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
@@ -360,16 +363,24 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
     return grid, y
 
 
-def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
+def _scipy_univariate_kde(data, bw, gridsize, cut, clip, **kwargs):
     """Compute a univariate kernel density estimate using scipy."""
-    try:
-        kde = stats.gaussian_kde(data, bw_method=bw)
-    except TypeError:
-        kde = stats.gaussian_kde(data)
-        if bw != "scott":  # scipy default
-            msg = ("Ignoring bandwidth choice, "
-                   "please upgrade scipy to use a different bandwidth.")
-            warnings.warn(msg, UserWarning)
+
+    if 'weights' in kwargs:
+        try:
+            kde = stats.gaussian_kde(data, bw_method=bw, weights=kwargs['weights'])
+        except TypeError:
+            print("Error: You are passing 'weights' to the scipy function stats.gaussian_kde, but it is not a valid argument. You may need to upgrade scipy to a newer version\n")
+            raise
+    else:
+        try:
+            kde = stats.gaussian_kde(data, bw_method=bw)
+        except TypeError:
+            kde = stats.gaussian_kde(data)
+            if bw != "scott":  # scipy default
+                msg = ("Ignoring bandwidth choice, "
+                       "please upgrade scipy to use a different bandwidth.")
+                warnings.warn(msg, UserWarning)
     if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)() * np.std(data)
@@ -389,10 +400,13 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
         clip = [clip, clip]
 
     # Calculate the KDE
-    if _has_statsmodels:
+    if _has_statsmodels and not ('weights' in kwargs):
         xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
     else:
-        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip)
+        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip, **kwargs)
+ 
+    #do this to remove 'weights' from kwargs before plotting
+    weights = kwargs.pop('weights',None)
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
@@ -468,10 +482,18 @@ def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     return xx, yy, z
 
 
-def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
+def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip, **kwargs):
     """Compute a bivariate kde using scipy."""
     data = np.c_[x, y]
-    kde = stats.gaussian_kde(data.T, bw_method=bw)
+    if 'weights' in kwargs:
+        try:
+            kde = stats.gaussian_kde(data.T, bw_method=bw, weights=kwargs['weights'])
+        except TypeError:
+            print("Error: You are passing 'weights' to the scipy function stats.gaussian_kde, but it is not a valid argument. You may need to upgrade scipy to a newer version\n")
+            raise
+    else:
+        kde = stats.gaussian_kde(data.T, bw_method=bw)
+
     data_std = data.std(axis=0, ddof=1)
     if isinstance(bw, string_types):
         bw = "scotts" if bw == "scott" else bw
