@@ -293,8 +293,10 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
                               "Please install statsmodels.")
         x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip, **kwargs)
 
-    #this is so that plotting function does not get weights in kwargs
-    weights = kwargs.pop('weights',None)
+    # Do this to remove 'weights' from kwargs before plotting.
+    #    Not passing explicitly in case user has an old version of scipy,
+    #    in which case passing weights=None would break
+    _ = kwargs.pop('weights', None)
 
     # Make sure the density is nonnegative
     y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
@@ -368,10 +370,14 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip, **kwargs):
 
     if 'weights' in kwargs:
         try:
-            kde = stats.gaussian_kde(data, bw_method=bw, weights=kwargs['weights'])
+            kde = stats.gaussian_kde(data, bw_method=bw,
+                                     weights=kwargs['weights'])
         except TypeError:
-            print("Error: You are passing 'weights' to the scipy function stats.gaussian_kde, but it is not a valid argument. You may need to upgrade scipy to a newer version\n")
-            raise
+            raise TypeError("Error: You are passing 'weights' "
+                            "to the scipy function stats.gaussian_kde, "
+                            "but it is not a valid argument. "
+                            "You may need to upgrade "
+                            "scipy to a newer version\n")
     else:
         try:
             kde = stats.gaussian_kde(data, bw_method=bw)
@@ -403,10 +409,13 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     if _has_statsmodels and not ('weights' in kwargs):
         xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
     else:
-        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip, **kwargs)
- 
-    #do this to remove 'weights' from kwargs before plotting
-    weights = kwargs.pop('weights',None)
+        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut,
+                                         clip, **kwargs)
+
+    # Do this to remove 'weights' from kwargs before plotting.
+    #    Not passing explicitly in case user has an old version of scipy,
+    #    in which case passing weights=None would break
+    _ = kwargs.pop('weights', None)
 
     # Plot the contours
     n_levels = kwargs.pop("n_levels", 10)
@@ -487,10 +496,14 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip, **kwargs):
     data = np.c_[x, y]
     if 'weights' in kwargs:
         try:
-            kde = stats.gaussian_kde(data.T, bw_method=bw, weights=kwargs['weights'])
+            kde = stats.gaussian_kde(data.T, bw_method=bw,
+                                     weights=kwargs['weights'])
         except TypeError:
-            print("Error: You are passing 'weights' to the scipy function stats.gaussian_kde, but it is not a valid argument. You may need to upgrade scipy to a newer version\n")
-            raise
+            raise TypeError("Error: You are passing 'weights' "
+                            "to the scipy function stats.gaussian_kde, "
+                            "but it is not a valid argument. "
+                            "You may need to upgrade "
+                            "scipy to a newer version\n")
     else:
         kde = stats.gaussian_kde(data.T, bw_method=bw)
 
