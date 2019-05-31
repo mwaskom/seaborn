@@ -1109,9 +1109,32 @@ class ClusterGrid(Grid):
         except (TypeError, IndexError):
             pass
 
+        # Sort out the annotations
+        annot = kws.pop("annot", None)
+        if annot is None:
+            pass
+        elif isinstance(annot, bool):
+            if annot:
+                annot_data = self.data2d
+            else:
+                annot_data = None
+        else:
+            try:
+                annot_data = annot.values
+            except AttributeError:
+                annot_data = annot
+            if annot.shape != self.data2d.shape:
+                raise ValueError('Data supplied to "annot" must be the same '
+                                 'shape as the data to plot.')
+            annot_data = annot_data[np.array(yind)[:, None],
+                                    np.array(xind)]
+            annot = True
+        if annot:
+            annot = annot_data
+
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
                 cbar_kws=colorbar_kws, mask=self.mask,
-                xticklabels=xtl, yticklabels=ytl, **kws)
+                xticklabels=xtl, yticklabels=ytl, annot=annot, **kws)
 
         ytl = self.ax_heatmap.get_yticklabels()
         ytl_rot = None if not ytl else ytl[0].get_rotation()
