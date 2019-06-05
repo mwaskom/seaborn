@@ -312,7 +312,7 @@ class _RegressionPlotter(_LinearPlotter):
         b = b - b.mean()
         b = np.c_[b]
         a_prime = a - b.dot(np.linalg.pinv(b).dot(a))
-        return (a_prime + a_mean).reshape(a.shape)
+        return (a_prime + a_mean).values.reshape(a.shape)
 
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
