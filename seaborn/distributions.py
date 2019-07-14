@@ -402,8 +402,9 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     scout.remove()
 
     color = kwargs.pop("color", default_color)
+    colors = kwargs.pop("colors", None)
     cmap = kwargs.pop("cmap", None)
-    if cmap is None:
+    if cmap is None and colors is None:
         if filled:
             cmap = light_palette(color, as_cmap=True)
         else:
@@ -419,6 +420,7 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     label = kwargs.pop("label", None)
 
     kwargs["cmap"] = cmap
+    kwargs["colors"] = colors
     contour_func = ax.contourf if filled else ax.contour
     cset = contour_func(xx, yy, z, n_levels, **kwargs)
     if filled and not fill_lowest:
