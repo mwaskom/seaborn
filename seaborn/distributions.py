@@ -401,10 +401,16 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     default_color = scout.get_color()
     scout.remove()
 
-    color = kwargs.pop("color", default_color)
+    color = kwargs.pop("color", None)
     colors = kwargs.pop("colors", None)
     cmap = kwargs.pop("cmap", None)
+    if color is not None and cmap is not None:
+        raise ValueError("Either color or cmap must be None")
+    if color is not None and colors is not None:
+        raise ValueError("Either color or colors must be None")
     if cmap is None and colors is None:
+        if color is None:
+            color = default_color
         if filled:
             cmap = light_palette(color, as_cmap=True)
         else:
