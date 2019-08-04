@@ -167,8 +167,12 @@ class _RelationalPlotter(object):
 
         # ---- Post-processing
 
+        # Make sure rows with nan-containing semantics are not used #GH1761
+        plot_data.dropna(axis=1, how='all', inplace=True)
+        plot_data.dropna(axis=0, how='any', inplace=True)
+
         # Assign default values for missing attribute variables
-        for attr in ["hue", "style", "size", "units"]:
+        for attr in ["x", "y", "hue", "style", "size", "units"]:
             if attr not in plot_data:
                 plot_data[attr] = None
 
