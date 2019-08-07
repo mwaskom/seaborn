@@ -2646,6 +2646,12 @@ class TestBoxenPlotter(CategoricalFixture):
         cat.boxenplot("y", "g", "h", data=self.df, orient="h")
         plt.close("all")
 
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", palette="Set2")
+        plt.close("all")
+
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", color="b")
+        plt.close("all")
+
     def test_axes_annotation(self):
 
         ax = cat.boxenplot("g", "y", data=self.df)
