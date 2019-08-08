@@ -231,8 +231,14 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
 
         # Potentially move the ticks
         if left and not right:
-            maj_on = any(t.tick1line.get_visible() for t in ax_i.yaxis.majorTicks)
-            min_on = any(t.tick1line.get_visible() for t in ax_i.yaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.minorTicks
+            )
             ax_i.yaxis.set_ticks_position("right")
             for t in ax_i.yaxis.majorTicks:
                 t.tick2line.set_visible(maj_on)
@@ -240,8 +246,14 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 t.tick2line.set_visible(min_on)
 
         if bottom and not top:
-            maj_on = any(t.tick1line.get_visible() for t in ax_i.xaxis.majorTicks)
-            min_on = any(t.tick1line.get_visible() for t in ax_i.xaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.minorTicks
+            )
             ax_i.xaxis.set_ticks_position("top")
             for t in ax_i.xaxis.majorTicks:
                 t.tick2line.set_visible(maj_on)
