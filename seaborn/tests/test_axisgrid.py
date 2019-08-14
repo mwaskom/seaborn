@@ -436,6 +436,7 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[0, 1].get_title(), "b == n")
         nt.assert_equal(g.axes[1, 0].get_title(), "")
 
+    @pytest.mark.xfail(mpl.__version__ == "3.1.0", reason="matplotlib bug")
     def test_set_ticklabels(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")

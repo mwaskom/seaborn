@@ -1,6 +1,11 @@
 language: python
 
 
+dist: xenial
+services:
+  - xvfb
+
+
 env:
   - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
@@ -38,6 +43,10 @@ before_script:
     export DISPLAY=:99.0;
     sh -e /etc/init.d/xvfb start;
     sleep 3;
+    fi
+    # https://www.python.org/dev/peps/pep-0493/
+  - if [ $PYTHON == "2.7" ]; then
+    export PYTHONHTTPSVERIFY=0;
     fi
 
 
