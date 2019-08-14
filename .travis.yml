@@ -1,6 +1,11 @@
 language: python
 
 
+dist: xenial
+services:
+  - xvfb
+
+
 env:
   - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
