@@ -25,7 +25,7 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda openssl  # Update openssl to fix python 2.7.9 issue
+  - conda update -q conda
   - conda info -a
 
 
@@ -43,6 +43,10 @@ before_script:
     export DISPLAY=:99.0;
     sh -e /etc/init.d/xvfb start;
     sleep 3;
+    fi
+    # https://www.python.org/dev/peps/pep-0493/
+  - if [ $PYTHON == "2.7" ]; then
+    export PYTHONHTTPSVERIFY=0;
     fi
 
 
