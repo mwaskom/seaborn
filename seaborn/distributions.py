@@ -66,7 +66,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Whether to draw a rugplot on the support axis.
     fit : random variable object, optional
         An object with `fit` method, returning a tuple that can be passed to a
-        `pdf` method a positional arguments following an grid of values to
+        `pdf` method a positional arguments following a grid of values to
         evaluate the pdf on.
     {hist, kde, rug, fit}_kws : dictionaries, optional
         Keyword arguments for underlying plotting functions.
