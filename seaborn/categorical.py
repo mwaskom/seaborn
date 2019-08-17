@@ -415,8 +415,6 @@ class _CategoricalPlotter(object):
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
             if self.hue_title is not None:
-                leg.set_title(self.hue_title)
-
                 # Set the title size a roundabout way to maintain
                 # compatibility with matplotlib 1.1
                 # TODO no longer needed
@@ -425,7 +423,7 @@ class _CategoricalPlotter(object):
                 except TypeError:  # labelsize is something like "large"
                     title_size = mpl.rcParams["axes.labelsize"]
                 prop = mpl.font_manager.FontProperties(size=title_size)
-                leg._legend_title_box._text.set_font_properties(prop)
+                leg.set_title(self.hue_title, prop=prop)
 
     def add_legend_data(self, ax, color, label):
         """Add a dummy patch object so we can get legend data."""
