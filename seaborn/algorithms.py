@@ -24,7 +24,7 @@ def bootstrap(*args, **kwargs):
             datapoints.
         smooth : bool, default False
             If True, performs a smoothed bootstrap (draws samples from a kernel
-            destiny estimate); only works for one-dimensional inputs and cannot
+            density estimate); only works for one-dimensional inputs and cannot
             be used `units` is present.
         func : string or callable, default np.mean
             Function to call on the args that are passed in. If string, tries
