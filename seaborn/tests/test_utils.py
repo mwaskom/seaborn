@@ -232,38 +232,38 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
 
-    def test_despine_moved_tickes(self):
+    def test_despine_moved_ticks(self):
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
 
