@@ -415,17 +415,13 @@ class _CategoricalPlotter(object):
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
             if self.hue_title is not None:
-                leg.set_title(self.hue_title)
-
-                # Set the title size a roundabout way to maintain
-                # compatibility with matplotlib 1.1
-                # TODO no longer needed
+                # Matplotlib rcParams does not expose legend title size?
                 try:
                     title_size = mpl.rcParams["axes.labelsize"] * .85
                 except TypeError:  # labelsize is something like "large"
                     title_size = mpl.rcParams["axes.labelsize"]
                 prop = mpl.font_manager.FontProperties(size=title_size)
-                leg._legend_title_box._text.set_font_properties(prop)
+                leg.set_title(self.hue_title, prop=prop)
 
     def add_legend_data(self, ax, color, label):
         """Add a dummy patch object so we can get legend data."""
@@ -1956,6 +1952,7 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Calculate the outliers and plot
             outliers = self._lv_outliers(box_data, k)
+            hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
                 boxes = [vert_perc_box(x, b[0], i, k, b[1])
@@ -1966,7 +1963,7 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=mpl.colors.rgb2hex(color), **kws)
+                           marker='d', c=hex_color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
@@ -1976,10 +1973,10 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=color, **kws)
+                           marker='d', c=hex_color, **kws)
 
             # Construct a color map from the input color
-            rgb = [[1, 1, 1], list(color)]
+            rgb = [[1, 1, 1], hex_color]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap)
 
@@ -2747,7 +2744,7 @@ boxenplot.__doc__ = dedent("""\
 
         >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, color="gray")
+        ...                    size=4, color="gray")
 
     Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using
@@ -2824,7 +2821,7 @@ stripplot.__doc__ = dedent("""\
     {color}
     {palette}
     size : float, optional
-        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        Diameter of the markers, in points. Although ``plt.scatter`` is used
         to draw the points, the ``size`` argument here takes a "normal"
         markersize and not size^2 like ``plt.scatter``.
     edgecolor : matplotlib color, "gray" is special-cased, optional
@@ -2864,13 +2861,6 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
-    Add jitter to bring out the distribution of values:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
-
     Use a smaller amount of jitter:
 
     .. plot::
@@ -2883,8 +2873,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True)
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips)
 
     Draw outlines around the points:
 
@@ -2892,15 +2881,14 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True, linewidth=1)
+        ...                    linewidth=1)
 
     Nest the strips within a second categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
-        ...                    data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day", data=tips)
 
     Draw each level of the ``hue`` variable at different locations on the
     major categorical axis:
@@ -2909,8 +2897,7 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, jitter=True,
-        ...                    palette="Set2", dodge=True)
+        ...                    data=tips, palette="Set2", dodge=True)
 
     Control strip order by passing an explicit order:
 
@@ -2934,9 +2921,9 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> import numpy as np
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips,
-        ...                    jitter=True, color=".3")
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips, color=".3")
 
     Draw strips of observations on top of a violin plot:
 
@@ -2945,7 +2932,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
         ...                     inner=None, color=".8")
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
     Use :func:`catplot` to combine a :func:`stripplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
@@ -2958,7 +2945,6 @@ stripplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="strip",
-        ...                 jitter=True,
         ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)

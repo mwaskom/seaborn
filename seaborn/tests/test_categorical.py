@@ -2646,6 +2646,12 @@ class TestBoxenPlotter(CategoricalFixture):
         cat.boxenplot("y", "g", "h", data=self.df, orient="h")
         plt.close("all")
 
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", palette="Set2")
+        plt.close("all")
+
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", color="b")
+        plt.close("all")
+
     def test_axes_annotation(self):
 
         ax = cat.boxenplot("g", "y", data=self.df)
@@ -2666,6 +2672,11 @@ class TestBoxenPlotter(CategoricalFixture):
                                ["a", "b", "c"])
         npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
                                ["m", "n"])
+
+        plt.close("all")
+
+        with plt.rc_context(rc={"axes.labelsize": "large"}):
+            ax = cat.boxenplot("g", "y", "h", data=self.df)
 
         plt.close("all")
 

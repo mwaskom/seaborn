@@ -7,3 +7,7 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 - Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.
 
 - Semantic variables with a ``category`` data type will always be treated as categorical in relational plots.
+
+- Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
+
+- Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.

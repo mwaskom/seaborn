@@ -436,7 +436,6 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[0, 1].get_title(), "b == n")
         nt.assert_equal(g.axes[1, 0].get_title(), "")
 
-    @pytest.mark.xfail(mpl.__version__ == "3.1.0", reason="matplotlib bug")
     def test_set_ticklabels(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
@@ -445,8 +444,7 @@ class TestFacetGrid(object):
         ylab = [l.get_text() for l in g.axes[1, 0].get_yticklabels()]
 
         g.set_xticklabels(xlab)
-        g.set_yticklabels(rotation=90)
-
+        g.set_yticklabels(ylab)
         got_x = [l.get_text() for l in g.axes[1, 1].get_xticklabels()]
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
         npt.assert_array_equal(got_x, xlab)
