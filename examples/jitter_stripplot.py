@@ -19,8 +19,7 @@ sns.despine(bottom=True, left=True)
 
 # Show each observation with a scatterplot
 sns.stripplot(x="value", y="measurement", hue="species",
-              data=iris, dodge=True, jitter=True,
-              alpha=.25, zorder=1)
+              data=iris, dodge=True, alpha=.25, zorder=1)
 
 # Show the conditional means
 sns.pointplot(x="value", y="measurement", hue="species",
