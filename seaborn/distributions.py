@@ -57,7 +57,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Observed data. If this is a Series object with a ``name`` attribute,
         the name will be used to label the data axis.
     bins : argument for matplotlib hist(), or None, optional
-        Specification of hist bins, or None to use Freedman-Diaconis rule.
+        Specification of hist bins. None to use Freedman-Diaconis rule or 50,
+        depends on which is smaller.
     hist : bool, optional
         Whether to plot a (normed) histogram.
     kde : bool, optional
