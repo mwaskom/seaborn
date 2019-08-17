@@ -2675,6 +2675,11 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
+        with plt.rc_context(rc={"axes.labelsize": "large"}):
+            ax = cat.boxenplot("g", "y", "h", data=self.df)
+
+        plt.close("all")
+
         ax = cat.boxenplot("y", "g", data=self.df, orient="h")
         nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")

@@ -415,9 +415,7 @@ class _CategoricalPlotter(object):
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
             if self.hue_title is not None:
-                # Set the title size a roundabout way to maintain
-                # compatibility with matplotlib 1.1
-                # TODO no longer needed
+                # Matplotlib rcParams does not expose legend title size?
                 try:
                     title_size = mpl.rcParams["axes.labelsize"] * .85
                 except TypeError:  # labelsize is something like "large"
