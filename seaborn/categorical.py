@@ -1954,6 +1954,7 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Calculate the outliers and plot
             outliers = self._lv_outliers(box_data, k)
+            hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
                 boxes = [vert_perc_box(x, b[0], i, k, b[1])
@@ -1964,7 +1965,7 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=mpl.colors.rgb2hex(color), **kws)
+                           marker='d', c=hex_color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
@@ -1974,10 +1975,10 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=color, **kws)
+                           marker='d', c=hex_color, **kws)
 
             # Construct a color map from the input color
-            rgb = [[1, 1, 1], list(color)]
+            rgb = [[1, 1, 1], hex_color]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap)
 
