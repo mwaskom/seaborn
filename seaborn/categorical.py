@@ -553,10 +553,11 @@ class _ViolinPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  bw, cut, scale, scale_hue, gridsize,
                  width, inner, split, dodge, orient, linewidth,
-                 color, palette, saturation):
+                 color, palette, saturation,fixedmaxcount):
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
+        self.fixedmaxcount = fixedmaxcount
         self.estimate_densities(bw, cut, scale, scale_hue, gridsize)
 
         self.gridsize = gridsize
@@ -595,7 +596,7 @@ class _ViolinPlotter(_CategoricalPlotter):
             size = len(self.group_names), len(self.hue_names)
             counts = np.zeros(size)
             max_density = np.zeros(size)
-
+            print(counts)
         for i, group_data in enumerate(self.plot_data):
 
             # Option 1: we have a single level of grouping
@@ -699,6 +700,9 @@ class _ViolinPlotter(_CategoricalPlotter):
         elif scale == "count":
             self.scale_count(density, counts, scale_hue)
 
+        elif scale == "fixed":
+            self.scale_fixedmaxcount(density, counts, scale_hue)
+
         else:
             raise ValueError("scale method '{}' not recognized".format(scale))
 
@@ -787,6 +791,29 @@ class _ViolinPlotter(_CategoricalPlotter):
                             scaler = count / counts[i].max()
                         else:
                             scaler = count / counts.max()
+                        d /= d.max()
+                        d *= scaler
+
+    def scale_fixedmaxcount(self, density, counts, scale_hue):
+        """Scale each density curve by a fixed max number of observations."""
+        if self.hue_names is None:
+            if counts.max() == 0:
+                d = 0
+            else:
+                for count, d in zip(counts, density):
+                    d /= d.max()
+                    d *= count / self.fixedmaxcount
+        else:
+            for i, group in enumerate(density):
+                for j, d in enumerate(group):
+                    if counts[i].max() == 0:
+                        d = 0
+                    else:
+                        count = counts[i, j]
+                        if scale_hue:
+                            scaler = count / counts[i].max()
+                        else:
+                            scaler = count / self.fixedmaxcount
                         d /= d.max()
                         d *= scaler
 
@@ -2376,12 +2403,12 @@ def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
                bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
                width=.8, inner="box", split=False, dodge=True, orient=None,
                linewidth=None, color=None, palette=None, saturation=.75,
-               ax=None, **kwargs):
+               ax=None, fixedmaxcount=200,**kwargs):
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
                              width, inner, split, dodge, orient, linewidth,
-                             color, palette, saturation)
+                             color, palette, saturation, fixedmaxcount)
 
     if ax is None:
         ax = plt.gca()
@@ -2424,11 +2451,12 @@ violinplot.__doc__ = dedent("""\
         extreme datapoints. Set to 0 to limit the violin range within the range
         of the observed data (i.e., to have the same effect as ``trim=True`` in
         ``ggplot``.
-    scale : {{"area", "count", "width"}}, optional
+    scale : {{"area", "count", "width", "fixed"}}, optional
         The method used to scale the width of each violin. If ``area``, each
         violin will have the same area. If ``count``, the width of the violins
         will be scaled by the number of observations in that bin. If ``width``,
-        each violin will have the same width.
+        each violin will have the same width. If ``fixed``, each violin will be 
+        normalized by a single parameter defaulted to 200.
     scale_hue : bool, optional
         When nesting violins using a ``hue`` variable, this parameter
         determines whether the scaling is computed within each level of the
