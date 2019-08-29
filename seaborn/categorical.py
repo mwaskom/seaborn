@@ -596,7 +596,7 @@ class _ViolinPlotter(_CategoricalPlotter):
             size = len(self.group_names), len(self.hue_names)
             counts = np.zeros(size)
             max_density = np.zeros(size)
-            print(counts)
+
         for i, group_data in enumerate(self.plot_data):
 
             # Option 1: we have a single level of grouping
