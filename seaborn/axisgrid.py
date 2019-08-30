@@ -225,7 +225,7 @@ class FacetGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(msg, UserWarning)
 
@@ -1240,7 +1240,7 @@ class PairGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(UserWarning(msg))
 
@@ -2261,7 +2261,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
