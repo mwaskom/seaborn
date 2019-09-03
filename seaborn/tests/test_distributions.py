@@ -104,6 +104,11 @@ class TestKDE(object):
         line = ax.lines[0]
         assert not line.get_xydata().size
 
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(np.ones(10) * np.nan)
+        line = ax.lines[1]
+        assert not line.get_xydata().size
+
     def test_bivariate_kde_series(self):
         df = pd.DataFrame({'x': self.x, 'y': self.y})
 

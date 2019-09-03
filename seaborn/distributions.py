@@ -278,7 +278,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 
     # Calculate the KDE
 
-    if data.var() == 0:
+    if np.nan_to_num(data.var()) == 0:
         # Don't try to compute KDE on singular data
         msg = "Data must have variance to compute a kernel density estimate."
         warnings.warn(msg, UserWarning)
