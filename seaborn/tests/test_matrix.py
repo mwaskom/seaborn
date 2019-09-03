@@ -306,6 +306,8 @@ class TestHeatmap(object):
         nt.assert_equal(len(f.axes), 2)
         plt.close(f)
 
+    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
+                       reason="matplotlib 3.1.1 bug")
     def test_heatmap_axes(self):
 
         ax = mat.heatmap(self.df_norm)
@@ -591,6 +593,8 @@ class TestDendrogram(object):
         nt.assert_equal(len(ax.collections[0].get_paths()),
                         len(d.dependent_coord))
 
+    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
+                       reason="matplotlib 3.1.1 bug")
     def test_dendrogram_rotate(self):
         kws = self.default_kws.copy()
         kws['rotate'] = True
