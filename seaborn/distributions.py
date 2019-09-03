@@ -277,7 +277,14 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         clip = (-np.inf, np.inf)
 
     # Calculate the KDE
-    if _has_statsmodels:
+
+    if data.var() == 0:
+        # Don't try to compute KDE on singular data
+        msg = "Data must have variance to compute a kernel density estimate."
+        warnings.warn(msg, UserWarning)
+        x, y = np.array([]), np.array([])
+
+    elif _has_statsmodels:
         # Prefer using statsmodels for kernel flexibility
         x, y = _statsmodels_univariate_kde(data, kernel, bw,
                                            gridsize, cut, clip,
