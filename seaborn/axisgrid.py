@@ -1374,15 +1374,16 @@ class PairGrid(Grid):
                     if x_var == y_var:
                         ax = self.axes[i, j]
                         diag_vars.append(x_var)
-                        if self.diag_axes and self.diag_sharey:
-                            diag_ax = ax._make_twin_axes(sharex=ax,
-                                                         sharey=diag_axes[0],
-                                                         frameon=False)
-                        else:
-                            diag_ax = ax._make_twin_axes(sharex=ax,
-                                                         frameon=False)
+                        diag_ax = ax.twinx()
                         diag_ax.set_axis_off()
                         diag_axes.append(diag_ax)
+
+            if self.diag_sharey:
+                # This may change in future matplotlibs
+                # See https://github.com/matplotlib/matplotlib/pull/9923
+                group = diag_axes[0].get_shared_y_axes()
+                for ax in diag_axes[1:]:
+                    group.join(ax)
 
             self.diag_vars = np.array(diag_vars, np.object)
             self.diag_axes = np.array(diag_axes, np.object)
