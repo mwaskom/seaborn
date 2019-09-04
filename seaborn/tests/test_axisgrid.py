@@ -1192,17 +1192,6 @@ class TestPairGrid(object):
                 assert n_valid == len(x_out)
                 assert n_valid == len(y_out)
 
-        g2 = ag.PairGrid(df, vars=plot_vars, dropna=False)
-        g2.map(plt.scatter)
-
-        for i, axes_i in enumerate(g2.axes):
-            for j, ax in enumerate(axes_i):
-                x_in = df[plot_vars[j]]
-                y_in = df[plot_vars[i]]
-                x_out, y_out = ax.collections[0].get_offsets().T
-                assert len(x_in) == len(x_out)
-                assert len(y_in) == len(y_out)
-
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]
