@@ -1253,6 +1253,8 @@ class PairGrid(Grid):
                 raise ValueError("Must specify `x_vars` and `y_vars`")
         else:
             numeric_cols = self._find_numeric_cols(data)
+            if hue in numeric_cols:
+                numeric_cols.remove(hue)
             x_vars = numeric_cols
             y_vars = numeric_cols
 
