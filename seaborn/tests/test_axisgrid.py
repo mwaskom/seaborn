@@ -901,27 +901,60 @@ class TestPairGrid(object):
         g1 = ag.PairGrid(self.df)
         g1.map_diag(plt.hist)
 
-        for ax in g1.diag_axes:
+        for var, ax in zip(g1.diag_vars, g1.diag_axes):
             nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
 
-        g2 = ag.PairGrid(self.df)
-        g2.map_diag(plt.hist, bins=15)
+        g2 = ag.PairGrid(self.df, hue="a")
+        g2.map_diag(plt.hist)
 
         for ax in g2.diag_axes:
-            nt.assert_equal(len(ax.patches), 15)
-
-        g3 = ag.PairGrid(self.df, hue="a")
-        g3.map_diag(plt.hist)
-
-        for ax in g3.diag_axes:
             nt.assert_equal(len(ax.patches), 30)
 
-        g4 = ag.PairGrid(self.df, hue="a")
-        g4.map_diag(plt.hist, histtype='step')
+        g3 = ag.PairGrid(self.df, hue="a")
+        g3.map_diag(plt.hist, histtype='step')
 
-        for ax in g4.diag_axes:
+        for ax in g3.diag_axes:
             for ptch in ax.patches:
                 nt.assert_equal(ptch.fill, False)
+
+    def test_map_diag_rectangular(self):
+
+        x_vars = ["x", "y"]
+        y_vars = ["x", "y", "z"]
+        g1 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        g1.map_diag(plt.hist)
+
+        assert set(g1.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for var, ax in zip(g1.diag_vars, g1.diag_axes):
+            nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
+
+        for i, ax in enumerate(np.diag(g1.axes)):
+            assert ax.bbox.bounds == g1.diag_axes[i].bbox.bounds
+
+        g2 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars, hue="a")
+        g2.map_diag(plt.hist)
+
+        assert set(g2.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for ax in g2.diag_axes:
+            nt.assert_equal(len(ax.patches), 30)
+
+        x_vars = ["x", "y", "z"]
+        y_vars = ["x", "y"]
+        g3 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        g3.map_diag(plt.hist)
+
+        assert set(g3.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for var, ax in zip(g3.diag_vars, g3.diag_axes):
+            nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
+
+        for i, ax in enumerate(np.diag(g3.axes)):
+            assert ax.bbox.bounds == g3.diag_axes[i].bbox.bounds
 
     def test_map_diag_color(self):
 

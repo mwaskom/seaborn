@@ -1279,6 +1279,7 @@ class PairGrid(Grid):
 
         # Save what we are going to do with the diagonal
         self.diag_sharey = diag_sharey
+        self.diag_vars = None
         self.diag_axes = None
 
         # Label the axes
@@ -1365,24 +1366,31 @@ class PairGrid(Grid):
 
         """
         # Add special diagonal axes for the univariate plot
-        if self.square_grid and self.diag_axes is None:
+        if self.diag_axes is None:
+            diag_vars = []
             diag_axes = []
-            for i, (var, ax) in enumerate(zip(self.x_vars,
-                                              np.diag(self.axes))):
-                if i and self.diag_sharey:
-                    diag_ax = ax._make_twin_axes(sharex=ax,
-                                                 sharey=diag_axes[0],
-                                                 frameon=False)
-                else:
-                    diag_ax = ax._make_twin_axes(sharex=ax, frameon=False)
-                diag_ax.set_axis_off()
-                diag_axes.append(diag_ax)
+            for i, y_var in enumerate(self.y_vars):
+                for j, x_var in enumerate(self.x_vars):
+                    if x_var == y_var:
+                        ax = self.axes[i, j]
+                        diag_vars.append(x_var)
+                        if self.diag_axes and self.diag_sharey:
+                            diag_ax = ax._make_twin_axes(sharex=ax,
+                                                         sharey=diag_axes[0],
+                                                         frameon=False)
+                        else:
+                            diag_ax = ax._make_twin_axes(sharex=ax,
+                                                         frameon=False)
+                        diag_ax.set_axis_off()
+                        diag_axes.append(diag_ax)
+
+            self.diag_vars = np.array(diag_vars, np.object)
             self.diag_axes = np.array(diag_axes, np.object)
 
         # Plot on each of the diagonal axes
         fixed_color = kwargs.pop("color", None)
-        for i, var in enumerate(self.x_vars):
-            ax = self.diag_axes[i]
+
+        for var, ax in zip(self.diag_vars, self.diag_axes):
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
             plt.sca(ax)
