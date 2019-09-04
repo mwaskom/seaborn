@@ -1144,14 +1144,14 @@ class TestPairGrid(object):
 
         df = self.df.copy().set_index("b")
 
-        vars = ["x", "y", "z"]
+        plot_vars = ["x", "y", "z"]
         g1 = ag.PairGrid(df)
         g1.map(plt.scatter)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
+                x_in = self.df[plot_vars[j]]
+                y_in = self.df[plot_vars[i]]
                 x_out, y_out = ax.collections[0].get_offsets().T
                 npt.assert_array_equal(x_in, x_out)
                 npt.assert_array_equal(y_in, y_out)
@@ -1161,14 +1161,47 @@ class TestPairGrid(object):
 
         for i, axes_i in enumerate(g2.axes):
             for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
+                x_in = self.df[plot_vars[j]]
+                y_in = self.df[plot_vars[i]]
                 for k, k_level in enumerate(self.df.a.unique()):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
                     x_out, y_out = ax.collections[k].get_offsets().T
                 npt.assert_array_equal(x_in_k, x_out)
                 npt.assert_array_equal(y_in_k, y_out)
+
+    def test_dropna(self):
+
+        df = self.df.copy()
+        n_null = 20
+        df.loc[np.arange(n_null), "x"] = np.nan
+
+        plot_vars = ["x", "y", "z"]
+
+        g1 = ag.PairGrid(df, vars=plot_vars, dropna=True)
+        g1.map(plt.scatter)
+
+        for i, axes_i in enumerate(g1.axes):
+            for j, ax in enumerate(axes_i):
+                x_in = df[plot_vars[j]]
+                y_in = df[plot_vars[i]]
+                x_out, y_out = ax.collections[0].get_offsets().T
+
+                n_valid = (x_in * y_in).notnull().sum()
+
+                assert n_valid == len(x_out)
+                assert n_valid == len(y_out)
+
+        g2 = ag.PairGrid(df, vars=plot_vars, dropna=False)
+        g2.map(plt.scatter)
+
+        for i, axes_i in enumerate(g2.axes):
+            for j, ax in enumerate(axes_i):
+                x_in = df[plot_vars[j]]
+                y_in = df[plot_vars[i]]
+                x_out, y_out = ax.collections[0].get_offsets().T
+                assert len(x_in) == len(x_out)
+                assert len(y_in) == len(y_out)
 
     def test_pairplot(self):
 

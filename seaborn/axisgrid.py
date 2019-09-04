@@ -1282,6 +1282,8 @@ class PairGrid(Grid):
         self.diag_vars = None
         self.diag_axes = None
 
+        self._dropna = dropna
+
         # Label the axes
         self._add_axis_labels()
 
@@ -1418,6 +1420,7 @@ class PairGrid(Grid):
 
                 # Attempt to get data for this level, allowing for empty
                 try:
+                    # TODO newer matplotlib(?) doesn't need array for hist
                     data_k = np.asarray(hue_grouped.get_group(label_k))
                 except KeyError:
                     data_k = np.array([])
@@ -1426,6 +1429,9 @@ class PairGrid(Grid):
                     color = self.palette[k]
                 else:
                     color = fixed_color
+
+                if self._dropna:
+                    data_k = utils.remove_na(data_k)
 
                 func(data_k, label=label_k, color=color, **kwargs)
 
@@ -1436,7 +1442,7 @@ class PairGrid(Grid):
         return self
 
     def _map_bivariate(self, func, indices, **kwargs):
-        """Draw a bivariate plot on the axes indicated in indices."""
+        """Draw a bivariate plot on the indicated axes."""
         kws = kwargs.copy()  # Use copy as we insert other kwargs
         kw_color = kws.pop("color", None)
         for i, j in indices:
@@ -1449,6 +1455,10 @@ class PairGrid(Grid):
     def _plot_bivariate(self, x_var, y_var, ax, func, kw_color, **kwargs):
         """Draw a bivariate plot on the specified axes."""
         plt.sca(ax)
+        if x_var == y_var:
+            axes_vars = [x_var]
+        else:
+            axes_vars = [x_var, y_var]
         hue_grouped = self.data.groupby(self.hue_vals)
         for k, label_k in enumerate(self.hue_names):
 
@@ -1456,17 +1466,19 @@ class PairGrid(Grid):
             try:
                 data_k = hue_grouped.get_group(label_k)
             except KeyError:
-                data_k = pd.DataFrame(columns=self.data.columns,
+                data_k = pd.DataFrame(columns=axes_vars,
                                       dtype=np.float)
 
-            # Insert the other hue aesthetics if appropriate
-            for kw, val_list in self.hue_kws.items():
-                kwargs[kw] = val_list[k]
+            if self._dropna:
+                data_k = data_k[axes_vars].dropna()
 
             x = data_k[x_var]
             y = data_k[y_var]
 
+            for kw, val_list in self.hue_kws.items():
+                kwargs[kw] = val_list[k]
             color = self.palette[k] if kw_color is None else kw_color
+
             func(x, y, label=label_k, color=color, **kwargs)
 
         self._clean_axis(ax)
