@@ -1415,17 +1415,27 @@ class PairGrid(Grid):
             for i, y_var in enumerate(self.y_vars):
                 for j, x_var in enumerate(self.x_vars):
                     if x_var == y_var:
+
+                        # Make the density axes
                         diag_vars.append(x_var)
                         ax = self.axes[i, j]
                         diag_ax = ax.twinx()
                         diag_ax.set_axis_off()
+                        diag_axes.append(diag_ax)
+
+                        # Work around matplotlib bug
+                        # https://github.com/matplotlib/matplotlib/issues/15188
+                        if not plt.rcParams.get("ytick.left", True):
+                            for tick in ax.yaxis.majorTicks:
+                                tick.tick1line.set_visible(False)
+
+                        # Remove main y axis from density axes in a corner plot
                         if self._corner:
                             ax.yaxis.set_visible(False)
                             if self._despine:
                                 utils.despine(ax=ax, left=True)
                             # TODO add optional density ticks (on the right)
                             # when drawing a corner plot?
-                        diag_axes.append(diag_ax)
 
             if self.diag_sharey:
                 # This may change in future matplotlibs
