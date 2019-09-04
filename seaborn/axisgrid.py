@@ -1111,7 +1111,8 @@ class PairGrid(Grid):
             Tidy (long-form) dataframe where each column is a variable and
             each row is an observation.
         hue : string (variable name), optional
-            Variable in ``data`` to map plot aspects to different colors.
+            Variable in ``data`` to map plot aspects to different colors. This
+            variable will be excluded from the default x and y variables.
         hue_order : list of strings
             Order for the levels of the hue variable in the palette
         palette : dict or seaborn color palette

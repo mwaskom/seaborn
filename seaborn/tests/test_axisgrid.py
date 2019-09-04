@@ -768,6 +768,18 @@ class TestPairGrid(object):
         nt.assert_equal(g.y_vars, vars)
         nt.assert_true(g.square_grid)
 
+    def test_remove_hue_from_default(self):
+
+        hue = "z"
+        g = ag.PairGrid(self.df, hue=hue)
+        assert hue not in g.x_vars
+        assert hue not in g.y_vars
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df, hue=hue, vars=vars)
+        assert hue in g.x_vars
+        assert hue in g.y_vars
+
     def test_specific_nonsquare_axes(self):
 
         x_vars = ["x", "y"]

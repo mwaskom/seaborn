@@ -6,6 +6,10 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 
 - Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
 
+- In :class:`PairGrid`, the ``hue`` variable is now excluded from the default list of variables that make up the rows and columns of the grid.
+
+- Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
+
 - Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
 
 - Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.
