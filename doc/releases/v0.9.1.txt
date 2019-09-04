@@ -6,6 +6,8 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 
 - Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
 
+- Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid with only the lower triangle of bivariate axes.
+
 - In :class:`PairGrid`, the ``hue`` variable is now excluded from the default list of variables that make up the rows and columns of the grid.
 
 - Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.

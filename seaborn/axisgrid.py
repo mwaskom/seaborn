@@ -1101,7 +1101,7 @@ class PairGrid(Grid):
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 diag_sharey=True, height=2.5, aspect=1,
+                 diag_sharey=True, height=2.5, aspect=1, corner=False,
                  despine=True, dropna=True, size=None):
         """Initialize the plot figure and PairGrid object.
 
@@ -1132,6 +1132,9 @@ class PairGrid(Grid):
             Height (in inches) of each facet.
         aspect : scalar, optional
             Aspect * height gives the width (in inches) of each facet.
+        corner : bool, optional
+            If True, don't add axes to the upper (off-diagonal) triangle of the
+            grid, making this a "corner" plot.
         despine : boolean, optional
             Remove the top and right spines from the plots.
         dropna : boolean, optional
@@ -1276,6 +1279,18 @@ class PairGrid(Grid):
                                  sharex="col", sharey="row",
                                  squeeze=False)
 
+        # Possibly remove upper axes to make a corner grid
+        # Note: setting up the axes is usually the most time-intensive part
+        # of using the PairGrid. We are foregoing the speed improvement that
+        # we would get by just not setting up the hidden axes so that we can
+        # avoid implementing plt.subplots ourselves. But worth thinking about.
+        self._corner = corner
+        if corner:
+            hide_indices = np.triu_indices_from(axes, 1)
+            for i, j in zip(*hide_indices):
+                axes[i, j].remove()
+                axes[i, j] = None
+
         self.fig = fig
         self.axes = axes
         self.data = data
@@ -1312,6 +1327,7 @@ class PairGrid(Grid):
 
         # Make the plot look nice
         if despine:
+            self._despine = True
             utils.despine(fig=fig)
         fig.tight_layout()
 
@@ -1374,7 +1390,8 @@ class PairGrid(Grid):
         """
 
         self.map_lower(func, **kwargs)
-        self.map_upper(func, **kwargs)
+        if not self._corner:
+            self.map_upper(func, **kwargs)
         return self
 
     def map_diag(self, func, **kwargs):
@@ -1395,10 +1412,16 @@ class PairGrid(Grid):
             for i, y_var in enumerate(self.y_vars):
                 for j, x_var in enumerate(self.x_vars):
                     if x_var == y_var:
-                        ax = self.axes[i, j]
                         diag_vars.append(x_var)
+                        ax = self.axes[i, j]
                         diag_ax = ax.twinx()
                         diag_ax.set_axis_off()
+                        if self._corner:
+                            ax.yaxis.set_visible(False)
+                            if self._despine:
+                                utils.despine(ax=ax, left=True)
+                            # TODO add optional density ticks (on the right)
+                            # when drawing a corner plot?
                         diag_axes.append(diag_ax)
 
             if self.diag_sharey:
@@ -1493,6 +1516,8 @@ class PairGrid(Grid):
             ax.set_xlabel(label)
         for ax, label in zip(self.axes[:, 0], self.y_vars):
             ax.set_ylabel(label)
+        if self._corner:
+            self.axes[0, 0].set_ylabel("")
 
     def _find_numeric_cols(self, data):
         """Find which variables in a DataFrame are numeric."""
@@ -1883,7 +1908,7 @@ class JointGrid(object):
 def pairplot(data, hue=None, hue_order=None, palette=None,
              vars=None, x_vars=None, y_vars=None,
              kind="scatter", diag_kind="auto", markers=None,
-             height=2.5, aspect=1, dropna=True,
+             height=2.5, aspect=1, corner=False, dropna=True,
              plot_kws=None, diag_kws=None, grid_kws=None, size=None):
     """Plot pairwise relationships in a dataset.
 
@@ -1920,7 +1945,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         columns of the figure; i.e. to make a non-square plot.
     kind : {'scatter', 'reg'}, optional
         Kind of plot for the non-identity relationships.
-    diag_kind : {'auto', 'hist', 'kde'}, optional
+    diag_kind : {'auto', 'hist', 'kde', None}, optional
         Kind of plot for the diagonal subplots. The default depends on whether
         ``"hue"`` is used or not.
     markers : single matplotlib marker code or list, optional
@@ -1932,6 +1957,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         Height (in inches) of each facet.
     aspect : scalar, optional
         Aspect * height gives the width (in inches) of each facet.
+    corner : bool, optional
+        If True, don't add axes to the upper (off-diagonal) triangle of the
+        grid, making this a "corner" plot.
     dropna : boolean, optional
         Drop missing values from the data before plotting.
     {plot, diag, grid}_kws : dicts, optional
@@ -2006,6 +2034,13 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         ...                  x_vars=["sepal_width", "sepal_length"],
         ...                  y_vars=["petal_width", "petal_length"])
 
+    Plot only the lower triangle of bivariate axes:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.pairplot(iris, corner=True)
+
     Use kernel density estimates for univariate plots:
 
     .. plot::
@@ -2054,7 +2089,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     diag_sharey = diag_kind == "hist"
     grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
                     hue_order=hue_order, palette=palette,
-                    diag_sharey=diag_sharey,
+                    diag_sharey=diag_sharey, corner=corner,
                     height=height, aspect=aspect, dropna=dropna, **grid_kws)
 
     # Add the markers here as PairGrid has figured out how many levels of the

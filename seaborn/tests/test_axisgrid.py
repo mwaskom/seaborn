@@ -817,6 +817,20 @@ class TestPairGrid(object):
         nt.assert_equal(g.y_vars, list(y_vars))
         nt.assert_true(not g.square_grid)
 
+    def test_corner(self):
+
+        plot_vars = ["x", "y", "z"]
+        g1 = ag.PairGrid(self.df, vars=plot_vars, corner=True)
+        corner_size = sum([i + 1 for i in range(len(plot_vars))])
+        assert len(g1.fig.axes) == corner_size
+
+        g1.map_diag(plt.hist)
+        assert len(g1.fig.axes) == (corner_size + len(plot_vars))
+
+        for ax in np.diag(g1.axes):
+            assert not ax.yaxis.get_visible()
+            assert not g1.axes[0, 0].get_ylabel()
+
     def test_size(self):
 
         g1 = ag.PairGrid(self.df, height=3)
