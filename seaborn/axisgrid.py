@@ -1925,7 +1925,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
              plot_kws=None, diag_kws=None, grid_kws=None, size=None):
     """Plot pairwise relationships in a dataset.
 
-    By default, this function will create a grid of Axes such that each
+    By default, this function will create a grid of Axes such that each numeric
     variable in ``data`` will by shared in the y-axis across a single row and
     in the x-axis across a single column. The diagonal Axes are treated
     differently, drawing a plot to show the univariate distribution of the data
@@ -1976,12 +1976,15 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     dropna : boolean, optional
         Drop missing values from the data before plotting.
     {plot, diag, grid}_kws : dicts, optional
-        Dictionaries of keyword arguments.
+        Dictionaries of keyword arguments. ``plot_kws`` are passed to the
+        bivariate plotting function, ``diag_kws`` are passed to the univariate
+        plotting function, and ``grid_kws`` are passed to the :class:`PairGrid`
+        constructor.
 
     Returns
     -------
-    grid : PairGrid
-        Returns the underlying ``PairGrid`` instance for further tweaking.
+    grid : :class:`PairGrid`
+        Returns the underlying :class:`PairGrid` instance for further tweaking.
 
     See Also
     --------
