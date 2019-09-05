@@ -1442,7 +1442,7 @@ class PairGrid(Grid):
                 # See https://github.com/matplotlib/matplotlib/pull/9923
                 group = diag_axes[0].get_shared_y_axes()
                 for ax in diag_axes[1:]:
-                    group.join(ax)
+                    group.join(ax, diag_axes[0])
 
             self.diag_vars = np.array(diag_vars, np.object)
             self.diag_axes = np.array(diag_axes, np.object)
@@ -2099,10 +2099,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
         grid_kws = {}
 
     # Set up the PairGrid
-    diag_sharey = diag_kind == "hist"
+    grid_kws.setdefault("diag_sharey", diag_kind == "hist")
     grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
-                    hue_order=hue_order, palette=palette,
-                    diag_sharey=diag_sharey, corner=corner,
+                    hue_order=hue_order, palette=palette, corner=corner,
                     height=height, aspect=aspect, dropna=dropna, **grid_kws)
 
     # Add the markers here as PairGrid has figured out how many levels of the

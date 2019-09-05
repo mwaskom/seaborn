@@ -1045,6 +1045,13 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
+    def test_diag_sharey(self):
+
+        g = ag.PairGrid(self.df, diag_sharey=True)
+        g.map_diag(kdeplot)
+        for ax in g.diag_axes[1:]:
+            assert ax.get_ylim() == g.diag_axes[0].get_ylim()
+
     def test_palette(self):
 
         rcmod.set()
