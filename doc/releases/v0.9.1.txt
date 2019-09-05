@@ -12,6 +12,8 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 
 - Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
 
+- Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
+
 - Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
 
 - Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.

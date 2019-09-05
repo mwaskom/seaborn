@@ -1101,8 +1101,8 @@ class PairGrid(Grid):
 
     def __init__(self, data, hue=None, hue_order=None, palette=None,
                  hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 diag_sharey=True, height=2.5, aspect=1, corner=False,
-                 despine=True, dropna=True, size=None):
+                 corner=False, diag_sharey=True, height=2.5, aspect=1,
+                 layout_pad=0, despine=True, dropna=True, size=None):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1128,13 +1128,15 @@ class PairGrid(Grid):
         {x, y}_vars : lists of variable names, optional
             Variables within ``data`` to use separately for the rows and
             columns of the figure; i.e. to make a non-square plot.
+        corner : bool, optional
+            If True, don't add axes to the upper (off-diagonal) triangle of the
+            grid, making this a "corner" plot.
         height : scalar, optional
             Height (in inches) of each facet.
         aspect : scalar, optional
             Aspect * height gives the width (in inches) of each facet.
-        corner : bool, optional
-            If True, don't add axes to the upper (off-diagonal) triangle of the
-            grid, making this a "corner" plot.
+        layout_pad : scalar, optional
+            Padding between axes; passed to ``fig.tight_layout``.
         despine : boolean, optional
             Remove the top and right spines from the plots.
         dropna : boolean, optional
@@ -1332,7 +1334,7 @@ class PairGrid(Grid):
         if despine:
             self._despine = True
             utils.despine(fig=fig)
-        fig.tight_layout()
+        fig.tight_layout(pad=layout_pad)
 
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
