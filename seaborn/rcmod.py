@@ -4,6 +4,7 @@ import functools
 import matplotlib as mpl
 import warnings
 from . import palettes, _orig_rc_params
+from .external.six import string_types
 
 
 mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
@@ -119,6 +120,9 @@ def set(context="notebook", style="darkgrid", palette="deep",
     """
     set_context(context, font_scale)
     set_style(style, rc={"font.family": font})
+    # Avoid mapping color codes for non-string palettes
+    if not isinstance(palette, string_types):
+        color_codes = False
     set_palette(palette, color_codes=color_codes)
     if rc is not None:
         mpl.rcParams.update(rc)
