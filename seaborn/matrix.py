@@ -1040,10 +1040,15 @@ class ClusterGrid(Grid):
         ----------
         heatmap_kws : dict
             Keyword arguments heatmap
+
         """
         # Remove any custom colormap and centering
+        # TODO this code has consistently caused problems when we
+        # have missed kwargs that need to be excluded that it might
+        # be better to rewrite *in*clusively.
         kws = kws.copy()
         kws.pop('cmap', None)
+        kws.pop('norm', None)
         kws.pop('center', None)
         kws.pop('annot', None)
         kws.pop('vmin', None)

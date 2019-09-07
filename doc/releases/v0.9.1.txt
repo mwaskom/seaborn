@@ -23,3 +23,5 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 - Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
 
 - Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
+
+- Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
