@@ -550,5 +550,5 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     if color_codes:
         try:
             palettes.set_color_codes(palette)
-        except ValueError:
+        except (ValueError, TypeError):
             pass
