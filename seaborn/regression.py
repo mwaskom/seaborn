@@ -125,6 +125,9 @@ class _RegressionPlotter(_LinearPlotter):
         # Save the range of the x variable for the grid later
         self.x_range = self.x.min(), self.x.max()
 
+        # Cache regression data in _data
+        self._data = dict()
+
     @property
     def scatter_data(self):
         """Data where each observation is a point."""
@@ -188,9 +191,11 @@ class _RegressionPlotter(_LinearPlotter):
             grid = np.linspace(x_min, x_max, 100)
         ci = self.ci
 
+        yhat_boots = None
         # Fit the regression
         if self.order > 1:
             yhat, yhat_boots = self.fit_poly(grid, self.order)
+            # self._data['func'] = """self.fit_poly"""
         elif self.logistic:
             from statsmodels.genmod.generalized_linear_model import GLM
             from statsmodels.genmod.families import Binomial
@@ -212,6 +217,12 @@ class _RegressionPlotter(_LinearPlotter):
             err_bands = None
         else:
             err_bands = utils.ci(yhat_boots, ci, axis=0)
+
+        # Store references to regression outputs in self._data
+        self._data['yhat'] = yhat
+        self._data['yhat_boots'] = yhat_boots
+        self._data['grid'] = grid
+        self._data['err_bands'] = err_bands
 
         return grid, yhat, err_bands
 
@@ -787,6 +798,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
     scatter_kws["marker"] = marker
     line_kws = {} if line_kws is None else copy.copy(line_kws)
     plotter.plot(ax, scatter_kws, line_kws)
+    ax.__dict__['_plotter'] = plotter
     return ax
 
 
@@ -1037,4 +1049,5 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
     scatter_kws = {} if scatter_kws is None else scatter_kws
     line_kws = {} if line_kws is None else line_kws
     plotter.plot(ax, scatter_kws, line_kws)
+    ax.__dict__['_plotter'] = plotter
     return ax
