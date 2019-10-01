@@ -1500,10 +1500,12 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         continue
 
                     if ci == "sd":
-
                         estimate = estimator(stat_data)
                         sd = np.std(stat_data)
                         confint.append((estimate - sd, estimate + sd))
+
+                    elif ci == "minmax":
+                        confint.append((np.min(stat_data), np.max(stat_data)))
 
                     else:
 
@@ -1554,7 +1556,10 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             estimate = estimator(stat_data)
                             sd = np.std(stat_data)
                             confint[i].append((estimate - sd, estimate + sd))
-
+                            
+                        elif ci == "minmax":
+                            confint[i].append((np.min(stat_data), np.max(stat_data)))
+ 
                         else:
 
                             boots = bootstrap(stat_data, func=estimator,

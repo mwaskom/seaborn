@@ -717,6 +717,11 @@ class _LinePlotter(_RelationalPlotter):
             cis = pd.DataFrame(np.c_[est - sd, est + sd],
                                index=est.index,
                                columns=["low", "high"]).stack()
+        elif ci == "minmax":
+            sd = grouped.std()
+            cis = pd.DataFrame(np.c_[grouped.min(), grouped.max()],
+                               index=est.index,
+                               columns=["low", "high"]).stack()
         else:
             cis = grouped.apply(bootstrapped_cis)
 
