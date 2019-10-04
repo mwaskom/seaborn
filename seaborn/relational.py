@@ -526,6 +526,8 @@ class _RelationalPlotter(object):
             return "categorical"
         elif isinstance(data, pd.Series) and data.dtype.name == "category":
             return "categorical"
+        elif data.dtype == "object":
+            return "categorical"
         else:
             try:
                 float_data = data.astype(np.float)
