@@ -24,7 +24,7 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - conda config --set always_yes yes --set changeps1 no
+  - conda config --set always_yes yes --set changeps1 no --set channel_priority false
   - conda config --add channels conda-forge
   - conda update -q conda
   - conda info -a
