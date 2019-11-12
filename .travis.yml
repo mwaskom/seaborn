@@ -13,8 +13,9 @@ env:
   - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.7 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
 
 
 before_install:
