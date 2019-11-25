@@ -225,7 +225,7 @@ class FacetGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(msg, UserWarning)
 
@@ -384,8 +384,8 @@ class FacetGrid(Grid):
         The plots it produces are often called "lattice", "trellis", or
         "small-multiple" graphics.
 
-        It can also represent levels of a third varaible with the ``hue``
-        parameter, which plots different subets of data in different colors.
+        It can also represent levels of a third variable with the ``hue``
+        parameter, which plots different subsets of data in different colors.
         This uses color to resolve elements on a third dimension, but only
         draws subsets on top of each other and will not tailor the ``hue``
         parameter for the specific visualization the way that axes-level
@@ -1089,7 +1089,7 @@ class PairGrid(Grid):
     the marginal distribution of each variable can be shown on the diagonal.
 
     It can also represent an additional level of conditionalization with the
-    ``hue`` parameter, which plots different subets of data in different
+    ``hue`` parameter, which plots different subsets of data in different
     colors. This uses color to resolve elements on a third dimension, but
     only draws subsets on top of each other and will not tailor the ``hue``
     parameter for the specific visualization the way that axes-level functions
@@ -1246,7 +1246,7 @@ class PairGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(UserWarning(msg))
 
@@ -2283,7 +2283,7 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
