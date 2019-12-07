@@ -330,7 +330,7 @@ class _RegressionPlotter(_LinearPlotter):
         else:
             color = self.color
 
-        # Ensure that color is hex to avoid matplotlib weidness
+        # Ensure that color is hex to avoid matplotlib weirdness
         color = mpl.colors.rgb2hex(mpl.colors.colorConverter.to_rgb(color))
 
         # Let color in keyword arguments override overall plot color
