@@ -1065,7 +1065,7 @@ def set_color_codes(palette="deep"):
 
     """
     if palette == "reset":
-        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
+        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, 0., .75),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
     elif not isinstance(palette, string_types):
         err = "set_color_codes requires a named seaborn palette"
