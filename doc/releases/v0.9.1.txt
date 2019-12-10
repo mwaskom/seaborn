@@ -22,8 +22,14 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 
 - Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
 
+- Relational plots now consider semantics with only a single value that can be interpreted as boolean (0 or 1) to be categorical, not numeric.
+
+- Relational plots now handle list or dict specifications for ``sizes`` correctly.
+
 - Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
 
 - Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
 
 - Fixed a bug when trying to call :func:`set` while specifying a list of colors for the palette.
+
+- Fixed a bug when resetting the color code short-hands to the matplotlib default.
