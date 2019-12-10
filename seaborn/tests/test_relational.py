@@ -1331,6 +1331,32 @@ class TestScatterPlotter(TestRelationalPlotter):
 
         # --
 
+        ax.clear()
+        sizes_list=[10,100,200]
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_list,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
+        assert sizes == expected_sizes
+
+        # --
+
+        ax.clear()
+        sizes_dict={2:10,4:100,8:200}
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_dict,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
+        assert sizes == expected_sizes
+        
+        # --
+
         x, y = np.random.randn(2, 40)
         z = np.tile(np.arange(20), 2)
 

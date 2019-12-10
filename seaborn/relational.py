@@ -428,6 +428,10 @@ class _RelationalPlotter(object):
                 except TypeError:
                     limits = None
 
+                # enforce numeric data to be treated as categorical -
+                # this ensures no size norm is used for legend (#GH1570)
+                var_type = "categorical"
+
             else:
 
                 # Infer the range of sizes to use
