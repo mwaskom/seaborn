@@ -364,7 +364,10 @@ class _RelationalPlotter(object):
             cmap = None
             limits = None
             levels, palette = self.categorical_to_palette(
-                data, order, palette
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # externalizes numpy datetime64
+                list(data), order, palette
             )
 
         # -- Option 2: sequential color palette
@@ -486,7 +489,10 @@ class _RelationalPlotter(object):
         else:
 
             if order is None:
-                levels = categorical_order(data)
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # coerces numpy datatypes
+                levels = categorical_order(list(data))
             else:
                 levels = order
 

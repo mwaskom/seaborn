@@ -82,6 +82,7 @@ class TestRelationalPlotter(object):
             a=np.take(list("abc"), rs.randint(0, 3, n)),
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
             c=np.take(list([0, 1]), rs.randint(0, 2, n)),
+            d=np.repeat(np.datetime64('2005-02-25'), n),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
         df["s_cat"] = df["s"].astype("category")
@@ -484,6 +485,11 @@ class TestRelationalPlotter(object):
         df=long_df[long_df["c"]==1]
         p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
         assert p.hue_levels == [1]
+        assert p.hue_type is "categorical"
+
+        # Test Timestamp data
+        p = rel._LinePlotter(x="x", y="y", hue="d", data=long_df)
+        assert p.hue_levels == [pd.Timestamp('2005-02-25')]
         assert p.hue_type is "categorical"
 
         # Test numeric data with category type
