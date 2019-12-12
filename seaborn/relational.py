@@ -367,7 +367,7 @@ class _RelationalPlotter(object):
                 # List comprehension here is required to
                 # overcome differences in the way pandas
                 # externalizes numpy datetime64
-                [v for v in data], order, palette
+                list(data), order, palette
             )
 
         # -- Option 2: sequential color palette
@@ -492,7 +492,7 @@ class _RelationalPlotter(object):
                 # List comprehension here is required to
                 # overcome differences in the way pandas
                 # coerces numpy datatypes
-                levels = categorical_order([v for v in data])
+                levels = categorical_order(list(data))
             else:
                 levels = order
 
