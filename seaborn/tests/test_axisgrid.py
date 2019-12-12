@@ -5,16 +5,16 @@ import pandas as pd
 from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from distutils.version import LooseVersion
 
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
 try:
     import pandas.testing as tm
 except ImportError:
     import pandas.util.testing as tm
+
+from distutils.version import LooseVersion
 
 from .. import axisgrid as ag
 from .. import rcmod
@@ -24,9 +24,6 @@ from ..categorical import pointplot
 from ..utils import categorical_order
 
 rs = np.random.RandomState(0)
-
-old_matplotlib = LooseVersion(mpl.__version__) < "1.4"
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 class TestFacetGrid(object):
@@ -279,7 +276,6 @@ class TestFacetGrid(object):
         for ax in g.axes.flat:
             nt.assert_true("PolarAxesSubplot" in str(type(ax)))
 
-    @skipif(old_matplotlib)
     def test_gridspec_kws(self):
         ratios = [3, 1, 2]
 
@@ -296,7 +292,6 @@ class TestFacetGrid(object):
             assert l.get_position().width > m.get_position().width
             assert r.get_position().width > m.get_position().width
 
-    @skipif(old_matplotlib)
     def test_gridspec_kws_col_wrap(self):
         ratios = [3, 1, 2, 1, 1]
 
@@ -306,17 +301,6 @@ class TestFacetGrid(object):
             warnings.simplefilter("always")
             npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='d',
                              col_wrap=5, gridspec_kws=gskws)
-
-    @skipif(not old_matplotlib)
-    def test_gridsic_kws_old_mpl(self):
-        ratios = [3, 1, 2]
-
-        gskws = dict(width_ratios=ratios, height_ratios=ratios)
-        with warnings.catch_warnings():
-            warnings.resetwarnings()
-            warnings.simplefilter("always")
-            npt.assert_warns(UserWarning, ag.FacetGrid, self.df, col='c',
-                             row='a', gridspec_kws=gskws)
 
     def test_data_generator(self):
 
@@ -417,10 +401,10 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[1, 0].get_title(), "a = b | b = m")
 
         # Test a provided title
-        g.set_titles("{row_var} == {row_name} \/ {col_var} == {col_name}")
-        nt.assert_equal(g.axes[0, 0].get_title(), "a == a \/ b == m")
-        nt.assert_equal(g.axes[0, 1].get_title(), "a == a \/ b == n")
-        nt.assert_equal(g.axes[1, 0].get_title(), "a == b \/ b == m")
+        g.set_titles("{row_var} == {row_name} \\/ {col_var} == {col_name}")
+        nt.assert_equal(g.axes[0, 0].get_title(), "a == a \\/ b == m")
+        nt.assert_equal(g.axes[0, 1].get_title(), "a == a \\/ b == n")
+        nt.assert_equal(g.axes[1, 0].get_title(), "a == b \\/ b == m")
 
         # Test a single row
         g = ag.FacetGrid(self.df,  col="b")
@@ -462,8 +446,7 @@ class TestFacetGrid(object):
         ylab = [l.get_text() for l in g.axes[1, 0].get_yticklabels()]
 
         g.set_xticklabels(xlab)
-        g.set_yticklabels(rotation=90)
-
+        g.set_yticklabels(ylab)
         got_x = [l.get_text() for l in g.axes[1, 1].get_xticklabels()]
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
         npt.assert_array_equal(got_x, xlab)
@@ -656,6 +639,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, row=unicode_row_label)
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_with_row_and_column(self):
 
         df = self.df.copy()
@@ -675,6 +660,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, col="a", row="b")
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_no_rows(self):
 
         df = self.df.copy()
@@ -694,6 +681,8 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, col="a")
         g = g.map(plt.plot, "x")
 
+    @pytest.mark.skipif(pd.__version__.startswith("0.24"),
+                        reason="known bug in pandas")
     def test_unicode_content_no_columns(self):
 
         df = self.df.copy()
@@ -713,7 +702,6 @@ class TestFacetGrid(object):
         g = ag.FacetGrid(df, row="b")
         g = g.map(plt.plot, "x")
 
-    @skipif(not pandas_has_categoricals)
     def test_categorical_column_missing_categories(self):
 
         df = self.df.copy()
@@ -782,6 +770,18 @@ class TestPairGrid(object):
         nt.assert_equal(g.y_vars, vars)
         nt.assert_true(g.square_grid)
 
+    def test_remove_hue_from_default(self):
+
+        hue = "z"
+        g = ag.PairGrid(self.df, hue=hue)
+        assert hue not in g.x_vars
+        assert hue not in g.y_vars
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df, hue=hue, vars=vars)
+        assert hue in g.x_vars
+        assert hue in g.y_vars
+
     def test_specific_nonsquare_axes(self):
 
         x_vars = ["x", "y"]
@@ -818,6 +818,22 @@ class TestPairGrid(object):
         nt.assert_equal(g.x_vars, list(x_vars))
         nt.assert_equal(g.y_vars, list(y_vars))
         nt.assert_true(not g.square_grid)
+
+    @pytest.mark.xfail(LooseVersion(mpl.__version__) < "1.5",
+                       reason="Expected failure on older matplotlib")
+    def test_corner(self):
+
+        plot_vars = ["x", "y", "z"]
+        g1 = ag.PairGrid(self.df, vars=plot_vars, corner=True)
+        corner_size = sum([i + 1 for i in range(len(plot_vars))])
+        assert len(g1.fig.axes) == corner_size
+
+        g1.map_diag(plt.hist)
+        assert len(g1.fig.axes) == (corner_size + len(plot_vars))
+
+        for ax in np.diag(g1.axes):
+            assert not ax.yaxis.get_visible()
+            assert not g1.axes[0, 0].get_ylabel()
 
     def test_size(self):
 
@@ -910,35 +926,66 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_map_diag(self):
 
         g1 = ag.PairGrid(self.df)
         g1.map_diag(plt.hist)
 
-        for ax in g1.diag_axes:
+        for var, ax in zip(g1.diag_vars, g1.diag_axes):
             nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
 
-        g2 = ag.PairGrid(self.df)
-        g2.map_diag(plt.hist, bins=15)
+        g2 = ag.PairGrid(self.df, hue="a")
+        g2.map_diag(plt.hist)
 
         for ax in g2.diag_axes:
-            nt.assert_equal(len(ax.patches), 15)
-
-        g3 = ag.PairGrid(self.df, hue="a")
-        g3.map_diag(plt.hist)
-
-        for ax in g3.diag_axes:
             nt.assert_equal(len(ax.patches), 30)
 
-        g4 = ag.PairGrid(self.df, hue="a")
-        g4.map_diag(plt.hist, histtype='step')
+        g3 = ag.PairGrid(self.df, hue="a")
+        g3.map_diag(plt.hist, histtype='step')
 
-        for ax in g4.diag_axes:
+        for ax in g3.diag_axes:
             for ptch in ax.patches:
                 nt.assert_equal(ptch.fill, False)
 
-    @skipif(old_matplotlib)
+    def test_map_diag_rectangular(self):
+
+        x_vars = ["x", "y"]
+        y_vars = ["x", "y", "z"]
+        g1 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        g1.map_diag(plt.hist)
+
+        assert set(g1.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for var, ax in zip(g1.diag_vars, g1.diag_axes):
+            nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
+
+        for i, ax in enumerate(np.diag(g1.axes)):
+            assert ax.bbox.bounds == g1.diag_axes[i].bbox.bounds
+
+        g2 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars, hue="a")
+        g2.map_diag(plt.hist)
+
+        assert set(g2.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for ax in g2.diag_axes:
+            nt.assert_equal(len(ax.patches), 30)
+
+        x_vars = ["x", "y", "z"]
+        y_vars = ["x", "y"]
+        g3 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
+        g3.map_diag(plt.hist)
+
+        assert set(g3.diag_vars) == (set(x_vars) & set(y_vars))
+
+        for var, ax in zip(g3.diag_vars, g3.diag_axes):
+            nt.assert_equal(len(ax.patches), 10)
+            assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
+
+        for i, ax in enumerate(np.diag(g3.axes)):
+            assert ax.bbox.bounds == g3.diag_axes[i].bbox.bounds
+
     def test_map_diag_color(self):
 
         color = "red"
@@ -949,16 +996,15 @@ class TestPairGrid(object):
 
         for ax in g1.diag_axes:
             for patch in ax.patches:
-                nt.assert_equals(patch.get_facecolor(), rgb_color)
+                assert patch.get_facecolor() == rgb_color
 
         g2 = ag.PairGrid(self.df)
         g2.map_diag(kdeplot, color='red')
 
         for ax in g2.diag_axes:
             for line in ax.lines:
-                nt.assert_equals(line.get_color(), color)
+                assert line.get_color() == color
 
-    @skipif(old_matplotlib)
     def test_map_diag_palette(self):
 
         pal = color_palette(n_colors=len(self.df.a.unique()))
@@ -967,9 +1013,8 @@ class TestPairGrid(object):
 
         for ax in g.diag_axes:
             for line, color in zip(ax.lines, pal):
-                nt.assert_equals(line.get_color(), color)
+                assert line.get_color() == color
 
-    @skipif(old_matplotlib)
     def test_map_diag_and_offdiag(self):
 
         vars = ["x", "y", "z"]
@@ -999,6 +1044,13 @@ class TestPairGrid(object):
         for i, j in zip(*np.diag_indices_from(g.axes)):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
+
+    def test_diag_sharey(self):
+
+        g = ag.PairGrid(self.df, diag_sharey=True)
+        g.map_diag(kdeplot)
+        for ax in g.diag_axes[1:]:
+            assert ax.get_ylim() == g.diag_axes[0].get_ylim()
 
     def test_palette(self):
 
@@ -1039,7 +1091,6 @@ class TestPairGrid(object):
         for line, marker in zip(g.axes[0, 0].lines, kws["marker"]):
             nt.assert_equal(line.get_marker(), marker)
 
-    @skipif(old_matplotlib)
     def test_hue_order(self):
 
         order = list("dcab")
@@ -1083,7 +1134,6 @@ class TestPairGrid(object):
 
         plt.close("all")
 
-    @skipif(old_matplotlib)
     def test_hue_order_missing_level(self):
 
         order = list("dcaeb")
@@ -1131,14 +1181,14 @@ class TestPairGrid(object):
 
         df = self.df.copy().set_index("b")
 
-        vars = ["x", "y", "z"]
+        plot_vars = ["x", "y", "z"]
         g1 = ag.PairGrid(df)
         g1.map(plt.scatter)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
+                x_in = self.df[plot_vars[j]]
+                y_in = self.df[plot_vars[i]]
                 x_out, y_out = ax.collections[0].get_offsets().T
                 npt.assert_array_equal(x_in, x_out)
                 npt.assert_array_equal(y_in, y_out)
@@ -1148,8 +1198,8 @@ class TestPairGrid(object):
 
         for i, axes_i in enumerate(g2.axes):
             for j, ax in enumerate(axes_i):
-                x_in = self.df[vars[j]]
-                y_in = self.df[vars[i]]
+                x_in = self.df[plot_vars[j]]
+                y_in = self.df[plot_vars[i]]
                 for k, k_level in enumerate(self.df.a.unique()):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
@@ -1157,7 +1207,28 @@ class TestPairGrid(object):
                 npt.assert_array_equal(x_in_k, x_out)
                 npt.assert_array_equal(y_in_k, y_out)
 
-    @skipif(old_matplotlib)
+    def test_dropna(self):
+
+        df = self.df.copy()
+        n_null = 20
+        df.loc[np.arange(n_null), "x"] = np.nan
+
+        plot_vars = ["x", "y", "z"]
+
+        g1 = ag.PairGrid(df, vars=plot_vars, dropna=True)
+        g1.map(plt.scatter)
+
+        for i, axes_i in enumerate(g1.axes):
+            for j, ax in enumerate(axes_i):
+                x_in = df[plot_vars[j]]
+                y_in = df[plot_vars[i]]
+                x_out, y_out = ax.collections[0].get_offsets().T
+
+                n_valid = (x_in * y_in).notnull().sum()
+
+                assert n_valid == len(x_out)
+                assert n_valid == len(y_out)
+
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]
@@ -1193,7 +1264,6 @@ class TestPairGrid(object):
             assert len(ax.lines) == n
             assert len(ax.collections) == n
 
-    @skipif(old_matplotlib)
     def test_pairplot_reg(self):
 
         vars = ["x", "y", "z"]
@@ -1228,7 +1298,6 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_pairplot_kde(self):
 
         vars = ["x", "y", "z"]
@@ -1257,7 +1326,6 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    @skipif(old_matplotlib)
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]

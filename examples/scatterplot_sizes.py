@@ -9,7 +9,7 @@ _thumb: .45, .45
 import seaborn as sns
 sns.set()
 
-# Load the example iris dataset
+# Load the example planets dataset
 planets = sns.load_dataset("planets")
 
 cmap = sns.cubehelix_palette(rot=-.2, as_cmap=True)

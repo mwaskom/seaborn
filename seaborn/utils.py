@@ -13,10 +13,6 @@ import matplotlib.pyplot as plt
 from .external.six.moves.urllib.request import urlopen, urlretrieve
 from .external.six.moves.http_client import HTTPException
 
-from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
-
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "load_dataset"]
@@ -235,22 +231,34 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
 
         # Potentially move the ticks
         if left and not right:
-            maj_on = any(t.tick1On for t in ax_i.yaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.yaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.minorTicks
+            )
             ax_i.yaxis.set_ticks_position("right")
             for t in ax_i.yaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.yaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if bottom and not top:
-            maj_on = any(t.tick1On for t in ax_i.xaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.xaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.minorTicks
+            )
             ax_i.xaxis.set_ticks_position("top")
             for t in ax_i.xaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.xaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if trim:
             # clip off the parts of the spines that extend past major ticks
@@ -432,9 +440,6 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
 
-    if not pandas_has_categoricals:
-        return df
-
     # Set some columns as a categorical type with ordered levels
 
     if name == "tips":
@@ -540,16 +545,17 @@ def categorical_order(values, order=None):
 
 def get_color_cycle():
     """Return the list of colors in the current matplotlib color cycle."""
-    if mpl_ge_150:
+    try:
         cyl = mpl.rcParams['axes.prop_cycle']
-        # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
-        # but no garuantee that there's a `color` key.
-        # so users could have a custom rcParmas w/ no color...
         try:
+            # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
+            # but no garuantee that there's a `color` key.
+            # so users could have a custom rcParmas w/ no color...
             return [x['color'] for x in cyl]
         except KeyError:
-            pass  # just return axes.color style below
-
+            pass
+    except KeyError:
+        pass
     return mpl.rcParams['axes.color_cycle']
 
 

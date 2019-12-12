@@ -2,7 +2,8 @@
 v0.9.0 (July 2018)
 ------------------
 
-TODO add Zenodo badge
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1313201.svg
+   :target: https://doi.org/10.5281/zenodo.1313201
 
 This is a major release with several substantial and long-desired new features. There are also updates/modifications to the themes and color palettes that give better consistency with matplotlib 2.0 and some notable API changes.
 
@@ -26,7 +27,7 @@ Updates to themes and palettes
 
 Several changes have been made to the seaborn style themes, context scaling, and color palettes. In general the aim of these changes was to make the seaborn styles more consistent with the `style updates in matplotlib 2.0 <https://matplotlib.org/users/dflt_style_changes.html>`_ and to leverage some of the new style parameters for better implementation of some aspects of the seaborn styles. Here is a list of the changes:
 
-- Reorganized and updated some :func:`axes_style`/:func:`plotting_context` parameters to take advantage of improvements in the matplotlib 2.0 update. The biggest change involves using several new parameterss in the "style" spec while moving parameters that used to implement the corresponding aesthetics to the "context" spec. For example, axes spines and ticks are now off instead of having their width/length zeroed out for the darkgrid style. That means the width/length of these elements can now be scaled in different contexts. The effect is a more cohesive appearance of the plots, especially in larger contexts. These changes include only minimal support for the 1.x matplotlib series. Users who are stuck on matplotlib 1.5 but wish to use seaborn styling may want to use the seaborn parameters that can be accessed through the `matplotlib stylesheet interface <https://matplotlib.org/users/style_sheets.html>`_.
+- Reorganized and updated some :func:`axes_style`/:func:`plotting_context` parameters to take advantage of improvements in the matplotlib 2.0 update. The biggest change involves using several new parameters in the "style" spec while moving parameters that used to implement the corresponding aesthetics to the "context" spec. For example, axes spines and ticks are now off instead of having their width/length zeroed out for the darkgrid style. That means the width/length of these elements can now be scaled in different contexts. The effect is a more cohesive appearance of the plots, especially in larger contexts. These changes include only minimal support for the 1.x matplotlib series. Users who are stuck on matplotlib 1.5 but wish to use seaborn styling may want to use the seaborn parameters that can be accessed through the `matplotlib stylesheet interface <https://matplotlib.org/users/style_sheets.html>`_.
 
 - Updated the seaborn palettes ("deep", "muted", "colorblind", etc.) to correspond with the new 10-color matplotlib default. The legacy palettes are now available at "deep6", "muted6", "colorblind6", etc. Additionally, a few individual colors were tweaked for better consistency, aesthetics, and accessibility.
 

@@ -265,7 +265,7 @@ class _HeatMapper(object):
         size = [bbox.width, bbox.height][axis]
         axis = [ax.xaxis, ax.yaxis][axis]
         tick, = axis.set_ticks([0])
-        fontsize = tick.label.get_size()
+        fontsize = tick.label1.get_size()
         max_ticks = int(size // (fontsize / 72))
         if max_ticks < 1:
             return [], []
@@ -820,9 +820,9 @@ class ClusterGrid(Grid):
             if isinstance(colors, (pd.DataFrame, pd.Series)):
                 # Ensure colors match data indices
                 if axis == 0:
-                    colors = colors.loc[data.index]
+                    colors = colors.reindex(data.index)
                 else:
-                    colors = colors.loc[data.columns]
+                    colors = colors.reindex(data.columns)
 
                 # Replace na's with background color
                 # TODO We should set these to transparent instead
@@ -1040,10 +1040,15 @@ class ClusterGrid(Grid):
         ----------
         heatmap_kws : dict
             Keyword arguments heatmap
+
         """
         # Remove any custom colormap and centering
+        # TODO this code has consistently caused problems when we
+        # have missed kwargs that need to be excluded that it might
+        # be better to rewrite *in*clusively.
         kws = kws.copy()
         kws.pop('cmap', None)
+        kws.pop('norm', None)
         kws.pop('center', None)
         kws.pop('annot', None)
         kws.pop('vmin', None)

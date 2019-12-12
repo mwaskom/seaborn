@@ -11,7 +11,6 @@ from distutils.version import LooseVersion
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
 
 from .. import categorical as cat
 from .. import palettes
@@ -1514,7 +1513,7 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
         for i, group_colors in enumerate(point_colors):
             nt.assert_equal(tuple(deep_colors[i]), tuple(group_colors[0]))
             for channel in group_colors.T:
-                nt.assert_equals(np.unique(channel).size, 1)
+                assert np.unique(channel).size == 1
 
     def test_hue_point_colors(self):
 
@@ -1573,7 +1572,6 @@ class TestStripPlotter(CategoricalFixture):
 
             npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
 
-    @skipif(not pandas_has_categoricals)
     def test_stripplot_horiztonal(self):
 
         df = self.df.copy()
@@ -1619,7 +1617,6 @@ class TestStripPlotter(CategoricalFixture):
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 npt.assert_equal(fc, pal[j])
 
-    @skipif(not pandas_has_categoricals)
     def test_dodge_nested_stripplot_horizontal(self):
 
         df = self.df.copy()
@@ -1647,7 +1644,6 @@ class TestStripPlotter(CategoricalFixture):
             npt.assert_array_equal(x, np.ones(len(x)) * i)
             npt.assert_array_equal(y, group_vals)
 
-    @skipif(not pandas_has_categoricals)
     def test_nested_stripplot_horizontal(self):
 
         df = self.df.copy()
@@ -2650,6 +2646,12 @@ class TestBoxenPlotter(CategoricalFixture):
         cat.boxenplot("y", "g", "h", data=self.df, orient="h")
         plt.close("all")
 
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", palette="Set2")
+        plt.close("all")
+
+        cat.boxenplot("y", "g", "h", data=self.df, orient="h", color="b")
+        plt.close("all")
+
     def test_axes_annotation(self):
 
         ax = cat.boxenplot("g", "y", data=self.df)
@@ -2670,6 +2672,11 @@ class TestBoxenPlotter(CategoricalFixture):
                                ["a", "b", "c"])
         npt.assert_array_equal([l.get_text() for l in ax.legend_.get_texts()],
                                ["m", "n"])
+
+        plt.close("all")
+
+        with plt.rc_context(rc={"axes.labelsize": "large"}):
+            ax = cat.boxenplot("g", "y", "h", data=self.df)
 
         plt.close("all")
 

@@ -76,7 +76,7 @@ class TestRelationalPlotter(object):
 
         n = 100
         rs = np.random.RandomState()
-        return pd.DataFrame(dict(
+        df = pd.DataFrame(dict(
             x=rs.randint(0, 20, n),
             y=rs.randn(n),
             a=np.take(list("abc"), rs.randint(0, 3, n)),
@@ -85,6 +85,8 @@ class TestRelationalPlotter(object):
             d=np.repeat(np.datetime64('2005-02-25'), n),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
         ))
+        df["s_cat"] = df["s"].astype("category")
+        return df
 
     @pytest.fixture
     def repeated_df(self):
@@ -475,10 +477,26 @@ class TestRelationalPlotter(object):
         assert p.hue_levels == [0, 1]
         assert p.hue_type is "categorical"
 
+        df=long_df[long_df["c"]==0]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [0]
+        assert p.hue_type is "categorical"
+
+        df=long_df[long_df["c"]==1]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [1]
+        assert p.hue_type is "categorical"
+
         # Test Timestamp data
         p = rel._LinePlotter(x="x", y="y", hue="d", data=long_df)
         assert p.hue_levels == [pd.Timestamp('2005-02-25')]
         assert p.hue_type is "categorical"
+
+        # Test numeric data with category type
+        p = rel._LinePlotter(x="x", y="y", hue="s_cat", data=long_df)
+        assert p.hue_levels == categorical_order(long_df.s_cat)
+        assert p.hue_type is "categorical"
+        assert p.cmap is None
 
     def test_parse_hue_numeric(self, long_df):
 
@@ -1327,6 +1345,32 @@ class TestScatterPlotter(TestRelationalPlotter):
         assert self.colors_equal(colors, expected_colors)
         assert sizes == expected_sizes
 
+        # --
+
+        ax.clear()
+        sizes_list=[10,100,200]
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_list,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
+        assert sizes == expected_sizes
+
+        # --
+
+        ax.clear()
+        sizes_dict={2:10,4:100,8:200}
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_dict,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
+        assert sizes == expected_sizes
+        
         # --
 
         x, y = np.random.randn(2, 40)

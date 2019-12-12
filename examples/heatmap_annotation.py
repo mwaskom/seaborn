@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set()
 
-# Load the example flights dataset and conver to long-form
+# Load the example flights dataset and convert to long-form
 flights_long = sns.load_dataset("flights")
 flights = flights_long.pivot("month", "year", "passengers")
 

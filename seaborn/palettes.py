@@ -741,8 +741,8 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
 
     """
     palfunc = dark_palette if center == "dark" else light_palette
-    neg = palfunc((h_neg, s, l), 128 - (sep / 2), reverse=True, input="husl")
-    pos = palfunc((h_pos, s, l), 128 - (sep / 2), input="husl")
+    neg = palfunc((h_neg, s, l), 128 - (sep // 2), reverse=True, input="husl")
+    pos = palfunc((h_pos, s, l), 128 - (sep // 2), input="husl")
     midpoint = dict(light=[(.95, .95, .95, 1.)],
                     dark=[(.133, .133, .133, 1.)])[center]
     mid = midpoint * sep
@@ -774,7 +774,7 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     name = "blend"
     pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
     if not as_cmap:
-        pal = _ColorPalette(pal(np.linspace(0, 1, n_colors)))
+        pal = _ColorPalette(pal(np.linspace(0, 1, int(n_colors))))
     return pal
 
 
@@ -1065,8 +1065,11 @@ def set_color_codes(palette="deep"):
 
     """
     if palette == "reset":
-        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
+        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, 0., .75),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
+    elif not isinstance(palette, string_types):
+        err = "set_color_codes requires a named seaborn palette"
+        raise TypeError(err)
     elif palette in SEABORN_PALETTES:
         if not palette.endswith("6"):
             palette = palette + "6"

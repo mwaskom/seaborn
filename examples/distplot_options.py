@@ -26,7 +26,7 @@ sns.distplot(d, hist=False, rug=True, color="r", ax=axes[0, 1])
 # Plot a filled kernel density estimate
 sns.distplot(d, hist=False, color="g", kde_kws={"shade": True}, ax=axes[1, 0])
 
-# Plot a historgram and kernel density estimate
+# Plot a histogram and kernel density estimate
 sns.distplot(d, color="m", ax=axes[1, 1])
 
 plt.setp(axes, yticks=[])

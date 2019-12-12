@@ -324,13 +324,13 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Use the current color cycle state as a default
         if self.color is None:
-            lines, = plt.plot(self.x.mean(), self.y.mean())
+            lines, = ax.plot(self.x.mean(), self.y.mean())
             color = lines.get_color()
             lines.remove()
         else:
             color = self.color
 
-        # Ensure that color is hex to avoid matplotlib weidness
+        # Ensure that color is hex to avoid matplotlib weirdness
         color = mpl.colors.rgb2hex(mpl.colors.colorConverter.to_rgb(color))
 
         # Let color in keyword arguments override overall plot color
@@ -541,7 +541,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
     # Handle deprecations
     if size is not None:
         height = size
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
@@ -819,7 +819,7 @@ regplot.__doc__ = dedent("""\
     {truncate}
     {xy_jitter}
     label : string
-        Label to apply to ether the scatterplot or regression line (if
+        Label to apply to either the scatterplot or regression line (if
         ``scatter`` is ``False``) for use in a legend.
     color : matplotlib color
         Color to apply to all plot elements; will be superseded by colors

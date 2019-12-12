@@ -431,6 +431,10 @@ class _RelationalPlotter(object):
                 except TypeError:
                     limits = None
 
+                # enforce numeric data to be treated as categorical -
+                # this ensures no size norm is used for legend (#GH1570)
+                var_type = "categorical"
+
             else:
 
                 # Infer the range of sizes to use
@@ -530,11 +534,14 @@ class _RelationalPlotter(object):
         """Determine if data should considered numeric or categorical."""
         if self.input_format == "wide":
             return "categorical"
+        elif isinstance(data, pd.Series) and data.dtype.name == "category":
+            return "categorical"
         else:
             try:
                 float_data = data.astype(np.float)
                 values = np.unique(float_data.dropna())
-                if np.array_equal(values, np.array([0., 1.])):
+                # TODO replace with isin when pinned np version >= 1.13
+                if np.all(np.in1d(values, np.array([0., 1.]))):
                     return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
@@ -1142,7 +1149,7 @@ lineplot.__doc__ = dedent("""\
     err_style : "band" or "bars", optional
         Whether to draw the confidence intervals with translucent error bands
         or discrete error bars.
-    err_band : dict of keyword arguments
+    err_kws : dict of keyword arguments
         Additional paramters to control the aesthetics of the error bars. The
         kwargs are passed either to ``ax.fill_between`` or ``ax.errorbar``,
         depending on the ``err_style``.
