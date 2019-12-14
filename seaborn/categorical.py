@@ -16,6 +16,7 @@ from .external.six.moves import range
 from . import utils
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
+from .algorithms import stats as sbstats
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
 
@@ -1501,13 +1502,26 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         sd = np.std(stat_data)
                         confint.append((estimate - sd, estimate + sd))
 
+                    elif ci == "sem":
+
+                        estimate = estimator(stat_data)
+                        sem = sbstats.sem(stat_data)
+                        confint.append((estimate - sem, estimate + sem))
+
                     else:
 
-                        boots = bootstrap(stat_data, func=estimator,
-                                          n_boot=n_boot,
-                                          units=unit_data)
-                        confint.append(utils.ci(boots, ci))
-
+                        if n_boot is not None:
+                            boots = bootstrap(stat_data, func=estimator,
+                                                    n_boot=n_boot,
+                                                    units=unit_data)
+                            confint.append(utils.ci(boots, ci))
+                        else:
+                            sem = sbstats.sem(stat_data)
+                            z_se = stats.norm.ppf((ci + (100 - ci) * .5) / 100.)
+                            ci_lo = stat_data.mean() - z_se * sem
+                            ci_hi = stat_data.mean() + z_se * sem
+                            confint.append((ci_lo, ci_hi))
+                            
             # Option 2: we are grouping by a hue layer
             # ----------------------------------------
 
@@ -1551,13 +1565,27 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             sd = np.std(stat_data)
                             confint[i].append((estimate - sd, estimate + sd))
 
+                        elif ci == "sem":
+
+                            estimate = estimator(stat_data)
+                            sem = sbstats.sem(stat_data)
+                            confint[i].append((estimate - sem, estimate + sem))
+
                         else:
 
-                            boots = bootstrap(stat_data, func=estimator,
-                                              n_boot=n_boot,
-                                              units=unit_data)
-                            confint[i].append(utils.ci(boots, ci))
+                            if n_boot is not None:
+                                boots = bootstrap(stat_data, func=estimator,
+                                                      n_boot=n_boot,
+                                                      units=unit_data)
+                                confint[i].append(utils.ci(boots, ci))
+                            else:
+                                sem = sbstats.sem(stat_data)
+                                z_se = stats.norm.ppf((ci + (100 - ci) * .5) / 100.)
+                                ci_lo = stat_data.mean() - z_se * sem
+                                ci_hi = stat_data.mean() + z_se * sem
+                                confint[i].append((ci_lo, ci_hi))
 
+        
         # Save the resulting values for plotting
         self.statistic = np.array(statistic)
         self.confint = np.array(confint)
@@ -2114,14 +2142,16 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or "sd" or None, optional
+    ci : float or "sd" or "sem" or None, optional
         Size of confidence intervals to draw around estimated values.  If
-        "sd", skip bootstrapping and draw the standard deviation of the
-        observations. If ``None``, no bootstrapping will be performed, and
-        error bars will not be drawn.
+        "sd" or "sem", skip bootstrapping and draw the standard deviation 
+        or standard error of the mean of the observations, respectively.
+        If ``None``, no bootstrapping will be performed, and error bars will
+        not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
-        intervals.
+        intervals. If ``None``, confidence intervals will be calculated
+        parametrically using the standard error of the mean.
     units : name of variable in ``data`` or vector data, optional
         Identifier of sampling units, which will be used to perform a
         multilevel bootstrap and account for repeated measures design.\
