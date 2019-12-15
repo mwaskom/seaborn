@@ -217,7 +217,7 @@ class FacetGrid(Grid):
                  row_order=None, col_order=None, hue_order=None, hue_kws=None,
                  dropna=True, legend_out=True, despine=True,
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-                 gridspec_kws=None, size=None):
+                 gridspec_kws=None, size=None, fig_dpi=100):
 
         MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
         OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
@@ -299,6 +299,7 @@ class FacetGrid(Grid):
         if col_wrap is None:
             kwargs = dict(figsize=figsize, squeeze=False,
                           sharex=sharex, sharey=sharey,
+                          dpi=fig_dpi,
                           subplot_kw=subplot_kws,
                           gridspec_kw=gridspec_kws)
 
@@ -441,6 +442,8 @@ class FacetGrid(Grid):
             Dictionary of keyword arguments passed to matplotlib's ``gridspec``
             module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
             ignored if ``col_wrap`` is not ``None``.
+        fig_dpi : int, optional
+            Set the dpi of the figure
 
         See Also
         --------
