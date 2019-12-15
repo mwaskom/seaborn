@@ -2200,6 +2200,22 @@ class TestPointPlotter(CategoricalFixture):
             for got_color in points.get_facecolors():
                 npt.assert_array_equal(got_color[:-1], color)
 
+    def test_draw_missing_points(self):
+
+        kws = self.default_kws.copy()
+        df = self.df.copy()
+
+        kws.update(x="g", y="y", hue="h", hue_order=["x", "y"], data=df)
+        p = cat._PointPlotter(**kws)
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
+        df.loc[df["h"] == "m", "y"] = np.nan
+        kws.update(x="g", y="y", hue="h", data=df)
+        p = cat._PointPlotter(**kws)
+        f, ax = plt.subplots()
+        p.draw_points(ax)
+
     def test_pointplot_colors(self):
 
         # Test a single-color unnested plot

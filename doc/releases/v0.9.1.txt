@@ -26,6 +26,8 @@ This is a minor release, comprising mostly bug fixes and compatibility with depe
 
 - Relational plots now handle list or dict specifications for ``sizes`` correctly.
 
+- Fixed an issue in :func:`pointplot` where missing levels of a hue variable would cause an exception after a recent update in matplotlib.
+
 - Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
 
 - Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.

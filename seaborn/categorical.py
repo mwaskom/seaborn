@@ -1787,18 +1787,22 @@ class _PointPlotter(_CategoricalStatPlotter):
                 n_points = len(remove_na(offpos))
                 marker = self.markers[j]
                 hex_color = mpl.colors.rgb2hex(self.colors[j])
+
                 if n_points:
                     point_colors = [hex_color for _ in range(n_points)]
                 else:
                     point_colors = hex_color
+
                 if self.orient == "h":
                     x, y = statistic, offpos
                 else:
                     x, y = offpos, statistic
+
                 if not len(remove_na(statistic)):
-                    x, y = [], []
+                    x = y = [np.nan] * n_points
+
                 ax.scatter(x, y, label=hue_level,
-                           c=point_colors, edgecolor=point_colors,
+                           c=point_colors, edgecolor=hex_color,
                            linewidth=mew, marker=marker, s=markersize,
                            zorder=z)
 
