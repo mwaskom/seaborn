@@ -324,7 +324,7 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Use the current color cycle state as a default
         if self.color is None:
-            lines, = ax.plot(self.x.mean(), self.y.mean())
+            lines, = ax.plot([], [])
             color = lines.get_color()
             lines.remove()
         else:
@@ -340,6 +340,7 @@ class _RegressionPlotter(_LinearPlotter):
         # Draw the constituent plots
         if self.scatter:
             self.scatterplot(ax, scatter_kws)
+
         if self.fit_reg:
             self.lineplot(ax, line_kws)
 
@@ -383,10 +384,9 @@ class _RegressionPlotter(_LinearPlotter):
 
     def lineplot(self, ax, kws):
         """Draw the model."""
-        xlim = ax.get_xlim()
-
         # Fit the regression model
         grid, yhat, err_bands = self.fit_regression(ax)
+        edges = grid[0], grid[-1]
 
         # Get set default aesthetics
         fill_color = kws["color"]
@@ -394,10 +394,10 @@ class _RegressionPlotter(_LinearPlotter):
         kws.setdefault("linewidth", lw)
 
         # Draw the regression line and confidence interval
-        ax.plot(grid, yhat, **kws)
+        line, = ax.plot(grid, yhat, **kws)
+        line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
-        ax.set_xlim(*xlim, auto=None)
 
 
 _regression_docs = dict(
