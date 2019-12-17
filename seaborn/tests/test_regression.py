@@ -591,7 +591,6 @@ class TestRegressionPlots(object):
     def test_regplot_xlim(self):
 
         f, ax = plt.subplots()
-
         x, y1, y2 = np.random.randn(3, 50)
         lm.regplot(x, y1, truncate=False)
         lm.regplot(x, y2, truncate=False)
