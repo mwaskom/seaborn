@@ -538,7 +538,7 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            legend=True, legend_out=True, x_estimator=None, x_bins=None,
            x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
            units=None, order=1, logistic=False, lowess=False, robust=False,
-           logx=False, x_partial=None, y_partial=None, truncate=False,
+           logx=False, x_partial=None, y_partial=None, truncate=True,
            x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None,
            size=None):
 
@@ -774,7 +774,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
             scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
             logx=False, x_partial=None, y_partial=None,
-            truncate=False, dropna=True, x_jitter=None, y_jitter=None,
+            truncate=True, dropna=True, x_jitter=None, y_jitter=None,
             label=None, color=None, marker="o",
             scatter_kws=None, line_kws=None, ax=None):
 
@@ -892,12 +892,12 @@ regplot.__doc__ = dedent("""\
         >>> ax = sns.regplot(x=x, y=y, marker="+")
 
     Use a 68% confidence interval, which corresponds with the standard error
-    of the estimate:
+    of the estimate, and extend the regression line to the axis limits:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.regplot(x=x, y=y, ci=68)
+        >>> ax = sns.regplot(x=x, y=y, ci=68, truncate=False)
 
     Plot with a discrete ``x`` variable and add some jitter:
 
@@ -922,7 +922,7 @@ regplot.__doc__ = dedent("""\
 
         >>> ax = sns.regplot(x=x, y=y, x_bins=4)
 
-    Fit a higher-order polynomial regression and truncate the model prediction:
+    Fit a higher-order polynomial regression:
 
     .. plot::
         :context: close-figs
@@ -930,7 +930,7 @@ regplot.__doc__ = dedent("""\
         >>> ans = sns.load_dataset("anscombe")
         >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "II"],
         ...                  scatter_kws={{"s": 80}},
-        ...                  order=2, ci=None, truncate=True)
+        ...                  order=2, ci=None)
 
     Fit a robust regression and don't plot a confidence interval:
 
@@ -951,13 +951,13 @@ regplot.__doc__ = dedent("""\
         >>> ax = sns.regplot(x="total_bill", y="big_tip", data=tips,
         ...                  logistic=True, n_boot=500, y_jitter=.03)
 
-    Fit the regression model using log(x) and truncate the model prediction:
+    Fit the regression model using log(x):
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
-        ...                  x_estimator=np.mean, logx=True, truncate=True)
+        ...                  x_estimator=np.mean, logx=True)
 
     """).format(**_regression_docs)
 
