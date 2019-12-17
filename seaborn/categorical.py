@@ -2134,12 +2134,11 @@ _categorical_docs = dict(
     stat_api_params=dedent("""\
     estimator : callable that maps vector -> scalar, optional
         Statistical function to estimate within each categorical bin.
-    ci : float or "sd" or "sem" or None, optional
+    ci : float or "sd" or None, optional
         Size of confidence intervals to draw around estimated values.  If
-        "sd" or "sem", skip bootstrapping and draw the standard deviation 
-        or standard error of the mean of the observations, respectively.
-        If ``None``, no bootstrapping will be performed, and error bars will
-        not be drawn.
+        "sd" , skip bootstrapping and draw the standard deviation of the 
+        observations. If ``None``, no bootstrapping will be performed, and
+        error bars will not be drawn.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals. If ``None``, confidence intervals will be calculated
