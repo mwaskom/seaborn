@@ -1501,13 +1501,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         estimate = estimator(stat_data)
                         sd = np.std(stat_data)
                         confint.append((estimate - sd, estimate + sd))
-
-                    elif ci == "sem":
-
-                        estimate = estimator(stat_data)
-                        sem = sbstats.sem(stat_data)
-                        confint.append((estimate - sem, estimate + sem))
-
+                    
                     else:
 
                         if n_boot is not None:
@@ -1516,6 +1510,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                                                     units=unit_data)
                             confint.append(utils.ci(boots, ci))
                         else:
+                            assert estimator is np.mean, \
+                                "analytic CIs not implemented for estimator '%s'" % estimator
                             sem = sbstats.sem(stat_data)
                             z_se = stats.norm.ppf((ci + (100 - ci) * .5) / 100.)
                             ci_lo = stat_data.mean() - z_se * sem
@@ -1565,12 +1561,6 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             sd = np.std(stat_data)
                             confint[i].append((estimate - sd, estimate + sd))
 
-                        elif ci == "sem":
-
-                            estimate = estimator(stat_data)
-                            sem = sbstats.sem(stat_data)
-                            confint[i].append((estimate - sem, estimate + sem))
-
                         else:
 
                             if n_boot is not None:
@@ -1579,6 +1569,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                                                       units=unit_data)
                                 confint[i].append(utils.ci(boots, ci))
                             else:
+                                assert estimator is np.mean, \
+                                    "analytic CIs not implemented for estimator '%s'" % estimator
                                 sem = sbstats.sem(stat_data)
                                 z_se = stats.norm.ppf((ci + (100 - ci) * .5) / 100.)
                                 ci_lo = stat_data.mean() - z_se * sem
