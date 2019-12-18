@@ -4,23 +4,31 @@ v0.9.1 (Unreleased)
 
 This is a minor release, comprising mostly bug fixes and compatibility with dependency updates.
 
+New features
+~~~~~~~~~~~~
+
 - Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid with only the lower triangle of bivariate axes.
 
 - Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
 
 - In :class:`PairGrid`, the ``hue`` variable is now excluded from the default list of variables that make up the rows and columns of the grid.
 
-- Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
-
 - Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
 
+Bug fixes and adpatations
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 - Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
+
+- Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
 
 - Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.
 
 - Semantic variables with a ``category`` data type will always be treated as categorical in relational plots.
 
 - Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
+
+- Adapted to a change in how matplotlib scales axis margins, which caused multiple calls to :func:`regplot` with ``truncate=False`` to progressively expand the x axis limits. Because there are currently limitations on how autoscaling works in matplotlib, the default value for ``truncate`` in seaborn has also been changed to ``True``.
 
 - Relational plots now consider semantics with only a single value that can be interpreted as boolean (0 or 1) to be categorical, not numeric.
 

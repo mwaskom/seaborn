@@ -11,6 +11,7 @@ try:
 except ImportError:
     import pandas.util.testing as pdt
 from nose import SkipTest
+from distutils.version import LooseVersion
 
 try:
     import statsmodels.regression.linear_model as smlm
@@ -587,3 +588,14 @@ class TestRegressionPlots(object):
         color = ax.collections[0].get_facecolors()
         npt.assert_almost_equal(color[0, :3],
                                 (1, 0, 0))
+
+    @pytest.mark.skipif(LooseVersion(mpl.__version__) < "2.0",
+                        reason="not supported on old matplotlib")
+    def test_regplot_xlim(self):
+
+        f, ax = plt.subplots()
+        x, y1, y2 = np.random.randn(3, 50)
+        lm.regplot(x, y1, truncate=False)
+        lm.regplot(x, y2, truncate=False)
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xdata(), line2.get_xdata())
