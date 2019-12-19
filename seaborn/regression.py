@@ -45,11 +45,17 @@ class _LinearPlotter(object):
         # Set the variables
         for var, val in kws.items():
             if isinstance(val, string_types):
-                setattr(self, var, data[val])
+                vector = data[val]
             elif isinstance(val, list):
-                setattr(self, var, np.asarray(val))
+                vector = np.asarray(val)
             else:
-                setattr(self, var, val)
+                vector = val
+            if vector is not None:
+                vector = np.squeeze(vector)
+            if np.ndim(vector) > 1:
+                err = "regplot inputs must be 1d"
+                raise ValueError(err)
+            setattr(self, var, vector)
 
     def dropna(self, *vars):
         """Remove observations with missing data."""
