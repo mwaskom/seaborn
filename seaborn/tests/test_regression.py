@@ -148,6 +148,15 @@ class TestRegressionPlotter(object):
         npt.assert_array_equal(p.y, self.df.y + 1)
         pdt.assert_frame_equal(p.data, self.df)
 
+    def test_variables_must_be_1d(self):
+
+        array_2d = np.random.randn(20, 2)
+        array_1d = np.random.randn(20)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_2d, array_1d)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_1d, array_2d)
+
     def test_dropna(self):
 
         p = lm._RegressionPlotter("x", "y_na", data=self.df)
@@ -351,6 +360,12 @@ class TestRegressionPlotter(object):
         _, r_semipartial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_semipartial, r_orig)
 
+        p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
+        _, r_partial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_partial, r_orig)
+
+        x = pd.Series(x)
+        y = pd.Series(y)
         p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
         _, r_partial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_partial, r_orig)
