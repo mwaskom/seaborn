@@ -1021,21 +1021,17 @@ class TestLinePlotter(TestRelationalPlotter):
         p = rel._LinePlotter(
             x="x", y="y", hue="f", legend="brief", data=long_df)
         p.add_legend_data(ax)
-        ticker = mpl.ticker.MaxNLocator(nbins=3)
-        levels = ticker.tick_values(0.2,0.3)
-        str_levels = np.around(levels,decimals=2).astype(str).tolist()
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
         handles, labels = ax.get_legend_handles_labels()
-        assert labels == ["f"] + str_levels
+        assert labels == ["f"] + expected_levels
 
         ax.clear()
         p = rel._LinePlotter(
             x="x", y="y", size="f", legend="brief", data=long_df)
         p.add_legend_data(ax)
-        ticker = mpl.ticker.MaxNLocator(nbins=3)
-        levels = ticker.tick_values(0.2,0.3)
-        str_levels = np.around(levels,decimals=2).astype(str).tolist()
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
         handles, labels = ax.get_legend_handles_labels()
-        assert labels == ["f"] + str_levels
+        assert labels == ["f"] + expected_levels
 
     def test_plot(self, long_df, repeated_df):
 
