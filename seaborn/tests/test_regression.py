@@ -364,6 +364,12 @@ class TestRegressionPlotter(object):
         _, r_partial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_partial, r_orig)
 
+        x = pd.Series(x)
+        y = pd.Series(y)
+        p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
+        _, r_partial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_partial, r_orig)
+
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_logistic_regression(self):
 
