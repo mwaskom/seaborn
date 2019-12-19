@@ -38,6 +38,8 @@ Bug fixes and adpatations
 
 - Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
 
+- Fixed a bug when using ``Series`` objects as arguments for ``x_partial`` or ``y_partial`` in :func:`regplot`.
+
 - Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
 
 - Fixed a bug when trying to call :func:`set` while specifying a list of colors for the palette.
