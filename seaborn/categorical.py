@@ -243,7 +243,11 @@ class _CategoricalPlotter(object):
         """Group a long-form variable by another with correct order."""
         # Ensure that the groupby will work
         if not isinstance(vals, pd.Series):
-            vals = pd.Series(vals)
+            if isinstance(grouper, pd.Series):
+                index = grouper.index
+            else:
+                index = None
+            vals = pd.Series(vals, index=index)
 
         # Group the val data
         grouped_vals = vals.groupby(grouper)

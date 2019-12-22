@@ -172,6 +172,12 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_is(p.value_label, None)
         nt.assert_is(p.group_label, None)
 
+        # Test array and series with non-default index
+        x = pd.Series([1, 1, 1, 1], index=[0, 2, 4, 6])
+        y = np.array([1, 2, 3, 4])
+        p.establish_variables(x, y)
+        assert len(p.plot_data[0]) == 4
+
     def test_single_long_indirect_inputs(self):
 
         p = cat._CategoricalPlotter()
