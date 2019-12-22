@@ -531,6 +531,29 @@ def categorical_order(values, order=None):
     return list(order)
 
 
+def locator_to_legend_entries(locator, limits, dtype):
+    """Return levels and formatted levels for brief numeric legends."""
+    raw_levels = locator.tick_values(*limits).astype(dtype)
+
+    class dummy_axis:
+        def get_view_interval(self):
+            return limits
+
+    if isinstance(locator, mpl.ticker.LogLocator):
+        formatter = mpl.ticker.LogFormatter()
+    else:
+        formatter = mpl.ticker.ScalarFormatter()
+    formatter.axis = dummy_axis()
+
+    # TODO: The following two lines should be replaced 
+    # once pinned matplotlib>=3.1.0 with:
+    # formatted_levels = formatter.format_ticks(raw_levels)
+    formatter.set_locs(raw_levels)
+    formatted_levels = [formatter(x) for x in raw_levels]
+
+    return raw_levels, formatted_levels
+
+
 def get_color_cycle():
     """Return the list of colors in the current matplotlib color cycle."""
     try:

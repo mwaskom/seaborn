@@ -12,7 +12,7 @@ from .external.six import string_types
 
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
-                    remove_na)
+                    remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
 from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
 from .axisgrid import FacetGrid, _facet_docs
@@ -564,22 +564,6 @@ class _RelationalPlotter(object):
                 keys.append(key)
 
                 legend_kwargs[key] = dict(**kws)
-
-        def locator_to_legend_entries(locator, limits, dtype):
-            """Return levels and formatted levels for brief numeric legends."""
-            raw_levels = locator.tick_values(*limits).astype(dtype)
-
-            class dummy_axis:
-                def get_view_interval(self):
-                    return limits
-
-            if isinstance(locator, mpl.ticker.LogLocator):
-                formatter = mpl.ticker.LogFormatter()
-            else:
-                formatter = mpl.ticker.ScalarFormatter()
-            formatter.axis = dummy_axis()
-            formatted_levels = np.asarray(formatter.format_ticks(raw_levels))
-            return raw_levels, formatted_levels
 
         # -- Add a legend for hue semantics
         if verbosity == "brief" and self.hue_type == "numeric":
