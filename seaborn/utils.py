@@ -545,7 +545,7 @@ def locator_to_legend_entries(locator, limits, dtype):
         formatter = mpl.ticker.ScalarFormatter()
     formatter.axis = dummy_axis()
 
-    # TODO: The following two lines should be replaced 
+    # TODO: The following two lines should be replaced
     # once pinned matplotlib>=3.1.0 with:
     # formatted_levels = formatter.format_ticks(raw_levels)
     formatter.set_locs(raw_levels)
