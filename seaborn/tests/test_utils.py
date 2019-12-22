@@ -352,11 +352,13 @@ def test_locator_to_legend_entries():
     locator=mpl.ticker.LogLocator(numticks=3)
     limits = (5,1425)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
-    assert str_levels == ['0', '1', '100', '10000', '1e+06']
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['0', '1', '100', '10000', '1e+06']
 
     limits = (0.00003, 0.02)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, float)
-    assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
 
 
 if LooseVersion(pd.__version__) >= "0.15":
