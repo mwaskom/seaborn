@@ -254,9 +254,9 @@ class TestCategoricalPlotter(CategoricalFixture):
         p = cat._CategoricalPlotter()
 
         kws = dict(x="g", y="y", hue="h", units="u", data=self.df)
-        for input in ["x", "y", "hue", "units"]:
+        for var in ["x", "y", "hue", "units"]:
             input_kws = kws.copy()
-            input_kws[input] = "bad_input"
+            input_kws[var] = "bad_input"
             with nt.assert_raises(ValueError):
                 p.establish_variables(**input_kws)
 

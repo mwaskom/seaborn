@@ -149,9 +149,9 @@ class _CategoricalPlotter(object):
                 units = data.get(units, units)
 
             # Validate the inputs
-            for input in [x, y, hue, units]:
-                if isinstance(input, string_types):
-                    err = "Could not interpret input '{}'".format(input)
+            for var in [x, y, hue, units]:
+                if isinstance(var, string_types):
+                    err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
             # Figure out the plotting orientation
@@ -1157,8 +1157,6 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
-        # Set the default zorder to 2.1, so that the points
-        # will be drawn on top of line elements (like in a boxplot)
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None or not self.dodge:
 
