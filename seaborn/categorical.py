@@ -154,6 +154,21 @@ class _CategoricalPlotter(object):
                     err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
+            # Warn if pandas objects do not have matching indices
+            indices = []
+            for var in [x, y, hue, units]:
+                if not isinstance(var, pd.Series):
+                    continue
+                if indices:
+                    if not all([var.index.equals(i) for i in indices]):
+                        indices.append(var.index)
+                else:
+                    indices.append(var.index)
+            if len(indices) > 1:
+                msg = ("Inputs have non-matching indices but will be aligned "
+                       "based on position")
+                warnings.warn(msg, UserWarning)
+
             # Figure out the plotting orientation
             orient = self.infer_orient(x, y, orient)
 
@@ -254,7 +269,7 @@ class _CategoricalPlotter(object):
         out_data = []
         for g in order:
             try:
-                g_vals = np.asarray(grouped_vals.get_group(g))
+                g_vals = grouped_vals.get_group(g)
             except KeyError:
                 g_vals = np.array([])
             out_data.append(g_vals)
@@ -1169,11 +1184,12 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
                 strip_data = group_data[hue_mask]
+                point_colors = self.point_colors[i][hue_mask]
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(strip_data.size) * i
                 cat_pos += self.jitterer(len(strip_data))
-                kws.update(c=self.point_colors[i][hue_mask])
+                kws.update(c=point_colors)
                 if self.orient == "v":
                     ax.scatter(cat_pos, strip_data, **kws)
                 else:
@@ -1184,12 +1200,13 @@ class _StripPlotter(_CategoricalScatterPlotter):
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
                     strip_data = group_data[hue_mask]
+                    point_colors = self.point_colors[i][hue_mask]
 
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(strip_data.size) * center
                     cat_pos += self.jitterer(len(strip_data))
-                    kws.update(c=self.point_colors[i][hue_mask])
+                    kws.update(c=point_colors)
                     if self.orient == "v":
                         ax.scatter(cat_pos, strip_data, **kws)
                     else:
@@ -1390,12 +1407,13 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
-                swarm_data = group_data[hue_mask]
+                swarm_data = np.asarray(group_data[hue_mask])
+                point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                 # Sort the points for the beeswarm algorithm
                 sorter = np.argsort(swarm_data)
                 swarm_data = swarm_data[sorter]
-                point_colors = self.point_colors[i][hue_mask][sorter]
+                point_colors = point_colors[sorter]
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(swarm_data.size) * i
@@ -1414,12 +1432,13 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    swarm_data = group_data[hue_mask]
+                    swarm_data = np.asarray(group_data[hue_mask])
+                    point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                     # Sort the points for the beeswarm algorithm
                     sorter = np.argsort(swarm_data)
                     swarm_data = swarm_data[sorter]
-                    point_colors = self.point_colors[i][hue_mask][sorter]
+                    point_colors = point_colors[sorter]
 
                     # Plot the points in centered positions
                     center = i + offsets[j]
