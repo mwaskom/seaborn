@@ -249,6 +249,14 @@ class TestCategoricalPlotter(CategoricalFixture):
             for group, hues in zip(["a", "b", "c"], p.plot_hues):
                 npt.assert_array_equal(hues, self.h[self.g == group])
 
+        # Test grouped data that matches on index
+        p1 = cat._CategoricalPlotter()
+        p1.establish_variables(self.g, self.y, self.h)
+        p2 = cat._CategoricalPlotter()
+        p2.establish_variables(self.g, self.y[::-1], self.h)
+        for i, (d1, d2) in enumerate(zip(p1.plot_data, p2.plot_data)):
+            assert np.array_equal(d1.sort_index(), d2.sort_index())
+
     def test_input_validation(self):
 
         p = cat._CategoricalPlotter()
@@ -259,6 +267,12 @@ class TestCategoricalPlotter(CategoricalFixture):
             input_kws[var] = "bad_input"
             with nt.assert_raises(ValueError):
                 p.establish_variables(**input_kws)
+
+        g_prime = pd.Series(self.g.values, np.roll(self.g.index, 2))
+        with pytest.warns(UserWarning):
+            p.establish_variables(x=g_prime, y=self.y)
+        with pytest.warns(UserWarning):
+            p.establish_variables(x=self.g, y=self.y, hue=g_prime)
 
     def test_order(self):
 
@@ -830,6 +844,22 @@ class TestBoxPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.artists), 7)
 
         plt.close("all")
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.boxplot(self.g, self.y, ax=ax1)
+        cat.boxplot(self.g, self.y.sample(frac=1), ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.boxplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
+        cat.boxplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                    hue_order=hue_order, ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
 
     def test_boxplots(self):
 
@@ -1536,7 +1566,7 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
 
         for i, group_colors in enumerate(point_colors):
             for j, point_color in enumerate(group_colors):
-                hue_level = p.plot_hues[i][j]
+                hue_level = np.asarray(p.plot_hues[i])[j]
                 nt.assert_equal(tuple(point_color),
                                 deep_colors[hue_order.index(hue_level)])
 
@@ -1671,6 +1701,29 @@ class TestStripPlotter(CategoricalFixture):
         facecolors = ax.collections[0].get_facecolor()
         nt.assert_equal(facecolors.shape, (3, 4))
         npt.assert_array_equal(facecolors[0], facecolors[1])
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.stripplot(self.g, self.y, ax=ax1)
+        cat.stripplot(self.g, self.y.sample(frac=1), ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
+            assert np.array_equal(np.sort(y1), np.sort(y2))
+            assert np.array_equal(p1.get_facecolors()[np.argsort(y1)],
+                                  p2.get_facecolors()[np.argsort(y2)])
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.stripplot(self.g, self.y, self.h,
+                      hue_order=hue_order, ax=ax1)
+        cat.stripplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      hue_order=hue_order, ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
+            assert np.array_equal(np.sort(y1), np.sort(y2))
+            assert np.array_equal(p1.get_facecolors()[np.argsort(y1)],
+                                  p2.get_facecolors()[np.argsort(y2)])
 
 
 class TestSwarmPlotter(CategoricalFixture):
@@ -1822,6 +1875,29 @@ class TestSwarmPlotter(CategoricalFixture):
                                points.get_facecolors()):
 
                 npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.swarmplot(self.g, self.y, ax=ax1)
+        cat.swarmplot(self.g, self.y.sample(frac=1), ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            assert np.allclose(p1.get_offsets()[:, 1],
+                               p2.get_offsets()[:, 1])
+            assert np.array_equal(p1.get_facecolors(),
+                                  p2.get_facecolors())
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.swarmplot(self.g, self.y, self.h,
+                      hue_order=hue_order, ax=ax1)
+        cat.swarmplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      hue_order=hue_order, ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            assert np.allclose(p1.get_offsets()[:, 1],
+                               p2.get_offsets()[:, 1])
+            assert np.array_equal(p1.get_facecolors(),
+                                  p2.get_facecolors())
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -1991,6 +2067,31 @@ class TestBarPlotter(CategoricalFixture):
         nt.assert_equal(len(ax.lines),  len(p.plot_data) * len(hue_order))
 
         plt.close("all")
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.barplot(self.g, self.y, ci="sd", ax=ax1)
+        cat.barplot(self.g, self.y.sample(frac=1), ci="sd", ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
+        for p1, p2 in zip(ax1.patches, ax2.patches):
+            assert pytest.approx(p1.get_height()) == p2.get_height()
+            assert p1.get_width() == p2.get_width()
+            assert p1.get_xy() == p2.get_xy()
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.barplot(self.g, self.y, self.h, hue_order=hue_order, ci="sd",
+                    ax=ax1)
+        cat.barplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                    hue_order=hue_order, ci="sd", ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
+        for p1, p2 in zip(ax1.patches, ax2.patches):
+            assert pytest.approx(p1.get_height()) == p2.get_height()
+            assert p1.get_width() == p2.get_width()
+            assert p1.get_xy() == p2.get_xy()
 
     def test_barplot_colors(self):
 
@@ -2221,6 +2322,27 @@ class TestPointPlotter(CategoricalFixture):
         p = cat._PointPlotter(**kws)
         f, ax = plt.subplots()
         p.draw_points(ax)
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.pointplot(self.g, self.y, ci="sd", ax=ax1)
+        cat.pointplot(self.g, self.y.sample(frac=1), ci="sd", ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            assert pytest.approx(p1.get_offsets()) == p2.get_offsets()
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.pointplot(self.g, self.y, self.h,
+                      hue_order=hue_order, ci="sd", ax=ax1)
+        cat.pointplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      hue_order=hue_order, ci="sd", ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            assert pytest.approx(p1.get_offsets()) == p2.get_offsets()
 
     def test_pointplot_colors(self):
 
@@ -2621,6 +2743,22 @@ class TestBoxenPlotter(CategoricalFixture):
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 3)
         plt.close("all")
+
+    def test_unaligned_index(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        cat.boxenplot(self.g, self.y, ax=ax1)
+        cat.boxenplot(self.g, self.y.sample(frac=1), ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.boxenplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
+        cat.boxenplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      hue_order=hue_order, ax=ax2)
+        for l1, l2 in zip(ax1.lines, ax2.lines):
+            assert np.array_equal(l1.get_xydata(), l2.get_xydata())
 
     def test_missing_data(self):
 
