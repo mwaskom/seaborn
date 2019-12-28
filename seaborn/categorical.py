@@ -1756,14 +1756,14 @@ class _PointPlotter(_CategoricalStatPlotter):
 
             # Draw the estimate points
             marker = self.markers[0]
-            hex_colors = [mpl.colors.rgb2hex(c) for c in self.colors]
+            colors = [mpl.colors.colorConverter.to_rgb(c) for c in self.colors]
             if self.orient == "h":
                 x, y = self.statistic, pointpos
             else:
                 x, y = pointpos, self.statistic
             ax.scatter(x, y,
                        linewidth=mew, marker=marker, s=markersize,
-                       c=hex_colors, edgecolor=hex_colors)
+                       facecolor=colors, edgecolor=colors)
 
         else:
 
@@ -1799,12 +1799,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                 # Draw the estimate points
                 n_points = len(remove_na(offpos))
                 marker = self.markers[j]
-                hex_color = mpl.colors.rgb2hex(self.colors[j])
-
-                if n_points:
-                    point_colors = [hex_color for _ in range(n_points)]
-                else:
-                    point_colors = hex_color
+                color = mpl.colors.colorConverter.to_rgb(self.colors[j])
 
                 if self.orient == "h":
                     x, y = statistic, offpos
@@ -1815,7 +1810,7 @@ class _PointPlotter(_CategoricalStatPlotter):
                     x = y = [np.nan] * n_points
 
                 ax.scatter(x, y, label=hue_level,
-                           c=point_colors, edgecolor=hex_color,
+                           facecolor=color, edgecolor=color,
                            linewidth=mew, marker=marker, s=markersize,
                            zorder=z)
 
