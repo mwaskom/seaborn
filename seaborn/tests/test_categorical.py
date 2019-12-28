@@ -27,6 +27,7 @@ class CategoricalFixture(object):
     x = rs.randn(int(n_total / 3), 3)
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
+    y_perm = y.reindex(np.random.choice(y.index, y.size, replace=False))
     g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
     h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
     u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
@@ -843,14 +844,14 @@ class TestBoxPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.boxplot(self.g, self.y, ax=ax1)
-        cat.boxplot(self.g, self.y.sample(frac=1), ax=ax2)
+        cat.boxplot(self.g, self.y_perm, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.boxplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
-        cat.boxplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.boxplot(self.g, self.y_perm, self.h,
                     hue_order=hue_order, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
@@ -1700,7 +1701,7 @@ class TestStripPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.stripplot(self.g, self.y, ax=ax1)
-        cat.stripplot(self.g, self.y.sample(frac=1), ax=ax2)
+        cat.stripplot(self.g, self.y_perm, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
             assert np.array_equal(np.sort(y1), np.sort(y2))
@@ -1711,7 +1712,7 @@ class TestStripPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.stripplot(self.g, self.y, self.h,
                       hue_order=hue_order, ax=ax1)
-        cat.stripplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.stripplot(self.g, self.y_perm, self.h,
                       hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
@@ -1723,7 +1724,7 @@ class TestStripPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.stripplot(self.g, self.y, self.h,
                       dodge=True, hue_order=hue_order, ax=ax1)
-        cat.stripplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.stripplot(self.g, self.y_perm, self.h,
                       dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
@@ -1886,7 +1887,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.swarmplot(self.g, self.y, ax=ax1)
-        cat.swarmplot(self.g, self.y.sample(frac=1), ax=ax2)
+        cat.swarmplot(self.g, self.y_perm, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
                                p2.get_offsets()[:, 1])
@@ -1897,7 +1898,7 @@ class TestSwarmPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.swarmplot(self.g, self.y, self.h,
                       hue_order=hue_order, ax=ax1)
-        cat.swarmplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.swarmplot(self.g, self.y_perm, self.h,
                       hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
@@ -1909,7 +1910,7 @@ class TestSwarmPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.swarmplot(self.g, self.y, self.h,
                       dodge=True, hue_order=hue_order, ax=ax1)
-        cat.swarmplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.swarmplot(self.g, self.y_perm, self.h,
                       dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
@@ -2090,7 +2091,7 @@ class TestBarPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.barplot(self.g, self.y, ci="sd", ax=ax1)
-        cat.barplot(self.g, self.y.sample(frac=1), ci="sd", ax=ax2)
+        cat.barplot(self.g, self.y_perm, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
@@ -2102,7 +2103,7 @@ class TestBarPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.barplot(self.g, self.y, self.h, hue_order=hue_order, ci="sd",
                     ax=ax1)
-        cat.barplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.barplot(self.g, self.y_perm, self.h,
                     hue_order=hue_order, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
@@ -2345,7 +2346,7 @@ class TestPointPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.pointplot(self.g, self.y, ci="sd", ax=ax1)
-        cat.pointplot(self.g, self.y.sample(frac=1), ci="sd", ax=ax2)
+        cat.pointplot(self.g, self.y_perm, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.collections, ax2.collections):
@@ -2355,7 +2356,7 @@ class TestPointPlotter(CategoricalFixture):
         hue_order = self.h.unique()
         cat.pointplot(self.g, self.y, self.h,
                       hue_order=hue_order, ci="sd", ax=ax1)
-        cat.pointplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.pointplot(self.g, self.y_perm, self.h,
                       hue_order=hue_order, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
@@ -2766,14 +2767,14 @@ class TestBoxenPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         cat.boxenplot(self.g, self.y, ax=ax1)
-        cat.boxenplot(self.g, self.y.sample(frac=1), ax=ax2)
+        cat.boxenplot(self.g, self.y_perm, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
         cat.boxenplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
-        cat.boxenplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+        cat.boxenplot(self.g, self.y_perm, self.h,
                       hue_order=hue_order, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
