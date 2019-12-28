@@ -311,7 +311,7 @@ class _CategoricalPlotter(object):
         if saturation < 1:
             colors = color_palette(colors, desat=saturation)
 
-        # Conver the colors to a common representations
+        # Convert the colors to a common representations
         rgb_colors = color_palette(colors)
 
         # Determine the gray color to use for the lines framing the plot
@@ -472,7 +472,7 @@ class _BoxPlotter(_CategoricalPlotter):
 
                 # Draw a single box or a set of boxes
                 # with a single level of grouping
-                box_data = remove_na(group_data)
+                box_data = np.asarray(remove_na(group_data))
 
                 # Handle case where there is no non-null data
                 if box_data.size == 0:
@@ -500,7 +500,7 @@ class _BoxPlotter(_CategoricalPlotter):
                         continue
 
                     hue_mask = self.plot_hues[i] == hue_level
-                    box_data = remove_na(group_data[hue_mask])
+                    box_data = np.asarray(remove_na(group_data[hue_mask]))
 
                     # Handle case where there is no non-null data
                     if box_data.size == 0:
@@ -1100,32 +1100,33 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
 
     @property
     def point_colors(self):
-        """Return a color for each scatter point based on group and hue."""
-        colors = []
+        """Return an index into the palette for each scatter point."""
+        point_colors = []
         for i, group_data in enumerate(self.plot_data):
 
             # Initialize the array for this group level
-            group_colors = np.empty(group_data.size, object)
+            group_colors = np.empty(group_data.size, np.int)
             if isinstance(group_data, pd.Series):
                 group_colors = pd.Series(group_colors, group_data.index)
 
             if self.plot_hues is None:
 
                 # Use the same color for all points at this level
-                group_color = self.colors[i]
-                group_colors[:] = mpl.colors.rgb2hex(group_color)
+                # group_color = self.colors[i]
+                group_colors[:] = i
 
             else:
 
                 # Color the points based on  the hue level
+
                 for j, level in enumerate(self.hue_names):
-                    hue_color = mpl.colors.rgb2hex(self.colors[j])
+                    # hue_color = self.colors[j]
                     if group_data.size:
-                        group_colors[self.plot_hues[i] == level] = hue_color
+                        group_colors[self.plot_hues[i] == level] = j
 
-            colors.append(group_colors)
+            point_colors.append(group_colors)
 
-        return colors
+        return point_colors
 
     def add_legend_data(self, ax):
         """Add empty scatterplot artists with labels for the legend."""
@@ -1159,6 +1160,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
+        palette = np.asarray(self.colors)
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None or not self.dodge:
 
@@ -1171,12 +1173,12 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
                 strip_data = group_data[hue_mask]
-                point_colors = self.point_colors[i][hue_mask]
+                point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(strip_data.size) * i
                 cat_pos += self.jitterer(len(strip_data))
-                kws.update(c=point_colors)
+                kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     ax.scatter(cat_pos, strip_data, **kws)
                 else:
@@ -1187,13 +1189,14 @@ class _StripPlotter(_CategoricalScatterPlotter):
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
                     strip_data = group_data[hue_mask]
-                    point_colors = self.point_colors[i][hue_mask]
+
+                    point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(strip_data.size) * center
                     cat_pos += self.jitterer(len(strip_data))
-                    kws.update(c=point_colors)
+                    kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         ax.scatter(cat_pos, strip_data, **kws)
                     else:
@@ -1373,6 +1376,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         centers = []
         swarms = []
 
+        palette = np.asarray(self.colors)
+
         # Set the categorical axes limits here for the swarm math
         if self.orient == "v":
             ax.set_xlim(-.5, len(self.plot_data) - .5)
@@ -1404,7 +1409,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(swarm_data.size) * i
-                kws.update(c=point_colors)
+                kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
                 else:
@@ -1430,7 +1435,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(swarm_data.size) * center
-                    kws.update(c=point_colors)
+                    kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
                     else:

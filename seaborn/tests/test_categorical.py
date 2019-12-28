@@ -1540,10 +1540,9 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
         n_colors = self.g.unique().size
         assert len(point_colors) == n_colors
 
-        deep_colors = palettes.color_palette("deep", n_colors).as_hex()
         for i, group_colors in enumerate(point_colors):
             for color in group_colors:
-                assert deep_colors[i] == color
+                assert color == i
 
     def test_hue_point_colors(self):
 
@@ -1556,12 +1555,14 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
 
         point_colors = p.point_colors
         assert len(point_colors) == self.g.unique().size
-        deep_colors = palettes.color_palette("deep", len(hue_order)).as_hex()
 
         for i, group_colors in enumerate(point_colors):
-            for j, point_color in enumerate(group_colors):
-                hue_level = np.asarray(p.plot_hues[i])[j]
-                assert point_color == deep_colors[hue_order.index(hue_level)]
+            group_hues = np.asarray(p.plot_hues[i])
+            for point_hue, point_color in zip(group_hues, group_colors):
+                assert point_color == p.hue_names.index(point_hue)
+                # hue_level = np.asarray(p.plot_hues[i])[j]
+                # palette_color = deep_colors[hue_order.index(hue_level)]
+                # assert tuple(point_color) == palette_color
 
     def test_scatterplot_legend(self):
 
@@ -1644,7 +1645,7 @@ class TestStripPlotter(CategoricalFixture):
                 npt.assert_array_equal(y, vals)
 
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                npt.assert_equal(fc, pal[j])
+                assert tuple(fc) == pal[j]
 
     def test_dodge_nested_stripplot_horizontal(self):
 
@@ -1712,6 +1713,18 @@ class TestStripPlotter(CategoricalFixture):
                       hue_order=hue_order, ax=ax1)
         cat.stripplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
                       hue_order=hue_order, ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
+            assert np.array_equal(np.sort(y1), np.sort(y2))
+            assert np.array_equal(p1.get_facecolors()[np.argsort(y1)],
+                                  p2.get_facecolors()[np.argsort(y2)])
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.stripplot(self.g, self.y, self.h,
+                      dodge=True, hue_order=hue_order, ax=ax1)
+        cat.stripplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
             assert np.array_equal(np.sort(y1), np.sort(y2))
@@ -1799,7 +1812,7 @@ class TestSwarmPlotter(CategoricalFixture):
             fc = ax.collections[i].get_facecolors()[0, :3]
             npt.assert_equal(fc, pal[i])
 
-    def test_dodge_nested_swarmplot_vetical(self):
+    def test_dodge_nested_swarmplot_vertical(self):
 
         pal = palettes.color_palette()
 
@@ -1811,7 +1824,7 @@ class TestSwarmPlotter(CategoricalFixture):
                 npt.assert_array_almost_equal(y, np.sort(vals))
 
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                npt.assert_equal(fc, pal[j])
+                assert tuple(fc) == pal[j]
 
     def test_dodge_nested_swarmplot_horizontal(self):
 
@@ -1825,7 +1838,7 @@ class TestSwarmPlotter(CategoricalFixture):
                 npt.assert_array_almost_equal(x, np.sort(vals))
 
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                npt.assert_equal(fc, pal[j])
+                assert tuple(fc) == pal[j]
 
     def test_nested_swarmplot_vertical(self):
 
@@ -1846,7 +1859,7 @@ class TestSwarmPlotter(CategoricalFixture):
             for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
-                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+                assert tuple(fc[:3]) == pal[hue_names.index(hue)]
 
     def test_nested_swarmplot_horizontal(self):
 
@@ -1867,7 +1880,7 @@ class TestSwarmPlotter(CategoricalFixture):
             for hue, fc in zip(hue_vals.values[sorter.values],
                                points.get_facecolors()):
 
-                npt.assert_equal(fc[:3], pal[hue_names.index(hue)])
+                assert tuple(fc[:3]) == pal[hue_names.index(hue)]
 
     def test_unaligned_index(self):
 
@@ -1886,6 +1899,18 @@ class TestSwarmPlotter(CategoricalFixture):
                       hue_order=hue_order, ax=ax1)
         cat.swarmplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
                       hue_order=hue_order, ax=ax2)
+        for p1, p2 in zip(ax1.collections, ax2.collections):
+            assert np.allclose(p1.get_offsets()[:, 1],
+                               p2.get_offsets()[:, 1])
+            assert np.array_equal(p1.get_facecolors(),
+                                  p2.get_facecolors())
+
+        f, (ax1, ax2) = plt.subplots(2)
+        hue_order = self.h.unique()
+        cat.swarmplot(self.g, self.y, self.h,
+                      dodge=True, hue_order=hue_order, ax=ax1)
+        cat.swarmplot(self.g, self.y.sample(frac=1), self.h.sample(frac=1),
+                      dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
                                p2.get_offsets()[:, 1])
@@ -2069,9 +2094,9 @@ class TestBarPlotter(CategoricalFixture):
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
+            assert pytest.approx(p1.get_xy()) == p2.get_xy()
             assert pytest.approx(p1.get_height()) == p2.get_height()
-            assert p1.get_width() == p2.get_width()
-            assert p1.get_xy() == p2.get_xy()
+            assert pytest.approx(p1.get_width()) == p2.get_width()
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
@@ -2082,9 +2107,9 @@ class TestBarPlotter(CategoricalFixture):
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
         for p1, p2 in zip(ax1.patches, ax2.patches):
+            assert pytest.approx(p1.get_xy()) == p2.get_xy()
             assert pytest.approx(p1.get_height()) == p2.get_height()
-            assert p1.get_width() == p2.get_width()
-            assert p1.get_xy() == p2.get_xy()
+            assert pytest.approx(p1.get_width()) == p2.get_width()
 
     def test_barplot_colors(self):
 
@@ -2635,7 +2660,7 @@ class TestBoxenPlotter(CategoricalFixture):
         # Check that all the box ends are finite and are within
         # the bounds of the data
         b_e = map(lambda a: np.all(np.isfinite(a)), box_ends)
-        npt.assert_equal(np.sum(list(b_e)), len(box_ends))
+        assert np.sum(list(b_e)) == len(box_ends)
 
         def within(t):
             a, d = t
@@ -2643,10 +2668,10 @@ class TestBoxenPlotter(CategoricalFixture):
                     (np.ravel(a) >= d.min())).all()
 
         b_w = map(within, zip(box_ends, p.plot_data))
-        npt.assert_equal(np.sum(list(b_w)), len(box_ends))
+        assert np.sum(list(b_w)) == len(box_ends)
 
         k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
-        npt.assert_equal(np.sum(list(k_f)), len(k_vals))
+        assert np.sum(list(k_f)) == len(k_vals)
 
     def test_box_ends_correct(self):
 
@@ -2659,8 +2684,8 @@ class TestBoxenPlotter(CategoricalFixture):
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(linear_data)
 
-        npt.assert_equal(list(expected_edges), calc_edges)
-        npt.assert_equal(expected_k, calc_k)
+        assert np.array_equal(expected_edges, calc_edges)
+        assert expected_k == calc_k
 
     def test_outliers(self):
 
