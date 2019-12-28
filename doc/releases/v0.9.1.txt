@@ -15,7 +15,7 @@ New features
 
 - Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
 
-Bug fixes and adpatations
+Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
@@ -39,6 +39,8 @@ Bug fixes and adpatations
 - Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
 
 - Fixed a bug where values would be excluded from categorical plots when only one variable was a pandas ``Series`` with a non-default index.
+
+- Improved support for grouping observations based on pandas index information in categorical plots.
 
 - Fixed a bug when using ``Series`` objects as arguments for ``x_partial`` or ``y_partial`` in :func:`regplot`.
 

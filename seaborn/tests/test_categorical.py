@@ -268,12 +268,6 @@ class TestCategoricalPlotter(CategoricalFixture):
             with nt.assert_raises(ValueError):
                 p.establish_variables(**input_kws)
 
-        g_prime = pd.Series(self.g.values, np.roll(self.g.index, 2))
-        with pytest.warns(UserWarning):
-            p.establish_variables(x=g_prime, y=self.y)
-        with pytest.warns(UserWarning):
-            p.establish_variables(x=self.g, y=self.y, hue=g_prime)
-
     def test_order(self):
 
         p = cat._CategoricalPlotter()
@@ -1543,13 +1537,13 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
         p.establish_colors(None, "deep", 1)
 
         point_colors = p.point_colors
-        nt.assert_equal(len(point_colors), self.g.unique().size)
-        deep_colors = palettes.color_palette("deep", self.g.unique().size)
+        n_colors = self.g.unique().size
+        assert len(point_colors) == n_colors
 
+        deep_colors = palettes.color_palette("deep", n_colors).as_hex()
         for i, group_colors in enumerate(point_colors):
-            nt.assert_equal(tuple(deep_colors[i]), tuple(group_colors[0]))
-            for channel in group_colors.T:
-                assert np.unique(channel).size == 1
+            for color in group_colors:
+                assert deep_colors[i] == color
 
     def test_hue_point_colors(self):
 
@@ -1561,14 +1555,13 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
         p.establish_colors(None, "deep", 1)
 
         point_colors = p.point_colors
-        nt.assert_equal(len(point_colors), self.g.unique().size)
-        deep_colors = palettes.color_palette("deep", len(hue_order))
+        assert len(point_colors) == self.g.unique().size
+        deep_colors = palettes.color_palette("deep", len(hue_order)).as_hex()
 
         for i, group_colors in enumerate(point_colors):
             for j, point_color in enumerate(group_colors):
                 hue_level = np.asarray(p.plot_hues[i])[j]
-                nt.assert_equal(tuple(point_color),
-                                deep_colors[hue_order.index(hue_level)])
+                assert point_color == deep_colors[hue_order.index(hue_level)]
 
     def test_scatterplot_legend(self):
 

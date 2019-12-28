@@ -154,21 +154,6 @@ class _CategoricalPlotter(object):
                     err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
-            # Warn if pandas objects do not have matching indices
-            indices = []
-            for var in [x, y, hue, units]:
-                if not isinstance(var, pd.Series):
-                    continue
-                if indices:
-                    if not all([var.index.equals(i) for i in indices]):
-                        indices.append(var.index)
-                else:
-                    indices.append(var.index)
-            if len(indices) > 1:
-                msg = ("Inputs have non-matching indices but will be aligned "
-                       "based on position")
-                warnings.warn(msg, UserWarning)
-
             # Figure out the plotting orientation
             orient = self.infer_orient(x, y, orient)
 
@@ -1120,19 +1105,21 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
         for i, group_data in enumerate(self.plot_data):
 
             # Initialize the array for this group level
-            group_colors = np.empty((group_data.size, 3))
+            group_colors = np.empty(group_data.size, object)
+            if isinstance(group_data, pd.Series):
+                group_colors = pd.Series(group_colors, group_data.index)
 
             if self.plot_hues is None:
 
                 # Use the same color for all points at this level
                 group_color = self.colors[i]
-                group_colors[:] = group_color
+                group_colors[:] = mpl.colors.rgb2hex(group_color)
 
             else:
 
                 # Color the points based on  the hue level
                 for j, level in enumerate(self.hue_names):
-                    hue_color = self.colors[j]
+                    hue_color = mpl.colors.rgb2hex(self.colors[j])
                     if group_data.size:
                         group_colors[self.plot_hues[i] == level] = hue_color
 
