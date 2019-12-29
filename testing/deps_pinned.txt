@@ -2,7 +2,7 @@ numpy=1.10
 scipy=0.17
 matplotlib=1.5
 pandas=0.17
-statsmodels=0.6
+statsmodels=0.7
 
 # Needed due to incomplete scipy recipe
 libgfortran=1.0
