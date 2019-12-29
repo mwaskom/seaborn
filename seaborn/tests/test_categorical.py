@@ -27,7 +27,7 @@ class CategoricalFixture(object):
     x = rs.randn(int(n_total / 3), 3)
     x_df = pd.DataFrame(x, columns=pd.Series(list("XYZ"), name="big"))
     y = pd.Series(rs.randn(n_total), name="y_data")
-    y_perm = y.reindex(np.random.choice(y.index, y.size, replace=False))
+    y_perm = y.reindex(rs.choice(y.index, y.size, replace=False))
     g = pd.Series(np.repeat(list("abc"), int(n_total / 3)), name="small")
     h = pd.Series(np.tile(list("mn"), int(n_total / 2)), name="medium")
     u = pd.Series(np.tile(list("jkh"), int(n_total / 3)))
