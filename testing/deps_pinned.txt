@@ -1,5 +1,5 @@
 numpy=1.10
-scipy=0.16
+scipy=0.17
 matplotlib=1.5
 pandas=0.17
 statsmodels=0.6
