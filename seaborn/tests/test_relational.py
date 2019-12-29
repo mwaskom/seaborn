@@ -499,6 +499,16 @@ class TestRelationalPlotter(object):
         assert p.hue_type == "categorical"
         assert p.cmap is None
 
+        # Test categorical palette specified for numeric data
+        palette = "deep"
+        p = rel._LinePlotter(x="x", y="y", hue="s",
+                             palette=palette, data=long_df)
+        expected_colors = color_palette(palette, n_colors=len(levels))
+        hue_levels = categorical_order(long_df["s"])
+        expected_palette = dict(zip(hue_levels, expected_colors))
+        assert p.palette == expected_palette
+        assert p.hue_type == "categorical"
+
     def test_parse_hue_numeric(self, long_df):
 
         p = rel._LinePlotter(x="x", y="y", hue="s", data=long_df)

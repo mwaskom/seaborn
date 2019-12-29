@@ -14,7 +14,8 @@ from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
                     remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
-from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
+from .palettes import (color_palette, cubehelix_palette,
+                       _parse_cubehelix_args, CATEGORICAL_PALETTE_SIZES)
 from .axisgrid import FacetGrid, _facet_docs
 
 
@@ -355,6 +356,8 @@ class _RelationalPlotter(object):
 
             # Override depending on the type of the palette argument
             if isinstance(palette, (dict, list)):
+                var_type = "categorical"
+            elif palette in CATEGORICAL_PALETTE_SIZES:
                 var_type = "categorical"
 
         # -- Option 1: categorical color palette

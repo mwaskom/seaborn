@@ -55,8 +55,12 @@ MPL_QUAL_PALS = {
 }
 
 
-QUAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
-QUAL_PALETTE_SIZES.update({k: len(v) for k, v in SEABORN_PALETTES.items()})
+CATEGORICAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
+CATEGORICAL_PALETTE_SIZES.update(
+    {k: len(v) for k, v in SEABORN_PALETTES.items()}
+)
+
+CATEGORICAL_PALETTES = list(CATEGORICAL_PALETTE_SIZES.keys())
 
 
 class _ColorPalette(list):
@@ -203,7 +207,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
 
         if n_colors is None:
             # Use all colors in a qualitative palette or 6 of another kind
-            n_colors = QUAL_PALETTE_SIZES.get(palette, 6)
+            n_colors = CATEGORICAL_PALETTE_SIZES.get(palette, 6)
 
         if palette in SEABORN_PALETTES:
             # Named "seaborn variant" of old matplotlib default palette
