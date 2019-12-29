@@ -964,6 +964,16 @@ _relational_docs = dict(
     See the :ref:`tutorial <relational_tutorial>` for more information.\
     """),
 
+    relational_semantic_narrative=dedent("""\
+    The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+    semantic, if present, depends on whether the variable is inferred to
+    represent "numeric" or "categorical" data. In particular, numeric variables
+    are represented with a sequential colormap by default, and the legend
+    entries show regular "ticks" with values that may or may not exist in the
+    data. This behavior can be controlled through various parameters, as
+    described and illustrated below.\
+    """),
+
     # --- Shared function parameters
     data_vars=dedent("""\
     x, y : names of variables in ``data`` or vector data, optional
@@ -1105,6 +1115,8 @@ lineplot.__doc__ = dedent("""\
     Draw a line plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     By default, the plot aggregates over multiple ``y`` values at each value of
     ``x`` and shows an estimate of the central tendency and a confidence
@@ -1362,6 +1374,8 @@ scatterplot.__doc__ = dedent("""\
     Draw a scatter plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     Parameters
     ----------
@@ -1652,6 +1666,8 @@ relplot.__doc__ = dedent("""\
     should refer to the documentation for each to see kind-specific options.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.
