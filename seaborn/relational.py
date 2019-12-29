@@ -377,6 +377,8 @@ class _RelationalPlotter(object):
 
         elif var_type == "numeric":
 
+            data = pd.to_numeric(data)
+
             levels, palette, cmap, norm = self.numeric_to_palette(
                 data, order, palette, norm
             )
@@ -388,6 +390,9 @@ class _RelationalPlotter(object):
         self.hue_type = var_type
         self.palette = palette
         self.cmap = cmap
+
+        # Update data as it may have changed dtype
+        self.plot_data["hue"] = data
 
     def parse_size(self, data, sizes, order, norm):
         """Determine the linewidths given data characteristics."""
@@ -406,12 +411,16 @@ class _RelationalPlotter(object):
 
             var_type = self._semantic_type(data)
 
-            # TODO override for list/dict like in parse_hue?
+            # Override depending on the type of the sizes argument
+            if isinstance(sizes, (dict, list)):
+                var_type = "categorical"
 
             if var_type == "categorical":
                 levels = categorical_order(data, order)
                 numbers = np.arange(1, 1 + len(levels))[::-1]
+
             elif var_type == "numeric":
+                data = pd.to_numeric(data)
                 levels = numbers = np.sort(remove_na(data.unique()))
 
             if isinstance(sizes, (dict, list)):
@@ -433,10 +442,6 @@ class _RelationalPlotter(object):
                     limits = min(sizes.keys()), max(sizes.keys())
                 except TypeError:
                     limits = None
-
-                # enforce numeric data to be treated as categorical -
-                # this ensures no size norm is used for legend (#GH1570)
-                var_type = "categorical"
 
             else:
 
@@ -479,6 +484,9 @@ class _RelationalPlotter(object):
         self.size_norm = norm
         self.size_limits = limits
         self.size_range = width_range
+
+        # Update data as it may have changed dtype
+        self.plot_data["size"] = data
 
     def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
@@ -588,7 +596,8 @@ class _RelationalPlotter(object):
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, self.hue_limits, self.plot_data["hue"].dtype)
+                locator, self.hue_limits, self.plot_data["hue"].dtype
+            )
         else:
             hue_levels = hue_formatted_levels = self.hue_levels
 
