@@ -1726,3 +1726,13 @@ class TestRelPlotter(TestRelationalPlotter):
         long_df["x_str"] = long_df["x"].astype(str)
         g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
         assert g._legend.texts[0].get_text() == "x_str"
+
+        palette = color_palette("deep", len(long_df["b"].unique()))
+        a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
+        long_df["a_like_b"] = long_df["a"].map(a_like_b)
+        g = rel.relplot(x="x", y="y", hue="b", style="a_like_b",
+                        palette=palette, kind="line", estimator=None,
+                        data=long_df)
+        lines = g._legend.get_lines()[1:]  # Chop off title dummy
+        for line, color in zip(lines, palette):
+            assert line.get_color() == color
