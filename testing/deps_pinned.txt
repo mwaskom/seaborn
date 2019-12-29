@@ -1,6 +1,6 @@
-numpy=1.9.3
+numpy=1.10.4
 scipy=0.14.0
-matplotlib=1.4.3
+matplotlib=1.5.1
 pandas=0.17.1
 statsmodels=0.5.0
 
