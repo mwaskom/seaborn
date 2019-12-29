@@ -15,6 +15,8 @@ New features
 
 - Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
 
+- It is now possible to force a categorical interpretation of the ``hue`` varaible in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passig a list/dict of colors.
+
 Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

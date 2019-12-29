@@ -44,7 +44,7 @@ SEABORN_PALETTES = dict(
                 "#CA9161", "#FBAFE4", "#949494", "#ECE133", "#56B4E9"],
     colorblind6=["#0173B2", "#029E73", "#D55E00",
                  "#CC78BC", "#ECE133", "#56B4E9"]
-    )
+)
 
 
 MPL_QUAL_PALS = {
@@ -57,6 +57,7 @@ MPL_QUAL_PALS = {
 
 QUAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
 QUAL_PALETTE_SIZES.update({k: len(v) for k, v in SEABORN_PALETTES.items()})
+QUAL_PALETTES = list(QUAL_PALETTE_SIZES.keys())
 
 
 class _ColorPalette(list):
