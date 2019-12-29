@@ -32,6 +32,8 @@ Bug fixes and adaptations
 
 - Adapted to a change in how matplotlib scales axis margins, which caused multiple calls to :func:`regplot` with ``truncate=False`` to progressively expand the x axis limits. Because there are currently limitations on how autoscaling works in matplotlib, the default value for ``truncate`` in seaborn has also been changed to ``True``.
 
+- Relational plots no longer error when hue/size data are inferred to be numeric but stored with a string datatype.
+
 - Relational plots now consider semantics with only a single value that can be interpreted as boolean (0 or 1) to be categorical, not numeric.
 
 - Relational plots now handle list or dict specifications for ``sizes`` correctly.
