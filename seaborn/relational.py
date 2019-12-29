@@ -12,7 +12,7 @@ from .external.six import string_types
 
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
-                    remove_na)
+                    remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
 from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
 from .axisgrid import FacetGrid, _facet_docs
@@ -579,48 +579,48 @@ class _RelationalPlotter(object):
                 legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
-
         if verbosity == "brief" and self.hue_type == "numeric":
             if isinstance(self.hue_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            hue_levels, hue_formatted_levels = locator_to_legend_entries(
+                locator, self.hue_limits, self.plot_data["hue"].dtype)
         else:
-            hue_levels = self.hue_levels
+            hue_levels = hue_formatted_levels = self.hue_levels
 
         # Add the hue semantic subtitle
         if self.hue_label is not None:
             update((self.hue_label, "title"), self.hue_label, **title_kws)
 
         # Add the hue semantic labels
-        for level in hue_levels:
+        for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
                 color = self.color_lookup(level)
-                update(self.hue_label, level, color=color)
+                update(self.hue_label, formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
         if verbosity == "brief" and self.size_type == "numeric":
             if isinstance(self.size_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            size_levels, size_formatted_levels = locator_to_legend_entries(
+                locator, self.size_limits, self.plot_data["size"].dtype)
         else:
-            size_levels = self.size_levels
+            size_levels = size_formatted_levels = self.size_levels
 
         # Add the size semantic subtitle
         if self.size_label is not None:
             update((self.size_label, "title"), self.size_label, **title_kws)
 
         # Add the size semantic labels
-        for level in size_levels:
+        for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(self.size_label, level, linewidth=size, s=size)
+                update(
+                    self.size_label, formatted_level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
@@ -1095,7 +1095,6 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         ax = plt.gca()
 
     p.plot(ax, kwargs)
-
     return ax
 
 

@@ -84,6 +84,7 @@ class TestRelationalPlotter(object):
             c=np.take(list([0, 1]), rs.randint(0, 2, n)),
             d=np.repeat(np.datetime64('2005-02-25'), n),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
+            f=np.take(list([0.2, 0.3]), rs.randint(0, 2, n)),
         ))
         df["s_cat"] = df["s"].astype("category")
         return df
@@ -1039,6 +1040,22 @@ class TestLinePlotter(TestRelationalPlotter):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", hue="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", size="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
 
     def test_plot(self, long_df, repeated_df):
 
