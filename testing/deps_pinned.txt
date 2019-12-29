@@ -1,8 +1,8 @@
-numpy=1.10.4
-scipy=0.14.0
-matplotlib=1.5.1
-pandas=0.17.1
-statsmodels=0.5.0
+numpy=1.10
+scipy=0.14
+matplotlib=1.5
+pandas=0.17
+statsmodels=0.5
 
 # Needed due to incomplete scipy recipe
 libgfortran=1.0

@@ -29,10 +29,10 @@ DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
 VERSION = '0.9.1.dev'
 
 INSTALL_REQUIRES = [
-    'numpy>=1.10.4',
-    'scipy>=0.14.0',
-    'pandas>=0.17.1',
-    'matplotlib>=1.5.1',
+    'numpy>=1.10',
+    'scipy>=0.14',
+    'pandas>=0.17',
+    'matplotlib>=1.5',
 ]
 
 PACKAGES = [
