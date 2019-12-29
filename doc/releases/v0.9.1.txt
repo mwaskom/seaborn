@@ -49,3 +49,5 @@ Bug fixes and adaptations
 - Fixed a bug when trying to call :func:`set` while specifying a list of colors for the palette.
 
 - Fixed a bug when resetting the color code short-hands to the matplotlib default.
+
+- Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.
