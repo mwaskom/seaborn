@@ -1203,6 +1203,15 @@ class TestLinePlotter(TestRelationalPlotter):
         with pytest.raises(ValueError):
             p.plot(ax, {})
 
+        x_str = long_df["x"].astype(str)
+        p = rel._LinePlotter(x="x", y="y", hue=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
+        p = rel._LinePlotter(x="x", y="y", size=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
@@ -1497,6 +1506,15 @@ class TestScatterPlotter(TestRelationalPlotter):
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
+        x_str = long_df["x"].astype(str)
+        p = rel._ScatterPlotter(x="x", y="y", hue=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
+        p = rel._ScatterPlotter(x="x", y="y", size=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
@@ -1704,3 +1722,7 @@ class TestRelPlotter(TestRelationalPlotter):
 
         g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None
+
+        long_df["x_str"] = long_df["x"].astype(str)
+        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
+        assert g._legend.texts[0].get_text() == "x_str"
