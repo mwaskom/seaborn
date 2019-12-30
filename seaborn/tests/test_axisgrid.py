@@ -256,6 +256,18 @@ class TestFacetGrid(object):
         for label, level in zip(labels, b_levels):
             nt.assert_equal(label.get_text(), level)
 
+    def test_legend_tuples(self):
+
+        g = ag.FacetGrid(self.df, hue="a")
+        g.map(plt.plot, "x", "y")
+
+        handles, labels = g.ax.get_legend_handles_labels()
+        label_tuples = [("", l) for l in labels]
+        legend_data = dict(zip(label_tuples, handles))
+        g.add_legend(legend_data, label_tuples)
+        for entry, label in zip(g._legend.get_texts(), labels):
+            assert entry.get_text() == label
+
     def test_legend_options(self):
 
         g1 = ag.FacetGrid(self.df, hue="b")

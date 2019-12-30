@@ -43,7 +43,8 @@ class Grid(object):
         Parameters
         ----------
         legend_data : dict, optional
-            Dictionary mapping label names to matplotlib artist handles. The
+            Dictionary mapping label names (or two-element tuples where the
+            second element is a label name) to matplotlib artist handles. The
             default reads from ``self._legend_data``.
         title : string, optional
             Title for the legend. The default reads from ``self._hue_var``.
@@ -61,7 +62,8 @@ class Grid(object):
 
         """
         # Find the data for the legend
-        legend_data = self._legend_data if legend_data is None else legend_data
+        if legend_data is None:
+            legend_data = self._legend_data
         if label_order is None:
             if self.hue_names is None:
                 label_order = list(legend_data.keys())
@@ -76,6 +78,15 @@ class Grid(object):
         except TypeError:  # labelsize is something like "large"
             title_size = mpl.rcParams["axes.labelsize"]
 
+        # Unpack nested labels from a hierarchical legend
+        labels = []
+        for entry in label_order:
+            if isinstance(entry, tuple):
+                _, label = entry
+            else:
+                label = entry
+            labels.append(label)
+
         # Set default legend kwargs
         kwargs.setdefault("scatterpoints", 1)
 
@@ -84,7 +95,7 @@ class Grid(object):
             kwargs.setdefault("frameon", False)
 
             # Draw a full-figure legend outside the grid
-            figlegend = self.fig.legend(handles, label_order, "center right",
+            figlegend = self.fig.legend(handles, labels, "center right",
                                         **kwargs)
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
@@ -115,7 +126,7 @@ class Grid(object):
         else:
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
-            leg = ax.legend(handles, label_order, loc="best", **kwargs)
+            leg = ax.legend(handles, labels, loc="best", **kwargs)
             leg.set_title(title, prop={"size": title_size})
 
         return self

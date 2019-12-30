@@ -664,8 +664,8 @@ class _RelationalPlotter(object):
             artist = func([], [], label=label, **use_kws)
             if self._legend_func == "plot":
                 artist = artist[0]
-            legend_data[label] = artist
-            legend_order.append(label)
+            legend_data[key] = artist
+            legend_order.append(key)
 
         self.legend_data = legend_data
         self.legend_order = legend_order
