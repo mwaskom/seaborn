@@ -43,7 +43,7 @@ class Grid(object):
         Parameters
         ----------
         legend_data : dict, optional
-            Dictionary mapping label names (or a two-element tuple where the
+            Dictionary mapping label names (or two-element tuples where the
             second element is a label name) to matplotlib artist handles. The
             default reads from ``self._legend_data``.
         title : string, optional
@@ -78,6 +78,7 @@ class Grid(object):
         except TypeError:  # labelsize is something like "large"
             title_size = mpl.rcParams["axes.labelsize"]
 
+        # Unpack nested labels from a hierarchical legend
         labels = []
         for entry in label_order:
             if isinstance(entry, tuple):
