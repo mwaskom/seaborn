@@ -1706,6 +1706,12 @@ class TestRelPlotter(TestRelationalPlotter):
             expected_paths = [paths[val] for val in grp_df["a"]]
             assert self.paths_equal(points.get_paths(), expected_paths)
 
+    def test_relplot_stringy_numerics(self, long_df):
+
+        long_df["x_str"] = long_df["x"].astype(str)
+        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
+        assert g._legend.texts[0].get_text() == "x_str"
+
     def test_relplot_legend(self, long_df):
 
         g = rel.relplot(x="x", y="y", data=long_df)
@@ -1722,10 +1728,6 @@ class TestRelPlotter(TestRelationalPlotter):
 
         g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None
-
-        long_df["x_str"] = long_df["x"].astype(str)
-        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
-        assert g._legend.texts[0].get_text() == "x_str"
 
         palette = color_palette("deep", len(long_df["b"].unique()))
         a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
