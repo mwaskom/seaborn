@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012-2018 Michael Waskom
+# Copyright (C) 2012-2019 Michael Waskom
 
 DESCRIPTION = "seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
@@ -26,13 +26,13 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.9.0'
+VERSION = '0.9.1.dev'
 
 INSTALL_REQUIRES = [
-    'numpy>=1.9.3',
-    'scipy>=0.14.0',
-    'pandas>=0.15.2',
-    'matplotlib>=1.4.3',
+    'numpy>=1.10.4',
+    'scipy>=0.17.1',
+    'pandas>=0.17.1',
+    'matplotlib>=1.5.3',
 ]
 
 PACKAGES = [
@@ -48,6 +48,7 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',

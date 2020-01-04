@@ -1,0 +1,59 @@
+
+v0.9.1 (Unreleased)
+------------------
+
+This is a minor release, comprising mostly bug fixes and compatibility with dependency updates.
+
+New features
+~~~~~~~~~~~~
+
+- Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid with only the lower triangle of bivariate axes.
+
+- Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
+
+- In :class:`PairGrid`, the ``hue`` variable is now excluded from the default list of variables that make up the rows and columns of the grid.
+
+- Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
+
+- It is now possible to force a categorical interpretation of the ``hue`` varaible in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passig a list/dict of colors.
+
+- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
+
+Bug fixes and adaptations
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
+
+- Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
+
+- Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.
+
+- Semantic variables with a ``category`` data type will always be treated as categorical in relational plots.
+
+- Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
+
+- Adapted to a change in how matplotlib scales axis margins, which caused multiple calls to :func:`regplot` with ``truncate=False`` to progressively expand the x axis limits. Because there are currently limitations on how autoscaling works in matplotlib, the default value for ``truncate`` in seaborn has also been changed to ``True``.
+
+- Relational plots no longer error when hue/size data are inferred to be numeric but stored with a string datatype.
+
+- Relational plots now consider semantics with only a single value that can be interpreted as boolean (0 or 1) to be categorical, not numeric.
+
+- Relational plots now handle list or dict specifications for ``sizes`` correctly.
+
+- Fixed an issue in :func:`pointplot` where missing levels of a hue variable would cause an exception after a recent update in matplotlib.
+
+- Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
+
+- Fixed a bug where values would be excluded from categorical plots when only one variable was a pandas ``Series`` with a non-default index.
+
+- Improved support for grouping observations based on pandas index information in categorical plots.
+
+- Fixed a bug when using ``Series`` objects as arguments for ``x_partial`` or ``y_partial`` in :func:`regplot`.
+
+- Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
+
+- Fixed a bug when trying to call :func:`set` while specifying a list of colors for the palette.
+
+- Fixed a bug when resetting the color code short-hands to the matplotlib default.
+
+- Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.

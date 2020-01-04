@@ -232,38 +232,38 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
 
-    def test_despine_moved_tickes(self):
+    def test_despine_moved_ticks(self):
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
 
@@ -332,6 +332,33 @@ def test_categorical_order():
     x = ["a", np.nan, "c", "c", "b", "a", "d"]
     out = utils.categorical_order(x)
     nt.assert_equal(out, ["a", "c", "b", "d"])
+
+
+def test_locator_to_legend_entries():
+
+    locator = mpl.ticker.MaxNLocator(nbins=3)
+    limits = (0.09, 0.4)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, float)
+    assert str_levels == ["0.00", "0.15", "0.30", "0.45"]
+
+    limits = (0.8, 0.9)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, float)
+    assert str_levels == ["0.80", "0.84", "0.88", "0.92"]    
+
+    limits = (1,6)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    assert str_levels == ["0", "2", "4", "6"]    
+
+    locator=mpl.ticker.LogLocator(numticks=3)
+    limits = (5,1425)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['0', '1', '100', '10000', '1e+06']
+
+    limits = (0.00003, 0.02)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, float)
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
 
 
 if LooseVersion(pd.__version__) >= "0.15":

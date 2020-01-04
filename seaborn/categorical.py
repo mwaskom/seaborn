@@ -149,9 +149,9 @@ class _CategoricalPlotter(object):
                 units = data.get(units, units)
 
             # Validate the inputs
-            for input in [x, y, hue, units]:
-                if isinstance(input, string_types):
-                    err = "Could not interpret input '{}'".format(input)
+            for var in [x, y, hue, units]:
+                if isinstance(var, string_types):
+                    err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
             # Figure out the plotting orientation
@@ -243,14 +243,18 @@ class _CategoricalPlotter(object):
         """Group a long-form variable by another with correct order."""
         # Ensure that the groupby will work
         if not isinstance(vals, pd.Series):
-            vals = pd.Series(vals)
+            if isinstance(grouper, pd.Series):
+                index = grouper.index
+            else:
+                index = None
+            vals = pd.Series(vals, index=index)
 
         # Group the val data
         grouped_vals = vals.groupby(grouper)
         out_data = []
         for g in order:
             try:
-                g_vals = np.asarray(grouped_vals.get_group(g))
+                g_vals = grouped_vals.get_group(g)
             except KeyError:
                 g_vals = np.array([])
             out_data.append(g_vals)
@@ -307,7 +311,7 @@ class _CategoricalPlotter(object):
         if saturation < 1:
             colors = color_palette(colors, desat=saturation)
 
-        # Conver the colors to a common representations
+        # Convert the colors to a common representations
         rgb_colors = color_palette(colors)
 
         # Determine the gray color to use for the lines framing the plot
@@ -415,17 +419,13 @@ class _CategoricalPlotter(object):
         if self.hue_names is not None:
             leg = ax.legend(loc="best")
             if self.hue_title is not None:
-                leg.set_title(self.hue_title)
-
-                # Set the title size a roundabout way to maintain
-                # compatibility with matplotlib 1.1
-                # TODO no longer needed
+                # Matplotlib rcParams does not expose legend title size?
                 try:
                     title_size = mpl.rcParams["axes.labelsize"] * .85
                 except TypeError:  # labelsize is something like "large"
                     title_size = mpl.rcParams["axes.labelsize"]
                 prop = mpl.font_manager.FontProperties(size=title_size)
-                leg._legend_title_box._text.set_font_properties(prop)
+                leg.set_title(self.hue_title, prop=prop)
 
     def add_legend_data(self, ax, color, label):
         """Add a dummy patch object so we can get legend data."""
@@ -472,7 +472,7 @@ class _BoxPlotter(_CategoricalPlotter):
 
                 # Draw a single box or a set of boxes
                 # with a single level of grouping
-                box_data = remove_na(group_data)
+                box_data = np.asarray(remove_na(group_data))
 
                 # Handle case where there is no non-null data
                 if box_data.size == 0:
@@ -500,7 +500,7 @@ class _BoxPlotter(_CategoricalPlotter):
                         continue
 
                     hue_mask = self.plot_hues[i] == hue_level
-                    box_data = remove_na(group_data[hue_mask])
+                    box_data = np.asarray(remove_na(group_data[hue_mask]))
 
                     # Handle case where there is no non-null data
                     if box_data.size == 0:
@@ -824,8 +824,8 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                 # Handle special case of a single observation
                 elif support.size == 1:
-                    val = np.asscalar(support)
-                    d = np.asscalar(density)
+                    val = support.item()
+                    d = density.item()
                     self.draw_single_observation(ax, i, val, d)
                     continue
 
@@ -880,8 +880,8 @@ class _ViolinPlotter(_CategoricalPlotter):
 
                     # Handle the special case where we have one observation
                     elif support.size == 1:
-                        val = np.asscalar(support)
-                        d = np.asscalar(density)
+                        val = support.item()
+                        d = density.item()
                         if self.split:
                             d = d / 2
                         at_group = i + offsets[j]
@@ -1100,30 +1100,33 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
 
     @property
     def point_colors(self):
-        """Return a color for each scatter point based on group and hue."""
-        colors = []
+        """Return an index into the palette for each scatter point."""
+        point_colors = []
         for i, group_data in enumerate(self.plot_data):
 
             # Initialize the array for this group level
-            group_colors = np.empty((group_data.size, 3))
+            group_colors = np.empty(group_data.size, np.int)
+            if isinstance(group_data, pd.Series):
+                group_colors = pd.Series(group_colors, group_data.index)
 
             if self.plot_hues is None:
 
                 # Use the same color for all points at this level
-                group_color = self.colors[i]
-                group_colors[:] = group_color
+                # group_color = self.colors[i]
+                group_colors[:] = i
 
             else:
 
                 # Color the points based on  the hue level
+
                 for j, level in enumerate(self.hue_names):
-                    hue_color = self.colors[j]
+                    # hue_color = self.colors[j]
                     if group_data.size:
-                        group_colors[self.plot_hues[i] == level] = hue_color
+                        group_colors[self.plot_hues[i] == level] = j
 
-            colors.append(group_colors)
+            point_colors.append(group_colors)
 
-        return colors
+        return point_colors
 
     def add_legend_data(self, ax):
         """Add empty scatterplot artists with labels for the legend."""
@@ -1157,8 +1160,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
-        # Set the default zorder to 2.1, so that the points
-        # will be drawn on top of line elements (like in a boxplot)
+        palette = np.asarray(self.colors)
         for i, group_data in enumerate(self.plot_data):
             if self.plot_hues is None or not self.dodge:
 
@@ -1171,11 +1173,12 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
                 strip_data = group_data[hue_mask]
+                point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(strip_data.size) * i
                 cat_pos += self.jitterer(len(strip_data))
-                kws.update(c=self.point_colors[i][hue_mask])
+                kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     ax.scatter(cat_pos, strip_data, **kws)
                 else:
@@ -1187,11 +1190,13 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     hue_mask = self.plot_hues[i] == hue_level
                     strip_data = group_data[hue_mask]
 
+                    point_colors = np.asarray(self.point_colors[i][hue_mask])
+
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(strip_data.size) * center
                     cat_pos += self.jitterer(len(strip_data))
-                    kws.update(c=self.point_colors[i][hue_mask])
+                    kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         ax.scatter(cat_pos, strip_data, **kws)
                     else:
@@ -1371,6 +1376,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         centers = []
         swarms = []
 
+        palette = np.asarray(self.colors)
+
         # Set the categorical axes limits here for the swarm math
         if self.orient == "v":
             ax.set_xlim(-.5, len(self.plot_data) - .5)
@@ -1392,16 +1399,17 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
-                swarm_data = group_data[hue_mask]
+                swarm_data = np.asarray(group_data[hue_mask])
+                point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                 # Sort the points for the beeswarm algorithm
                 sorter = np.argsort(swarm_data)
                 swarm_data = swarm_data[sorter]
-                point_colors = self.point_colors[i][hue_mask][sorter]
+                point_colors = point_colors[sorter]
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(swarm_data.size) * i
-                kws.update(c=point_colors)
+                kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
                 else:
@@ -1416,17 +1424,18 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
                 for j, hue_level in enumerate(self.hue_names):
                     hue_mask = self.plot_hues[i] == hue_level
-                    swarm_data = group_data[hue_mask]
+                    swarm_data = np.asarray(group_data[hue_mask])
+                    point_colors = np.asarray(self.point_colors[i][hue_mask])
 
                     # Sort the points for the beeswarm algorithm
                     sorter = np.argsort(swarm_data)
                     swarm_data = swarm_data[sorter]
-                    point_colors = self.point_colors[i][hue_mask][sorter]
+                    point_colors = point_colors[sorter]
 
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(swarm_data.size) * center
-                    kws.update(c=point_colors)
+                    kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         points = ax.scatter(cat_pos, swarm_data, s=s, **kws)
                     else:
@@ -1747,14 +1756,14 @@ class _PointPlotter(_CategoricalStatPlotter):
 
             # Draw the estimate points
             marker = self.markers[0]
-            hex_colors = [mpl.colors.rgb2hex(c) for c in self.colors]
+            colors = [mpl.colors.colorConverter.to_rgb(c) for c in self.colors]
             if self.orient == "h":
                 x, y = self.statistic, pointpos
             else:
                 x, y = pointpos, self.statistic
             ax.scatter(x, y,
                        linewidth=mew, marker=marker, s=markersize,
-                       c=hex_colors, edgecolor=hex_colors)
+                       facecolor=colors, edgecolor=colors)
 
         else:
 
@@ -1790,19 +1799,18 @@ class _PointPlotter(_CategoricalStatPlotter):
                 # Draw the estimate points
                 n_points = len(remove_na(offpos))
                 marker = self.markers[j]
-                hex_color = mpl.colors.rgb2hex(self.colors[j])
-                if n_points:
-                    point_colors = [hex_color for _ in range(n_points)]
-                else:
-                    point_colors = hex_color
+                color = mpl.colors.colorConverter.to_rgb(self.colors[j])
+
                 if self.orient == "h":
                     x, y = statistic, offpos
                 else:
                     x, y = offpos, statistic
+
                 if not len(remove_na(statistic)):
-                    x, y = [], []
+                    x = y = [np.nan] * n_points
+
                 ax.scatter(x, y, label=hue_level,
-                           c=point_colors, edgecolor=point_colors,
+                           facecolor=color, edgecolor=color,
                            linewidth=mew, marker=marker, s=markersize,
                            zorder=z)
 
@@ -1956,6 +1964,7 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Calculate the outliers and plot
             outliers = self._lv_outliers(box_data, k)
+            hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
                 boxes = [vert_perc_box(x, b[0], i, k, b[1])
@@ -1966,7 +1975,7 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=mpl.colors.rgb2hex(color), **kws)
+                           marker='d', c=hex_color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
@@ -1976,10 +1985,10 @@ class _LVPlotter(_CategoricalPlotter):
                         c='.15', alpha=.45, **kws)
 
                 ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=color, **kws)
+                           marker='d', c=hex_color, **kws)
 
             # Construct a color map from the input color
-            rgb = [[1, 1, 1], list(color)]
+            rgb = [[1, 1, 1], hex_color]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap)
 
@@ -2747,7 +2756,7 @@ boxenplot.__doc__ = dedent("""\
 
         >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, jitter=True, color="gray")
+        ...                    size=4, color="gray")
 
     Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using
@@ -2824,7 +2833,7 @@ stripplot.__doc__ = dedent("""\
     {color}
     {palette}
     size : float, optional
-        Diameter of the markers, in points. (Although ``plt.scatter`` is used
+        Diameter of the markers, in points. Although ``plt.scatter`` is used
         to draw the points, the ``size`` argument here takes a "normal"
         markersize and not size^2 like ``plt.scatter``.
     edgecolor : matplotlib color, "gray" is special-cased, optional
@@ -2864,13 +2873,6 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
-    Add jitter to bring out the distribution of values:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
-
     Use a smaller amount of jitter:
 
     .. plot::
@@ -2883,8 +2885,7 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True)
+        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips)
 
     Draw outlines around the points:
 
@@ -2892,15 +2893,14 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    jitter=True, linewidth=1)
+        ...                    linewidth=1)
 
     Nest the strips within a second categorical variable:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day",
-        ...                    data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day", data=tips)
 
     Draw each level of the ``hue`` variable at different locations on the
     major categorical axis:
@@ -2909,8 +2909,7 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, jitter=True,
-        ...                    palette="Set2", dodge=True)
+        ...                    data=tips, palette="Set2", dodge=True)
 
     Control strip order by passing an explicit order:
 
@@ -2934,9 +2933,9 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
+        >>> import numpy as np
         >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips,
-        ...                    jitter=True, color=".3")
+        >>> ax = sns.stripplot(x="tip", y="day", data=tips, color=".3")
 
     Draw strips of observations on top of a violin plot:
 
@@ -2945,7 +2944,7 @@ stripplot.__doc__ = dedent("""\
 
         >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
         ...                     inner=None, color=".8")
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=True)
+        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
 
     Use :func:`catplot` to combine a :func:`stripplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
@@ -2958,7 +2957,6 @@ stripplot.__doc__ = dedent("""\
         >>> g = sns.catplot(x="sex", y="total_bill",
         ...                 hue="smoker", col="time",
         ...                 data=tips, kind="strip",
-        ...                 jitter=True,
         ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
@@ -3035,6 +3033,9 @@ swarmplot.__doc__ = dedent("""\
         of the points.
     {linewidth}
     {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.scatter`` at draw
+        time.
 
     Returns
     -------
@@ -3667,7 +3668,7 @@ def factorplot(*args, **kwargs):
 
     if "size" in kwargs:
         kwargs["height"] = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
@@ -3687,7 +3688,7 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 

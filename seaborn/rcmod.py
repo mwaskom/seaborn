@@ -2,6 +2,7 @@
 from distutils.version import LooseVersion
 import functools
 import matplotlib as mpl
+import warnings
 from . import palettes, _orig_rc_params
 
 
@@ -130,7 +131,9 @@ def reset_defaults():
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
-    mpl.rcParams.update(_orig_rc_params)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', mpl.cbook.MatplotlibDeprecationWarning)
+        mpl.rcParams.update(_orig_rc_params)
 
 
 def axes_style(style=None, rc=None):
@@ -547,5 +550,5 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
     if color_codes:
         try:
             palettes.set_color_codes(palette)
-        except ValueError:
+        except (ValueError, TypeError):
             pass

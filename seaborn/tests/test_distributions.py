@@ -1,13 +1,10 @@
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import pytest
-from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
 
 from .. import distributions as dist
 
@@ -17,9 +14,6 @@ try:
     _no_statsmodels = False
 except ImportError:
     _no_statsmodels = True
-
-
-_old_matplotlib = LooseVersion(mpl.__version__) < "1.5"
 
 
 class TestKDE(object):
@@ -43,7 +37,7 @@ class TestKDE(object):
             dist._scipy_univariate_kde(self.x, bw, self.gridsize,
                                        self.cut, self.clip)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_univariate_kde(self):
         """Test the univariate KDE estimation with statsmodels."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
@@ -75,7 +69,7 @@ class TestKDE(object):
             dist._scipy_bivariate_kde(self.x, self.y, (1, 2),
                                       self.gridsize, self.cut, clip)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_bivariate_kde(self):
         """Test the bivariate KDE estimation with statsmodels."""
         clip = [self.clip, self.clip]
@@ -86,7 +80,7 @@ class TestKDE(object):
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_kde_cumulative(self):
         """Test computation of cumulative KDE."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
@@ -103,6 +97,18 @@ class TestKDE(object):
         with npt.assert_raises(TypeError):
             dist.kdeplot(self.x, data2=self.y, cumulative=True)
 
+    def test_kde_singular(self):
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(np.ones(10))
+        line = ax.lines[0]
+        assert not line.get_xydata().size
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(np.ones(10) * np.nan)
+        line = ax.lines[1]
+        assert not line.get_xydata().size
+
     def test_bivariate_kde_series(self):
         df = pd.DataFrame({'x': self.x, 'y': self.y})
 
@@ -114,7 +120,6 @@ class TestKDE(object):
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
 
-    @skipif(_old_matplotlib)
     def test_bivariate_kde_colorbar(self):
 
         f, ax = plt.subplots()

@@ -45,11 +45,17 @@ class _LinearPlotter(object):
         # Set the variables
         for var, val in kws.items():
             if isinstance(val, string_types):
-                setattr(self, var, data[val])
+                vector = data[val]
             elif isinstance(val, list):
-                setattr(self, var, np.asarray(val))
+                vector = np.asarray(val)
             else:
-                setattr(self, var, val)
+                vector = val
+            if vector is not None:
+                vector = np.squeeze(vector)
+            if np.ndim(vector) > 1:
+                err = "regplot inputs must be 1d"
+                raise ValueError(err)
+            setattr(self, var, vector)
 
     def dropna(self, *vars):
         """Remove observations with missing data."""
@@ -312,7 +318,7 @@ class _RegressionPlotter(_LinearPlotter):
         b = b - b.mean()
         b = np.c_[b]
         a_prime = a - b.dot(np.linalg.pinv(b).dot(a))
-        return (a_prime + a_mean).reshape(a.shape)
+        return np.asarray(a_prime + a_mean).reshape(a.shape)
 
     def plot(self, ax, scatter_kws, line_kws):
         """Draw the full plot."""
@@ -324,13 +330,13 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Use the current color cycle state as a default
         if self.color is None:
-            lines, = plt.plot(self.x.mean(), self.y.mean())
+            lines, = ax.plot([], [])
             color = lines.get_color()
             lines.remove()
         else:
             color = self.color
 
-        # Ensure that color is hex to avoid matplotlib weidness
+        # Ensure that color is hex to avoid matplotlib weirdness
         color = mpl.colors.rgb2hex(mpl.colors.colorConverter.to_rgb(color))
 
         # Let color in keyword arguments override overall plot color
@@ -340,6 +346,7 @@ class _RegressionPlotter(_LinearPlotter):
         # Draw the constituent plots
         if self.scatter:
             self.scatterplot(ax, scatter_kws)
+
         if self.fit_reg:
             self.lineplot(ax, line_kws)
 
@@ -383,10 +390,9 @@ class _RegressionPlotter(_LinearPlotter):
 
     def lineplot(self, ax, kws):
         """Draw the model."""
-        xlim = ax.get_xlim()
-
         # Fit the regression model
         grid, yhat, err_bands = self.fit_regression(ax)
+        edges = grid[0], grid[-1]
 
         # Get set default aesthetics
         fill_color = kws["color"]
@@ -394,10 +400,14 @@ class _RegressionPlotter(_LinearPlotter):
         kws.setdefault("linewidth", lw)
 
         # Draw the regression line and confidence interval
-        ax.plot(grid, yhat, **kws)
+        line, = ax.plot(grid, yhat, **kws)
+        try:
+            line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
+        except AttributeError:
+            msg = "Cannot set sticky_edges; requires newer matplotlib."
+            warnings.warn(msg, UserWarning)
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
-        ax.set_xlim(*xlim, auto=None)
 
 
 _regression_docs = dict(
@@ -534,14 +544,14 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
            legend=True, legend_out=True, x_estimator=None, x_bins=None,
            x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
            units=None, order=1, logistic=False, lowess=False, robust=False,
-           logx=False, x_partial=None, y_partial=None, truncate=False,
+           logx=False, x_partial=None, y_partial=None, truncate=True,
            x_jitter=None, y_jitter=None, scatter_kws=None, line_kws=None,
            size=None):
 
     # Handle deprecations
     if size is not None:
         height = size
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
@@ -770,7 +780,7 @@ def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
             scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
             order=1, logistic=False, lowess=False, robust=False,
             logx=False, x_partial=None, y_partial=None,
-            truncate=False, dropna=True, x_jitter=None, y_jitter=None,
+            truncate=True, dropna=True, x_jitter=None, y_jitter=None,
             label=None, color=None, marker="o",
             scatter_kws=None, line_kws=None, ax=None):
 
@@ -819,7 +829,7 @@ regplot.__doc__ = dedent("""\
     {truncate}
     {xy_jitter}
     label : string
-        Label to apply to ether the scatterplot or regression line (if
+        Label to apply to either the scatterplot or regression line (if
         ``scatter`` is ``False``) for use in a legend.
     color : matplotlib color
         Color to apply to all plot elements; will be superseded by colors
@@ -888,12 +898,12 @@ regplot.__doc__ = dedent("""\
         >>> ax = sns.regplot(x=x, y=y, marker="+")
 
     Use a 68% confidence interval, which corresponds with the standard error
-    of the estimate:
+    of the estimate, and extend the regression line to the axis limits:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.regplot(x=x, y=y, ci=68)
+        >>> ax = sns.regplot(x=x, y=y, ci=68, truncate=False)
 
     Plot with a discrete ``x`` variable and add some jitter:
 
@@ -918,7 +928,7 @@ regplot.__doc__ = dedent("""\
 
         >>> ax = sns.regplot(x=x, y=y, x_bins=4)
 
-    Fit a higher-order polynomial regression and truncate the model prediction:
+    Fit a higher-order polynomial regression:
 
     .. plot::
         :context: close-figs
@@ -926,7 +936,7 @@ regplot.__doc__ = dedent("""\
         >>> ans = sns.load_dataset("anscombe")
         >>> ax = sns.regplot(x="x", y="y", data=ans.loc[ans.dataset == "II"],
         ...                  scatter_kws={{"s": 80}},
-        ...                  order=2, ci=None, truncate=True)
+        ...                  order=2, ci=None)
 
     Fit a robust regression and don't plot a confidence interval:
 
@@ -947,13 +957,13 @@ regplot.__doc__ = dedent("""\
         >>> ax = sns.regplot(x="total_bill", y="big_tip", data=tips,
         ...                  logistic=True, n_boot=500, y_jitter=.03)
 
-    Fit the regression model using log(x) and truncate the model prediction:
+    Fit the regression model using log(x):
 
     .. plot::
         :context: close-figs
 
         >>> ax = sns.regplot(x="size", y="total_bill", data=tips,
-        ...                  x_estimator=np.mean, logx=True, truncate=True)
+        ...                  x_estimator=np.mean, logx=True)
 
     """).format(**_regression_docs)
 

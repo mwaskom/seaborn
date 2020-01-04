@@ -87,6 +87,29 @@ class TestAxesStyle(RCParamTester):
         nt.assert_equal(mpl.rcParams["lines.linewidth"], 4)
         rcmod.set()
 
+    def test_set_with_palette(self):
+
+        rcmod.reset_orig()
+
+        rcmod.set(palette="deep")
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+        rcmod.reset_orig()
+
+        rcmod.set(palette="deep", color_codes=False)
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+        rcmod.reset_orig()
+
+        pal = palettes.color_palette("deep")
+        rcmod.set(palette=pal)
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+        rcmod.reset_orig()
+
+        rcmod.set(palette=pal, color_codes=False)
+        assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
+        rcmod.reset_orig()
+
+        rcmod.set()
+
     def test_reset_defaults(self):
 
         # Changes to the rc parameters make this test hard to manage

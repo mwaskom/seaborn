@@ -1,14 +1,21 @@
 language: python
 
 
+dist: xenial
+services:
+  - xvfb
+
+
 env:
   - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
   - PYTHON=2.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
   - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.6 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.6 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
 
 
 before_install:
@@ -18,8 +25,10 @@ before_install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - conda config --set always_yes yes --set changeps1 no
+  - conda config --set always_yes yes --set changeps1 no 
+  - conda config --add channels conda-forge
   - conda update -q conda
+  - conda config --set channel_priority false
   - conda info -a
 
 
@@ -37,6 +46,10 @@ before_script:
     export DISPLAY=:99.0;
     sh -e /etc/init.d/xvfb start;
     sleep 3;
+    fi
+    # https://www.python.org/dev/peps/pep-0493/
+  - if [ $PYTHON == "2.7" ]; then
+    export PYTHONHTTPSVERIFY=0;
     fi
 
 

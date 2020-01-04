@@ -12,9 +12,10 @@ from .external.six import string_types
 
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
-                    remove_na)
+                    remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
-from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
+from .palettes import (color_palette, cubehelix_palette,
+                       _parse_cubehelix_args, QUAL_PALETTES)
 from .axisgrid import FacetGrid, _facet_docs
 
 
@@ -356,6 +357,8 @@ class _RelationalPlotter(object):
             # Override depending on the type of the palette argument
             if isinstance(palette, (dict, list)):
                 var_type = "categorical"
+            elif palette in QUAL_PALETTES:
+                var_type = "categorical"
 
         # -- Option 1: categorical color palette
 
@@ -364,12 +367,17 @@ class _RelationalPlotter(object):
             cmap = None
             limits = None
             levels, palette = self.categorical_to_palette(
-                data, order, palette
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # externalizes numpy datetime64
+                list(data), order, palette
             )
 
         # -- Option 2: sequential color palette
 
         elif var_type == "numeric":
+
+            data = pd.to_numeric(data)
 
             levels, palette, cmap, norm = self.numeric_to_palette(
                 data, order, palette, norm
@@ -382,6 +390,9 @@ class _RelationalPlotter(object):
         self.hue_type = var_type
         self.palette = palette
         self.cmap = cmap
+
+        # Update data as it may have changed dtype
+        self.plot_data["hue"] = data
 
     def parse_size(self, data, sizes, order, norm):
         """Determine the linewidths given data characteristics."""
@@ -400,12 +411,16 @@ class _RelationalPlotter(object):
 
             var_type = self._semantic_type(data)
 
-            # TODO override for list/dict like in parse_hue?
+            # Override depending on the type of the sizes argument
+            if isinstance(sizes, (dict, list)):
+                var_type = "categorical"
 
             if var_type == "categorical":
                 levels = categorical_order(data, order)
                 numbers = np.arange(1, 1 + len(levels))[::-1]
+
             elif var_type == "numeric":
+                data = pd.to_numeric(data)
                 levels = numbers = np.sort(remove_na(data.unique()))
 
             if isinstance(sizes, (dict, list)):
@@ -470,6 +485,9 @@ class _RelationalPlotter(object):
         self.size_limits = limits
         self.size_range = width_range
 
+        # Update data as it may have changed dtype
+        self.plot_data["size"] = data
+
     def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
 
@@ -482,7 +500,10 @@ class _RelationalPlotter(object):
         else:
 
             if order is None:
-                levels = categorical_order(data)
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # coerces numpy datatypes
+                levels = categorical_order(list(data))
             else:
                 levels = order
 
@@ -524,11 +545,14 @@ class _RelationalPlotter(object):
         """Determine if data should considered numeric or categorical."""
         if self.input_format == "wide":
             return "categorical"
+        elif isinstance(data, pd.Series) and data.dtype.name == "category":
+            return "categorical"
         else:
             try:
                 float_data = data.astype(np.float)
                 values = np.unique(float_data.dropna())
-                if np.array_equal(values, np.array([0., 1.])):
+                # TODO replace with isin when pinned np version >= 1.13
+                if np.all(np.in1d(values, np.array([0., 1.]))):
                     return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
@@ -566,48 +590,49 @@ class _RelationalPlotter(object):
                 legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
-
         if verbosity == "brief" and self.hue_type == "numeric":
             if isinstance(self.hue_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            hue_levels, hue_formatted_levels = locator_to_legend_entries(
+                locator, self.hue_limits, self.plot_data["hue"].dtype
+            )
         else:
-            hue_levels = self.hue_levels
+            hue_levels = hue_formatted_levels = self.hue_levels
 
         # Add the hue semantic subtitle
         if self.hue_label is not None:
             update((self.hue_label, "title"), self.hue_label, **title_kws)
 
         # Add the hue semantic labels
-        for level in hue_levels:
+        for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
                 color = self.color_lookup(level)
-                update(self.hue_label, level, color=color)
+                update(self.hue_label, formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
         if verbosity == "brief" and self.size_type == "numeric":
             if isinstance(self.size_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            size_levels, size_formatted_levels = locator_to_legend_entries(
+                locator, self.size_limits, self.plot_data["size"].dtype)
         else:
-            size_levels = self.size_levels
+            size_levels = size_formatted_levels = self.size_levels
 
         # Add the size semantic subtitle
         if self.size_label is not None:
             update((self.size_label, "title"), self.size_label, **title_kws)
 
         # Add the size semantic labels
-        for level in size_levels:
+        for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(self.size_label, level, linewidth=size, s=size)
+                update(
+                    self.size_label, formatted_level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
@@ -639,8 +664,8 @@ class _RelationalPlotter(object):
             artist = func([], [], label=label, **use_kws)
             if self._legend_func == "plot":
                 artist = artist[0]
-            legend_data[label] = artist
-            legend_order.append(label)
+            legend_data[key] = artist
+            legend_order.append(key)
 
         self.legend_data = legend_data
         self.legend_order = legend_order
@@ -948,6 +973,16 @@ _relational_docs = dict(
     See the :ref:`tutorial <relational_tutorial>` for more information.\
     """),
 
+    relational_semantic_narrative=dedent("""\
+    The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+    semantic, if present, depends on whether the variable is inferred to
+    represent "numeric" or "categorical" data. In particular, numeric variables
+    are represented with a sequential colormap by default, and the legend
+    entries show regular "ticks" with values that may or may not exist in the
+    data. This behavior can be controlled through various parameters, as
+    described and illustrated below.\
+    """),
+
     # --- Shared function parameters
     data_vars=dedent("""\
     x, y : names of variables in ``data`` or vector data, optional
@@ -1082,7 +1117,6 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         ax = plt.gca()
 
     p.plot(ax, kwargs)
-
     return ax
 
 
@@ -1090,6 +1124,8 @@ lineplot.__doc__ = dedent("""\
     Draw a line plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     By default, the plot aggregates over multiple ``y`` values at each value of
     ``x`` and shows an estimate of the central tendency and a confidence
@@ -1136,7 +1172,7 @@ lineplot.__doc__ = dedent("""\
     err_style : "band" or "bars", optional
         Whether to draw the confidence intervals with translucent error bands
         or discrete error bars.
-    err_band : dict of keyword arguments
+    err_kws : dict of keyword arguments
         Additional paramters to control the aesthetics of the error bars. The
         kwargs are passed either to ``ax.fill_between`` or ``ax.errorbar``,
         depending on the ``err_style``.
@@ -1347,6 +1383,8 @@ scatterplot.__doc__ = dedent("""\
     Draw a scatter plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     Parameters
     ----------
@@ -1637,6 +1675,8 @@ relplot.__doc__ = dedent("""\
     should refer to the documentation for each to see kind-specific options.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.

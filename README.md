@@ -2,12 +2,17 @@ seaborn: statistical data visualization
 =======================================
 
 <div class="row">
-<a href=https://seaborn.pydata.org/examples/anscombes_quartet.html>
-<img src="https://seaborn.pydata.org/_static/anscombes_quartet_thumb.png" height="135" width="135">
+
+<a href=https://seaborn.pydata.org/examples/scatterplot_matrix.html>
+<img src="https://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
 </a>
 
-<a href=https://seaborn.pydata.org/examples/multiple_regression.html>
-<img src="https://seaborn.pydata.org/_static/multiple_regression_thumb.png" height="135" width="135">
+<a href=http://seaborn.pydata.org/examples/errorband_lineplots.html>
+<img src="https://seaborn.pydata.org/_static/errorband_lineplots_thumb.png" height="135" width="135">
+</a>
+
+<a href=http://seaborn.pydata.org/examples/different_scatter_variables.html>
+<img src="http://seaborn.pydata.org/_static/different_scatter_variables_thumb.png" height="135" width="135">
 </a>
 
 <a href=https://seaborn.pydata.org/examples/many_facets.html>
@@ -16,10 +21,6 @@ seaborn: statistical data visualization
 
 <a href=https://seaborn.pydata.org/examples/structured_heatmap.html>
 <img src="https://seaborn.pydata.org/_static/structured_heatmap_thumb.png" height="135" width="135">
-</a>
-
-<a href=https://seaborn.pydata.org/examples/scatterplot_matrix.html>
-<img src="https://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
 </a>
 
 <a href=https://seaborn.pydata.org/examples/horizontal_boxplot.html>
@@ -32,7 +33,7 @@ seaborn: statistical data visualization
 
 [![PyPI Version](https://img.shields.io/pypi/v/seaborn.svg)](https://pypi.org/project/seaborn/)
 [![License](https://img.shields.io/pypi/l/seaborn.svg)](https://github.com/mwaskom/seaborn/blob/master/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.883859.svg)](https://doi.org/10.5281/zenodo.883859)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1313201.svg)](https://doi.org/10.5281/zenodo.1313201)
 [![Build Status](https://travis-ci.org/mwaskom/seaborn.svg?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 [![Code Coverage](https://codecov.io/gh/mwaskom/seaborn/branch/master/graph/badge.svg)](https://codecov.io/gh/mwaskom/seaborn)
 

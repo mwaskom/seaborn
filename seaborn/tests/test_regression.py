@@ -3,14 +3,15 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 
+import pytest
 import nose.tools as nt
 import numpy.testing as npt
 try:
     import pandas.testing as pdt
 except ImportError:
     import pandas.util.testing as pdt
-from numpy.testing.decorators import skipif
 from nose import SkipTest
+from distutils.version import LooseVersion
 
 try:
     import statsmodels.regression.linear_model as smlm
@@ -147,6 +148,15 @@ class TestRegressionPlotter(object):
         npt.assert_array_equal(p.y, self.df.y + 1)
         pdt.assert_frame_equal(p.data, self.df)
 
+    def test_variables_must_be_1d(self):
+
+        array_2d = np.random.randn(20, 2)
+        array_1d = np.random.randn(20)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_2d, array_1d)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_1d, array_2d)
+
     def test_dropna(self):
 
         p = lm._RegressionPlotter("x", "y_na", data=self.df)
@@ -169,7 +179,7 @@ class TestRegressionPlotter(object):
         nt.assert_equal(p.ci, 95)
         nt.assert_equal(p.x_ci, "sd")
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_fast_regression(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -183,7 +193,7 @@ class TestRegressionPlotter(object):
         # Compare the vector of y_hat values
         npt.assert_array_almost_equal(yhat_fast, yhat_smod)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_regress_poly(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -211,7 +221,7 @@ class TestRegressionPlotter(object):
         nt.assert_greater(yhat_log[20], yhat_lin[20])
         nt.assert_greater(yhat_lin[90], yhat_log[90])
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_regress_n_boot(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, n_boot=self.n_boot)
@@ -228,7 +238,7 @@ class TestRegressionPlotter(object):
         _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         npt.assert_equal(boots_smod.shape, (self.n_boot, self.grid.size))
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_regress_without_bootstrap(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df,
@@ -354,7 +364,13 @@ class TestRegressionPlotter(object):
         _, r_partial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_partial, r_orig)
 
-    @skipif(_no_statsmodels)
+        x = pd.Series(x)
+        y = pd.Series(y)
+        p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
+        _, r_partial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_partial, r_orig)
+
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_logistic_regression(self):
 
         p = lm._RegressionPlotter("x", "c", data=self.df,
@@ -363,7 +379,7 @@ class TestRegressionPlotter(object):
         npt.assert_array_less(yhat, 1)
         npt.assert_array_less(0, yhat)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_logistic_perfect_separation(self):
 
         y = self.df.x > self.df.x.mean()
@@ -373,7 +389,7 @@ class TestRegressionPlotter(object):
             _, yhat, _ = p.fit_regression(x_range=(-3, 3))
         nt.assert_true(np.isnan(yhat).all())
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_robust_regression(self):
 
         p_ols = lm._RegressionPlotter("x", "y", data=self.df,
@@ -386,7 +402,7 @@ class TestRegressionPlotter(object):
 
         nt.assert_equal(len(ols_yhat), len(robust_yhat))
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_lowess_regression(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True)
@@ -571,7 +587,7 @@ class TestRegressionPlots(object):
         npt.assert_array_equal(x, x_plot)
         npt.assert_array_almost_equal(resid, y_plot)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_residplot_lowess(self):
 
         ax = lm.residplot("x", "y", self.df, lowess=True)
@@ -587,3 +603,14 @@ class TestRegressionPlots(object):
         color = ax.collections[0].get_facecolors()
         npt.assert_almost_equal(color[0, :3],
                                 (1, 0, 0))
+
+    @pytest.mark.skipif(LooseVersion(mpl.__version__) < "2.0",
+                        reason="not supported on old matplotlib")
+    def test_regplot_xlim(self):
+
+        f, ax = plt.subplots()
+        x, y1, y2 = np.random.randn(3, 50)
+        lm.regplot(x, y1, truncate=False)
+        lm.regplot(x, y2, truncate=False)
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xdata(), line2.get_xdata())
