@@ -96,7 +96,7 @@ class Grid(object):
             kwargs.setdefault("loc", "center right")
 
             # Draw a full-figure legend outside the grid
-            figlegend = self.fig.legend(handles, label_order, **kwargs)
+            figlegend = self.fig.legend(handles, labels, **kwargs)
 
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
@@ -129,7 +129,7 @@ class Grid(object):
             ax = self.axes.flat[0]
             kwargs.setdefault("loc", "best")
             
-            leg = ax.legend(handles, label_order, **kwargs)
+            leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})
 
         return self
