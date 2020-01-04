@@ -128,7 +128,7 @@ class Grid(object):
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
             kwargs.setdefault("loc", "best")
-            
+
             leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})
 
