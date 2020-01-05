@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import stats
 
 import pytest
 import nose.tools as nt
@@ -18,13 +19,59 @@ except ImportError:
 
 class TestDistPlot(object):
 
+    rs = np.random.RandomState(0)
+    x = rs.randn(100)
+
+    def test_hist_bins(self):
+
+        fd_edges = np.histogram_bin_edges(self.x, "fd")
+        ax = dist.distplot(self.x)
+        for edge, bar in zip(fd_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+        plt.close(ax.figure)
+        n = 25
+        n_edges = np.histogram_bin_edges(self.x, n)
+        ax = dist.distplot(self.x, bins=n)
+        for edge, bar in zip(n_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+    def test_elements(self):
+
+        n = 10
+        ax = dist.distplot(self.x, bins=n,
+                           hist=True, kde=False, rug=False, fit=None)
+        assert len(ax.patches) == 10
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=True, rug=False, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=False, rug=True, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 1
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=False, rug=False, fit=stats.norm)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
     def test_distplot_with_nans(self):
 
         f, (ax1, ax2) = plt.subplots(2)
-        x = np.random.randn(100)
-        x_null = np.append(x, [np.nan])
+        x_null = np.append(self.x, [np.nan])
 
-        dist.distplot(x, ax=ax1)
+        dist.distplot(self.x, ax=ax1)
         dist.distplot(x_null, ax=ax2)
 
         line1 = ax1.lines[0]
