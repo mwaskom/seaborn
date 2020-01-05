@@ -173,8 +173,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if axlabel is not None:
             label_ax = True
 
-    # Make a a 1-d array
-    a = np.asarray(a)
+    # Make a a 1-d float array
+    a = np.asarray(a, np.float)
     if a.ndim > 1:
         a = a.squeeze()
 
