@@ -16,6 +16,26 @@ except ImportError:
     _no_statsmodels = True
 
 
+class TestDistPlot(object):
+
+    def test_distplot_with_nans(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        x = np.random.randn(100)
+        x_null = np.append(x, [np.nan])
+
+        dist.distplot(x, ax=ax1)
+        dist.distplot(x_null, ax=ax2)
+
+        line1 = ax1.lines[0]
+        line2 = ax2.lines[0]
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
+
+        for bar1, bar2 in zip(ax1.patches, ax2.patches):
+            assert bar1.get_xy() == bar2.get_xy()
+            assert bar1.get_height() == bar2.get_height()
+
+
 class TestKDE(object):
 
     rs = np.random.RandomState(0)
@@ -110,7 +130,7 @@ class TestKDE(object):
         assert not line.get_xydata().size
 
     @pytest.mark.parametrize("cumulative", [True, False])
-    def test_kdeplot_missing(self, cumulative):
+    def test_kdeplot_with_nans(self, cumulative):
 
         x_missing = np.append(self.x, [np.nan, np.nan])
 

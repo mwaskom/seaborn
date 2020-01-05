@@ -179,9 +179,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         a = a.squeeze()
 
     # Drop null values from array
-    mask = np.isnan(a)
-    if mask.any():
-        a = a[~mask]
+    a = remove_na(a)
 
     # Decide if the hist is normed
     norm_hist = norm_hist or kde or (fit is not None)
