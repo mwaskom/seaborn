@@ -212,10 +212,10 @@ class TestColorPalettes(object):
 
         pal_forward = palettes.light_palette("red")
         pal_reverse = palettes.light_palette("red", reverse=True)
-        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
+        assert np.allclose(pal_forward, pal_reverse[::-1])
 
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
+        red = mpl.colors.colorConverter.to_rgb("red")
+        nt.assert_equal(pal_forward[-1], red)
 
         pal_cmap = palettes.light_palette("blue", as_cmap=True)
         nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
@@ -224,13 +224,35 @@ class TestColorPalettes(object):
 
         pal_forward = palettes.dark_palette("red")
         pal_reverse = palettes.dark_palette("red", reverse=True)
-        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
+        assert np.allclose(pal_forward, pal_reverse[::-1])
 
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
+        red = mpl.colors.colorConverter.to_rgb("red")
+        assert pal_forward[-1] == red
 
         pal_cmap = palettes.dark_palette("blue", as_cmap=True)
-        nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+    def test_diverging_palette(self):
+
+        h_neg, h_pos = 100, 200
+        sat, lum = 70, 50
+        args = h_neg, h_pos, sat, lum
+
+        n = 12
+        pal = palettes.diverging_palette(*args,  n=n)
+        neg_pal = palettes.light_palette((h_neg, sat, lum), int(n // 2),
+                                         input="husl")
+        pos_pal = palettes.light_palette((h_pos, sat, lum), int(n // 2),
+                                         input="husl")
+        assert len(pal) == n
+        assert pal[0] == neg_pal[-1]
+        assert pal[-1] == pos_pal[-1]
+
+        pal_dark = palettes.diverging_palette(*args, n=n, center="dark")
+        assert np.mean(pal[int(n / 2)]) > np.mean(pal_dark[int(n / 2)])
+
+        pal_cmap = palettes.diverging_palette(*args, as_cmap=True)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
 
     def test_blend_palette(self):
 
