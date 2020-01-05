@@ -109,6 +109,18 @@ class TestKDE(object):
         line = ax.lines[1]
         assert not line.get_xydata().size
 
+    @pytest.mark.parametrize("cumulative", [True, False])
+    def test_kdeplot_missing(self, cumulative):
+
+        x_missing = np.append(self.x, [np.nan, np.nan])
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, cumulative=cumulative)
+        dist.kdeplot(x_missing, cumulative=cumulative)
+
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
+
     def test_bivariate_kde_series(self):
         df = pd.DataFrame({'x': self.x, 'y': self.y})
 

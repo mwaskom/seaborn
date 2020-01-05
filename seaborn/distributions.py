@@ -18,7 +18,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support
+from .utils import iqr, _kde_support,  remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
@@ -280,6 +280,9 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     # Sort out the clipping
     if clip is None:
         clip = (-np.inf, np.inf)
+
+    # Preprocess the data
+    data = remove_na(data)
 
     # Calculate the KDE
 
