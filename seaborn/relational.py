@@ -243,6 +243,9 @@ class _RelationalPlotter(object):
         elif str(palette).startswith("ch:"):
             args, kwargs = _parse_cubehelix_args(palette)
             cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
+        elif isinstance(palette, dict):
+            colors = [palette[k] for k in sorted(palette)]
+            cmap = mpl.colors.ListedColormap(colors)
         else:
             try:
                 cmap = mpl.cm.get_cmap(palette)
@@ -263,7 +266,8 @@ class _RelationalPlotter(object):
 
         # TODO this should also use color_lookup, but that needs the
         # class attributes that get set after using this function...
-        palette = dict(zip(levels, cmap(norm(levels))))
+        if not isinstance(palette, dict):
+            palette = dict(zip(levels, cmap(norm(levels))))
         # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
 
         return levels, palette, cmap, norm
@@ -356,9 +360,11 @@ class _RelationalPlotter(object):
             var_type = self._semantic_type(data)
 
             # Override depending on the type of the palette argument
-            if isinstance(palette, (dict, list)):
+            if palette in QUAL_PALETTES:
                 var_type = "categorical"
-            elif palette in QUAL_PALETTES:
+            elif norm is not None:
+                var_type = "numeric"
+            elif isinstance(palette, (dict, list)):
                 var_type = "categorical"
 
         # -- Option 1: categorical color palette
@@ -413,7 +419,9 @@ class _RelationalPlotter(object):
             var_type = self._semantic_type(data)
 
             # Override depending on the type of the sizes argument
-            if isinstance(sizes, (dict, list)):
+            if norm is not None:
+                var_type = "numeric"
+            elif isinstance(sizes, (dict, list)):
                 var_type = "categorical"
 
             if var_type == "categorical":
@@ -478,6 +486,11 @@ class _RelationalPlotter(object):
                 sizes = dict(zip(levels, widths))
                 # sizes = {l: min_width + norm(n) * (max_width - min_width)
                 #          for l, n in zip(levels, numbers)}
+
+            if var_type == "categorical":
+                # Don't keep a reference to the norm, which will avoid
+                # downstream  code from switching to numerical interpretation
+                norm = None
 
         self.sizes = sizes
         self.size_type = var_type
