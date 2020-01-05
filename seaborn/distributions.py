@@ -18,7 +18,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support,  remove_na
+from .utils import iqr, _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 

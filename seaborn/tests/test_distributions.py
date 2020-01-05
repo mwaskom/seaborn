@@ -9,12 +9,7 @@ import numpy.testing as npt
 
 from .. import distributions as dist
 
-try:
-    import statsmodels.nonparametric.api
-    assert statsmodels.nonparametric.api
-    _no_statsmodels = False
-except ImportError:
-    _no_statsmodels = True
+_no_statsmodels = not dist._has_statsmodels
 
 
 class TestDistPlot(object):
@@ -178,6 +173,9 @@ class TestKDE(object):
 
     @pytest.mark.parametrize("cumulative", [True, False])
     def test_kdeplot_with_nans(self, cumulative):
+
+        if cumulative and _no_statsmodels:
+            pytest.skip("no statsmodels")
 
         x_missing = np.append(self.x, [np.nan, np.nan])
 
