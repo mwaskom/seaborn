@@ -19,7 +19,10 @@ class TestDistPlot(object):
 
     def test_hist_bins(self):
 
-        fd_edges = np.histogram_bin_edges(self.x, "fd")
+        try:
+            fd_edges = np.histogram_bin_edges(self.x, "fd")
+        except AttributeError:
+            pytest.skip("Requires numpy >= 1.15")
         ax = dist.distplot(self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
