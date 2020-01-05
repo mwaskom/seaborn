@@ -18,7 +18,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support
+from .utils import iqr, _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
@@ -173,10 +173,13 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if axlabel is not None:
             label_ax = True
 
-    # Make a a 1-d array
-    a = np.asarray(a)
+    # Make a a 1-d float array
+    a = np.asarray(a, np.float)
     if a.ndim > 1:
         a = a.squeeze()
+
+    # Drop null values from array
+    a = remove_na(a)
 
     # Decide if the hist is normed
     norm_hist = norm_hist or kde or (fit is not None)
@@ -275,6 +278,9 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     # Sort out the clipping
     if clip is None:
         clip = (-np.inf, np.inf)
+
+    # Preprocess the data
+    data = remove_na(data)
 
     # Calculate the KDE
 

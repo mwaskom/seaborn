@@ -62,4 +62,6 @@ Bug fixes and adaptations
 
 - Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.
 
+- Improved robustness to missing values in distribution plots.
+
 - Made it possible to specify the location of the :class:`FacetGrid` legend using matplotlib keyword arguments.
