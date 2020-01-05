@@ -2621,6 +2621,14 @@ class TestCatPlot(CategoricalFixture):
             nt.assert_equal(l1.get_color(), l2.get_color())
         plt.close("all")
 
+    def test_ax_kwarg_removal(self):
+
+        f, ax = plt.subplots()
+        with pytest.warns(UserWarning):
+            g = cat.catplot("g", "y", data=self.df, ax=ax)
+        assert len(ax.collections) == 0
+        assert len(g.ax.collections) > 0
+
     def test_factorplot(self):
 
         with pytest.warns(UserWarning):

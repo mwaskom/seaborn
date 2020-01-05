@@ -3711,6 +3711,13 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     else:
         x_, y_ = x, y
 
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = ("catplot is a figure-level function and does not accept "
+               "target axes. You may wish to try {}".format(kind + "plot"))
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
+
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
     p = _CategoricalPlotter()

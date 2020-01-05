@@ -2,6 +2,7 @@ from __future__ import division
 from itertools import product
 from textwrap import dedent
 from distutils.version import LooseVersion
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -1604,6 +1605,13 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     else:
         err = "Plot kind {} not recognized".format(kind)
         raise ValueError(err)
+
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = ("relplot is a figure-level function and does not accept "
+               "target axes. You may wish to try {}".format(kind + "plot"))
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
 
     # Use the full dataset to establish how to draw the semantics
     p = plotter(

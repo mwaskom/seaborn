@@ -1738,3 +1738,11 @@ class TestRelPlotter(TestRelationalPlotter):
         lines = g._legend.get_lines()[1:]  # Chop off title dummy
         for line, color in zip(lines, palette):
             assert line.get_color() == color
+
+    def test_ax_kwarg_removal(self, long_df):
+
+        f, ax = plt.subplots()
+        with pytest.warns(UserWarning):
+            g = rel.relplot("x", "y", data=long_df, ax=ax)
+        assert len(ax.collections) == 0
+        assert len(g.ax.collections) > 0
