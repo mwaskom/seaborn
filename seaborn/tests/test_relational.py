@@ -1709,8 +1709,20 @@ class TestRelPlotter(TestRelationalPlotter):
     def test_relplot_stringy_numerics(self, long_df):
 
         long_df["x_str"] = long_df["x"].astype(str)
+
         g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
-        assert g._legend.texts[0].get_text() == "x_str"
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert np.array_equal(xys, long_df[["x", "y"]])
+
+        g = rel.relplot(x="x", y="y", size="x_str", data=long_df)
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert np.array_equal(xys, long_df[["x", "y"]])
 
     def test_relplot_legend(self, long_df):
 
