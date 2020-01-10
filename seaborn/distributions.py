@@ -80,7 +80,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         This is implied if a KDE or fitted density is plotted.
     axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
-        from a.namel if False, do not set a label.
+        from a.name if False, do not set a label.
     label : string, optional
         Legend label for the relevant component of the plot.
     ax : matplotlib axis, optional
