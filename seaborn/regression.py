@@ -1018,8 +1018,8 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
     See Also
     --------
     regplot : Plot a simple linear regression model.
-    jointplot (with kind="resid"): Draw a residplot with univariate
-                                   marginal distrbutions.
+    jointplot : Draw a :func:`residplot` with univariate marginal distributions
+                (when used with ``kind="resid"``).
 
     """
     plotter = _RegressionPlotter(x, y, data, ci=None,

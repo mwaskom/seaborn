@@ -2219,7 +2219,7 @@ _categorical_docs = dict(
                 glyphs.\
     """),
     catplot=dedent("""\
-    catplot : Combine a categorical plot with a class:`FacetGrid`.\
+    catplot : Combine a categorical plot with a :class:`FacetGrid`.\
     """),
     boxenplot=dedent("""\
     boxenplot : An enhanced boxplot for larger datasets.\
@@ -2298,6 +2298,7 @@ boxplot.__doc__ = dedent("""\
     {violinplot}
     {stripplot}
     {swarmplot}
+    {catplot}
 
     Examples
     --------
@@ -2368,7 +2369,7 @@ boxplot.__doc__ = dedent("""\
         >>> ax = sns.boxplot(x="day", y="total_bill", data=tips)
         >>> ax = sns.swarmplot(x="day", y="total_bill", data=tips, color=".25")
 
-    Use :func:`catplot` to combine a :func:`pointplot` and a
+    Use :func:`catplot` to combine a :func:`boxplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
     variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
@@ -2476,6 +2477,7 @@ violinplot.__doc__ = dedent("""\
     {boxplot}
     {stripplot}
     {swarmplot}
+    {catplot}
 
     Examples
     --------
@@ -2696,6 +2698,7 @@ boxenplot.__doc__ = dedent("""\
     --------
     {violinplot}
     {boxplot}
+    {catplot}
 
     Examples
     --------
@@ -2842,6 +2845,9 @@ stripplot.__doc__ = dedent("""\
         of the points.
     {linewidth}
     {ax_in}
+    kwargs : key, value mappings
+        Other keyword arguments are passed through to ``plt.scatter`` at draw
+        time.
 
     Returns
     -------
@@ -2852,6 +2858,7 @@ stripplot.__doc__ = dedent("""\
     {swarmplot}
     {boxplot}
     {violinplot}
+    {catplot}
 
     Examples
     --------
@@ -3508,7 +3515,7 @@ pointplot.__doc__ = dedent("""\
 
         >>> ax = sns.pointplot(x="day", y="tip", data=tips, capsize=.2)
 
-    Use :func:`catplot` to combine a :func:`barplot` and a
+    Use :func:`catplot` to combine a :func:`pointplot` and a
     :class:`FacetGrid`. This allows grouping within additional categorical
     variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
     directly, as it ensures synchronization of variable order across facets:
@@ -3777,7 +3784,8 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
 
 catplot.__doc__ = dedent("""\
-    Figure-level interface for drawing categorical plots onto a FacetGrid.
+    Figure-level interface for drawing categorical plots onto a
+    :class:`FacetGrid`.
 
     This function provides access to several axes-level functions that
     show the relationship between a numerical and one or more categorical
