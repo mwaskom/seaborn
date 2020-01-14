@@ -19,6 +19,7 @@ New features
 
 - Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
 
+
 Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

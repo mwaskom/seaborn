@@ -18,4 +18,5 @@ from .widgets import *
 from .colors import xkcd_rgb, crayons
 from . import cm
 
+
 __version__ = "0.9.1.dev0"

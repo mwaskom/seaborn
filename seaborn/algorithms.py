@@ -7,6 +7,9 @@ from .external.six import string_types
 from .external.six.moves import range
 
 
+_rng = np.random.RandomState()
+
+
 def bootstrap(*args, **kwargs):
     """Resample one or more arrays with replacement and store aggregate values.
 
@@ -57,7 +60,10 @@ def bootstrap(*args, **kwargs):
         func_kwargs = dict(axis=axis)
 
     # Initialize the resampler
-    rs = np.random.RandomState(random_seed)
+    if random_seed is None:
+        rs = _rng
+    else:
+        rs = np.random.RandomState(random_seed)
 
     # Coerce to arrays
     args = list(map(np.asarray, args))

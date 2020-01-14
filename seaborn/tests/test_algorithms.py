@@ -76,6 +76,20 @@ def test_bootstrap_random_seed(random):
     assert_array_equal(boots1, boots2)
 
 
+def test_bootstrap_internal_random_state(random):
+    """Test that bootstrapping uses the internal random state."""
+    data = np.random.randn(50)
+    orig_rng = algo._rng
+    try:
+        algo._rng = np.random.RandomState(100)
+        boots1 = algo.bootstrap(data)
+        algo._rng = np.random.RandomState(100)
+        boots2 = algo.bootstrap(data)
+        assert_array_equal(boots1, boots2)
+    finally:
+        algo._rng = orig_rng
+
+
 def test_smooth_bootstrap(random):
     """Test smooth bootstrap."""
     x = np.random.randn(15)
