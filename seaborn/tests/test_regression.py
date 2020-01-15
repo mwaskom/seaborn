@@ -256,6 +256,18 @@ class TestRegressionPlotter(object):
         _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         nt.assert_is(boots_smod, None)
 
+    def test_regress_bootstrap_seed(self):
+
+        seed = 200
+        p1 = lm._RegressionPlotter("x", "y", data=self.df,
+                                   n_boot=self.n_boot, seed=seed)
+        p2 = lm._RegressionPlotter("x", "y", data=self.df,
+                                   n_boot=self.n_boot, seed=seed)
+
+        _, boots1 = p1.fit_fast(self.grid)
+        _, boots2 = p2.fit_fast(self.grid)
+        npt.assert_array_equal(boots1, boots2)
+
     def test_numeric_bins(self):
 
         p = lm._RegressionPlotter(self.df.x, self.df.y)
@@ -314,15 +326,14 @@ class TestRegressionPlotter(object):
 
     def test_estimate_cis(self):
 
-        # set known good seed to avoid the test stochastically failing
-        np.random.seed(123)
+        seed = 123
 
         p = lm._RegressionPlotter(self.df.d, self.df.y,
-                                  x_estimator=np.mean, ci=95)
+                                  x_estimator=np.mean, ci=95, seed=seed)
         _, _, ci_big = p.estimate_data
 
         p = lm._RegressionPlotter(self.df.d, self.df.y,
-                                  x_estimator=np.mean, ci=50)
+                                  x_estimator=np.mean, ci=50, seed=seed)
         _, _, ci_wee = p.estimate_data
         npt.assert_array_less(np.diff(ci_wee), np.diff(ci_big))
 
@@ -334,14 +345,14 @@ class TestRegressionPlotter(object):
     def test_estimate_units(self):
 
         # Seed the RNG locally
-        np.random.seed(345)
+        seed = 345
 
         p = lm._RegressionPlotter("x", "y", data=self.df,
-                                  units="s", x_bins=3)
+                                  units="s", seed=seed, x_bins=3)
         _, _, ci_big = p.estimate_data
         ci_big = np.diff(ci_big, axis=1)
 
-        p = lm._RegressionPlotter("x", "y", data=self.df, x_bins=3)
+        p = lm._RegressionPlotter("x", "y", data=self.df, seed=seed, x_bins=3)
         _, _, ci_wee = p.estimate_data
         ci_wee = np.diff(ci_wee, axis=1)
 
