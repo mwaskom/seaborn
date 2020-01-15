@@ -33,10 +33,10 @@ before_install:
   - conda config --add channels conda-forge
   # Pinned deps aren't happy when conda>4.6.14
   - if [[ "$DEPS" == "PINNED" ]]; then
-      conda update -q conda=4.6.14
+      conda update -q conda=4.6.14;
     else
-      conda update -q conda
-  fi
+      conda update -q conda;
+    fi
   - conda config --set channel_priority false
   # Workaround py2.7/conda4.8 tqdm absence 
   - if [[ "$PYTHON" == "2.7" ]]; then pip install tqdm; fi
