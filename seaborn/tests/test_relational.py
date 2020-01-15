@@ -906,6 +906,11 @@ class TestLinePlotter(TestRelationalPlotter):
         assert cis.values == pytest.approx(y_cis.values, 4)
         assert list(cis.columns) == ["low", "high"]
 
+        p.seed = 0
+        _, _, ci1 = p.aggregate(y, x)
+        _, _, ci2 = p.aggregate(y, x)
+        assert np.array_equal(ci1, ci2)
+
         y_std = y.groupby(x).std()
         y_cis = pd.DataFrame(dict(low=y_mean - y_std,
                                   high=y_mean + y_std),

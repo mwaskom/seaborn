@@ -695,7 +695,7 @@ class _LinePlotter(_RelationalPlotter):
                  palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_norm=None,
                  dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
+                 units=None, estimator=None, ci=None, n_boot=None, seed=None,
                  sort=True, err_style=None, err_kws=None, legend=None):
 
         plot_data = self.establish_variables(
@@ -714,6 +714,7 @@ class _LinePlotter(_RelationalPlotter):
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
+        self.seed = seed
         self.sort = sort
         self.err_style = err_style
         self.err_kws = {} if err_kws is None else err_kws
@@ -725,6 +726,7 @@ class _LinePlotter(_RelationalPlotter):
         func = self.estimator
         ci = self.ci
         n_boot = self.n_boot
+        seed = self.seed
 
         # Define a "null" CI for when we only have one value
         null_ci = pd.Series(index=["low", "high"], dtype=np.float)
@@ -735,7 +737,7 @@ class _LinePlotter(_RelationalPlotter):
             if len(vals) == 1:
                 return null_ci
 
-            boots = bootstrap(vals, func=func, n_boot=n_boot)
+            boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
@@ -1085,6 +1087,10 @@ _relational_docs = dict(
     n_boot : int, optional
         Number of bootstraps to use for computing the confidence interval.\
     """),
+    seed=dedent("""\
+    seed : int, numpy.random.Generator, or numpy.random.RandomState, optional
+        Seed or random number generator for reproducible bootstrapping.\
+    """),
     legend=dedent("""\
     legend : "brief", "full", or False, optional
         How to draw the legend. If "brief", numeric ``hue`` and ``size``
@@ -1114,7 +1120,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_norm=None,
              sizes=None, size_order=None, size_norm=None,
              dashes=True, markers=None, style_order=None,
-             units=None, estimator="mean", ci=95, n_boot=1000,
+             units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
              sort=True, err_style="band", err_kws=None,
              legend="brief", ax=None, **kwargs):
 
@@ -1123,7 +1129,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
-        units=units, estimator=estimator, ci=ci, n_boot=n_boot,
+        units=units, estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
@@ -1180,6 +1186,7 @@ lineplot.__doc__ = dedent("""\
     {estimator}
     {ci}
     {n_boot}
+    {seed}
     sort : boolean, optional
         If True, the data will be sorted by the x and y variables, otherwise
         lines will connect points in the order they appear in the dataset.
