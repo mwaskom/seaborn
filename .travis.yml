@@ -43,6 +43,8 @@ install:
   - source activate testenv
   - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
   - conda install --file deps.txt
+  # TODO address broken conda-forge package for v45
+  - if [ $PYTHON == "2.7" ]; then conda install setuptools=44; fi
   - pip install .
 
 
