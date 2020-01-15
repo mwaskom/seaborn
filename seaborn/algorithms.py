@@ -132,7 +132,7 @@ def _smooth_bootstrap(args, n_boot, func, func_kwargs):
 
 
 def _handle_random_seed(seed=None):
-    """Given a seed in many formats, return a random number generator.
+    """Given a seed in one of many formats, return a random number generator.
 
     Generalizes across the numpy 1.17 changes, preferring newer functionality.
 
