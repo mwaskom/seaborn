@@ -1470,7 +1470,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
             width = self.width
         return width
 
-    def estimate_statistic(self, estimator, ci, n_boot):
+    def estimate_statistic(self, estimator, ci, n_boot, seed):
 
         if self.hue_names is None:
             statistic = []
@@ -1518,7 +1518,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                         boots = bootstrap(stat_data, func=estimator,
                                           n_boot=n_boot,
-                                          units=unit_data)
+                                          units=unit_data,
+                                          seed=seed)
                         confint.append(utils.ci(boots, ci))
 
             # Option 2: we are grouping by a hue layer
@@ -1568,7 +1569,8 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                             boots = bootstrap(stat_data, func=estimator,
                                               n_boot=n_boot,
-                                              units=unit_data)
+                                              units=unit_data,
+                                              seed=seed)
                             confint[i].append(utils.ci(boots, ci))
 
         # Save the resulting values for plotting
@@ -1608,14 +1610,14 @@ class _BarPlotter(_CategoricalStatPlotter):
     """Show point estimates and confidence intervals with bars."""
 
     def __init__(self, x, y, hue, data, order, hue_order,
-                 estimator, ci, n_boot, units,
+                 estimator, ci, n_boot, units, seed,
                  orient, color, palette, saturation, errcolor,
                  errwidth, capsize, dodge):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, saturation)
-        self.estimate_statistic(estimator, ci, n_boot)
+        self.estimate_statistic(estimator, ci, n_boot, seed)
 
         self.dodge = dodge
 
@@ -1679,14 +1681,14 @@ class _PointPlotter(_CategoricalStatPlotter):
 
     """Show point estimates and confidence intervals with (joined) points."""
     def __init__(self, x, y, hue, data, order, hue_order,
-                 estimator, ci, n_boot, units,
+                 estimator, ci, n_boot, units, seed,
                  markers, linestyles, dodge, join, scale,
                  orient, color, palette, errwidth=None, capsize=None):
         """Initialize the plotter."""
         self.establish_variables(x, y, hue, data, orient,
                                  order, hue_order, units)
         self.establish_colors(color, palette, 1)
-        self.estimate_statistic(estimator, ci, n_boot)
+        self.estimate_statistic(estimator, ci, n_boot, seed)
 
         # Override the default palette for single-color plots
         if hue is None and color is None and palette is None:
@@ -2136,7 +2138,9 @@ _categorical_docs = dict(
         intervals.
     units : name of variable in ``data`` or vector data, optional
         Identifier of sampling units, which will be used to perform a
-        multilevel bootstrap and account for repeated measures design.\
+        multilevel bootstrap and account for repeated measures design.
+    seed : int, numpy.random.Generator, or numpy.random.RandomState, optional
+        Seed or random number generator for reproducible bootstrapping.\
     """),
     orient=dedent("""\
     orient : "v" | "h", optional
@@ -3146,13 +3150,13 @@ swarmplot.__doc__ = dedent("""\
 
 
 def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            estimator=np.mean, ci=95, n_boot=1000, units=None,
+            estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
             orient=None, color=None, palette=None, saturation=.75,
             errcolor=".26", errwidth=None, capsize=None, dodge=True,
             ax=None, **kwargs):
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
-                          estimator, ci, n_boot, units,
+                          estimator, ci, n_boot, units, seed,
                           orient, color, palette, saturation,
                           errcolor, errwidth, capsize, dodge)
 
@@ -3332,13 +3336,13 @@ barplot.__doc__ = dedent("""\
 
 
 def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              estimator=np.mean, ci=95, n_boot=1000, units=None,
+              estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
               markers="o", linestyles="-", dodge=False, join=True, scale=1,
               orient=None, color=None, palette=None, errwidth=None,
               capsize=None, ax=None, **kwargs):
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
-                            estimator, ci, n_boot, units,
+                            estimator, ci, n_boot, units, seed,
                             markers, linestyles, dodge, join, scale,
                             orient, color, palette, errwidth, capsize)
 
@@ -3540,6 +3544,7 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
     ci = None
     n_boot = 0
     units = None
+    seed = None
     errcolor = None
     errwidth = None
     capsize = None
@@ -3556,7 +3561,7 @@ def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
         raise TypeError("Must pass values for either `x` or `y`")
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
-                          estimator, ci, n_boot, units,
+                          estimator, ci, n_boot, units, seed,
                           orient, color, palette, saturation,
                           errcolor, errwidth, capsize, dodge)
 
@@ -3686,7 +3691,7 @@ def factorplot(*args, **kwargs):
 
 def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
             col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
-            units=None, order=None, hue_order=None, row_order=None,
+            units=None, seed=None, order=None, hue_order=None, row_order=None,
             col_order=None, kind="strip", height=5, aspect=1,
             orient=None, color=None, palette=None,
             legend=True, legend_out=True, sharex=True, sharey=True,
@@ -3760,7 +3765,7 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
 
     if kind in ["bar", "point"]:
         plot_kws.update(
-            estimator=estimator, ci=ci, n_boot=n_boot, units=units,
+            estimator=estimator, ci=ci, n_boot=n_boot, units=units, seed=seed,
             )
 
     # Initialize the facets

@@ -462,11 +462,11 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         p = cat._CategoricalStatPlotter()
         p.establish_variables("g", "y", data=self.df)
-        p.estimate_statistic(np.mean, None, 100)
+        p.estimate_statistic(np.mean, None, 100, None)
         npt.assert_array_equal(p.confint, np.array([]))
 
         p.establish_variables("g", "y", "h", data=self.df)
-        p.estimate_statistic(np.mean, None, 100)
+        p.estimate_statistic(np.mean, None, 100, None)
         npt.assert_array_equal(p.confint, np.array([[], [], []]))
 
     def test_single_layer_stats(self):
@@ -477,7 +477,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
 
         nt.assert_equal(p.statistic.shape, (3,))
         nt.assert_equal(p.confint.shape, (3, 2))
@@ -504,11 +504,11 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y[u == "y"] += 3
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
         stat1, ci1 = p.statistic, p.confint
 
         p.establish_variables(g, y, units=u)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
         stat2, ci2 = p.statistic, p.confint
 
         npt.assert_array_equal(stat1, stat2)
@@ -524,7 +524,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, order=list("abdc"))
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
 
         nt.assert_equal(p.statistic.shape, (4,))
         nt.assert_equal(p.confint.shape, (4, 2))
@@ -548,7 +548,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 50000)
+        p.estimate_statistic(np.mean, 95, 50000, None)
 
         nt.assert_equal(p.statistic.shape, (3, 2))
         nt.assert_equal(p.confint.shape, (3, 2, 2))
@@ -564,6 +564,22 @@ class TestCategoricalStatPlotter(CategoricalFixture):
                 ci_want = mean - half_ci, mean + half_ci
                 npt.assert_array_almost_equal(ci_want, ci, 2)
 
+    def test_bootstrap_seed(self):
+
+        p = cat._CategoricalStatPlotter()
+
+        g = pd.Series(np.repeat(list("abc"), 100))
+        h = pd.Series(np.tile(list("xy"), 150))
+        y = pd.Series(np.random.RandomState(0).randn(300))
+
+        p.establish_variables(g, y, h)
+        p.estimate_statistic(np.mean, 95, 1000, 0)
+        confint_1 = p.confint
+        p.estimate_statistic(np.mean, 95, 1000, 0)
+        confint_2 = p.confint
+
+        npt.assert_array_equal(confint_1, confint_2)
+
     def test_nested_stats_with_units(self):
 
         p = cat._CategoricalStatPlotter()
@@ -576,11 +592,11 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y[u == "k"] += 3
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
         stat1, ci1 = p.statistic, p.confint
 
         p.establish_variables(g, y, h, units=u)
-        p.estimate_statistic(np.mean, 95, 10000)
+        p.estimate_statistic(np.mean, 95, 10000, None)
         stat2, ci2 = p.statistic, p.confint
 
         npt.assert_array_equal(stat1, stat2)
@@ -599,7 +615,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.establish_variables(g, y, h,
                               order=list("abdc"),
                               hue_order=list("zyx"))
-        p.estimate_statistic(np.mean, 95, 50000)
+        p.estimate_statistic(np.mean, 95, 50000, None)
 
         nt.assert_equal(p.statistic.shape, (4, 3))
         nt.assert_equal(p.confint.shape, (4, 3, 2))
@@ -626,7 +642,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y)
-        p.estimate_statistic(np.mean, "sd", None)
+        p.estimate_statistic(np.mean, "sd", None, None)
 
         nt.assert_equal(p.statistic.shape, (3,))
         nt.assert_equal(p.confint.shape, (3, 2))
@@ -649,7 +665,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         y = pd.Series(np.random.RandomState(0).randn(300))
 
         p.establish_variables(g, y, h)
-        p.estimate_statistic(np.mean, "sd", None)
+        p.estimate_statistic(np.mean, "sd", None, None)
 
         nt.assert_equal(p.statistic.shape, (3, 2))
         nt.assert_equal(p.confint.shape, (3, 2, 2))
@@ -1921,12 +1937,14 @@ class TestSwarmPlotter(CategoricalFixture):
 
 class TestBarPlotter(CategoricalFixture):
 
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       estimator=np.mean, ci=95, n_boot=100, units=None,
-                       order=None, hue_order=None,
-                       orient=None, color=None, palette=None,
-                       saturation=.75, errcolor=".26", errwidth=None,
-                       capsize=None, dodge=True)
+    default_kws = dict(
+        x=None, y=None, hue=None, data=None,
+        estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
+        order=None, hue_order=None,
+        orient=None, color=None, palette=None,
+        saturation=.75, errcolor=".26", errwidth=None,
+        capsize=None, dodge=True
+    )
 
     def test_nested_width(self):
 
@@ -2192,12 +2210,14 @@ class TestBarPlotter(CategoricalFixture):
 
 class TestPointPlotter(CategoricalFixture):
 
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       estimator=np.mean, ci=95, n_boot=100, units=None,
-                       order=None, hue_order=None,
-                       markers="o", linestyles="-", dodge=0,
-                       join=True, scale=1,
-                       orient=None, color=None, palette=None)
+    default_kws = dict(
+        x=None, y=None, hue=None, data=None,
+        estimator=np.mean, ci=95, n_boot=100, units=None, seed=None,
+        order=None, hue_order=None,
+        markers="o", linestyles="-", dodge=0,
+        join=True, scale=1,
+        orient=None, color=None, palette=None,
+    )
 
     def test_different_defualt_colors(self):
 
