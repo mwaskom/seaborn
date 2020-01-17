@@ -751,10 +751,10 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
 
 
 class ClusterGrid(Grid):
+
     def __init__(self, data, pivot_kws=None, z_score=None, standard_scale=None,
                  figsize=None, row_colors=None, col_colors=None, mask=None,
-                 expected_size_dendrogram=1.0,
-                 expected_size_colors=0.25):
+                 dendrogram_ratio=None, colors_ratio=None, cbar_pos=None):
         """Grid object for organizing clustered heatmap input on to axes"""
 
         if isinstance(data, pd.DataFrame):
@@ -767,13 +767,7 @@ class ClusterGrid(Grid):
 
         self.mask = _matrix_mask(self.data2d, mask)
 
-        if figsize is None:
-            width, height = 10, 10
-            figsize = (width, height)
         self.fig = plt.figure(figsize=figsize)
-
-        self.expected_size_dendrogram = expected_size_dendrogram
-        self.expected_size_side_colors = expected_size_colors
 
         self.row_colors, self.row_color_labels = \
             self._preprocess_colors(data, row_colors, axis=0)
@@ -781,21 +775,19 @@ class ClusterGrid(Grid):
             self._preprocess_colors(data, col_colors, axis=1)
 
         width_ratios = self.dim_ratios(self.row_colors,
-                                       figsize=figsize,
-                                       axis=0)
-
+                                       dendrogram_ratio, colors_ratio)
         height_ratios = self.dim_ratios(self.col_colors,
-                                        figsize=figsize,
-                                        axis=1)
-        nrows = 3 if self.col_colors is None else 4
-        ncols = 3 if self.row_colors is None else 4
+                                        dendrogram_ratio, colors_ratio)
+        nrows = 2 if self.col_colors is None else 3
+        ncols = 2 if self.row_colors is None else 3
 
-        self.gs = gridspec.GridSpec(nrows, ncols, wspace=0.01, hspace=0.01,
+        self.gs = gridspec.GridSpec(nrows, ncols, wspace=.01, hspace=.01,
+                                    left=.01, right=.99, bottom=.01, top=.99,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
-        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[nrows - 1, 0:2])
-        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0:2, ncols - 1])
+        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[-1, 0])
+        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0, -1])
         self.ax_row_dendrogram.set_axis_off()
         self.ax_col_dendrogram.set_axis_off()
 
@@ -804,21 +796,13 @@ class ClusterGrid(Grid):
 
         if self.row_colors is not None:
             self.ax_row_colors = self.fig.add_subplot(
-                self.gs[nrows - 1, ncols - 2])
+                self.gs[-1, 1])
         if self.col_colors is not None:
             self.ax_col_colors = self.fig.add_subplot(
-                self.gs[nrows - 2, ncols - 1])
+                self.gs[1, -1])
 
-        self.ax_heatmap = self.fig.add_subplot(self.gs[nrows - 1, ncols - 1])
-
-        # colorbar for scale to left corner
-
-        if self.col_colors is not None:
-            cbar_max = 3
-        else:
-            cbar_max = 2
-
-        self.cax = self.fig.add_subplot(self.gs[0:cbar_max, 0])
+        self.ax_heatmap = self.fig.add_subplot(self.gs[-1, -1])
+        self.cax = self.fig.add_axes(cbar_pos)
 
         self.dendrogram_row = None
         self.dendrogram_col = None
@@ -941,43 +925,18 @@ class ClusterGrid(Grid):
         else:
             return standardized.T
 
-    def dim_ratios(self, side_colors, axis, figsize):
-        """Get the proportions of the figure taken up by each axes
-        """
-        figdim = figsize[axis]
+    def dim_ratios(self, colors, dendrogram_ratio, colors_ratio):
+        """Get the proportions of the figure taken up by each axes."""
+        ratios = [dendrogram_ratio]
 
-        expected_size_for_dendrogram = self.expected_size_dendrogram  # Inches
-        expected_size_for_side_colors = self.expected_size_side_colors  # Inches
-
-        # Get resizing proportion of this figure for the dendrogram and
-        # colorbar, so only the heatmap gets bigger but the dendrogram stays
-        # the same size.
-        dendrogram = expected_size_for_dendrogram / figdim
-
-        # add the colorbar
-        colorbar_width = .8 * dendrogram
-        colorbar_height = .2 * dendrogram
-        if axis == 1:
-            ratios = [colorbar_width, colorbar_height]
-        else:
-            ratios = [colorbar_height, colorbar_width]
-
-        if side_colors is not None:
-            colors_shape = np.asarray(side_colors).shape
-            # This happens when a series or a list is passed
-            if len(colors_shape) <= 2:
-                n_colors = 1
-            # And this happens when a dataframe is passed, the first dimension is number of colors
+        if colors is not None:
+            # Colors are encoded as rgb, so ther is an extra dimention
+            if np.ndim(colors) > 2:
+                n_colors = len(colors)
             else:
-                n_colors = colors_shape[0]
+                n_colors = 1
 
-            # Multiply side colors size by the number of colors
-            expected_size_for_side_colors = n_colors * expected_size_for_side_colors
-
-            side_colors_ratio = expected_size_for_side_colors / figdim
-
-            # Add room for the colors
-            ratios += [side_colors_ratio]
+            ratios += [n_colors * colors_ratio]
 
         # Add the ratio for the heatmap itself
         ratios.append(1 - sum(ratios))
@@ -1174,12 +1133,12 @@ class ClusterGrid(Grid):
 
 
 def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
-               z_score=None, standard_scale=None, figsize=None, cbar_kws=None,
-               row_cluster=True, col_cluster=True,
+               z_score=None, standard_scale=None, figsize=(10, 10),
+               cbar_kws=None, row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None,
-               expected_size_dendrogram=1.0,
-               expected_size_colors=0.25,
+               dendrogram_ratio=.2, colors_ratio=0.03,
+               cbar_pos=(0, .8, .05, .2),
                **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
@@ -1211,8 +1170,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         Either 0 (rows) or 1 (columns). Whether or not to standardize that
         dimension, meaning for each row or column, subtract the minimum and
         divide each by its maximum.
-    figsize: tuple of two ints, optional
-        Size of the figure to create.
+    figsize: (width, height), optional
+        Overall size of the figure.
     cbar_kws : dict, optional
         Keyword arguments to pass to ``cbar_kws`` in ``heatmap``, e.g. to
         add a label to the colorbar.
@@ -1233,10 +1192,10 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
         visualizing, not for calculating.
-    expected_size_dendrogram: float, optional
-        Size (in the same units as figsize) of the dendrogram size
-    expected_size_colors: float, optional
-        Size (in the same units as figsize) of size for row/col columns, if passed.
+    dendrogram_ratio: float, optional
+        Size (in the same units as figsize) of the dendrograms
+    colors_ratio: float, optional
+        Size (in the same units as figsize) of size for row/col colors.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``sns.heatmap``
 
@@ -1332,8 +1291,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale,
-                          mask=mask, expected_size_dendrogram=expected_size_dendrogram,
-                          expected_size_colors=expected_size_colors)
+                          mask=mask, dendrogram_ratio=dendrogram_ratio,
+                          colors_ratio=colors_ratio, cbar_pos=cbar_pos)
 
     return plotter.plot(metric=metric, method=method,
                         colorbar_kws=cbar_kws,

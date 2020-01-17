@@ -664,7 +664,9 @@ class TestClustermap(object):
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
 
     default_kws = dict(pivot_kws=None, z_score=None, standard_scale=None,
-                       figsize=None, row_colors=None, col_colors=None)
+                       figsize=(10, 10), row_colors=None, col_colors=None,
+                       dendrogram_ratio=.2, colors_ratio=.03,
+                       cbar_pos=(0, .8, .05, .2))
 
     default_plot_kws = dict(metric='euclidean', method='average',
                             colorbar_kws=None,
