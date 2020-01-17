@@ -1206,5 +1206,9 @@ class TestClustermap(object):
     def test_clustermap_annotation(self):
 
         g = mat.clustermap(self.df_norm, annot=True, fmt=".1f")
-        for val, text in zip(self.x_norm.flat, g.ax_heatmap.texts):
+        for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
+            assert text.get_text() == "{:.1f}".format(val)
+
+        g = mat.clustermap(self.df_norm, annot=self.df_norm, fmt=".1f")
+        for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
             assert text.get_text() == "{:.1f}".format(val)

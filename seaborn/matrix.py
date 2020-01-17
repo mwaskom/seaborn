@@ -168,22 +168,17 @@ class _HeatMapper(object):
                                     cmap, center, robust)
 
         # Sort out the annotations
-        if annot is None:
+        if annot is None or annot is False:
             annot = False
             annot_data = None
-        elif isinstance(annot, bool):
-            if annot:
+        else:
+            if isinstance(annot, bool):
                 annot_data = plot_data
             else:
-                annot_data = None
-        else:
-            try:
-                annot_data = annot.values
-            except AttributeError:
-                annot_data = annot
-            if annot.shape != plot_data.shape:
-                raise ValueError('Data supplied to "annot" must be the same '
-                                 'shape as the data to plot.')
+                annot_data = np.asarray(annot)
+                if annot_data.shape != plot_data.shape:
+                    err = "`data` and `annot` must have same shape."
+                    raise ValueError(err)
             annot = True
 
         # Save other attributes to the object
@@ -365,7 +360,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
     annot : bool or rectangular dataset, optional
         If True, write the data value in each cell. If an array-like with the
         same shape as ``data``, then use this to annotate the heatmap instead
-        of the raw data.
+        of the data. Note that DataFrames will match on position, not index.
     fmt : string, optional
         String formatting code to use when adding annotations.
     annot_kws : dict of key, value mappings, optional
@@ -1116,27 +1111,19 @@ class ClusterGrid(Grid):
         except (TypeError, IndexError):
             pass
 
-        # Sort out the annotations
+        # Reorganize the annotations to match the heatmap
         annot = kws.pop("annot", None)
         if annot is None:
             pass
-        elif isinstance(annot, bool):
-            if annot:
+        else:
+            if isinstance(annot, bool):
                 annot_data = self.data2d
             else:
-                annot_data = None
-        else:
-            try:
-                annot_data = annot.values
-            except AttributeError:
-                annot_data = annot
-            if annot.shape != self.data2d.shape:
-                raise ValueError('Data supplied to "annot" must be the same '
-                                 'shape as the data to plot.')
-            annot_data = annot_data[np.array(yind)[:, None],
-                                    np.array(xind)]
-            annot = True
-        if annot:
+                annot_data = np.asarray(annot)
+                if annot_data.shape != self.data2d.shape:
+                    err = "`data` and `annot` must have same shape."
+                    raise ValueError(err)
+                annot_data = annot_data[yind][:, xind]
             annot = annot_data
 
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.ax_cbar,
