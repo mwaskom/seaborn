@@ -21,6 +21,8 @@ New features
 
 - Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer ``numpy.random.Generator`` or the older ``numpy.random.RandomState``).
 
+- Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default scaling with different figure sizes has been improved.
+
 Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
