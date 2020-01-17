@@ -1202,3 +1202,9 @@ class TestClustermap(object):
         g1_shape = g1.ax_heatmap.get_position().get_points()
         g2_shape = g2.ax_heatmap.get_position().get_points()
         assert np.array_equal(g1_shape, g2_shape)
+
+    def test_clustermap_annotation(self):
+
+        g = mat.clustermap(self.df_norm, annot=True, fmt=".1f")
+        for val, text in zip(self.x_norm.flat, g.ax_heatmap.texts):
+            assert text.get_text() == "{:.1f}".format(val)
