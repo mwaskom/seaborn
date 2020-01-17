@@ -592,9 +592,6 @@ class _DendrogramPlotter(object):
         self.independent_coord = self.dendrogram['icoord']
 
     def _calculate_linkage_scipy(self):
-        if np.product(self.shape) >= 10000:
-            UserWarning('This will be slow... (gentle suggestion: '
-                        '"pip install fastcluster")')
         linkage = hierarchy.linkage(self.array, method=self.method,
                                     metric=self.metric)
         return linkage
@@ -618,10 +615,16 @@ class _DendrogramPlotter(object):
 
     @property
     def calculated_linkage(self):
+
         try:
             return self._calculate_linkage_fastcluster()
         except ImportError:
-            return self._calculate_linkage_scipy()
+            if np.product(self.shape) >= 10000:
+                msg = ("Clustering large matrix with scipy. Installing
+                       "`fastcluster` may give better performance.")
+                warnings.warn(msg)
+
+        return self._calculate_linkage_scipy()
 
     def calculate_dendrogram(self):
         """Calculates a dendrogram based on the linkage matrix
