@@ -1164,6 +1164,21 @@ class TestClustermap(object):
         assert (g2.ax_col_colors.get_position().height
                 > g1.ax_col_colors.get_position().height)
 
+        kws1 = self.default_kws.copy()
+        kws1.update(dendrogram_ratio=(.2, .2))
+
+        kws2 = kws1.copy()
+        kws2.update(dendrogram_ratio=(.2, .3))
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_row_dendrogram.get_position().width
+                == g1.ax_row_dendrogram.get_position().width)
+
+        assert (g2.ax_col_dendrogram.get_position().height
+                > g1.ax_col_dendrogram.get_position().height)
+
     def test_cbar_pos(self):
 
         kws = self.default_kws.copy()

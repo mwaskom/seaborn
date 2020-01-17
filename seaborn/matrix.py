@@ -774,10 +774,23 @@ class ClusterGrid(Grid):
         self.col_colors, self.col_color_labels = \
             self._preprocess_colors(data, col_colors, axis=1)
 
+        try:
+            row_dendrogram_ratio, col_dendrogram_ratio = dendrogram_ratio
+        except TypeError:
+            row_dendrogram_ratio = col_dendrogram_ratio = dendrogram_ratio
+
+        try:
+            row_colors_ratio, col_colors_ratio = colors_ratio
+        except TypeError:
+            row_colors_ratio = col_colors_ratio = colors_ratio
+
         width_ratios = self.dim_ratios(self.row_colors,
-                                       dendrogram_ratio, colors_ratio)
+                                       row_dendrogram_ratio,
+                                       row_colors_ratio)
         height_ratios = self.dim_ratios(self.col_colors,
-                                        dendrogram_ratio, colors_ratio)
+                                        col_dendrogram_ratio,
+                                        col_colors_ratio)
+
         nrows = 2 if self.col_colors is None else 3
         ncols = 2 if self.row_colors is None else 3
 
@@ -1193,8 +1206,9 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
         visualizing, not for calculating.
-    {dendrogram,colors}_ratio: float, optional
-        Proportion of the figure size devoted to the two marginal elements.
+    {dendrogram,colors}_ratio: float, or pair of floats, optional
+        Proportion of the figure size devoted to the two marginal elements. If
+        a pair is given, they correspond to (row, col) ratios.
     cbar_pos : (left, bottom, width, height), optional
         Position of the colorbar axes in the figure.
     kwargs : other keyword arguments
@@ -1250,12 +1264,15 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
 
         >>> g = sns.clustermap(iris, cmap="mako", robust=True)
 
-    Change the size of the figure:
+    Change the size and layout of the figure:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(iris, figsize=(6, 7))
+        >>> g = sns.clustermap(iris, row_cluster=False,
+        ...                    figsize=(7, 5),
+        ...                    dendrogram_ratio=(.1 .2),
+        ...                    cbar_pos=(0, .2, .03, .4))
 
     Plot one of the axes in its original organization:
 
