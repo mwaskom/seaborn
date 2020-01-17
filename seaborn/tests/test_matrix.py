@@ -1189,3 +1189,16 @@ class TestClustermap(object):
         assert pytest.approx(tuple(pos.p0)) == kws["cbar_pos"][:2]
         assert pytest.approx(pos.width) == kws["cbar_pos"][2]
         assert pytest.approx(pos.height) == kws["cbar_pos"][3]
+
+    def test_square_warning(self):
+
+        kws = self.default_kws.copy()
+        g1 = mat.clustermap(self.df_norm, **kws)
+
+        with pytest.warns(UserWarning):
+            kws["square"] = True
+            g2 = mat.clustermap(self.df_norm, **kws)
+
+        g1_shape = g1.ax_heatmap.get_position().get_points()
+        g2_shape = g2.ax_heatmap.get_position().get_points()
+        assert np.array_equal(g1_shape, g2_shape)

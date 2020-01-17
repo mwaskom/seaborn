@@ -1,6 +1,7 @@
 """Functions to visualize matrices of data."""
 from __future__ import division
 import itertools
+import warnings
 
 import matplotlib as mpl
 from matplotlib.collections import LineCollection
@@ -1129,6 +1130,14 @@ class ClusterGrid(Grid):
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
              row_linkage, col_linkage, **kws):
+
+        # heatmap square=True sets the aspect ratio on the axes, but that is
+        # not compatible with the multi-axes layout of clustergrid
+        if kws.get("square", False):
+            msg = "``square=True`` ignored in clustermap"
+            warnings.warn(msg)
+            kws.pop("square")
+
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage)
