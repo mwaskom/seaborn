@@ -802,7 +802,8 @@ class ClusterGrid(Grid):
                 self.gs[1, -1])
 
         self.ax_heatmap = self.fig.add_subplot(self.gs[-1, -1])
-        self.cax = self.fig.add_axes(cbar_pos)
+        self.ax_cbar = self.fig.add_axes(cbar_pos)
+        self.cax = self.ax_cbar  # Backwards compatability
 
         self.dendrogram_row = None
         self.dendrogram_col = None
@@ -1101,7 +1102,7 @@ class ClusterGrid(Grid):
         except (TypeError, IndexError):
             pass
 
-        heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.cax,
+        heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.ax_cbar,
                 cbar_kws=colorbar_kws, mask=self.mask,
                 xticklabels=xtl, yticklabels=ytl, **kws)
 
