@@ -1118,3 +1118,59 @@ class TestClustermap(object):
         ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
         nt.assert_equal(xtl_actual, [])
         nt.assert_equal(ytl_actual, [])
+
+    def test_size_ratios(self):
+
+        # The way that wspace/hspace work in GridSpec, the mapping from input
+        # ratio to actual width/height of each axes is complicated, so this
+        # test is just going to assert comparative relationships
+
+        kws1 = self.default_kws.copy()
+        kws1.update(dendrogram_ratio=.2, colors_ratio=.03,
+                    col_colors=self.col_colors, row_colors=self.row_colors)
+
+        kws2 = kws1.copy()
+        kws2.update(dendrogram_ratio=.3, colors_ratio=.05)
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_col_dendrogram.get_position().height
+                > g1.ax_col_dendrogram.get_position().height)
+
+        assert (g2.ax_col_colors.get_position().height
+                > g1.ax_col_colors.get_position().height)
+
+        assert (g2.ax_heatmap.get_position().height
+                < g1.ax_heatmap.get_position().height)
+
+        assert (g2.ax_row_dendrogram.get_position().width
+                > g1.ax_row_dendrogram.get_position().width)
+
+        assert (g2.ax_row_colors.get_position().width
+                > g1.ax_row_colors.get_position().width)
+
+        assert (g2.ax_heatmap.get_position().width
+                < g1.ax_heatmap.get_position().width)
+
+        kws1 = self.default_kws.copy()
+        kws1.update(col_colors=self.col_colors)
+        kws2 = kws1.copy()
+        kws2.update(col_colors=[self.col_colors, self.col_colors])
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_col_colors.get_position().height
+                > g1.ax_col_colors.get_position().height)
+
+    def test_cbar_pos(self):
+
+        kws = self.default_kws.copy()
+        kws["cbar_pos"] = (.2, .1, .4, .3)
+
+        g = mat.clustermap(self.df_norm, **kws)
+        pos = g.ax_cbar.get_position()
+        assert pytest.approx(tuple(pos.p0)) == kws["cbar_pos"][:2]
+        assert pytest.approx(pos.width) == kws["cbar_pos"][2]
+        assert pytest.approx(pos.height) == kws["cbar_pos"][3]

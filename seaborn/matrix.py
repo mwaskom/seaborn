@@ -1139,7 +1139,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None,
                dendrogram_ratio=.2, colors_ratio=0.03,
-               cbar_pos=(0, .8, .05, .2),
+               cbar_pos=(.02, .8, .05, .18),
                **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
@@ -1193,10 +1193,10 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
         visualizing, not for calculating.
-    dendrogram_ratio: float, optional
-        Size (in the same units as figsize) of the dendrograms
-    colors_ratio: float, optional
-        Size (in the same units as figsize) of size for row/col colors.
+    {dendrogram,colors}_ratio: float, optional
+        Proportion of the figure size devoted to the two marginal elements.
+    cbar_pos : (left, bottom, width, height), optional
+        Position of the colorbar axes in the figure.
     kwargs : other keyword arguments
         All other keyword arguments are passed to ``sns.heatmap``
 
