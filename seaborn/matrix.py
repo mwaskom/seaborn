@@ -620,7 +620,7 @@ class _DendrogramPlotter(object):
             return self._calculate_linkage_fastcluster()
         except ImportError:
             if np.product(self.shape) >= 10000:
-                msg = ("Clustering large matrix with scipy. Installing
+                msg = ("Clustering large matrix with scipy. Installing "
                        "`fastcluster` may give better performance.")
                 warnings.warn(msg)
 
@@ -1293,7 +1293,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
 
         >>> g = sns.clustermap(iris, row_cluster=False,
         ...                    figsize=(7, 5),
-        ...                    dendrogram_ratio=(.1 .2),
+        ...                    dendrogram_ratio=(.1, .2),
         ...                    cbar_pos=(0, .2, .03, .4))
 
     Plot one of the axes in its original organization:
