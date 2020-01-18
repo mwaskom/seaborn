@@ -1629,38 +1629,12 @@ class JointGrid(object):
 
             >>> import numpy as np
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter, color="m", edgecolor="white")
+            >>> g = g.plot_joint(sns.scatterplot, color="m")
             >>> _ = g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
             ...                      bins=np.arange(0, 60, 5))
             >>> _ = g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
             ...                      orientation="horizontal",
             ...                      bins=np.arange(0, 12, 1))
-
-        Add an annotation with a statistic summarizing the bivariate
-        relationship:
-
-        .. plot::
-            :context: close-figs
-
-            >>> from scipy import stats
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter,
-            ...                  color="g", s=40, edgecolor="white")
-            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
-            >>> g = g.annotate(stats.pearsonr)
-
-        Use a custom function and formatting for the annotation
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter,
-            ...                  color="g", s=40, edgecolor="white")
-            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
-            >>> rsquare = lambda a, b: stats.pearsonr(a, b)[0] ** 2
-            >>> g = g.annotate(rsquare, template="{stat}: {val:.2f}",
-            ...                stat="$R^2$", loc="upper left", fontsize=12)
 
         Remove the space between the joint and marginal axes:
 
