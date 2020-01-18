@@ -64,6 +64,8 @@ Bug fixes and adaptations
 
 - Avoided errors from stricter type checking in upcomming ``numpy`` changes.
 
+- Avoided error/warning in :func:`lineplot` when plotting categoricals with empty levels.
+
 - Standardized the output format of custom color palette functions.
 
 - Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.
