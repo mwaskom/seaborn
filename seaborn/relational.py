@@ -734,7 +734,7 @@ class _LinePlotter(_RelationalPlotter):
         # Function to bootstrap in the context of a pandas group by
         def bootstrapped_cis(vals):
 
-            if len(vals) == 1:
+            if len(vals) <= 1:
                 return null_ci
 
             boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)

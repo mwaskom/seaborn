@@ -1,5 +1,6 @@
 from __future__ import division
 from itertools import product
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -938,6 +939,17 @@ class TestLinePlotter(TestRelationalPlotter):
         x, y = pd.Series([1, 1, 2]), pd.Series([2, 3, 4])
         index, est, cis = p.aggregate(y, x)
         assert cis.loc[2].isnull().all()
+
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
+        p.estimator = "mean"
+        p.n_boot = 100
+        p.ci = 95
+        x = pd.Categorical(["a", "b", "a", "b"], ["a", "b", "c"])
+        y = pd.Series([1, 1, 2, 2])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            index, est, cis = p.aggregate(y, x)
+            assert cis.loc[["c"]].isnull().all().all()
 
     def test_legend_data(self, long_df):
 
