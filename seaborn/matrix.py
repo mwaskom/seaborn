@@ -1181,8 +1181,8 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                cbar_kws=None, row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None,
-               dendrogram_ratio=.2, colors_ratio=0.03, tree_kws=None,
-               cbar_pos=(.02, .8, .05, .18),
+               dendrogram_ratio=.2, colors_ratio=0.03,
+               cbar_pos=(.02, .8, .05, .18), tree_kws=None,
                **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
