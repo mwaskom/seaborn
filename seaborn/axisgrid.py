@@ -1241,9 +1241,9 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris)
-            >>> g = g.map_upper(plt.scatter)
-            >>> g = g.map_lower(sns.kdeplot, cmap="Blues_d")
-            >>> g = g.map_diag(sns.kdeplot, lw=3, legend=False)
+            >>> g = g.map_upper(sns.scatterplot)
+            >>> g = g.map_lower(sns.kdeplot, colors="C0")
+            >>> g = g.map_diag(sns.kdeplot, lw=2)
 
         Use different colors and markers for each categorical level:
 
