@@ -582,7 +582,7 @@ class FacetGrid(Grid):
             >>> def qqplot(x, y, **kwargs):
             ...     _, xr = stats.probplot(x, fit=False)
             ...     _, yr = stats.probplot(y, fit=False)
-            ...     plt.scatter(xr, yr, **kwargs)
+            ...     sns.scatterplot(xr, yr, **kwargs)
             >>> g = sns.FacetGrid(tips, col="smoker", hue="sex")
             >>> g = (g.map(qqplot, "total_bill", "tip", **kws)
             ...       .add_legend())
@@ -1252,7 +1252,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
             ...                  hue_kws={"marker": ["o", "s", "D"]})
-            >>> g = g.map(plt.scatter, linewidths=1, edgecolor="w", s=40)
+            >>> g = g.map(sns.scatterplot, linewidths=1, edgecolor="w", s=40)
             >>> g = g.add_legend()
 
         """
@@ -1619,7 +1619,7 @@ class JointGrid(object):
 
             >>> import matplotlib.pyplot as plt
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter, color=".5", edgecolor="white")
+            >>> g = g.plot_joint(sns.scatterplot, color=".5")
             >>> g = g.plot_marginals(sns.distplot, kde=False, color=".5")
 
         Draw the two marginal plots separately:
