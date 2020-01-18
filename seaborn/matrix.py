@@ -528,8 +528,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 class _DendrogramPlotter(object):
     """Object for drawing tree of similarities between data rows/columns"""
 
-    def __init__(self, data, linkage, metric, method, axis, label, rotate,
-                 tree_kws):
+    def __init__(self, data, linkage, metric, method, axis, label, rotate):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
@@ -556,9 +555,6 @@ class _DendrogramPlotter(object):
         self.axis = axis
         self.label = label
         self.rotate = rotate
-
-        tree_kws.setdefault("linewidths", .5)
-        tree_kws.setdefault("colors", ".2")
 
         if linkage is None:
             self.linkage = self.calculated_linkage
@@ -660,12 +656,16 @@ class _DendrogramPlotter(object):
             Axes object upon which the dendrogram is plotted
 
         """
+        tree_kws = {} if tree_kws is None else tree_kws.copy()
+        tree_kws.setdefault("linewidths", .5)
+        tree_kws.setdefault("colors", ".2")
+
         if self.rotate and self.axis == 0:
             coords = zip(self.dependent_coord, self.independent_coord)
         else:
             coords = zip(self.independent_coord, self.dependent_coord)
         lines = LineCollection([list(zip(x, y)) for x, y in coords],
-                               **self.tree_kws)
+                               **tree_kws)
 
         ax.add_collection(lines)
         number_of_leaves = len(self.reordered_ind)
@@ -745,11 +745,11 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
     """
     plotter = _DendrogramPlotter(data, linkage=linkage, axis=axis,
                                  metric=metric, method=method,
-                                 label=label, rotate=rotate,
-                                 tree_kws=tree_kws)
+                                 label=label, rotate=rotate)
     if ax is None:
         ax = plt.gca()
-    return plotter.plot(ax=ax)
+
+    return plotter.plot(ax=ax, tree_kws=tree_kws)
 
 
 class ClusterGrid(Grid):
