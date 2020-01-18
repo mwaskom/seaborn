@@ -2110,12 +2110,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
             "'data' must be pandas DataFrame object, not: {typefound}".format(
                 typefound=type(data)))
 
-    if plot_kws is None:
-        plot_kws = {}
-    if diag_kws is None:
-        diag_kws = {}
-    if grid_kws is None:
-        grid_kws = {}
+    plot_kws = {} if plot_kws is None else plot_kws.copy()
+    diag_kws = {} if diag_kws is None else diag_kws.copy()
+    grid_kws = {} if grid_kws is None else grid_kws.copy()
 
     # Set up the PairGrid
     grid_kws.setdefault("diag_sharey", diag_kind == "hist")
@@ -2302,13 +2299,10 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
         warnings.warn(msg, UserWarning)
 
     # Set up empty default kwarg dicts
-    if joint_kws is None:
-        joint_kws = {}
+    joint_kws = {} if joint_kws is None else joint_kws.copy()
     joint_kws.update(kwargs)
-    if marginal_kws is None:
-        marginal_kws = {}
-    if annot_kws is None:
-        annot_kws = {}
+    marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
+    annot_kws = {} if annot_kws is None else annot_kws.copy()
 
     # Make a colormap based off the plot color
     if color is None:

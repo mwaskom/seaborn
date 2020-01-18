@@ -1600,3 +1600,12 @@ class TestJointPlot(object):
 
         with nt.assert_raises(ValueError):
             ag.jointplot("x", "y", self.data, kind="not_a_kind")
+
+    def test_leaky_dict(self):
+        # Validate input dicts are unchanged by jointplot plotting function
+
+        for kwarg in ("joint_kws", "marginal_kws", "annot_kws"):
+            for kind in ("hex", "kde", "resid", "reg", "scatter"):
+                empty_dict={}
+                g = ag.jointplot("x", "y", self.data, kind=kind, **{kwarg:empty_dict})
+                assert empty_dict == {}

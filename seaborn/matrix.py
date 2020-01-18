@@ -189,9 +189,9 @@ class _HeatMapper(object):
         self.annot_data = annot_data
 
         self.fmt = fmt
-        self.annot_kws = {} if annot_kws is None else annot_kws
+        self.annot_kws = {} if annot_kws is None else annot_kws.copy()
         self.cbar = cbar
-        self.cbar_kws = {} if cbar_kws is None else cbar_kws
+        self.cbar_kws = {} if cbar_kws is None else cbar_kws.copy()
         self.cbar_kws.setdefault('ticks', mpl.ticker.MaxNLocator(6))
 
     def _determine_cmap_params(self, plot_data, vmin, vmax,

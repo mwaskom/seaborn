@@ -185,14 +185,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
     norm_hist = norm_hist or kde or (fit is not None)
 
     # Handle dictionary defaults
-    if hist_kws is None:
-        hist_kws = dict()
-    if kde_kws is None:
-        kde_kws = dict()
-    if rug_kws is None:
-        rug_kws = dict()
-    if fit_kws is None:
-        fit_kws = dict()
+    hist_kws = {} if hist_kws is None else hist_kws.copy()
+    kde_kws = {} if kde_kws is None else kde_kws.copy()
+    rug_kws = {} if rug_kws is None else rug_kws.copy()
+    fit_kws = {} if fit_kws is None else fit_kws.copy()
 
     # Get the color from the current color cycle
     if color is None:
