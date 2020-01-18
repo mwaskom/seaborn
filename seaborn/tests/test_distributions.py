@@ -240,6 +240,12 @@ class TestKDE(object):
         high = ax.collections[-1].get_facecolor().mean()
         assert low > high
 
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, colors=[rgb])
+        for level in ax.collections:
+            level_rgb = tuple(level.get_facecolor().squeeze()[:3])
+            assert level_rgb == rgb
+
 
 class TestRugPlot(object):
 
