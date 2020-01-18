@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012-2019 Michael Waskom
+# Copyright (C) 2012-2020 Michael Waskom
 
 DESCRIPTION = "seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
