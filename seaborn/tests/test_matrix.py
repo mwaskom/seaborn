@@ -671,7 +671,8 @@ class TestClustermap(object):
     default_plot_kws = dict(metric='euclidean', method='average',
                             colorbar_kws=None,
                             row_cluster=True, col_cluster=True,
-                            row_linkage=None, col_linkage=None)
+                            row_linkage=None, col_linkage=None,
+                            tree_kws=None)
 
     row_colors = color_palette('Set2', df_norm.shape[0])
     col_colors = color_palette('Dark2', df_norm.shape[1])
@@ -1212,3 +1213,11 @@ class TestClustermap(object):
         g = mat.clustermap(self.df_norm, annot=self.df_norm, fmt=".1f")
         for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
             assert text.get_text() == "{:.1f}".format(val)
+
+    def test_tree_kws(self):
+
+        rgb = (1, .5, .2)
+        g = mat.clustermap(self.df_norm, tree_kws=dict(color=rgb))
+        for ax in [g.ax_col_dendrogram, g.ax_row_dendrogram]:
+            tree, = ax.collections
+            assert tuple(tree.get_color().squeeze())[:3] == rgb

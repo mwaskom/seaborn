@@ -23,6 +23,8 @@ New features
 
 - Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default scaling with different figure sizes has been improved.
 
+- Added the ``tree_kws`` parameter to :func:`clustermap` to control the properties of the lines in the dendrogram.
+
 Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
