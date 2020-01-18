@@ -528,7 +528,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
 class _DendrogramPlotter(object):
     """Object for drawing tree of similarities between data rows/columns"""
 
-    def __init__(self, data, linkage, metric, method, axis, label, rotate):
+    def __init__(self, data, linkage, metric, method, axis, label, rotate,
+                 tree_kws):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
@@ -555,6 +556,9 @@ class _DendrogramPlotter(object):
         self.axis = axis
         self.label = label
         self.rotate = rotate
+
+        tree_kws.setdefault("linewidths", .5)
+        tree_kws.setdefault("colors", ".2")
 
         if linkage is None:
             self.linkage = self.calculated_linkage
@@ -647,7 +651,7 @@ class _DendrogramPlotter(object):
         """Indices of the matrix, reordered by the dendrogram"""
         return self.dendrogram['leaves']
 
-    def plot(self, ax):
+    def plot(self, ax, tree_kws):
         """Plots a dendrogram of the similarities between data on the axes
 
         Parameters
@@ -656,17 +660,12 @@ class _DendrogramPlotter(object):
             Axes object upon which the dendrogram is plotted
 
         """
-        line_kwargs = dict(linewidths=.5, colors='k')
         if self.rotate and self.axis == 0:
-            lines = LineCollection([list(zip(x, y))
-                                    for x, y in zip(self.dependent_coord,
-                                                    self.independent_coord)],
-                                   **line_kwargs)
+            coords = zip(self.dependent_coord, self.independent_coord)
         else:
-            lines = LineCollection([list(zip(x, y))
-                                    for x, y in zip(self.independent_coord,
-                                                    self.dependent_coord)],
-                                   **line_kwargs)
+            coords = zip(self.independent_coord, self.dependent_coord)
+        lines = LineCollection([list(zip(x, y)) for x, y in coords],
+                               **self.tree_kws)
 
         ax.add_collection(lines)
         number_of_leaves = len(self.reordered_ind)
@@ -706,7 +705,7 @@ class _DendrogramPlotter(object):
 
 
 def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
-               method='average', rotate=False, ax=None):
+               method='average', rotate=False, tree_kws=None, ax=None):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -727,6 +726,9 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
     rotate : bool, optional
         When plotting the matrix, whether to rotate it 90 degrees
         counter-clockwise, so the leaves face right
+    tree_kws : dict, optional
+        Keyword arguments for the ``matplotlib.collections.LineCollection``
+        that is used for plotting the lines of the dendrogram tree.
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis
 
@@ -743,7 +745,8 @@ def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
     """
     plotter = _DendrogramPlotter(data, linkage=linkage, axis=axis,
                                  metric=metric, method=method,
-                                 label=label, rotate=rotate)
+                                 label=label, rotate=rotate,
+                                 tree_kws=tree_kws)
     if ax is None:
         ax = plt.gca()
     return plotter.plot(ax=ax)
@@ -1013,12 +1016,14 @@ class ClusterGrid(Grid):
         self.fig.savefig(*args, **kwargs)
 
     def plot_dendrograms(self, row_cluster, col_cluster, metric, method,
-                         row_linkage, col_linkage):
+                         row_linkage, col_linkage, tree_kws):
         # Plot the row dendrogram
         if row_cluster:
             self.dendrogram_row = dendrogram(
                 self.data2d, metric=metric, method=method, label=False, axis=0,
-                ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage)
+                ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage,
+                tree_kws=tree_kws
+            )
         else:
             self.ax_row_dendrogram.set_xticks([])
             self.ax_row_dendrogram.set_yticks([])
@@ -1026,7 +1031,9 @@ class ClusterGrid(Grid):
         if col_cluster:
             self.dendrogram_col = dendrogram(
                 self.data2d, metric=metric, method=method, label=False,
-                axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage)
+                axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage,
+                tree_kws=tree_kws
+            )
         else:
             self.ax_col_dendrogram.set_xticks([])
             self.ax_col_dendrogram.set_yticks([])
@@ -1142,7 +1149,7 @@ class ClusterGrid(Grid):
             plt.setp(ytl, rotation=ytl_rot)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
-             row_linkage, col_linkage, **kws):
+             row_linkage, col_linkage, tree_kws, **kws):
 
         # heatmap square=True sets the aspect ratio on the axes, but that is
         # not compatible with the multi-axes layout of clustergrid
@@ -1153,7 +1160,8 @@ class ClusterGrid(Grid):
 
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
-                              row_linkage=row_linkage, col_linkage=col_linkage)
+                              row_linkage=row_linkage, col_linkage=col_linkage,
+                              tree_kws=tree_kws)
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
@@ -1173,7 +1181,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                cbar_kws=None, row_cluster=True, col_cluster=True,
                row_linkage=None, col_linkage=None,
                row_colors=None, col_colors=None, mask=None,
-               dendrogram_ratio=.2, colors_ratio=0.03,
+               dendrogram_ratio=.2, colors_ratio=0.03, tree_kws=None,
                cbar_pos=(.02, .8, .05, .18),
                **kwargs):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
@@ -1233,8 +1241,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         a pair is given, they correspond to (row, col) ratios.
     cbar_pos : (left, bottom, width, height), optional
         Position of the colorbar axes in the figure.
+    tree_kws : dict, optional
+        Keyword arguments for the ``matplotlib.collections.LineCollection``
+        that is used for plotting the lines of the dendrogram tree.
     kwargs : other keyword arguments
-        All other keyword arguments are passed to ``sns.heatmap``
+        All other keyword arguments are passed to :func:`heatmap`
 
     Returns
     -------
@@ -1338,4 +1349,4 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
                         colorbar_kws=cbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        **kwargs)
+                        tree_kws=tree_kws, **kwargs)
