@@ -1066,7 +1066,7 @@ def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
     ax.axhline(0, ls=":", c=".2")
 
     # Draw the scatterplot
-    scatter_kws = {} if scatter_kws is None else scatter_kws
-    line_kws = {} if line_kws is None else line_kws
+    scatter_kws = {} if scatter_kws is None else scatter_kws.copy()
+    line_kws = {} if line_kws is None else line_kws.copy()
     plotter.plot(ax, scatter_kws, line_kws)
     return ax
