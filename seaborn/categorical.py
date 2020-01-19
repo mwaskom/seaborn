@@ -1245,7 +1245,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         left_first = True
         for x_j, y_j in neighbors:
             dy = y_i - y_j
-            dx = np.sqrt(d ** 2 - dy ** 2) * 1.05
+            dx = np.sqrt(max(d ** 2 - dy ** 2, 0)) * 1.05
             cl, cr = (x_j - dx, y_i), (x_j + dx, y_i)
             if left_first:
                 new_candidates = [cl, cr]
