@@ -957,7 +957,7 @@ class TestLinePlotter(TestRelationalPlotter):
 
         p = rel._LinePlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
-        handles, _ = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
         assert handles == []
 
         # --
@@ -1336,7 +1336,7 @@ class TestScatterPlotter(TestRelationalPlotter):
 
         p = rel._ScatterPlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
-        handles, _ = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
         assert handles == []
 
         # --
