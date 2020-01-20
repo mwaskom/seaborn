@@ -1,6 +1,6 @@
 
 v0.9.1 (Unreleased)
-------------------
+-------------------
 
 This is a minor release, comprising mostly bug fixes and compatibility with dependency updates.
 
