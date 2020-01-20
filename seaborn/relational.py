@@ -1369,6 +1369,14 @@ lineplot.__doc__ = dedent("""\
         >>> x, y = np.random.randn(2, 5000).cumsum(axis=1)
         >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
+    Use :func:`relplot` to combine :func:`lineplot` and :class:`FacetGrid`:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                  col="region", hue="event", style="event",
+        ...                  kind="line", data=fmri)
 
     """).format(**_relational_docs)
 
@@ -1598,6 +1606,16 @@ scatterplot.__doc__ = dedent("""\
         >>> data = np.random.randn(100, 4).cumsum(axis=0)
         >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
         >>> ax = sns.scatterplot(data=wide_df)
+
+    Use :func:`relplot` to combine :func:`scatterplot` and :class:`FacetGrid`:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip",
+        ...                  col="time", hue="day", style="day",
+        ...                  kind="scatter", data=tips)
+
 
     """).format(**_relational_docs)
 
