@@ -114,8 +114,8 @@ To see the code or report a bug, please visit the `github repository
 
 * Relational: :ref:`API <relational_api>` | :doc:`Tutorial <tutorial/relational>`
 * Categorical: :ref:`API <categorical_api>` | :doc:`Tutorial <tutorial/categorical>`
-* Distributions: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
-* Regressions: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
+* Distribution: :ref:`API <distribution_api>` | :doc:`Tutorial <tutorial/distributions>`
+* Regression: :ref:`API <regression_api>` | :doc:`Tutorial <tutorial/regression>`
 * Multiples: :ref:`API <grid_api>` | :doc:`Tutorial <tutorial/axis_grids>`
 * Style: :ref:`API <style_api>` | :doc:`Tutorial <tutorial/aesthetics>`
 * Color: :ref:`API <palette_api>` | :doc:`Tutorial <tutorial/color_palettes>`

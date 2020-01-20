@@ -69,8 +69,12 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         An object with `fit` method, returning a tuple that can be passed to a
         `pdf` method a positional arguments following a grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries, optional
-        Keyword arguments for underlying plotting functions.
+    hist_kws : dict, optional
+        Keyword arguments for :meth:`matplotlib.axes.Axes.hist`.
+    kde_kws : dict, optional
+        Keyword arguments for :func:`kdeplot`.
+    rug_kws : dict, optional
+        Keyword arguments for :func:`rugplot`.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
     vertical : bool, optional

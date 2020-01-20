@@ -1195,12 +1195,13 @@ lineplot.__doc__ = dedent("""\
         or discrete error bars.
     err_kws : dict of keyword arguments
         Additional paramters to control the aesthetics of the error bars. The
-        kwargs are passed either to ``ax.fill_between`` or ``ax.errorbar``,
-        depending on the ``err_style``.
+        kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
+        or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
     {legend}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed down to ``plt.plot`` at draw time.
+        Other keyword arguments are passed down to
+        :meth:`matplotlib.axes.Axes.plot`.
 
     Returns
     -------
@@ -1354,7 +1355,7 @@ lineplot.__doc__ = dedent("""\
         >>> list_data = [wide_df.loc[:"2005", "a"], wide_df.loc["2003":, "b"]]
         >>> ax = sns.lineplot(data=list_data)
 
-    Plot a single Series, pass kwargs to ``plt.plot``:
+    Plot a single Series, pass kwargs to :meth:`matplotlib.axes.Axes.plot`:
 
     .. plot::
         :context: close-figs
@@ -1370,6 +1371,9 @@ lineplot.__doc__ = dedent("""\
         >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
     Use :func:`relplot` to combine :func:`lineplot` and :class:`FacetGrid`:
+    This allows grouping within additional categorical variables. Using
+    :func:`relplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of the semantic mappings across facets.
 
     .. plot::
         :context: close-figs
@@ -1455,8 +1459,8 @@ scatterplot.__doc__ = dedent("""\
     {legend}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed down to ``plt.scatter`` at draw
-        time.
+        Other keyword arguments are passed down to
+        :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
@@ -1608,6 +1612,9 @@ scatterplot.__doc__ = dedent("""\
         >>> ax = sns.scatterplot(data=wide_df)
 
     Use :func:`relplot` to combine :func:`scatterplot` and :class:`FacetGrid`:
+    This allows grouping within additional categorical variables. Using
+    :func:`relplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of the semantic mappings across facets.
 
     .. plot::
         :context: close-figs
