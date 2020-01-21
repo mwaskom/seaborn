@@ -390,7 +390,8 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         Axes in which to draw the plot, otherwise use the currently-active
         Axes.
     kwargs : other keyword arguments
-        All other keyword arguments are passed to ``ax.pcolormesh``.
+        All other keyword arguments are passed to
+        :func:`matplotlib.axes.Axes.pcolormesh`.
 
     Returns
     -------
@@ -796,8 +797,9 @@ class ClusterGrid(Grid):
         nrows = 2 if self.col_colors is None else 3
         ncols = 2 if self.row_colors is None else 3
 
-        self.gs = gridspec.GridSpec(nrows, ncols, wspace=.01, hspace=.01,
-                                    left=.01, right=.99, bottom=.01, top=.99,
+        self.gs = gridspec.GridSpec(nrows, ncols,
+                                    # wspace=.01, hspace=.01,
+                                    # left=.01, right=.99, bottom=.01, top=.99,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
@@ -817,8 +819,14 @@ class ClusterGrid(Grid):
                 self.gs[1, -1])
 
         self.ax_heatmap = self.fig.add_subplot(self.gs[-1, -1])
-        self.ax_cbar = self.fig.add_axes(cbar_pos)
-        self.cax = self.ax_cbar  # Backwards compatability
+        if cbar_pos is None:
+            self.ax_cbar = self.cax = None
+        else:
+            # Initialize the colorbar axes in the gridspec so that tight_layout
+            # works. We will move it where it belongs later. This is a hack.
+            self.ax_cbar = self.fig.add_subplot(self.gs[0, 0])
+            self.cax = self.ax_cbar  # Backwards compatability
+        self.cbar_pos = cbar_pos
 
         self.dendrogram_row = None
         self.dendrogram_col = None
@@ -1136,6 +1144,8 @@ class ClusterGrid(Grid):
                 annot_data = annot_data[yind][:, xind]
             annot = annot_data
 
+        # Setting ax_cbar=None in clustermap call implies no colorbar
+        kws.setdefault("cbar", self.ax_cbar is not None)
         heatmap(self.data2d, ax=self.ax_heatmap, cbar_ax=self.ax_cbar,
                 cbar_kws=colorbar_kws, mask=self.mask,
                 xticklabels=xtl, yticklabels=ytl, annot=annot, **kws)
@@ -1147,6 +1157,18 @@ class ClusterGrid(Grid):
         if ytl_rot is not None:
             ytl = self.ax_heatmap.get_yticklabels()
             plt.setp(ytl, rotation=ytl_rot)
+
+        tight_params = dict(h_pad=.02, w_pad=.02)
+        if self.ax_cbar is None:
+            self.fig.tight_layout(**tight_params)
+        else:
+            # Turn the colorbar axes off for tight layout so that its
+            # ticks don't interfere with the rest of the plot layout.
+            # Then move it.
+            self.ax_cbar.set_axis_off()
+            self.fig.tight_layout(**tight_params)
+            self.ax_cbar.set_axis_on()
+            self.ax_cbar.set_position(self.cbar_pos)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
              row_linkage, col_linkage, tree_kws, **kws):
@@ -1241,10 +1263,11 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         Proportion of the figure size devoted to the two marginal elements. If
         a pair is given, they correspond to (row, col) ratios.
     cbar_pos : (left, bottom, width, height), optional
-        Position of the colorbar axes in the figure.
+        Position of the colorbar axes in the figure. Setting to ``None`` will
+        disable the colorbar.
     tree_kws : dict, optional
-        Keyword arguments for the ``matplotlib.collections.LineCollection``
-        that is used for plotting the lines of the dendrogram tree.
+        Parameters for the :class:`matplotlib.collections.LineCollection`
+        that is used to plot the lines of the dendrogram tree.
     kwargs : other keyword arguments
         All other keyword arguments are passed to :func:`heatmap`
 
