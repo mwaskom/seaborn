@@ -177,8 +177,8 @@ class ExampleGenerator(object):
 
         # Only actually run it if the output RST file doesn't
         # exist or it was modified less recently than the example
-        file_modified = op.getmtime(outfilename) < op.getmtime(filename)
-        if not op.exists(outfilename) or file_modified:
+        file_mtime = op.getmtime(filename)
+        if not op.exists(outfilename) or op.getmtime(outfilename) < file_mtime:
             self.exec_file()
         else:
             print("skipping {0}".format(self.filename))
