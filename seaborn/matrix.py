@@ -1300,6 +1300,33 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
         >>> species = iris.pop("species")
         >>> g = sns.clustermap(iris)
 
+    Change the size and layout of the figure:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris,
+        ...                    figsize=(7, 5),
+        ...                    row_cluster=False,
+        ...                    dendrogram_ratio=(.1, .2),
+        ...                    cbar_pos=(0, .2, .03, .4))
+
+    Add colored labels to identify observations:
+
+    .. plot::
+        :context: close-figs
+
+        >>> lut = dict(zip(species.unique(), "rbg"))
+        >>> row_colors = species.map(lut)
+        >>> g = sns.clustermap(iris, row_colors=row_colors)
+
+    Use a different colormap and adjust the limits of the color range:
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.clustermap(iris, cmap="mako", vmin=0, vmax=10)
+
     Use a different similarity metric:
 
     .. plot::
@@ -1314,39 +1341,6 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
 
         >>> g = sns.clustermap(iris, method="single")
 
-    Use a different colormap and ignore outliers in colormap limits:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(iris, cmap="mako", robust=True)
-
-    Change the size and layout of the figure:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(iris, row_cluster=False,
-        ...                    figsize=(7, 5),
-        ...                    dendrogram_ratio=(.1, .2),
-        ...                    cbar_pos=(0, .2, .03, .4))
-
-    Plot one of the axes in its original organization:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.clustermap(iris, col_cluster=False)
-
-    Add colored labels:
-
-    .. plot::
-        :context: close-figs
-
-        >>> lut = dict(zip(species.unique(), "rbg"))
-        >>> row_colors = species.map(lut)
-        >>> g = sns.clustermap(iris, row_colors=row_colors)
-
     Standardize the data within the columns:
 
     .. plot::
@@ -1359,7 +1353,7 @@ def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
     .. plot::
         :context: close-figs
 
-        >>> g = sns.clustermap(iris, z_score=0)
+        >>> g = sns.clustermap(iris, z_score=0, cmap="vlag")
 
 
     """
