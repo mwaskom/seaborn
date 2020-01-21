@@ -192,7 +192,6 @@ class _HeatMapper(object):
         self.annot_kws = {} if annot_kws is None else annot_kws.copy()
         self.cbar = cbar
         self.cbar_kws = {} if cbar_kws is None else cbar_kws.copy()
-        self.cbar_kws.setdefault('ticks', mpl.ticker.MaxNLocator(6))
 
     def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
@@ -503,6 +502,7 @@ def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
         >>> mask = np.zeros_like(corr)
         >>> mask[np.triu_indices_from(mask)] = True
         >>> with sns.axes_style("white"):
+        ...     f, ax = plt.subplots(figsize=(7, 5))
         ...     ax = sns.heatmap(corr, mask=mask, vmax=.3, square=True)
 
 
@@ -1159,6 +1159,7 @@ class ClusterGrid(Grid):
             kws.pop("square")
 
         colorbar_kws = {} if colorbar_kws is None else colorbar_kws
+
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage,
                               tree_kws=tree_kws)

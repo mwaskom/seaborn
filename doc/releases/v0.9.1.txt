@@ -1,13 +1,15 @@
 
-v0.9.1 (Unreleased)
-------------------
+v0.9.1 (January 2020)
+---------------------
 
-This is a minor release, comprising mostly bug fixes and compatibility with dependency updates.
+This is a minor release with a number of bug fixes and adaptations to changes in seaborn's dependencies. There are also a number of new features.
+
+This is the final version of seaborn that will support Python 2.7 or 3.5.
 
 New features
 ~~~~~~~~~~~~
 
-- Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid with only the lower triangle of bivariate axes.
+- Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid without the upper triangle of bivariate axes.
 
 - Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
 
@@ -19,11 +21,13 @@ New features
 
 - Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
 
-- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer ``numpy.random.Generator`` or the older ``numpy.random.RandomState``).
+- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer :class:`numpy.random.Generator` or the older :class:`numpy.random.mtrand.RandomState`).
 
 - Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default scaling with different figure sizes has been improved.
 
 - Added the ``tree_kws`` parameter to :func:`clustermap` to control the properties of the lines in the dendrogram.
+
+- Improved support for grouping observations based on pandas index information in categorical plots.
 
 Bug fixes and adaptations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,8 +56,6 @@ Bug fixes and adaptations
 
 - Fixed a bug where values would be excluded from categorical plots when only one variable was a pandas ``Series`` with a non-default index.
 
-- Improved support for grouping observations based on pandas index information in categorical plots.
-
 - Fixed a bug when using ``Series`` objects as arguments for ``x_partial`` or ``y_partial`` in :func:`regplot`.
 
 - Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
@@ -64,7 +66,7 @@ Bug fixes and adaptations
 
 - Fixed a bug when resetting the color code short-hands to the matplotlib default.
 
-- Avoided errors from stricter type checking in upcomming ``numpy`` changes.
+- Avoided errors from stricter type checking in upcoming ``numpy`` changes.
 
 - Avoided error/warning in :func:`lineplot` when plotting categoricals with empty levels.
 

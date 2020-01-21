@@ -17,9 +17,8 @@ from seaborn.external import six
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # noqa: E402
 
-from matplotlib import image
 
 if six.PY3:
     # Python 3 has no execfile
@@ -138,7 +137,7 @@ def create_thumbnail(infile, thumbfile,
                      cx=0.5, cy=0.5, border=4):
     baseout, extout = op.splitext(thumbfile)
 
-    im = image.imread(infile)
+    im = matplotlib.image.imread(infile)
     rows, cols = im.shape[:2]
     x0 = int(cx * cols - .5 * width)
     y0 = int(cy * rows - .5 * height)
@@ -178,12 +177,10 @@ class ExampleGenerator(object):
 
         # Only actually run it if the output RST file doesn't
         # exist or it was modified less recently than the example
-        if (not op.exists(outfilename)
-            or (op.getmtime(outfilename) < op.getmtime(filename))):
-
+        file_modified = op.getmtime(outfilename) < op.getmtime(filename)
+        if not op.exists(outfilename) or file_modified:
             self.exec_file()
         else:
-
             print("skipping {0}".format(self.filename))
 
     @property
@@ -326,8 +323,7 @@ def main(app):
     target_dir = op.join(app.builder.srcdir, 'examples')
     image_dir = op.join(app.builder.srcdir, 'examples/_images')
     thumb_dir = op.join(app.builder.srcdir, "example_thumbs")
-    source_dir = op.abspath(op.join(app.builder.srcdir,
-                                              '..', 'examples'))
+    source_dir = op.abspath(op.join(app.builder.srcdir, '..', 'examples'))
     if not op.exists(static_dir):
         os.makedirs(static_dir)
 
@@ -351,7 +347,7 @@ def main(app):
     contents = "\n\n"
 
     # Write individual example files
-    for filename in glob.glob(op.join(source_dir, "*.py")):
+    for filename in sorted(glob.glob(op.join(source_dir, "*.py"))):
 
         ex = ExampleGenerator(filename, target_dir)
 

@@ -1245,7 +1245,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         left_first = True
         for x_j, y_j in neighbors:
             dy = y_i - y_j
-            dx = np.sqrt(d ** 2 - dy ** 2) * 1.05
+            dx = np.sqrt(max(d ** 2 - dy ** 2, 0)) * 1.05
             cl, cr = (x_j - dx, y_i), (x_j + dx, y_i)
             if left_first:
                 new_candidates = [cl, cr]
@@ -2237,7 +2237,7 @@ _categorical_docs.update(_facet_docs)
 def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
             width=.8, dodge=True, fliersize=5, linewidth=None,
-            whis=1.5, notch=False, ax=None, **kwargs):
+            whis=1.5, ax=None, **kwargs):
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
@@ -2245,7 +2245,7 @@ def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
 
     if ax is None:
         ax = plt.gca()
-    kwargs.update(dict(whis=whis, notch=notch))
+    kwargs.update(dict(whis=whis))
 
     plotter.plot(ax, kwargs)
     return ax
@@ -2283,15 +2283,10 @@ boxplot.__doc__ = dedent("""\
         Proportion of the IQR past the low and high quartiles to extend the
         plot whiskers. Points outside this range will be identified as
         outliers.
-    notch : boolean, optional
-        Whether to "notch" the box to indicate a confidence interval for the
-        median. There are several other parameters that can control how the
-        notches are drawn; see the ``plt.boxplot`` help for more information
-        on them.
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.boxplot`` at draw
-        time.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.boxplot`.
 
     Returns
     -------
@@ -2691,8 +2686,9 @@ boxenplot.__doc__ = dedent("""\
         0.007 as a proportion of outliers. Should be in range [0, 1].
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.plot`` and
-        ``plt.scatter`` at draw time.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.plot` and
+        :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
@@ -2840,9 +2836,7 @@ stripplot.__doc__ = dedent("""\
     {color}
     {palette}
     size : float, optional
-        Diameter of the markers, in points. Although ``plt.scatter`` is used
-        to draw the points, the ``size`` argument here takes a "normal"
-        markersize and not size^2 like ``plt.scatter``.
+        Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased, optional
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
@@ -2850,8 +2844,8 @@ stripplot.__doc__ = dedent("""\
     {linewidth}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.scatter`` at draw
-        time.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
@@ -3035,9 +3029,7 @@ swarmplot.__doc__ = dedent("""\
     {color}
     {palette}
     size : float, optional
-        Diameter of the markers, in points. (Although ``plt.scatter`` is used
-        to draw the points, the ``size`` argument here takes a "normal"
-        markersize and not size^2 like ``plt.scatter``.
+        Radius of the markers, in points.
     edgecolor : matplotlib color, "gray" is special-cased, optional
         Color of the lines around each point. If you pass ``"gray"``, the
         brightness is determined by the color palette used for the body
@@ -3045,8 +3037,8 @@ swarmplot.__doc__ = dedent("""\
     {linewidth}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.scatter`` at draw
-        time.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
@@ -3208,8 +3200,8 @@ barplot.__doc__ = dedent("""\
     {dodge}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed through to ``plt.bar`` at draw
-        time.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.bar`.
 
     Returns
     -------
@@ -3310,7 +3302,7 @@ barplot.__doc__ = dedent("""\
         >>> ax = sns.barplot("size", y="total_bill", data=tips,
         ...                  color="salmon", saturation=.5)
 
-    Use ``plt.bar`` keyword arguments to further change the aesthetic:
+    Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
 
     .. plot::
         :context: close-figs
@@ -3597,7 +3589,8 @@ countplot.__doc__ = dedent("""\
     {dodge}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed to ``plt.bar``.
+        Other keyword arguments are passed through to
+        :meth:`matplotlib.axes.Axes.bar`.
 
     Returns
     -------
@@ -3642,7 +3635,7 @@ countplot.__doc__ = dedent("""\
 
         >>> ax = sns.countplot(x="who", data=titanic, palette="Set3")
 
-    Use ``plt.bar`` keyword arguments for a different look:
+    Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
 
     .. plot::
         :context: close-figs
