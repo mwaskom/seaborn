@@ -798,8 +798,6 @@ class ClusterGrid(Grid):
         ncols = 2 if self.row_colors is None else 3
 
         self.gs = gridspec.GridSpec(nrows, ncols,
-                                    # wspace=.01, hspace=.01,
-                                    # left=.01, right=.99, bottom=.01, top=.99,
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
