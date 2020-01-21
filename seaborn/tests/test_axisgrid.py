@@ -256,6 +256,18 @@ class TestFacetGrid(object):
         for label, level in zip(labels, b_levels):
             nt.assert_equal(label.get_text(), level)
 
+    def test_legend_tuples(self):
+
+        g = ag.FacetGrid(self.df, hue="a")
+        g.map(plt.plot, "x", "y")
+
+        handles, labels = g.ax.get_legend_handles_labels()
+        label_tuples = [("", l) for l in labels]
+        legend_data = dict(zip(label_tuples, handles))
+        g.add_legend(legend_data, label_tuples)
+        for entry, label in zip(g._legend.get_texts(), labels):
+            assert entry.get_text() == label
+
     def test_legend_options(self):
 
         g1 = ag.FacetGrid(self.df, hue="b")
@@ -1451,11 +1463,13 @@ class TestJointGrid(object):
         g = ag.JointGrid("x", "y", self.data)
         rp = stats.pearsonr(self.x, self.y)
 
-        g.annotate(stats.pearsonr)
+        with pytest.warns(UserWarning):
+            g.annotate(stats.pearsonr)
         annotation = g.ax_joint.legend_.texts[0].get_text()
         nt.assert_equal(annotation, "pearsonr = %.2g; p = %.2g" % rp)
 
-        g.annotate(stats.pearsonr, stat="correlation")
+        with pytest.warns(UserWarning):
+            g.annotate(stats.pearsonr, stat="correlation")
         annotation = g.ax_joint.legend_.texts[0].get_text()
         nt.assert_equal(annotation, "correlation = %.2g; p = %.2g" % rp)
 
@@ -1463,12 +1477,14 @@ class TestJointGrid(object):
             return stats.pearsonr(x, y)[0] ** 2
 
         r2 = rsquared(self.x, self.y)
-        g.annotate(rsquared)
+        with pytest.warns(UserWarning):
+            g.annotate(rsquared)
         annotation = g.ax_joint.legend_.texts[0].get_text()
         nt.assert_equal(annotation, "rsquared = %.2g" % r2)
 
         template = "{stat} = {val:.3g} (p = {p:.3g})"
-        g.annotate(stats.pearsonr, template=template)
+        with pytest.warns(UserWarning):
+            g.annotate(stats.pearsonr, template=template)
         annotation = g.ax_joint.legend_.texts[0].get_text()
         nt.assert_equal(annotation, template.format(stat="pearsonr",
                                                     val=rp[0], p=rp[1]))
@@ -1569,7 +1585,8 @@ class TestJointPlot(object):
 
     def test_annotation(self):
 
-        g = ag.jointplot("x", "y", self.data, stat_func=stats.pearsonr)
+        with pytest.warns(UserWarning):
+            g = ag.jointplot("x", "y", self.data, stat_func=stats.pearsonr)
         nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
 
         g = ag.jointplot("x", "y", self.data, stat_func=None)
@@ -1588,3 +1605,13 @@ class TestJointPlot(object):
 
         with nt.assert_raises(ValueError):
             ag.jointplot("x", "y", self.data, kind="not_a_kind")
+
+    def test_leaky_dict(self):
+        # Validate input dicts are unchanged by jointplot plotting function
+
+        for kwarg in ("joint_kws", "marginal_kws", "annot_kws"):
+            for kind in ("hex", "kde", "resid", "reg", "scatter"):
+                empty_dict = {}
+                ag.jointplot("x", "y", self.data, kind=kind,
+                             **{kwarg: empty_dict})
+                assert empty_dict == {}

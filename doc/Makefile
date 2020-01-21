@@ -47,6 +47,8 @@ clean:
 	-rm -rf tutorial/*_files/
 	-rm -rf tutorial/*.rst
 	-rm -rf generated/*
+	-rm -rf introduction_files/*
+	-rm introduction.rst
 
 tutorials:
 	make -C tutorial
@@ -166,11 +168,3 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
-
-upload:
-	rsync -azP $(BUILDDIR)/html/ mwaskom@cardinal.stanford.edu:WWW/software/seaborn
-	@echo "Uploaded to Stanford webspace"
-
-upload-dev:
-	rsync -azP $(BUILDDIR)/html/ mwaskom@cardinal.stanford.edu:WWW/software/seaborn-dev
-	@echo "Uploaded to Stanford webspace (development page)"

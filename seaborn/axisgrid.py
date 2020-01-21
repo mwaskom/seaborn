@@ -43,7 +43,8 @@ class Grid(object):
         Parameters
         ----------
         legend_data : dict, optional
-            Dictionary mapping label names to matplotlib artist handles. The
+            Dictionary mapping label names (or two-element tuples where the
+            second element is a label name) to matplotlib artist handles. The
             default reads from ``self._legend_data``.
         title : string, optional
             Title for the legend. The default reads from ``self._hue_var``.
@@ -61,7 +62,8 @@ class Grid(object):
 
         """
         # Find the data for the legend
-        legend_data = self._legend_data if legend_data is None else legend_data
+        if legend_data is None:
+            legend_data = self._legend_data
         if label_order is None:
             if self.hue_names is None:
                 label_order = list(legend_data.keys())
@@ -76,16 +78,26 @@ class Grid(object):
         except TypeError:  # labelsize is something like "large"
             title_size = mpl.rcParams["axes.labelsize"]
 
+        # Unpack nested labels from a hierarchical legend
+        labels = []
+        for entry in label_order:
+            if isinstance(entry, tuple):
+                _, label = entry
+            else:
+                label = entry
+            labels.append(label)
+
         # Set default legend kwargs
         kwargs.setdefault("scatterpoints", 1)
 
         if self._legend_out:
 
             kwargs.setdefault("frameon", False)
+            kwargs.setdefault("loc", "center right")
 
             # Draw a full-figure legend outside the grid
-            figlegend = self.fig.legend(handles, label_order, "center right",
-                                        **kwargs)
+            figlegend = self.fig.legend(handles, labels, **kwargs)
+
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
 
@@ -115,7 +127,9 @@ class Grid(object):
         else:
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
-            leg = ax.legend(handles, label_order, loc="best", **kwargs)
+            kwargs.setdefault("loc", "best")
+
+            leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})
 
         return self
@@ -225,7 +239,7 @@ class FacetGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(msg, UserWarning)
 
@@ -384,8 +398,8 @@ class FacetGrid(Grid):
         The plots it produces are often called "lattice", "trellis", or
         "small-multiple" graphics.
 
-        It can also represent levels of a third varaible with the ``hue``
-        parameter, which plots different subets of data in different colors.
+        It can also represent levels of a third variable with the ``hue``
+        parameter, which plots different subsets of data in different colors.
         This uses color to resolve elements on a third dimension, but only
         draws subsets on top of each other and will not tailor the ``hue``
         parameter for the specific visualization the way that axes-level
@@ -568,7 +582,7 @@ class FacetGrid(Grid):
             >>> def qqplot(x, y, **kwargs):
             ...     _, xr = stats.probplot(x, fit=False)
             ...     _, yr = stats.probplot(y, fit=False)
-            ...     plt.scatter(xr, yr, **kwargs)
+            ...     sns.scatterplot(xr, yr, **kwargs)
             >>> g = sns.FacetGrid(tips, col="smoker", hue="sex")
             >>> g = (g.map(qqplot, "total_bill", "tip", **kws)
             ...       .add_legend())
@@ -1089,7 +1103,7 @@ class PairGrid(Grid):
     the marginal distribution of each variable can be shown on the diagonal.
 
     It can also represent an additional level of conditionalization with the
-    ``hue`` parameter, which plots different subets of data in different
+    ``hue`` parameter, which plots different subsets of data in different
     colors. This uses color to resolve elements on a third dimension, but
     only draws subsets on top of each other and will not tailor the ``hue``
     parameter for the specific visualization the way that axes-level functions
@@ -1227,9 +1241,9 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris)
-            >>> g = g.map_upper(plt.scatter)
-            >>> g = g.map_lower(sns.kdeplot, cmap="Blues_d")
-            >>> g = g.map_diag(sns.kdeplot, lw=3, legend=False)
+            >>> g = g.map_upper(sns.scatterplot)
+            >>> g = g.map_lower(sns.kdeplot, colors="C0")
+            >>> g = g.map_diag(sns.kdeplot, lw=2)
 
         Use different colors and markers for each categorical level:
 
@@ -1238,7 +1252,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
             ...                  hue_kws={"marker": ["o", "s", "D"]})
-            >>> g = g.map(plt.scatter, linewidths=1, edgecolor="w", s=40)
+            >>> g = g.map(sns.scatterplot, linewidths=1, edgecolor="w", s=40)
             >>> g = g.add_legend()
 
         """
@@ -1246,7 +1260,7 @@ class PairGrid(Grid):
         # Handle deprecations
         if size is not None:
             height = size
-            msg = ("The `size` paramter has been renamed to `height`; "
+            msg = ("The `size` parameter has been renamed to `height`; "
                    "please update your code.")
             warnings.warn(UserWarning(msg))
 
@@ -1605,7 +1619,7 @@ class JointGrid(object):
 
             >>> import matplotlib.pyplot as plt
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter, color=".5", edgecolor="white")
+            >>> g = g.plot_joint(sns.scatterplot, color=".5")
             >>> g = g.plot_marginals(sns.distplot, kde=False, color=".5")
 
         Draw the two marginal plots separately:
@@ -1615,38 +1629,12 @@ class JointGrid(object):
 
             >>> import numpy as np
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter, color="m", edgecolor="white")
+            >>> g = g.plot_joint(sns.scatterplot, color="m")
             >>> _ = g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
             ...                      bins=np.arange(0, 60, 5))
             >>> _ = g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
             ...                      orientation="horizontal",
             ...                      bins=np.arange(0, 12, 1))
-
-        Add an annotation with a statistic summarizing the bivariate
-        relationship:
-
-        .. plot::
-            :context: close-figs
-
-            >>> from scipy import stats
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter,
-            ...                  color="g", s=40, edgecolor="white")
-            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
-            >>> g = g.annotate(stats.pearsonr)
-
-        Use a custom function and formatting for the annotation
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(plt.scatter,
-            ...                  color="g", s=40, edgecolor="white")
-            >>> g = g.plot_marginals(sns.distplot, kde=False, color="g")
-            >>> rsquare = lambda a, b: stats.pearsonr(a, b)[0] ** 2
-            >>> g = g.annotate(rsquare, template="{stat}: {val:.2f}",
-            ...                stat="$R^2$", loc="upper left", fontsize=12)
 
         Remove the space between the joint and marginal axes:
 
@@ -2096,12 +2084,9 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
             "'data' must be pandas DataFrame object, not: {typefound}".format(
                 typefound=type(data)))
 
-    if plot_kws is None:
-        plot_kws = {}
-    if diag_kws is None:
-        diag_kws = {}
-    if grid_kws is None:
-        grid_kws = {}
+    plot_kws = {} if plot_kws is None else plot_kws.copy()
+    diag_kws = {} if diag_kws is None else diag_kws.copy()
+    grid_kws = {} if grid_kws is None else grid_kws.copy()
 
     # Set up the PairGrid
     grid_kws.setdefault("diag_sharey", diag_kind == "hist")
@@ -2283,18 +2268,15 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
-        msg = ("The `size` paramter has been renamed to `height`; "
+        msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
     # Set up empty default kwarg dicts
-    if joint_kws is None:
-        joint_kws = {}
+    joint_kws = {} if joint_kws is None else joint_kws.copy()
     joint_kws.update(kwargs)
-    if marginal_kws is None:
-        marginal_kws = {}
-    if annot_kws is None:
-        annot_kws = {}
+    marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
+    annot_kws = {} if annot_kws is None else annot_kws.copy()
 
     # Make a colormap based off the plot color
     if color is None:

@@ -1,5 +1,6 @@
 from __future__ import division
 from itertools import product
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -82,7 +83,9 @@ class TestRelationalPlotter(object):
             a=np.take(list("abc"), rs.randint(0, 3, n)),
             b=np.take(list("mnop"), rs.randint(0, 4, n)),
             c=np.take(list([0, 1]), rs.randint(0, 2, n)),
+            d=np.repeat(np.datetime64('2005-02-25'), n),
             s=np.take([2, 4, 8], rs.randint(0, 3, n)),
+            f=np.take(list([0.2, 0.3]), rs.randint(0, 2, n)),
         ))
         df["s_cat"] = df["s"].astype("category")
         return df
@@ -414,7 +417,7 @@ class TestRelationalPlotter(object):
 
         p = rel._LinePlotter(data=wide_df)
         assert p.hue_levels == wide_df.columns.tolist()
-        assert p.hue_type is "categorical"
+        assert p.hue_type == "categorical"
         assert p.cmap is None
 
         # Test named palette
@@ -454,7 +457,7 @@ class TestRelationalPlotter(object):
         # Test long data
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
         assert p.hue_levels == categorical_order(long_df.a)
-        assert p.hue_type is "categorical"
+        assert p.hue_type == "categorical"
         assert p.cmap is None
 
         # Test default palette
@@ -474,20 +477,45 @@ class TestRelationalPlotter(object):
         # Test binary data
         p = rel._LinePlotter(x="x", y="y", hue="c", data=long_df)
         assert p.hue_levels == [0, 1]
-        assert p.hue_type is "categorical"
+        assert p.hue_type == "categorical"
+
+        df = long_df[long_df["c"] == 0]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [0]
+        assert p.hue_type == "categorical"
+
+        df = long_df[long_df["c"] == 1]
+        p = rel._LinePlotter(x="x", y="y", hue="c", data=df)
+        assert p.hue_levels == [1]
+        assert p.hue_type == "categorical"
+
+        # Test Timestamp data
+        p = rel._LinePlotter(x="x", y="y", hue="d", data=long_df)
+        assert p.hue_levels == [pd.Timestamp('2005-02-25')]
+        assert p.hue_type == "categorical"
 
         # Test numeric data with category type
         p = rel._LinePlotter(x="x", y="y", hue="s_cat", data=long_df)
         assert p.hue_levels == categorical_order(long_df.s_cat)
-        assert p.hue_type is "categorical"
+        assert p.hue_type == "categorical"
         assert p.cmap is None
+
+        # Test categorical palette specified for numeric data
+        palette = "deep"
+        p = rel._LinePlotter(x="x", y="y", hue="s",
+                             palette=palette, data=long_df)
+        expected_colors = color_palette(palette, n_colors=len(levels))
+        hue_levels = categorical_order(long_df["s"])
+        expected_palette = dict(zip(hue_levels, expected_colors))
+        assert p.palette == expected_palette
+        assert p.hue_type == "categorical"
 
     def test_parse_hue_numeric(self, long_df):
 
         p = rel._LinePlotter(x="x", y="y", hue="s", data=long_df)
         hue_levels = list(np.sort(long_df.s.unique()))
         assert p.hue_levels == hue_levels
-        assert p.hue_type is "numeric"
+        assert p.hue_type == "numeric"
         assert p.cmap.name == "seaborn_cubehelix"
 
         # Test named colormap
@@ -879,6 +907,11 @@ class TestLinePlotter(TestRelationalPlotter):
         assert cis.values == pytest.approx(y_cis.values, 4)
         assert list(cis.columns) == ["low", "high"]
 
+        p.seed = 0
+        _, _, ci1 = p.aggregate(y, x)
+        _, _, ci2 = p.aggregate(y, x)
+        assert np.array_equal(ci1, ci2)
+
         y_std = y.groupby(x).std()
         y_cis = pd.DataFrame(dict(low=y_mean - y_std,
                                   high=y_mean + y_std),
@@ -907,13 +940,24 @@ class TestLinePlotter(TestRelationalPlotter):
         index, est, cis = p.aggregate(y, x)
         assert cis.loc[2].isnull().all()
 
+        p = rel._LinePlotter(x="x", y="y", data=long_df)
+        p.estimator = "mean"
+        p.n_boot = 100
+        p.ci = 95
+        x = pd.Categorical(["a", "b", "a", "b"], ["a", "b", "c"])
+        y = pd.Series([1, 1, 2, 2])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            index, est, cis = p.aggregate(y, x)
+            assert cis.loc[["c"]].isnull().all().all()
+
     def test_legend_data(self, long_df):
 
         f, ax = plt.subplots()
 
         p = rel._LinePlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
-        handles, _ = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
         assert handles == []
 
         # --
@@ -1023,6 +1067,22 @@ class TestLinePlotter(TestRelationalPlotter):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         assert float(labels[2]) / float(labels[1]) == 10
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", hue="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
+
+        ax.clear()
+        p = rel._LinePlotter(
+            x="x", y="y", size="f", legend="brief", data=long_df)
+        p.add_legend_data(ax)
+        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
 
     def test_plot(self, long_df, repeated_df):
 
@@ -1160,6 +1220,15 @@ class TestLinePlotter(TestRelationalPlotter):
         with pytest.raises(ValueError):
             p.plot(ax, {})
 
+        x_str = long_df["x"].astype(str)
+        p = rel._LinePlotter(x="x", y="y", hue=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
+        p = rel._LinePlotter(x="x", y="y", size=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
@@ -1267,7 +1336,7 @@ class TestScatterPlotter(TestRelationalPlotter):
 
         p = rel._ScatterPlotter(x="x", y="y", data=long_df, legend="full")
         p.add_legend_data(ax)
-        handles, _ = ax.get_legend_handles_labels()
+        handles, labels = ax.get_legend_handles_labels()
         assert handles == []
 
         # --
@@ -1327,6 +1396,32 @@ class TestScatterPlotter(TestRelationalPlotter):
         expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
         assert labels == ["a"] + p.hue_levels == ["a"] + p.size_levels
         assert self.colors_equal(colors, expected_colors)
+        assert sizes == expected_sizes
+
+        # --
+
+        ax.clear()
+        sizes_list = [10, 100, 200]
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_list,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
+        assert sizes == expected_sizes
+
+        # --
+
+        ax.clear()
+        sizes_dict = {2: 10, 4: 100, 8: 200}
+        p = rel._ScatterPlotter(x="x", y="y", size="s", sizes=sizes_dict,
+                                  data=long_df, legend="full")
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        sizes = [h.get_sizes()[0] for h in handles]
+        expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
+        assert labels == ["s"] + [str(l) for l in p.size_levels]
         assert sizes == expected_sizes
 
         # --
@@ -1427,6 +1522,15 @@ class TestScatterPlotter(TestRelationalPlotter):
         expected_paths = [p.paths[k] for k in p.plot_data["style"]]
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
+
+        x_str = long_df["x"].astype(str)
+        p = rel._ScatterPlotter(x="x", y="y", hue=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
+
+        p = rel._ScatterPlotter(x="x", y="y", size=x_str, data=long_df)
+        ax.clear()
+        p.plot(ax, {})
 
     def test_axis_labels(self, long_df):
 
@@ -1619,6 +1723,24 @@ class TestRelPlotter(TestRelationalPlotter):
             expected_paths = [paths[val] for val in grp_df["a"]]
             assert self.paths_equal(points.get_paths(), expected_paths)
 
+    def test_relplot_stringy_numerics(self, long_df):
+
+        long_df["x_str"] = long_df["x"].astype(str)
+
+        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert np.array_equal(xys, long_df[["x", "y"]])
+
+        g = rel.relplot(x="x", y="y", size="x_str", data=long_df)
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert np.array_equal(xys, long_df[["x", "y"]])
+
     def test_relplot_legend(self, long_df):
 
         g = rel.relplot(x="x", y="y", data=long_df)
@@ -1635,3 +1757,21 @@ class TestRelPlotter(TestRelationalPlotter):
 
         g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None
+
+        palette = color_palette("deep", len(long_df["b"].unique()))
+        a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
+        long_df["a_like_b"] = long_df["a"].map(a_like_b)
+        g = rel.relplot(x="x", y="y", hue="b", style="a_like_b",
+                        palette=palette, kind="line", estimator=None,
+                        data=long_df)
+        lines = g._legend.get_lines()[1:]  # Chop off title dummy
+        for line, color in zip(lines, palette):
+            assert line.get_color() == color
+
+    def test_ax_kwarg_removal(self, long_df):
+
+        f, ax = plt.subplots()
+        with pytest.warns(UserWarning):
+            g = rel.relplot("x", "y", data=long_df, ax=ax)
+        assert len(ax.collections) == 0
+        assert len(g.ax.collections) > 0

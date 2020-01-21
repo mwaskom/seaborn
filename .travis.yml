@@ -13,21 +13,33 @@ env:
   - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
   - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.7 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
 
 
 before_install:
   - sudo apt-get update -yq
   - sudo sh testing/getmsfonts.sh
-  - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - if [[ "$PYTHON" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi  
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no 
   - conda config --add channels conda-forge
-  - conda update -q conda
+  # Pinned deps aren't happy when conda>4.6.14
+  - if [[ "$DEPS" == "pinned" ]]; then
+      conda install -q conda=4.6.14;
+    else
+      conda update -q conda;
+    fi
   - conda config --set channel_priority false
+  # Workaround py2.7/conda4.8 tqdm absence 
+  - if [[ "$PYTHON" == "2.7" ]]; then pip install tqdm; fi
   - conda info -a
 
 
@@ -36,6 +48,8 @@ install:
   - source activate testenv
   - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
   - conda install --file deps.txt
+  # TODO address broken conda-forge package for v45
+  - if [ $PYTHON == "2.7" ]; then conda install setuptools=44; fi
   - pip install .
 
 

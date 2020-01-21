@@ -11,6 +11,7 @@ try:
 except ImportError:
     import pandas.util.testing as pdt
 from nose import SkipTest
+from distutils.version import LooseVersion
 
 try:
     import statsmodels.regression.linear_model as smlm
@@ -147,6 +148,15 @@ class TestRegressionPlotter(object):
         npt.assert_array_equal(p.y, self.df.y + 1)
         pdt.assert_frame_equal(p.data, self.df)
 
+    def test_variables_must_be_1d(self):
+
+        array_2d = np.random.randn(20, 2)
+        array_1d = np.random.randn(20)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_2d, array_1d)
+        with pytest.raises(ValueError):
+            lm._RegressionPlotter(array_1d, array_2d)
+
     def test_dropna(self):
 
         p = lm._RegressionPlotter("x", "y_na", data=self.df)
@@ -246,6 +256,18 @@ class TestRegressionPlotter(object):
         _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
         nt.assert_is(boots_smod, None)
 
+    def test_regress_bootstrap_seed(self):
+
+        seed = 200
+        p1 = lm._RegressionPlotter("x", "y", data=self.df,
+                                   n_boot=self.n_boot, seed=seed)
+        p2 = lm._RegressionPlotter("x", "y", data=self.df,
+                                   n_boot=self.n_boot, seed=seed)
+
+        _, boots1 = p1.fit_fast(self.grid)
+        _, boots2 = p2.fit_fast(self.grid)
+        npt.assert_array_equal(boots1, boots2)
+
     def test_numeric_bins(self):
 
         p = lm._RegressionPlotter(self.df.x, self.df.y)
@@ -304,15 +326,14 @@ class TestRegressionPlotter(object):
 
     def test_estimate_cis(self):
 
-        # set known good seed to avoid the test stochastically failing
-        np.random.seed(123)
+        seed = 123
 
         p = lm._RegressionPlotter(self.df.d, self.df.y,
-                                  x_estimator=np.mean, ci=95)
+                                  x_estimator=np.mean, ci=95, seed=seed)
         _, _, ci_big = p.estimate_data
 
         p = lm._RegressionPlotter(self.df.d, self.df.y,
-                                  x_estimator=np.mean, ci=50)
+                                  x_estimator=np.mean, ci=50, seed=seed)
         _, _, ci_wee = p.estimate_data
         npt.assert_array_less(np.diff(ci_wee), np.diff(ci_big))
 
@@ -324,14 +345,14 @@ class TestRegressionPlotter(object):
     def test_estimate_units(self):
 
         # Seed the RNG locally
-        np.random.seed(345)
+        seed = 345
 
         p = lm._RegressionPlotter("x", "y", data=self.df,
-                                  units="s", x_bins=3)
+                                  units="s", seed=seed, x_bins=3)
         _, _, ci_big = p.estimate_data
         ci_big = np.diff(ci_big, axis=1)
 
-        p = lm._RegressionPlotter("x", "y", data=self.df, x_bins=3)
+        p = lm._RegressionPlotter("x", "y", data=self.df, seed=seed, x_bins=3)
         _, _, ci_wee = p.estimate_data
         ci_wee = np.diff(ci_wee, axis=1)
 
@@ -350,6 +371,12 @@ class TestRegressionPlotter(object):
         _, r_semipartial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_semipartial, r_orig)
 
+        p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
+        _, r_partial = np.corrcoef(p.x, p.y)[0]
+        nt.assert_less(r_partial, r_orig)
+
+        x = pd.Series(x)
+        y = pd.Series(y)
         p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
         _, r_partial = np.corrcoef(p.x, p.y)[0]
         nt.assert_less(r_partial, r_orig)
@@ -587,3 +614,14 @@ class TestRegressionPlots(object):
         color = ax.collections[0].get_facecolors()
         npt.assert_almost_equal(color[0, :3],
                                 (1, 0, 0))
+
+    @pytest.mark.skipif(LooseVersion(mpl.__version__) < "2.0",
+                        reason="not supported on old matplotlib")
+    def test_regplot_xlim(self):
+
+        f, ax = plt.subplots()
+        x, y1, y2 = np.random.randn(3, 50)
+        lm.regplot(x, y1, truncate=False)
+        lm.regplot(x, y2, truncate=False)
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xdata(), line2.get_xdata())

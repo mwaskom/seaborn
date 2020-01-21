@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import stats
 
 import pytest
 import nose.tools as nt
@@ -8,12 +9,76 @@ import numpy.testing as npt
 
 from .. import distributions as dist
 
-try:
-    import statsmodels.nonparametric.api
-    assert statsmodels.nonparametric.api
-    _no_statsmodels = False
-except ImportError:
-    _no_statsmodels = True
+_no_statsmodels = not dist._has_statsmodels
+
+
+class TestDistPlot(object):
+
+    rs = np.random.RandomState(0)
+    x = rs.randn(100)
+
+    def test_hist_bins(self):
+
+        try:
+            fd_edges = np.histogram_bin_edges(self.x, "fd")
+        except AttributeError:
+            pytest.skip("Requires numpy >= 1.15")
+        ax = dist.distplot(self.x)
+        for edge, bar in zip(fd_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+        plt.close(ax.figure)
+        n = 25
+        n_edges = np.histogram_bin_edges(self.x, n)
+        ax = dist.distplot(self.x, bins=n)
+        for edge, bar in zip(n_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+    def test_elements(self):
+
+        n = 10
+        ax = dist.distplot(self.x, bins=n,
+                           hist=True, kde=False, rug=False, fit=None)
+        assert len(ax.patches) == 10
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=True, rug=False, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=False, rug=True, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 1
+
+        plt.close(ax.figure)
+        ax = dist.distplot(self.x,
+                           hist=False, kde=False, rug=False, fit=stats.norm)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+    def test_distplot_with_nans(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        x_null = np.append(self.x, [np.nan])
+
+        dist.distplot(self.x, ax=ax1)
+        dist.distplot(x_null, ax=ax2)
+
+        line1 = ax1.lines[0]
+        line2 = ax2.lines[0]
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
+
+        for bar1, bar2 in zip(ax1.patches, ax2.patches):
+            assert bar1.get_xy() == bar2.get_xy()
+            assert bar1.get_height() == bar2.get_height()
 
 
 class TestKDE(object):
@@ -109,6 +174,21 @@ class TestKDE(object):
         line = ax.lines[1]
         assert not line.get_xydata().size
 
+    @pytest.mark.parametrize("cumulative", [True, False])
+    def test_kdeplot_with_nans(self, cumulative):
+
+        if cumulative and _no_statsmodels:
+            pytest.skip("no statsmodels")
+
+        x_missing = np.append(self.x, [np.nan, np.nan])
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, cumulative=cumulative)
+        dist.kdeplot(x_missing, cumulative=cumulative)
+
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
+
     def test_bivariate_kde_series(self):
         df = pd.DataFrame({'x': self.x, 'y': self.y})
 
@@ -159,6 +239,12 @@ class TestKDE(object):
         low = ax.collections[0].get_facecolor().mean()
         high = ax.collections[-1].get_facecolor().mean()
         assert low > high
+
+        f, ax = plt.subplots()
+        dist.kdeplot(self.x, self.y, shade=True, colors=[rgb])
+        for level in ax.collections:
+            level_rgb = tuple(level.get_facecolor().squeeze()[:3])
+            assert level_rgb == rgb
 
 
 class TestRugPlot(object):
