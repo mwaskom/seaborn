@@ -29,7 +29,7 @@ Another option would be to to clone the `github repository
 Dependencies
 ~~~~~~~~~~~~
 
--  Python 2.7 or 3.5+
+-  Python 3.6+
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^

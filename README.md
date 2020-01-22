@@ -51,7 +51,7 @@ The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [exampl
 Dependencies
 ------------
 
-Seaborn supports Python 2.7 and 3.5+.
+Seaborn supports Python 3.6+ and no longer supports Python 2.
 
 Installation requires [numpy](http://www.numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
 
@@ -71,9 +71,9 @@ You may instead want to use the development version from Github:
 Testing
 -------
 
-To test seaborn, run `make test` in the source directory.
+To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using `pytest`).
 
-This will exercise both the unit tests and docstring examples (using `pytest`).
+The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`. Run `make coverage` to generate a test coverage report and `make lint` to check code style consistency.
 
  
 Development
@@ -81,5 +81,5 @@ Development
 
 Seaborn development takes place on Github: https://github.com/mwaskom/seaborn
 
-Please submit any reproducible bugs you encounter to the [issue tracker](https://github.com/mwaskom/seaborn/issues).
+Please submit bugs that you encounter to the [issue tracker](https://github.com/mwaskom/seaborn/issues) with a reproducible example demonstrating the problem. Questions about usage are more at home on StackOverflow, where there is a [seaborn tag](https://stackoverflow.com/questions/tagged/seaborn).
 
