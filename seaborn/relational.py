@@ -9,8 +9,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .external.six import string_types
-
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
                     remove_na, locator_to_legend_entries)
@@ -139,7 +137,7 @@ class _RelationalPlotter(object):
 
             # Validate the inputs
             for var in [x, y, hue, size, style, units]:
-                if isinstance(var, string_types):
+                if isinstance(var, str):
                     err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 

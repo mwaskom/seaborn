@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 from . import utils
 from .palettes import color_palette, blend_palette
-from .external.six import string_types
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
 
@@ -1706,7 +1705,7 @@ class JointGrid(object):
             y = data.get(y, y)
 
         for var in [x, y]:
-            if isinstance(var, string_types):
+            if isinstance(var, str):
                 err = "Could not interpret input '{}'".format(var)
                 raise ValueError(err)
 

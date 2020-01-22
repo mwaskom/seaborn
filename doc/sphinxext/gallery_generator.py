@@ -13,18 +13,15 @@ import token
 import tokenize
 import shutil
 
-from seaborn.external import six
-
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
 
 
-if six.PY3:
-    # Python 3 has no execfile
-    def execfile(filename, globals=None, locals=None):
-        with open(filename, "rb") as fp:
-            six.exec_(compile(fp.read(), filename, 'exec'), globals, locals)
+# Python 3 has no execfile
+def execfile(filename, globals=None, locals=None):
+    with open(filename, "rb") as fp:
+        exec(compile(fp.read(), filename, 'exec'), globals, locals)
 
 
 RST_TEMPLATE = """

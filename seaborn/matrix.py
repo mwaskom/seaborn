@@ -16,8 +16,6 @@ from .axisgrid import Grid
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
                     to_utf8)
 
-from .external.six import string_types
-
 
 __all__ = ["heatmap", "clustermap"]
 
@@ -140,7 +138,7 @@ class _HeatMapper(object):
         if not len(xticklabels):
             self.xticks = []
             self.xticklabels = []
-        elif isinstance(xticklabels, string_types) and xticklabels == "auto":
+        elif isinstance(xticklabels, str) and xticklabels == "auto":
             self.xticks = "auto"
             self.xticklabels = _index_to_ticklabels(data.columns)
         else:
@@ -150,7 +148,7 @@ class _HeatMapper(object):
         if not len(yticklabels):
             self.yticks = []
             self.yticklabels = []
-        elif isinstance(yticklabels, string_types) and yticklabels == "auto":
+        elif isinstance(yticklabels, str) and yticklabels == "auto":
             self.yticks = "auto"
             self.yticklabels = _index_to_ticklabels(data.index)
         else:
@@ -209,7 +207,7 @@ class _HeatMapper(object):
                 self.cmap = cm.rocket
             else:
                 self.cmap = cm.icefire
-        elif isinstance(cmap, string_types):
+        elif isinstance(cmap, str):
             self.cmap = mpl.cm.get_cmap(cmap)
         elif isinstance(cmap, list):
             self.cmap = mpl.colors.ListedColormap(cmap)
@@ -294,12 +292,12 @@ class _HeatMapper(object):
                 cb.solids.set_rasterized(True)
 
         # Add row and column labels
-        if isinstance(self.xticks, string_types) and self.xticks == "auto":
+        if isinstance(self.xticks, str) and self.xticks == "auto":
             xticks, xticklabels = self._auto_ticks(ax, self.xticklabels, 0)
         else:
             xticks, xticklabels = self.xticks, self.xticklabels
 
-        if isinstance(self.yticks, string_types) and self.yticks == "auto":
+        if isinstance(self.yticks, str) and self.yticks == "auto":
             yticks, yticklabels = self._auto_ticks(ax, self.yticklabels, 1)
         else:
             yticks, yticklabels = self.yticks, self.yticklabels

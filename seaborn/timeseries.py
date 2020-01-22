@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 
 import warnings
 
-from .external.six import string_types
-
 from . import utils
 from . import algorithms as algo
 from .palettes import color_palette
@@ -266,7 +264,7 @@ def tsplot(data, time=None, unit=None, condition=None, value=None,
                                  cond=conds))
 
     # Set up the err_style and ci arguments for the loop below
-    if isinstance(err_style, string_types):
+    if isinstance(err_style, str):
         err_style = [err_style]
     elif err_style is None:
         err_style = []
