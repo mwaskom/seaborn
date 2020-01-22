@@ -10,7 +10,6 @@ from .relational import *
 from .regression import *
 from .categorical import *
 from .distributions import *
-from .timeseries import *
 from .matrix import *
 from .miscplot import *
 from .axisgrid import *
