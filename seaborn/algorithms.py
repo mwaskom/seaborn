@@ -4,8 +4,6 @@ import numbers
 import numpy as np
 from scipy import stats
 import warnings
-from .external.six import string_types
-from .external.six.moves import range
 
 
 def bootstrap(*args, **kwargs):
@@ -70,7 +68,7 @@ def bootstrap(*args, **kwargs):
         units = np.asarray(units)
 
     # Allow for a function that is the name of a method on an array
-    if isinstance(func, string_types):
+    if isinstance(func, str):
         def f(x):
             return getattr(x, func)()
     else:

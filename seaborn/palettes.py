@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib as mpl
 
 from .external import husl
-from .external.six import string_types
-from .external.six.moves import range
 
 from .utils import desaturate, set_hls_values, get_color_cycle
 from .colors import xkcd_rgb, crayons
@@ -196,7 +194,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         if n_colors is None:
             n_colors = len(palette)
 
-    elif not isinstance(palette, string_types):
+    elif not isinstance(palette, str):
         palette = palette
         if n_colors is None:
             n_colors = len(palette)
@@ -1071,7 +1069,7 @@ def set_color_codes(palette="deep"):
     if palette == "reset":
         colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, 0., .75),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
-    elif not isinstance(palette, string_types):
+    elif not isinstance(palette, str):
         err = "set_color_codes requires a named seaborn palette"
         raise TypeError(err)
     elif palette in SEABORN_PALETTES:

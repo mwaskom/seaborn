@@ -18,7 +18,6 @@ import pytest
 
 from .. import matrix as mat
 from .. import color_palette
-from ..external.six.moves import range
 
 try:
     import fastcluster

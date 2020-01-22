@@ -16,8 +16,6 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .external.six import string_types
-
 from . import utils
 from . import algorithms as algo
 from .axisgrid import FacetGrid, _facet_docs
@@ -38,13 +36,13 @@ class _LinearPlotter(object):
         self.data = data
 
         # Validate the inputs
-        any_strings = any([isinstance(v, string_types) for v in kws.values()])
+        any_strings = any([isinstance(v, str) for v in kws.values()])
         if any_strings and data is None:
             raise ValueError("Must pass `data` if using named variables.")
 
         # Set the variables
         for var, val in kws.items():
-            if isinstance(val, string_types):
+            if isinstance(val, str):
                 vector = data[val]
             elif isinstance(val, list):
                 vector = np.asarray(val)

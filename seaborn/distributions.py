@@ -10,8 +10,6 @@ from matplotlib.collections import LineCollection
 import warnings
 from distutils.version import LooseVersion
 
-from six import string_types
-
 try:
     import statsmodels.nonparametric.api as smnp
     _has_statsmodels = True
@@ -384,7 +382,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
             msg = ("Ignoring bandwidth choice, "
                    "please upgrade scipy to use a different bandwidth.")
             warnings.warn(msg, UserWarning)
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)() * np.std(data)
     grid = _kde_support(data, bw, gridsize, cut, clip)
@@ -424,7 +422,7 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
             cmap = light_palette(color, as_cmap=True)
         else:
             cmap = dark_palette(color, as_cmap=True)
-    if isinstance(cmap, string_types):
+    if isinstance(cmap, str):
         if cmap.endswith("_d"):
             pal = ["#333333"]
             pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
@@ -463,7 +461,7 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
 
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
@@ -489,7 +487,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     data = np.c_[x, y]
     kde = stats.gaussian_kde(data.T, bw_method=bw)
     data_std = data.std(axis=0, ddof=1)
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw_x = getattr(kde, "%s_factor" % bw)() * data_std[0]
         bw_y = getattr(kde, "%s_factor" % bw)() * data_std[1]

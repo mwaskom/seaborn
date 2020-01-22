@@ -1,6 +1,5 @@
 import numpy as np
 import numpy.random as npr
-from ..external.six.moves import range
 
 import pytest
 from numpy.testing import assert_array_equal

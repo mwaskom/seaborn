@@ -10,9 +10,6 @@ import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 import warnings
 
-from .external.six import string_types
-from .external.six.moves import range
-
 from . import utils
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
@@ -150,7 +147,7 @@ class _CategoricalPlotter(object):
 
             # Validate the inputs
             for var in [x, y, hue, units]:
-                if isinstance(var, string_types):
+                if isinstance(var, str):
                     err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
@@ -1703,12 +1700,12 @@ class _PointPlotter(_CategoricalStatPlotter):
             dodge = .025 * len(self.hue_names)
 
         # Make sure we have a marker for each hue level
-        if isinstance(markers, string_types):
+        if isinstance(markers, str):
             markers = [markers] * len(self.colors)
         self.markers = markers
 
         # Make sure we have a line style for each hue level
-        if isinstance(linestyles, string_types):
+        if isinstance(linestyles, str):
             linestyles = [linestyles] * len(self.colors)
         self.linestyles = linestyles
 
