@@ -78,16 +78,6 @@ def test_bootstrap_seed(random):
     assert_array_equal(boots1, boots2)
 
 
-def test_smooth_bootstrap(random):
-    """Test smooth bootstrap."""
-    x = np.random.randn(15)
-    n_boot = 100
-    with pytest.warns(UserWarning):
-        out_smooth = algo.bootstrap(x, n_boot=n_boot,
-                                    smooth=True, func=np.median)
-    assert not np.median(out_smooth) in x
-
-
 def test_bootstrap_ols(random):
     """Test bootstrap of OLS model fit."""
     def ols_fit(X, y):

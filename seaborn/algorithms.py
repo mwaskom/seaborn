@@ -2,7 +2,6 @@
 from __future__ import division
 import numbers
 import numpy as np
-from scipy import stats
 import warnings
 from .external.six import string_types
 from .external.six.moves import range
@@ -23,10 +22,6 @@ def bootstrap(*args, **kwargs):
             Array of sampling unit IDs. When used the bootstrap resamples units
             and then observations within units instead of individual
             datapoints.
-        smooth : bool, default False
-            If True, performs a smoothed bootstrap (draws samples from a kernel
-            density estimate); only works for one-dimensional inputs and cannot
-            be used `units` is present.
         func : string or callable, default np.mean
             Function to call on the args that are passed in. If string, tries
             to use as named method on numpy array.
@@ -50,7 +45,6 @@ def bootstrap(*args, **kwargs):
     func = kwargs.get("func", np.mean)
     axis = kwargs.get("axis", None)
     units = kwargs.get("units", None)
-    smooth = kwargs.get("smooth", False)
     random_seed = kwargs.get("random_seed", None)
     if random_seed is not None:
         msg = "`random_seed` has been renamed to `seed` and will be removed"
@@ -83,11 +77,6 @@ def bootstrap(*args, **kwargs):
         integers = rng.randint
 
     # Do the bootstrap
-    if smooth:
-        msg = "Smooth bootstraps are deprecated and will be removed."
-        warnings.warn(msg)
-        return _smooth_bootstrap(args, n_boot, f, func_kwargs)
-
     if units is not None:
         return _structured_bootstrap(args, n_boot, units, f,
                                      func_kwargs, integers)
@@ -116,17 +105,6 @@ def _structured_bootstrap(args, n_boot, units, func, func_kwargs, integers):
         sample = [[c.take(r, axis=0) for c, r in zip(a, resampler)]
                   for a in sample]
         sample = list(map(np.concatenate, sample))
-        boot_dist.append(func(*sample, **func_kwargs))
-    return np.array(boot_dist)
-
-
-def _smooth_bootstrap(args, n_boot, func, func_kwargs):
-    """Bootstrap by resampling from a kernel density estimate."""
-    n = len(args[0])
-    boot_dist = []
-    kde = [stats.gaussian_kde(np.transpose(a)) for a in args]
-    for i in range(int(n_boot)):
-        sample = [a.resample(n).T for a in kde]
         boot_dist.append(func(*sample, **func_kwargs))
     return np.array(boot_dist)
 
