@@ -9,7 +9,11 @@ This is the final version of seaborn that will support Python 2.7 or 3.5.
 New features
 ~~~~~~~~~~~~
 
+- Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default organization and scaling with different figure sizes has been improved.
+
 - Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid without the upper triangle of bivariate axes.
+
+- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer :class:`numpy.random.Generator` or the older :class:`numpy.random.mtrand.RandomState`).
 
 - Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
 
@@ -19,13 +23,9 @@ New features
 
 - It is now possible to force a categorical interpretation of the ``hue`` varaible in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passig a list/dict of colors.
 
-- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
-
-- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer :class:`numpy.random.Generator` or the older :class:`numpy.random.mtrand.RandomState`).
-
-- Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default scaling with different figure sizes has been improved.
-
 - Added the ``tree_kws`` parameter to :func:`clustermap` to control the properties of the lines in the dendrogram.
+
+- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
 
 - Improved support for grouping observations based on pandas index information in categorical plots.
 
