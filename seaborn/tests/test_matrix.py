@@ -1191,6 +1191,10 @@ class TestClustermap(object):
         assert pytest.approx(pos.width) == kws["cbar_pos"][2]
         assert pytest.approx(pos.height) == kws["cbar_pos"][3]
 
+        kws["cbar_pos"] = None
+        g = mat.clustermap(self.df_norm, **kws)
+        assert g.ax_cbar is None
+
     def test_square_warning(self):
 
         kws = self.default_kws.copy()
