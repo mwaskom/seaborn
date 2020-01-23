@@ -29,7 +29,7 @@ def palplot(pal, size=1):
     ax.set_yticklabels([])
 
 
-def dogplot():
+def dogplot(*_, **__):
     """Who's a good boy?"""
     try:
         from urllib.request import urlopen
