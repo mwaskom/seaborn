@@ -70,7 +70,7 @@ Bug fixes and adaptations
 
 - Avoided error/warning in :func:`lineplot` when plotting categoricals with empty levels.
 
-- Allowed ``colors`` to be passed through to a bivariabe :func:`kdeplot`.
+- Allowed ``colors`` to be passed through to a bivariate :func:`kdeplot`.
 
 - Standardized the output format of custom color palette functions.
 

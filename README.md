@@ -33,7 +33,7 @@ seaborn: statistical data visualization
 
 [![PyPI Version](https://img.shields.io/pypi/v/seaborn.svg)](https://pypi.org/project/seaborn/)
 [![License](https://img.shields.io/pypi/l/seaborn.svg)](https://github.com/mwaskom/seaborn/blob/master/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1313201.svg)](https://doi.org/10.5281/zenodo.1313201)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.592845.svg)](https://doi.org/10.5281/zenodo.592845)
 [![Build Status](https://travis-ci.org/mwaskom/seaborn.svg?branch=master)](https://travis-ci.org/mwaskom/seaborn)
 [![Code Coverage](https://codecov.io/gh/mwaskom/seaborn/branch/master/graph/badge.svg)](https://codecov.io/gh/mwaskom/seaborn)
 
