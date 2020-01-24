@@ -26,7 +26,7 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.10.0.rc0'
+VERSION = '0.10.0'
 PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
