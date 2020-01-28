@@ -216,20 +216,29 @@ class _HeatMapper(object):
 
         # Recenter a divergent colormap
         if center is not None:
-            # Copy under/over/bad values
+
+            # Copy bad values
             # in mpl<3.2 only masked values are honored with "bad" color spec
             # (see https://github.com/matplotlib/matplotlib/pull/14257)
             bad = self.cmap(np.ma.masked_invalid([np.nan]))[0]
+
+            # under/over values are set for sure when cmap extremes
+            # do not map to the same color as +-inf
             under = self.cmap(-np.inf)
             over = self.cmap(np.inf)
+            under_set = under != self.cmap(0)
+            over_set = over != self.cmap(self.cmap.N - 1)
+
             vrange = max(vmax - center, center - vmin)
             normlize = mpl.colors.Normalize(center - vrange, center + vrange)
             cmin, cmax = normlize([vmin, vmax])
             cc = np.linspace(cmin, cmax, 256)
             self.cmap = mpl.colors.ListedColormap(self.cmap(cc))
             self.cmap.set_bad(bad)
-            self.cmap.set_under(under)
-            self.cmap.set_over(over)
+            if under_set:
+                self.cmap.set_under(under)
+            if over_set:
+                self.cmap.set_over(over)
 
     def _annotate_heatmap(self, ax, mesh):
         """Add textual labels with the value in each cell."""
