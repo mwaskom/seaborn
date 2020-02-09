@@ -194,11 +194,19 @@ class _HeatMapper(object):
     def _determine_cmap_params(self, plot_data, vmin, vmax,
                                cmap, center, robust):
         """Use some heuristics to set good defaults for colorbar and range."""
-        calc_data = plot_data.filled(np.nan) #plot_data is a np.ma.array instance
+
+        # plot_data is a np.ma.array instance
+        calc_data = plot_data.filled(np.nan)
         if vmin is None:
-            vmin = np.nanpercentile(calc_data, 2) if robust else np.nanmin(calc_data)
+            vmin = (
+                np.nanpercentile(calc_data, 2)
+                if robust else np.nanmin(calc_data)
+            )
         if vmax is None:
-            vmax = np.nanpercentile(calc_data, 98) if robust else np.nanmax(calc_data)
+            vmax = (
+                np.nanpercentile(calc_data, 98)
+                if robust else np.nanmax(calc_data)
+            )
         self.vmin, self.vmax = vmin, vmax
 
         # Choose default colormaps if not provided
