@@ -96,6 +96,25 @@ class TestHeatmap(object):
 
         npt.assert_array_equal(p.plot_data, plot_data)
 
+    def test_mask_limits(self):
+        """Make sure masked cells are not used to calculate extremes"""
+
+        kws = self.default_kws.copy()
+
+        mask = self.x_norm > 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+
+        mask = self.x_norm < 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
+
     def test_default_vlims(self):
 
         p = mat._HeatMapper(self.df_unif, **self.default_kws)
