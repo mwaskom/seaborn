@@ -198,15 +198,15 @@ class _HeatMapper(object):
         # plot_data is a np.ma.array instance
         calc_data = plot_data.filled(np.nan)
         if vmin is None:
-            vmin = (
-                np.nanpercentile(calc_data, 2)
-                if robust else np.nanmin(calc_data)
-            )
+            if robust:
+                vmin = np.nanpercentile(calc_data, 2)
+            else:
+                vmin = np.nanmin(calc_data)
         if vmax is None:
-            vmax = (
-                np.nanpercentile(calc_data, 98)
-                if robust else np.nanmax(calc_data)
-            )
+            if robust:
+                vmax = np.nanpercentile(calc_data, 98)
+            else:
+                vmax = np.nanmax(calc_data)
         self.vmin, self.vmax = vmin, vmax
 
         # Choose default colormaps if not provided
