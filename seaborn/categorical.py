@@ -457,6 +457,12 @@ class _BoxPlotter(_CategoricalPlotter):
         for obj in ["box", "whisker", "cap", "median", "flier"]:
             props[obj] = kws.pop(obj + "props", {})
 
+        if not np.isscalar(self.width):
+          # If width is an array-like structure, check the dimensions match.
+          if len(self.width) != len(self.plot_data):
+            raise ValueError("Length of `width` should be the same than the "
+                              "categorical data.")
+
         for i, group_data in enumerate(self.plot_data):
 
             if self.plot_hues is None:
@@ -473,11 +479,17 @@ class _BoxPlotter(_CategoricalPlotter):
                 if box_data.size == 0:
                     continue
 
+                # Support per column width.
+                if np.isscalar(self.width):
+                  width = self.width
+                else:
+                  width = self.width[i]
+
                 artist_dict = ax.boxplot(box_data,
                                          vert=vert,
                                          patch_artist=True,
                                          positions=[i],
-                                         widths=self.width,
+                                         widths=width,
                                          **kws)
                 color = self.colors[i]
                 self.restyle_boxplot(artist_dict, color, props)
@@ -2149,9 +2161,10 @@ _categorical_docs = dict(
              Thickness of error bar lines (and caps).\
          """),
     width=dedent("""\
-    width : float, optional
+    width : float, list, optional
         Width of a full element when not using hue nesting, or width of all the
-        elements for one level of the major grouping variable.\
+        elements for one level of the major grouping variable. If list, width
+        of each of the boxes for onle level of the major grouping variable.\
     """),
     dodge=dedent("""\
     dodge : bool, optional
