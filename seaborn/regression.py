@@ -536,9 +536,8 @@ _regression_docs = dict(
     """),
     truncate=dedent("""\
     truncate : bool, optional
-        By default, the regression line is drawn to fill the x axis limits
-        after the scatterplot is drawn. If ``truncate`` is ``True``, it will
-        instead by bounded by the data limits.\
+        If ``True``, the regression line is bounded by the data limits. If
+        ``False``, it extends to the ``x`` axis limits.
     """),
     xy_jitter=dedent("""\
     {x,y}_jitter : floats, optional
