@@ -458,10 +458,11 @@ class _BoxPlotter(_CategoricalPlotter):
             props[obj] = kws.pop(obj + "props", {})
 
         if self.width and not np.isscalar(self.width):
-            # If width is an array-like structure, check the dimensions match.
+            # If width is an array-like structure, check the dimensions.
             if len(self.width) != len(self.plot_data):
-                raise ValueError("Length of `width` should be the same than the "
-                                 "categorical data.")
+                raise ValueError(
+                    "Length of `width` should be the same than the "
+                    "categorical data.")
 
         for i, group_data in enumerate(self.plot_data):
 
