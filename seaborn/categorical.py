@@ -1,4 +1,4 @@
-from __future__ import division
+/from __future__ import division
 from textwrap import dedent
 import colorsys
 import numpy as np
@@ -457,11 +457,11 @@ class _BoxPlotter(_CategoricalPlotter):
         for obj in ["box", "whisker", "cap", "median", "flier"]:
             props[obj] = kws.pop(obj + "props", {})
 
-        if not np.isscalar(self.width):
-          # If width is an array-like structure, check the dimensions match.
-          if len(self.width) != len(self.plot_data):
-            raise ValueError("Length of `width` should be the same than the "
-                              "categorical data.")
+        if self.width and not np.isscalar(self.width):
+            # If width is an array-like structure, check the dimensions match.
+            if len(self.width) != len(self.plot_data):
+                raise ValueError("Length of `width` should be the same than the "
+                                 "categorical data.")
 
         for i, group_data in enumerate(self.plot_data):
 
@@ -480,10 +480,10 @@ class _BoxPlotter(_CategoricalPlotter):
                     continue
 
                 # Support per column width.
-                if np.isscalar(self.width):
-                  width = self.width
+                if self.width and not np.isscalar(self.width):
+                    width = self.width[i]
                 else:
-                  width = self.width[i]
+                    width = self.width
 
                 artist_dict = ax.boxplot(box_data,
                                          vert=vert,
@@ -2164,7 +2164,7 @@ _categorical_docs = dict(
     width : float, list, optional
         Width of a full element when not using hue nesting, or width of all the
         elements for one level of the major grouping variable. If list, width
-        of each of the boxes for onle level of the major grouping variable.\
+        of each of the boxes for one level of the major grouping variable.\
     """),
     dodge=dedent("""\
     dodge : bool, optional
