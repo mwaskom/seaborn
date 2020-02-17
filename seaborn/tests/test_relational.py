@@ -122,7 +122,7 @@ class TestRelationalPlotter(object):
     @pytest.fixture
     def null_column(self):
 
-        return pd.Series(index=np.arange(20))
+        return pd.Series(index=np.arange(20), dtype='float64')
 
     def test_wide_df_variables(self, wide_df):
 

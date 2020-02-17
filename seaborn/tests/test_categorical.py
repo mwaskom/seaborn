@@ -16,7 +16,6 @@ from .. import categorical as cat
 from .. import palettes
 
 
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 mpl_barplot_change = LooseVersion("2.0.1")
 
 
@@ -231,24 +230,23 @@ class TestCategoricalPlotter(CategoricalFixture):
             npt.assert_array_equal(hues, self.h[self.g == group])
 
         # Test categorical grouping data
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.g = df.g.astype("category")
+        df = self.df.copy()
+        df.g = df.g.astype("category")
 
-            # Test that horizontal orientation is automatically detected
-            p.establish_variables("y", "g", "h", data=df)
-            nt.assert_equal(len(p.plot_data), 3)
-            nt.assert_equal(len(p.plot_hues), 3)
-            nt.assert_equal(p.orient, "h")
-            nt.assert_equal(p.value_label, "y")
-            nt.assert_equal(p.group_label, "g")
-            nt.assert_equal(p.hue_title, "h")
+        # Test that horizontal orientation is automatically detected
+        p.establish_variables("y", "g", "h", data=df)
+        nt.assert_equal(len(p.plot_data), 3)
+        nt.assert_equal(len(p.plot_hues), 3)
+        nt.assert_equal(p.orient, "h")
+        nt.assert_equal(p.value_label, "y")
+        nt.assert_equal(p.group_label, "g")
+        nt.assert_equal(p.hue_title, "h")
 
-            for group, vals in zip(["a", "b", "c"], p.plot_data):
-                npt.assert_array_equal(vals, self.y[self.g == group])
+        for group, vals in zip(["a", "b", "c"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
 
-            for group, hues in zip(["a", "b", "c"], p.plot_hues):
-                npt.assert_array_equal(hues, self.h[self.g == group])
+        for group, hues in zip(["a", "b", "c"], p.plot_hues):
+            npt.assert_array_equal(hues, self.h[self.g == group])
 
         # Test grouped data that matches on index
         p1 = cat._CategoricalPlotter()
@@ -299,20 +297,19 @@ class TestCategoricalPlotter(CategoricalFixture):
             npt.assert_array_equal(vals, self.y[self.g == group])
 
         # Test inferred order from a grouped input with categorical groups
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.g = df.g.astype("category")
-            df.g = df.g.cat.reorder_categories(["c", "b", "a"])
-            p.establish_variables("g", "y", data=df)
-            nt.assert_equal(p.group_names, ["c", "b", "a"])
+        df = self.df.copy()
+        df.g = df.g.astype("category")
+        df.g = df.g.cat.reorder_categories(["c", "b", "a"])
+        p.establish_variables("g", "y", data=df)
+        nt.assert_equal(p.group_names, ["c", "b", "a"])
 
-            for group, vals in zip(["c", "b", "a"], p.plot_data):
-                npt.assert_array_equal(vals, self.y[self.g == group])
+        for group, vals in zip(["c", "b", "a"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
 
-            df.g = (df.g.cat.add_categories("d")
-                        .cat.reorder_categories(["c", "b", "d", "a"]))
-            p.establish_variables("g", "y", data=df)
-            nt.assert_equal(p.group_names, ["c", "b", "d", "a"])
+        df.g = (df.g.cat.add_categories("d")
+                    .cat.reorder_categories(["c", "b", "d", "a"]))
+        p.establish_variables("g", "y", data=df)
+        nt.assert_equal(p.group_names, ["c", "b", "d", "a"])
 
     def test_hue_order(self):
 
@@ -328,17 +325,16 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_equal(p.hue_names, ["n", "m"])
 
         # Test inferred hue order from a categorical hue input
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.h = df.h.astype("category")
-            df.h = df.h.cat.reorder_categories(["n", "m"])
-            p.establish_variables("g", "y", "h", data=df)
-            nt.assert_equal(p.hue_names, ["n", "m"])
+        df = self.df.copy()
+        df.h = df.h.astype("category")
+        df.h = df.h.cat.reorder_categories(["n", "m"])
+        p.establish_variables("g", "y", "h", data=df)
+        nt.assert_equal(p.hue_names, ["n", "m"])
 
-            df.h = (df.h.cat.add_categories("o")
-                        .cat.reorder_categories(["o", "m", "n"]))
-            p.establish_variables("g", "y", "h", data=df)
-            nt.assert_equal(p.hue_names, ["o", "m", "n"])
+        df.h = (df.h.cat.add_categories("o")
+                    .cat.reorder_categories(["o", "m", "n"]))
+        p.establish_variables("g", "y", "h", data=df)
+        nt.assert_equal(p.hue_names, ["o", "m", "n"])
 
     def test_plot_units(self):
 
@@ -367,13 +363,12 @@ class TestCategoricalPlotter(CategoricalFixture):
         with nt.assert_raises(ValueError):
             p.infer_orient(cats, cats)
 
-        if pandas_has_categoricals:
-            cats = pd.Series([0, 1, 2] * 10, dtype="category")
-            nt.assert_equal(p.infer_orient(cats, nums), "v")
-            nt.assert_equal(p.infer_orient(nums, cats), "h")
+        cats = pd.Series([0, 1, 2] * 10, dtype="category")
+        nt.assert_equal(p.infer_orient(cats, nums), "v")
+        nt.assert_equal(p.infer_orient(nums, cats), "h")
 
-            with nt.assert_raises(ValueError):
-                p.infer_orient(cats, cats)
+        with nt.assert_raises(ValueError):
+            p.infer_orient(cats, cats)
 
     def test_default_palettes(self):
 
