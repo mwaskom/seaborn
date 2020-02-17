@@ -1,12 +1,9 @@
 import numpy as np
 import pandas as pd
-import scipy
 from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
-
-from distutils.version import LooseVersion
 
 import pytest
 import nose.tools as nt
@@ -1156,25 +1153,17 @@ class TestViolinPlotter(CategoricalFixture):
         data = self.y
         data_std = data.std(ddof=1)
 
-        # Bandwidth behavior depends on scipy version
-        if LooseVersion(scipy.__version__) < "0.11":
-            # Test ignoring custom bandwidth on old scipy
-            kde, bw = p.fit_kde(self.y, .2)
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, kde.scotts_factor())
+        # Test reference rule bandwidth
+        kde, bw = p.fit_kde(data, "scott")
+        nt.assert_is_instance(kde, stats.gaussian_kde)
+        nt.assert_equal(kde.factor, kde.scotts_factor())
+        nt.assert_equal(bw, kde.scotts_factor() * data_std)
 
-        else:
-            # Test reference rule bandwidth
-            kde, bw = p.fit_kde(data, "scott")
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, kde.scotts_factor())
-            nt.assert_equal(bw, kde.scotts_factor() * data_std)
-
-            # Test numeric scale factor
-            kde, bw = p.fit_kde(self.y, .2)
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, .2)
-            nt.assert_equal(bw, .2 * data_std)
+        # Test numeric scale factor
+        kde, bw = p.fit_kde(self.y, .2)
+        nt.assert_is_instance(kde, stats.gaussian_kde)
+        nt.assert_equal(kde.factor, .2)
+        nt.assert_equal(bw, .2 * data_std)
 
     def test_draw_to_density(self):
 

@@ -709,15 +709,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def fit_kde(self, x, bw):
         """Estimate a KDE for a vector of data with flexible bandwidth."""
-        # Allow for the use of old scipy where `bw` is fixed
-        try:
-            kde = stats.gaussian_kde(x, bw)
-        except TypeError:
-            kde = stats.gaussian_kde(x)
-            if bw != "scott":  # scipy default
-                msg = ("Ignoring bandwidth choice, "
-                       "please upgrade scipy to use a different bandwidth.")
-                warnings.warn(msg, UserWarning)
+        kde = stats.gaussian_kde(x, bw)
 
         # Extract the numeric bandwidth from the KDE object
         bw_used = kde.factor
