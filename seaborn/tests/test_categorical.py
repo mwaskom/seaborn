@@ -16,9 +16,6 @@ from .. import categorical as cat
 from .. import palettes
 
 
-mpl_barplot_change = LooseVersion("2.0.1")
-
-
 class CategoricalFixture(object):
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
@@ -1977,12 +1974,8 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_x(), pos)
             nt.assert_equal(bar.get_width(), p.width)
-            if mpl.__version__ >= mpl_barplot_change:
-                nt.assert_equal(bar.get_y(), 0)
-                nt.assert_equal(bar.get_height(), stat)
-            else:
-                nt.assert_equal(bar.get_y(), min(0, stat))
-                nt.assert_equal(bar.get_height(), abs(stat))
+            nt.assert_equal(bar.get_y(), 0)
+            nt.assert_equal(bar.get_height(), stat)
 
     def test_draw_horizontal_bars(self):
 
@@ -2003,12 +1996,8 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_y(), pos)
             nt.assert_equal(bar.get_height(), p.width)
-            if mpl.__version__ >= mpl_barplot_change:
-                nt.assert_equal(bar.get_x(), 0)
-                nt.assert_equal(bar.get_width(), stat)
-            else:
-                nt.assert_equal(bar.get_x(), min(0, stat))
-                nt.assert_equal(bar.get_width(), abs(stat))
+            nt.assert_equal(bar.get_x(), 0)
+            nt.assert_equal(bar.get_width(), stat)
 
     def test_draw_nested_vertical_bars(self):
 
@@ -2034,12 +2023,8 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
-                nt.assert_almost_equal(bar.get_y(), 0)
-                nt.assert_almost_equal(bar.get_height(), stat)
-            else:
-                nt.assert_almost_equal(bar.get_y(), min(0, stat))
-                nt.assert_almost_equal(bar.get_height(), abs(stat))
+            nt.assert_almost_equal(bar.get_y(), 0)
+            nt.assert_almost_equal(bar.get_height(), stat)
 
     def test_draw_nested_horizontal_bars(self):
 
@@ -2065,12 +2050,8 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_height(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
-                nt.assert_almost_equal(bar.get_x(), 0)
-                nt.assert_almost_equal(bar.get_width(), stat)
-            else:
-                nt.assert_almost_equal(bar.get_x(), min(0, stat))
-                nt.assert_almost_equal(bar.get_width(), abs(stat))
+            nt.assert_almost_equal(bar.get_x(), 0)
+            nt.assert_almost_equal(bar.get_width(), stat)
 
     def test_draw_missing_bars(self):
 

@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.collections import LineCollection
 import warnings
-from distutils.version import LooseVersion
 
 try:
     import statsmodels.nonparametric.api as smnp
@@ -216,10 +215,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if bins is None:
             bins = min(_freedman_diaconis_bins(a), 50)
         hist_kws.setdefault("alpha", 0.4)
-        if LooseVersion(mpl.__version__) < LooseVersion("2.2"):
-            hist_kws.setdefault("normed", norm_hist)
-        else:
-            hist_kws.setdefault("density", norm_hist)
+        hist_kws.setdefault("density", norm_hist)
 
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)

@@ -1,6 +1,5 @@
 from __future__ import division
 from itertools import product
-from distutils.version import LooseVersion
 import warnings
 from textwrap import dedent
 
@@ -232,9 +231,6 @@ class FacetGrid(Grid):
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
                  gridspec_kws=None, size=None):
 
-        MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
-        OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
-
         # Handle deprecations
         if size is not None:
             height = size
@@ -314,12 +310,6 @@ class FacetGrid(Grid):
                           sharex=sharex, sharey=sharey,
                           subplot_kw=subplot_kws,
                           gridspec_kw=gridspec_kws)
-
-            if OLD_MPL:
-                kwargs.pop('gridspec_kw', None)
-                if gridspec_kws:
-                    msg = "gridspec module only available in mpl >= {}"
-                    warnings.warn(msg.format(MPL_GRIDSPEC_VERSION))
 
             fig, axes = plt.subplots(nrow, ncol, **kwargs)
             self.axes = axes

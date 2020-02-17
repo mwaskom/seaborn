@@ -368,6 +368,7 @@ def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
     assert(isinstance(ds, pd.DataFrame))
 
+
 def check_load_cached_dataset(name):
     # Test the cacheing using a temporary file.
     # With Python 3.2+, we could use the tempfile.TemporaryDirectory()
@@ -384,6 +385,7 @@ def check_load_cached_dataset(name):
     finally:
         shutil.rmtree(tmpdir)
 
+
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_get_dataset_names():
     if not BeautifulSoup:
@@ -391,6 +393,7 @@ def test_get_dataset_names():
     names = get_dataset_names()
     assert(len(names) > 0)
     assert(u"titanic" in names)
+
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_datasets():
@@ -403,6 +406,7 @@ def test_load_datasets():
         # does not get in effect, so we need to call explicitly
         # yield check_load_dataset, name
         check_load_dataset(name)
+
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_cached_datasets():
