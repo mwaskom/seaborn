@@ -227,7 +227,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                     val = offset.get(side, 0)
                 except AttributeError:
                     val = offset
-                _set_spine_position(ax_i.spines[side], ('outward', val))
+                ax_i.spines[side].set_position(('outward', val))
 
         # Potentially move the ticks
         if left and not right:
@@ -285,24 +285,6 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = yticks.compress(yticks <= lasttick)
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_yticks(newticks)
-
-
-def _set_spine_position(spine, position):
-    """
-    Set the spine's position without resetting an associated axis.
-
-    As of matplotlib v. 1.0.0, if a spine has an associated axis, then
-    spine.set_position() calls axis.cla(), which resets locators, formatters,
-    etc.  We temporarily replace that call with axis.reset_ticks(), which is
-    sufficient for our purposes.
-    """
-    axis = spine.axis
-    if axis is not None:
-        cla = axis.cla
-        axis.cla = axis.reset_ticks
-    spine.set_position(position)
-    if axis is not None:
-        axis.cla = cla
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
