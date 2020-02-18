@@ -1,6 +1,7 @@
 """Tests for plotting utilities."""
 import tempfile
 import shutil
+import pytest
 
 import numpy as np
 import pandas as pd
@@ -112,12 +113,25 @@ def test_iqr():
     assert_equal(iqr, 2)
 
 
-def test_str_to_utf8():
-    """Test the to_utf8 function: string to Unicode"""
-    s = "\u01ff\u02ff"
+@pytest.mark.parametrize(
+    "s,exp",
+    [
+        ("a", "a"),
+        ("abc", "abc"),
+        (b"a", "a"),
+        (b"abc", "abc"),
+        (bytearray("abc", "utf-8"), "abc"),
+        (bytearray(), ""),
+        (1, "1"),
+        (0, "0"),
+        ([], str([])),
+    ],
+)
+def test_to_utf8(s, exp):
+    """Test the to_utf8 function: object to string"""
     u = utils.to_utf8(s)
-    assert_equal(type(s), type(str()))
-    assert_equal(type(u), type(u"\u01ff\u02ff"))
+    assert_equal(type(u), str)
+    assert_equal(u, exp)
 
 
 class TestSpineUtils(object):
