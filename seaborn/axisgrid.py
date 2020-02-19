@@ -1293,10 +1293,7 @@ class PairGrid(Grid):
         if corner:
             hide_indices = np.triu_indices_from(axes, 1)
             for i, j in zip(*hide_indices):
-                try:
-                    axes[i, j].remove()
-                except NotImplementedError:  # Problem on old matplotlibs?
-                    axes[i, j].set_axis_off()
+                axes[i, j].remove()
                 axes[i, j] = None
 
         self.fig = fig

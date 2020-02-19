@@ -325,15 +325,7 @@ class _CategoricalPlotter(object):
         orient = str(orient)
 
         def is_categorical(s):
-            try:
-                # Correct way, but does not exist in older Pandas
-                try:
-                    return pd.api.types.is_categorical_dtype(s)
-                except AttributeError:
-                    return pd.core.common.is_categorical_dtype(s)
-            except AttributeError:
-                # Also works, but feels hackier
-                return str(s.dtype) == "categorical"
+            return pd.api.types.is_categorical_dtype(s)
 
         def is_not_numeric(s):
             try:

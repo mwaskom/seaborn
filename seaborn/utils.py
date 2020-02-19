@@ -550,18 +550,7 @@ def locator_to_legend_entries(locator, limits, dtype):
 
 def get_color_cycle():
     """Return the list of colors in the current matplotlib color cycle."""
-    try:
-        cyl = mpl.rcParams['axes.prop_cycle']
-        try:
-            # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
-            # but no garuantee that there's a `color` key.
-            # so users could have a custom rcParmas w/ no color...
-            return [x['color'] for x in cyl]
-        except KeyError:
-            pass
-    except KeyError:
-        pass
-    return mpl.rcParams['axes.color_cycle']
+    return [x['color'] for x in mpl.rcParams['axes.prop_cycle']]
 
 
 def relative_luminance(color):

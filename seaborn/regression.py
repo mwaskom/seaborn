@@ -415,11 +415,7 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Draw the regression line and confidence interval
         line, = ax.plot(grid, yhat, **kws)
-        try:
-            line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
-        except AttributeError:
-            msg = "Cannot set sticky_edges; requires newer matplotlib."
-            warnings.warn(msg, UserWarning)
+        line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
 
