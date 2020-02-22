@@ -165,6 +165,11 @@ class TestRegressionPlotter(object):
         p = lm._RegressionPlotter("x", "y_na", data=self.df, dropna=False)
         nt.assert_equal(len(p.x), len(self.df.y_na))
 
+    def test_singleton(self):
+        lm._RegressionPlotter([1.5], [2])
+        lm._RegressionPlotter(np.asarray([1.5]), np.asarray([2]))
+        lm._RegressionPlotter(pd.Series(1.5), pd.Series(2))
+
     def test_ci(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, ci=95)

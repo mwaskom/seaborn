@@ -48,7 +48,7 @@ class _LinearPlotter(object):
                 vector = np.asarray(val)
             else:
                 vector = val
-            if vector is not None:
+            if vector is not None and vector.shape != (1,):
                 vector = np.squeeze(vector)
             if np.ndim(vector) > 1:
                 err = "regplot inputs must be 1d"
