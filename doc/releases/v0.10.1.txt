@@ -1,0 +1,7 @@
+
+v0.10.1 (Unreleased)
+--------------------
+
+This is minor release with bug fixes issues in 0.10.0.
+
+- Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
