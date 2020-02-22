@@ -127,8 +127,13 @@ class _RegressionPlotter(_LinearPlotter):
         else:
             self.x_discrete = self.x
 
+        # Disable regression in case of singleton inputs
+        if len(self.x) <= 1:
+            self.fit_reg = False
+
         # Save the range of the x variable for the grid later
-        self.x_range = self.x.min(), self.x.max()
+        if self.fit_reg:
+            self.x_range = self.x.min(), self.x.max()
 
     @property
     def scatter_data(self):
