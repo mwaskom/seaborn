@@ -1,4 +1,3 @@
-from __future__ import division
 from textwrap import dedent
 import colorsys
 import numpy as np

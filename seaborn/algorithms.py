@@ -1,5 +1,4 @@
 """Algorithms to support fitting routines in seaborn plotting functions."""
-from __future__ import division
 import numbers
 import numpy as np
 import warnings

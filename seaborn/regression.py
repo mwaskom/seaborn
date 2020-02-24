@@ -1,5 +1,4 @@
 """Plotting functions for linear models (broadly construed)."""
-from __future__ import division
 import copy
 from textwrap import dedent
 import warnings

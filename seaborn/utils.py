@@ -1,5 +1,4 @@
 """Small plotting-related utility functions."""
-from __future__ import print_function, division
 import colorsys
 import os
 

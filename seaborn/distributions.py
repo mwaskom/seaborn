@@ -1,5 +1,4 @@
 """Plotting functions for visualizing distributions."""
-from __future__ import division
 import numpy as np
 from scipy import stats
 import pandas as pd

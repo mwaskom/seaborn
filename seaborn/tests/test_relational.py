@@ -1,4 +1,3 @@
-from __future__ import division
 from itertools import product
 import warnings
 import numpy as np

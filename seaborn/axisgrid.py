@@ -1,4 +1,3 @@
-from __future__ import division
 from itertools import product
 import warnings
 from textwrap import dedent
