@@ -119,7 +119,7 @@ def test_sig_stars():
     stars4 = utils.sig_stars(0.09)
     assert_equal(stars4, ".")
     
-    stars5 = utils.sig_stars(0)
+    stars5 = utils.sig_stars(1)
     assert_equal(stars5, "")
 
     
