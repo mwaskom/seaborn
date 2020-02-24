@@ -105,6 +105,24 @@ def test_saturate():
     assert_equal(out, (1, 0, 0))
 
 
+def test_sig_stars():
+    """Test the sig stars function"""
+    stars1 = utils.sig_stars(0.0001)
+    assert_equal(stars1, "***")
+    
+    stars2 = utils.sig_stars(0.001)
+    assert_equal(stars2, "**")
+    
+    stars3 = utils.sig_stars(0.01)
+    assert_equal(stars3, "*")
+    
+    stars4 = utils.sig_stars(0.09)
+    assert_equal(stars4, ".")
+    
+    stars5 = utils.sig_stars(0)
+    assert_equal(stars5, "")
+
+    
 def test_iqr():
     """Test the IQR function."""
     a = np.arange(5)
