@@ -106,21 +106,21 @@ def test_saturate():
 
 
 def test_sig_stars():
-    """Test the sig stars function"""
-    stars1 = utils.sig_stars(0.0001)
-    assert_equal(stars1, "***")
+    """Test the sig stars function."""
+    stars = utils.sig_stars(0.0001)
+    assert_equal(stars, "***")
     
-    stars2 = utils.sig_stars(0.001)
-    assert_equal(stars2, "**")
+    stars = utils.sig_stars(0.001)
+    assert_equal(stars, "**")
     
-    stars3 = utils.sig_stars(0.01)
-    assert_equal(stars3, "*")
+    stars = utils.sig_stars(0.01)
+    assert_equal(stars, "*")
     
-    stars4 = utils.sig_stars(0.09)
-    assert_equal(stars4, ".")
+    stars = utils.sig_stars(0.09)
+    assert_equal(stars, ".")
     
-    stars5 = utils.sig_stars(1)
-    assert_equal(stars5, "")
+    stars = utils.sig_stars(1)
+    assert_equal(stars, "")
 
     
 def test_iqr():
