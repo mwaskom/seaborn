@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+import warnings
 from urllib.request import urlopen, urlretrieve
 from http.client import HTTPException
 
@@ -356,7 +357,13 @@ def ci(a, which=95, axis=None):
 
 
 def sig_stars(p):
-    """Return a R-style significance string corresponding to p values."""
+    """Return a R-style significance string corresponding to p values.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "sig_stars is deprecated and will be removed in a future version."
+    warnings.warn(msg)
     if p < 0.001:
         return "***"
     elif p < 0.01:
