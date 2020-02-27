@@ -1,6 +1,5 @@
 """Tests for plotting utilities."""
 import tempfile
-import shutil
 
 import numpy as np
 import pandas as pd
@@ -371,19 +370,13 @@ def check_load_dataset(name):
 
 def check_load_cached_dataset(name):
     # Test the cacheing using a temporary file.
-    # With Python 3.2+, we could use the tempfile.TemporaryDirectory()
-    # context manager instead of this try...finally statement
-    tmpdir = tempfile.mkdtemp()
-    try:
+    with tempfile.TemporaryDirectory() as tmpdir:
         # download and cache
         ds = load_dataset(name, cache=True, data_home=tmpdir)
 
         # use cached version
         ds2 = load_dataset(name, cache=True, data_home=tmpdir)
         pdt.assert_frame_equal(ds, ds2)
-
-    finally:
-        shutil.rmtree(tmpdir)
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
@@ -392,7 +385,7 @@ def test_get_dataset_names():
         raise nose.SkipTest("No BeautifulSoup available for parsing html")
     names = get_dataset_names()
     assert(len(names) > 0)
-    assert(u"titanic" in names)
+    assert("titanic" in names)
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")

@@ -435,14 +435,14 @@ class FacetGrid(Grid):
         {margin_titles}
         {{x, y}}lim: tuples, optional
             Limits for each of the axes on each facet (only relevant when
-            share{{x, y}} is True.
+            share{{x, y}} is True).
         subplot_kws : dict, optional
             Dictionary of keyword arguments passed to matplotlib subplot(s)
             methods.
         gridspec_kws : dict, optional
             Dictionary of keyword arguments passed to matplotlib's ``gridspec``
-            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
-            ignored if ``col_wrap`` is not ``None``.
+            module (via ``plt.subplots``). Ignored if ``col_wrap`` is not
+            ``None``.
 
         See Also
         --------

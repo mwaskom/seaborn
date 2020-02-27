@@ -1,7 +1,8 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
+import warnings
 import functools
 import matplotlib as mpl
-import warnings
+from cycler import cycler
 from . import palettes, _orig_rc_params
 
 
@@ -32,16 +33,11 @@ _style_keys = [
     "lines.solid_capstyle",
 
     "patch.edgecolor",
+    "patch.force_edgecolor",
 
     "image.cmap",
     "font.family",
     "font.sans-serif",
-
-    ]
-
-_style_keys.extend([
-
-    "patch.force_edgecolor",
 
     "xtick.bottom",
     "xtick.top",
@@ -53,7 +49,7 @@ _style_keys.extend([
     "axes.spines.right",
     "axes.spines.top",
 
-])
+    ]
 
 _context_keys = [
 
@@ -533,7 +529,6 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     """
     colors = palettes.color_palette(palette, n_colors, desat)
-    from cycler import cycler
     cyl = cycler('color', colors)
     mpl.rcParams['axes.prop_cycle'] = cyl
     mpl.rcParams["patch.facecolor"] = colors[0]
