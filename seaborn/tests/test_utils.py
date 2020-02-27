@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pytest
 import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
@@ -105,22 +106,14 @@ def test_saturate():
     assert_equal(out, (1, 0, 0))
 
 
-def test_sig_stars():
+@pytest.mark.parametrize(
+    "p,annot", [(.0001, "***"), (.001, "**"), (.01, "*"), (.09, "."), (1, "")]
+)
+def test_sig_stars(p, annot):
     """Test the sig stars function."""
-    stars = utils.sig_stars(0.0001)
-    assert_equal(stars, "***")
-
-    stars = utils.sig_stars(0.001)
-    assert_equal(stars, "**")
-
-    stars = utils.sig_stars(0.01)
-    assert_equal(stars, "*")
-
-    stars = utils.sig_stars(0.09)
-    assert_equal(stars, ".")
-
-    stars = utils.sig_stars(1)
-    assert_equal(stars, "")
+    with pytest.warns(UserWarning):
+        stars = utils.sig_stars(p)
+        assert_equal(stars, annot)
 
 
 def test_iqr():
