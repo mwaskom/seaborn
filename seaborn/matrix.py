@@ -1,5 +1,4 @@
 """Functions to visualize matrices of data."""
-from __future__ import division
 import itertools
 import warnings
 

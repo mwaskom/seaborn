@@ -11,9 +11,6 @@ from .. import palettes, utils, rcmod
 from ..external import husl
 from ..colors import xkcd_rgb, crayons
 
-from distutils.version import LooseVersion
-mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
-
 
 class TestColorPalettes(object):
 
@@ -360,9 +357,8 @@ class TestColorPalettes(object):
 
     def test_get_color_cycle(self):
 
-        if mpl_ge_150:
-            colors = [(1., 0., 0.), (0, 1., 0.)]
-            prop_cycle = plt.cycler(color=colors)
-            with plt.rc_context({"axes.prop_cycle": prop_cycle}):
-                result = utils.get_color_cycle()
-                assert result == colors
+        colors = [(1., 0., 0.), (0, 1., 0.)]
+        prop_cycle = plt.cycler(color=colors)
+        with plt.rc_context({"axes.prop_cycle": prop_cycle}):
+            result = utils.get_color_cycle()
+            assert result == colors

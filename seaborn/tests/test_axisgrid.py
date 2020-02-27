@@ -14,8 +14,6 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from distutils.version import LooseVersion
-
 from .. import axisgrid as ag
 from .. import rcmod
 from ..palettes import color_palette
@@ -831,8 +829,6 @@ class TestPairGrid(object):
         nt.assert_equal(g.y_vars, list(y_vars))
         nt.assert_true(not g.square_grid)
 
-    @pytest.mark.xfail(LooseVersion(mpl.__version__) < "1.5",
-                       reason="Expected failure on older matplotlib")
     def test_corner(self):
 
         plot_vars = ["x", "y", "z"]
