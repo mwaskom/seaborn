@@ -1,4 +1,3 @@
-from __future__ import division
 from textwrap import dedent
 import colorsys
 import numpy as np
@@ -325,15 +324,7 @@ class _CategoricalPlotter(object):
         orient = str(orient)
 
         def is_categorical(s):
-            try:
-                # Correct way, but does not exist in older Pandas
-                try:
-                    return pd.api.types.is_categorical_dtype(s)
-                except AttributeError:
-                    return pd.core.common.is_categorical_dtype(s)
-            except AttributeError:
-                # Also works, but feels hackier
-                return str(s.dtype) == "categorical"
+            return pd.api.types.is_categorical_dtype(s)
 
         def is_not_numeric(s):
             try:
@@ -709,15 +700,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def fit_kde(self, x, bw):
         """Estimate a KDE for a vector of data with flexible bandwidth."""
-        # Allow for the use of old scipy where `bw` is fixed
-        try:
-            kde = stats.gaussian_kde(x, bw)
-        except TypeError:
-            kde = stats.gaussian_kde(x)
-            if bw != "scott":  # scipy default
-                msg = ("Ignoring bandwidth choice, "
-                       "please upgrade scipy to use a different bandwidth.")
-                warnings.warn(msg, UserWarning)
+        kde = stats.gaussian_kde(x, bw)
 
         # Extract the numeric bandwidth from the KDE object
         bw_used = kde.factor

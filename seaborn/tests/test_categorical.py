@@ -1,12 +1,9 @@
 import numpy as np
 import pandas as pd
-import scipy
 from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
-
-from distutils.version import LooseVersion
 
 import pytest
 import nose.tools as nt
@@ -14,10 +11,6 @@ import numpy.testing as npt
 
 from .. import categorical as cat
 from .. import palettes
-
-
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-mpl_barplot_change = LooseVersion("2.0.1")
 
 
 class CategoricalFixture(object):
@@ -231,24 +224,23 @@ class TestCategoricalPlotter(CategoricalFixture):
             npt.assert_array_equal(hues, self.h[self.g == group])
 
         # Test categorical grouping data
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.g = df.g.astype("category")
+        df = self.df.copy()
+        df.g = df.g.astype("category")
 
-            # Test that horizontal orientation is automatically detected
-            p.establish_variables("y", "g", "h", data=df)
-            nt.assert_equal(len(p.plot_data), 3)
-            nt.assert_equal(len(p.plot_hues), 3)
-            nt.assert_equal(p.orient, "h")
-            nt.assert_equal(p.value_label, "y")
-            nt.assert_equal(p.group_label, "g")
-            nt.assert_equal(p.hue_title, "h")
+        # Test that horizontal orientation is automatically detected
+        p.establish_variables("y", "g", "h", data=df)
+        nt.assert_equal(len(p.plot_data), 3)
+        nt.assert_equal(len(p.plot_hues), 3)
+        nt.assert_equal(p.orient, "h")
+        nt.assert_equal(p.value_label, "y")
+        nt.assert_equal(p.group_label, "g")
+        nt.assert_equal(p.hue_title, "h")
 
-            for group, vals in zip(["a", "b", "c"], p.plot_data):
-                npt.assert_array_equal(vals, self.y[self.g == group])
+        for group, vals in zip(["a", "b", "c"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
 
-            for group, hues in zip(["a", "b", "c"], p.plot_hues):
-                npt.assert_array_equal(hues, self.h[self.g == group])
+        for group, hues in zip(["a", "b", "c"], p.plot_hues):
+            npt.assert_array_equal(hues, self.h[self.g == group])
 
         # Test grouped data that matches on index
         p1 = cat._CategoricalPlotter()
@@ -299,20 +291,19 @@ class TestCategoricalPlotter(CategoricalFixture):
             npt.assert_array_equal(vals, self.y[self.g == group])
 
         # Test inferred order from a grouped input with categorical groups
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.g = df.g.astype("category")
-            df.g = df.g.cat.reorder_categories(["c", "b", "a"])
-            p.establish_variables("g", "y", data=df)
-            nt.assert_equal(p.group_names, ["c", "b", "a"])
+        df = self.df.copy()
+        df.g = df.g.astype("category")
+        df.g = df.g.cat.reorder_categories(["c", "b", "a"])
+        p.establish_variables("g", "y", data=df)
+        nt.assert_equal(p.group_names, ["c", "b", "a"])
 
-            for group, vals in zip(["c", "b", "a"], p.plot_data):
-                npt.assert_array_equal(vals, self.y[self.g == group])
+        for group, vals in zip(["c", "b", "a"], p.plot_data):
+            npt.assert_array_equal(vals, self.y[self.g == group])
 
-            df.g = (df.g.cat.add_categories("d")
-                        .cat.reorder_categories(["c", "b", "d", "a"]))
-            p.establish_variables("g", "y", data=df)
-            nt.assert_equal(p.group_names, ["c", "b", "d", "a"])
+        df.g = (df.g.cat.add_categories("d")
+                    .cat.reorder_categories(["c", "b", "d", "a"]))
+        p.establish_variables("g", "y", data=df)
+        nt.assert_equal(p.group_names, ["c", "b", "d", "a"])
 
     def test_hue_order(self):
 
@@ -328,17 +319,16 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_equal(p.hue_names, ["n", "m"])
 
         # Test inferred hue order from a categorical hue input
-        if pandas_has_categoricals:
-            df = self.df.copy()
-            df.h = df.h.astype("category")
-            df.h = df.h.cat.reorder_categories(["n", "m"])
-            p.establish_variables("g", "y", "h", data=df)
-            nt.assert_equal(p.hue_names, ["n", "m"])
+        df = self.df.copy()
+        df.h = df.h.astype("category")
+        df.h = df.h.cat.reorder_categories(["n", "m"])
+        p.establish_variables("g", "y", "h", data=df)
+        nt.assert_equal(p.hue_names, ["n", "m"])
 
-            df.h = (df.h.cat.add_categories("o")
-                        .cat.reorder_categories(["o", "m", "n"]))
-            p.establish_variables("g", "y", "h", data=df)
-            nt.assert_equal(p.hue_names, ["o", "m", "n"])
+        df.h = (df.h.cat.add_categories("o")
+                    .cat.reorder_categories(["o", "m", "n"]))
+        p.establish_variables("g", "y", "h", data=df)
+        nt.assert_equal(p.hue_names, ["o", "m", "n"])
 
     def test_plot_units(self):
 
@@ -367,13 +357,12 @@ class TestCategoricalPlotter(CategoricalFixture):
         with nt.assert_raises(ValueError):
             p.infer_orient(cats, cats)
 
-        if pandas_has_categoricals:
-            cats = pd.Series([0, 1, 2] * 10, dtype="category")
-            nt.assert_equal(p.infer_orient(cats, nums), "v")
-            nt.assert_equal(p.infer_orient(nums, cats), "h")
+        cats = pd.Series([0, 1, 2] * 10, dtype="category")
+        nt.assert_equal(p.infer_orient(cats, nums), "v")
+        nt.assert_equal(p.infer_orient(nums, cats), "h")
 
-            with nt.assert_raises(ValueError):
-                p.infer_orient(cats, cats)
+        with nt.assert_raises(ValueError):
+            p.infer_orient(cats, cats)
 
     def test_default_palettes(self):
 
@@ -1164,25 +1153,17 @@ class TestViolinPlotter(CategoricalFixture):
         data = self.y
         data_std = data.std(ddof=1)
 
-        # Bandwidth behavior depends on scipy version
-        if LooseVersion(scipy.__version__) < "0.11":
-            # Test ignoring custom bandwidth on old scipy
-            kde, bw = p.fit_kde(self.y, .2)
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, kde.scotts_factor())
+        # Test reference rule bandwidth
+        kde, bw = p.fit_kde(data, "scott")
+        nt.assert_is_instance(kde, stats.gaussian_kde)
+        nt.assert_equal(kde.factor, kde.scotts_factor())
+        nt.assert_equal(bw, kde.scotts_factor() * data_std)
 
-        else:
-            # Test reference rule bandwidth
-            kde, bw = p.fit_kde(data, "scott")
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, kde.scotts_factor())
-            nt.assert_equal(bw, kde.scotts_factor() * data_std)
-
-            # Test numeric scale factor
-            kde, bw = p.fit_kde(self.y, .2)
-            nt.assert_is_instance(kde, stats.gaussian_kde)
-            nt.assert_equal(kde.factor, .2)
-            nt.assert_equal(bw, .2 * data_std)
+        # Test numeric scale factor
+        kde, bw = p.fit_kde(self.y, .2)
+        nt.assert_is_instance(kde, stats.gaussian_kde)
+        nt.assert_equal(kde.factor, .2)
+        nt.assert_equal(bw, .2 * data_std)
 
     def test_draw_to_density(self):
 
@@ -1982,12 +1963,8 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_x(), pos)
             nt.assert_equal(bar.get_width(), p.width)
-            if mpl.__version__ >= mpl_barplot_change:
-                nt.assert_equal(bar.get_y(), 0)
-                nt.assert_equal(bar.get_height(), stat)
-            else:
-                nt.assert_equal(bar.get_y(), min(0, stat))
-                nt.assert_equal(bar.get_height(), abs(stat))
+            nt.assert_equal(bar.get_y(), 0)
+            nt.assert_equal(bar.get_height(), stat)
 
     def test_draw_horizontal_bars(self):
 
@@ -2008,12 +1985,8 @@ class TestBarPlotter(CategoricalFixture):
         for bar, pos, stat in zip(ax.patches, positions, p.statistic):
             nt.assert_equal(bar.get_y(), pos)
             nt.assert_equal(bar.get_height(), p.width)
-            if mpl.__version__ >= mpl_barplot_change:
-                nt.assert_equal(bar.get_x(), 0)
-                nt.assert_equal(bar.get_width(), stat)
-            else:
-                nt.assert_equal(bar.get_x(), min(0, stat))
-                nt.assert_equal(bar.get_width(), abs(stat))
+            nt.assert_equal(bar.get_x(), 0)
+            nt.assert_equal(bar.get_width(), stat)
 
     def test_draw_nested_vertical_bars(self):
 
@@ -2039,12 +2012,8 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_width(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
-                nt.assert_almost_equal(bar.get_y(), 0)
-                nt.assert_almost_equal(bar.get_height(), stat)
-            else:
-                nt.assert_almost_equal(bar.get_y(), min(0, stat))
-                nt.assert_almost_equal(bar.get_height(), abs(stat))
+            nt.assert_almost_equal(bar.get_y(), 0)
+            nt.assert_almost_equal(bar.get_height(), stat)
 
     def test_draw_nested_horizontal_bars(self):
 
@@ -2070,12 +2039,8 @@ class TestBarPlotter(CategoricalFixture):
             nt.assert_almost_equal(bar.get_height(), p.nested_width)
 
         for bar, stat in zip(ax.patches, p.statistic.T.flat):
-            if LooseVersion(mpl.__version__) >= mpl_barplot_change:
-                nt.assert_almost_equal(bar.get_x(), 0)
-                nt.assert_almost_equal(bar.get_width(), stat)
-            else:
-                nt.assert_almost_equal(bar.get_x(), min(0, stat))
-                nt.assert_almost_equal(bar.get_width(), abs(stat))
+            nt.assert_almost_equal(bar.get_x(), 0)
+            nt.assert_almost_equal(bar.get_width(), stat)
 
     def test_draw_missing_bars(self):
 

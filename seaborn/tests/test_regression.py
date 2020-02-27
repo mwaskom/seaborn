@@ -10,8 +10,6 @@ try:
     import pandas.testing as pdt
 except ImportError:
     import pandas.util.testing as pdt
-from nose import SkipTest
-from distutils.version import LooseVersion
 
 try:
     import statsmodels.regression.linear_model as smlm
@@ -561,9 +559,6 @@ class TestRegressionPlots(object):
 
     def test_lmplot_marker_linewidths(self):
 
-        if mpl.__version__ == "1.4.2":
-            raise SkipTest
-
         g = lm.lmplot("x", "y", data=self.df, hue="h",
                       fit_reg=False, markers=["o", "+"])
         c = g.axes[0, 0].collections
@@ -623,8 +618,6 @@ class TestRegressionPlots(object):
         npt.assert_almost_equal(color[0, :3],
                                 (1, 0, 0))
 
-    @pytest.mark.skipif(LooseVersion(mpl.__version__) < "2.0",
-                        reason="not supported on old matplotlib")
     def test_regplot_xlim(self):
 
         f, ax = plt.subplots()

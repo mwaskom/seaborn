@@ -4,7 +4,6 @@ Sphinx plugin to run example scripts and create a gallery page.
 Lightly modified from the mpld3 project.
 
 """
-from __future__ import division
 import os
 import os.path as op
 import re
