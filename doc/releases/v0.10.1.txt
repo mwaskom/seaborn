@@ -1,0 +1,13 @@
+
+v0.10.1 (Unreleased)
+--------------------
+
+This is minor release with bug fixes issues in 0.10.0.
+
+- Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
+
+- Fixed a bug where :func:`regplot` would crash on singleton inputs. Now a crash is avoided and regression estimation/plotting is skipped.
+
+- Fixed a bug where :func:`heatmap` would ignore user-specified under/over/bad values when recentering a colormap.
+
+- Fixed a bug where :func:`heatmap` would use values from masked cells when computing default colormap limits.

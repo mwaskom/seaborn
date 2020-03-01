@@ -1,5 +1,6 @@
 import itertools
 import tempfile
+import copy
 
 import numpy as np
 import matplotlib as mpl
@@ -95,6 +96,25 @@ class TestHeatmap(object):
         plot_data = np.ma.masked_where(mask, self.x_norm)
 
         npt.assert_array_equal(p.plot_data, plot_data)
+
+    def test_mask_limits(self):
+        """Make sure masked cells are not used to calculate extremes"""
+
+        kws = self.default_kws.copy()
+
+        mask = self.x_norm > 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+
+        mask = self.x_norm < 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
 
     def test_default_vlims(self):
 
@@ -199,6 +219,45 @@ class TestHeatmap(object):
         ax = mat.heatmap([vals], center=.5, cmap=cmap)
         fc = ax.collections[0].get_facecolors()
         npt.assert_array_almost_equal(fc, cmap(vals), 2)
+
+    def test_cmap_with_properties(self):
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_bad("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(
+            cmap(np.ma.masked_invalid([np.nan])),
+            hm.cmap(np.ma.masked_invalid([np.nan])))
+
+        kws["center"] = 0.5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(
+            cmap(np.ma.masked_invalid([np.nan])),
+            hm.cmap(np.ma.masked_invalid([np.nan])))
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_under("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws["center"] = .5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_over("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws["center"] = .5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(np.inf), hm.cmap(np.inf))
 
     def test_tickabels_off(self):
         kws = self.default_kws.copy()

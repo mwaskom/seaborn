@@ -1,7 +1,5 @@
-from __future__ import division
 from itertools import product
 from textwrap import dedent
-from distutils.version import LooseVersion
 import warnings
 
 import numpy as np
@@ -23,10 +21,7 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 
 class _RelationalPlotter(object):
 
-    if LooseVersion(mpl.__version__) >= "2.0":
-        default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
-    else:
-        default_markers = ["o", "s", "D", "^", "v", "p"]
+    default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
                       (5, 1, 2, 1, 2, 1)]

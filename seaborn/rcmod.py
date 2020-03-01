@@ -1,13 +1,9 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
-from distutils.version import LooseVersion
+import warnings
 import functools
 import matplotlib as mpl
-import warnings
+from cycler import cycler
 from . import palettes, _orig_rc_params
-
-
-mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
-mpl_ge_2 = LooseVersion(mpl.__version__) >= '2.0'
 
 
 __all__ = ["set", "reset_defaults", "reset_orig",
@@ -37,30 +33,23 @@ _style_keys = [
     "lines.solid_capstyle",
 
     "patch.edgecolor",
+    "patch.force_edgecolor",
 
     "image.cmap",
     "font.family",
     "font.sans-serif",
 
+    "xtick.bottom",
+    "xtick.top",
+    "ytick.left",
+    "ytick.right",
+
+    "axes.spines.left",
+    "axes.spines.bottom",
+    "axes.spines.right",
+    "axes.spines.top",
+
     ]
-
-if mpl_ge_2:
-
-    _style_keys.extend([
-
-        "patch.force_edgecolor",
-
-        "xtick.bottom",
-        "xtick.top",
-        "ytick.left",
-        "ytick.right",
-
-        "axes.spines.left",
-        "axes.spines.bottom",
-        "axes.spines.right",
-        "axes.spines.top",
-
-    ])
 
 _context_keys = [
 
@@ -540,12 +529,8 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     """
     colors = palettes.color_palette(palette, n_colors, desat)
-    if mpl_ge_150:
-        from cycler import cycler
-        cyl = cycler('color', colors)
-        mpl.rcParams['axes.prop_cycle'] = cyl
-    else:
-        mpl.rcParams["axes.color_cycle"] = list(colors)
+    cyl = cycler('color', colors)
+    mpl.rcParams['axes.prop_cycle'] = cyl
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         try:

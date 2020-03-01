@@ -1,6 +1,4 @@
-from __future__ import division
 from itertools import product
-from distutils.version import LooseVersion
 import warnings
 from textwrap import dedent
 
@@ -232,9 +230,6 @@ class FacetGrid(Grid):
                  margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
                  gridspec_kws=None, size=None):
 
-        MPL_GRIDSPEC_VERSION = LooseVersion('1.4')
-        OLD_MPL = LooseVersion(mpl.__version__) < MPL_GRIDSPEC_VERSION
-
         # Handle deprecations
         if size is not None:
             height = size
@@ -314,12 +309,6 @@ class FacetGrid(Grid):
                           sharex=sharex, sharey=sharey,
                           subplot_kw=subplot_kws,
                           gridspec_kw=gridspec_kws)
-
-            if OLD_MPL:
-                kwargs.pop('gridspec_kw', None)
-                if gridspec_kws:
-                    msg = "gridspec module only available in mpl >= {}"
-                    warnings.warn(msg.format(MPL_GRIDSPEC_VERSION))
 
             fig, axes = plt.subplots(nrow, ncol, **kwargs)
             self.axes = axes
@@ -446,14 +435,14 @@ class FacetGrid(Grid):
         {margin_titles}
         {{x, y}}lim: tuples, optional
             Limits for each of the axes on each facet (only relevant when
-            share{{x, y}} is True.
+            share{{x, y}} is True).
         subplot_kws : dict, optional
             Dictionary of keyword arguments passed to matplotlib subplot(s)
             methods.
         gridspec_kws : dict, optional
             Dictionary of keyword arguments passed to matplotlib's ``gridspec``
-            module (via ``plt.subplots``). Requires matplotlib >= 1.4 and is
-            ignored if ``col_wrap`` is not ``None``.
+            module (via ``plt.subplots``). Ignored if ``col_wrap`` is not
+            ``None``.
 
         See Also
         --------
@@ -1303,10 +1292,7 @@ class PairGrid(Grid):
         if corner:
             hide_indices = np.triu_indices_from(axes, 1)
             for i, j in zip(*hide_indices):
-                try:
-                    axes[i, j].remove()
-                except NotImplementedError:  # Problem on old matplotlibs?
-                    axes[i, j].set_axis_off()
+                axes[i, j].remove()
                 axes[i, j] = None
 
         self.fig = fig

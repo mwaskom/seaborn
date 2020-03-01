@@ -1,6 +1,5 @@
 """Tests for plotting utilities."""
 import tempfile
-import shutil
 import pytest
 
 import numpy as np
@@ -25,9 +24,6 @@ except ImportError:
 
 from .. import utils, rcmod
 from ..utils import get_dataset_names, load_dataset, _network
-
-
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
 
 
 a_norm = np.random.randn(100)
@@ -104,6 +100,16 @@ def test_saturate():
     """Test performance of saturation function."""
     out = utils.saturate((.75, .25, .25))
     assert_equal(out, (1, 0, 0))
+
+
+@pytest.mark.parametrize(
+    "p,annot", [(.0001, "***"), (.001, "**"), (.01, "*"), (.09, "."), (1, "")]
+)
+def test_sig_stars(p, annot):
+    """Test the sig stars function."""
+    with pytest.warns(UserWarning):
+        stars = utils.sig_stars(p)
+        assert_equal(stars, annot)
 
 
 def test_iqr():
@@ -332,17 +338,16 @@ def test_categorical_order():
     out = utils.categorical_order(pd.Series(y))
     nt.assert_equal(out, [1, 2, 3, 4, 5])
 
-    if pandas_has_categoricals:
-        x = pd.Categorical(x, order)
-        out = utils.categorical_order(x)
-        nt.assert_equal(out, list(x.categories))
+    x = pd.Categorical(x, order)
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, list(x.categories))
 
-        x = pd.Series(x)
-        out = utils.categorical_order(x)
-        nt.assert_equal(out, list(x.cat.categories))
+    x = pd.Series(x)
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, list(x.cat.categories))
 
-        out = utils.categorical_order(x, ["b", "a"])
-        nt.assert_equal(out, ["b", "a"])
+    out = utils.categorical_order(x, ["b", "a"])
+    nt.assert_equal(out, ["b", "a"])
 
     x = ["a", np.nan, "c", "c", "b", "a", "d"]
     out = utils.categorical_order(x)
@@ -382,59 +387,55 @@ def test_locator_to_legend_entries():
         assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
 
 
-if LooseVersion(pd.__version__) >= "0.15":
+def check_load_dataset(name):
+    ds = load_dataset(name, cache=False)
+    assert(isinstance(ds, pd.DataFrame))
 
-    def check_load_dataset(name):
-        ds = load_dataset(name, cache=False)
-        assert(isinstance(ds, pd.DataFrame))
 
-    def check_load_cached_dataset(name):
-        # Test the cacheing using a temporary file.
-        # With Python 3.2+, we could use the tempfile.TemporaryDirectory()
-        # context manager instead of this try...finally statement
-        tmpdir = tempfile.mkdtemp()
-        try:
-            # download and cache
-            ds = load_dataset(name, cache=True, data_home=tmpdir)
+def check_load_cached_dataset(name):
+    # Test the cacheing using a temporary file.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # download and cache
+        ds = load_dataset(name, cache=True, data_home=tmpdir)
 
-            # use cached version
-            ds2 = load_dataset(name, cache=True, data_home=tmpdir)
-            pdt.assert_frame_equal(ds, ds2)
+        # use cached version
+        ds2 = load_dataset(name, cache=True, data_home=tmpdir)
+        pdt.assert_frame_equal(ds, ds2)
 
-        finally:
-            shutil.rmtree(tmpdir)
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_get_dataset_names():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
-        names = get_dataset_names()
-        assert(len(names) > 0)
-        assert(u"titanic" in names)
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_get_dataset_names():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+    names = get_dataset_names()
+    assert(len(names) > 0)
+    assert("titanic" in names)
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_load_datasets():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
 
-        # Heavy test to verify that we can load all available datasets
-        for name in get_dataset_names():
-            # unfortunately @network somehow obscures this generator so it
-            # does not get in effect, so we need to call explicitly
-            # yield check_load_dataset, name
-            check_load_dataset(name)
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_load_datasets():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_load_cached_datasets():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
+    # Heavy test to verify that we can load all available datasets
+    for name in get_dataset_names():
+        # unfortunately @network somehow obscures this generator so it
+        # does not get in effect, so we need to call explicitly
+        # yield check_load_dataset, name
+        check_load_dataset(name)
 
-        # Heavy test to verify that we can load all available datasets
-        for name in get_dataset_names():
-            # unfortunately @network somehow obscures this generator so it
-            # does not get in effect, so we need to call explicitly
-            # yield check_load_dataset, name
-            check_load_cached_dataset(name)
+
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_load_cached_datasets():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+
+    # Heavy test to verify that we can load all available datasets
+    for name in get_dataset_names():
+        # unfortunately @network somehow obscures this generator so it
+        # does not get in effect, so we need to call explicitly
+        # yield check_load_dataset, name
+        check_load_cached_dataset(name)
 
 
 def test_relative_luminance():

@@ -1,5 +1,4 @@
 """Plotting functions for linear models (broadly construed)."""
-from __future__ import division
 import copy
 from textwrap import dedent
 import warnings
@@ -48,7 +47,7 @@ class _LinearPlotter(object):
                 vector = np.asarray(val)
             else:
                 vector = val
-            if vector is not None:
+            if vector is not None and vector.shape != (1,):
                 vector = np.squeeze(vector)
             if np.ndim(vector) > 1:
                 err = "regplot inputs must be 1d"
@@ -127,8 +126,13 @@ class _RegressionPlotter(_LinearPlotter):
         else:
             self.x_discrete = self.x
 
+        # Disable regression in case of singleton inputs
+        if len(self.x) <= 1:
+            self.fit_reg = False
+
         # Save the range of the x variable for the grid later
-        self.x_range = self.x.min(), self.x.max()
+        if self.fit_reg:
+            self.x_range = self.x.min(), self.x.max()
 
     @property
     def scatter_data(self):
@@ -415,11 +419,7 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Draw the regression line and confidence interval
         line, = ax.plot(grid, yhat, **kws)
-        try:
-            line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
-        except AttributeError:
-            msg = "Cannot set sticky_edges; requires newer matplotlib."
-            warnings.warn(msg, UserWarning)
+        line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
 
@@ -536,9 +536,8 @@ _regression_docs = dict(
     """),
     truncate=dedent("""\
     truncate : bool, optional
-        By default, the regression line is drawn to fill the x axis limits
-        after the scatterplot is drawn. If ``truncate`` is ``True``, it will
-        instead by bounded by the data limits.\
+        If ``True``, the regression line is bounded by the data limits. If
+        ``False``, it extends to the ``x`` axis limits.
     """),
     xy_jitter=dedent("""\
     {x,y}_jitter : floats, optional
