@@ -34,7 +34,7 @@ Dependencies
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <http://www.numpy.org/>`__ (>= 1.13.3)
+-  `numpy <https://numpy.org/>`__ (>= 1.13.3)
 
 -  `scipy <https://www.scipy.org/>`__ (>= 1.0.1)
 
