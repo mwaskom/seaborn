@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cycler import cycler
 import pytest
 import nose
 import nose.tools as nt
@@ -372,6 +373,23 @@ def test_locator_to_legend_entries():
     )
     if LooseVersion(mpl.__version__) >= "3.1":
         assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
+
+
+@pytest.mark.parametrize(
+    "cycler,result",
+    [
+        (cycler(color=["y"]), ["y"]),
+        (cycler(color=["k"]), ["k"]),
+        (cycler(color=["k", "y"]), ["k", "y"]),
+        (cycler(color=["y", "k"]), ["y", "k"]),
+        (cycler(color=["b", "r"]), ["b", "r"]),
+        (cycler(color=["r", "b"]), ["r", "b"]),
+        (cycler(lw=[1, 2]), ["k"]),  # no color in cycle
+    ],
+)
+def test_get_color_cycle(cycler, result):
+    with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
+        assert utils.get_color_cycle() == result
 
 
 def check_load_dataset(name):
