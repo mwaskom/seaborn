@@ -211,6 +211,7 @@ class TestSpineUtils(object):
                                 self.original_position)
 
     def test_despine_trim_spines(self):
+
         f, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_xlim(.75, 3.25)
@@ -239,6 +240,19 @@ class TestSpineUtils(object):
         ax.set_yticks([])
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
+
+    def test_despine_trim_categorical(self):
+
+        f, ax = plt.subplots()
+        ax.plot(["a", "b", "c"], [1, 2, 3])
+
+        utils.despine(trim=True)
+
+        bounds = ax.spines["left"].get_bounds()
+        nt.assert_equal(bounds, (1, 3))
+
+        bounds = ax.spines["bottom"].get_bounds()
+        nt.assert_equal(bounds, (0, 2))
 
     def test_despine_moved_ticks(self):
 
