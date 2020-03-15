@@ -384,7 +384,7 @@ def test_locator_to_legend_entries():
         (cycler(color=["y", "k"]), ["y", "k"]),
         (cycler(color=["b", "r"]), ["b", "r"]),
         (cycler(color=["r", "b"]), ["r", "b"]),
-        (cycler(lw=[1, 2]), ["k"]),  # no color in cycle
+        (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
     ],
 )
 def test_get_color_cycle(cycler, result):

@@ -564,11 +564,11 @@ def get_color_cycle():
     Returns
     -------
     colors : list
-        List of matplotlib colors in the current cycle, or ``list('k')`` if
+        List of matplotlib colors in the current cycle, or dark gray if
         the current color cycle is empty.
     """
     cycler = mpl.rcParams['axes.prop_cycle']
-    return cycler.by_key()['color'] if 'color' in cycler.keys else list('k')
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def relative_luminance(color):
