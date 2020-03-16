@@ -153,11 +153,11 @@ class Grid(object):
             hue_names = utils.categorical_order(data[hue], hue_order)
             n_colors = len(hue_names)
 
-            # By default use either the current color palette or HUSL
+            # By default use either the current color palette or HSLuv
             if palette is None:
                 current_palette = utils.get_color_cycle()
                 if n_colors > len(current_palette):
-                    colors = color_palette("husl", n_colors)
+                    colors = color_palette("hsluv", n_colors)
                 else:
                     colors = color_palette(n_colors=n_colors)
 
@@ -1992,7 +1992,7 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     .. plot::
         :context: close-figs
 
-        >>> g = sns.pairplot(iris, hue="species", palette="husl")
+        >>> g = sns.pairplot(iris, hue="species", palette="hsluv")
 
     Use different markers for each level of the hue variable:
 

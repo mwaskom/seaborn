@@ -209,7 +209,7 @@ class _RelationalPlotter(object):
                 if n_colors <= len(get_color_cycle()):
                     colors = color_palette(None, n_colors)
                 else:
-                    colors = color_palette("husl", n_colors)
+                    colors = color_palette("hsluv", n_colors)
             elif isinstance(palette, list):
                 if len(palette) != n_colors:
                     err = "The palette list has the wrong number of colors."

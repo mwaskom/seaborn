@@ -8,7 +8,7 @@ import numpy.testing as npt
 import matplotlib.pyplot as plt
 
 from .. import palettes, utils, rcmod
-from ..external import husl
+from ..external import hsluv
 from ..colors import xkcd_rgb, crayons
 
 
@@ -34,7 +34,7 @@ class TestColorPalettes(object):
     def test_big_palette_context(self):
 
         original_pal = palettes.color_palette("deep", n_colors=8)
-        context_pal = palettes.color_palette("husl", 10)
+        context_pal = palettes.color_palette("hsluv", 10)
 
         rcmod.set_palette(original_pal)
         with palettes.color_palette(context_pal, 10):
@@ -56,7 +56,7 @@ class TestColorPalettes(object):
         pal = palettes.color_palette("Set3")
         assert len(pal) == palettes.QUAL_PALETTE_SIZES["Set3"]
 
-        pal = palettes.color_palette("husl")
+        pal = palettes.color_palette("hsluv")
         assert len(pal) == 6
 
         pal = palettes.color_palette("Greens")
@@ -77,11 +77,11 @@ class TestColorPalettes(object):
         hls_pal2 = palettes.color_palette("hls")
         npt.assert_array_equal(hls_pal1, hls_pal2)
 
-    def test_husl_palette(self):
+    def test_hsluv_palette(self):
 
-        husl_pal1 = palettes.husl_palette()
-        husl_pal2 = palettes.color_palette("husl")
-        npt.assert_array_equal(husl_pal1, husl_pal2)
+        hsluv_pal1 = palettes.hsluv_palette()
+        hsluv_pal2 = palettes.color_palette("hsluv")
+        npt.assert_array_equal(hsluv_pal1, hsluv_pal2)
 
     def test_mpl_palette(self):
 
@@ -113,9 +113,9 @@ class TestColorPalettes(object):
 
     def test_palette_desat(self):
 
-        pal1 = palettes.husl_palette(6)
+        pal1 = palettes.hsluv_palette(6)
         pal1 = [utils.desaturate(c, .5) for c in pal1]
-        pal2 = palettes.color_palette("husl", desat=.5)
+        pal2 = palettes.color_palette("hsluv", desat=.5)
         npt.assert_array_equal(pal1, pal2)
 
     def test_palette_is_list_of_tuples(self):
@@ -151,20 +151,20 @@ class TestColorPalettes(object):
         npt.assert_array_less(list(map(np.std, pal_flat)),
                               list(map(np.std, pal_bold)))
 
-    def test_husl_values(self):
+    def test_hsluv_values(self):
 
-        pal1 = palettes.husl_palette(6, h=0)
-        pal2 = palettes.husl_palette(6, h=.5)
+        pal1 = palettes.hsluv_palette(6, h=0)
+        pal2 = palettes.hsluv_palette(6, h=.5)
         pal2 = pal2[3:] + pal2[:3]
         npt.assert_array_almost_equal(pal1, pal2)
 
-        pal_dark = palettes.husl_palette(5, l=.2)  # noqa
-        pal_bright = palettes.husl_palette(5, l=.8)  # noqa
+        pal_dark = palettes.hsluv_palette(5, l=.2)  # noqa
+        pal_bright = palettes.hsluv_palette(5, l=.8)  # noqa
         npt.assert_array_less(list(map(sum, pal_dark)),
                               list(map(sum, pal_bright)))
 
-        pal_flat = palettes.husl_palette(5, s=.1)
-        pal_bold = palettes.husl_palette(5, s=.9)
+        pal_flat = palettes.hsluv_palette(5, s=.1)
+        pal_bold = palettes.hsluv_palette(5, s=.9)
         npt.assert_array_less(list(map(np.std, pal_flat)),
                               list(map(np.std, pal_bold)))
 
@@ -191,11 +191,11 @@ class TestColorPalettes(object):
         rgb_want = colorsys.hls_to_rgb(*color)
         nt.assert_equal(rgb_got, rgb_want)
 
-    def test_rgb_from_husl(self):
+    def test_rgb_from_hsluv(self):
 
         color = 120, 50, 40
-        rgb_got = palettes._color_to_rgb(color, "husl")
-        rgb_want = husl.husl_to_rgb(*color)
+        rgb_got = palettes._color_to_rgb(color, "hsluv")
+        rgb_want = hsluv.hsluv_to_rgb(color)
         nt.assert_equal(rgb_got, rgb_want)
 
     def test_rgb_from_xkcd(self):
@@ -238,9 +238,9 @@ class TestColorPalettes(object):
         n = 12
         pal = palettes.diverging_palette(*args,  n=n)
         neg_pal = palettes.light_palette((h_neg, sat, lum), int(n // 2),
-                                         input="husl")
+                                         input="hsluv")
         pos_pal = palettes.light_palette((h_pos, sat, lum), int(n // 2),
-                                         input="husl")
+                                         input="hsluv")
         assert len(pal) == n
         assert pal[0] == neg_pal[-1]
         assert pal[-1] == pos_pal[-1]

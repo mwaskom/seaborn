@@ -4,14 +4,14 @@ from itertools import cycle
 import numpy as np
 import matplotlib as mpl
 
-from .external import husl
+from .external import hsluv
 
 from .utils import desaturate, set_hls_values, get_color_cycle
 from .colors import xkcd_rgb, crayons
 
 
-__all__ = ["color_palette", "hls_palette", "husl_palette", "mpl_palette",
-           "dark_palette", "light_palette", "diverging_palette",
+__all__ = ["color_palette", "hls_palette", "hsluv_palette", "husl_palette",
+           "mpl_palette", "dark_palette", "light_palette", "diverging_palette",
            "blend_palette", "xkcd_palette", "crayon_palette",
            "cubehelix_palette", "set_color_codes"]
 
@@ -84,7 +84,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         deep, muted, bright, pastel, dark, colorblind
 
     Other options:
-        name of matplotlib cmap, 'ch:<cubehelix arguments>', 'hls', 'husl',
+        name of matplotlib cmap, 'ch:<cubehelix arguments>', 'hls', 'hsluv',
         or a list of colors in any format matplotlib accepts
 
     Calling this function with ``palette=None`` will return the current
@@ -184,7 +184,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         :context: close-figs
 
         >>> import numpy as np, matplotlib.pyplot as plt
-        >>> with sns.color_palette("husl", 8):
+        >>> with sns.color_palette("hsluv", 8):
         ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
 
     """
@@ -211,9 +211,15 @@ def color_palette(palette=None, n_colors=None, desat=None):
             # Evenly spaced colors in cylindrical RGB space
             palette = hls_palette(n_colors)
 
-        elif palette == "husl":
+        elif palette in ("husl", "hsluv"):
+            if palette == "husl":
+                import warnings
+                warnings.warn("husl changed name to hsluv. "
+                              "You should use 'hsluv' instead.",
+                              FutureWarning)
+
             # Evenly spaced colors in cylindrical Lab space
-            palette = husl_palette(n_colors)
+            palette = hsluv_palette(n_colors)
 
         elif palette.lower() == "jet":
             # Paternalism
@@ -272,8 +278,8 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
 
     See Also
     --------
-    husl_palette : Make a palette using evently spaced circular hues in the
-                   HUSL system.
+    hsluv_palette : Make a palette using evently spaced circular hues in the
+                   HSLuv system.
 
     Examples
     --------
@@ -313,11 +319,21 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
     hues %= 1
     hues -= hues.astype(int)
     palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
+
     return _ColorPalette(palette)
 
 
-def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
-    """Get a set of evenly spaced colors in HUSL hue space.
+def husl_palette(*args, **kwargs):
+    import warnings
+    warnings.warn("husl changed name to hsluv. "
+                  "You should use 'hsluv_palette' instead.",
+                  FutureWarning)
+
+    return hsluv_palette(*args, **kwargs)
+
+
+def hsluv_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
+    """Get a set of evenly spaced colors in HSLuv hue space.
 
     h, s, and l should be between 0 and 1
 
@@ -352,28 +368,28 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
         :context: close-figs
 
         >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.husl_palette(10))
+        >>> sns.palplot(sns.hsluv_palette(10))
 
     Create a palette of 10 colors that begins at a different hue value:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, h=.5))
+        >>> sns.palplot(sns.hsluv_palette(10, h=.5))
 
     Create a palette of 10 colors that are darker than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, l=.4))
+        >>> sns.palplot(sns.hsluv_palette(10, l=.4))
 
     Create a palette of 10 colors that are less saturated than the default:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.husl_palette(10, s=.4))
+        >>> sns.palplot(sns.hsluv_palette(10, s=.4))
 
     """
     hues = np.linspace(0, 1, int(n_colors) + 1)[:-1]
@@ -381,8 +397,8 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
     hues %= 1
     hues *= 359
     s *= 99
-    l *= 99  # noqa
-    palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
+    l *= 99
+    palette = [hsluv.hsluv_to_rgb((h_i, s, l)) for h_i in hues]
     return _ColorPalette(palette)
 
 
@@ -467,8 +483,13 @@ def _color_to_rgb(color, input):
     """Add some more flexibility to color choices."""
     if input == "hls":
         color = colorsys.hls_to_rgb(*color)
-    elif input == "husl":
-        color = husl.husl_to_rgb(*color)
+    elif input in ("husl", "hsluv"):
+        if input == "husl":
+            import warnings
+            warnings.warn("husl changed name to hsluv. "
+                          "You should use 'hsluv' instead.",
+                          FutureWarning)
+        color = hsluv.hsluv_to_rgb(color)
     elif input == "xkcd":
         color = xkcd_rgb[color]
     return color
@@ -498,7 +519,7 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
         if True, reverse the direction of the blend
     as_cmap : bool, optional
         if True, return as a matplotlib colormap instead of list
-    input : {'rgb', 'hls', 'husl', xkcd'}
+    input : {'rgb', 'hls', 'hsluv', xkcd'}
         Color space to interpret the input color. The first three options
         apply to tuple inputs and the latter applies to string inputs.
 
@@ -532,12 +553,12 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
 
         >>> sns.palplot(sns.dark_palette("seagreen", reverse=True))
 
-    Generate a palette from an HUSL-space seed:
+    Generate a palette from an HSLuv-space seed:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.dark_palette((260, 75, 60), input="husl"))
+        >>> sns.palplot(sns.dark_palette((260, 75, 60), input="hsluv"))
 
     Generate a colormap object:
 
@@ -581,7 +602,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
         if True, reverse the direction of the blend
     as_cmap : bool, optional
         if True, return as a matplotlib colormap instead of list
-    input : {'rgb', 'hls', 'husl', xkcd'}
+    input : {'rgb', 'hls', 'hsluv', xkcd'}
         Color space to interpret the input color. The first three options
         apply to tuple inputs and the latter applies to string inputs.
 
@@ -615,12 +636,12 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
         >>> sns.palplot(sns.light_palette("seagreen", reverse=True))
 
-    Generate a palette from an HUSL-space seed:
+    Generate a palette from an HSLuv-space seed:
 
     .. plot::
         :context: close-figs
 
-        >>> sns.palplot(sns.light_palette((260, 75, 60), input="husl"))
+        >>> sns.palplot(sns.light_palette((260, 75, 60), input="hsluv"))
 
     Generate a colormap object:
 
@@ -668,7 +689,7 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
 
 def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
                       center="light", as_cmap=False):
-    """Make a diverging palette between two HUSL colors.
+    """Make a diverging palette between two HSLuv colors.
 
     If you are using the IPython notebook, you can also choose this palette
     interactively with the :func:`choose_diverging_palette` function.
@@ -742,8 +763,8 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
     """
     palfunc = dark_palette if center == "dark" else light_palette
     n_half = int(128 - (sep // 2))
-    neg = palfunc((h_neg, s, l), n_half, reverse=True, input="husl")
-    pos = palfunc((h_pos, s, l), n_half, input="husl")
+    neg = palfunc((h_neg, s, l), n_half, reverse=True, input="hsluv")
+    pos = palfunc((h_pos, s, l), n_half, input="hsluv")
     midpoint = dict(light=[(.95, .95, .95)], dark=[(.133, .133, .133)])[center]
     mid = midpoint * sep
     pal = blend_palette(np.concatenate([neg, mid,  pos]), n, as_cmap=as_cmap)

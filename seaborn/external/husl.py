@@ -1,3 +1,7 @@
+import warnings
+warnings.warn("This file is outdated and also changed name. "
+              "You should use hsluv.py", DeprecationWarning)
+
 import operator
 import math
 

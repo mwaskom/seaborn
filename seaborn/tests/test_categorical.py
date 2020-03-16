@@ -385,7 +385,7 @@ class TestCategoricalPlotter(CategoricalFixture):
             p.establish_variables("g", "y", data=self.df)
             p.establish_colors(None, None, 1)
             npt.assert_array_equal(p.colors,
-                                   palettes.husl_palette(3, l=.7))  # noqa
+                                   palettes.hsluv_palette(3, l=.7))  # noqa
 
     def test_specific_color(self):
 

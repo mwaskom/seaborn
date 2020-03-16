@@ -501,7 +501,7 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     Parameters
     ----------
-    palette : seaborn color paltte | matplotlib colormap | hls | husl
+    palette : seaborn color paltte | matplotlib colormap | hls | hsluv
         Palette definition. Should be something that :func:`color_palette`
         can process.
     n_colors : int

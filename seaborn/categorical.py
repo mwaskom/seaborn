@@ -12,7 +12,7 @@ import warnings
 from . import utils
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
-from .palettes import color_palette, husl_palette, light_palette, dark_palette
+from .palettes import color_palette, hsluv_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
 
 
@@ -270,12 +270,12 @@ class _CategoricalPlotter(object):
         # Determine the main colors
         if color is None and palette is None:
             # Determine whether the current palette will have enough values
-            # If not, we'll default to the husl palette so each is distinct
+            # If not, we'll default to the hsluv palette so each is distinct
             current_palette = utils.get_color_cycle()
             if n_colors <= len(current_palette):
                 colors = color_palette(n_colors=n_colors)
             else:
-                colors = husl_palette(n_colors, l=.7)  # noqa
+                colors = hsluv_palette(n_colors, l=.7)  # noqa
 
         elif palette is None:
             # When passing a specific color, the interpretation depends

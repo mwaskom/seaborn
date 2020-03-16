@@ -537,7 +537,7 @@ class TestFacetGrid(object):
         assert g._colors == color_palette(n_colors=len(self.df.c.unique()))
 
         g = ag.FacetGrid(self.df, hue="d")
-        assert g._colors == color_palette("husl", len(self.df.d.unique()))
+        assert g._colors == color_palette("hsluv", len(self.df.d.unique()))
 
         g = ag.FacetGrid(self.df, hue="c", palette="Set2")
         assert g._colors == color_palette("Set2", len(self.df.c.unique()))
@@ -1068,7 +1068,7 @@ class TestPairGrid(object):
         assert g.palette == color_palette(n_colors=len(self.df.a.unique()))
 
         g = ag.PairGrid(self.df, hue="b")
-        assert g.palette == color_palette("husl", len(self.df.b.unique()))
+        assert g.palette == color_palette("hsluv", len(self.df.b.unique()))
 
         g = ag.PairGrid(self.df, hue="a", palette="Set2")
         assert g.palette == color_palette("Set2", len(self.df.a.unique()))

@@ -469,7 +469,7 @@ class TestRelationalPlotter(object):
         # Test default palette with many levels
         levels = pd.Series(list("abcdefghijklmnopqrstuvwxyz"))
         p.parse_hue(levels, None, None, None)
-        expected_colors = color_palette("husl", n_colors=len(levels))
+        expected_colors = color_palette("hsluv", n_colors=len(levels))
         expected_palette = dict(zip(levels, expected_colors))
         assert p.palette == expected_palette
 

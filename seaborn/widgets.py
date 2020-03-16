@@ -154,7 +154,7 @@ def choose_colorbrewer_palette(data_type, as_cmap=False):
     return pal
 
 
-def choose_dark_palette(input="husl", as_cmap=False):
+def choose_dark_palette(input="hsluv", as_cmap=False):
     """Launch an interactive widget to create a dark sequential palette.
 
     This corresponds with the :func:`dark_palette` function. This kind
@@ -165,7 +165,7 @@ def choose_dark_palette(input="husl", as_cmap=False):
 
     Parameters
     ----------
-    input : {'husl', 'hls', 'rgb'}
+    input : {'hsluv', 'hls', 'rgb'}
         Color space for defining the seed value. Note that the default is
         different than the default input for :func:`dark_palette`.
     as_cmap : bool
@@ -219,19 +219,19 @@ def choose_dark_palette(input="husl", as_cmap=False):
                 pal[:] = dark_palette(color, n, input="hls")
                 palplot(pal)
 
-    elif input == "husl":
+    elif input == "hsluv":
         @interact
-        def choose_dark_palette_husl(h=(0, 359),
-                                     s=(0, 99),
-                                     l=(0, 99),
-                                     n=(3, 17)):
+        def choose_dark_palette_hsluv(h=(0, 359),
+                                      s=(0, 99),
+                                      l=(0, 99),
+                                      n=(3, 17)):
             color = h, s, l
             if as_cmap:
-                colors = dark_palette(color, 256, input="husl")
+                colors = dark_palette(color, 256, input="hsluv")
                 _update_lut(cmap, colors)
                 _show_cmap(cmap)
             else:
-                pal[:] = dark_palette(color, n, input="husl")
+                pal[:] = dark_palette(color, n, input="hsluv")
                 palplot(pal)
 
     if as_cmap:
@@ -239,7 +239,7 @@ def choose_dark_palette(input="husl", as_cmap=False):
     return pal
 
 
-def choose_light_palette(input="husl", as_cmap=False):
+def choose_light_palette(input="hsluv", as_cmap=False):
     """Launch an interactive widget to create a light sequential palette.
 
     This corresponds with the :func:`light_palette` function. This kind
@@ -250,7 +250,7 @@ def choose_light_palette(input="husl", as_cmap=False):
 
     Parameters
     ----------
-    input : {'husl', 'hls', 'rgb'}
+    input : {'hsluv', 'hls', 'rgb'}
         Color space for defining the seed value. Note that the default is
         different than the default input for :func:`light_palette`.
     as_cmap : bool
@@ -304,19 +304,19 @@ def choose_light_palette(input="husl", as_cmap=False):
                 pal[:] = light_palette(color, n, input="hls")
                 palplot(pal)
 
-    elif input == "husl":
+    elif input == "hsluv":
         @interact
-        def choose_light_palette_husl(h=(0, 359),
-                                      s=(0, 99),
-                                      l=(0, 99),
-                                      n=(3, 17)):
+        def choose_light_palette_hsluv(h=(0, 359),
+                                       s=(0, 99),
+                                       l=(0, 99),
+                                       n=(3, 17)):
             color = h, s, l
             if as_cmap:
-                colors = light_palette(color, 256, input="husl")
+                colors = light_palette(color, 256, input="hsluv")
                 _update_lut(cmap, colors)
                 _show_cmap(cmap)
             else:
-                pal[:] = light_palette(color, n, input="husl")
+                pal[:] = light_palette(color, n, input="hsluv")
                 palplot(pal)
 
     if as_cmap:
