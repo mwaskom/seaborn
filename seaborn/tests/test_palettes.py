@@ -362,3 +362,10 @@ class TestColorPalettes(object):
         with plt.rc_context({"axes.prop_cycle": prop_cycle}):
             result = utils.get_color_cycle()
             assert result == colors
+
+    def test_husl_deprecation(self):
+
+        nt.assert_warns(FutureWarning,
+                        palettes._color_to_rgb, (0, 0, 0), input="husl")
+        nt.assert_warns(FutureWarning, palettes.color_palette, "husl")
+        nt.assert_warns(FutureWarning, palettes.husl_palette)
