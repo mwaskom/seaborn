@@ -138,7 +138,7 @@ Color palettes
 
     set_palette
     color_palette
-    husl_palette
+    hsluv_palette
     hls_palette
     cubehelix_palette
     dark_palette
