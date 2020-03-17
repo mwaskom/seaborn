@@ -382,7 +382,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
     hues *= 359
     s *= 99
     l *= 99  # noqa
-    palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
+    palette = [_color_to_rgb((h_i, s, l), input='husl') for h_i in hues]
     return _ColorPalette(palette)
 
 
@@ -469,8 +469,10 @@ def _color_to_rgb(color, input):
         color = colorsys.hls_to_rgb(*color)
     elif input == "husl":
         color = husl.husl_to_rgb(*color)
+        color = tuple(np.clip(color, 0, 1))
     elif input == "xkcd":
         color = xkcd_rgb[color]
+
     return color
 
 
