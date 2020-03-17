@@ -465,20 +465,14 @@ def mpl_palette(name, n_colors=6):
 
 def _color_to_rgb(color, input):
     """Add some more flexibility to color choices."""
-    def normalize(x):
-        if x > 1:
-            return 1
-        if x < 0:
-            return 0
-        return x
-
     if input == "hls":
         color = colorsys.hls_to_rgb(*color)
     elif input == "husl":
         color = husl.husl_to_rgb(*color)
-        color = tuple(map(normalize, color))
+        color = tuple(np.clip(color, 0, 1))
     elif input == "xkcd":
         color = xkcd_rgb[color]
+
     return color
 
 

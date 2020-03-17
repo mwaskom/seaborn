@@ -9,7 +9,6 @@ import numpy.testing as npt
 from .. import palettes, utils, rcmod
 from ..external import husl
 from ..colors import xkcd_rgb, crayons
-from random import randint
 
 
 class TestColorPalettes(object):
@@ -193,21 +192,16 @@ class TestColorPalettes(object):
 
     def test_rgb_from_husl(self):
 
-        colors = [
-            (120, 50, 40),
-            (randint(0, 360), randint(0, 100), 100),
-            (randint(0, 360), 100, randint(0, 100)),
-            (250, 100, 50)
-        ]
+        color = 120, 50, 40
+        rgb_got = palettes._color_to_rgb(color, "husl")
+        rgb_want = tuple(husl.husl_to_rgb(*color))
+        assert rgb_got == rgb_want
 
-        for color in colors:
-            rgb_got = palettes._color_to_rgb(color, "husl")
-            rgb_want = husl.husl_to_rgb(*color)
-
-            npt.assert_almost_equal(rgb_got, rgb_want, decimal=4)
-            for channel in rgb_got:
-                nt.assert_less_equal(channel, 1)
-                nt.assert_less_equal(0, channel)
+        for h in range(0, 360):
+            color = h, 100, 100
+            rgb = palettes._color_to_rgb(color, "husl")
+            assert min(rgb) >= 0
+            assert max(rgb) <= 1
 
     def test_rgb_from_xkcd(self):
 
