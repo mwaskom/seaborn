@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from cycle import cycler
+from cycler import cycler
 
 import pytest
 import nose
