@@ -194,8 +194,14 @@ class TestColorPalettes(object):
 
         color = 120, 50, 40
         rgb_got = palettes._color_to_rgb(color, "husl")
-        rgb_want = husl.husl_to_rgb(*color)
-        nt.assert_equal(rgb_got, rgb_want)
+        rgb_want = tuple(husl.husl_to_rgb(*color))
+        assert rgb_got == rgb_want
+
+        for h in range(0, 360):
+            color = h, 100, 100
+            rgb = palettes._color_to_rgb(color, "husl")
+            assert min(rgb) >= 0
+            assert max(rgb) <= 1
 
     def test_rgb_from_xkcd(self):
 
