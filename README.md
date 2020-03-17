@@ -7,12 +7,12 @@ seaborn: statistical data visualization
 <img src="https://seaborn.pydata.org/_static/scatterplot_matrix_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/errorband_lineplots.html>
+<a href=https://seaborn.pydata.org/examples/errorband_lineplots.html>
 <img src="https://seaborn.pydata.org/_static/errorband_lineplots_thumb.png" height="135" width="135">
 </a>
 
-<a href=http://seaborn.pydata.org/examples/different_scatter_variables.html>
-<img src="http://seaborn.pydata.org/_static/different_scatter_variables_thumb.png" height="135" width="135">
+<a href=https://seaborn.pydata.org/examples/different_scatter_variables.html>
+<img src="https://seaborn.pydata.org/_static/different_scatter_variables_thumb.png" height="135" width="135">
 </a>
 
 <a href=https://seaborn.pydata.org/examples/many_facets.html>
@@ -53,7 +53,7 @@ Dependencies
 
 Seaborn supports Python 3.6+ and no longer supports Python 2.
 
-Installation requires [numpy](http://www.numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
+Installation requires [numpy](https://numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
 
 
 Installation

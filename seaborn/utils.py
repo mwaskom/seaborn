@@ -262,7 +262,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
 
         if trim:
             # clip off the parts of the spines that extend past major ticks
-            xticks = ax_i.get_xticks()
+            xticks = np.asarray(ax_i.get_xticks())
             if xticks.size:
                 firsttick = np.compress(xticks >= min(ax_i.get_xlim()),
                                         xticks)[0]
@@ -274,7 +274,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_xticks(newticks)
 
-            yticks = ax_i.get_yticks()
+            yticks = np.asarray(ax_i.get_yticks())
             if yticks.size:
                 firsttick = np.compress(yticks >= min(ax_i.get_ylim()),
                                         yticks)[0]
@@ -555,8 +555,20 @@ def locator_to_legend_entries(locator, limits, dtype):
 
 
 def get_color_cycle():
-    """Return the list of colors in the current matplotlib color cycle."""
-    return [x['color'] for x in mpl.rcParams['axes.prop_cycle']]
+    """Return the list of colors in the current matplotlib color cycle
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    colors : list
+        List of matplotlib colors in the current cycle, or dark gray if
+        the current color cycle is empty.
+    """
+    cycler = mpl.rcParams['axes.prop_cycle']
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def relative_luminance(color):

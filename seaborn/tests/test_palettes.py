@@ -5,7 +5,6 @@ import matplotlib as mpl
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-import matplotlib.pyplot as plt
 
 from .. import palettes, utils, rcmod
 from ..external import husl
@@ -354,11 +353,3 @@ class TestColorPalettes(object):
         pal_in = palettes.color_palette("Set1", 10)
         pal_out = palettes.color_palette(pal_in)
         nt.assert_equal(pal_in, pal_out)
-
-    def test_get_color_cycle(self):
-
-        colors = [(1., 0., 0.), (0, 1., 0.)]
-        prop_cycle = plt.cycler(color=colors)
-        with plt.rc_context({"axes.prop_cycle": prop_cycle}):
-            result = utils.get_color_cycle()
-            assert result == colors

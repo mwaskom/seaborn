@@ -1,11 +1,13 @@
 """Tests for plotting utilities."""
 import tempfile
-import pytest
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cycle import cycler
+
+import pytest
 import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
@@ -224,6 +226,7 @@ class TestSpineUtils(object):
                                 self.original_position)
 
     def test_despine_trim_spines(self):
+
         f, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_xlim(.75, 3.25)
@@ -252,6 +255,19 @@ class TestSpineUtils(object):
         ax.set_yticks([])
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
+
+    def test_despine_trim_categorical(self):
+
+        f, ax = plt.subplots()
+        ax.plot(["a", "b", "c"], [1, 2, 3])
+
+        utils.despine(trim=True)
+
+        bounds = ax.spines["left"].get_bounds()
+        nt.assert_equal(bounds, (1, 3))
+
+        bounds = ax.spines["bottom"].get_bounds()
+        nt.assert_equal(bounds, (0, 2))
 
     def test_despine_moved_ticks(self):
 
@@ -385,6 +401,23 @@ def test_locator_to_legend_entries():
     )
     if LooseVersion(mpl.__version__) >= "3.1":
         assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
+
+
+@pytest.mark.parametrize(
+    "cycler,result",
+    [
+        (cycler(color=["y"]), ["y"]),
+        (cycler(color=["k"]), ["k"]),
+        (cycler(color=["k", "y"]), ["k", "y"]),
+        (cycler(color=["y", "k"]), ["y", "k"]),
+        (cycler(color=["b", "r"]), ["b", "r"]),
+        (cycler(color=["r", "b"]), ["r", "b"]),
+        (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
+    ],
+)
+def test_get_color_cycle(cycler, result):
+    with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
+        assert utils.get_color_cycle() == result
 
 
 def check_load_dataset(name):
