@@ -128,6 +128,7 @@ class Grid(object):
 
             leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})
+            self._legend = leg
 
         return self
 
