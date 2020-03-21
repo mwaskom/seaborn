@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 #
-# Copyright (C) 2012-2019 Michael Waskom
+# Copyright (C) 2012-2020 Michael Waskom
 
 DESCRIPTION = "seaborn: statistical data visualization"
 LONG_DESCRIPTION = """\
@@ -26,14 +26,16 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.9.1.dev'
+VERSION = '0.11.0.dev0'
+PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
-    'numpy>=1.9.3',
-    'scipy>=0.14.0',
-    'pandas>=0.15.2',
-    'matplotlib>=1.4.3',
+    'numpy>=1.13.3',
+    'scipy>=1.0.1',
+    'pandas>=0.22.0',
+    'matplotlib>=2.1.2',
 ]
+
 
 PACKAGES = [
     'seaborn',
@@ -44,10 +46,9 @@ PACKAGES = [
 
 CLASSIFIERS = [
     'Intended Audience :: Science/Research',
-    'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',
@@ -56,13 +57,14 @@ CLASSIFIERS = [
     'Operating System :: MacOS'
 ]
 
-try:
-    from setuptools import setup
-    _has_setuptools = True
-except ImportError:
-    from distutils.core import setup
 
 if __name__ == "__main__":
+
+    from setuptools import setup
+
+    import sys
+    if sys.version_info[:2] < (3, 6):
+        raise RuntimeError("seaborn requires python >= 3.6.")
 
     setup(
         name=DISTNAME,
@@ -76,6 +78,7 @@ if __name__ == "__main__":
         url=URL,
         version=VERSION,
         download_url=DOWNLOAD_URL,
+        python_requires=PYTHON_REQUIRES,
         install_requires=INSTALL_REQUIRES,
         packages=PACKAGES,
         classifiers=CLASSIFIERS

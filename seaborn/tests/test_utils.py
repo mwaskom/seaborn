@@ -1,11 +1,13 @@
 """Tests for plotting utilities."""
 import tempfile
-import shutil
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cycler import cycler
+
+import pytest
 import nose
 import nose.tools as nt
 from nose.tools import assert_equal, raises
@@ -16,8 +18,6 @@ except ImportError:
     import pandas.util.testing as pdt
 
 from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-
 
 try:
     from bs4 import BeautifulSoup
@@ -104,6 +104,16 @@ def test_saturate():
     assert_equal(out, (1, 0, 0))
 
 
+@pytest.mark.parametrize(
+    "p,annot", [(.0001, "***"), (.001, "**"), (.01, "*"), (.09, "."), (1, "")]
+)
+def test_sig_stars(p, annot):
+    """Test the sig stars function."""
+    with pytest.warns(UserWarning):
+        stars = utils.sig_stars(p)
+        assert_equal(stars, annot)
+
+
 def test_iqr():
     """Test the IQR function."""
     a = np.arange(5)
@@ -111,12 +121,25 @@ def test_iqr():
     assert_equal(iqr, 2)
 
 
-def test_str_to_utf8():
-    """Test the to_utf8 function: string to Unicode"""
-    s = "\u01ff\u02ff"
+@pytest.mark.parametrize(
+    "s,exp",
+    [
+        ("a", "a"),
+        ("abc", "abc"),
+        (b"a", "a"),
+        (b"abc", "abc"),
+        (bytearray("abc", "utf-8"), "abc"),
+        (bytearray(), ""),
+        (1, "1"),
+        (0, "0"),
+        ([], str([])),
+    ],
+)
+def test_to_utf8(s, exp):
+    """Test the to_utf8 function: object to string"""
     u = utils.to_utf8(s)
-    assert_equal(type(s), type(str()))
-    assert_equal(type(u), type(u"\u01ff\u02ff"))
+    assert_equal(type(u), str)
+    assert_equal(u, exp)
 
 
 class TestSpineUtils(object):
@@ -203,6 +226,7 @@ class TestSpineUtils(object):
                                 self.original_position)
 
     def test_despine_trim_spines(self):
+
         f, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_xlim(.75, 3.25)
@@ -232,38 +256,51 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
         nt.assert_equal(ax.get_yticks().size, 0)
 
-    def test_despine_moved_tickes(self):
+    def test_despine_trim_categorical(self):
+
+        f, ax = plt.subplots()
+        ax.plot(["a", "b", "c"], [1, 2, 3])
+
+        utils.despine(trim=True)
+
+        bounds = ax.spines["left"].get_bounds()
+        nt.assert_equal(bounds, (1, 3))
+
+        bounds = ax.spines["bottom"].get_bounds()
+        nt.assert_equal(bounds, (0, 2))
+
+    def test_despine_moved_ticks(self):
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.yaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, left=True, right=False)
         for y in ax.yaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = True
+            t.tick1line.set_visible(True)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert t.tick2On
+            assert t.tick2line.get_visible()
         plt.close(f)
 
         f, ax = plt.subplots()
         for t in ax.xaxis.majorTicks:
-            t.tick1On = False
+            t.tick1line.set_visible(False)
         utils.despine(ax=ax, bottom=True, top=False)
         for y in ax.xaxis.majorTicks:
-            assert not t.tick2On
+            assert not t.tick2line.get_visible()
         plt.close(f)
 
 
@@ -317,76 +354,121 @@ def test_categorical_order():
     out = utils.categorical_order(pd.Series(y))
     nt.assert_equal(out, [1, 2, 3, 4, 5])
 
-    if pandas_has_categoricals:
-        x = pd.Categorical(x, order)
-        out = utils.categorical_order(x)
-        nt.assert_equal(out, list(x.categories))
+    x = pd.Categorical(x, order)
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, list(x.categories))
 
-        x = pd.Series(x)
-        out = utils.categorical_order(x)
-        nt.assert_equal(out, list(x.cat.categories))
+    x = pd.Series(x)
+    out = utils.categorical_order(x)
+    nt.assert_equal(out, list(x.cat.categories))
 
-        out = utils.categorical_order(x, ["b", "a"])
-        nt.assert_equal(out, ["b", "a"])
+    out = utils.categorical_order(x, ["b", "a"])
+    nt.assert_equal(out, ["b", "a"])
 
     x = ["a", np.nan, "c", "c", "b", "a", "d"]
     out = utils.categorical_order(x)
     nt.assert_equal(out, ["a", "c", "b", "d"])
 
 
-if LooseVersion(pd.__version__) >= "0.15":
+def test_locator_to_legend_entries():
 
-    def check_load_dataset(name):
-        ds = load_dataset(name, cache=False)
-        assert(isinstance(ds, pd.DataFrame))
+    locator = mpl.ticker.MaxNLocator(nbins=3)
+    limits = (0.09, 0.4)
+    levels, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float
+    )
+    assert str_levels == ["0.00", "0.15", "0.30", "0.45"]
 
-    def check_load_cached_dataset(name):
-        # Test the cacheing using a temporary file.
-        # With Python 3.2+, we could use the tempfile.TemporaryDirectory()
-        # context manager instead of this try...finally statement
-        tmpdir = tempfile.mkdtemp()
-        try:
-            # download and cache
-            ds = load_dataset(name, cache=True, data_home=tmpdir)
+    limits = (0.8, 0.9)
+    levels, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float
+    )
+    assert str_levels == ["0.80", "0.84", "0.88", "0.92"]
 
-            # use cached version
-            ds2 = load_dataset(name, cache=True, data_home=tmpdir)
-            pdt.assert_frame_equal(ds, ds2)
+    limits = (1, 6)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    assert str_levels == ["0", "2", "4", "6"]
 
-        finally:
-            shutil.rmtree(tmpdir)
+    locator = mpl.ticker.LogLocator(numticks=3)
+    limits = (5, 1425)
+    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['0', '1', '100', '10000', '1e+06']
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_get_dataset_names():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
-        names = get_dataset_names()
-        assert(len(names) > 0)
-        assert(u"titanic" in names)
+    limits = (0.00003, 0.02)
+    levels, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float
+    )
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_load_datasets():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
 
-        # Heavy test to verify that we can load all available datasets
-        for name in get_dataset_names():
-            # unfortunately @network somehow obscures this generator so it
-            # does not get in effect, so we need to call explicitly
-            # yield check_load_dataset, name
-            check_load_dataset(name)
+@pytest.mark.parametrize(
+    "cycler,result",
+    [
+        (cycler(color=["y"]), ["y"]),
+        (cycler(color=["k"]), ["k"]),
+        (cycler(color=["k", "y"]), ["k", "y"]),
+        (cycler(color=["y", "k"]), ["y", "k"]),
+        (cycler(color=["b", "r"]), ["b", "r"]),
+        (cycler(color=["r", "b"]), ["r", "b"]),
+        (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
+    ],
+)
+def test_get_color_cycle(cycler, result):
+    with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
+        assert utils.get_color_cycle() == result
 
-    @_network(url="https://github.com/mwaskom/seaborn-data")
-    def test_load_cached_datasets():
-        if not BeautifulSoup:
-            raise nose.SkipTest("No BeautifulSoup available for parsing html")
 
-        # Heavy test to verify that we can load all available datasets
-        for name in get_dataset_names():
-            # unfortunately @network somehow obscures this generator so it
-            # does not get in effect, so we need to call explicitly
-            # yield check_load_dataset, name
-            check_load_cached_dataset(name)
+def check_load_dataset(name):
+    ds = load_dataset(name, cache=False)
+    assert(isinstance(ds, pd.DataFrame))
+
+
+def check_load_cached_dataset(name):
+    # Test the cacheing using a temporary file.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # download and cache
+        ds = load_dataset(name, cache=True, data_home=tmpdir)
+
+        # use cached version
+        ds2 = load_dataset(name, cache=True, data_home=tmpdir)
+        pdt.assert_frame_equal(ds, ds2)
+
+
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_get_dataset_names():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+    names = get_dataset_names()
+    assert(len(names) > 0)
+    assert("titanic" in names)
+
+
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_load_datasets():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+
+    # Heavy test to verify that we can load all available datasets
+    for name in get_dataset_names():
+        # unfortunately @network somehow obscures this generator so it
+        # does not get in effect, so we need to call explicitly
+        # yield check_load_dataset, name
+        check_load_dataset(name)
+
+
+@_network(url="https://github.com/mwaskom/seaborn-data")
+def test_load_cached_datasets():
+    if not BeautifulSoup:
+        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+
+    # Heavy test to verify that we can load all available datasets
+    for name in get_dataset_names():
+        # unfortunately @network somehow obscures this generator so it
+        # does not get in effect, so we need to call explicitly
+        # yield check_load_dataset, name
+        check_load_cached_dataset(name)
 
 
 def test_relative_luminance():

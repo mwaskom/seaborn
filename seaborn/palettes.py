@@ -1,4 +1,3 @@
-from __future__ import division
 import colorsys
 from itertools import cycle
 
@@ -6,8 +5,6 @@ import numpy as np
 import matplotlib as mpl
 
 from .external import husl
-from .external.six import string_types
-from .external.six.moves import range
 
 from .utils import desaturate, set_hls_values, get_color_cycle
 from .colors import xkcd_rgb, crayons
@@ -44,7 +41,7 @@ SEABORN_PALETTES = dict(
                 "#CA9161", "#FBAFE4", "#949494", "#ECE133", "#56B4E9"],
     colorblind6=["#0173B2", "#029E73", "#D55E00",
                  "#CC78BC", "#ECE133", "#56B4E9"]
-    )
+)
 
 
 MPL_QUAL_PALS = {
@@ -57,6 +54,7 @@ MPL_QUAL_PALS = {
 
 QUAL_PALETTE_SIZES = MPL_QUAL_PALS.copy()
 QUAL_PALETTE_SIZES.update({k: len(v) for k, v in SEABORN_PALETTES.items()})
+QUAL_PALETTES = list(QUAL_PALETTE_SIZES.keys())
 
 
 class _ColorPalette(list):
@@ -195,7 +193,7 @@ def color_palette(palette=None, n_colors=None, desat=None):
         if n_colors is None:
             n_colors = len(palette)
 
-    elif not isinstance(palette, string_types):
+    elif not isinstance(palette, str):
         palette = palette
         if n_colors is None:
             n_colors = len(palette)
@@ -310,7 +308,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
         >>> sns.palplot(sns.hls_palette(10, s=.4))
 
     """
-    hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues = np.linspace(0, 1, int(n_colors) + 1)[:-1]
     hues += h
     hues %= 1
     hues -= hues.astype(int)
@@ -378,13 +376,13 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
         >>> sns.palplot(sns.husl_palette(10, s=.4))
 
     """
-    hues = np.linspace(0, 1, n_colors + 1)[:-1]
+    hues = np.linspace(0, 1, int(n_colors) + 1)[:-1]
     hues += h
     hues %= 1
     hues *= 359
     s *= 99
     l *= 99  # noqa
-    palette = [husl.husl_to_rgb(h_i, s, l) for h_i in hues]
+    palette = [_color_to_rgb((h_i, s, l), input='husl') for h_i in hues]
     return _ColorPalette(palette)
 
 
@@ -459,7 +457,7 @@ def mpl_palette(name, n_colors=6):
     if name in MPL_QUAL_PALS:
         bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]
     else:
-        bins = np.linspace(0, 1, n_colors + 2)[1:-1]
+        bins = np.linspace(0, 1, int(n_colors) + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
 
     return _ColorPalette(palette)
@@ -471,8 +469,10 @@ def _color_to_rgb(color, input):
         color = colorsys.hls_to_rgb(*color)
     elif input == "husl":
         color = husl.husl_to_rgb(*color)
+        color = tuple(np.clip(color, 0, 1))
     elif input == "xkcd":
         color = xkcd_rgb[color]
+
     return color
 
 
@@ -683,6 +683,8 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
         Anchor saturation for both extents of the map.
     l : float in [0, 100], optional
         Anchor lightness for both extents of the map.
+    sep : int, optional
+        Size of the intermediate region.
     n : int, optional
         Number of colors in the palette (if not returning a cmap)
     center : {"light", "dark"}, optional
@@ -741,10 +743,10 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
 
     """
     palfunc = dark_palette if center == "dark" else light_palette
-    neg = palfunc((h_neg, s, l), 128 - (sep // 2), reverse=True, input="husl")
-    pos = palfunc((h_pos, s, l), 128 - (sep // 2), input="husl")
-    midpoint = dict(light=[(.95, .95, .95, 1.)],
-                    dark=[(.133, .133, .133, 1.)])[center]
+    n_half = int(128 - (sep // 2))
+    neg = palfunc((h_neg, s, l), n_half, reverse=True, input="husl")
+    pos = palfunc((h_pos, s, l), n_half, input="husl")
+    midpoint = dict(light=[(.95, .95, .95)], dark=[(.133, .133, .133)])[center]
     mid = midpoint * sep
     pal = blend_palette(np.concatenate([neg, mid,  pos]), n, as_cmap=as_cmap)
     return pal
@@ -774,7 +776,8 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     name = "blend"
     pal = mpl.colors.LinearSegmentedColormap.from_list(name, colors)
     if not as_cmap:
-        pal = _ColorPalette(pal(np.linspace(0, 1, int(n_colors))))
+        rgb_array = pal(np.linspace(0, 1, int(n_colors)))[:, :3]  # no alpha
+        pal = _ColorPalette(map(tuple, rgb_array))
     return pal
 
 
@@ -972,7 +975,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
 
     cmap = mpl.colors.LinearSegmentedColormap("cubehelix", cdict)
 
-    x = np.linspace(light, dark, n_colors)
+    x = np.linspace(light, dark, int(n_colors))
     pal = cmap(x)[:, :3].tolist()
     if reverse:
         pal = pal[::-1]
@@ -1065,8 +1068,11 @@ def set_color_codes(palette="deep"):
 
     """
     if palette == "reset":
-        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, .75, 0.),
+        colors = [(0., 0., 1.), (0., .5, 0.), (1., 0., 0.), (.75, 0., .75),
                   (.75, .75, 0.), (0., .75, .75), (0., 0., 0.)]
+    elif not isinstance(palette, str):
+        err = "set_color_codes requires a named seaborn palette"
+        raise TypeError(err)
     elif palette in SEABORN_PALETTES:
         if not palette.endswith("6"):
             palette = palette + "6"

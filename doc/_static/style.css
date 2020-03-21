@@ -31,7 +31,7 @@ pre {
 
 code {
     color: #49759c !important;
-    background-color: #ffffff !important;
+    background-color: transparent; !important;
 }
 
 code.descclassname {
@@ -69,7 +69,7 @@ ul.dropdown-menu {
   visibility: hidden; 
 }
 
-table {
+.dataframe table {
     /*Uncomment to center tables horizontally*/
     /* margin-left: auto; */
     /* margin-right: auto; */
@@ -80,13 +80,13 @@ table {
     table-layout: fixed;
 }
 
-thead {
+.dataframe thead {
     border-bottom: 1px solid;
     vertical-align: bottom;
 }
 
-tr, th, td {
-    text-align: right;
+.dataframe tr, th, td {
+    text-align: left;
     vertical-align: middle;
     padding: 0.5em 0.5em;
     line-height: normal;
@@ -95,8 +95,12 @@ tr, th, td {
     border: none;
 }
 
-th {
+.dataframe th {
     font-weight: bold;
+}
+
+table {
+    margin-bottom: 20px;
 }
 
 tbody tr:nth-child(odd) {

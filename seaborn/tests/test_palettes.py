@@ -5,14 +5,10 @@ import matplotlib as mpl
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-import matplotlib.pyplot as plt
 
 from .. import palettes, utils, rcmod
 from ..external import husl
 from ..colors import xkcd_rgb, crayons
-
-from distutils.version import LooseVersion
-mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
 
 
 class TestColorPalettes(object):
@@ -198,8 +194,14 @@ class TestColorPalettes(object):
 
         color = 120, 50, 40
         rgb_got = palettes._color_to_rgb(color, "husl")
-        rgb_want = husl.husl_to_rgb(*color)
-        nt.assert_equal(rgb_got, rgb_want)
+        rgb_want = tuple(husl.husl_to_rgb(*color))
+        assert rgb_got == rgb_want
+
+        for h in range(0, 360):
+            color = h, 100, 100
+            rgb = palettes._color_to_rgb(color, "husl")
+            assert min(rgb) >= 0
+            assert max(rgb) <= 1
 
     def test_rgb_from_xkcd(self):
 
@@ -212,10 +214,10 @@ class TestColorPalettes(object):
 
         pal_forward = palettes.light_palette("red")
         pal_reverse = palettes.light_palette("red", reverse=True)
-        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
+        assert np.allclose(pal_forward, pal_reverse[::-1])
 
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
+        red = mpl.colors.colorConverter.to_rgb("red")
+        nt.assert_equal(pal_forward[-1], red)
 
         pal_cmap = palettes.light_palette("blue", as_cmap=True)
         nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
@@ -224,13 +226,35 @@ class TestColorPalettes(object):
 
         pal_forward = palettes.dark_palette("red")
         pal_reverse = palettes.dark_palette("red", reverse=True)
-        npt.assert_array_almost_equal(pal_forward, pal_reverse[::-1])
+        assert np.allclose(pal_forward, pal_reverse[::-1])
 
-        red = tuple(mpl.colors.colorConverter.to_rgba("red"))
-        nt.assert_equal(tuple(pal_forward[-1]), red)
+        red = mpl.colors.colorConverter.to_rgb("red")
+        assert pal_forward[-1] == red
 
         pal_cmap = palettes.dark_palette("blue", as_cmap=True)
-        nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+    def test_diverging_palette(self):
+
+        h_neg, h_pos = 100, 200
+        sat, lum = 70, 50
+        args = h_neg, h_pos, sat, lum
+
+        n = 12
+        pal = palettes.diverging_palette(*args,  n=n)
+        neg_pal = palettes.light_palette((h_neg, sat, lum), int(n // 2),
+                                         input="husl")
+        pos_pal = palettes.light_palette((h_pos, sat, lum), int(n // 2),
+                                         input="husl")
+        assert len(pal) == n
+        assert pal[0] == neg_pal[-1]
+        assert pal[-1] == pos_pal[-1]
+
+        pal_dark = palettes.diverging_palette(*args, n=n, center="dark")
+        assert np.mean(pal[int(n / 2)]) > np.mean(pal_dark[int(n / 2)])
+
+        pal_cmap = palettes.diverging_palette(*args, as_cmap=True)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
 
     def test_blend_palette(self):
 
@@ -335,12 +359,3 @@ class TestColorPalettes(object):
         pal_in = palettes.color_palette("Set1", 10)
         pal_out = palettes.color_palette(pal_in)
         nt.assert_equal(pal_in, pal_out)
-
-    def test_get_color_cycle(self):
-
-        if mpl_ge_150:
-            colors = [(1., 0., 0.), (0, 1., 0.)]
-            prop_cycle = plt.cycler(color=colors)
-            with plt.rc_context({"axes.prop_cycle": prop_cycle}):
-                result = utils.get_color_cycle()
-                assert result == colors

@@ -15,5 +15,5 @@ pal = dict(male="#6495ED", female="#F08080")
 
 # Show the survival probability as a function of age and sex
 g = sns.lmplot(x="age", y="survived", col="sex", hue="sex", data=df,
-               palette=pal, y_jitter=.02, logistic=True)
+               palette=pal, y_jitter=.02, logistic=True, truncate=False)
 g.set(xlim=(0, 80), ylim=(-.05, 1.05))

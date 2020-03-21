@@ -39,6 +39,6 @@ v0.8.0 (July 2017)
 
 - Some modules and functions have been internally reorganized; there should be no effect on code that uses the ``seaborn`` namespace.
 
-- Added a deprecation warning to :func:`tsplot` function to indicate that it will be removed or replaced with a substantially altered version in a future release.
+- Added a deprecation warning to ``tsplot`` function to indicate that it will be removed or replaced with a substantially altered version in a future release.
 
 - The ``interactplot`` and ``coefplot`` functions are officially deprecated and will be removed in a future release.

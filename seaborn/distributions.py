@@ -1,5 +1,4 @@
 """Plotting functions for visualizing distributions."""
-from __future__ import division
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -8,9 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.collections import LineCollection
 import warnings
-from distutils.version import LooseVersion
-
-from six import string_types
 
 try:
     import statsmodels.nonparametric.api as smnp
@@ -18,7 +14,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support
+from .utils import iqr, _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
@@ -57,7 +53,8 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Observed data. If this is a Series object with a ``name`` attribute,
         the name will be used to label the data axis.
     bins : argument for matplotlib hist(), or None, optional
-        Specification of hist bins, or None to use Freedman-Diaconis rule.
+        Specification of hist bins. If unspecified, as reference rule is used
+        that tries to find a useful default.
     hist : bool, optional
         Whether to plot a (normed) histogram.
     kde : bool, optional
@@ -66,10 +63,14 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         Whether to draw a rugplot on the support axis.
     fit : random variable object, optional
         An object with `fit` method, returning a tuple that can be passed to a
-        `pdf` method a positional arguments following an grid of values to
+        `pdf` method a positional arguments following a grid of values to
         evaluate the pdf on.
-    {hist, kde, rug, fit}_kws : dictionaries, optional
-        Keyword arguments for underlying plotting functions.
+    hist_kws : dict, optional
+        Keyword arguments for :meth:`matplotlib.axes.Axes.hist`.
+    kde_kws : dict, optional
+        Keyword arguments for :func:`kdeplot`.
+    rug_kws : dict, optional
+        Keyword arguments for :func:`rugplot`.
     color : matplotlib color, optional
         Color to plot everything but the fitted curve in.
     vertical : bool, optional
@@ -79,7 +80,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         This is implied if a KDE or fitted density is plotted.
     axlabel : string, False, or None, optional
         Name for the support axis label. If None, will try to get it
-        from a.namel if False, do not set a label.
+        from a.name if False, do not set a label.
     label : string, optional
         Legend label for the relevant component of the plot.
     ax : matplotlib axis, optional
@@ -172,23 +173,22 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if axlabel is not None:
             label_ax = True
 
-    # Make a a 1-d array
-    a = np.asarray(a)
+    # Make a a 1-d float array
+    a = np.asarray(a, np.float)
     if a.ndim > 1:
         a = a.squeeze()
+
+    # Drop null values from array
+    a = remove_na(a)
 
     # Decide if the hist is normed
     norm_hist = norm_hist or kde or (fit is not None)
 
     # Handle dictionary defaults
-    if hist_kws is None:
-        hist_kws = dict()
-    if kde_kws is None:
-        kde_kws = dict()
-    if rug_kws is None:
-        rug_kws = dict()
-    if fit_kws is None:
-        fit_kws = dict()
+    hist_kws = {} if hist_kws is None else hist_kws.copy()
+    kde_kws = {} if kde_kws is None else kde_kws.copy()
+    rug_kws = {} if rug_kws is None else rug_kws.copy()
+    fit_kws = {} if fit_kws is None else fit_kws.copy()
 
     # Get the color from the current color cycle
     if color is None:
@@ -214,10 +214,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         if bins is None:
             bins = min(_freedman_diaconis_bins(a), 50)
         hist_kws.setdefault("alpha", 0.4)
-        if LooseVersion(mpl.__version__) < LooseVersion("2.2"):
-            hist_kws.setdefault("normed", norm_hist)
-        else:
-            hist_kws.setdefault("density", norm_hist)
+        hist_kws.setdefault("density", norm_hist)
 
         orientation = "horizontal" if vertical else "vertical"
         hist_color = hist_kws.pop("color", color)
@@ -275,8 +272,18 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
     if clip is None:
         clip = (-np.inf, np.inf)
 
+    # Preprocess the data
+    data = remove_na(data)
+
     # Calculate the KDE
-    if _has_statsmodels:
+
+    if np.nan_to_num(data.var()) == 0:
+        # Don't try to compute KDE on singular data
+        msg = "Data must have variance to compute a kernel density estimate."
+        warnings.warn(msg, UserWarning)
+        x, y = np.array([]), np.array([])
+
+    elif _has_statsmodels:
         # Prefer using statsmodels for kernel flexibility
         x, y = _statsmodels_univariate_kde(data, kernel, bw,
                                            gridsize, cut, clip,
@@ -370,7 +377,7 @@ def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
             msg = ("Ignoring bandwidth choice, "
                    "please upgrade scipy to use a different bandwidth.")
             warnings.warn(msg, UserWarning)
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)() * np.std(data)
     grid = _kde_support(data, bw, gridsize, cut, clip)
@@ -401,14 +408,16 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
     default_color = scout.get_color()
     scout.remove()
 
-    color = kwargs.pop("color", default_color)
     cmap = kwargs.pop("cmap", None)
-    if cmap is None:
+    color = kwargs.pop("color", None)
+    if cmap is None and "colors" not in kwargs:
+        if color is None:
+            color = default_color
         if filled:
             cmap = light_palette(color, as_cmap=True)
         else:
             cmap = dark_palette(color, as_cmap=True)
-    if isinstance(cmap, string_types):
+    if isinstance(cmap, str):
         if cmap.endswith("_d"):
             pal = ["#333333"]
             pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
@@ -447,7 +456,7 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
 
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
         y_bw = bw_func(y)
@@ -473,7 +482,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     data = np.c_[x, y]
     kde = stats.gaussian_kde(data.T, bw_method=bw)
     data_std = data.std(axis=0, ddof=1)
-    if isinstance(bw, string_types):
+    if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw_x = getattr(kde, "%s_factor" % bw)() * data_std[0]
         bw_y = getattr(kde, "%s_factor" % bw)() * data_std[1]

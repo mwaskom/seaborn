@@ -10,7 +10,7 @@ This is a major release with several substantial and long-desired new features. 
 New relational plots
 ~~~~~~~~~~~~~~~~~~~~
 
-Three completely new plotting functions have been added: :func:`catplot`, :func:`scatterplot`, and :func:`lineplot`. The first is a figure-level interface to the latter two that combines them with a :class:`FacetGrid`. The functions bring the high-level, dataset-oriented API of the seaborn categorical plotting functions to more general plots (scatter plots and line plots).
+Three completely new plotting functions have been added: :func:`relplot`, :func:`scatterplot`, and :func:`lineplot`. The first is a figure-level interface to the latter two that combines them with a :class:`FacetGrid`. The functions bring the high-level, dataset-oriented API of the seaborn categorical plotting functions to more general plots (scatter plots and line plots).
 
 These functions can visualize a relationship between two numeric variables while mapping up to three additional variables by modifying ``hue``, ``size``, and/or ``style`` semantics. The common high-level API is implemented differently in the two functions. For example, the size semantic in :func:`scatterplot` scales the area of scatter plot points, but in :func:`lineplot` it scales width of the line plot lines. The API is dataset-oriented, meaning that in both cases you pass the variable in your dataset rather than directly specifying the matplotlib parameters to use for point area or line width.
 

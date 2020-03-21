@@ -1,5 +1,4 @@
 """Small plotting-related utility functions."""
-from __future__ import print_function, division
 import colorsys
 import os
 
@@ -10,8 +9,9 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
-from .external.six.moves.urllib.request import urlopen, urlretrieve
-from .external.six.moves.http_client import HTTPException
+import warnings
+from urllib.request import urlopen, urlretrieve
+from http.client import HTTPException
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
@@ -227,30 +227,42 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                     val = offset.get(side, 0)
                 except AttributeError:
                     val = offset
-                _set_spine_position(ax_i.spines[side], ('outward', val))
+                ax_i.spines[side].set_position(('outward', val))
 
         # Potentially move the ticks
         if left and not right:
-            maj_on = any(t.tick1On for t in ax_i.yaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.yaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.minorTicks
+            )
             ax_i.yaxis.set_ticks_position("right")
             for t in ax_i.yaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.yaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if bottom and not top:
-            maj_on = any(t.tick1On for t in ax_i.xaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.xaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.minorTicks
+            )
             ax_i.xaxis.set_ticks_position("top")
             for t in ax_i.xaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.xaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if trim:
             # clip off the parts of the spines that extend past major ticks
-            xticks = ax_i.get_xticks()
+            xticks = np.asarray(ax_i.get_xticks())
             if xticks.size:
                 firsttick = np.compress(xticks >= min(ax_i.get_xlim()),
                                         xticks)[0]
@@ -262,7 +274,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_xticks(newticks)
 
-            yticks = ax_i.get_yticks()
+            yticks = np.asarray(ax_i.get_yticks())
             if yticks.size:
                 firsttick = np.compress(yticks >= min(ax_i.get_ylim()),
                                         yticks)[0]
@@ -273,24 +285,6 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = yticks.compress(yticks <= lasttick)
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_yticks(newticks)
-
-
-def _set_spine_position(spine, position):
-    """
-    Set the spine's position without resetting an associated axis.
-
-    As of matplotlib v. 1.0.0, if a spine has an associated axis, then
-    spine.set_position() calls axis.cla(), which resets locators, formatters,
-    etc.  We temporarily replace that call with axis.reset_ticks(), which is
-    sufficient for our purposes.
-    """
-    axis = spine.axis
-    if axis is not None:
-        cla = axis.cla
-        axis.cla = axis.reset_ticks
-    spine.set_position(position)
-    if axis is not None:
-        axis.cla = cla
 
 
 def _kde_support(data, bw, gridsize, cut, clip):
@@ -344,7 +338,13 @@ def ci(a, which=95, axis=None):
 
 
 def sig_stars(p):
-    """Return a R-style significance string corresponding to p values."""
+    """Return a R-style significance string corresponding to p values.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "sig_stars is deprecated and will be removed in a future version."
+    warnings.warn(msg)
     if p < 0.001:
         return "***"
     elif p < 0.01:
@@ -531,20 +531,44 @@ def categorical_order(values, order=None):
     return list(order)
 
 
+def locator_to_legend_entries(locator, limits, dtype):
+    """Return levels and formatted levels for brief numeric legends."""
+    raw_levels = locator.tick_values(*limits).astype(dtype)
+
+    class dummy_axis:
+        def get_view_interval(self):
+            return limits
+
+    if isinstance(locator, mpl.ticker.LogLocator):
+        formatter = mpl.ticker.LogFormatter()
+    else:
+        formatter = mpl.ticker.ScalarFormatter()
+    formatter.axis = dummy_axis()
+
+    # TODO: The following two lines should be replaced
+    # once pinned matplotlib>=3.1.0 with:
+    # formatted_levels = formatter.format_ticks(raw_levels)
+    formatter.set_locs(raw_levels)
+    formatted_levels = [formatter(x) for x in raw_levels]
+
+    return raw_levels, formatted_levels
+
+
 def get_color_cycle():
-    """Return the list of colors in the current matplotlib color cycle."""
-    try:
-        cyl = mpl.rcParams['axes.prop_cycle']
-        try:
-            # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
-            # but no garuantee that there's a `color` key.
-            # so users could have a custom rcParmas w/ no color...
-            return [x['color'] for x in cyl]
-        except KeyError:
-            pass
-    except KeyError:
-        pass
-    return mpl.rcParams['axes.color_cycle']
+    """Return the list of colors in the current matplotlib color cycle
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    colors : list
+        List of matplotlib colors in the current cycle, or dark gray if
+        the current color cycle is empty.
+    """
+    cycler = mpl.rcParams['axes.prop_cycle']
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def relative_luminance(color):
@@ -570,16 +594,14 @@ def relative_luminance(color):
 
 
 def to_utf8(obj):
-    """Return a Unicode string representing a Python object.
+    """Return a string representing a Python object.
 
-    Unicode strings (i.e. type ``unicode`` in Python 2.7 and type ``str`` in
-    Python 3.x) are returned unchanged.
+    Strings (i.e. type ``str``) are returned unchanged.
 
-    Byte strings (i.e. type ``str`` in Python 2.7 and type ``bytes`` in
-    Python 3.x) are returned as UTF-8-encoded strings.
+    Byte strings (i.e. type ``bytes``) are returned as UTF-8-decoded strings.
 
     For other objects, the method ``__str__()`` is called, and the result is
-    returned as a UTF-8-encoded string.
+    returned as a string.
 
     Parameters
     ----------
@@ -588,35 +610,15 @@ def to_utf8(obj):
 
     Returns
     -------
-    s : unicode (Python 2.7) / str (Python 3.x)
-        UTF-8-encoded string representation of ``obj``
+    s : str
+        UTF-8-decoded string representation of ``obj``
     """
     if isinstance(obj, str):
-        try:
-            # If obj is a string, try to return it as a Unicode-encoded
-            # string:
-            return obj.decode("utf-8")
-        except AttributeError:
-            # Python 3.x strings are already Unicode, and do not have a
-            # decode() method, so the unchanged string is returned
-            return obj
-
+        return obj
     try:
-        if isinstance(obj, unicode):
-            # do not attemt a conversion if string is already a Unicode
-            # string:
-            return obj
-        else:
-            # call __str__() for non-string object, and return the
-            # result to Unicode:
-            return obj.__str__().decode("utf-8")
-    except NameError:
-        # NameError is raised in Python 3.x as type 'unicode' is not
-        # defined.
-        if isinstance(obj, bytes):
-            return obj.decode("utf-8")
-        else:
-            return obj.__str__()
+        return obj.decode(encoding="utf-8")
+    except AttributeError:  # obj is not bytes-like
+        return str(obj)
 
 
 def _network(t=None, url='https://google.com'):

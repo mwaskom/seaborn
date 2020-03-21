@@ -1,20 +1,18 @@
-from __future__ import division
 from itertools import product
 from textwrap import dedent
-from distutils.version import LooseVersion
+import warnings
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .external.six import string_types
-
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
-                    remove_na)
+                    remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
-from .palettes import color_palette, cubehelix_palette, _parse_cubehelix_args
+from .palettes import (color_palette, cubehelix_palette,
+                       _parse_cubehelix_args, QUAL_PALETTES)
 from .axisgrid import FacetGrid, _facet_docs
 
 
@@ -23,10 +21,7 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 
 class _RelationalPlotter(object):
 
-    if LooseVersion(mpl.__version__) >= "2.0":
-        default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
-    else:
-        default_markers = ["o", "s", "D", "^", "v", "p"]
+    default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
                       (5, 1, 2, 1, 2, 1)]
@@ -137,7 +132,7 @@ class _RelationalPlotter(object):
 
             # Validate the inputs
             for var in [x, y, hue, size, style, units]:
-                if isinstance(var, string_types):
+                if isinstance(var, str):
                     err = "Could not interpret input '{}'".format(var)
                     raise ValueError(err)
 
@@ -241,6 +236,9 @@ class _RelationalPlotter(object):
         elif str(palette).startswith("ch:"):
             args, kwargs = _parse_cubehelix_args(palette)
             cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
+        elif isinstance(palette, dict):
+            colors = [palette[k] for k in sorted(palette)]
+            cmap = mpl.colors.ListedColormap(colors)
         else:
             try:
                 cmap = mpl.cm.get_cmap(palette)
@@ -261,7 +259,8 @@ class _RelationalPlotter(object):
 
         # TODO this should also use color_lookup, but that needs the
         # class attributes that get set after using this function...
-        palette = dict(zip(levels, cmap(norm(levels))))
+        if not isinstance(palette, dict):
+            palette = dict(zip(levels, cmap(norm(levels))))
         # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
 
         return levels, palette, cmap, norm
@@ -354,7 +353,11 @@ class _RelationalPlotter(object):
             var_type = self._semantic_type(data)
 
             # Override depending on the type of the palette argument
-            if isinstance(palette, (dict, list)):
+            if palette in QUAL_PALETTES:
+                var_type = "categorical"
+            elif norm is not None:
+                var_type = "numeric"
+            elif isinstance(palette, (dict, list)):
                 var_type = "categorical"
 
         # -- Option 1: categorical color palette
@@ -364,12 +367,17 @@ class _RelationalPlotter(object):
             cmap = None
             limits = None
             levels, palette = self.categorical_to_palette(
-                data, order, palette
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # externalizes numpy datetime64
+                list(data), order, palette
             )
 
         # -- Option 2: sequential color palette
 
         elif var_type == "numeric":
+
+            data = pd.to_numeric(data)
 
             levels, palette, cmap, norm = self.numeric_to_palette(
                 data, order, palette, norm
@@ -382,6 +390,9 @@ class _RelationalPlotter(object):
         self.hue_type = var_type
         self.palette = palette
         self.cmap = cmap
+
+        # Update data as it may have changed dtype
+        self.plot_data["hue"] = data
 
     def parse_size(self, data, sizes, order, norm):
         """Determine the linewidths given data characteristics."""
@@ -400,12 +411,18 @@ class _RelationalPlotter(object):
 
             var_type = self._semantic_type(data)
 
-            # TODO override for list/dict like in parse_hue?
+            # Override depending on the type of the sizes argument
+            if norm is not None:
+                var_type = "numeric"
+            elif isinstance(sizes, (dict, list)):
+                var_type = "categorical"
 
             if var_type == "categorical":
                 levels = categorical_order(data, order)
                 numbers = np.arange(1, 1 + len(levels))[::-1]
+
             elif var_type == "numeric":
+                data = pd.to_numeric(data)
                 levels = numbers = np.sort(remove_na(data.unique()))
 
             if isinstance(sizes, (dict, list)):
@@ -463,12 +480,20 @@ class _RelationalPlotter(object):
                 # sizes = {l: min_width + norm(n) * (max_width - min_width)
                 #          for l, n in zip(levels, numbers)}
 
+            if var_type == "categorical":
+                # Don't keep a reference to the norm, which will avoid
+                # downstream  code from switching to numerical interpretation
+                norm = None
+
         self.sizes = sizes
         self.size_type = var_type
         self.size_levels = levels
         self.size_norm = norm
         self.size_limits = limits
         self.size_range = width_range
+
+        # Update data as it may have changed dtype
+        self.plot_data["size"] = data
 
     def parse_style(self, data, markers, dashes, order):
         """Determine the markers and line dashes."""
@@ -482,7 +507,10 @@ class _RelationalPlotter(object):
         else:
 
             if order is None:
-                levels = categorical_order(data)
+                # List comprehension here is required to
+                # overcome differences in the way pandas
+                # coerces numpy datatypes
+                levels = categorical_order(list(data))
             else:
                 levels = order
 
@@ -532,7 +560,8 @@ class _RelationalPlotter(object):
             try:
                 float_data = data.astype(np.float)
                 values = np.unique(float_data.dropna())
-                if np.array_equal(values, np.array([0., 1.])):
+                # TODO replace with isin when pinned np version >= 1.13
+                if np.all(np.in1d(values, np.array([0., 1.]))):
                     return "categorical"
                 return "numeric"
             except (ValueError, TypeError):
@@ -570,48 +599,49 @@ class _RelationalPlotter(object):
                 legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
-
         if verbosity == "brief" and self.hue_type == "numeric":
             if isinstance(self.hue_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            hue_levels = (ticker.tick_values(*self.hue_limits)
-                                .astype(self.plot_data["hue"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            hue_levels, hue_formatted_levels = locator_to_legend_entries(
+                locator, self.hue_limits, self.plot_data["hue"].dtype
+            )
         else:
-            hue_levels = self.hue_levels
+            hue_levels = hue_formatted_levels = self.hue_levels
 
         # Add the hue semantic subtitle
         if self.hue_label is not None:
             update((self.hue_label, "title"), self.hue_label, **title_kws)
 
         # Add the hue semantic labels
-        for level in hue_levels:
+        for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
                 color = self.color_lookup(level)
-                update(self.hue_label, level, color=color)
+                update(self.hue_label, formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
         if verbosity == "brief" and self.size_type == "numeric":
             if isinstance(self.size_norm, mpl.colors.LogNorm):
-                ticker = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=3)
             else:
-                ticker = mpl.ticker.MaxNLocator(nbins=3)
-            size_levels = (ticker.tick_values(*self.size_limits)
-                                 .astype(self.plot_data["size"].dtype))
+                locator = mpl.ticker.MaxNLocator(nbins=3)
+            size_levels, size_formatted_levels = locator_to_legend_entries(
+                locator, self.size_limits, self.plot_data["size"].dtype)
         else:
-            size_levels = self.size_levels
+            size_levels = size_formatted_levels = self.size_levels
 
         # Add the size semantic subtitle
         if self.size_label is not None:
             update((self.size_label, "title"), self.size_label, **title_kws)
 
         # Add the size semantic labels
-        for level in size_levels:
+        for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(self.size_label, level, linewidth=size, s=size)
+                update(
+                    self.size_label, formatted_level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
@@ -643,8 +673,8 @@ class _RelationalPlotter(object):
             artist = func([], [], label=label, **use_kws)
             if self._legend_func == "plot":
                 artist = artist[0]
-            legend_data[label] = artist
-            legend_order.append(label)
+            legend_data[key] = artist
+            legend_order.append(key)
 
         self.legend_data = legend_data
         self.legend_order = legend_order
@@ -660,7 +690,7 @@ class _LinePlotter(_RelationalPlotter):
                  palette=None, hue_order=None, hue_norm=None,
                  sizes=None, size_order=None, size_norm=None,
                  dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None, switch_axes=False,
+                 units=None, estimator=None, ci=None, n_boot=None, switch_axes=False, seed=None,
                  sort=True, err_style=None, err_kws=None, legend=None):
 
         plot_data = self.establish_variables(
@@ -679,6 +709,7 @@ class _LinePlotter(_RelationalPlotter):
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
+        self.seed = seed
         self.sort = sort
         self.err_style = err_style
         self.switch_axes = switch_axes
@@ -691,6 +722,7 @@ class _LinePlotter(_RelationalPlotter):
         func = self.estimator
         ci = self.ci
         n_boot = self.n_boot
+        seed = self.seed
 
         # Define a "null" CI for when we only have one value
         null_ci = pd.Series(index=["low", "high"], dtype=np.float)
@@ -698,10 +730,10 @@ class _LinePlotter(_RelationalPlotter):
         # Function to bootstrap in the context of a pandas group by
         def bootstrapped_cis(vals):
 
-            if len(vals) == 1:
+            if len(vals) <= 1:
                 return null_ci
 
-            boots = bootstrap(vals, func=func, n_boot=n_boot)
+            boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)
             cis = utils.ci(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
@@ -974,6 +1006,16 @@ _relational_docs = dict(
     See the :ref:`tutorial <relational_tutorial>` for more information.\
     """),
 
+    relational_semantic_narrative=dedent("""\
+    The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+    semantic, if present, depends on whether the variable is inferred to
+    represent "numeric" or "categorical" data. In particular, numeric variables
+    are represented with a sequential colormap by default, and the legend
+    entries show regular "ticks" with values that may or may not exist in the
+    data. This behavior can be controlled through various parameters, as
+    described and illustrated below.\
+    """),
+
     # --- Shared function parameters
     data_vars=dedent("""\
     x, y : names of variables in ``data`` or vector data, optional
@@ -1062,6 +1104,10 @@ _relational_docs = dict(
     n_boot : int, optional
         Number of bootstraps to use for computing the confidence interval.\
     """),
+    seed=dedent("""\
+    seed : int, numpy.random.Generator, or numpy.random.RandomState, optional
+        Seed or random number generator for reproducible bootstrapping.\
+    """),
     legend=dedent("""\
     legend : "brief", "full", or False, optional
         How to draw the legend. If "brief", numeric ``hue`` and ``size``
@@ -1091,7 +1137,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
              palette=None, hue_order=None, hue_norm=None,
              sizes=None, size_order=None, size_norm=None,
              dashes=True, markers=None, style_order=None,
-             units=None, estimator="mean", ci=95, n_boot=1000,
+             units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
              switch_axes=False, sort=True, err_style="band", err_kws=None,
              legend="brief", ax=None, **kwargs):
 
@@ -1100,7 +1146,7 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
-        units=units, estimator=estimator, ci=ci, n_boot=n_boot, switch_axes=switch_axes,
+        units=units, estimator=estimator, ci=ci, n_boot=n_boot, switch_axes=switch_axes, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
@@ -1108,7 +1154,6 @@ def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
         ax = plt.gca()
 
     p.plot(ax, kwargs)
-
     return ax
 
 
@@ -1116,6 +1161,8 @@ lineplot.__doc__ = dedent("""\
     Draw a line plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     By default, the plot aggregates over multiple ``y`` values at each value of
     ``x`` and shows an estimate of the central tendency and a confidence
@@ -1156,6 +1203,7 @@ lineplot.__doc__ = dedent("""\
     {estimator}
     {ci}
     {n_boot}
+    {seed}
     sort : boolean, optional
         If True, the data will be sorted by the x and y variables, otherwise
         lines will connect points in the order they appear in the dataset.
@@ -1164,12 +1212,13 @@ lineplot.__doc__ = dedent("""\
         or discrete error bars.
     err_kws : dict of keyword arguments
         Additional paramters to control the aesthetics of the error bars. The
-        kwargs are passed either to ``ax.fill_between`` or ``ax.errorbar``,
-        depending on the ``err_style``.
+        kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
+        or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
     {legend}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed down to ``plt.plot`` at draw time.
+        Other keyword arguments are passed down to
+        :meth:`matplotlib.axes.Axes.plot`.
 
     Returns
     -------
@@ -1323,7 +1372,7 @@ lineplot.__doc__ = dedent("""\
         >>> list_data = [wide_df.loc[:"2005", "a"], wide_df.loc["2003":, "b"]]
         >>> ax = sns.lineplot(data=list_data)
 
-    Plot a single Series, pass kwargs to ``plt.plot``:
+    Plot a single Series, pass kwargs to :meth:`matplotlib.axes.Axes.plot`:
 
     .. plot::
         :context: close-figs
@@ -1338,6 +1387,17 @@ lineplot.__doc__ = dedent("""\
         >>> x, y = np.random.randn(2, 5000).cumsum(axis=1)
         >>> ax = sns.lineplot(x=x, y=y, sort=False, lw=1)
 
+    Use :func:`relplot` to combine :func:`lineplot` and :class:`FacetGrid`:
+    This allows grouping within additional categorical variables. Using
+    :func:`relplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of the semantic mappings across facets.
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="timepoint", y="signal",
+        ...                  col="region", hue="event", style="event",
+        ...                  kind="line", data=fmri)
 
     """).format(**_relational_docs)
 
@@ -1373,6 +1433,8 @@ scatterplot.__doc__ = dedent("""\
     Draw a scatter plot with possibility of several semantic groupings.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     Parameters
     ----------
@@ -1414,8 +1476,8 @@ scatterplot.__doc__ = dedent("""\
     {legend}
     {ax_in}
     kwargs : key, value mappings
-        Other keyword arguments are passed down to ``plt.scatter`` at draw
-        time.
+        Other keyword arguments are passed down to
+        :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
@@ -1566,6 +1628,19 @@ scatterplot.__doc__ = dedent("""\
         >>> wide_df = pd.DataFrame(data, index, ["a", "b", "c", "d"])
         >>> ax = sns.scatterplot(data=wide_df)
 
+    Use :func:`relplot` to combine :func:`scatterplot` and :class:`FacetGrid`:
+    This allows grouping within additional categorical variables. Using
+    :func:`relplot` is safer than using :class:`FacetGrid` directly, as it
+    ensures synchronization of the semantic mappings across facets.
+
+    .. plot::
+        :context: close-figs
+
+        >>> g = sns.relplot(x="total_bill", y="tip",
+        ...                  col="time", hue="day", style="day",
+        ...                  kind="scatter", data=tips)
+
+
     """).format(**_relational_docs)
 
 
@@ -1592,6 +1667,13 @@ def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
     else:
         err = "Plot kind {} not recognized".format(kind)
         raise ValueError(err)
+
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = ("relplot is a figure-level function and does not accept "
+               "target axes. You may wish to try {}".format(kind + "plot"))
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
 
     # Use the full dataset to establish how to draw the semantics
     p = plotter(
@@ -1663,6 +1745,8 @@ relplot.__doc__ = dedent("""\
     should refer to the documentation for each to see kind-specific options.
 
     {main_api_narrative}
+
+    {relational_semantic_narrative}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.

@@ -66,7 +66,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'seaborn'
 import time
-copyright = u'2012-{}, Michael Waskom'.format(time.strftime("%Y"))
+copyright = u'2012-{}'.format(time.strftime("%Y"))
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -288,8 +288,10 @@ def setup(app):
 
 # -- Intersphinx ------------------------------------------------
 
-intersphinx_mapping = {'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-                       'matplotlib': ('http://matplotlib.org/', None),
-                       'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-                       'statsmodels': ('http://www.statsmodels.org/stable/', None)}
+intersphinx_mapping = {
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'matplotlib': ('https://matplotlib.org/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'statsmodels': ('https://www.statsmodels.org/stable/', None)
+}
