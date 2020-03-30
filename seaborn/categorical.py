@@ -2674,7 +2674,7 @@ boxenplot.__doc__ = dedent("""\
         k_depth to determine the number of percentiles to draw. Defaults to
         0.007 as a proportion of outliers. Should be in range [0, 1].
     showfliers : bool, optional
-        If True, outliers beyond ``outlier_prop`` are plotted as markers 
+        If True, outliers beyond ``outlier_prop`` are plotted as markers
         outside the boxes.
     {ax_in}
     kwargs : key, value mappings
