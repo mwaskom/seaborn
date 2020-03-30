@@ -1808,7 +1808,8 @@ class _LVPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
-                 width, dodge, k_depth, linewidth, scale, outlier_prop):
+                 width, dodge, k_depth, linewidth, scale, outlier_prop,
+                 showfliers):
 
         # TODO assigning variables for None is unneccesary
         if width is None:
@@ -1834,6 +1835,10 @@ class _LVPlotter(_CategoricalPlotter):
         self.scale = scale
 
         self.outlier_prop = outlier_prop
+
+        if showfliers is None:
+            showfliers = True
+        self.showfliers = showfliers
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
@@ -1894,7 +1899,7 @@ class _LVPlotter(_CategoricalPlotter):
                 color=[255. / 256., 185. / 256., 0.],
                 vert=True, widths=1, k_depth='proportion',
                 ax=None, outlier_prop=None, scale='exponential',
-                **kws):
+                showfliers=True, **kws):
 
         x = positions[0]
         box_data = np.asarray(box_data)
@@ -1944,8 +1949,10 @@ class _LVPlotter(_CategoricalPlotter):
             # Calculate the medians
             y = np.median(box_data)
 
-            # Calculate the outliers and plot
-            outliers = self._lv_outliers(box_data, k)
+            # Calculate the outliers and plot (only if showfliers == True)
+            outliers = []
+            if self.showfliers:
+                outliers = self._lv_outliers(box_data, k)
             hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
@@ -2011,6 +2018,7 @@ class _LVPlotter(_CategoricalPlotter):
                              ax=ax,
                              scale=self.scale,
                              outlier_prop=self.outlier_prop,
+                             showfliers=self.showfliers,
                              **kws)
 
             else:
@@ -2607,12 +2615,13 @@ def lvplot(*args, **kwargs):
 def boxenplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
               orient=None, color=None, palette=None, saturation=.75,
               width=.8, dodge=True, k_depth='proportion', linewidth=None,
-              scale='exponential', outlier_prop=None, ax=None, **kwargs):
+              scale='exponential', outlier_prop=None, showfliers=True, ax=None,
+              **kwargs):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
                          width, dodge, k_depth, linewidth, scale,
-                         outlier_prop)
+                         outlier_prop, showfliers)
 
     if ax is None:
         ax = plt.gca()
@@ -2664,6 +2673,9 @@ boxenplot.__doc__ = dedent("""\
         Proportion of data believed to be outliers. Used in conjunction with
         k_depth to determine the number of percentiles to draw. Defaults to
         0.007 as a proportion of outliers. Should be in range [0, 1].
+    showfliers : bool, optional
+        If True, outliers beyond ``outlier_prop`` are plotted as markers 
+        outside the boxes.
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
