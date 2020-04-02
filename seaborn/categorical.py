@@ -1809,7 +1809,7 @@ class _LVPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
                  width, dodge, k_depth, linewidth, scale, outlier_prop,
-                 showfliers):
+                 showfliers=True):
 
         # TODO assigning variables for None is unneccesary
         if width is None:
@@ -1836,8 +1836,6 @@ class _LVPlotter(_CategoricalPlotter):
 
         self.outlier_prop = outlier_prop
 
-        if showfliers is None:
-            showfliers = True
         self.showfliers = showfliers
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)

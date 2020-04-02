@@ -2632,7 +2632,7 @@ class TestBoxenPlotter(CategoricalFixture):
                        saturation=.75, width=.8, dodge=True,
                        k_depth='proportion', linewidth=None,
                        scale='exponential', outlier_prop=None,
-                       showfliers=False)
+                       showfliers=True)
 
     def ispatch(self, c):
 
