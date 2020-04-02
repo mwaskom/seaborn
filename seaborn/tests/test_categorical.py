@@ -2638,6 +2638,10 @@ class TestBoxenPlotter(CategoricalFixture):
 
         return isinstance(c, mpl.collections.PatchCollection)
 
+    def ispath(self, c):
+
+        return isinstance(c, mpl.collections.PathCollection)
+
     def edge_calc(self, n, data):
 
         q = np.asanyarray([0.5 ** n, 1 - 0.5 ** n]) * 100
@@ -2701,6 +2705,20 @@ class TestBoxenPlotter(CategoricalFixture):
         out_exp = p._lv_outliers(outlier_data, expected_k)
 
         npt.assert_equal(out_exp, out_calc)
+
+    def test_showfliers(self):
+
+        ax = cat.boxenplot("g", "y", data=self.df)
+        for c in filter(self.ispath, ax.collections):
+            assert len(c.get_offsets()) == 2
+
+        plt.close("all")
+
+        ax = cat.boxenplot("g", "y", data=self.df, showfliers=False)
+        for c in filter(self.ispath, ax.collections):
+            assert len(c.get_offsets()) == 0
+
+        plt.close("all")
 
     def test_hue_offsets(self):
 
