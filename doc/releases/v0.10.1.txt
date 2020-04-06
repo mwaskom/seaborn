@@ -15,3 +15,5 @@ This is minor release with bug fixes issues in 0.10.0.
 - Fixed a bug where :func:`despine` would cause an error when trying to trim spines on a matplotlib categorical axis.
 
 - Adapted to a change in matplotlib that caused problems with single swarm plots.
+
+- Added the ``showfliers`` parameter to :func:`boxenplot` to suppress plotting of outlier data points, matching the API of :func:`boxplot`.
