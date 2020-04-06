@@ -1424,6 +1424,9 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                     centers.append(center)
                     swarms.append(points)
 
+        # Autoscale the valus axis to set the data/axes transforms properly
+        ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
+
         # Update the position of each point on the categorical axis
         # Do this after plotting so that the numerical axis limits are correct
         for center, swarm in zip(centers, swarms):

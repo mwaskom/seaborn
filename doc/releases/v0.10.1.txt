@@ -13,3 +13,5 @@ This is minor release with bug fixes issues in 0.10.0.
 - Fixed a bug where :func:`heatmap` would use values from masked cells when computing default colormap limits.
 
 - Fixed a bug where :func:`despine` would cause an error when trying to trim spines on a matplotlib categorical axis.
+
+- Adapted to a change in matplotlib that caused problems with single swarm plots.
