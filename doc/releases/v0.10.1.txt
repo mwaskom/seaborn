@@ -2,7 +2,7 @@
 v0.10.1 (Unreleased)
 --------------------
 
-This is minor release with bug fixes issues in 0.10.0.
+This is minor release with bug fixes for issues identified since 0.10.0.
 
 - Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
 
@@ -17,3 +17,5 @@ This is minor release with bug fixes issues in 0.10.0.
 - Adapted to a change in matplotlib that caused problems with single swarm plots.
 
 - Added the ``showfliers`` parameter to :func:`boxenplot` to suppress plotting of outlier data points, matching the API of :func:`boxplot`.
+
+- Several utility functions that are no longer used internally (``percentiles`` and ``sig_stars``) have been deprecated and marked for future removal.

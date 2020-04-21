@@ -139,7 +139,7 @@ def saturate(color):
 
     Parameters
     ----------
-    color :  matplotlib color
+    color : matplotlib color
         hex, rgb-tuple, or html color name
 
     Returns
@@ -167,7 +167,7 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
         new color code in RGB tuple representation
 
     """
-    # Get rgb tuple representation
+    # Get an RGB tuple representation
     rgb = mplcol.colorConverter.to_rgb(color)
     vals = list(colorsys.rgb_to_hls(*rgb))
     for i, val in enumerate([h, l, s]):
@@ -297,6 +297,8 @@ def _kde_support(data, bw, gridsize, cut, clip):
 def percentiles(a, pcts, axis=None):
     """Like scoreatpercentile but can take and return array of percentiles.
 
+    DEPRECATED: will be removed in a future version.
+
     Parameters
     ----------
     a : array
@@ -313,6 +315,9 @@ def percentiles(a, pcts, axis=None):
         first dimension is length of object passed to ``pcts``
 
     """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg)
+
     scores = []
     try:
         n = len(pcts)
@@ -343,8 +348,9 @@ def sig_stars(p):
     DEPRECATED: will be removed in a future version.
 
     """
-    msg = "sig_stars is deprecated and will be removed in a future version."
+    msg = "This function is deprecated and will be removed in a future version"
     warnings.warn(msg)
+
     if p < 0.001:
         return "***"
     elif p < 0.01:
@@ -377,15 +383,13 @@ def get_dataset_names():
 
 
 def get_data_home(data_home=None):
-    """Return the path of the seaborn data directory.
+    """Return a path to the cache directory for example datasets.
 
-    This is used by the ``load_dataset`` function.
+    This directory is then used by :func:`load_dataset`.
 
-    If the ``data_home`` argument is not specified, the default location
-    is ``~/seaborn-data``.
+    If the ``data_home`` argument is not specified, it tries to read from the
+    ``SEABORN_DATA`` environment variable and defaults to ``~/seaborn-data``.
 
-    Alternatively, a different default location can be specified using the
-    environment variable ``SEABORN_DATA``.
     """
     if data_home is None:
         data_home = os.environ.get('SEABORN_DATA',
@@ -397,20 +401,35 @@ def get_data_home(data_home=None):
 
 
 def load_dataset(name, cache=True, data_home=None, **kws):
-    """Load a dataset from the online repository (requires internet).
+    """Load an example dataset from the online repository (requires internet).
+
+    This function provides quick access to a small number of example datasets
+    that are useful for documenting seaborn or generating reproducible examples
+    for bug reports. It is not necessary for normal usage.
+
+    Note that some of the datasets have a small amount of preprocessing applied
+    to define a proper ordering for categorical variables.
+
+    Use :func:`get_dataset_names` to see a list of available datasets.
 
     Parameters
     ----------
     name : str
-        Name of the dataset (`name`.csv on
-        https://github.com/mwaskom/seaborn-data).  You can obtain list of
-        available datasets using :func:`get_dataset_names`
+        Name of the dataset (``{name}.csv`` on
+        https://github.com/mwaskom/seaborn-data).
     cache : boolean, optional
-        If True, then cache data locally and use the cache on subsequent calls
+        If True, try to load from the local cache first, and save to the cache
+        if a download is required.
     data_home : string, optional
-        The directory in which to cache data. By default, uses ~/seaborn-data/
-    kws : dict, optional
-        Passed to pandas.read_csv
+        The directory in which to cache data; see :func:`get_data_home`.
+    kws : keys and values, optional
+        Additional keyword arguments are passed to passed through to
+        :func:`pandas.read_csv`.
+
+    Returns
+    -------
+    df : :class:`pandas.DataFrame`
+        Tabular data, possibly with some preprocessing applied.
 
     """
     path = ("https://raw.githubusercontent.com/"
@@ -456,7 +475,7 @@ def axis_ticklabels_overlap(labels):
 
     Parameters
     ----------
-    labels : list of ticklabels
+    labels : list of matplotlib ticklabels
 
     Returns
     -------
@@ -471,7 +490,7 @@ def axis_ticklabels_overlap(labels):
         overlaps = [b.count_overlaps(bboxes) for b in bboxes]
         return max(overlaps) > 1
     except RuntimeError:
-        # Issue on macosx backend rasies an error in the above code
+        # Issue on macos backend raises an error in the above code
         return False
 
 
@@ -612,6 +631,7 @@ def to_utf8(obj):
     -------
     s : str
         UTF-8-decoded string representation of ``obj``
+
     """
     if isinstance(obj, str):
         return obj
@@ -629,6 +649,7 @@ def _network(t=None, url='https://google.com'):
     ----------
     t : function, optional
     url : str, optional
+
     """
     import nose
 
