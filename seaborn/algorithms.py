@@ -81,7 +81,8 @@ def bootstrap(*args, **kwargs):
     boot_dist = []
     for i in range(int(n_boot)):
         resampler = integers(0, n, n, dtype=np.intp)  # intp is indexing dtype
-        sample = [a.take(resampler, axis=0) for a in args]
+        resampler = integers(0, n, n, dtype=np.int_)
+
         boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
 
