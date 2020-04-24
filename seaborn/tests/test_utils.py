@@ -33,33 +33,32 @@ a_norm = np.random.randn(100)
 
 def test_pmf_hist_basics():
     """Test the function to return barplot args for pmf hist."""
-    out = utils.pmf_hist(a_norm)
+    with pytest.warns(UserWarning):
+        out = utils.pmf_hist(a_norm)
     assert_equal(len(out), 3)
     x, h, w = out
     assert_equal(len(x), len(h))
 
     # Test simple case
     a = np.arange(10)
-    x, h, w = utils.pmf_hist(a, 10)
+    with pytest.warns(UserWarning):
+        x, h, w = utils.pmf_hist(a, 10)
     nose.tools.assert_true(np.all(h == h[0]))
 
-
-def test_pmf_hist_widths():
-    """Test histogram width is correct."""
-    x, h, w = utils.pmf_hist(a_norm)
+    # Test width
+    with pytest.warns(UserWarning):
+        x, h, w = utils.pmf_hist(a_norm)
     assert_equal(x[1] - x[0], w)
 
-
-def test_pmf_hist_normalization():
-    """Test that output data behaves like a PMF."""
-    x, h, w = utils.pmf_hist(a_norm)
+    # Test normalization
+    with pytest.warns(UserWarning):
+        x, h, w = utils.pmf_hist(a_norm)
     nose.tools.assert_almost_equal(sum(h), 1)
     nose.tools.assert_less_equal(h.max(), 1)
 
-
-def test_pmf_hist_bins():
-    """Test bin specification."""
-    x, h, w = utils.pmf_hist(a_norm, 20)
+    # Test bins
+    with pytest.warns(UserWarning):
+        x, h, w = utils.pmf_hist(a_norm, 20)
     assert_equal(len(x), 20)
 
 

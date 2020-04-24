@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pytest
 from .. import relational as rel
 from ..palettes import color_palette
-from ..utils import categorical_order, sort_df
+from ..utils import categorical_order
 
 
 class TestRelationalPlotter(object):
@@ -832,7 +832,7 @@ class TestRelationalPlotter(object):
 
         p = rel._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
-        expected = sort_df(p.plot_data.loc[:, ["x", "y"]], ["x", "y"])
+        expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
         assert np.array_equal(data.values, expected)
 
         p = rel._LinePlotter(x="x", y="y", data=long_df, sort=False)
@@ -844,7 +844,7 @@ class TestRelationalPlotter(object):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
@@ -858,14 +858,14 @@ class TestRelationalPlotter(object):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
 
@@ -1101,12 +1101,12 @@ class TestLinePlotter(TestRelationalPlotter):
         assert line.get_label() == "test"
 
         p = rel._LinePlotter(x="x", y="y", data=long_df,
-                               sort=True, estimator=None)
+                             sort=True, estimator=None)
 
         ax.clear()
         p.plot(ax, {})
         line, = ax.lines
-        sorted_data = sort_df(long_df, ["x", "y"])
+        sorted_data = long_df.sort_values(["x", "y"])
         assert np.array_equal(line.get_xdata(), sorted_data.x.values)
         assert np.array_equal(line.get_ydata(), sorted_data.y.values)
 
@@ -1127,7 +1127,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_linewidth() == p.sizes[level]
 
         p = rel._LinePlotter(x="x", y="y", hue="a", style="a",
-                               markers=True, data=long_df)
+                             markers=True, data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1137,7 +1137,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_marker() == p.markers[level]
 
         p = rel._LinePlotter(x="x", y="y", hue="a", style="b",
-                               markers=True, data=long_df)
+                             markers=True, data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1148,8 +1148,8 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_marker() == p.markers[style]
 
         p = rel._LinePlotter(x="x", y="y", data=long_df,
-                               estimator="mean", err_style="band", ci="sd",
-                               sort=True)
+                             estimator="mean", err_style="band", ci="sd",
+                             sort=True)
 
         ax.clear()
         p.plot(ax, {})
@@ -1160,7 +1160,7 @@ class TestLinePlotter(TestRelationalPlotter):
         assert len(ax.collections) == 1
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", err_style="band", ci="sd")
+                             estimator="mean", err_style="band", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1169,7 +1169,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert isinstance(c, mpl.collections.PolyCollection)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", err_style="bars", ci="sd")
+                             estimator="mean", err_style="bars", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1180,7 +1180,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert isinstance(c, mpl.collections.LineCollection)
 
         p = rel._LinePlotter(x="x", y="y", data=repeated_df,
-                               units="u", estimator=None)
+                             units="u", estimator=None)
 
         ax.clear()
         p.plot(ax, {})
@@ -1188,7 +1188,7 @@ class TestLinePlotter(TestRelationalPlotter):
         assert len(ax.lines) == n_units
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=repeated_df,
-                               units="u", estimator=None)
+                             units="u", estimator=None)
 
         ax.clear()
         p.plot(ax, {})
@@ -1200,7 +1200,7 @@ class TestLinePlotter(TestRelationalPlotter):
             p.plot(ax, {})
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               err_style="band", err_kws={"alpha": .5})
+                             err_style="band", err_kws={"alpha": .5})
 
         ax.clear()
         p.plot(ax, {})
@@ -1208,7 +1208,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert band.get_alpha() == .5
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               err_style="bars", err_kws={"elinewidth": 2})
+                             err_style="bars", err_kws={"elinewidth": 2})
 
         ax.clear()
         p.plot(ax, {})
@@ -1670,8 +1670,8 @@ class TestRelPlotter(TestRelationalPlotter):
 
         for sem in ["hue", "size", "style"]:
             g = rel.relplot(x="x", y="y", col="b", row="c",
-                              data=sort_df(long_df, ["c", "b"]),
-                              **{sem: "a"})
+                            data=long_df.sort_values(["c", "b"]),
+                            **{sem: "a"})
             grouped = long_df.groupby(["c", "b"])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
@@ -1682,7 +1682,7 @@ class TestRelPlotter(TestRelationalPlotter):
 
         palette = ["r", "b", "g"]
         g = rel.relplot(x="x", y="y", hue="a", style="b", col="c",
-                          palette=palette, data=long_df)
+                        palette=palette, data=long_df)
 
         palette = dict(zip(long_df["a"].unique(), palette))
         grouped = long_df.groupby("c")
@@ -1695,7 +1695,7 @@ class TestRelPlotter(TestRelationalPlotter):
 
         sizes = [5, 12, 7]
         g = rel.relplot(x="x", y="y", size="a", hue="b", col="c",
-                          sizes=sizes, data=long_df)
+                        sizes=sizes, data=long_df)
 
         sizes = dict(zip(long_df["a"].unique(), sizes))
         grouped = long_df.groupby("c")
