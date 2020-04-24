@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pytest
 from .. import relational as rel
 from ..palettes import color_palette
-from ..utils import categorical_order, sort_df
+from ..utils import categorical_order
 
 
 class TestRelationalPlotter(object):
@@ -832,7 +832,7 @@ class TestRelationalPlotter(object):
 
         p = rel._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
-        expected = sort_df(p.plot_data.loc[:, ["x", "y"]], ["x", "y"])
+        expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
         assert np.array_equal(data.values, expected)
 
         p = rel._LinePlotter(x="x", y="y", data=long_df, sort=False)
@@ -844,7 +844,7 @@ class TestRelationalPlotter(object):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
@@ -858,14 +858,14 @@ class TestRelationalPlotter(object):
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]
-            expected = sort_df(p.plot_data.loc[rows, cols], cols)
+            expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert np.array_equal(data.values, expected.values)
 
 
@@ -1101,12 +1101,12 @@ class TestLinePlotter(TestRelationalPlotter):
         assert line.get_label() == "test"
 
         p = rel._LinePlotter(x="x", y="y", data=long_df,
-                               sort=True, estimator=None)
+                             sort=True, estimator=None)
 
         ax.clear()
         p.plot(ax, {})
         line, = ax.lines
-        sorted_data = sort_df(long_df, ["x", "y"])
+        sorted_data = long_df.sort_values(["x", "y"])
         assert np.array_equal(line.get_xdata(), sorted_data.x.values)
         assert np.array_equal(line.get_ydata(), sorted_data.y.values)
 
@@ -1670,8 +1670,8 @@ class TestRelPlotter(TestRelationalPlotter):
 
         for sem in ["hue", "size", "style"]:
             g = rel.relplot(x="x", y="y", col="b", row="c",
-                              data=sort_df(long_df, ["c", "b"]),
-                              **{sem: "a"})
+                            data=long_df.sort_values(["c", "b"]),
+                            **{sem: "a"})
             grouped = long_df.groupby(["c", "b"])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T

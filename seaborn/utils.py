@@ -37,6 +37,8 @@ def remove_na(arr):
 
 def sort_df(df, *args, **kwargs):
     """Wrapper to handle different pandas sorting API pre/post 0.17."""
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg)
     try:
         return df.sort_values(*args, **kwargs)
     except AttributeError:
