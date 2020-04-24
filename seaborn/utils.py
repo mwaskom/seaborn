@@ -46,8 +46,6 @@ def sort_df(df, *args, **kwargs):
 def ci_to_errsize(cis, heights):
     """Convert intervals to error arguments relative to plot heights.
 
-    DEPRECATED: will be removed in a future version.
-
     Parameters
     ----------
     cis: 2 x n sequence
@@ -62,8 +60,6 @@ def ci_to_errsize(cis, heights):
         format as argument for plt.bar
 
     """
-    msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
     cis = np.atleast_2d(cis).reshape(2, -1)
     heights = np.atleast_1d(heights)
     errsize = []
