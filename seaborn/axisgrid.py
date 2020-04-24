@@ -400,8 +400,11 @@ class FacetGrid(Grid):
 
         When using seaborn functions that infer semantic mappings from a
         dataset, care must be taken to synchronize those mappings across
-        facets. In most cases, it will be better to use a figure-level function
-        (e.g. :func:`relplot` or :func:`catplot`) than to use
+        facets. In other words some mechanism needs to ensure that the same
+        mapping is used in each facet. This can be achieved for example by 
+        passing pallete dictionnaries or by defining categorical types 
+        in your dataframe. In most cases, it will be better to use a figure-level
+        function (e.g. :func:`relplot` or :func:`catplot`) than to use
         :class:`FacetGrid` directly.
 
         The basic workflow is to initialize the :class:`FacetGrid` object with
