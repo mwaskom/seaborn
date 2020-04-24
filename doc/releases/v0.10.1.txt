@@ -18,4 +18,6 @@ This is minor release with bug fixes for issues identified since 0.10.0.
 
 - Added the ``showfliers`` parameter to :func:`boxenplot` to suppress plotting of outlier data points, matching the API of :func:`boxplot`.
 
+- Added the ``legend.title_fontsize`` to the :func:`plotting_context` definition.
+
 - Several utility functions that are no longer used internally (``percentiles``, ``sig_stars``, ``pmf_hist``, and ``sort_df``) have been deprecated and marked for future removal.
