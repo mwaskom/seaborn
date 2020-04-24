@@ -339,7 +339,7 @@ def percentiles(a, pcts, axis=None):
 def ci(a, which=95, axis=None):
     """Return a percentile range from an array of values."""
     p = 50 - which / 2, 50 + which / 2
-    return percentiles(a, p, axis)
+    return np.percentile(a, p, axis)
 
 
 def sig_stars(p):

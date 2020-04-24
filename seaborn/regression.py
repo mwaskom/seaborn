@@ -320,7 +320,7 @@ class _RegressionPlotter(_LinearPlotter):
         x = self.x
         if np.isscalar(bins):
             percentiles = np.linspace(0, 100, bins + 2)[1:-1]
-            bins = np.c_[utils.percentiles(x, percentiles)]
+            bins = np.c_[np.percentile(x, percentiles)]
         else:
             bins = np.c_[np.ravel(bins)]
 
