@@ -4,6 +4,7 @@ from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
+from distutils.version import LooseVersion
 
 import pytest
 import nose.tools as nt
@@ -2866,11 +2867,6 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        with plt.rc_context(rc={"axes.labelsize": "large"}):
-            ax = cat.boxenplot("g", "y", "h", data=self.df)
-
-        plt.close("all")
-
         ax = cat.boxenplot("y", "g", data=self.df, orient="h")
         nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
@@ -2878,6 +2874,24 @@ class TestBoxenPlotter(CategoricalFixture):
         npt.assert_array_equal(ax.get_yticks(), [0, 1, 2])
         npt.assert_array_equal([l.get_text() for l in ax.get_yticklabels()],
                                ["a", "b", "c"])
+
+        plt.close("all")
+
+    @pytest.mark.parametrize("size", ["large", "medium", "small", 22, 12])
+    def test_legend_titlesize(self, size):
+
+        if LooseVersion(mpl.__version__) >= LooseVersion("3.0"):
+            rc_ctx = {"legend.title_fontsize": size}
+        else:  # Old matplotlib doesn't have legend.title_fontsize rcparam
+            rc_ctx = {"axes.labelsize": size}
+            if isinstance(size, int):
+                size = size * .85
+        exp = mpl.font_manager.FontProperties(size=size).get_size()
+
+        with plt.rc_context(rc=rc_ctx):
+            ax = cat.boxenplot("g", "y", "h", data=self.df)
+            obs = ax.get_legend().get_title().get_fontproperties().get_size()
+            assert obs == exp
 
         plt.close("all")
 

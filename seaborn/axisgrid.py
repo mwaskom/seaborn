@@ -1,6 +1,7 @@
 from itertools import product
 import warnings
 from textwrap import dedent
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -70,10 +71,13 @@ class Grid(object):
         blank_handle = mpl.patches.Patch(alpha=0, linewidth=0)
         handles = [legend_data.get(l, blank_handle) for l in label_order]
         title = self._hue_var if title is None else title
-        try:
-            title_size = mpl.rcParams["axes.labelsize"] * .85
-        except TypeError:  # labelsize is something like "large"
-            title_size = mpl.rcParams["axes.labelsize"]
+        if LooseVersion(mpl.__version__) < LooseVersion("3.0"):
+            try:
+                title_size = mpl.rcParams["axes.labelsize"] * .85
+            except TypeError:  # labelsize is something like "large"
+                title_size = mpl.rcParams["axes.labelsize"]
+        else:
+            title_size = mpl.rcParams["legend.title_fontsize"]
 
         # Unpack nested labels from a hierarchical legend
         labels = []
