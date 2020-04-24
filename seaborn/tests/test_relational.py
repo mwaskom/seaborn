@@ -1127,7 +1127,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_linewidth() == p.sizes[level]
 
         p = rel._LinePlotter(x="x", y="y", hue="a", style="a",
-                               markers=True, data=long_df)
+                             markers=True, data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1137,7 +1137,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_marker() == p.markers[level]
 
         p = rel._LinePlotter(x="x", y="y", hue="a", style="b",
-                               markers=True, data=long_df)
+                             markers=True, data=long_df)
 
         ax.clear()
         p.plot(ax, {})
@@ -1148,8 +1148,8 @@ class TestLinePlotter(TestRelationalPlotter):
             assert line.get_marker() == p.markers[style]
 
         p = rel._LinePlotter(x="x", y="y", data=long_df,
-                               estimator="mean", err_style="band", ci="sd",
-                               sort=True)
+                             estimator="mean", err_style="band", ci="sd",
+                             sort=True)
 
         ax.clear()
         p.plot(ax, {})
@@ -1160,7 +1160,7 @@ class TestLinePlotter(TestRelationalPlotter):
         assert len(ax.collections) == 1
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", err_style="band", ci="sd")
+                             estimator="mean", err_style="band", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1169,7 +1169,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert isinstance(c, mpl.collections.PolyCollection)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               estimator="mean", err_style="bars", ci="sd")
+                             estimator="mean", err_style="bars", ci="sd")
 
         ax.clear()
         p.plot(ax, {})
@@ -1180,7 +1180,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert isinstance(c, mpl.collections.LineCollection)
 
         p = rel._LinePlotter(x="x", y="y", data=repeated_df,
-                               units="u", estimator=None)
+                             units="u", estimator=None)
 
         ax.clear()
         p.plot(ax, {})
@@ -1188,7 +1188,7 @@ class TestLinePlotter(TestRelationalPlotter):
         assert len(ax.lines) == n_units
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=repeated_df,
-                               units="u", estimator=None)
+                             units="u", estimator=None)
 
         ax.clear()
         p.plot(ax, {})
@@ -1200,7 +1200,7 @@ class TestLinePlotter(TestRelationalPlotter):
             p.plot(ax, {})
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               err_style="band", err_kws={"alpha": .5})
+                             err_style="band", err_kws={"alpha": .5})
 
         ax.clear()
         p.plot(ax, {})
@@ -1208,7 +1208,7 @@ class TestLinePlotter(TestRelationalPlotter):
             assert band.get_alpha() == .5
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df,
-                               err_style="bars", err_kws={"elinewidth": 2})
+                             err_style="bars", err_kws={"elinewidth": 2})
 
         ax.clear()
         p.plot(ax, {})
@@ -1682,7 +1682,7 @@ class TestRelPlotter(TestRelationalPlotter):
 
         palette = ["r", "b", "g"]
         g = rel.relplot(x="x", y="y", hue="a", style="b", col="c",
-                          palette=palette, data=long_df)
+                        palette=palette, data=long_df)
 
         palette = dict(zip(long_df["a"].unique(), palette))
         grouped = long_df.groupby("c")
@@ -1695,7 +1695,7 @@ class TestRelPlotter(TestRelationalPlotter):
 
         sizes = [5, 12, 7]
         g = rel.relplot(x="x", y="y", size="a", hue="b", col="c",
-                          sizes=sizes, data=long_df)
+                        sizes=sizes, data=long_df)
 
         sizes = dict(zip(long_df["a"].unique(), sizes))
         grouped = long_df.groupby("c")
