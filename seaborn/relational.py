@@ -8,7 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
-from .utils import (categorical_order, get_color_cycle, ci_to_errsize, sort_df,
+from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
                     remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
 from .palettes import (color_palette, cubehelix_palette,
@@ -328,7 +328,7 @@ class _RelationalPlotter(object):
                 continue
 
             if self.sort:
-                subset_data = sort_df(subset_data, ["units", "x", "y"])
+                subset_data = subset_data.sort_values(["units", "x", "y"])
 
             if self.units is None:
                 subset_data = subset_data.drop("units", axis=1)
