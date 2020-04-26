@@ -359,7 +359,16 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
     """Compute a univariate kernel density estimate using statsmodels."""
     fft = kernel == "gau"
     kde = smnp.KDEUnivariate(data)
-    kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
+
+    try:
+        kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
+    except RuntimeError as err:  # GH#1990
+        if stats.iqr(data) > 0:
+            raise err
+        msg = "Default bandwidth for data is 0; skipping density estimation."
+        warnings.warn(msg, UserWarning)
+        return np.array([]), np.array([])
+
     if cumulative:
         grid, y = kde.support, kde.cdf
     else:

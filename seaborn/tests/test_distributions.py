@@ -6,10 +6,16 @@ from scipy import stats
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
+from distutils.version import LooseVersion
 
 from .. import distributions as dist
 
 _no_statsmodels = not dist._has_statsmodels
+
+_old_statsmodels = False
+if not _no_statsmodels:
+    import statsmodels
+    _old_statsmodels = LooseVersion(statsmodels.__version__) < "0.11"
 
 
 class TestDistPlot(object):
@@ -172,6 +178,17 @@ class TestKDE(object):
         with pytest.warns(UserWarning):
             ax = dist.kdeplot(np.ones(10) * np.nan)
         line = ax.lines[1]
+        assert not line.get_xydata().size
+
+    @pytest.mark.skipif(_no_statsmodels or _old_statsmodels,
+                        reason="no statsmodels or statsmodels without issue")
+    def test_statsmodels_zero_bandwidth(self):
+        """Test handling of 0 bandwidth data in statsmodels."""
+        x = np.zeros(100)
+        x[0] = 1
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(x)
+        line = ax.lines[0]
         assert not line.get_xydata().size
 
     @pytest.mark.parametrize("cumulative", [True, False])
