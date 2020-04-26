@@ -6,10 +6,18 @@ from scipy import stats
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
+from distutils.version import LooseVersion
 
 from .. import distributions as dist
 
 _no_statsmodels = not dist._has_statsmodels
+
+if not _no_statsmodels:
+    import statsmodels
+    import statsmodels.nonparametric as smnp
+    _old_statsmodels = LooseVersion(statsmodels.__version__) < "0.11"
+else:
+    _old_statsmodels = False
 
 
 class TestDistPlot(object):
@@ -173,6 +181,29 @@ class TestKDE(object):
             ax = dist.kdeplot(np.ones(10) * np.nan)
         line = ax.lines[1]
         assert not line.get_xydata().size
+
+    @pytest.mark.skipif(_no_statsmodels or _old_statsmodels,
+                        reason="no statsmodels or statsmodels without issue")
+    def test_statsmodels_zero_bandwidth(self):
+        """Test handling of 0 bandwidth data in statsmodels."""
+        x = np.zeros(100)
+        x[0] = 1
+
+        try:
+
+            smnp.kde.bandwidths.select_bandwidth(x, "scott", "gau")
+
+        except RuntimeError:
+
+            # Only execute the actual test in the except clause, this should
+            # keep the test from failing in the future if statsmodels changes
+            # it's behavior to avoid raising the error itself.
+            # Track at https://github.com/statsmodels/statsmodels/issues/5419
+
+            with pytest.warns(UserWarning):
+                ax = dist.kdeplot(x)
+            line = ax.lines[0]
+            assert not line.get_xydata().size
 
     @pytest.mark.parametrize("cumulative", [True, False])
     def test_kdeplot_with_nans(self, cumulative):
