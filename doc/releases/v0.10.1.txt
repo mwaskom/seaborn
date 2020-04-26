@@ -1,5 +1,5 @@
 
-v0.10.1 (Unreleased)
+v0.10.1 (April 2020)
 --------------------
 
 This is minor release with bug fixes for issues identified since 0.10.0.
@@ -22,4 +22,4 @@ This is minor release with bug fixes for issues identified since 0.10.0.
 
 - Added the ``legend.title_fontsize`` to the :func:`plotting_context` definition.
 
-- Several utility functions that are no longer used internally (``percentiles``, ``sig_stars``, ``pmf_hist``, and ``sort_df``) have been deprecated and marked for future removal.
+- Deprecated several utility functions that are no longer used internally (``percentiles``, ``sig_stars``, ``pmf_hist``, and ``sort_df``).
