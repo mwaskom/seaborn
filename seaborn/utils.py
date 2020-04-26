@@ -15,7 +15,7 @@ from http.client import HTTPException
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
-           "despine", "get_dataset_names", "load_dataset"]
+           "despine", "get_dataset_names", "get_data_home", "load_dataset"]
 
 
 def remove_na(arr):
