@@ -11,6 +11,8 @@ This page contains information about what has changed in each new version of ``s
 
    <div class="col-md-9">
 
+.. include:: releases/v0.10.1.txt
+
 .. include:: releases/v0.10.0.txt
 
 .. include:: releases/v0.9.1.txt
