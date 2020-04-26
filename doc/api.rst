@@ -169,6 +169,8 @@ Utility functions
     :toctree: generated/
 
     load_dataset
+    get_dataset_names
+    get_data_home
     despine
     desaturate
     saturate
