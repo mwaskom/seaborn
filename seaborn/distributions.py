@@ -378,14 +378,7 @@ def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
 
 def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
     """Compute a univariate kernel density estimate using scipy."""
-    try:
-        kde = stats.gaussian_kde(data, bw_method=bw)
-    except TypeError:
-        kde = stats.gaussian_kde(data)
-        if bw != "scott":  # scipy default
-            msg = ("Ignoring bandwidth choice, "
-                   "please upgrade scipy to use a different bandwidth.")
-            warnings.warn(msg, UserWarning)
+    kde = stats.gaussian_kde(data, bw_method=bw)
     if isinstance(bw, str):
         bw = "scotts" if bw == "scott" else bw
         bw = getattr(kde, "%s_factor" % bw)() * np.std(data)
