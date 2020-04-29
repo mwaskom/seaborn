@@ -365,6 +365,7 @@ class _CategoricalPlotter(object):
             each_width = self.width / n_levels
             offsets = np.linspace(0, self.width - each_width, n_levels)
             offsets -= offsets.mean()
+            offsets *= float(self.dodge)
         else:
             offsets = np.zeros(n_levels)
 
@@ -2171,9 +2172,10 @@ _categorical_docs = dict(
         elements for one level of the major grouping variable.\
     """),
     dodge=dedent("""\
-    dodge : bool, optional
+    dodge : bool or float, optional
         When hue nesting is used, whether elements should be shifted along the
-        categorical axis.\
+        categorical axis (bool). If a float is passed, the elements are shifted
+        with an offset sclaed by the float. \
     """),
     linewidth=dedent("""\
     linewidth : float, optional
@@ -2317,6 +2319,15 @@ boxplot.__doc__ = dedent("""\
 
         >>> ax = sns.boxplot(x="day", y="total_bill", hue="smoker",
         ...                  data=tips, palette="Set3")
+
+    Draw a boxplot with nested grouping by two categorical variables
+    with a larger offset to each other:
+
+    .. plot::
+        :context: close-figs
+
+        >>> ax = sns.boxplot(x="day", y="total_bill", hue="smoker",
+        ...                  data=tips, palette="Set3", dodge=1.4)
 
     Draw a boxplot with nested grouping when some bins are empty:
 
