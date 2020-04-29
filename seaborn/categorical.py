@@ -2327,7 +2327,7 @@ boxplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> ax = sns.boxplot(x="day", y="total_bill", hue="smoker",
-        ...                  data=tips, palette="Set3", dodge=1.4)
+        ...                  data=tips, palette="Set3", dodge=1.1)
 
     Draw a boxplot with nested grouping when some bins are empty:
 
