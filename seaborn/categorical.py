@@ -1315,6 +1315,15 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
         off_high = points > high_gutter
         if off_high.any():
             points[off_high] = high_gutter
+
+        gutter_prop = (off_high + off_low).sum() / len(points)
+        if gutter_prop > .02:
+            msg = (
+                "{:.1%} of the points cannot be placed; you may want "
+                "to decrease the size of the markers or use stripplot."
+            ).format(gutter_prop)
+            warnings.warn(msg, UserWarning)
+
         return points
 
     def swarm_points(self, ax, points, center, width, s, **kws):
