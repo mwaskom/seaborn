@@ -1,0 +1,5 @@
+
+v0.11.0 (Unreleased)
+--------------------
+
+- Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm.

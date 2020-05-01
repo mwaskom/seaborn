@@ -1780,10 +1780,15 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_add_gutters(self):
 
         p = cat._SwarmPlotter(**self.default_kws)
+
+        points = np.zeros(10)
+        assert np.array_equal(points, p.add_gutters(points, 0, 1))
+
         points = np.array([0, -1, .4, .8])
-        points = p.add_gutters(points, 0, 1)
-        npt.assert_array_equal(points,
-                               np.array([0, -.5, .4, .5]))
+        msg = r"50.0% of the points cannot be placed.+$"
+        with pytest.warns(UserWarning, match=msg):
+            new_points = p.add_gutters(points, 0, 1)
+        assert np.array_equal(new_points, np.array([0, -.5, .4, .5]))
 
     def test_swarmplot_vertical(self):
 
