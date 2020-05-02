@@ -308,17 +308,28 @@ class FacetGrid(Grid):
         if ylim is not None:
             subplot_kws["ylim"] = ylim
 
-        # Initialize the subplot grid
+        # --- Initialize the subplot grid
         if col_wrap is None:
+
             kwargs = dict(figsize=figsize, squeeze=False,
                           sharex=sharex, sharey=sharey,
                           subplot_kw=subplot_kws,
                           gridspec_kw=gridspec_kws)
 
             fig, axes = plt.subplots(nrow, ncol, **kwargs)
-            self.axes = axes
+
+            if col is None and row is None:
+                axes_dict = {}
+            elif col is None:
+                axes_dict = dict(zip(row_names, axes.flat))
+            elif row is None:
+                axes_dict = dict(zip(col_names, axes.flat))
+            else:
+                facet_product = product(row_names, col_names)
+                axes_dict = dict(zip(facet_product, axes.flat))
 
         else:
+
             # If wrapping the col variable we need to make the grid ourselves
             if gridspec_kws:
                 warnings.warn("`gridspec_kws` ignored when using `col_wrap`")
@@ -333,27 +344,16 @@ class FacetGrid(Grid):
                 subplot_kws["sharey"] = axes[0]
             for i in range(1, n_axes):
                 axes[i] = fig.add_subplot(nrow, ncol, i + 1, **subplot_kws)
-            self.axes = axes
 
-            # Now we turn off labels on the inner axes
-            if sharex:
-                for ax in self._not_bottom_axes:
-                    for label in ax.get_xticklabels():
-                        label.set_visible(False)
-                    ax.xaxis.offsetText.set_visible(False)
-            if sharey:
-                for ax in self._not_left_axes:
-                    for label in ax.get_yticklabels():
-                        label.set_visible(False)
-                    ax.yaxis.offsetText.set_visible(False)
+            axes_dict = dict(zip(col_names, axes))
 
-        # Set up the class attributes
-        # ---------------------------
+        # --- Set up the class attributes
 
         # First the public API
         self.data = data
         self.fig = fig
         self.axes = axes
+        self.axes_dict = axes_dict
 
         self.row_names = row_names
         self.col_names = col_names
@@ -378,10 +378,23 @@ class FacetGrid(Grid):
         self._dropna = dropna
         self._not_na = not_na
 
-        # Make the axes look good
+        # --- Make the axes look good
+
         fig.tight_layout()
         if despine:
             self.despine()
+
+        if sharex:
+            for ax in self._not_bottom_axes:
+                for label in ax.get_xticklabels():
+                    label.set_visible(False)
+                ax.xaxis.offsetText.set_visible(False)
+
+        if sharey:
+            for ax in self._not_left_axes:
+                for label in ax.get_yticklabels():
+                    label.set_visible(False)
+                ax.yaxis.offsetText.set_visible(False)
 
     __init__.__doc__ = dedent("""\
         Initialize the matplotlib figure and FacetGrid object.
