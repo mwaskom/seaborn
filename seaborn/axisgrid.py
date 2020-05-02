@@ -886,30 +886,37 @@ class FacetGrid(Grid):
         utils.despine(self.fig, **kwargs)
         return self
 
-    def set_axis_labels(self, x_var=None, y_var=None):
+    def set_axis_labels(self, x_var=None, y_var=None, clear_inner=True):
         """Set axis labels on the left column and bottom row of the grid."""
         if x_var is not None:
             self._x_var = x_var
-            self.set_xlabels(x_var)
+            self.set_xlabels(x_var, clear_inner=clear_inner)
         if y_var is not None:
             self._y_var = y_var
-            self.set_ylabels(y_var)
+            self.set_ylabels(y_var, clear_inner=clear_inner)
+
         return self
 
-    def set_xlabels(self, label=None, **kwargs):
+    def set_xlabels(self, label=None, clear_inner=True, **kwargs):
         """Label the x axis on the bottom row of the grid."""
         if label is None:
             label = self._x_var
         for ax in self._bottom_axes:
             ax.set_xlabel(label, **kwargs)
+        if clear_inner:
+            for ax in self._not_bottom_axes:
+                ax.set_xlabel("")
         return self
 
-    def set_ylabels(self, label=None, **kwargs):
+    def set_ylabels(self, label=None, clear_inner=True, **kwargs):
         """Label the y axis on the left column of the grid."""
         if label is None:
             label = self._y_var
         for ax in self._left_axes:
             ax.set_ylabel(label, **kwargs)
+        if clear_inner:
+            for ax in self._not_left_axes:
+                ax.set_ylabel("")
         return self
 
     def set_xticklabels(self, labels=None, step=None, **kwargs):

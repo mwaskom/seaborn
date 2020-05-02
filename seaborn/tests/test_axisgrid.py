@@ -521,6 +521,15 @@ class TestFacetGrid(object):
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
 
+        for ax in g.axes.flat:
+            ax.set(xlabel="x", ylabel="y")
+
+        g.set_axis_labels(xlab, ylab)
+        for ax in g._not_bottom_axes:
+            assert not ax.get_xlabel()
+        for ax in g._not_left_axes:
+            assert not ax.get_ylabel()
+
     def test_axis_lims(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b", xlim=(0, 4), ylim=(-2, 3))
