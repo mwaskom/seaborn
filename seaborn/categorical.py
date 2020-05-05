@@ -400,10 +400,10 @@ class _CategoricalPlotter(object):
 
         if self.orient == "v":
             ax.xaxis.grid(False)
-            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=None)
+            ax.set_xlim(-.5, len(self.plot_data) - .5, auto=False)
         else:
             ax.yaxis.grid(False)
-            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
+            ax.set_ylim(-.5, len(self.plot_data) - .5, auto=False)
 
         if self.hue_names is not None:
             leg = ax.legend(loc="best", title=self.hue_title)
