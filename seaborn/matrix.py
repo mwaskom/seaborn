@@ -347,12 +347,16 @@ class _HeatMapper(object):
             self._annotate_heatmap(ax, mesh)
 
 
-def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=None, fmt=".2g", annot_kws=None,
-            linewidths=0, linecolor="white",
-            cbar=True, cbar_kws=None, cbar_ax=None,
-            square=False, xticklabels="auto", yticklabels="auto",
-            mask=None, ax=None, **kwargs):
+def heatmap(
+    data, *,
+    vmin=None, vmax=None, cmap=None, center=None, robust=False,
+    annot=None, fmt=".2g", annot_kws=None,
+    linewidths=0, linecolor="white",
+    cbar=True, cbar_kws=None, cbar_ax=None,
+    square=False, xticklabels="auto", yticklabels="auto",
+    mask=None, ax=None,
+    **kwargs
+):
     """Plot rectangular data as a color-encoded matrix.
 
     This is an Axes-level function and will draw the heatmap into the
@@ -1220,14 +1224,17 @@ class ClusterGrid(Grid):
         return self
 
 
-def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
-               z_score=None, standard_scale=None, figsize=(10, 10),
-               cbar_kws=None, row_cluster=True, col_cluster=True,
-               row_linkage=None, col_linkage=None,
-               row_colors=None, col_colors=None, mask=None,
-               dendrogram_ratio=.2, colors_ratio=0.03,
-               cbar_pos=(.02, .8, .05, .18), tree_kws=None,
-               **kwargs):
+def clustermap(
+    data, *,
+    pivot_kws=None, method='average', metric='euclidean',
+    z_score=None, standard_scale=None, figsize=(10, 10),
+    cbar_kws=None, row_cluster=True, col_cluster=True,
+    row_linkage=None, col_linkage=None,
+    row_colors=None, col_colors=None, mask=None,
+    dendrogram_ratio=.2, colors_ratio=0.03,
+    cbar_pos=(.02, .8, .05, .18), tree_kws=None,
+    **kwargs
+):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters

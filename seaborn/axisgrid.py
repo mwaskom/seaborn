@@ -1919,11 +1919,14 @@ class JointGrid(object):
         self.fig.savefig(*args, **kwargs)
 
 
-def pairplot(data, hue=None, hue_order=None, palette=None,
-             vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="auto", markers=None,
-             height=2.5, aspect=1, corner=False, dropna=True,
-             plot_kws=None, diag_kws=None, grid_kws=None, size=None):
+def pairplot(
+    data,
+    hue=None, hue_order=None, palette=None,
+    vars=None, x_vars=None, y_vars=None,
+    kind="scatter", diag_kind="auto", markers=None,
+    height=2.5, aspect=1, corner=False, dropna=True,
+    plot_kws=None, diag_kws=None, grid_kws=None, size=None,
+):
     """Plot pairwise relationships in a dataset.
 
     By default, this function will create a grid of Axes such that each numeric
@@ -2152,10 +2155,15 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     return grid
 
 
-def jointplot(x, y, data=None, kind="scatter", stat_func=None,
-              color=None, height=6, ratio=5, space=.2,
-              dropna=True, xlim=None, ylim=None,
-              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
+def jointplot(
+    x, y,
+    *, data=None,
+    kind="scatter", stat_func=None,
+    color=None, height=6, ratio=5, space=.2,
+    dropna=True, xlim=None, ylim=None,
+    joint_kws=None, marginal_kws=None, annot_kws=None,
+    **kwargs
+):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
     This function provides a convenient interface to the :class:`JointGrid`

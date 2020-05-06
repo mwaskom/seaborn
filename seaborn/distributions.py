@@ -35,10 +35,13 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
-             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-             color=None, vertical=False, norm_hist=False, axlabel=None,
-             label=None, ax=None):
+def distplot(
+    a, *,
+    bins=None, hist=True, kde=True, rug=False, fit=None,
+    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+    color=None, vertical=False, norm_hist=False, axlabel=None,
+    label=None, ax=None
+):
     """Flexibly plot a univariate distribution of observations.
 
     This function combines the matplotlib ``hist`` function (with automatic
@@ -501,10 +504,14 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     return xx, yy, z
 
 
-def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
-            bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-            cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
-            cbar_kws=None, ax=None, **kwargs):
+def kdeplot(
+    data, *,
+    data2=None, shade=False, vertical=False, kernel="gau",
+    bw="scott", gridsize=100, cut=3, clip=None, legend=True,
+    cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
+    cbar_kws=None, ax=None,
+    **kwargs,
+):
     """Fit and plot a univariate or bivariate kernel density estimate.
 
     Parameters
@@ -704,7 +711,11 @@ def kdeplot(data, data2=None, shade=False, vertical=False, kernel="gau",
     return ax
 
 
-def rugplot(a, height=.05, axis="x", ax=None, **kwargs):
+def rugplot(
+    a, *,
+    height=.05, axis="x", ax=None,
+    **kwargs
+):
     """Plot datapoints in an array as sticks on an axis.
 
     Parameters

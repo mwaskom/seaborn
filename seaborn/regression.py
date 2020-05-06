@@ -555,15 +555,19 @@ _regression_docs = dict(
 _regression_docs.update(_facet_docs)
 
 
-def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, height=5, aspect=1, markers="o", sharex=True,
-           sharey=True, hue_order=None, col_order=None, row_order=None,
-           legend=True, legend_out=True, x_estimator=None, x_bins=None,
-           x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
-           units=None, seed=None, order=1, logistic=False, lowess=False,
-           robust=False, logx=False, x_partial=None, y_partial=None,
-           truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
-           line_kws=None, size=None):
+def lmplot(
+    x, y,
+    *, data=None,
+    hue=None, col=None, row=None,
+    palette=None, col_wrap=None, height=5, aspect=1, markers="o",
+    sharex=True, sharey=True, hue_order=None, col_order=None, row_order=None,
+    legend=True, legend_out=True, x_estimator=None, x_bins=None,
+    x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
+    units=None, seed=None, order=1, logistic=False, lowess=False,
+    robust=False, logx=False, x_partial=None, y_partial=None,
+    truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
+    line_kws=None, size=None
+):
 
     # Handle deprecations
     if size is not None:
@@ -794,13 +798,17 @@ lmplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
-            scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
-            seed=None, order=1, logistic=False, lowess=False, robust=False,
-            logx=False, x_partial=None, y_partial=None,
-            truncate=True, dropna=True, x_jitter=None, y_jitter=None,
-            label=None, color=None, marker="o",
-            scatter_kws=None, line_kws=None, ax=None):
+def regplot(
+    x, y,
+    *, data=None,
+    x_estimator=None, x_bins=None, x_ci="ci",
+    scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
+    seed=None, order=1, logistic=False, lowess=False, robust=False,
+    logx=False, x_partial=None, y_partial=None,
+    truncate=True, dropna=True, x_jitter=None, y_jitter=None,
+    label=None, color=None, marker="o",
+    scatter_kws=None, line_kws=None, ax=None
+):
 
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
@@ -987,9 +995,13 @@ regplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
-              order=1, robust=False, dropna=True, label=None, color=None,
-              scatter_kws=None, line_kws=None, ax=None):
+def residplot(
+    x, y,
+    *, data=None,
+    lowess=False, x_partial=None, y_partial=None,
+    order=1, robust=False, dropna=True, label=None, color=None,
+    scatter_kws=None, line_kws=None, ax=None
+):
     """Plot the residuals of a linear regression.
 
     This function will regress y on x (possibly as a robust or polynomial

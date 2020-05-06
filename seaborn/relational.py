@@ -1109,13 +1109,16 @@ _relational_docs = dict(
 _relational_docs.update(_facet_docs)
 
 
-def lineplot(x=None, y=None, hue=None, size=None, style=None, data=None,
-             palette=None, hue_order=None, hue_norm=None,
-             sizes=None, size_order=None, size_norm=None,
-             dashes=True, markers=None, style_order=None,
-             units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
-             sort=True, err_style="band", err_kws=None,
-             legend="brief", ax=None, **kwargs):
+def lineplot(
+    x=None, y=None, hue=None, size=None, style=None,
+    *, data=None,
+    palette=None, hue_order=None, hue_norm=None,
+    sizes=None, size_order=None, size_norm=None,
+    dashes=True, markers=None, style_order=None,
+    units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
+    sort=True, err_style="band", err_kws=None,
+    legend="brief", ax=None, **kwargs
+):
 
     p = _LinePlotter(
         x=x, y=y, hue=hue, size=size, style=style, data=data,
@@ -1378,14 +1381,17 @@ lineplot.__doc__ = dedent("""\
     """).format(**_relational_docs)
 
 
-def scatterplot(x=None, y=None, hue=None, style=None, size=None, data=None,
-                palette=None, hue_order=None, hue_norm=None,
-                sizes=None, size_order=None, size_norm=None,
-                markers=True, style_order=None,
-                x_bins=None, y_bins=None,
-                units=None, estimator=None, ci=95, n_boot=1000,
-                alpha="auto", x_jitter=None, y_jitter=None,
-                legend="brief", ax=None, **kwargs):
+def scatterplot(
+    x=None, y=None, hue=None, style=None, size=None,
+    *, data=None,
+    palette=None, hue_order=None, hue_norm=None,
+    sizes=None, size_order=None, size_norm=None,
+    markers=True, style_order=None,
+    x_bins=None, y_bins=None,
+    units=None, estimator=None, ci=95, n_boot=1000,
+    alpha="auto", x_jitter=None, y_jitter=None,
+    legend="brief", ax=None, **kwargs
+):
 
     p = _ScatterPlotter(
         x=x, y=y, hue=hue, style=style, size=size, data=data,
@@ -1620,13 +1626,18 @@ scatterplot.__doc__ = dedent("""\
     """).format(**_relational_docs)
 
 
-def relplot(x=None, y=None, hue=None, size=None, style=None, data=None,
-            row=None, col=None, col_wrap=None, row_order=None, col_order=None,
-            palette=None, hue_order=None, hue_norm=None,
-            sizes=None, size_order=None, size_norm=None,
-            markers=None, dashes=None, style_order=None,
-            legend="brief", kind="scatter",
-            height=5, aspect=1, facet_kws=None, **kwargs):
+def relplot(
+    x=None, y=None, hue=None, size=None, style=None,
+    *, data=None,
+    row=None, col=None,
+    col_wrap=None, row_order=None, col_order=None,
+    palette=None, hue_order=None, hue_norm=None,
+    sizes=None, size_order=None, size_norm=None,
+    markers=None, dashes=None, style_order=None,
+    legend="brief", kind="scatter",
+    height=5, aspect=1, facet_kws=None,
+    **kwargs
+):
 
     if kind == "scatter":
 
