@@ -158,6 +158,33 @@ class TestFacetGrid(object):
         npt.assert_array_equal(g._not_left_axes, g.axes[np.array([1])].flat)
         npt.assert_array_equal(g._inner_axes, null)
 
+    def test_axes_dict(self):
+
+        g = ag.FacetGrid(self.df)
+        assert isinstance(g.axes_dict, dict)
+        assert not g.axes_dict
+
+        g = ag.FacetGrid(self.df, row="c")
+        assert list(g.axes_dict.keys()) == g.row_names
+        for (name, ax) in zip(g.row_names, g.axes.flat):
+            assert g.axes_dict[name] is ax
+
+        g = ag.FacetGrid(self.df, col="c")
+        assert list(g.axes_dict.keys()) == g.col_names
+        for (name, ax) in zip(g.col_names, g.axes.flat):
+            assert g.axes_dict[name] is ax
+
+        g = ag.FacetGrid(self.df, col="a", col_wrap=2)
+        assert list(g.axes_dict.keys()) == g.col_names
+        for (name, ax) in zip(g.col_names, g.axes.flat):
+            assert g.axes_dict[name] is ax
+
+        g = ag.FacetGrid(self.df, row="a", col="c")
+        for (row_var, col_var), ax in g.axes_dict.items():
+            i = g.row_names.index(row_var)
+            j = g.col_names.index(col_var)
+            assert g.axes[i, j] is ax
+
     def test_figure_size(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
@@ -493,6 +520,15 @@ class TestFacetGrid(object):
         got_y = [ax.get_ylabel() for ax in g.axes[:, 0]]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
+
+        for ax in g.axes.flat:
+            ax.set(xlabel="x", ylabel="y")
+
+        g.set_axis_labels(xlab, ylab)
+        for ax in g._not_bottom_axes:
+            assert not ax.get_xlabel()
+        for ax in g._not_left_axes:
+            assert not ax.get_ylabel()
 
     def test_axis_lims(self):
 
