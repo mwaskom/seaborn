@@ -505,8 +505,8 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 
 def kdeplot(
-    data, *,
-    data2=None, shade=False, vertical=False, kernel="gau",
+    data, data2=None,
+    *, shade=False, vertical=False, kernel="gau",
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,

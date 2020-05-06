@@ -168,7 +168,7 @@ class TestKDE(object):
     def test_kde_cummulative_2d(self):
         """Check error if args indicate bivariate KDE and cumulative."""
         with npt.assert_raises(TypeError):
-            dist.kdeplot(self.x, data2=self.y, cumulative=True)
+            dist.kdeplot(self.x, self.y, cumulative=True)
 
     def test_kde_singular(self):
 
@@ -299,7 +299,7 @@ class TestRugPlot(object):
         for data in [list_data, array_data, series_data]:
 
             f, ax = plt.subplots()
-            dist.rugplot(data, h)
+            dist.rugplot(data, height=h)
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 
@@ -312,7 +312,7 @@ class TestRugPlot(object):
             plt.close(f)
 
             f, ax = plt.subplots()
-            dist.rugplot(data, h, axis="y")
+            dist.rugplot(data, height=h, axis="y")
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 

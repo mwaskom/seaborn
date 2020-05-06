@@ -469,7 +469,7 @@ class TestRegressionPlots(object):
     def test_regplot_basic(self):
 
         f, ax = plt.subplots()
-        lm.regplot("x", "y", self.df)
+        lm.regplot(x="x", y="y", data=self.df)
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), 2)
 
@@ -480,19 +480,19 @@ class TestRegressionPlots(object):
     def test_regplot_selective(self):
 
         f, ax = plt.subplots()
-        ax = lm.regplot("x", "y", self.df, scatter=False, ax=ax)
+        ax = lm.regplot("x", "y", data=self.df, scatter=False, ax=ax)
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), 1)
         ax.clear()
 
         f, ax = plt.subplots()
-        ax = lm.regplot("x", "y", self.df, fit_reg=False)
+        ax = lm.regplot("x", "y", data=self.df, fit_reg=False)
         nt.assert_equal(len(ax.lines), 0)
         nt.assert_equal(len(ax.collections), 1)
         ax.clear()
 
         f, ax = plt.subplots()
-        ax = lm.regplot("x", "y", self.df, ci=None)
+        ax = lm.regplot("x", "y", data=self.df, ci=None)
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), 1)
         ax.clear()
@@ -501,35 +501,35 @@ class TestRegressionPlots(object):
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5, 0.5]])
-        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        ax = lm.regplot("x", "y", data=self.df, scatter_kws={'color': color})
         nt.assert_is(ax.collections[0]._alpha, None)
         nt.assert_equal(ax.collections[0]._facecolors[0, 3], 0.5)
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
-        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        ax = lm.regplot("x", "y", data=self.df, scatter_kws={'color': color})
         nt.assert_equal(ax.collections[0]._alpha, 0.8)
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
-        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color,
-                                                        'alpha': 0.4})
+        ax = lm.regplot("x", "y", data=self.df,
+                        scatter_kws={'color': color, 'alpha': 0.4})
         nt.assert_equal(ax.collections[0]._alpha, 0.4)
 
         f, ax = plt.subplots()
         color = 'r'
-        ax = lm.regplot("x", "y", self.df, scatter_kws={'color': color})
+        ax = lm.regplot("x", "y", data=self.df, scatter_kws={'color': color})
         nt.assert_equal(ax.collections[0]._alpha, 0.8)
 
     def test_regplot_binned(self):
 
-        ax = lm.regplot("x", "y", self.df, x_bins=5)
+        ax = lm.regplot("x", "y", data=self.df, x_bins=5)
         nt.assert_equal(len(ax.lines), 6)
         nt.assert_equal(len(ax.collections), 2)
 
     def test_lmplot_basic(self):
 
-        g = lm.lmplot("x", "y", self.df)
+        g = lm.lmplot("x", "y", data=self.df)
         ax = g.axes[0, 0]
         nt.assert_equal(len(ax.lines), 1)
         nt.assert_equal(len(ax.collections), 2)
@@ -604,7 +604,7 @@ class TestRegressionPlots(object):
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_residplot_lowess(self):
 
-        ax = lm.residplot("x", "y", self.df, lowess=True)
+        ax = lm.residplot("x", "y", data=self.df, lowess=True)
         nt.assert_equal(len(ax.lines), 2)
 
         x, y = ax.lines[1].get_xydata().T
