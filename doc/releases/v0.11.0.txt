@@ -3,3 +3,7 @@ v0.11.0 (Unreleased)
 --------------------
 
 - Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm.
+
+- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.
+
+- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.
