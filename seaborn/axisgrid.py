@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
+from .utils import _deprecate_positional_args
 from .palettes import color_palette, blend_palette
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
 
@@ -1919,6 +1920,7 @@ class JointGrid(object):
         self.fig.savefig(*args, **kwargs)
 
 
+@_deprecate_positional_args
 def pairplot(
     data,
     *,
@@ -2156,6 +2158,7 @@ def pairplot(
     return grid
 
 
+@_deprecate_positional_args
 def jointplot(
     x=None, y=None,
     *, data=None,

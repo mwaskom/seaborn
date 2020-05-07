@@ -11,7 +11,8 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
-from .utils import iqr, categorical_order, remove_na
+from .utils import (iqr, categorical_order, remove_na,
+                    _deprecate_positional_args)
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -2234,6 +2235,7 @@ _categorical_docs = dict(
 _categorical_docs.update(_facet_docs)
 
 
+@_deprecate_positional_args
 def boxplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -2389,6 +2391,7 @@ boxplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def violinplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -2633,6 +2636,7 @@ def lvplot(*args, **kwargs):
     return boxenplot(*args, **kwargs)
 
 
+@_deprecate_positional_args
 def boxenplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -2793,6 +2797,7 @@ boxenplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def stripplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -2988,6 +2993,7 @@ stripplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def swarmplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -3167,6 +3173,7 @@ swarmplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def barplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -3358,6 +3365,7 @@ barplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def pointplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -3564,6 +3572,7 @@ pointplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
+@_deprecate_positional_args
 def countplot(
     x=None, y=None, hue=None,
     *, data=None,
@@ -3722,6 +3731,7 @@ def factorplot(*args, **kwargs):
     return catplot(*args, **kwargs)
 
 
+@_deprecate_positional_args
 def catplot(
     x=None, y=None, hue=None,
     *, data=None,

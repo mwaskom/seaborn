@@ -25,7 +25,12 @@ except ImportError:
     BeautifulSoup = None
 
 from .. import utils, rcmod
-from ..utils import get_dataset_names, load_dataset, _network
+from ..utils import (
+    get_dataset_names,
+    load_dataset,
+    _network,
+    _deprecate_positional_args
+)
 
 
 a_norm = np.random.randn(100)
@@ -498,3 +503,41 @@ def test_remove_na():
     a_series = pd.Series([1, 2, np.nan, 3])
     a_series_rm = utils.remove_na(a_series)
     pdt.assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))
+
+
+# This test was adapted from scikit-learn
+# github.com/scikit-learn/scikit-learn/blob/master/sklearn/utils/tests/test_validation.py
+def test_deprecate_positional_args_warns_for_function():
+
+    @_deprecate_positional_args
+    def f1(a, b, *, c=1, d=1):
+        return a, b, c, d
+
+    with pytest.warns(FutureWarning,
+                      match=r"Pass c=3 as keyword arg\."):
+        out = f1(1, 2, 3)
+        assert out == (1, 2, 3, 1)
+
+    with pytest.warns(FutureWarning,
+                      match=r"Pass c=3, d=4 as keyword args\."):
+        out = f1(1, 2, 3, 4)
+        assert out == (1, 2, 3, 4)
+
+    @_deprecate_positional_args
+    def f2(a=1, *, b=1, c=1, d=1):
+        return a, b, c, d
+
+    with pytest.warns(FutureWarning,
+                      match=r"Pass b=2 as keyword arg\."):
+        out = f2(1, 2)
+        assert out == (1, 2, 1, 1)
+
+    # The * is placed before a keyword only argument without a default value
+    @_deprecate_positional_args
+    def f3(a, *, b, c=1, d=1):
+        return a, b, c, d
+
+    with pytest.warns(FutureWarning,
+                      match=r"Pass b=2 as keyword arg\."):
+        out = f3(1, 2)
+        assert out == (1, 2, 1, 1)

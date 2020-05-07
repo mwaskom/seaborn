@@ -14,7 +14,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support, remove_na
+from .utils import iqr, _kde_support, remove_na, _deprecate_positional_args
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 
 
@@ -35,6 +35,7 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
+@_deprecate_positional_args
 def distplot(
     a,
     *,
@@ -505,6 +506,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     return xx, yy, z
 
 
+@_deprecate_positional_args
 def kdeplot(
     data, data2=None,
     *,
@@ -713,6 +715,7 @@ def kdeplot(
     return ax
 
 
+@_deprecate_positional_args
 def rugplot(
     a,
     *,

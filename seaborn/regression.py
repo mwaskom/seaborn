@@ -16,6 +16,7 @@ except ImportError:
     _has_statsmodels = False
 
 from . import utils
+from .utils import _deprecate_positional_args
 from . import algorithms as algo
 from .axisgrid import FacetGrid, _facet_docs
 
@@ -555,6 +556,7 @@ _regression_docs = dict(
 _regression_docs.update(_facet_docs)
 
 
+@_deprecate_positional_args
 def lmplot(
     x=None, y=None,
     *, data=None,
@@ -798,6 +800,7 @@ lmplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
+@_deprecate_positional_args
 def regplot(
     x=None, y=None,
     *, data=None,
@@ -995,6 +998,7 @@ regplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
+@_deprecate_positional_args
 def residplot(
     x=None, y=None,
     *, data=None,

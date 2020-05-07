@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
-                    remove_na, locator_to_legend_entries)
+                    remove_na, locator_to_legend_entries,
+                    _deprecate_positional_args)
 from .algorithms import bootstrap
 from .palettes import (color_palette, cubehelix_palette,
                        _parse_cubehelix_args, QUAL_PALETTES)
@@ -1109,6 +1110,7 @@ _relational_docs = dict(
 _relational_docs.update(_facet_docs)
 
 
+@_deprecate_positional_args
 def lineplot(
     x=None, y=None, hue=None, size=None, style=None,
     *, data=None,
@@ -1381,6 +1383,7 @@ lineplot.__doc__ = dedent("""\
     """).format(**_relational_docs)
 
 
+@_deprecate_positional_args
 def scatterplot(
     x=None, y=None, hue=None, style=None, size=None,
     *, data=None,
@@ -1626,6 +1629,7 @@ scatterplot.__doc__ = dedent("""\
     """).format(**_relational_docs)
 
 
+@_deprecate_positional_args
 def relplot(
     x=None, y=None, hue=None, size=None, style=None,
     *, data=None,
