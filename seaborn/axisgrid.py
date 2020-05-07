@@ -1921,6 +1921,7 @@ class JointGrid(object):
 
 def pairplot(
     data,
+    *,
     hue=None, hue_order=None, palette=None,
     vars=None, x_vars=None, y_vars=None,
     kind="scatter", diag_kind="auto", markers=None,
@@ -2156,7 +2157,7 @@ def pairplot(
 
 
 def jointplot(
-    x, y,
+    x=None, y=None,
     *, data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,

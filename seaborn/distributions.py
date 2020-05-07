@@ -36,7 +36,8 @@ def _freedman_diaconis_bins(a):
 
 
 def distplot(
-    a, *,
+    a,
+    *,
     bins=None, hist=True, kde=True, rug=False, fit=None,
     hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
     color=None, vertical=False, norm_hist=False, axlabel=None,
@@ -506,7 +507,8 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 def kdeplot(
     data, data2=None,
-    *, shade=False, vertical=False, kernel="gau",
+    *,
+    shade=False, vertical=False, kernel="gau",
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
@@ -712,7 +714,8 @@ def kdeplot(
 
 
 def rugplot(
-    a, *,
+    a,
+    *,
     height=.05, axis="x", ax=None,
     **kwargs
 ):

@@ -2236,7 +2236,8 @@ _categorical_docs.update(_facet_docs)
 
 def boxplot(
     x=None, y=None, hue=None,
-    *, data=None, order=None, hue_order=None,
+    *, data=None,
+    order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
     width=.8, dodge=True, fliersize=5, linewidth=None,
     whis=1.5, ax=None,

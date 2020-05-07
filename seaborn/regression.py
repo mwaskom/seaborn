@@ -556,7 +556,7 @@ _regression_docs.update(_facet_docs)
 
 
 def lmplot(
-    x, y,
+    x=None, y=None,
     *, data=None,
     hue=None, col=None, row=None,
     palette=None, col_wrap=None, height=5, aspect=1, markers="o",
@@ -799,7 +799,7 @@ lmplot.__doc__ = dedent("""\
 
 
 def regplot(
-    x, y,
+    x=None, y=None,
     *, data=None,
     x_estimator=None, x_bins=None, x_ci="ci",
     scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
@@ -996,7 +996,7 @@ regplot.__doc__ = dedent("""\
 
 
 def residplot(
-    x, y,
+    x=None, y=None,
     *, data=None,
     lowess=False, x_partial=None, y_partial=None,
     order=1, robust=False, dropna=True, label=None, color=None,
