@@ -1,6 +1,9 @@
-"""Small plotting-related utility functions."""
-import colorsys
+"""Utility functions, mostly for internal use."""
 import os
+import colorsys
+import warnings
+from urllib.request import urlopen, urlretrieve
+from http.client import HTTPException
 
 import numpy as np
 from scipy import stats
@@ -8,10 +11,6 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
-
-import warnings
-from urllib.request import urlopen, urlretrieve
-from http.client import HTTPException
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",

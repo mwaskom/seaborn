@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from . import utils
 from .palettes import color_palette, blend_palette
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
@@ -228,12 +229,16 @@ _facet_docs = dict(
 
 class FacetGrid(Grid):
     """Multi-plot grid for plotting conditional relationships."""
-    def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
-                 sharex=True, sharey=True, height=3, aspect=1, palette=None,
-                 row_order=None, col_order=None, hue_order=None, hue_kws=None,
-                 dropna=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-                 gridspec_kws=None, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, data, *,
+        row=None, col=None, hue=None, col_wrap=None,
+        sharex=True, sharey=True, height=3, aspect=1, palette=None,
+        row_order=None, col_order=None, hue_order=None, hue_kws=None,
+        dropna=True, legend_out=True, despine=True,
+        margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
+        gridspec_kws=None, size=None
+    ):
 
         # Handle deprecations
         if size is not None:
@@ -1126,11 +1131,14 @@ class PairGrid(Grid):
     See the :ref:`tutorial <grid_tutorial>` for more information.
 
     """
-
-    def __init__(self, data, hue=None, hue_order=None, palette=None,
-                 hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 corner=False, diag_sharey=True, height=2.5, aspect=1,
-                 layout_pad=0, despine=True, dropna=True, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, data, *,
+        hue=None, hue_order=None, palette=None,
+        hue_kws=None, vars=None, x_vars=None, y_vars=None,
+        corner=False, diag_sharey=True, height=2.5, aspect=1,
+        layout_pad=0, despine=True, dropna=True, size=None
+    ):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1576,8 +1584,13 @@ class PairGrid(Grid):
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
 
-    def __init__(self, x, y, data=None, height=6, ratio=5, space=.2,
-                 dropna=True, xlim=None, ylim=None, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, x, y, *,
+        data=None,
+        height=6, ratio=5, space=.2,
+        dropna=True, xlim=None, ylim=None, size=None
+    ):
         """Set up the grid of subplots.
 
         Parameters
@@ -1919,11 +1932,15 @@ class JointGrid(object):
         self.fig.savefig(*args, **kwargs)
 
 
-def pairplot(data, hue=None, hue_order=None, palette=None,
-             vars=None, x_vars=None, y_vars=None,
-             kind="scatter", diag_kind="auto", markers=None,
-             height=2.5, aspect=1, corner=False, dropna=True,
-             plot_kws=None, diag_kws=None, grid_kws=None, size=None):
+@_deprecate_positional_args
+def pairplot(
+    data, *,
+    hue=None, hue_order=None, palette=None,
+    vars=None, x_vars=None, y_vars=None,
+    kind="scatter", diag_kind="auto", markers=None,
+    height=2.5, aspect=1, corner=False, dropna=True,
+    plot_kws=None, diag_kws=None, grid_kws=None, size=None,
+):
     """Plot pairwise relationships in a dataset.
 
     By default, this function will create a grid of Axes such that each numeric
@@ -2152,10 +2169,16 @@ def pairplot(data, hue=None, hue_order=None, palette=None,
     return grid
 
 
-def jointplot(x, y, data=None, kind="scatter", stat_func=None,
-              color=None, height=6, ratio=5, space=.2,
-              dropna=True, xlim=None, ylim=None,
-              joint_kws=None, marginal_kws=None, annot_kws=None, **kwargs):
+@_deprecate_positional_args
+def jointplot(
+    x=None, y=None, *,
+    data=None,
+    kind="scatter", stat_func=None,
+    color=None, height=6, ratio=5, space=.2,
+    dropna=True, xlim=None, ylim=None,
+    joint_kws=None, marginal_kws=None, annot_kws=None,
+    **kwargs
+):
     """Draw a plot of two variables with bivariate and univariate graphs.
 
     This function provides a convenient interface to the :class:`JointGrid`
@@ -2298,9 +2321,11 @@ def jointplot(x, y, data=None, kind="scatter", stat_func=None,
     cmap = blend_palette(colors, as_cmap=True)
 
     # Initialize the JointGrid object
-    grid = JointGrid(x, y, data, dropna=dropna,
-                     height=height, ratio=ratio, space=space,
-                     xlim=xlim, ylim=ylim)
+    grid = JointGrid(
+        x, y, data=data,
+        dropna=dropna, height=height, ratio=ratio, space=space,
+        xlim=xlim, ylim=ylim
+    )
 
     # Plot the data using the grid
     if kind == "scatter":

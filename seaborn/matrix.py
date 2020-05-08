@@ -14,6 +14,7 @@ from . import cm
 from .axisgrid import Grid
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
                     to_utf8)
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -347,12 +348,17 @@ class _HeatMapper(object):
             self._annotate_heatmap(ax, mesh)
 
 
-def heatmap(data, vmin=None, vmax=None, cmap=None, center=None, robust=False,
-            annot=None, fmt=".2g", annot_kws=None,
-            linewidths=0, linecolor="white",
-            cbar=True, cbar_kws=None, cbar_ax=None,
-            square=False, xticklabels="auto", yticklabels="auto",
-            mask=None, ax=None, **kwargs):
+@_deprecate_positional_args
+def heatmap(
+    data, *,
+    vmin=None, vmax=None, cmap=None, center=None, robust=False,
+    annot=None, fmt=".2g", annot_kws=None,
+    linewidths=0, linecolor="white",
+    cbar=True, cbar_kws=None, cbar_ax=None,
+    square=False, xticklabels="auto", yticklabels="auto",
+    mask=None, ax=None,
+    **kwargs
+):
     """Plot rectangular data as a color-encoded matrix.
 
     This is an Axes-level function and will draw the heatmap into the
@@ -728,8 +734,12 @@ class _DendrogramPlotter(object):
         return self
 
 
-def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
-               method='average', rotate=False, tree_kws=None, ax=None):
+@_deprecate_positional_args
+def dendrogram(
+    data, *,
+    linkage=None, axis=1, label=True, metric='euclidean',
+    method='average', rotate=False, tree_kws=None, ax=None
+):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -1220,14 +1230,18 @@ class ClusterGrid(Grid):
         return self
 
 
-def clustermap(data, pivot_kws=None, method='average', metric='euclidean',
-               z_score=None, standard_scale=None, figsize=(10, 10),
-               cbar_kws=None, row_cluster=True, col_cluster=True,
-               row_linkage=None, col_linkage=None,
-               row_colors=None, col_colors=None, mask=None,
-               dendrogram_ratio=.2, colors_ratio=0.03,
-               cbar_pos=(.02, .8, .05, .18), tree_kws=None,
-               **kwargs):
+@_deprecate_positional_args
+def clustermap(
+    data, *,
+    pivot_kws=None, method='average', metric='euclidean',
+    z_score=None, standard_scale=None, figsize=(10, 10),
+    cbar_kws=None, row_cluster=True, col_cluster=True,
+    row_linkage=None, col_linkage=None,
+    row_colors=None, col_colors=None, mask=None,
+    dendrogram_ratio=.2, colors_ratio=0.03,
+    cbar_pos=(.02, .8, .05, .18), tree_kws=None,
+    **kwargs
+):
     """Plot a matrix dataset as a hierarchically-clustered heatmap.
 
     Parameters

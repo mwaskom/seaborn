@@ -15,6 +15,7 @@ from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = [
@@ -2234,10 +2235,16 @@ _categorical_docs = dict(
 _categorical_docs.update(_facet_docs)
 
 
-def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            orient=None, color=None, palette=None, saturation=.75,
-            width=.8, dodge=True, fliersize=5, linewidth=None,
-            whis=1.5, ax=None, **kwargs):
+@_deprecate_positional_args
+def boxplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    orient=None, color=None, palette=None, saturation=.75,
+    width=.8, dodge=True, fliersize=5, linewidth=None,
+    whis=1.5, ax=None,
+    **kwargs
+):
 
     plotter = _BoxPlotter(x, y, hue, data, order, hue_order,
                           orient, color, palette, saturation,
@@ -2384,11 +2391,16 @@ boxplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def violinplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-               bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
-               width=.8, inner="box", split=False, dodge=True, orient=None,
-               linewidth=None, color=None, palette=None, saturation=.75,
-               ax=None, **kwargs):
+@_deprecate_positional_args
+def violinplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
+    width=.8, inner="box", split=False, dodge=True, orient=None,
+    linewidth=None, color=None, palette=None, saturation=.75,
+    ax=None, **kwargs,
+):
 
     plotter = _ViolinPlotter(x, y, hue, data, order, hue_order,
                              bw, cut, scale, scale_hue, gridsize,
@@ -2624,11 +2636,16 @@ def lvplot(*args, **kwargs):
     return boxenplot(*args, **kwargs)
 
 
-def boxenplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              orient=None, color=None, palette=None, saturation=.75,
-              width=.8, dodge=True, k_depth='proportion', linewidth=None,
-              scale='exponential', outlier_prop=None, showfliers=True, ax=None,
-              **kwargs):
+@_deprecate_positional_args
+def boxenplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    orient=None, color=None, palette=None, saturation=.75,
+    width=.8, dodge=True, k_depth='proportion', linewidth=None,
+    scale='exponential', outlier_prop=None, showfliers=True, ax=None,
+    **kwargs
+):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
@@ -2780,9 +2797,15 @@ boxenplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def stripplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              jitter=True, dodge=False, orient=None, color=None, palette=None,
-              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
+@_deprecate_positional_args
+def stripplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    jitter=True, dodge=False, orient=None, color=None, palette=None,
+    size=5, edgecolor="gray", linewidth=0, ax=None,
+    **kwargs
+):
 
     if "split" in kwargs:
         dodge = kwargs.pop("split")
@@ -2932,8 +2955,8 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax =  sns.stripplot("day", "total_bill", "smoker", data=tips,
-        ...                    palette="Set2", size=20, marker="D",
+        >>> ax =  sns.stripplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set2", size=20, marker="D",
         ...                    edgecolor="gray", alpha=.25)
 
     Draw strips of observations on top of a box plot:
@@ -2970,9 +2993,15 @@ stripplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def swarmplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              dodge=False, orient=None, color=None, palette=None,
-              size=5, edgecolor="gray", linewidth=0, ax=None, **kwargs):
+@_deprecate_positional_args
+def swarmplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    dodge=False, orient=None, color=None, palette=None,
+    size=5, edgecolor="gray", linewidth=0, ax=None,
+    **kwargs
+):
 
     if "split" in kwargs:
         dodge = kwargs.pop("split")
@@ -3144,11 +3173,17 @@ swarmplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def barplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-            estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
-            orient=None, color=None, palette=None, saturation=.75,
-            errcolor=".26", errwidth=None, capsize=None, dodge=True,
-            ax=None, **kwargs):
+@_deprecate_positional_args
+def barplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
+    orient=None, color=None, palette=None, saturation=.75,
+    errcolor=".26", errwidth=None, capsize=None, dodge=True,
+    ax=None,
+    **kwargs,
+):
 
     plotter = _BarPlotter(x, y, hue, data, order, hue_order,
                           estimator, ci, n_boot, units, seed,
@@ -3330,11 +3365,17 @@ barplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def pointplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
-              markers="o", linestyles="-", dodge=False, join=True, scale=1,
-              orient=None, color=None, palette=None, errwidth=None,
-              capsize=None, ax=None, **kwargs):
+@_deprecate_positional_args
+def pointplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
+    markers="o", linestyles="-", dodge=False, join=True, scale=1,
+    orient=None, color=None, palette=None, errwidth=None,
+    capsize=None, ax=None,
+    **kwargs
+):
 
     plotter = _PointPlotter(x, y, hue, data, order, hue_order,
                             estimator, ci, n_boot, units, seed,
@@ -3531,9 +3572,14 @@ pointplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def countplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
-              orient=None, color=None, palette=None, saturation=.75,
-              dodge=True, ax=None, **kwargs):
+@_deprecate_positional_args
+def countplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    orient=None, color=None, palette=None, saturation=.75,
+    dodge=True, ax=None, **kwargs
+):
 
     estimator = len
     ci = None
@@ -3685,13 +3731,19 @@ def factorplot(*args, **kwargs):
     return catplot(*args, **kwargs)
 
 
-def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
-            col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
-            units=None, seed=None, order=None, hue_order=None, row_order=None,
-            col_order=None, kind="strip", height=5, aspect=1,
-            orient=None, color=None, palette=None,
-            legend=True, legend_out=True, sharex=True, sharey=True,
-            margin_titles=False, facet_kws=None, **kwargs):
+@_deprecate_positional_args
+def catplot(
+    x=None, y=None, *,
+    hue=None, data=None,
+    row=None, col=None,  # TODO move in front of data when * is enforced
+    col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
+    units=None, seed=None, order=None, hue_order=None, row_order=None,
+    col_order=None, kind="strip", height=5, aspect=1,
+    orient=None, color=None, palette=None,
+    legend=True, legend_out=True, sharex=True, sharey=True,
+    margin_titles=False, facet_kws=None,
+    **kwargs
+):
 
     # Handle deprecations
     if "size" in kwargs:
@@ -3768,7 +3820,7 @@ def catplot(x=None, y=None, hue=None, data=None, row=None, col=None,
     g = FacetGrid(**facet_kws)
 
     # Draw the plot onto the facets
-    g.map_dataframe(plot_func, x, y, hue, **plot_kws)
+    g.map_dataframe(plot_func, x, y, hue=hue, **plot_kws)
 
     # Special case axis labels for a count type plot
     if kind == "count":

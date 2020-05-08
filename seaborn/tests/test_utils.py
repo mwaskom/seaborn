@@ -25,7 +25,11 @@ except ImportError:
     BeautifulSoup = None
 
 from .. import utils, rcmod
-from ..utils import get_dataset_names, load_dataset, _network
+from ..utils import (
+    get_dataset_names,
+    load_dataset,
+    _network,
+)
 
 
 a_norm = np.random.randn(100)

@@ -196,7 +196,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         p = cat._CategoricalPlotter()
 
         # Test a vertically oriented grouped and nested plot
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(len(p.plot_data), 3)
         nt.assert_equal(len(p.plot_hues), 3)
         nt.assert_equal(p.orient, "v")
@@ -229,7 +229,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         df.g = df.g.astype("category")
 
         # Test that horizontal orientation is automatically detected
-        p.establish_variables("y", "g", "h", data=df)
+        p.establish_variables("y", "g", hue="h", data=df)
         nt.assert_equal(len(p.plot_data), 3)
         nt.assert_equal(len(p.plot_hues), 3)
         nt.assert_equal(p.orient, "h")
@@ -245,7 +245,7 @@ class TestCategoricalPlotter(CategoricalFixture):
 
         # Test grouped data that matches on index
         p1 = cat._CategoricalPlotter()
-        p1.establish_variables(self.g, self.y, self.h)
+        p1.establish_variables(self.g, self.y, hue=self.h)
         p2 = cat._CategoricalPlotter()
         p2.establish_variables(self.g, self.y[::-1], self.h)
         for i, (d1, d2) in enumerate(zip(p1.plot_data, p2.plot_data)):
@@ -311,11 +311,11 @@ class TestCategoricalPlotter(CategoricalFixture):
         p = cat._CategoricalPlotter()
 
         # Test inferred hue order
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(p.hue_names, ["m", "n"])
 
         # Test specified hue order
-        p.establish_variables("g", "y", "h", data=self.df,
+        p.establish_variables("g", "y", hue="h", data=self.df,
                               hue_order=["n", "m"])
         nt.assert_equal(p.hue_names, ["n", "m"])
 
@@ -323,21 +323,21 @@ class TestCategoricalPlotter(CategoricalFixture):
         df = self.df.copy()
         df.h = df.h.astype("category")
         df.h = df.h.cat.reorder_categories(["n", "m"])
-        p.establish_variables("g", "y", "h", data=df)
+        p.establish_variables("g", "y", hue="h", data=df)
         nt.assert_equal(p.hue_names, ["n", "m"])
 
         df.h = (df.h.cat.add_categories("o")
                     .cat.reorder_categories(["o", "m", "n"]))
-        p.establish_variables("g", "y", "h", data=df)
+        p.establish_variables("g", "y", hue="h", data=df)
         nt.assert_equal(p.hue_names, ["o", "m", "n"])
 
     def test_plot_units(self):
 
         p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_is(p.plot_units, None)
 
-        p.establish_variables("g", "y", "h", data=self.df, units="u")
+        p.establish_variables("g", "y", hue="h", data=self.df, units="u")
         for group, units in zip(["a", "b", "c"], p.plot_units):
             npt.assert_array_equal(units, self.u[self.g == group])
 
@@ -375,7 +375,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_equal(p.colors, palettes.color_palette(n_colors=3))
 
         # Test palette mapping the hue position
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         p.establish_colors(None, None, 1)
         nt.assert_equal(p.colors, palettes.color_palette(n_colors=2))
 
@@ -399,7 +399,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_equal(p.colors, [blue_rgb] * 3)
 
         # Test a color-based blend for the hue mapping
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         p.establish_colors("#ff0022", None, 1)
         rgba_array = np.array(palettes.light_palette("#ff0022", 2))
         npt.assert_array_almost_equal(p.colors,
@@ -415,7 +415,7 @@ class TestCategoricalPlotter(CategoricalFixture):
         nt.assert_equal(p.colors, palettes.color_palette("dark", 3))
 
         # Test that non-None `color` and `hue` raises an error
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         p.establish_colors(None, "muted", 1)
         nt.assert_equal(p.colors, palettes.color_palette("muted", 2))
 
@@ -428,7 +428,7 @@ class TestCategoricalPlotter(CategoricalFixture):
     def test_dict_as_palette(self):
 
         p = cat._CategoricalPlotter()
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         pal = {"m": (0, 0, 1), "n": (1, 0, 0)}
         p.establish_colors(None, pal, 1)
         nt.assert_equal(p.colors, [(0, 0, 1), (1, 0, 0)])
@@ -455,7 +455,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         p.estimate_statistic(np.mean, None, 100, None)
         npt.assert_array_equal(p.confint, np.array([]))
 
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         p.estimate_statistic(np.mean, None, 100, None)
         npt.assert_array_equal(p.confint, np.array([[], [], []]))
 
@@ -763,31 +763,31 @@ class TestBoxPlotter(CategoricalFixture):
 
         kws = self.default_kws.copy()
         p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(p.nested_width, .4 * .98)
 
         kws = self.default_kws.copy()
         kws["width"] = .6
         p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(p.nested_width, .3 * .98)
 
         kws = self.default_kws.copy()
         kws["dodge"] = False
         p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(p.nested_width, .8)
 
     def test_hue_offsets(self):
 
         p = cat._BoxPlotter(**self.default_kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         npt.assert_array_equal(p.hue_offsets, [-.2, .2])
 
         kws = self.default_kws.copy()
         kws["width"] = .6
         p = cat._BoxPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         npt.assert_array_equal(p.hue_offsets, [-.15, .15])
 
         p = cat._BoxPlotter(**kws)
@@ -801,7 +801,7 @@ class TestBoxPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxplot("g", "y", "h", data=self.df)
+        ax = cat.boxplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(len(ax.artists), 6)
 
         plt.close("all")
@@ -815,7 +815,7 @@ class TestBoxPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxplot("g", "y", "h", data=self.df, saturation=1)
+        ax = cat.boxplot("g", "y", hue="h", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=2)
         for patch, color in zip(ax.artists, pal * 2):
             nt.assert_equal(patch.get_facecolor()[:3], color)
@@ -841,7 +841,7 @@ class TestBoxPlotter(CategoricalFixture):
         plt.close("all")
 
         y[-1] = 0
-        ax = cat.boxplot(x, y, h)
+        ax = cat.boxplot(x, y, hue=h)
         nt.assert_equal(len(ax.artists), 7)
 
         plt.close("all")
@@ -856,8 +856,8 @@ class TestBoxPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.boxplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
-        cat.boxplot(self.g, self.y_perm, self.h,
+        cat.boxplot(self.g, self.y, hue=self.h, hue_order=hue_order, ax=ax1)
+        cat.boxplot(self.g, self.y_perm, hue=self.h,
                     hue_order=hue_order, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
@@ -878,16 +878,16 @@ class TestBoxPlotter(CategoricalFixture):
         cat.boxplot("y", "g", data=self.df, orient="h")
         plt.close("all")
 
-        cat.boxplot("g", "y", "h", data=self.df)
+        cat.boxplot("g", "y", hue="h", data=self.df)
         plt.close("all")
 
-        cat.boxplot("g", "y", "h", order=list("nabc"), data=self.df)
+        cat.boxplot("g", "y", hue="h", order=list("nabc"), data=self.df)
         plt.close("all")
 
-        cat.boxplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        cat.boxplot("g", "y", hue="h", hue_order=list("omn"), data=self.df)
         plt.close("all")
 
-        cat.boxplot("y", "g", "h", data=self.df, orient="h")
+        cat.boxplot("y", "g", hue="h", data=self.df, orient="h")
         plt.close("all")
 
     def test_axes_annotation(self):
@@ -902,7 +902,7 @@ class TestBoxPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxplot("g", "y", "h", data=self.df)
+        ax = cat.boxplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
@@ -966,7 +966,7 @@ class TestViolinPlotter(CategoricalFixture):
         y = self.rs.randn(6)
         h = ["m", "n"] * 2 + ["m"] * 2
 
-        p.establish_variables(x, y, h)
+        p.establish_variables(x, y, hue=h)
         p.estimate_densities("scott", 2, "area", True, 20)
 
         nt.assert_equal(len(p.support[1][0]), 20)
@@ -1004,7 +1004,7 @@ class TestViolinPlotter(CategoricalFixture):
         y = self.rs.randn(7)
         h = (["m", "n"] * 4)[:-1]
 
-        p.establish_variables(x, y, h)
+        p.establish_variables(x, y, hue=h)
         p.estimate_densities("scott", 2, "area", True, 20)
 
         nt.assert_equal(len(p.support[1][0]), 20)
@@ -1502,26 +1502,26 @@ class TestViolinPlotter(CategoricalFixture):
         cat.violinplot("y", "g", data=self.df, orient="h")
         plt.close("all")
 
-        cat.violinplot("g", "y", "h", data=self.df)
+        cat.violinplot("g", "y", hue="h", data=self.df)
         plt.close("all")
 
-        cat.violinplot("g", "y", "h", order=list("nabc"), data=self.df)
+        cat.violinplot("g", "y", hue="h", order=list("nabc"), data=self.df)
         plt.close("all")
 
-        cat.violinplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        cat.violinplot("g", "y", hue="h", hue_order=list("omn"), data=self.df)
         plt.close("all")
 
-        cat.violinplot("y", "g", "h", data=self.df, orient="h")
+        cat.violinplot("y", "g", hue="h", data=self.df, orient="h")
         plt.close("all")
 
         for inner in ["box", "quart", "point", "stick", None]:
             cat.violinplot("g", "y", data=self.df, inner=inner)
             plt.close("all")
 
-            cat.violinplot("g", "y", "h", data=self.df, inner=inner)
+            cat.violinplot("g", "y", hue="h", data=self.df, inner=inner)
             plt.close("all")
 
-            cat.violinplot("g", "y", "h", data=self.df,
+            cat.violinplot("g", "y", hue="h", data=self.df,
                            inner=inner, split=True)
             plt.close("all")
 
@@ -1633,7 +1633,7 @@ class TestStripPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.stripplot("g", "y", "h", data=self.df,
+        ax = cat.stripplot("g", "y", hue="h", data=self.df,
                            jitter=False, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
@@ -1651,7 +1651,7 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df,
+        ax = cat.stripplot("y", "g", hue="h", data=df,
                            jitter=False, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
@@ -1664,7 +1664,7 @@ class TestStripPlotter(CategoricalFixture):
     def test_nested_stripplot_vertical(self):
 
         # Test a simple vertical strip plot
-        ax = cat.stripplot("g", "y", "h", data=self.df,
+        ax = cat.stripplot("g", "y", hue="h", data=self.df,
                            jitter=False, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
@@ -1678,7 +1678,7 @@ class TestStripPlotter(CategoricalFixture):
         df = self.df.copy()
         df.g = df.g.astype("category")
 
-        ax = cat.stripplot("y", "g", "h", data=df,
+        ax = cat.stripplot("y", "g", hue="h", data=df,
                            jitter=False, dodge=False)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
 
@@ -1708,9 +1708,9 @@ class TestStripPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.stripplot(self.g, self.y, self.h,
+        cat.stripplot(self.g, self.y, hue=self.h,
                       hue_order=hue_order, ax=ax1)
-        cat.stripplot(self.g, self.y_perm, self.h,
+        cat.stripplot(self.g, self.y_perm, hue=self.h,
                       hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
@@ -1720,9 +1720,9 @@ class TestStripPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.stripplot(self.g, self.y, self.h,
+        cat.stripplot(self.g, self.y, hue=self.h,
                       dodge=True, hue_order=hue_order, ax=ax1)
-        cat.stripplot(self.g, self.y_perm, self.h,
+        cat.stripplot(self.g, self.y_perm, hue=self.h,
                       dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             y1, y2 = p1.get_offsets()[:, 1], p2.get_offsets()[:, 1]
@@ -1820,7 +1820,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.swarmplot("g", "y", "h", data=self.df, dodge=True)
+        ax = cat.swarmplot("g", "y", hue="h", data=self.df, dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1834,7 +1834,8 @@ class TestSwarmPlotter(CategoricalFixture):
 
         pal = palettes.color_palette()
 
-        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h", dodge=True)
+        ax = cat.swarmplot("y", "g", hue="h", data=self.df,
+                           orient="h", dodge=True)
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -1846,7 +1847,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_nested_swarmplot_vertical(self):
 
-        ax = cat.swarmplot("g", "y", "h", data=self.df)
+        ax = cat.swarmplot("g", "y", hue="h", data=self.df)
 
         pal = palettes.color_palette()
         hue_names = self.h.unique().tolist()
@@ -1867,7 +1868,7 @@ class TestSwarmPlotter(CategoricalFixture):
 
     def test_nested_swarmplot_horizontal(self):
 
-        ax = cat.swarmplot("y", "g", "h", data=self.df, orient="h")
+        ax = cat.swarmplot("y", "g", hue="h", data=self.df, orient="h")
 
         pal = palettes.color_palette()
         hue_names = self.h.unique().tolist()
@@ -1899,9 +1900,9 @@ class TestSwarmPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.swarmplot(self.g, self.y, self.h,
+        cat.swarmplot(self.g, self.y, hue=self.h,
                       hue_order=hue_order, ax=ax1)
-        cat.swarmplot(self.g, self.y_perm, self.h,
+        cat.swarmplot(self.g, self.y_perm, hue=self.h,
                       hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
@@ -1911,9 +1912,9 @@ class TestSwarmPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.swarmplot(self.g, self.y, self.h,
+        cat.swarmplot(self.g, self.y, hue=self.h,
                       dodge=True, hue_order=hue_order, ax=ax1)
-        cat.swarmplot(self.g, self.y_perm, self.h,
+        cat.swarmplot(self.g, self.y_perm, hue=self.h,
                       dodge=True, hue_order=hue_order, ax=ax2)
         for p1, p2 in zip(ax1.collections, ax2.collections):
             assert np.allclose(p1.get_offsets()[:, 1],
@@ -1938,7 +1939,7 @@ class TestBarPlotter(CategoricalFixture):
         kws = self.default_kws.copy()
 
         p = cat._BarPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         nt.assert_equal(p.nested_width, .8 / 2)
 
         p = cat._BarPlotter(**kws)
@@ -2090,9 +2091,9 @@ class TestBarPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.barplot(self.g, self.y, self.h, hue_order=hue_order, ci="sd",
+        cat.barplot(self.g, self.y, hue=self.h, hue_order=hue_order, ci="sd",
                     ax=ax1)
-        cat.barplot(self.g, self.y_perm, self.h,
+        cat.barplot(self.g, self.y_perm, hue=self.h,
                     hue_order=hue_order, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
@@ -2164,14 +2165,14 @@ class TestBarPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
-        ax = cat.barplot("g", "y", "h", data=self.df)
+        ax = cat.barplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(len(ax.patches),
                         len(self.g.unique()) * len(self.h.unique()))
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
-        ax = cat.barplot("y", "g", "h", orient="h", data=self.df)
+        ax = cat.barplot("y", "g", hue="h", orient="h", data=self.df)
         nt.assert_equal(len(ax.patches),
                         len(self.g.unique()) * len(self.h.unique()))
         nt.assert_equal(ax.get_xlabel(), "y")
@@ -2345,9 +2346,9 @@ class TestPointPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.pointplot(self.g, self.y, self.h,
+        cat.pointplot(self.g, self.y, hue=self.h,
                       hue_order=hue_order, ci="sd", ax=ax1)
-        cat.pointplot(self.g, self.y_perm, self.h,
+        cat.pointplot(self.g, self.y_perm, hue=self.h,
                       hue_order=hue_order, ci="sd", ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert pytest.approx(l1.get_xydata()) == l2.get_xydata()
@@ -2427,7 +2428,7 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
 
-        ax = cat.pointplot("g", "y", "h", data=self.df)
+        ax = cat.pointplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
                         (len(self.g.unique()) *
@@ -2437,7 +2438,7 @@ class TestPointPlotter(CategoricalFixture):
         nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
 
-        ax = cat.pointplot("y", "g", "h", orient="h", data=self.df)
+        ax = cat.pointplot("y", "g", hue="h", orient="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
                         (len(self.g.unique()) *
@@ -2510,7 +2511,7 @@ class TestCatPlot(CategoricalFixture):
         want_lines = self.g.unique().size + 1
         nt.assert_equal(len(g.ax.lines), want_lines)
 
-        g = cat.catplot("g", "y", "h", data=self.df, kind="point")
+        g = cat.catplot("g", "y", hue="h", data=self.df, kind="point")
         want_collections = self.h.unique().size
         nt.assert_equal(len(g.ax.collections), want_collections)
         want_lines = (self.g.unique().size + 1) * self.h.unique().size
@@ -2521,7 +2522,7 @@ class TestCatPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.patches), want_elements)
         nt.assert_equal(len(g.ax.lines), want_elements)
 
-        g = cat.catplot("g", "y", "h", data=self.df, kind="bar")
+        g = cat.catplot("g", "y", hue="h", data=self.df, kind="bar")
         want_elements = self.g.unique().size * self.h.unique().size
         nt.assert_equal(len(g.ax.patches), want_elements)
         nt.assert_equal(len(g.ax.lines), want_elements)
@@ -2540,7 +2541,7 @@ class TestCatPlot(CategoricalFixture):
         want_artists = self.g.unique().size
         nt.assert_equal(len(g.ax.artists), want_artists)
 
-        g = cat.catplot("g", "y", "h", data=self.df, kind="box")
+        g = cat.catplot("g", "y", hue="h", data=self.df, kind="box")
         want_artists = self.g.unique().size * self.h.unique().size
         nt.assert_equal(len(g.ax.artists), want_artists)
 
@@ -2549,7 +2550,7 @@ class TestCatPlot(CategoricalFixture):
         want_elements = self.g.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
 
-        g = cat.catplot("g", "y", "h", data=self.df,
+        g = cat.catplot("g", "y", hue="h", data=self.df,
                         kind="violin", inner=None)
         want_elements = self.g.unique().size * self.h.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
@@ -2558,7 +2559,7 @@ class TestCatPlot(CategoricalFixture):
         want_elements = self.g.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
 
-        g = cat.catplot("g", "y", "h", data=self.df, kind="strip")
+        g = cat.catplot("g", "y", hue="h", data=self.df, kind="strip")
         want_elements = self.g.unique().size + self.h.unique().size
         nt.assert_equal(len(g.ax.collections), want_elements)
 
@@ -2729,13 +2730,13 @@ class TestBoxenPlotter(CategoricalFixture):
     def test_hue_offsets(self):
 
         p = cat._LVPlotter(**self.default_kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         npt.assert_array_equal(p.hue_offsets, [-.2, .2])
 
         kws = self.default_kws.copy()
         kws["width"] = .6
         p = cat._LVPlotter(**kws)
-        p.establish_variables("g", "y", "h", data=self.df)
+        p.establish_variables("g", "y", hue="h", data=self.df)
         npt.assert_array_equal(p.hue_offsets, [-.15, .15])
 
         p = cat._LVPlotter(**kws)
@@ -2750,7 +2751,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxenplot("g", "y", "h", data=self.df)
+        ax = cat.boxenplot("g", "y", hue="h", data=self.df)
         patches = filter(self.ispatch, ax.collections)
         nt.assert_equal(len(list(patches)), 6)
 
@@ -2765,7 +2766,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxenplot("g", "y", "h", data=self.df, saturation=1)
+        ax = cat.boxenplot("g", "y", hue="h", data=self.df, saturation=1)
         pal = palettes.color_palette(n_colors=2)
         for patch, color in zip(ax.artists, pal * 2):
             nt.assert_equal(patch.get_facecolor()[:3], color)
@@ -2791,8 +2792,8 @@ class TestBoxenPlotter(CategoricalFixture):
 
         f, (ax1, ax2) = plt.subplots(2)
         hue_order = self.h.unique()
-        cat.boxenplot(self.g, self.y, self.h, hue_order=hue_order, ax=ax1)
-        cat.boxenplot(self.g, self.y_perm, self.h,
+        cat.boxenplot(self.g, self.y, hue=self.h, hue_order=hue_order, ax=ax1)
+        cat.boxenplot(self.g, self.y_perm, hue=self.h,
                       hue_order=hue_order, ax=ax2)
         for l1, l2 in zip(ax1.lines, ax2.lines):
             assert np.array_equal(l1.get_xydata(), l2.get_xydata())
@@ -2810,7 +2811,7 @@ class TestBoxenPlotter(CategoricalFixture):
         plt.close("all")
 
         y[-1] = 0
-        ax = cat.boxenplot(x, y, h)
+        ax = cat.boxenplot(x, y, hue=h)
         nt.assert_equal(len(ax.lines), 7)
 
         plt.close("all")
@@ -2831,22 +2832,23 @@ class TestBoxenPlotter(CategoricalFixture):
         cat.boxenplot("y", "g", data=self.df, orient="h")
         plt.close("all")
 
-        cat.boxenplot("g", "y", "h", data=self.df)
+        cat.boxenplot("g", "y", hue="h", data=self.df)
         plt.close("all")
 
-        cat.boxenplot("g", "y", "h", order=list("nabc"), data=self.df)
+        cat.boxenplot("g", "y", hue="h", order=list("nabc"), data=self.df)
         plt.close("all")
 
-        cat.boxenplot("g", "y", "h", hue_order=list("omn"), data=self.df)
+        cat.boxenplot("g", "y", hue="h", hue_order=list("omn"), data=self.df)
         plt.close("all")
 
-        cat.boxenplot("y", "g", "h", data=self.df, orient="h")
+        cat.boxenplot("y", "g", hue="h", data=self.df, orient="h")
         plt.close("all")
 
-        cat.boxenplot("y", "g", "h", data=self.df, orient="h", palette="Set2")
+        cat.boxenplot("y", "g", hue="h", data=self.df, orient="h",
+                      palette="Set2")
         plt.close("all")
 
-        cat.boxenplot("y", "g", "h", data=self.df, orient="h", color="b")
+        cat.boxenplot("y", "g", hue="h", data=self.df, orient="h", color="b")
         plt.close("all")
 
     def test_axes_annotation(self):
@@ -2861,7 +2863,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-        ax = cat.boxenplot("g", "y", "h", data=self.df)
+        ax = cat.boxenplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         npt.assert_array_equal(ax.get_xticks(), [0, 1, 2])
@@ -2894,7 +2896,7 @@ class TestBoxenPlotter(CategoricalFixture):
         exp = mpl.font_manager.FontProperties(size=size).get_size()
 
         with plt.rc_context(rc=rc_ctx):
-            ax = cat.boxenplot("g", "y", "h", data=self.df)
+            ax = cat.boxenplot("g", "y", hue="h", data=self.df)
             obs = ax.get_legend().get_title().get_fontproperties().get_size()
             assert obs == exp
 
