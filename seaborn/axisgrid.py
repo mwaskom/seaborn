@@ -2321,9 +2321,11 @@ def jointplot(
     cmap = blend_palette(colors, as_cmap=True)
 
     # Initialize the JointGrid object
-    grid = JointGrid(x, y, data, dropna=dropna,
-                     height=height, ratio=ratio, space=space,
-                     xlim=xlim, ylim=ylim)
+    grid = JointGrid(
+        x, y, data=data,
+        dropna=dropna, height=height, ratio=ratio, space=space,
+        xlim=xlim, ylim=ylim
+    )
 
     # Plot the data using the grid
     if kind == "scatter":

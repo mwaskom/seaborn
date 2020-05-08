@@ -2955,8 +2955,8 @@ stripplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax =  sns.stripplot("day", "total_bill", "smoker", data=tips,
-        ...                    palette="Set2", size=20, marker="D",
+        >>> ax =  sns.stripplot(x="day", y="total_bill", hue="smoker",
+        ...                    data=tips, palette="Set2", size=20, marker="D",
         ...                    edgecolor="gray", alpha=.25)
 
     Draw strips of observations on top of a box plot:
@@ -3820,7 +3820,7 @@ def catplot(
     g = FacetGrid(**facet_kws)
 
     # Draw the plot onto the facets
-    g.map_dataframe(plot_func, x, y, hue, **plot_kws)
+    g.map_dataframe(plot_func, x, y, hue=hue, **plot_kws)
 
     # Special case axis labels for a count type plot
     if kind == "count":

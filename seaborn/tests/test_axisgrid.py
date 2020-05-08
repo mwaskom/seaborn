@@ -766,7 +766,7 @@ class TestPairGrid(object):
                 npt.assert_array_equal(x_in, x_out)
                 npt.assert_array_equal(y_in, y_out)
 
-        g2 = ag.PairGrid(self.df, "a")
+        g2 = ag.PairGrid(self.df, hue="a")
         g2.map(plt.scatter)
 
         for i, axes_i in enumerate(g2.axes):
@@ -1098,7 +1098,7 @@ class TestPairGrid(object):
                 npt.assert_array_equal(x_in, x_out)
                 npt.assert_array_equal(y_in, y_out)
 
-        g2 = ag.PairGrid(df, "a")
+        g2 = ag.PairGrid(df, hue="a")
         g2.map(plt.scatter)
 
         for i, axes_i in enumerate(g2.axes):
@@ -1280,7 +1280,7 @@ class TestJointGrid(object):
     def test_margin_grid_from_dataframe_bad_variable(self):
 
         with nt.assert_raises(ValueError):
-            ag.JointGrid("x", "bad_column", self.data)
+            ag.JointGrid("x", "bad_column", data=self.data)
 
     def test_margin_grid_axis_labels(self):
 
@@ -1297,10 +1297,10 @@ class TestJointGrid(object):
 
     def test_dropna(self):
 
-        g = ag.JointGrid("x_na", "y", self.data, dropna=False)
+        g = ag.JointGrid("x_na", "y", data=self.data, dropna=False)
         nt.assert_equal(len(g.x), len(self.x_na))
 
-        g = ag.JointGrid("x_na", "y", self.data, dropna=True)
+        g = ag.JointGrid("x_na", "y", data=self.data, dropna=True)
         nt.assert_equal(len(g.x), pd.notnull(self.x_na).sum())
 
     def test_axlims(self):
@@ -1331,7 +1331,7 @@ class TestJointGrid(object):
 
     def test_univariate_plot(self):
 
-        g = ag.JointGrid("x", "x", self.data)
+        g = ag.JointGrid("x", "x", data=self.data)
         g.plot_marginals(kdeplot)
 
         _, y1 = g.ax_marg_x.lines[0].get_xydata().T
@@ -1340,7 +1340,7 @@ class TestJointGrid(object):
 
     def test_plot(self):
 
-        g = ag.JointGrid("x", "x", self.data)
+        g = ag.JointGrid("x", "x", data=self.data)
         g.plot(plt.plot, kdeplot)
 
         x, y = g.ax_joint.lines[0].get_xydata().T

@@ -584,11 +584,13 @@ def lmplot(
     data = data[cols]
 
     # Initialize the grid
-    facets = FacetGrid(data, row, col, hue, palette=palette,
-                       row_order=row_order, col_order=col_order,
-                       hue_order=hue_order, height=height, aspect=aspect,
-                       col_wrap=col_wrap, sharex=sharex, sharey=sharey,
-                       legend_out=legend_out)
+    facets = FacetGrid(
+        data, row=row, col=col, hue=hue,
+        palette=palette,
+        row_order=row_order, col_order=col_order, hue_order=hue_order,
+        height=height, aspect=aspect, col_wrap=col_wrap,
+        sharex=sharex, sharey=sharey, legend_out=legend_out
+    )
 
     # Add the markers here as FacetGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
