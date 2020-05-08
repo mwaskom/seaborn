@@ -370,6 +370,9 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
 def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
                                 cumulative=False):
     """Compute a univariate kernel density estimate using statsmodels."""
+    # statsmodels 0.8 fails on int type data
+    data = data.astype(np.float64)
+
     fft = kernel == "gau"
     kde = smnp.KDEUnivariate(data)
 
@@ -471,6 +474,10 @@ def _bivariate_kdeplot(x, y, filled, fill_lowest,
 
 def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
     """Compute a bivariate kde using statsmodels."""
+    # statsmodels 0.8 fails on int type data
+    x = x.astype(np.float64)
+    y = y.astype(np.float64)
+
     if isinstance(bw, str):
         bw_func = getattr(smnp.bandwidths, "bw_" + bw)
         x_bw = bw_func(x)
