@@ -6,16 +6,13 @@ from scipy import stats
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-from distutils.version import LooseVersion
 
 from .. import distributions as dist
 
 _no_statsmodels = not dist._has_statsmodels
 
 if not _no_statsmodels:
-    import statsmodels
     import statsmodels.nonparametric as smnp
-    _old_statsmodels = LooseVersion(statsmodels.__version__) < "0.11"
 else:
     _old_statsmodels = False
 
@@ -87,6 +84,13 @@ class TestDistPlot(object):
         for bar1, bar2 in zip(ax1.patches, ax2.patches):
             assert bar1.get_xy() == bar2.get_xy()
             assert bar1.get_height() == bar2.get_height()
+
+    def test_a_parameter_deprecation(self):
+
+        n = 10
+        with pytest.warns(UserWarning):
+            ax = dist.distplot(a=self.x, bins=n)
+        assert len(ax.patches) == n
 
 
 class TestKDE(object):
@@ -171,7 +175,7 @@ class TestKDE(object):
             dist.kdeplot(self.x, self.y, cumulative=True)
 
     def test_kde_singular(self):
-
+        """Check that kdeplot warns and skips on singular inputs."""
         with pytest.warns(UserWarning):
             ax = dist.kdeplot(np.ones(10))
         line = ax.lines[0]
@@ -182,8 +186,13 @@ class TestKDE(object):
         line = ax.lines[1]
         assert not line.get_xydata().size
 
-    @pytest.mark.skipif(_no_statsmodels or _old_statsmodels,
-                        reason="no statsmodels or statsmodels without issue")
+    def test_data2_input_deprecation(self):
+        """Using data2 kwarg should warn but still draw a bivariate plot."""
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(self.x, data2=self.y)
+        assert len(ax.collections)
+
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_zero_bandwidth(self):
         """Test handling of 0 bandwidth data in statsmodels."""
         x = np.zeros(100)
@@ -196,8 +205,9 @@ class TestKDE(object):
         except RuntimeError:
 
             # Only execute the actual test in the except clause, this should
-            # keep the test from failing in the future if statsmodels changes
-            # it's behavior to avoid raising the error itself.
+            # allot the test to pass on versions of statsmodels predating 0.11
+            # and keep the test from failing in the future if statsmodels
+            # reverts its behavior to avoid raising the error in the futures
             # Track at https://github.com/statsmodels/statsmodels/issues/5419
 
             with pytest.warns(UserWarning):
@@ -339,3 +349,11 @@ class TestRugPlot(object):
             assert np.squeeze(c.get_linewidth()).item() == lw
         assert c.get_alpha() == .5
         plt.close(f)
+
+    def test_a_parameter_deprecation(self, series_data):
+
+        with pytest.warns(UserWarning):
+            ax = dist.rugplot(a=series_data)
+        rug, = ax.collections
+        segments = np.array(rug.get_segments())
+        assert len(segments) == len(series_data)

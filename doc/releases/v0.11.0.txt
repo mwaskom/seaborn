@@ -4,6 +4,8 @@ v0.11.0 (Unreleased)
 
 - Enforced keyword-only arguments for most parameters of most functions and classes.
 
+- Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.
+
 - Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm.
 
 - Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.
