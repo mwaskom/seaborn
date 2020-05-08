@@ -16,9 +16,9 @@ except ImportError:
     _has_statsmodels = False
 
 from . import utils
-from .utils import _deprecate_positional_args
 from . import algorithms as algo
 from .axisgrid import FacetGrid, _facet_docs
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["lmplot", "regplot", "residplot"]

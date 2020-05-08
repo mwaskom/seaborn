@@ -10,9 +10,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
-from .utils import _deprecate_positional_args
 from .palettes import color_palette, blend_palette
 from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]

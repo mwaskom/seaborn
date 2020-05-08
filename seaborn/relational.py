@@ -9,12 +9,12 @@ import matplotlib.pyplot as plt
 
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
-                    remove_na, locator_to_legend_entries,
-                    _deprecate_positional_args)
+                    remove_na, locator_to_legend_entries)
 from .algorithms import bootstrap
 from .palettes import (color_palette, cubehelix_palette,
                        _parse_cubehelix_args, QUAL_PALETTES)
 from .axisgrid import FacetGrid, _facet_docs
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["relplot", "scatterplot", "lineplot"]

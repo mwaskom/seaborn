@@ -11,11 +11,11 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
-from .utils import (iqr, categorical_order, remove_na,
-                    _deprecate_positional_args)
+from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = [

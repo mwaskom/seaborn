@@ -13,7 +13,8 @@ from scipy.cluster import hierarchy
 from . import cm
 from .axisgrid import Grid
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
-                    to_utf8, _deprecate_positional_args)
+                    to_utf8)
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["heatmap", "clustermap"]
