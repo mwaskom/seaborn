@@ -229,12 +229,16 @@ _facet_docs = dict(
 
 class FacetGrid(Grid):
     """Multi-plot grid for plotting conditional relationships."""
-    def __init__(self, data, row=None, col=None, hue=None, col_wrap=None,
-                 sharex=True, sharey=True, height=3, aspect=1, palette=None,
-                 row_order=None, col_order=None, hue_order=None, hue_kws=None,
-                 dropna=True, legend_out=True, despine=True,
-                 margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-                 gridspec_kws=None, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, data, *,
+        row=None, col=None, hue=None, col_wrap=None,
+        sharex=True, sharey=True, height=3, aspect=1, palette=None,
+        row_order=None, col_order=None, hue_order=None, hue_kws=None,
+        dropna=True, legend_out=True, despine=True,
+        margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
+        gridspec_kws=None, size=None
+    ):
 
         # Handle deprecations
         if size is not None:
@@ -1127,11 +1131,14 @@ class PairGrid(Grid):
     See the :ref:`tutorial <grid_tutorial>` for more information.
 
     """
-
-    def __init__(self, data, hue=None, hue_order=None, palette=None,
-                 hue_kws=None, vars=None, x_vars=None, y_vars=None,
-                 corner=False, diag_sharey=True, height=2.5, aspect=1,
-                 layout_pad=0, despine=True, dropna=True, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, data, *,
+        hue=None, hue_order=None, palette=None,
+        hue_kws=None, vars=None, x_vars=None, y_vars=None,
+        corner=False, diag_sharey=True, height=2.5, aspect=1,
+        layout_pad=0, despine=True, dropna=True, size=None
+    ):
         """Initialize the plot figure and PairGrid object.
 
         Parameters
@@ -1577,8 +1584,13 @@ class PairGrid(Grid):
 class JointGrid(object):
     """Grid for drawing a bivariate plot with marginal univariate plots."""
 
-    def __init__(self, x, y, data=None, height=6, ratio=5, space=.2,
-                 dropna=True, xlim=None, ylim=None, size=None):
+    @_deprecate_positional_args
+    def __init__(
+        self, x, y, *,
+        data=None,
+        height=6, ratio=5, space=.2,
+        dropna=True, xlim=None, ylim=None, size=None
+    ):
         """Set up the grid of subplots.
 
         Parameters
@@ -1922,8 +1934,7 @@ class JointGrid(object):
 
 @_deprecate_positional_args
 def pairplot(
-    data,
-    *,
+    data, *,
     hue=None, hue_order=None, palette=None,
     vars=None, x_vars=None, y_vars=None,
     kind="scatter", diag_kind="auto", markers=None,
@@ -2160,8 +2171,8 @@ def pairplot(
 
 @_deprecate_positional_args
 def jointplot(
-    x=None, y=None,
-    *, data=None,
+    x=None, y=None, *,
+    data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
     dropna=True, xlim=None, ylim=None,

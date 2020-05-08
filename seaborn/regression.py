@@ -558,9 +558,9 @@ _regression_docs.update(_facet_docs)
 
 @_deprecate_positional_args
 def lmplot(
-    x=None, y=None,
-    *, data=None,
-    hue=None, col=None, row=None,
+    x=None, y=None, *,
+    data=None,
+    hue=None, col=None, row=None,  # TODO move before data once * is enforced
     palette=None, col_wrap=None, height=5, aspect=1, markers="o",
     sharex=True, sharey=True, hue_order=None, col_order=None, row_order=None,
     legend=True, legend_out=True, x_estimator=None, x_bins=None,
@@ -802,8 +802,8 @@ lmplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def regplot(
-    x=None, y=None,
-    *, data=None,
+    x=None, y=None, *,
+    data=None,
     x_estimator=None, x_bins=None, x_ci="ci",
     scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
     seed=None, order=1, logistic=False, lowess=False, robust=False,
@@ -1000,8 +1000,8 @@ regplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def residplot(
-    x=None, y=None,
-    *, data=None,
+    x=None, y=None, *,
+    data=None,
     lowess=False, x_partial=None, y_partial=None,
     order=1, robust=False, dropna=True, label=None, color=None,
     scatter_kws=None, line_kws=None, ax=None

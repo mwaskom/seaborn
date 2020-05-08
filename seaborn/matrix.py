@@ -13,7 +13,7 @@ from scipy.cluster import hierarchy
 from . import cm
 from .axisgrid import Grid
 from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
-                    to_utf8)
+                    to_utf8, _deprecate_positional_args)
 
 
 __all__ = ["heatmap", "clustermap"]
@@ -347,6 +347,7 @@ class _HeatMapper(object):
             self._annotate_heatmap(ax, mesh)
 
 
+@_deprecate_positional_args
 def heatmap(
     data, *,
     vmin=None, vmax=None, cmap=None, center=None, robust=False,
@@ -732,8 +733,12 @@ class _DendrogramPlotter(object):
         return self
 
 
-def dendrogram(data, linkage=None, axis=1, label=True, metric='euclidean',
-               method='average', rotate=False, tree_kws=None, ax=None):
+@_deprecate_positional_args
+def dendrogram(
+    data, *,
+    linkage=None, axis=1, label=True, metric='euclidean',
+    method='average', rotate=False, tree_kws=None, ax=None
+):
     """Draw a tree diagram of relationships within a matrix
 
     Parameters
@@ -1224,6 +1229,7 @@ class ClusterGrid(Grid):
         return self
 
 
+@_deprecate_positional_args
 def clustermap(
     data, *,
     pivot_kws=None, method='average', metric='euclidean',

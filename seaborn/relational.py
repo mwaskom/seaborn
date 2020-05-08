@@ -1112,8 +1112,9 @@ _relational_docs.update(_facet_docs)
 
 @_deprecate_positional_args
 def lineplot(
-    x=None, y=None, hue=None, size=None, style=None,
-    *, data=None,
+    x=None, y=None, *,
+    hue=None, size=None, style=None,
+    data=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
@@ -1385,8 +1386,8 @@ lineplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def scatterplot(
-    x=None, y=None, hue=None, style=None, size=None,
-    *, data=None,
+    x=None, y=None, *,
+    hue=None, style=None, size=None, data=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=True, style_order=None,
@@ -1631,9 +1632,9 @@ scatterplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def relplot(
-    x=None, y=None, hue=None, size=None, style=None,
-    *, data=None,
-    row=None, col=None,
+    x=None, y=None, *,
+    hue=None, size=None, style=None, data=None,
+    row=None, col=None,  # TODO move in front of data when * is enforced
     col_wrap=None, row_order=None, col_order=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
