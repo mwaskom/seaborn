@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -103,6 +104,38 @@ class TestKDE(object):
     gridsize = 128
     clip = (-np.inf, np.inf)
     cut = 3
+
+    def test_kde_1d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x)
+        dist.kdeplot(x=pd.Series(self.x))
+        dist.kdeplot(x=self.x.tolist())
+        dist.kdeplot(data=self.x)
+
+        supports = [l.get_xdata() for l in ax.lines]
+        for a, b in itertools.product(supports, supports):
+            assert np.array_equal(a, b)
+
+        densities = [l.get_ydata() for l in ax.lines]
+        for a, b in itertools.product(densities, densities):
+            assert np.array_equal(a, b)
+
+    def test_kde_2d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x, y=self.y)
+        dist.kdeplot(x=pd.Series(self.x), y=pd.Series(self.y))
+        dist.kdeplot(x=self.x.tolist(), y=self.y.tolist())
+
+        contours = ax.collections
+        n = len(contours) // 3
+
+        for i in range(n):
+            for a, b in itertools.product(contours[i::n], contours[i::n]):
+                assert np.array_equal(a.get_offsets(), b.get_offsets())
 
     def test_scipy_univariate_kde(self):
         """Test the univariate KDE estimation with scipy."""
