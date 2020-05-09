@@ -744,7 +744,7 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         # Test errwidth is set appropriately
         f, ax = plt.subplots()
         p.draw_confints(ax, at_group, confints, colors, errwidth=2)
-        capline = ax.lines[len(ax.lines)-1]
+        capline = ax.lines[len(ax.lines) - 1]
         nt.assert_equal(capline._linewidth, 2)
         nt.assert_equal(len(ax.lines), 2)
 
@@ -2073,7 +2073,7 @@ class TestBarPlotter(CategoricalFixture):
         p.draw_bars(ax, {})
 
         nt.assert_equal(len(ax.patches), len(p.plot_data) * len(hue_order))
-        nt.assert_equal(len(ax.lines),  len(p.plot_data) * len(hue_order))
+        nt.assert_equal(len(ax.lines), len(p.plot_data) * len(hue_order))
 
         plt.close("all")
 
@@ -2431,9 +2431,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("g", "y", hue="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique()) *
-                         len(self.h.unique()) +
-                         len(self.h.unique())))
+                        (len(self.g.unique())
+                         * len(self.h.unique())
+                         + len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "g")
         nt.assert_equal(ax.get_ylabel(), "y")
         plt.close("all")
@@ -2441,9 +2441,9 @@ class TestPointPlotter(CategoricalFixture):
         ax = cat.pointplot("y", "g", hue="h", orient="h", data=self.df)
         nt.assert_equal(len(ax.collections), len(self.h.unique()))
         nt.assert_equal(len(ax.lines),
-                        (len(self.g.unique()) *
-                         len(self.h.unique()) +
-                         len(self.h.unique())))
+                        (len(self.g.unique())
+                        * len(self.h.unique())
+                        + len(self.h.unique())))
         nt.assert_equal(ax.get_xlabel(), "y")
         nt.assert_equal(ax.get_ylabel(), "g")
         plt.close("all")
@@ -2670,8 +2670,8 @@ class TestBoxenPlotter(CategoricalFixture):
 
         def within(t):
             a, d = t
-            return ((np.ravel(a) <= d.max()) &
-                    (np.ravel(a) >= d.min())).all()
+            return ((np.ravel(a) <= d.max())
+                    & (np.ravel(a) >= d.min())).all()
 
         b_w = map(within, zip(box_ends, p.plot_data))
         assert np.sum(list(b_w)) == len(box_ends)

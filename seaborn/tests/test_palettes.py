@@ -241,7 +241,7 @@ class TestColorPalettes(object):
         args = h_neg, h_pos, sat, lum
 
         n = 12
-        pal = palettes.diverging_palette(*args,  n=n)
+        pal = palettes.diverging_palette(*args, n=n)
         neg_pal = palettes.light_palette((h_neg, sat, lum), int(n // 2),
                                          input="husl")
         pos_pal = palettes.light_palette((h_pos, sat, lum), int(n // 2),
