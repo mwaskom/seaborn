@@ -4,7 +4,7 @@ import functools
 from distutils.version import LooseVersion
 import matplotlib as mpl
 from cycler import cycler
-from . import palettes, _orig_rc_params
+from . import palettes
 
 
 __all__ = ["set", "reset_defaults", "reset_orig",
@@ -50,7 +50,7 @@ _style_keys = [
     "axes.spines.right",
     "axes.spines.top",
 
-    ]
+]
 
 _context_keys = [
 
@@ -77,7 +77,7 @@ _context_keys = [
     "xtick.minor.size",
     "ytick.minor.size",
 
-    ]
+]
 
 if LooseVersion(mpl.__version__) >= "3.0":
     _context_keys.append("legend.title_fontsize")
@@ -124,6 +124,7 @@ def reset_defaults():
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
+    from . import _orig_rc_params
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', mpl.cbook.MatplotlibDeprecationWarning)
         mpl.rcParams.update(_orig_rc_params)
@@ -210,17 +211,17 @@ def axes_style(style=None, rc=None):
             "xtick.top": False,
             "ytick.right": False,
 
-            }
+        }
 
         # Set grid on or off
         if "grid" in style:
             style_dict.update({
                 "axes.grid": True,
-                })
+            })
         else:
             style_dict.update({
                 "axes.grid": False,
-                })
+            })
 
         # Set the color of the background, spines, and grids
         if style.startswith("dark"):
@@ -235,7 +236,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style == "whitegrid":
             style_dict.update({
@@ -249,7 +250,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
@@ -263,19 +264,19 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         # Show or hide the axes ticks
         if style == "ticks":
             style_dict.update({
                 "xtick.bottom": True,
                 "ytick.left": True,
-                })
+            })
         else:
             style_dict.update({
                 "xtick.bottom": False,
                 "ytick.left": False,
-                })
+            })
 
     # Remove entries that are not defined in the base list of valid keys
     # This lets us handle matplotlib <=/> 2.0
@@ -407,7 +408,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "xtick.minor.size": 4,
             "ytick.minor.size": 4,
 
-            }
+        }
 
         if LooseVersion(mpl.__version__) >= "3.0":
             base_context["legend.title_fontsize"] = 12

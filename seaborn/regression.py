@@ -552,7 +552,7 @@ _regression_docs = dict(
         Additional keyword arguments to pass to ``plt.scatter`` and
         ``plt.plot``.\
     """),
-    )
+)
 _regression_docs.update(_facet_docs)
 
 
@@ -620,7 +620,7 @@ def lmplot(
         robust=robust, logx=logx, x_partial=x_partial, y_partial=y_partial,
         truncate=truncate, x_jitter=x_jitter, y_jitter=y_jitter,
         scatter_kws=scatter_kws, line_kws=line_kws,
-        )
+    )
     facets.map_dataframe(regplot, x, y, **regplot_kws)
 
     # Add a legend

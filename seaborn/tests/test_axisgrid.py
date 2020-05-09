@@ -444,7 +444,7 @@ class TestFacetGrid(object):
         nt.assert_equal(g.axes[1, 0].get_title(), "a == b \\/ b == m")
 
         # Test a single row
-        g = ag.FacetGrid(self.df,  col="b")
+        g = ag.FacetGrid(self.df, col="b")
         g.map(plt.plot, "x", "y")
 
         # Test the default titles

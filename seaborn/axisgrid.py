@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from . import utils
 from .palettes import color_palette, blend_palette
-from .distributions import distplot, kdeplot,  _freedman_diaconis_bins
+from .distributions import distplot, kdeplot, _freedman_diaconis_bins
 from ._decorators import _deprecate_positional_args
 
 
@@ -224,7 +224,7 @@ _facet_docs = dict(
         the last column. This option is experimental and may not work in all
         cases.\
     """),
-    )
+)
 
 
 class FacetGrid(Grid):
@@ -948,7 +948,7 @@ class FacetGrid(Grid):
                 ax.set_yticklabels(labels, **kwargs)
         return self
 
-    def set_titles(self, template=None, row_template=None,  col_template=None,
+    def set_titles(self, template=None, row_template=None, col_template=None,
                    **kwargs):
         """Draw titles either above each facet or on the grid margins.
 
@@ -1051,9 +1051,11 @@ class FacetGrid(Grid):
             axes = []
             n_empty = self._nrow * self._ncol - self._n_facets
             for i, ax in enumerate(self.axes):
-                append = (i % self._ncol and
-                          i < (self._ncol * (self._nrow - 1)) and
-                          i < (self._ncol * (self._nrow - 1) - n_empty))
+                append = (
+                    i % self._ncol
+                    and i < (self._ncol * (self._nrow - 1))
+                    and i < (self._ncol * (self._nrow - 1) - n_empty)
+                )
                 if append:
                     axes.append(ax)
             return np.array(axes, object).flat
@@ -1091,8 +1093,10 @@ class FacetGrid(Grid):
             axes = []
             n_empty = self._nrow * self._ncol - self._n_facets
             for i, ax in enumerate(self.axes):
-                append = (i >= (self._ncol * (self._nrow - 1)) or
-                          i >= (self._ncol * (self._nrow - 1) - n_empty))
+                append = (
+                    i >= (self._ncol * (self._nrow - 1))
+                    or i >= (self._ncol * (self._nrow - 1) - n_empty)
+                )
                 if append:
                     axes.append(ax)
             return np.array(axes, object).flat
@@ -1106,8 +1110,10 @@ class FacetGrid(Grid):
             axes = []
             n_empty = self._nrow * self._ncol - self._n_facets
             for i, ax in enumerate(self.axes):
-                append = (i < (self._ncol * (self._nrow - 1)) and
-                          i < (self._ncol * (self._nrow - 1) - n_empty))
+                append = (
+                    i < (self._ncol * (self._nrow - 1))
+                    and i < (self._ncol * (self._nrow - 1) - n_empty)
+                )
                 if append:
                     axes.append(ax)
             return np.array(axes, object).flat

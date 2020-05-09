@@ -346,7 +346,7 @@ def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
         alpha=kwargs.get("alpha", 0.25),
         clip_on=kwargs.get("clip_on", True),
         zorder=kwargs.get("zorder", 1),
-        )
+    )
     if shade:
         if vertical:
             ax.fill_betweenx(y, 0, x, **shade_kws)

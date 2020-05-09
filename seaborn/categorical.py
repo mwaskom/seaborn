@@ -1537,7 +1537,7 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         group_units = self.plot_units[i]
                         have = pd.notnull(
                             np.c_[group_data, group_units]
-                            ).all(axis=1)
+                        ).all(axis=1)
                         stat_data = group_data[hue_mask & have]
                         unit_data = group_units[hue_mask & have]
 
@@ -1872,10 +1872,12 @@ class _LVPlotter(_CategoricalPlotter):
                 raise ValueError('outlier_prop not in range [0, 1]!')
             p = outlier_prop
         # Select the depth, i.e. number of boxes to draw, based on the method
-        k_dict = {'proportion': (np.log2(n)) - int(np.log2(n*p)) + 1,
-                  'tukey': (np.log2(n)) - 3,
-                  'trustworthy': (np.log2(n) -
-                                  np.log2(2*stats.norm.ppf((1-p))**2)) + 1}
+        k_dict = {
+            'proportion': (np.log2(n)) - int(np.log2(n * p)) + 1,
+            'tukey': (np.log2(n)) - 3,
+            'trustworthy': 1 + (np.log2(n)
+                                - np.log2(2 * stats.norm.ppf((1 - p)) ** 2))
+        }
         k = k_dict[k_depth]
         try:
             k = int(k)
@@ -1885,9 +1887,9 @@ class _LVPlotter(_CategoricalPlotter):
         if k < 1.:
             k = 1
         # Calculate the upper box ends
-        upper = [100*(1 - 0.5**(i+2)) for i in range(k, -1, -1)]
+        upper = [100 * (1 - 0.5 ** (i + 2)) for i in range(k, -1, -1)]
         # Calculate the lower box ends
-        lower = [100*(0.5**(i+2)) for i in range(k, -1, -1)]
+        lower = [100 * (0.5 ** (i + 2)) for i in range(k, -1, -1)]
         # Stitch the box ends together
         percentile_ends = [(i, j) for i, j in zip(lower, upper)]
         box_ends = [np.percentile(vals, q) for q in percentile_ends]
@@ -1895,7 +1897,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lv_outliers(self, vals, k):
         """Find the outliers based on the letter value depth."""
-        perc_ends = (100*(0.5**(k+2)), 100*(1 - 0.5**(k+2)))
+        perc_ends = (100 * (0.5 ** (k + 2)), 100 * (1 - 0.5 ** (k + 2)))
         edges = np.percentile(vals, perc_ends)
         lower_out = vals[np.where(vals < edges[0])[0]]
         upper_out = vals[np.where(vals > edges[1])[0]]
@@ -1904,8 +1906,8 @@ class _LVPlotter(_CategoricalPlotter):
     def _width_functions(self, width_func):
         # Dictionary of functions for computing the width of the boxes
         width_functions = {'linear': lambda h, i, k: (i + 1.) / k,
-                           'exponential': lambda h, i, k: 2**(-k+i-1),
-                           'area': lambda h, i, k: (1 - 2**(-k+i-2)) / h}
+                           'exponential': lambda h, i, k: 2**(-k + i - 1),
+                           'area': lambda h, i, k: (1 - 2**(-k + i - 2)) / h}
         return width_functions[width_func]
 
     def _lvplot(self, box_data, positions,
@@ -1943,14 +1945,14 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Functions to construct the letter value boxes
             def vert_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((x - widths*w / 2, b[0]),
-                                         widths*w,
+                rect = Patches.Rectangle((x - widths * w / 2, b[0]),
+                                         widths * w,
                                          height(b), fill=True)
                 return rect
 
             def horz_perc_box(x, b, i, k, w):
-                rect = Patches.Rectangle((b[0], x - widths*w / 2),
-                                         height(b), widths*w,
+                rect = Patches.Rectangle((b[0], x - widths * w / 2),
+                                         height(b), widths * w,
                                          fill=True)
                 return rect
 
@@ -2230,7 +2232,7 @@ _categorical_docs = dict(
     boxenplot : An enhanced boxplot for larger datasets.\
     """),
 
-    )
+)
 
 _categorical_docs.update(_facet_docs)
 
@@ -3802,19 +3804,19 @@ def catplot(
         sharex=sharex, sharey=sharey,
         legend_out=legend_out, margin_titles=margin_titles,
         dropna=False,
-        )
+    )
 
     # Determine keyword arguments for the plotting function
     plot_kws = dict(
         order=order, hue_order=hue_order,
         orient=orient, color=color, palette=palette,
-        )
+    )
     plot_kws.update(kwargs)
 
     if kind in ["bar", "point"]:
         plot_kws.update(
             estimator=estimator, ci=ci, n_boot=n_boot, units=units, seed=seed,
-            )
+        )
 
     # Initialize the facets
     g = FacetGrid(**facet_kws)

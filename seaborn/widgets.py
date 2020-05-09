@@ -207,7 +207,7 @@ def choose_dark_palette(input="husl", as_cmap=False):
     elif input == "hls":
         @interact
         def choose_dark_palette_hls(h=(0., 1.),
-                                    l=(0., 1.),
+                                    l=(0., 1.),  # noqa: E741
                                     s=(0., 1.),
                                     n=(3, 17)):
             color = h, l, s
@@ -223,7 +223,7 @@ def choose_dark_palette(input="husl", as_cmap=False):
         @interact
         def choose_dark_palette_husl(h=(0, 359),
                                      s=(0, 99),
-                                     l=(0, 99),
+                                     l=(0, 99),  # noqa: E741
                                      n=(3, 17)):
             color = h, s, l
             if as_cmap:
@@ -292,7 +292,7 @@ def choose_light_palette(input="husl", as_cmap=False):
     elif input == "hls":
         @interact
         def choose_light_palette_hls(h=(0., 1.),
-                                     l=(0., 1.),
+                                     l=(0., 1.),  # noqa: E741
                                      s=(0., 1.),
                                      n=(3, 17)):
             color = h, l, s
@@ -308,7 +308,7 @@ def choose_light_palette(input="husl", as_cmap=False):
         @interact
         def choose_light_palette_husl(h=(0, 359),
                                       s=(0, 99),
-                                      l=(0, 99),
+                                      l=(0, 99),  # noqa: E741
                                       n=(3, 17)):
             color = h, s, l
             if as_cmap:
@@ -357,17 +357,19 @@ def choose_diverging_palette(as_cmap=False):
         cmap = _init_mutable_colormap()
 
     @interact
-    def choose_diverging_palette(h_neg=IntSlider(min=0,
-                                                 max=359,
-                                                 value=220),
-                                 h_pos=IntSlider(min=0,
-                                                 max=359,
-                                                 value=10),
-                                 s=IntSlider(min=0, max=99, value=74),
-                                 l=IntSlider(min=0, max=99, value=50),
-                                 sep=IntSlider(min=1, max=50, value=10),
-                                 n=(2, 16),
-                                 center=["light", "dark"]):
+    def choose_diverging_palette(
+        h_neg=IntSlider(min=0,
+                        max=359,
+                        value=220),
+        h_pos=IntSlider(min=0,
+                        max=359,
+                        value=10),
+        s=IntSlider(min=0, max=99, value=74),
+        l=IntSlider(min=0, max=99, value=50),  # noqa: E741
+        sep=IntSlider(min=1, max=50, value=10),
+        n=(2, 16),
+        center=["light", "dark"]
+    ):
         if as_cmap:
             colors = diverging_palette(h_neg, h_pos, s, l, sep, 256, center)
             _update_lut(cmap, colors)
