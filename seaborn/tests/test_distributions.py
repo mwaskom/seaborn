@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,16 +7,13 @@ from scipy import stats
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
-from distutils.version import LooseVersion
 
 from .. import distributions as dist
 
 _no_statsmodels = not dist._has_statsmodels
 
 if not _no_statsmodels:
-    import statsmodels
     import statsmodels.nonparametric as smnp
-    _old_statsmodels = LooseVersion(statsmodels.__version__) < "0.11"
 else:
     _old_statsmodels = False
 
@@ -88,6 +86,13 @@ class TestDistPlot(object):
             assert bar1.get_xy() == bar2.get_xy()
             assert bar1.get_height() == bar2.get_height()
 
+    def test_a_parameter_deprecation(self):
+
+        n = 10
+        with pytest.warns(UserWarning):
+            ax = dist.distplot(a=self.x, bins=n)
+        assert len(ax.patches) == n
+
 
 class TestKDE(object):
 
@@ -99,6 +104,38 @@ class TestKDE(object):
     gridsize = 128
     clip = (-np.inf, np.inf)
     cut = 3
+
+    def test_kde_1d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x)
+        dist.kdeplot(x=pd.Series(self.x))
+        dist.kdeplot(x=self.x.tolist())
+        dist.kdeplot(data=self.x)
+
+        supports = [l.get_xdata() for l in ax.lines]
+        for a, b in itertools.product(supports, supports):
+            assert np.array_equal(a, b)
+
+        densities = [l.get_ydata() for l in ax.lines]
+        for a, b in itertools.product(densities, densities):
+            assert np.array_equal(a, b)
+
+    def test_kde_2d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x, y=self.y)
+        dist.kdeplot(x=pd.Series(self.x), y=pd.Series(self.y))
+        dist.kdeplot(x=self.x.tolist(), y=self.y.tolist())
+
+        contours = ax.collections
+        n = len(contours) // 3
+
+        for i in range(n):
+            for a, b in itertools.product(contours[i::n], contours[i::n]):
+                assert np.array_equal(a.get_offsets(), b.get_offsets())
 
     def test_scipy_univariate_kde(self):
         """Test the univariate KDE estimation with scipy."""
@@ -171,7 +208,7 @@ class TestKDE(object):
             dist.kdeplot(self.x, self.y, cumulative=True)
 
     def test_kde_singular(self):
-
+        """Check that kdeplot warns and skips on singular inputs."""
         with pytest.warns(UserWarning):
             ax = dist.kdeplot(np.ones(10))
         line = ax.lines[0]
@@ -182,8 +219,13 @@ class TestKDE(object):
         line = ax.lines[1]
         assert not line.get_xydata().size
 
-    @pytest.mark.skipif(_no_statsmodels or _old_statsmodels,
-                        reason="no statsmodels or statsmodels without issue")
+    def test_data2_input_deprecation(self):
+        """Using data2 kwarg should warn but still draw a bivariate plot."""
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(self.x, data2=self.y)
+        assert len(ax.collections)
+
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_zero_bandwidth(self):
         """Test handling of 0 bandwidth data in statsmodels."""
         x = np.zeros(100)
@@ -196,8 +238,9 @@ class TestKDE(object):
         except RuntimeError:
 
             # Only execute the actual test in the except clause, this should
-            # keep the test from failing in the future if statsmodels changes
-            # it's behavior to avoid raising the error itself.
+            # allot the test to pass on versions of statsmodels predating 0.11
+            # and keep the test from failing in the future if statsmodels
+            # reverts its behavior to avoid raising the error in the futures
             # Track at https://github.com/statsmodels/statsmodels/issues/5419
 
             with pytest.warns(UserWarning):
@@ -339,3 +382,11 @@ class TestRugPlot(object):
             assert np.squeeze(c.get_linewidth()).item() == lw
         assert c.get_alpha() == .5
         plt.close(f)
+
+    def test_a_parameter_deprecation(self, series_data):
+
+        with pytest.warns(UserWarning):
+            ax = dist.rugplot(a=series_data)
+        rug, = ax.collections
+        segments = np.array(rug.get_segments())
+        assert len(segments) == len(series_data)
