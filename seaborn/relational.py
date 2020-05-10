@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from .core import _Plotter
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
                     remove_na, locator_to_legend_entries)
@@ -20,7 +21,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _RelationalPlotter(object):
+class _RelationalPlotter(_Plotter):
 
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
@@ -114,6 +115,18 @@ class _RelationalPlotter(object):
                         plot_data.append(pd.DataFrame(data_i))
                     plot_data = pd.concat(plot_data)
 
+            # Assign default values for missing attribute variables
+            for attr in ["hue", "style", "size", "units"]:
+                if attr not in plot_data:
+                    plot_data[attr] = None
+
+            # Determine which variables have (some) data
+            plot_valid = plot_data.notnull().any()
+            semantics = ["x", "y"] + [
+                name for name in ["hue", "size", "style"]
+                if plot_valid[name]
+            ]
+
         # Option 2:
         # We have long-form data
         # ----------------------
@@ -122,35 +135,19 @@ class _RelationalPlotter(object):
 
             self.input_format = "long"
 
-            # Use variables as from the dataframe if specified
-            if data is not None:
-                x = data.get(x, x)
-                y = data.get(y, y)
-                hue = data.get(hue, hue)
-                size = data.get(size, size)
-                style = data.get(style, style)
-                units = data.get(units, units)
-
-            # Validate the inputs
-            for var in [x, y, hue, size, style, units]:
-                if isinstance(var, str):
-                    err = "Could not interpret input '{}'".format(var)
-                    raise ValueError(err)
-
-            # Extract variable names
-            x_label = getattr(x, "name", None)
-            y_label = getattr(y, "name", None)
-            hue_label = getattr(hue, "name", None)
-            size_label = getattr(size, "name", None)
-            style_label = getattr(style, "name", None)
-
-            # Reassemble into a DataFrame
-            plot_data = dict(
-                x=x, y=y,
-                hue=hue, style=style, size=size,
-                units=units
+            plot_data, variables = self.establish_variables_longform(
+                data, x=x, y=y, hue=hue, size=size, style=style, units=units,
             )
-            plot_data = pd.DataFrame(plot_data)
+
+            # TODO Use the variables dictionary downstream
+            x_label = variables.get("x", None)
+            y_label = variables.get("y", None)
+            hue_label = variables.get("hue", None)
+            size_label = variables.get("size", None)
+            style_label = variables.get("style", None)
+
+            # TODO keeping "semantics" for testing, maybe ditch later
+            semantics = list(variables)
 
         # Option 3:
         # Only one variable argument
@@ -163,18 +160,7 @@ class _RelationalPlotter(object):
 
         # ---- Post-processing
 
-        # Assign default values for missing attribute variables
-        for attr in ["hue", "style", "size", "units"]:
-            if attr not in plot_data:
-                plot_data[attr] = None
-
-        # Determine which semantics have (some) data
-        plot_valid = plot_data.notnull().any()
-        semantics = ["x", "y"] + [
-            name for name in ["hue", "size", "style"]
-            if plot_valid[name]
-        ]
-
+        # TODO move away from this to use variables dict
         self.x_label = x_label
         self.y_label = y_label
         self.hue_label = hue_label

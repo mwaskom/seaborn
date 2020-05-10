@@ -60,4 +60,11 @@ class _Plotter:
         # types automatically, aligning on index in case of pandas objects
         plot_data = pd.DataFrame(plot_data)
 
+        # Reduce the variables dictionary to fields with valid data
+        variables = {
+            var: name
+            for var, name in variables.items()
+            if plot_data[var].notnull().any()
+        }
+
         return plot_data, variables
