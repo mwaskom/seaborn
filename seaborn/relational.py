@@ -29,138 +29,93 @@ class _RelationalPlotter(_Plotter):
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
                       (5, 1, 2, 1, 2, 1)]
 
-    def establish_variables(self, x=None, y=None,
-                            hue=None, size=None, style=None,
-                            units=None, data=None):
-        """Parse the inputs to define data for plotting."""
+    def establish_variables_wideform(self, data=None, **kwargs):
+
         # Option 1:
-        # We have a wide-form datast
-        # --------------------------
+        # The input data is a Pandas DataFrame
+        # ------------------------------------
+        # We will assign the index to x, the values to y,
+        # and the columns names to both hue and style
 
-        if x is None and y is None:
+        if isinstance(data, pd.DataFrame):
 
-            # TODO clean up by making establish_variables_wideform method?
-            # Then we could define the outer method at the _Plotter level?
-            # (Only if we allow either x or y to always trigger long-form)
+            # TODO accept a dict and try to coerce to a dataframe?
 
-            self.input_format = "wide"
+            # Enforce numeric values
+            try:
+                data.astype(np.float)
+            except ValueError:
+                err = "A wide-form input must have only numeric values."
+                raise ValueError(err)
 
-            # Option 1a:
-            # The input data is a Pandas DataFrame
-            # ------------------------------------
-            # We will assign the index to x, the values to y,
-            # and the columns names to both hue and style
+            plot_data = data.copy()
+            plot_data.loc[:, "x"] = data.index
+            plot_data = pd.melt(plot_data, "x",
+                                var_name="hue", value_name="y")
+            plot_data["style"] = plot_data["hue"]
 
-            if isinstance(data, pd.DataFrame):
+            row_index_name = getattr(data.index, "name", None)
+            col_index_name = getattr(data.columns, "name", None)
+            variables = {
+                "x": row_index_name,
+                "y": None,
+                "hue": col_index_name,
+                "style": col_index_name,
+            }
 
-                # TODO accept a dict and try to coerce to a dataframe?
+        # Option 2:
+        # The input data is an array or list
+        # ----------------------------------
 
-                # Enforce numeric values
-                try:
-                    data.astype(np.float)
-                except ValueError:
-                    err = "A wide-form input must have only numeric values."
-                    raise ValueError(err)
+        else:
 
-                plot_data = data.copy()
-                plot_data.loc[:, "x"] = data.index
+            variables = {"x": None, "y": None}
+
+            if not len(data):
+
+                plot_data = pd.DataFrame(columns=["x", "y"])
+
+            elif np.isscalar(np.asarray(data)[0]):
+
+                # The input data is a flat list(like):
+                # We assign a numeric index for x and use the values for y
+
+                x = getattr(data, "index", np.arange(len(data)))
+                plot_data = pd.DataFrame(dict(x=x, y=data))
+
+            elif hasattr(data, "shape"):
+
+                # The input data is an array(like):
+                # We either use the index or assign a numeric index to x,
+                # the values to y, and id keys to both hue and style
+
+                plot_data = pd.DataFrame(data)
+                plot_data.loc[:, "x"] = plot_data.index
                 plot_data = pd.melt(plot_data, "x",
-                                    var_name="hue", value_name="y")
+                                    var_name="hue",
+                                    value_name="y")
                 plot_data["style"] = plot_data["hue"]
-
-                row_index_name = getattr(data.index, "name", None)
-                col_index_name = getattr(data.columns, "name", None)
-                variables = {
-                    "x": row_index_name,
-                    "y": None,
-                    "hue": col_index_name,
-                    "style": col_index_name,
-                }
-
-            # Option 1b:
-            # The input data is an array or list
-            # ----------------------------------
+                variables.update({"hue": None, "style": None})
 
             else:
 
-                variables = {"x": None, "y": None}
+                # The input data is a nested list: We will either use the
+                # index or assign a numeric index for x, use the values
+                # for y, and use numeric hue/style identifiers.
 
-                if not len(data):
+                plot_data = []
+                for i, data_i in enumerate(data):
+                    x = getattr(data_i, "index", np.arange(len(data_i)))
+                    n = getattr(data_i, "name", i)
+                    data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
+                    plot_data.append(pd.DataFrame(data_i))
+                plot_data = pd.concat(plot_data)
+                variables.update({"hue": None, "style": None})
 
-                    plot_data = pd.DataFrame(columns=["x", "y"])
+        # Assign default values for missing attribute variables
+        plot_data = plot_data.reindex(columns=self.semantics)
 
-                elif np.isscalar(np.asarray(data)[0]):
-
-                    # The input data is a flat list(like):
-                    # We assign a numeric index for x and use the values for y
-
-                    x = getattr(data, "index", np.arange(len(data)))
-                    plot_data = pd.DataFrame(dict(x=x, y=data))
-
-                elif hasattr(data, "shape"):
-
-                    # The input data is an array(like):
-                    # We either use the index or assign a numeric index to x,
-                    # the values to y, and id keys to both hue and style
-
-                    plot_data = pd.DataFrame(data)
-                    plot_data.loc[:, "x"] = plot_data.index
-                    plot_data = pd.melt(plot_data, "x",
-                                        var_name="hue",
-                                        value_name="y")
-                    plot_data["style"] = plot_data["hue"]
-                    variables.update({"hue": None, "style": None})
-
-                else:
-
-                    # The input data is a nested list: We will either use the
-                    # index or assign a numeric index for x, use the values
-                    # for y, and use numeric hue/style identifiers.
-
-                    plot_data = []
-                    for i, data_i in enumerate(data):
-                        x = getattr(data_i, "index", np.arange(len(data_i)))
-                        n = getattr(data_i, "name", i)
-                        data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
-                        plot_data.append(pd.DataFrame(data_i))
-                    plot_data = pd.concat(plot_data)
-                    variables.update({"hue": None, "style": None})
-
-            # Assign default values for missing attribute variables
-            for var in self.semantics:
-                if var not in plot_data:
-                    plot_data[var] = None
-
-        # Option 2:
-        # We have long-form data
-        # ----------------------
-
-        # TODO commenting out as a test
-        # elif x is not None and y is not None:
-        else:
-
-            self.input_format = "long"
-
-            plot_data, variables = self.establish_variables_longform(
-                data, x=x, y=y, hue=hue, size=size, style=style, units=units,
-            )
-
-        # Option 3:
-        # Only one variable argument
-        # --------------------------
-
-        # TODO commenting out as a test
-        # else:
-        #     err = ("Either both or neither of `x` and `y` must be specified "
-        #            "(but try passing to `data`, which is more flexible).")
-        #     raise ValueError(err)
-
-        # ---- Post-processing
-
-        self.plot_data = plot_data
-        self.variables = variables
-
-        return plot_data  # TODO also return semantics?
+        return plot_data, variables
 
     def categorical_to_palette(self, data, order, palette):
         """Determine colors when the hue variable is qualitative."""
@@ -673,7 +628,7 @@ class _LinePlotter(_RelationalPlotter):
                  sort=True, err_style=None, err_kws=None, legend=None):
 
         plot_data = self.establish_variables(
-            x, y, hue, size, style, units, data
+            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 
         self._default_size_range = (
@@ -864,7 +819,7 @@ class _ScatterPlotter(_RelationalPlotter):
                  legend=None):
 
         plot_data = self.establish_variables(
-            x, y, hue, size, style, units, data
+            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 
         self._default_size_range = (

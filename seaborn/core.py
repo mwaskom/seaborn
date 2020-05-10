@@ -6,18 +6,20 @@ class _Plotter:
 
     semantics = ["x", "y"]
 
-    def establish_variables(self, data=None, x=None, y=None, **kwargs):
+    def establish_variables(self, data=None, **kwargs):
+        """Define plot variables."""
+        x = kwargs.get("x", None)
+        y = kwargs.get("y", None)
 
         if x is None and y is None:
             self.input_format = "wide"
             plot_data, variables = self.establish_variables_wideform(
-                data, x=x, y=y, **kwargs
+                data, **kwargs
             )
-
         else:
             self.input_format = "long"
             plot_data, variables = self.establish_variables_longform(
-                data, x=x, y=y, **kwargs
+                data, **kwargs
             )
 
         self.plot_data = plot_data
@@ -26,7 +28,7 @@ class _Plotter:
         return plot_data  # TODO also return variables?
 
     def establish_variables_wideform(self, data=None, **kwargs):
-
+        """Define plot variables given wide-form data."""
         raise NotImplementedError
 
     def establish_variables_longform(self, data=None, **kwargs):
@@ -97,7 +99,7 @@ class _Plotter:
 
         # Construct a tidy plot DataFrame. This will convert a number of
         # types automatically, aligning on index in case of pandas objects
-        plot_data = pd.DataFrame(plot_data)
+        plot_data = pd.DataFrame(plot_data, columns=self.semantics)
 
         # Reduce the variables dictionary to fields with valid data
         variables = {

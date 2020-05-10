@@ -358,12 +358,6 @@ class TestRelationalPlotter(object):
         p = rel._RelationalPlotter()
 
         with pytest.raises(ValueError):
-            p.establish_variables(x=long_df.x)
-
-        with pytest.raises(ValueError):
-            p.establish_variables(y=long_df.y)
-
-        with pytest.raises(ValueError):
             p.establish_variables(x="not_in_df", data=long_df)
 
         with pytest.raises(ValueError):
