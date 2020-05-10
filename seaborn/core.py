@@ -3,6 +3,32 @@ import pandas as pd
 
 class _Plotter:
     """Base class for objects underlying *plot functions."""
+
+    semantics = ["x", "y"]
+
+    def establish_variables(self, data=None, x=None, y=None, **kwargs):
+
+        if x is None and y is None:
+            self.input_format = "wide"
+            plot_data, variables = self.establish_variables_wideform(
+                data, x=x, y=y, **kwargs
+            )
+
+        else:
+            self.input_format = "long"
+            plot_data, variables = self.establish_variables_longform(
+                data, x=x, y=y, **kwargs
+            )
+
+        self.plot_data = plot_data
+        self.variables = variables
+
+        return plot_data  # TODO also return variables?
+
+    def establish_variables_wideform(self, data=None, **kwargs):
+
+        raise NotImplementedError
+
     def establish_variables_longform(self, data=None, **kwargs):
         """Define plot variables given long-form data and/or vector inputs.
 
@@ -21,7 +47,7 @@ class _Plotter:
             to data vectors.
         variables : dict
             Keys are defined seaborn variables; values are names inferred from
-            the inputs or None when no name can be determined.
+            the inputs (or None when no name can be determined).
 
         Raises
         ------
@@ -36,18 +62,31 @@ class _Plotter:
         if data is None:
             data = {}
 
+        # Variables can also be extraced from the index attribute
+        # TODO is this the most general way to enable it? Also it is added in
+        # pandas 0.24 so will fail our pinned tests
+        try:
+            index = data.index.to_frame()
+        except AttributeError:
+            index = {}
+
         # The caller will determine the order of variables in plot_data
         for key, val in kwargs.items():
 
             if isinstance(val, str):
-                # Use string types to index the data object
+                # String inputs trigger __getitem__, first from data itself
                 try:
                     plot_data[key] = data[val]
                     variables[key] = val
                 except KeyError:
-                    # Raise ValueError for backwards compatability
-                    err = f"Could not interpret input '{val}'"
-                    raise ValueError(err)
+                    # Failing that, try to get an index level
+                    try:
+                        plot_data[key] = index[val]
+                        variables[key] = val
+                    except KeyError:
+                        # Raise ValueError for backwards compatability
+                        err = f"Could not interpret input '{val}'"
+                        raise ValueError(err)
 
             else:
                 # Otherwise, assume the value is the data itself

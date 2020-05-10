@@ -23,6 +23,7 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 
 class _RelationalPlotter(_Plotter):
 
+    semantics = _Plotter.semantics + ["hue", "size", "style", "units"]
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
@@ -32,14 +33,15 @@ class _RelationalPlotter(_Plotter):
                             hue=None, size=None, style=None,
                             units=None, data=None):
         """Parse the inputs to define data for plotting."""
-        # Initialize label variables
-        x_label = y_label = hue_label = size_label = style_label = None
-
         # Option 1:
         # We have a wide-form datast
         # --------------------------
 
         if x is None and y is None:
+
+            # TODO clean up by making establish_variables_wideform method?
+            # Then we could define the outer method at the _Plotter level?
+            # (Only if we allow either x or y to always trigger long-form)
 
             self.input_format = "wide"
 
@@ -49,9 +51,9 @@ class _RelationalPlotter(_Plotter):
             # We will assign the index to x, the values to y,
             # and the columns names to both hue and style
 
-            # TODO accept a dict and try to coerce to a dataframe?
-
             if isinstance(data, pd.DataFrame):
+
+                # TODO accept a dict and try to coerce to a dataframe?
 
                 # Enforce numeric values
                 try:
@@ -66,15 +68,22 @@ class _RelationalPlotter(_Plotter):
                                     var_name="hue", value_name="y")
                 plot_data["style"] = plot_data["hue"]
 
-                x_label = getattr(data.index, "name", None)
-                hue_label = style_label = getattr(plot_data.columns,
-                                                  "name", None)
+                row_index_name = getattr(data.index, "name", None)
+                col_index_name = getattr(data.columns, "name", None)
+                variables = {
+                    "x": row_index_name,
+                    "y": None,
+                    "hue": col_index_name,
+                    "style": col_index_name,
+                }
 
             # Option 1b:
             # The input data is an array or list
             # ----------------------------------
 
             else:
+
+                variables = {"x": None, "y": None}
 
                 if not len(data):
 
@@ -100,6 +109,7 @@ class _RelationalPlotter(_Plotter):
                                         var_name="hue",
                                         value_name="y")
                     plot_data["style"] = plot_data["hue"]
+                    variables.update({"hue": None, "style": None})
 
                 else:
 
@@ -114,24 +124,20 @@ class _RelationalPlotter(_Plotter):
                         data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
                         plot_data.append(pd.DataFrame(data_i))
                     plot_data = pd.concat(plot_data)
+                    variables.update({"hue": None, "style": None})
 
             # Assign default values for missing attribute variables
-            for attr in ["hue", "style", "size", "units"]:
-                if attr not in plot_data:
-                    plot_data[attr] = None
-
-            # Determine which variables have (some) data
-            plot_valid = plot_data.notnull().any()
-            semantics = ["x", "y"] + [
-                name for name in ["hue", "size", "style"]
-                if plot_valid[name]
-            ]
+            for var in self.semantics:
+                if var not in plot_data:
+                    plot_data[var] = None
 
         # Option 2:
         # We have long-form data
         # ----------------------
 
-        elif x is not None and y is not None:
+        # TODO commenting out as a test
+        # elif x is not None and y is not None:
+        else:
 
             self.input_format = "long"
 
@@ -139,37 +145,22 @@ class _RelationalPlotter(_Plotter):
                 data, x=x, y=y, hue=hue, size=size, style=style, units=units,
             )
 
-            # TODO Use the variables dictionary downstream
-            x_label = variables.get("x", None)
-            y_label = variables.get("y", None)
-            hue_label = variables.get("hue", None)
-            size_label = variables.get("size", None)
-            style_label = variables.get("style", None)
-
-            # TODO keeping "semantics" for testing, maybe ditch later
-            semantics = list(variables)
-
         # Option 3:
         # Only one variable argument
         # --------------------------
 
-        else:
-            err = ("Either both or neither of `x` and `y` must be specified "
-                   "(but try passing to `data`, which is more flexible).")
-            raise ValueError(err)
+        # TODO commenting out as a test
+        # else:
+        #     err = ("Either both or neither of `x` and `y` must be specified "
+        #            "(but try passing to `data`, which is more flexible).")
+        #     raise ValueError(err)
 
         # ---- Post-processing
 
-        # TODO move away from this to use variables dict
-        self.x_label = x_label
-        self.y_label = y_label
-        self.hue_label = hue_label
-        self.size_label = size_label
-        self.style_label = style_label
         self.plot_data = plot_data
-        self.semantics = semantics
+        self.variables = variables
 
-        return plot_data
+        return plot_data  # TODO also return semantics?
 
     def categorical_to_palette(self, data, order, palette):
         """Determine colors when the hue variable is qualitative."""
@@ -554,12 +545,12 @@ class _RelationalPlotter(_Plotter):
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""
-        if self.x_label is not None:
+        if "x" in self.variables and self.variables["x"] is not None:
             x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.x_label, visible=x_visible)
-        if self.y_label is not None:
+            ax.set_xlabel(self.variables["x"], visible=x_visible)
+        if "y" in self.variables and self.variables["y"] is not None:
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.y_label, visible=y_visible)
+            ax.set_ylabel(self.variables["y"], visible=y_visible)
 
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
@@ -596,14 +587,15 @@ class _RelationalPlotter(_Plotter):
             hue_levels = hue_formatted_levels = self.hue_levels
 
         # Add the hue semantic subtitle
-        if self.hue_label is not None:
-            update((self.hue_label, "title"), self.hue_label, **title_kws)
+        if "hue" in self.variables and self.variables["hue"] is not None:
+            update((self.variables["hue"], "title"),
+                   self.variables["hue"], **title_kws)
 
         # Add the hue semantic labels
         for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
                 color = self.color_lookup(level)
-                update(self.hue_label, formatted_level, color=color)
+                update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
@@ -618,26 +610,28 @@ class _RelationalPlotter(_Plotter):
             size_levels = size_formatted_levels = self.size_levels
 
         # Add the size semantic subtitle
-        if self.size_label is not None:
-            update((self.size_label, "title"), self.size_label, **title_kws)
+        if "size" in self.variables and self.variables["size"] is not None:
+            update((self.variables["size"], "title"),
+                   self.variables["size"], **title_kws)
 
         # Add the size semantic labels
         for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(
-                    self.size_label, formatted_level, linewidth=size, s=size)
+                update(self.variables["size"],
+                       formatted_level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
         # Add the style semantic title
-        if self.style_label is not None:
-            update((self.style_label, "title"), self.style_label, **title_kws)
+        if "style" in self.variables and self.variables["style"] is not None:
+            update((self.variables["style"], "title"),
+                   self.variables["style"], **title_kws)
 
         # Add the style semantic labels
         for level in self.style_levels:
             if level is not None:
-                update(self.style_label, level,
+                update(self.variables["style"], level,
                        marker=self.markers.get(level, ""),
                        dashes=self.dashes.get(level, ""))
 
@@ -920,12 +914,12 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # Assign arguments for plt.scatter and draw the plot
 
-        data = self.plot_data[self.semantics].dropna()
+        data = self.plot_data[list(self.variables)].dropna()
         if not data.size:
             return
 
-        x = data["x"]
-        y = data["y"]
+        x = data.get(["x"], np.full(len(data), np.nan))
+        y = data.get(["y"], np.full(len(data), np.nan))
 
         if self.palette:
             c = [self.palette.get(val) for val in data["hue"]]

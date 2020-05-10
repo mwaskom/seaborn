@@ -128,7 +128,7 @@ class TestRelationalPlotter(object):
         p = rel._RelationalPlotter()
         p.establish_variables(data=wide_df)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_df.shape)
 
         x = p.plot_data["x"]
@@ -149,11 +149,10 @@ class TestRelationalPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
-        assert p.x_label == wide_df.index.name
-        assert p.y_label is None
-        assert p.hue_label == wide_df.columns.name
-        assert p.size_label is None
-        assert p.style_label == wide_df.columns.name
+        assert p.variables["x"] == wide_df.index.name
+        assert p.variables["y"] is None
+        assert p.variables["hue"] == wide_df.columns.name
+        assert p.variables["style"] == wide_df.columns.name
 
     def test_wide_df_variables_check(self, wide_df):
 
@@ -168,7 +167,7 @@ class TestRelationalPlotter(object):
         p = rel._RelationalPlotter()
         p.establish_variables(data=wide_array)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_array.shape)
 
         nrow, ncol = wide_array.shape
@@ -191,18 +190,17 @@ class TestRelationalPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
-        assert p.x_label is None
-        assert p.y_label is None
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
 
     def test_flat_array_variables(self, flat_array):
 
         p = rel._RelationalPlotter()
         p.establish_variables(data=flat_array)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y"]
+        assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == np.product(flat_array.shape)
 
         x = p.plot_data["x"]
@@ -217,18 +215,15 @@ class TestRelationalPlotter(object):
         assert p.plot_data["style"].isnull().all()
         assert p.plot_data["size"].isnull().all()
 
-        assert p.x_label is None
-        assert p.y_label is None
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
 
     def test_flat_series_variables(self, flat_series):
 
         p = rel._RelationalPlotter()
         p.establish_variables(data=flat_series)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y"]
+        assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == len(flat_series)
 
         x = p.plot_data["x"]
@@ -239,18 +234,15 @@ class TestRelationalPlotter(object):
         expected_y = flat_series
         assert np.array_equal(y, expected_y)
 
-        assert p.x_label is None
-        assert p.y_label is None
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
 
     def test_wide_list_variables(self, wide_list):
 
         p = rel._RelationalPlotter()
         p.establish_variables(data=wide_list)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == sum(len(l) for l in wide_list)
 
         x = p.plot_data["x"]
@@ -273,18 +265,17 @@ class TestRelationalPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
-        assert p.x_label is None
-        assert p.y_label is None
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
 
     def test_wide_list_of_series_variables(self, wide_list_of_series):
 
         p = rel._RelationalPlotter()
         p.establish_variables(data=wide_list_of_series)
         assert p.input_format == "wide"
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == sum(len(l) for l in wide_list_of_series)
 
         x = p.plot_data["x"]
@@ -307,67 +298,60 @@ class TestRelationalPlotter(object):
 
         assert p.plot_data["size"].isnull().all()
 
-        assert p.x_label is None
-        assert p.y_label is None
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
 
     def test_long_df(self, long_df):
 
         p = rel._RelationalPlotter()
         p.establish_variables(x="x", y="y", data=long_df)
         assert p.input_format == "long"
-        assert p.semantics == ["x", "y"]
+        assert list(p.variables) == ["x", "y"]
 
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
         for col in ["hue", "style", "size"]:
             assert p.plot_data[col].isnull().all()
-        assert (p.x_label, p.y_label) == ("x", "y")
-        assert p.hue_label is None
-        assert p.size_label is None
-        assert p.style_label is None
+        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x=long_df.x, y="y", data=long_df)
-        assert p.semantics == ["x", "y"]
+        assert list(p.variables) == ["x", "y"]
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
-        assert (p.x_label, p.y_label) == ("x", "y")
+        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x="x", y=long_df.y, data=long_df)
-        assert p.semantics == ["x", "y"]
+        assert list(p.variables) == ["x", "y"]
         assert np.array_equal(p.plot_data["x"], long_df["x"])
         assert np.array_equal(p.plot_data["y"], long_df["y"])
-        assert (p.x_label, p.y_label) == ("x", "y")
+        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x="x", y="y", hue="a", data=long_df)
-        assert p.semantics == ["x", "y", "hue"]
+        assert list(p.variables) == ["x", "y", "hue"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         for col in ["style", "size"]:
             assert p.plot_data[col].isnull().all()
-        assert p.hue_label == "a"
-        assert p.size_label is None and p.style_label is None
+        assert p.variables["hue"] == "a"
 
         p.establish_variables(x="x", y="y", hue="a", style="a", data=long_df)
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         assert np.array_equal(p.plot_data["style"], long_df["a"])
         assert p.plot_data["size"].isnull().all()
-        assert p.hue_label == p.style_label == "a"
-        assert p.size_label is None
+        assert p.variables["hue"] == p.variables["style"] == "a"
 
         p.establish_variables(x="x", y="y", hue="a", style="b", data=long_df)
-        assert p.semantics == ["x", "y", "hue", "style"]
+        assert list(p.variables) == ["x", "y", "hue", "style"]
         assert np.array_equal(p.plot_data["hue"], long_df["a"])
         assert np.array_equal(p.plot_data["style"], long_df["b"])
         assert p.plot_data["size"].isnull().all()
 
         p.establish_variables(x="x", y="y", size="y", data=long_df)
-        assert p.semantics == ["x", "y", "size"]
+        assert list(p.variables) == ["x", "y", "size"]
         assert np.array_equal(p.plot_data["size"], long_df["y"])
-        assert p.size_label == "y"
-        assert p.hue_label is None and p.style_label is None
+        assert p.variables["size"] == "y"
 
     def test_bad_input(self, long_df):
 
