@@ -1,5 +1,6 @@
 from itertools import product
 from textwrap import dedent
+from collections.abc import Iterable
 import warnings
 
 import numpy as np
@@ -80,7 +81,12 @@ class _RelationalPlotter(_Plotter):
                 # The input data is a flat list(like):
                 # We assign a numeric index for x and use the values for y
 
-                x = getattr(data, "index", np.arange(len(data)))
+                index = getattr(data, "index", None)
+                # TODO abstract this out, it's used twice
+                if isinstance(index, Iterable):
+                    x = index
+                else:
+                    x = np.arange(len(data))
                 plot_data = pd.DataFrame(dict(x=x, y=data))
 
             elif hasattr(data, "shape"):
@@ -105,7 +111,10 @@ class _RelationalPlotter(_Plotter):
 
                 plot_data = []
                 for i, data_i in enumerate(data):
-                    x = getattr(data_i, "index", np.arange(len(data_i)))
+                    x = np.arange(len(data_i))
+                    if hasattr(data_i, "index"):
+                        if isinstance(data_i.index, Iterable):
+                            x = data_i.index
                     n = getattr(data_i, "name", i)
                     data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
                     plot_data.append(pd.DataFrame(data_i))

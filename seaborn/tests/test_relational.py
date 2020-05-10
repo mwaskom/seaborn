@@ -303,6 +303,41 @@ class TestRelationalPlotter(object):
         assert p.variables["hue"] is None
         assert p.variables["style"] is None
 
+    def test_wide_list_of_list_variables(self, wide_list_of_series):
+
+        data = [s.tolist() for s in wide_list_of_series]
+
+        p = rel._RelationalPlotter()
+        p.establish_variables(data=data)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+        assert len(p.plot_data) == sum(len(l) for l in data)
+
+        x = p.plot_data["x"]
+        expected_x = np.concatenate([np.arange(len(s)) for s in data])
+        assert np.array_equal(x, expected_x)
+
+        y = p.plot_data["y"]
+        expected_y = np.concatenate(data)
+        assert np.array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.concatenate([
+            np.full(len(s), i) for i, s in enumerate(data)
+        ])
+        assert np.array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert np.array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
+
     def test_long_df(self, long_df):
 
         p = rel._RelationalPlotter()
