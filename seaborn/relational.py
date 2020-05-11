@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .core import _Plotter
+from .core import _VectorPlotter
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
                     remove_na, locator_to_legend_entries)
@@ -22,9 +22,9 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _RelationalPlotter(_Plotter):
+class _RelationalPlotter(_VectorPlotter):
 
-    semantics = _Plotter.semantics + ["hue", "size", "style", "units"]
+    semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
@@ -43,6 +43,7 @@ class _RelationalPlotter(_Plotter):
             # TODO accept a dict and try to coerce to a dataframe?
 
             # Enforce numeric values
+            # TODO categorical plots just drop the non-numeric columns
             try:
                 data.astype(np.float)
             except ValueError:
@@ -52,7 +53,8 @@ class _RelationalPlotter(_Plotter):
             plot_data = data.copy()
             plot_data.loc[:, "x"] = data.index
             plot_data = pd.melt(plot_data, "x",
-                                var_name="hue", value_name="y")
+                                var_name="hue",
+                                value_name="y")
             plot_data["style"] = plot_data["hue"]
 
             row_index_name = getattr(data.index, "name", None)

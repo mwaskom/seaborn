@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class _Plotter:
+class _VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
     semantics = ["x", "y"]
