@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Sequence, Mapping
 import numpy as np
 import pandas as pd
 
@@ -80,7 +80,7 @@ class _VectorPlotter:
 
             # Handle Python sequences such that entries end up in the columns,
             # not in the rows, of the intermediate wide DataFrame.
-            # One way to accomplish this is to conver to a dict of Series.
+            # One way to accomplish this is to convert to a dict of Series.
             if isinstance(data, Sequence):
                 data_dict = {}
                 for i, var in enumerate(data):
@@ -91,9 +91,15 @@ class _VectorPlotter:
 
                 data = data_dict
 
-            # Now coerce our collection into a wide-form dataframe
-            # This is where we'd like to use a general interface that says
-            # "give me this data as a pandas DataFrame"
+            # Pandas requires that dict values either be Series objects
+            # or all have the same mapping
+            if isinstance(data, Mapping):
+                data = {key: pd.Series(val) for key, val in data.items()}
+
+            # Otherwise, delegate to the pandas DataFrame constructor
+            # This is where we'd prefer to use a general interface that says
+            # "give me this data as a pandas DataFrame", so we can accept
+            # DataFrame objects from other libraries
             wide_data = pd.DataFrame(data, copy=True)
 
             # At this point we should reduce the dataframe to numeric cols

@@ -181,41 +181,6 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["x"] is flat_series.index.name
         assert p.variables["y"] is flat_series.name
 
-    def test_wide_list_variables(self, wide_list_of_arrays):
-
-        p = _RelationalPlotter()
-        p.establish_variables(data=wide_list_of_arrays)
-        assert p.input_format == "wide"
-        assert list(p.variables) == ["x", "y", "hue", "style"]
-
-        chunks = len(wide_list_of_arrays)
-        chunk_size = max(len(l) for l in wide_list_of_arrays)
-
-        assert len(p.plot_data) == chunks * chunk_size
-
-        x = p.plot_data["x"]
-        expected_x = np.tile(np.arange(chunk_size), chunks)
-        assert_array_equal(x, expected_x)
-
-        y = p.plot_data["y"].dropna()
-        expected_y = np.concatenate(wide_list_of_arrays)
-        assert_array_equal(y, expected_y)
-
-        hue = p.plot_data["hue"]
-        expected_hue = np.repeat(np.arange(chunks), chunk_size)
-        assert_array_equal(hue, expected_hue)
-
-        style = p.plot_data["style"]
-        expected_style = expected_hue
-        assert_array_equal(style, expected_style)
-
-        assert p.plot_data["size"].isnull().all()
-
-        assert p.variables["x"] is None
-        assert p.variables["y"] is None
-        assert p.variables["hue"] is None
-        assert p.variables["style"] is None
-
     def test_wide_list_of_series_variables(self, wide_list_of_series):
 
         p = _RelationalPlotter()
@@ -258,6 +223,41 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["hue"] is None
         assert p.variables["style"] is None
 
+    def test_wide_list_of_arrays_variables(self, wide_list_of_arrays):
+
+        p = _RelationalPlotter()
+        p.establish_variables(data=wide_list_of_arrays)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+
+        chunks = len(wide_list_of_arrays)
+        chunk_size = max(len(l) for l in wide_list_of_arrays)
+
+        assert len(p.plot_data) == chunks * chunk_size
+
+        x = p.plot_data["x"]
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
+
+        y = p.plot_data["y"].dropna()
+        expected_y = np.concatenate(wide_list_of_arrays)
+        assert_array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.repeat(np.arange(chunks), chunk_size)
+        assert_array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert_array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
+
     def test_wide_list_of_list_variables(self, wide_list_of_lists):
 
         p = _RelationalPlotter()
@@ -280,6 +280,111 @@ class TestRelationalPlotter(Helpers):
 
         hue = p.plot_data["hue"]
         expected_hue = np.repeat(np.arange(chunks), chunk_size)
+        assert_array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert_array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
+
+    def test_wide_dict_of_series_variables(self, wide_dict_of_series):
+
+        p = _RelationalPlotter()
+        p.establish_variables(data=wide_dict_of_series)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+
+        chunks = len(wide_dict_of_series)
+        chunk_size = max(len(l) for l in wide_dict_of_series.values())
+
+        assert len(p.plot_data) == chunks * chunk_size
+
+        x = p.plot_data["x"]
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
+
+        y = p.plot_data["y"].dropna()
+        expected_y = np.concatenate(list(wide_dict_of_series.values()))
+        assert_array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.repeat(list(wide_dict_of_series), chunk_size)
+        assert_array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert_array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
+
+    def test_wide_dict_of_arrays_variables(self, wide_dict_of_arrays):
+
+        p = _RelationalPlotter()
+        p.establish_variables(data=wide_dict_of_arrays)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+
+        chunks = len(wide_dict_of_arrays)
+        chunk_size = max(len(l) for l in wide_dict_of_arrays.values())
+
+        assert len(p.plot_data) == chunks * chunk_size
+
+        x = p.plot_data["x"]
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
+
+        y = p.plot_data["y"].dropna()
+        expected_y = np.concatenate(list(wide_dict_of_arrays.values()))
+        assert_array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.repeat(list(wide_dict_of_arrays), chunk_size)
+        assert_array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert_array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] is None
+        assert p.variables["y"] is None
+        assert p.variables["hue"] is None
+        assert p.variables["style"] is None
+
+    def test_wide_dict_of_lists_variables(self, wide_dict_of_lists):
+
+        p = _RelationalPlotter()
+        p.establish_variables(data=wide_dict_of_lists)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+
+        chunks = len(wide_dict_of_lists)
+        chunk_size = max(len(l) for l in wide_dict_of_lists.values())
+
+        assert len(p.plot_data) == chunks * chunk_size
+
+        x = p.plot_data["x"]
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
+
+        y = p.plot_data["y"].dropna()
+        expected_y = np.concatenate(list(wide_dict_of_lists.values()))
+        assert_array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.repeat(list(wide_dict_of_lists), chunk_size)
         assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]

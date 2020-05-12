@@ -70,6 +70,24 @@ def wide_list_of_lists(wide_list_of_series):
 
 
 @pytest.fixture
+def wide_dict_of_series(wide_list_of_series):
+
+    return {s.name: s for s in wide_list_of_series}
+
+
+@pytest.fixture
+def wide_dict_of_arrays(wide_list_of_series):
+
+    return {s.name: s.to_numpy() for s in wide_list_of_series}
+
+
+@pytest.fixture
+def wide_dict_of_lists(wide_list_of_series):
+
+    return {s.name: s.to_list() for s in wide_list_of_series}
+
+
+@pytest.fixture
 def long_df():
 
     n = 100
