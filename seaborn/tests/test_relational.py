@@ -892,6 +892,155 @@ class TestRelationalPlotter(RelationalFixtures):
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert_array_equal(data.values, expected.values)
 
+    def test_relplot_simple(self, long_df):
+
+        g = rel.relplot(x="x", y="y", kind="scatter", data=long_df)
+        x, y = g.ax.collections[0].get_offsets().T
+        assert_array_equal(x, long_df["x"])
+        assert_array_equal(y, long_df["y"])
+
+        g = rel.relplot(x="x", y="y", kind="line", data=long_df)
+        x, y = g.ax.lines[0].get_xydata().T
+        expected = long_df.groupby("x").y.mean()
+        assert_array_equal(x, expected.index)
+        assert y == pytest.approx(expected.values)
+
+        with pytest.raises(ValueError):
+            g = rel.relplot(x="x", y="y", kind="not_a_kind", data=long_df)
+
+    def test_relplot_complex(self, long_df):
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", data=long_df, **{sem: "a"})
+            x, y = g.ax.collections[0].get_offsets().T
+            assert_array_equal(x, long_df["x"])
+            assert_array_equal(y, long_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
+
+        for sem in ["size", "style"]:
+            g = rel.relplot(x="x", y="y", hue="b", col="c", data=long_df,
+                              **{sem: "a"})
+            grouped = long_df.groupby("c")
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
+
+        for sem in ["hue", "size", "style"]:
+            g = rel.relplot(x="x", y="y", col="b", row="c",
+                            data=long_df.sort_values(["c", "b"]),
+                            **{sem: "a"})
+            grouped = long_df.groupby(["c", "b"])
+            for (_, grp_df), ax in zip(grouped, g.axes.flat):
+                x, y = ax.collections[0].get_offsets().T
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
+
+    def test_relplot_hues(self, long_df):
+
+        palette = ["r", "b", "g"]
+        g = rel.relplot(x="x", y="y", hue="a", style="b", col="c",
+                        palette=palette, data=long_df)
+
+        palette = dict(zip(long_df["a"].unique(), palette))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_hues = [palette[val] for val in grp_df["a"]]
+            assert self.colors_equal(points.get_facecolors(), expected_hues)
+
+    def test_relplot_sizes(self, long_df):
+
+        sizes = [5, 12, 7]
+        g = rel.relplot(x="x", y="y", size="a", hue="b", col="c",
+                        sizes=sizes, data=long_df)
+
+        sizes = dict(zip(long_df["a"].unique(), sizes))
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_sizes = [sizes[val] for val in grp_df["a"]]
+            assert_array_equal(points.get_sizes(), expected_sizes)
+
+    def test_relplot_styles(self, long_df):
+
+        markers = ["o", "d", "s"]
+        g = rel.relplot(x="x", y="y", style="a", hue="b", col="c",
+                          markers=markers, data=long_df)
+
+        paths = []
+        for m in markers:
+            m = mpl.markers.MarkerStyle(m)
+            paths.append(m.get_path().transformed(m.get_transform()))
+        paths = dict(zip(long_df["a"].unique(), paths))
+
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            points = ax.collections[0]
+            expected_paths = [paths[val] for val in grp_df["a"]]
+            assert self.paths_equal(points.get_paths(), expected_paths)
+
+    def test_relplot_stringy_numerics(self, long_df):
+
+        long_df["x_str"] = long_df["x"].astype(str)
+
+        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert_array_equal(xys, long_df[["x", "y"]])
+
+        g = rel.relplot(x="x", y="y", size="x_str", data=long_df)
+        points = g.ax.collections[0]
+        xys = points.get_offsets()
+        mask = np.ma.getmask(xys)
+        assert not mask.any()
+        assert_array_equal(xys, long_df[["x", "y"]])
+
+    def test_relplot_legend(self, long_df):
+
+        g = rel.relplot(x="x", y="y", data=long_df)
+        assert g._legend is None
+
+        g = rel.relplot(x="x", y="y", hue="a", data=long_df)
+        texts = [t.get_text() for t in g._legend.texts]
+        expected_texts = np.append(["a"], long_df["a"].unique())
+        assert_array_equal(texts, expected_texts)
+
+        g = rel.relplot(x="x", y="y", hue="s", size="s", data=long_df)
+        texts = [t.get_text() for t in g._legend.texts]
+        assert_array_equal(texts[1:], np.sort(texts[1:]))
+
+        g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
+        assert g._legend is None
+
+        palette = color_palette("deep", len(long_df["b"].unique()))
+        a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
+        long_df["a_like_b"] = long_df["a"].map(a_like_b)
+        g = rel.relplot(x="x", y="y", hue="b", style="a_like_b",
+                        palette=palette, kind="line", estimator=None,
+                        data=long_df)
+        lines = g._legend.get_lines()[1:]  # Chop off title dummy
+        for line, color in zip(lines, palette):
+            assert line.get_color() == color
+
+    def test_ax_kwarg_removal(self, long_df):
+
+        f, ax = plt.subplots()
+        with pytest.warns(UserWarning):
+            g = rel.relplot("x", "y", data=long_df, ax=ax)
+        assert len(ax.collections) == 0
+        assert len(g.ax.collections) > 0
+
 
 class TestLinePlotter(RelationalFixtures):
 
@@ -1646,155 +1795,3 @@ class TestScatterPlotter(RelationalFixtures):
 
         rel.scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
-
-
-class TestRelPlotter(RelationalFixtures):
-    # TODO move tests to TestRelationalPlotter
-    def test_relplot_simple(self, long_df):
-
-        g = rel.relplot(x="x", y="y", kind="scatter", data=long_df)
-        x, y = g.ax.collections[0].get_offsets().T
-        assert_array_equal(x, long_df["x"])
-        assert_array_equal(y, long_df["y"])
-
-        g = rel.relplot(x="x", y="y", kind="line", data=long_df)
-        x, y = g.ax.lines[0].get_xydata().T
-        expected = long_df.groupby("x").y.mean()
-        assert_array_equal(x, expected.index)
-        assert y == pytest.approx(expected.values)
-
-        with pytest.raises(ValueError):
-            g = rel.relplot(x="x", y="y", kind="not_a_kind", data=long_df)
-
-    def test_relplot_complex(self, long_df):
-
-        for sem in ["hue", "size", "style"]:
-            g = rel.relplot(x="x", y="y", data=long_df, **{sem: "a"})
-            x, y = g.ax.collections[0].get_offsets().T
-            assert_array_equal(x, long_df["x"])
-            assert_array_equal(y, long_df["y"])
-
-        for sem in ["hue", "size", "style"]:
-            g = rel.relplot(x="x", y="y", col="c", data=long_df,
-                              **{sem: "a"})
-            grouped = long_df.groupby("c")
-            for (_, grp_df), ax in zip(grouped, g.axes.flat):
-                x, y = ax.collections[0].get_offsets().T
-                assert_array_equal(x, grp_df["x"])
-                assert_array_equal(y, grp_df["y"])
-
-        for sem in ["size", "style"]:
-            g = rel.relplot(x="x", y="y", hue="b", col="c", data=long_df,
-                              **{sem: "a"})
-            grouped = long_df.groupby("c")
-            for (_, grp_df), ax in zip(grouped, g.axes.flat):
-                x, y = ax.collections[0].get_offsets().T
-                assert_array_equal(x, grp_df["x"])
-                assert_array_equal(y, grp_df["y"])
-
-        for sem in ["hue", "size", "style"]:
-            g = rel.relplot(x="x", y="y", col="b", row="c",
-                            data=long_df.sort_values(["c", "b"]),
-                            **{sem: "a"})
-            grouped = long_df.groupby(["c", "b"])
-            for (_, grp_df), ax in zip(grouped, g.axes.flat):
-                x, y = ax.collections[0].get_offsets().T
-                assert_array_equal(x, grp_df["x"])
-                assert_array_equal(y, grp_df["y"])
-
-    def test_relplot_hues(self, long_df):
-
-        palette = ["r", "b", "g"]
-        g = rel.relplot(x="x", y="y", hue="a", style="b", col="c",
-                        palette=palette, data=long_df)
-
-        palette = dict(zip(long_df["a"].unique(), palette))
-        grouped = long_df.groupby("c")
-        for (_, grp_df), ax in zip(grouped, g.axes.flat):
-            points = ax.collections[0]
-            expected_hues = [palette[val] for val in grp_df["a"]]
-            assert self.colors_equal(points.get_facecolors(), expected_hues)
-
-    def test_relplot_sizes(self, long_df):
-
-        sizes = [5, 12, 7]
-        g = rel.relplot(x="x", y="y", size="a", hue="b", col="c",
-                        sizes=sizes, data=long_df)
-
-        sizes = dict(zip(long_df["a"].unique(), sizes))
-        grouped = long_df.groupby("c")
-        for (_, grp_df), ax in zip(grouped, g.axes.flat):
-            points = ax.collections[0]
-            expected_sizes = [sizes[val] for val in grp_df["a"]]
-            assert_array_equal(points.get_sizes(), expected_sizes)
-
-    def test_relplot_styles(self, long_df):
-
-        markers = ["o", "d", "s"]
-        g = rel.relplot(x="x", y="y", style="a", hue="b", col="c",
-                          markers=markers, data=long_df)
-
-        paths = []
-        for m in markers:
-            m = mpl.markers.MarkerStyle(m)
-            paths.append(m.get_path().transformed(m.get_transform()))
-        paths = dict(zip(long_df["a"].unique(), paths))
-
-        grouped = long_df.groupby("c")
-        for (_, grp_df), ax in zip(grouped, g.axes.flat):
-            points = ax.collections[0]
-            expected_paths = [paths[val] for val in grp_df["a"]]
-            assert self.paths_equal(points.get_paths(), expected_paths)
-
-    def test_relplot_stringy_numerics(self, long_df):
-
-        long_df["x_str"] = long_df["x"].astype(str)
-
-        g = rel.relplot(x="x", y="y", hue="x_str", data=long_df)
-        points = g.ax.collections[0]
-        xys = points.get_offsets()
-        mask = np.ma.getmask(xys)
-        assert not mask.any()
-        assert_array_equal(xys, long_df[["x", "y"]])
-
-        g = rel.relplot(x="x", y="y", size="x_str", data=long_df)
-        points = g.ax.collections[0]
-        xys = points.get_offsets()
-        mask = np.ma.getmask(xys)
-        assert not mask.any()
-        assert_array_equal(xys, long_df[["x", "y"]])
-
-    def test_relplot_legend(self, long_df):
-
-        g = rel.relplot(x="x", y="y", data=long_df)
-        assert g._legend is None
-
-        g = rel.relplot(x="x", y="y", hue="a", data=long_df)
-        texts = [t.get_text() for t in g._legend.texts]
-        expected_texts = np.append(["a"], long_df["a"].unique())
-        assert_array_equal(texts, expected_texts)
-
-        g = rel.relplot(x="x", y="y", hue="s", size="s", data=long_df)
-        texts = [t.get_text() for t in g._legend.texts]
-        assert_array_equal(texts[1:], np.sort(texts[1:]))
-
-        g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
-        assert g._legend is None
-
-        palette = color_palette("deep", len(long_df["b"].unique()))
-        a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
-        long_df["a_like_b"] = long_df["a"].map(a_like_b)
-        g = rel.relplot(x="x", y="y", hue="b", style="a_like_b",
-                        palette=palette, kind="line", estimator=None,
-                        data=long_df)
-        lines = g._legend.get_lines()[1:]  # Chop off title dummy
-        for line, color in zip(lines, palette):
-            assert line.get_color() == color
-
-    def test_ax_kwarg_removal(self, long_df):
-
-        f, ax = plt.subplots()
-        with pytest.warns(UserWarning):
-            g = rel.relplot("x", "y", data=long_df, ax=ax)
-        assert len(ax.collections) == 0
-        assert len(g.ax.collections) > 0

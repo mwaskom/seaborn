@@ -1,6 +1,5 @@
 from itertools import product
 from textwrap import dedent
-from collections.abc import Iterable
 import warnings
 
 import numpy as np
