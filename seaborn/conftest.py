@@ -28,7 +28,9 @@ def wide_df():
 @pytest.fixture
 def wide_array(wide_df):
 
-    return wide_df.to_numpy()
+    # Requires panads >= 0.24
+    # return wide_df.to_numpy()
+    return np.asarray(wide_df)
 
 
 @pytest.fixture
@@ -41,13 +43,17 @@ def flat_series():
 @pytest.fixture
 def flat_array(flat_series):
 
-    return flat_series.to_numpy()
+    # Requires panads >= 0.24
+    # return flat_series.to_numpy()
+    return np.asarray(flat_series)
 
 
 @pytest.fixture
 def flat_list(flat_series):
 
-    return flat_series.to_list()
+    # Requires panads >= 0.24
+    # return flat_series.to_list()
+    return flat_series.tolist()
 
 
 @pytest.fixture
@@ -60,13 +66,17 @@ def wide_list_of_series():
 @pytest.fixture
 def wide_list_of_arrays(wide_list_of_series):
 
-    return [s.to_numpy() for s in wide_list_of_series]
+    # Requires pandas >= 0.24
+    # return [s.to_numpy() for s in wide_list_of_series]
+    return [np.asarray(s) for s in wide_list_of_series]
 
 
 @pytest.fixture
 def wide_list_of_lists(wide_list_of_series):
 
-    return [s.to_list() for s in wide_list_of_series]
+    # Requires pandas >= 0.24
+    # return [s.to_list() for s in wide_list_of_series]
+    return [s.tolist() for s in wide_list_of_series]
 
 
 @pytest.fixture
@@ -78,13 +88,17 @@ def wide_dict_of_series(wide_list_of_series):
 @pytest.fixture
 def wide_dict_of_arrays(wide_list_of_series):
 
-    return {s.name: s.to_numpy() for s in wide_list_of_series}
+    # Requires pandas >= 0.24
+    # return {s.name: s.to_numpy() for s in wide_list_of_series}
+    return {s.name: np.asarray(s) for s in wide_list_of_series}
 
 
 @pytest.fixture
 def wide_dict_of_lists(wide_list_of_series):
 
-    return {s.name: s.to_list() for s in wide_list_of_series}
+    # Requires pandas >= 0.24
+    # return {s.name: s.to_list() for s in wide_list_of_series}
+    return {s.name: s.tolist() for s in wide_list_of_series}
 
 
 @pytest.fixture
