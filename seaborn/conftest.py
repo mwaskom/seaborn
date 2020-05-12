@@ -17,7 +17,7 @@ def random_seed():
 
 
 @pytest.fixture
-def wide_df(self):
+def wide_df():
 
     columns = list("abc")
     index = pd.Int64Index(np.arange(10, 50, 2), name="wide_index")
@@ -26,44 +26,51 @@ def wide_df(self):
 
 
 @pytest.fixture
-def wide_array(self, wide_df):
+def wide_array(wide_df):
 
     return wide_df.to_numpy()
 
 
 @pytest.fixture
-def flat_array(self, flat_series):
+def flat_series():
+
+    index = pd.Int64Index(np.arange(10, 30), name="t")
+    return pd.Series(np.random.randn(20), index, name="s")
+
+
+@pytest.fixture
+def flat_array(flat_series):
 
     return flat_series.to_numpy()
 
 
 @pytest.fixture
-def flat_list(self, flat_series):
+def flat_list(flat_series):
 
     return flat_series.to_list()
 
 
 @pytest.fixture
-def wide_list_of_series(self):
+def wide_list_of_series():
 
     return [pd.Series(np.random.randn(20), np.arange(20), name="a"),
             pd.Series(np.random.randn(10), np.arange(5, 15), name="b")]
 
 
 @pytest.fixture
-def wide_list_of_arrays(self, wide_list_of_series):
+def wide_list_of_arrays(wide_list_of_series):
 
     return [s.to_numpy() for s in wide_list_of_series]
 
 
 @pytest.fixture
-def wide_list_of_lists(self, wide_list_of_series):
+def wide_list_of_lists(wide_list_of_series):
 
     return [s.to_list() for s in wide_list_of_series]
 
 
 @pytest.fixture
-def long_df(self):
+def long_df():
 
     n = 100
     rs = np.random.RandomState()
@@ -82,7 +89,7 @@ def long_df(self):
 
 
 @pytest.fixture
-def repeated_df(self):
+def repeated_df():
 
     n = 100
     rs = np.random.RandomState()
@@ -95,7 +102,7 @@ def repeated_df(self):
 
 
 @pytest.fixture
-def missing_df(self):
+def missing_df():
 
     n = 100
     rs = np.random.RandomState()
@@ -113,6 +120,6 @@ def missing_df(self):
 
 
 @pytest.fixture
-def null_column(self):
+def null_column():
 
     return pd.Series(index=np.arange(20), dtype='float64')
