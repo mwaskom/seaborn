@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
@@ -38,51 +38,63 @@ class _VectorPlotter:
         # TODO raise here if any kwarg values are not None,
         # # if we decide for "structure-only" wide API
 
-        # First, determine if we have "flat" data (a single vector)
+        # First, determine if the data object actually has any data in it
+        empty = not len(data)
+
+        # Then, determine if we have "flat" data (a single vector)
         # TODO extract this into a separate function?
         if isinstance(data, dict):
             values = data.values()
         else:
             values = np.atleast_1d(data)
         flat = not any(
-            isinstance(v, Iterable) and not isinstance(v, str) for v in values
+            isinstance(v, Iterable) and not isinstance(v, (str, bytes))
+            for v in values
         )
 
-        if flat:
+        if empty:
+
+            # Make an object with the structure of plot_data, but empty
+            plot_data = pd.DataFrame(columns=self.semantics)
+            variables = {}
+
+        elif flat:
 
             # Coerce the data into a pandas Series such that the values
             # become the y variable and the index becomes the x variable
             # No other semantics are defined.
             # (Could be accomplished with a more general to_series() interface)
-            flat_data = pd.Series(data, name="y")
+            flat_data = pd.Series(data, name="y").copy()
             flat_data.index.name = "x"
             plot_data = flat_data.reset_index().reindex(columns=self.semantics)
 
+            orig_index = getattr(data, "index", None)
             variables = {
-                "x": getattr((flat_data, "index", None), "name", None),
-                "y": getattr(flat_data, "name", None)
+                "x": getattr(orig_index, "name", None),
+                "y": getattr(data, "name", None)
             }
 
         else:
 
             # Otherwise assume we have some collection of vectors.
+
             # Handle Python sequences such that entries end up in the columns,
             # not in the rows, of the intermediate wide DataFrame.
-            if isinstance(data, (list, tuple)):
+            # One way to accomplish this is to conver to a dict of Series.
+            if isinstance(data, Sequence):
                 data_dict = {}
                 for i, var in enumerate(data):
                     key = getattr(var, "name", i)
+                    # TODO is there a safer/more generic way to ensure Series?
+                    # sort of like np.asarray, but for pandas?
                     data_dict[key] = pd.Series(var)
 
                 data = data_dict
 
             # Now coerce our collection into a wide-form dataframe
             # This is where we'd like to use a general interface that says
-            # "give me this DataFrame as a pandas object"
-            try:
-                wide_data = data.to_pandas().copy()
-            except AttributeError:
-                wide_data = pd.DataFrame(data, copy=True)
+            # "give me this data as a pandas DataFrame"
+            wide_data = pd.DataFrame(data, copy=True)
 
             # At this point we should reduce the dataframe to numeric cols
             # TODO do we want any control over this?

@@ -4,13 +4,16 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 import pytest
+from numpy.testing import assert_array_equal
+
 from .. import relational as rel
 from ..palettes import color_palette
 from ..utils import categorical_order
 
 
-class TestRelationalPlotter(object):
+class RelationalFixtures:
 
     def scatter_rgbs(self, collections):
         rgbs = []
@@ -123,6 +126,9 @@ class TestRelationalPlotter(object):
 
         return pd.Series(index=np.arange(20), dtype='float64')
 
+
+class TestRelationalPlotter(RelationalFixtures):
+
     def test_wide_df_variables(self, wide_df):
 
         p = rel._RelationalPlotter()
@@ -133,19 +139,19 @@ class TestRelationalPlotter(object):
 
         x = p.plot_data["x"]
         expected_x = np.tile(wide_df.index, wide_df.shape[1])
-        assert np.array_equal(x, expected_x)
+        assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
         expected_y = wide_df.values.ravel(order="f")
-        assert np.array_equal(y, expected_y)
+        assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
         expected_hue = np.repeat(wide_df.columns.values, wide_df.shape[0])
-        assert np.array_equal(hue, expected_hue)
+        assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
         expected_style = expected_hue
-        assert np.array_equal(style, expected_style)
+        assert_array_equal(style, expected_style)
 
         assert p.plot_data["size"].isnull().all()
 
@@ -153,14 +159,6 @@ class TestRelationalPlotter(object):
         assert p.variables["y"] is None
         assert p.variables["hue"] == wide_df.columns.name
         assert p.variables["style"] == wide_df.columns.name
-
-    def test_wide_df_variables_check(self, wide_df):
-
-        p = rel._RelationalPlotter()
-        wide_df = wide_df.copy()
-        wide_df.loc[:, "not_numeric"] = "a"
-        with pytest.raises(ValueError):
-            p.establish_variables(data=wide_df)
 
     def test_wide_array_variables(self, wide_array):
 
@@ -174,19 +172,19 @@ class TestRelationalPlotter(object):
 
         x = p.plot_data["x"]
         expected_x = np.tile(np.arange(nrow), ncol)
-        assert np.array_equal(x, expected_x)
+        assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
         expected_y = wide_array.ravel(order="f")
-        assert np.array_equal(y, expected_y)
+        assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
         expected_hue = np.repeat(np.arange(ncol), nrow)
-        assert np.array_equal(hue, expected_hue)
+        assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
         expected_style = expected_hue
-        assert np.array_equal(style, expected_style)
+        assert_array_equal(style, expected_style)
 
         assert p.plot_data["size"].isnull().all()
 
@@ -205,11 +203,11 @@ class TestRelationalPlotter(object):
 
         x = p.plot_data["x"]
         expected_x = np.arange(flat_array.shape[0])
-        assert np.array_equal(x, expected_x)
+        assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
         expected_y = flat_array
-        assert np.array_equal(y, expected_y)
+        assert_array_equal(y, expected_y)
 
         assert p.plot_data["hue"].isnull().all()
         assert p.plot_data["style"].isnull().all()
@@ -228,14 +226,14 @@ class TestRelationalPlotter(object):
 
         x = p.plot_data["x"]
         expected_x = flat_series.index
-        assert np.array_equal(x, expected_x)
+        assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
         expected_y = flat_series
-        assert np.array_equal(y, expected_y)
+        assert_array_equal(y, expected_y)
 
-        assert p.variables["x"] is None
-        assert p.variables["y"] is None
+        assert p.variables["x"] is flat_series.index.name
+        assert p.variables["y"] is flat_series.name
 
     def test_wide_list_variables(self, wide_list):
 
@@ -243,25 +241,27 @@ class TestRelationalPlotter(object):
         p.establish_variables(data=wide_list)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert len(p.plot_data) == sum(len(l) for l in wide_list)
+
+        chunks = len(wide_list)
+        chunk_size = max(len(l) for l in wide_list)
+
+        assert len(p.plot_data) == chunks * chunk_size
 
         x = p.plot_data["x"]
-        expected_x = np.concatenate([np.arange(len(l)) for l in wide_list])
-        assert np.array_equal(x, expected_x)
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
 
-        y = p.plot_data["y"]
+        y = p.plot_data["y"].dropna()
         expected_y = np.concatenate(wide_list)
-        assert np.array_equal(y, expected_y)
+        assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.concatenate([
-            np.ones_like(l) * i for i, l in enumerate(wide_list)
-        ])
-        assert np.array_equal(hue, expected_hue)
+        expected_hue = np.repeat(np.arange(chunks), chunk_size)
+        assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
         expected_style = expected_hue
-        assert np.array_equal(style, expected_style)
+        assert_array_equal(style, expected_style)
 
         assert p.plot_data["size"].isnull().all()
 
@@ -276,25 +276,34 @@ class TestRelationalPlotter(object):
         p.establish_variables(data=wide_list_of_series)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert len(p.plot_data) == sum(len(l) for l in wide_list_of_series)
+
+        chunks = len(wide_list_of_series)
+        chunk_size = max(len(l) for l in wide_list_of_series)
+
+        assert len(p.plot_data) == chunks * chunk_size
+
+        index_union = np.unique(
+            np.concatenate([s.index for s in wide_list_of_series])
+        )
 
         x = p.plot_data["x"]
-        expected_x = np.concatenate([s.index for s in wide_list_of_series])
-        assert np.array_equal(x, expected_x)
+        expected_x = np.tile(index_union, chunks)
+        assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
-        expected_y = np.concatenate(wide_list_of_series)
-        assert np.array_equal(y, expected_y)
+        expected_y = np.concatenate([
+            s.reindex(index_union) for s in wide_list_of_series
+        ])
+        assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.concatenate([
-            np.full(len(s), s.name, object) for s in wide_list_of_series
-        ])
-        assert np.array_equal(hue, expected_hue)
+        series_names = [s.name for s in wide_list_of_series]
+        expected_hue = np.repeat(series_names, chunk_size)
+        assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
         expected_style = expected_hue
-        assert np.array_equal(style, expected_style)
+        assert_array_equal(style, expected_style)
 
         assert p.plot_data["size"].isnull().all()
 
@@ -311,25 +320,27 @@ class TestRelationalPlotter(object):
         p.establish_variables(data=data)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert len(p.plot_data) == sum(len(l) for l in data)
+
+        chunks = len(wide_list_of_series)
+        chunk_size = max(len(l) for l in wide_list_of_series)
+
+        assert len(p.plot_data) == chunks * chunk_size
 
         x = p.plot_data["x"]
-        expected_x = np.concatenate([np.arange(len(s)) for s in data])
-        assert np.array_equal(x, expected_x)
+        expected_x = np.tile(np.arange(chunk_size), chunks)
+        assert_array_equal(x, expected_x)
 
-        y = p.plot_data["y"]
-        expected_y = np.concatenate(data)
-        assert np.array_equal(y, expected_y)
+        y = p.plot_data["y"].dropna()
+        expected_y = np.concatenate(wide_list_of_series)
+        assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.concatenate([
-            np.full(len(s), i) for i, s in enumerate(data)
-        ])
-        assert np.array_equal(hue, expected_hue)
+        expected_hue = np.repeat(np.arange(chunks), chunk_size)
+        assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
         expected_style = expected_hue
-        assert np.array_equal(style, expected_style)
+        assert_array_equal(style, expected_style)
 
         assert p.plot_data["size"].isnull().all()
 
@@ -345,47 +356,47 @@ class TestRelationalPlotter(object):
         assert p.input_format == "long"
         assert list(p.variables) == ["x", "y"]
 
-        assert np.array_equal(p.plot_data["x"], long_df["x"])
-        assert np.array_equal(p.plot_data["y"], long_df["y"])
+        assert_array_equal(p.plot_data["x"], long_df["x"])
+        assert_array_equal(p.plot_data["y"], long_df["y"])
         for col in ["hue", "style", "size"]:
             assert p.plot_data[col].isnull().all()
         assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x=long_df.x, y="y", data=long_df)
         assert list(p.variables) == ["x", "y"]
-        assert np.array_equal(p.plot_data["x"], long_df["x"])
-        assert np.array_equal(p.plot_data["y"], long_df["y"])
+        assert_array_equal(p.plot_data["x"], long_df["x"])
+        assert_array_equal(p.plot_data["y"], long_df["y"])
         assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x="x", y=long_df.y, data=long_df)
         assert list(p.variables) == ["x", "y"]
-        assert np.array_equal(p.plot_data["x"], long_df["x"])
-        assert np.array_equal(p.plot_data["y"], long_df["y"])
+        assert_array_equal(p.plot_data["x"], long_df["x"])
+        assert_array_equal(p.plot_data["y"], long_df["y"])
         assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
         p.establish_variables(x="x", y="y", hue="a", data=long_df)
         assert list(p.variables) == ["x", "y", "hue"]
-        assert np.array_equal(p.plot_data["hue"], long_df["a"])
+        assert_array_equal(p.plot_data["hue"], long_df["a"])
         for col in ["style", "size"]:
             assert p.plot_data[col].isnull().all()
         assert p.variables["hue"] == "a"
 
         p.establish_variables(x="x", y="y", hue="a", style="a", data=long_df)
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert np.array_equal(p.plot_data["hue"], long_df["a"])
-        assert np.array_equal(p.plot_data["style"], long_df["a"])
+        assert_array_equal(p.plot_data["hue"], long_df["a"])
+        assert_array_equal(p.plot_data["style"], long_df["a"])
         assert p.plot_data["size"].isnull().all()
         assert p.variables["hue"] == p.variables["style"] == "a"
 
         p.establish_variables(x="x", y="y", hue="a", style="b", data=long_df)
         assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert np.array_equal(p.plot_data["hue"], long_df["a"])
-        assert np.array_equal(p.plot_data["style"], long_df["b"])
+        assert_array_equal(p.plot_data["hue"], long_df["a"])
+        assert_array_equal(p.plot_data["style"], long_df["b"])
         assert p.plot_data["size"].isnull().all()
 
         p.establish_variables(x="x", y="y", size="y", data=long_df)
         assert list(p.variables) == ["x", "y", "size"]
-        assert np.array_equal(p.plot_data["size"], long_df["y"])
+        assert_array_equal(p.plot_data["size"], long_df["y"])
         assert p.variables["size"] == "y"
 
     def test_bad_input(self, long_df):
@@ -414,7 +425,7 @@ class TestRelationalPlotter(object):
 
         p = rel._RelationalPlotter()
         p.establish_variables(x="x", y="y", units="u", data=repeated_df)
-        assert np.array_equal(p.plot_data["units"], repeated_df["u"])
+        assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
     def test_parse_hue_null(self, wide_df, null_column):
 
@@ -846,43 +857,43 @@ class TestRelationalPlotter(object):
         p = rel._LinePlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
-        assert np.array_equal(data.values, expected)
+        assert_array_equal(data.values, expected)
 
         p = rel._LinePlotter(x="x", y="y", data=long_df, sort=False)
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]]
-        assert np.array_equal(data.values, expected)
+        assert_array_equal(data.values, expected)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
-            assert np.array_equal(data.values, expected.values)
+            assert_array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols]
-            assert np.array_equal(data.values, expected.values)
+            assert_array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
-            assert np.array_equal(data.values, expected.values)
+            assert_array_equal(data.values, expected.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
-            assert np.array_equal(data.values, expected.values)
+            assert_array_equal(data.values, expected.values)
 
 
-class TestLinePlotter(TestRelationalPlotter):
+class TestLinePlotter(RelationalFixtures):
 
     def test_aggregate(self, long_df):
 
@@ -905,7 +916,7 @@ class TestLinePlotter(TestRelationalPlotter):
         p.ci = 68
         p.estimator = "mean"
         index, est, cis = p.aggregate(y, x)
-        assert np.array_equal(index.values, x.unique())
+        assert_array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values, 4)
@@ -913,7 +924,7 @@ class TestLinePlotter(TestRelationalPlotter):
 
         p.estimator = np.mean
         index, est, cis = p.aggregate(y, x)
-        assert np.array_equal(index.values, x.unique())
+        assert_array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values, 4)
@@ -922,7 +933,7 @@ class TestLinePlotter(TestRelationalPlotter):
         p.seed = 0
         _, _, ci1 = p.aggregate(y, x)
         _, _, ci2 = p.aggregate(y, x)
-        assert np.array_equal(ci1, ci2)
+        assert_array_equal(ci1, ci2)
 
         y_std = y.groupby(x).std()
         y_cis = pd.DataFrame(dict(low=y_mean - y_std,
@@ -931,7 +942,7 @@ class TestLinePlotter(TestRelationalPlotter):
 
         p.ci = "sd"
         index, est, cis = p.aggregate(y, x)
-        assert np.array_equal(index.values, x.unique())
+        assert_array_equal(index.values, x.unique())
         assert est.index.equals(index)
         assert est.values == pytest.approx(y_mean.values)
         assert cis.values == pytest.approx(y_cis.values)
@@ -944,8 +955,8 @@ class TestLinePlotter(TestRelationalPlotter):
         p.ci = 68
         x, y = pd.Series([1, 2, 3]), pd.Series([4, 3, 2])
         index, est, cis = p.aggregate(y, x)
-        assert np.array_equal(index.values, x)
-        assert np.array_equal(est.values, y)
+        assert_array_equal(index.values, x)
+        assert_array_equal(est.values, y)
         assert cis is None
 
         x, y = pd.Series([1, 1, 2]), pd.Series([2, 3, 4])
@@ -1104,8 +1115,8 @@ class TestLinePlotter(TestRelationalPlotter):
                                sort=False, estimator=None)
         p.plot(ax, {})
         line, = ax.lines
-        assert np.array_equal(line.get_xdata(), long_df.x.values)
-        assert np.array_equal(line.get_ydata(), long_df.y.values)
+        assert_array_equal(line.get_xdata(), long_df.x.values)
+        assert_array_equal(line.get_ydata(), long_df.y.values)
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -1120,8 +1131,8 @@ class TestLinePlotter(TestRelationalPlotter):
         p.plot(ax, {})
         line, = ax.lines
         sorted_data = long_df.sort_values(["x", "y"])
-        assert np.array_equal(line.get_xdata(), sorted_data.x.values)
-        assert np.array_equal(line.get_ydata(), sorted_data.y.values)
+        assert_array_equal(line.get_xdata(), sorted_data.x.values)
+        assert_array_equal(line.get_ydata(), sorted_data.y.values)
 
         p = rel._LinePlotter(x="x", y="y", hue="a", data=long_df)
 
@@ -1168,7 +1179,7 @@ class TestLinePlotter(TestRelationalPlotter):
         p.plot(ax, {})
         line, = ax.lines
         expected_data = long_df.groupby("x").y.mean()
-        assert np.array_equal(line.get_xdata(), expected_data.index.values)
+        assert_array_equal(line.get_xdata(), expected_data.index.values)
         assert np.allclose(line.get_ydata(), expected_data.values)
         assert len(ax.collections) == 1
 
@@ -1334,7 +1345,7 @@ class TestLinePlotter(TestRelationalPlotter):
         ax.clear()
 
 
-class TestScatterPlotter(TestRelationalPlotter):
+class TestScatterPlotter(RelationalFixtures):
 
     def test_legend_data(self, long_df):
 
@@ -1482,7 +1493,7 @@ class TestScatterPlotter(TestRelationalPlotter):
 
         p.plot(ax, {})
         points = ax.collections[0]
-        assert np.array_equal(points.get_offsets(), long_df[["x", "y"]].values)
+        assert_array_equal(points.get_offsets(), long_df[["x", "y"]].values)
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -1513,7 +1524,7 @@ class TestScatterPlotter(TestRelationalPlotter):
         p.plot(ax, {})
         points = ax.collections[0]
         expected_sizes = [p.size_lookup(k) for k in p.plot_data["size"]]
-        assert np.array_equal(points.get_sizes(), expected_sizes)
+        assert_array_equal(points.get_sizes(), expected_sizes)
 
         p = rel._ScatterPlotter(x="x", y="y", hue="a", style="a",
                                   markers=True, data=long_df)
@@ -1637,19 +1648,19 @@ class TestScatterPlotter(TestRelationalPlotter):
         ax.clear()
 
 
-class TestRelPlotter(TestRelationalPlotter):
-
+class TestRelPlotter(RelationalFixtures):
+    # TODO move tests to TestRelationalPlotter
     def test_relplot_simple(self, long_df):
 
         g = rel.relplot(x="x", y="y", kind="scatter", data=long_df)
         x, y = g.ax.collections[0].get_offsets().T
-        assert np.array_equal(x, long_df["x"])
-        assert np.array_equal(y, long_df["y"])
+        assert_array_equal(x, long_df["x"])
+        assert_array_equal(y, long_df["y"])
 
         g = rel.relplot(x="x", y="y", kind="line", data=long_df)
         x, y = g.ax.lines[0].get_xydata().T
         expected = long_df.groupby("x").y.mean()
-        assert np.array_equal(x, expected.index)
+        assert_array_equal(x, expected.index)
         assert y == pytest.approx(expected.values)
 
         with pytest.raises(ValueError):
@@ -1660,8 +1671,8 @@ class TestRelPlotter(TestRelationalPlotter):
         for sem in ["hue", "size", "style"]:
             g = rel.relplot(x="x", y="y", data=long_df, **{sem: "a"})
             x, y = g.ax.collections[0].get_offsets().T
-            assert np.array_equal(x, long_df["x"])
-            assert np.array_equal(y, long_df["y"])
+            assert_array_equal(x, long_df["x"])
+            assert_array_equal(y, long_df["y"])
 
         for sem in ["hue", "size", "style"]:
             g = rel.relplot(x="x", y="y", col="c", data=long_df,
@@ -1669,8 +1680,8 @@ class TestRelPlotter(TestRelationalPlotter):
             grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
-                assert np.array_equal(x, grp_df["x"])
-                assert np.array_equal(y, grp_df["y"])
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
 
         for sem in ["size", "style"]:
             g = rel.relplot(x="x", y="y", hue="b", col="c", data=long_df,
@@ -1678,8 +1689,8 @@ class TestRelPlotter(TestRelationalPlotter):
             grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
-                assert np.array_equal(x, grp_df["x"])
-                assert np.array_equal(y, grp_df["y"])
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
 
         for sem in ["hue", "size", "style"]:
             g = rel.relplot(x="x", y="y", col="b", row="c",
@@ -1688,8 +1699,8 @@ class TestRelPlotter(TestRelationalPlotter):
             grouped = long_df.groupby(["c", "b"])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
                 x, y = ax.collections[0].get_offsets().T
-                assert np.array_equal(x, grp_df["x"])
-                assert np.array_equal(y, grp_df["y"])
+                assert_array_equal(x, grp_df["x"])
+                assert_array_equal(y, grp_df["y"])
 
     def test_relplot_hues(self, long_df):
 
@@ -1715,7 +1726,7 @@ class TestRelPlotter(TestRelationalPlotter):
         for (_, grp_df), ax in zip(grouped, g.axes.flat):
             points = ax.collections[0]
             expected_sizes = [sizes[val] for val in grp_df["a"]]
-            assert np.array_equal(points.get_sizes(), expected_sizes)
+            assert_array_equal(points.get_sizes(), expected_sizes)
 
     def test_relplot_styles(self, long_df):
 
@@ -1744,14 +1755,14 @@ class TestRelPlotter(TestRelationalPlotter):
         xys = points.get_offsets()
         mask = np.ma.getmask(xys)
         assert not mask.any()
-        assert np.array_equal(xys, long_df[["x", "y"]])
+        assert_array_equal(xys, long_df[["x", "y"]])
 
         g = rel.relplot(x="x", y="y", size="x_str", data=long_df)
         points = g.ax.collections[0]
         xys = points.get_offsets()
         mask = np.ma.getmask(xys)
         assert not mask.any()
-        assert np.array_equal(xys, long_df[["x", "y"]])
+        assert_array_equal(xys, long_df[["x", "y"]])
 
     def test_relplot_legend(self, long_df):
 
@@ -1761,11 +1772,11 @@ class TestRelPlotter(TestRelationalPlotter):
         g = rel.relplot(x="x", y="y", hue="a", data=long_df)
         texts = [t.get_text() for t in g._legend.texts]
         expected_texts = np.append(["a"], long_df["a"].unique())
-        assert np.array_equal(texts, expected_texts)
+        assert_array_equal(texts, expected_texts)
 
         g = rel.relplot(x="x", y="y", hue="s", size="s", data=long_df)
         texts = [t.get_text() for t in g._legend.texts]
-        assert np.array_equal(texts[1:], np.sort(texts[1:]))
+        assert_array_equal(texts[1:], np.sort(texts[1:]))
 
         g = rel.relplot(x="x", y="y", hue="a", legend=False, data=long_df)
         assert g._legend is None
