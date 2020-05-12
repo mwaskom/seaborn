@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+import numpy as np
 import pandas as pd
 
 
@@ -28,8 +30,90 @@ class _VectorPlotter:
         return plot_data  # TODO also return variables?
 
     def establish_variables_wideform(self, data=None, **kwargs):
-        """Define plot variables given wide-form data."""
-        raise NotImplementedError
+        """Define plot variables given wide-form data.
+
+        TODO finish docstring.
+
+        """
+        # TODO raise here if any kwarg values are not None,
+        # # if we decide for "structure-only" wide API
+
+        # First, determine if we have "flat" data (a single vector)
+        # TODO extract this into a separate function?
+        if isinstance(data, dict):
+            values = data.values()
+        else:
+            values = np.atleast_1d(data)
+        flat = not any(
+            isinstance(v, Iterable) and not isinstance(v, str) for v in values
+        )
+
+        if flat:
+
+            # Coerce the data into a pandas Series such that the values
+            # become the y variable and the index becomes the x variable
+            # No other semantics are defined.
+            # (Could be accomplished with a more general to_series() interface)
+            flat_data = pd.Series(data, name="y")
+            flat_data.index.name = "x"
+            plot_data = flat_data.reset_index().reindex(columns=self.semantics)
+
+            variables = {
+                "x": getattr((flat_data, "index", None), "name", None),
+                "y": getattr(flat_data, "name", None)
+            }
+
+        else:
+
+            # Otherwise assume we have some collection of vectors.
+            # Handle Python sequences such that entries end up in the columns,
+            # not in the rows, of the intermediate wide DataFrame.
+            if isinstance(data, (list, tuple)):
+                data_dict = {}
+                for i, var in enumerate(data):
+                    key = getattr(var, "name", i)
+                    data_dict[key] = pd.Series(var)
+
+                data = data_dict
+
+            # Now coerce our collection into a wide-form dataframe
+            # This is where we'd like to use a general interface that says
+            # "give me this DataFrame as a pandas object"
+            try:
+                wide_data = data.to_pandas().copy()
+            except AttributeError:
+                wide_data = pd.DataFrame(data, copy=True)
+
+            # At this point we should reduce the dataframe to numeric cols
+            # TODO do we want any control over this?
+            numeric_cols = []
+            for col in wide_data:
+                try:
+                    wide_data[col].astype("float")
+                    numeric_cols.append(col)
+                except ValueError:
+                    pass
+            wide_data = wide_data[numeric_cols]
+
+            # Now melt the data to long form
+            melt_kws = {"var_name": "columns", "value_name": "values"}
+            if "index" in self.wide_structure.values():
+                melt_kws["id_vars"] = "index"
+                wide_data["index"] = wide_data.index.to_series()
+            plot_data = wide_data.melt(**melt_kws)
+
+            # Assign names corresponding to plot semantics
+            for var, attr in self.wide_structure.items():
+                plot_data[var] = plot_data[attr]
+            plot_data = plot_data.reindex(columns=self.semantics)
+
+            # Define the variable names
+            variables = {}
+            for var, attr in self.wide_structure.items():
+                obj = getattr(wide_data, attr)
+                variables[var] = getattr(obj, "name", None)
+
+        return plot_data, variables
 
     def establish_variables_longform(self, data=None, **kwargs):
         """Define plot variables given long-form data and/or vector inputs.

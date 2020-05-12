@@ -25,12 +25,17 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 class _RelationalPlotter(_VectorPlotter):
 
     semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
+    wide_structure = {
+        "x": "index", "y": "values", "hue": "columns", "style": "columns",
+    }
+
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
                       (5, 1, 2, 1, 2, 1)]
 
-    def establish_variables_wideform(self, data=None, **kwargs):
+    # TODO disabling to test generic function
+    def _establish_variables_wideform(self, data=None, **kwargs):
 
         # Option 1:
         # The input data is a Pandas DataFrame
