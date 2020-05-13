@@ -543,7 +543,7 @@ class _LinePlotter(_RelationalPlotter):
                  units=None, estimator=None, ci=None, n_boot=None, seed=None,
                  sort=True, err_style=None, err_kws=None, legend=None):
 
-        plot_data = self.establish_variables(
+        plot_data, variables = self.establish_variables(
             data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 
@@ -734,7 +734,7 @@ class _ScatterPlotter(_RelationalPlotter):
                  alpha=None, x_jitter=None, y_jitter=None,
                  legend=None):
 
-        plot_data = self.establish_variables(
+        plot_data, variables = self.establish_variables(
             data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 

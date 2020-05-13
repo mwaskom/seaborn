@@ -27,7 +27,7 @@ class _VectorPlotter:
         self.plot_data = plot_data
         self.variables = variables
 
-        return plot_data  # TODO also return variables?
+        return plot_data, variables
 
     def establish_variables_wideform(self, data=None, **kwargs):
         """Define plot variables given wide-form data.
@@ -178,7 +178,9 @@ class _VectorPlotter:
 
         # TODO should we try a data.to_dict() or similar here to more
         # generally accept objects with that interface?
-        # Note that dict(df) also works for pandas
+        # Note that dict(df) also works for pandas, and gives us what we
+        # want, whereas DataFrame.to_dict() gives a nested dict instead of
+        # a dict of series.
 
         # Variables can also be extraced from the index attribute
         # TODO is this the most general way to enable it?
@@ -191,7 +193,7 @@ class _VectorPlotter:
         # The caller will determine the order of variables in plot_data
         for key, val in kwargs.items():
 
-            if isinstance(val, str):
+            if isinstance(val, (str, bytes)):
                 # String inputs trigger __getitem__
                 if val in data:
                     # First try to get an entry in the data object
