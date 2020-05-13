@@ -167,9 +167,13 @@ class _VectorPlotter:
         if data is None:
             data = {}
 
+        # TODO should we try a data.to_dict() or similar here to more
+        # generally accept objects with that interface?
+        # Note that dict(df) also works for pandas
+
         # Variables can also be extraced from the index attribute
-        # TODO is this the most general way to enable it? Also it is added in
-        # pandas 0.24 so will fail our pinned tests
+        # TODO is this the most general way to enable it?
+        # There is no index.to_dict on multiindex, unfortunately
         try:
             index = data.index.to_frame()
         except AttributeError:
@@ -179,22 +183,23 @@ class _VectorPlotter:
         for key, val in kwargs.items():
 
             if isinstance(val, str):
-                # String inputs trigger __getitem__, first from data itself
-                try:
+                # String inputs trigger __getitem__
+                if val in data:
+                    # First try to get an entry in the data object
                     plot_data[key] = data[val]
                     variables[key] = val
-                except KeyError:
-                    # Failing that, try to get an index level
-                    try:
-                        plot_data[key] = index[val]
-                        variables[key] = val
-                    except KeyError:
-                        # Raise ValueError for backwards compatability
-                        err = f"Could not interpret input '{val}'"
-                        raise ValueError(err)
+                elif val in index:
+                    # Failing that, try to get an entry in the index object
+                    plot_data[key] = index[val]
+                    variables[key] = val
+                else:
+                    # We don't know what this name means
+                    err = f"Could not interpret input '{val}'"
+                    raise ValueError(err)
 
             else:
-                # Otherwise, assume the value is the data itself
+
+                # Otherwise, assume the value is itself a vector of data
                 # TODO check for 1D here or let pd.DataFrame raise?
                 plot_data[key] = val
                 # Try to infer the name of the variable
