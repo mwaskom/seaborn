@@ -13,15 +13,22 @@ def close_figs():
 
 @pytest.fixture(autouse=True)
 def random_seed():
-    np.random.seed(47)
+    seed = sum(map(ord, "seaborn random global"))
+    np.random.seed(seed)
+
+
+@pytest.fixture()
+def rng():
+    seed = sum(map(ord, "seaborn random object"))
+    return np.random.RandomState(seed)
 
 
 @pytest.fixture
-def wide_df():
+def wide_df(rng):
 
     columns = list("abc")
     index = pd.Int64Index(np.arange(10, 50, 2), name="wide_index")
-    values = np.random.randn(len(index), len(columns))
+    values = rng.normal(size=(len(index), len(columns)))
     return pd.DataFrame(values, index=index, columns=columns)
 
 
@@ -34,10 +41,10 @@ def wide_array(wide_df):
 
 
 @pytest.fixture
-def flat_series():
+def flat_series(rng):
 
     index = pd.Int64Index(np.arange(10, 30), name="t")
-    return pd.Series(np.random.randn(20), index, name="s")
+    return pd.Series(rng.normal(size=20), index, name="s")
 
 
 @pytest.fixture
@@ -57,10 +64,10 @@ def flat_list(flat_series):
 
 
 @pytest.fixture
-def wide_list_of_series():
+def wide_list_of_series(rng):
 
-    return [pd.Series(np.random.randn(20), np.arange(20), name="a"),
-            pd.Series(np.random.randn(10), np.arange(5, 15), name="b")]
+    return [pd.Series(rng.normal(size=20), np.arange(20), name="a"),
+            pd.Series(rng.normal(size=10), np.arange(5, 15), name="b")]
 
 
 @pytest.fixture
@@ -102,51 +109,41 @@ def wide_dict_of_lists(wide_list_of_series):
 
 
 @pytest.fixture
-def long_df():
+def long_df(rng):
 
     n = 100
-    rs = np.random.RandomState()
     df = pd.DataFrame(dict(
-        x=rs.randint(0, 20, n),
-        y=rs.randn(n),
-        a=np.take(list("abc"), rs.randint(0, 3, n)),
-        b=np.take(list("mnop"), rs.randint(0, 4, n)),
-        c=np.take(list([0, 1]), rs.randint(0, 2, n)),
+        x=rng.uniform(0, 20, n).round().astype("int"),
+        y=rng.normal(size=n),
+        a=rng.choice(list("abc"), n),
+        b=rng.choice(list("mnop"), n),
+        c=rng.choice([0, 1], n),
         d=np.repeat(np.datetime64('2005-02-25'), n),
-        s=np.take([2, 4, 8], rs.randint(0, 3, n)),
-        f=np.take(list([0.2, 0.3]), rs.randint(0, 2, n)),
+        s=rng.choice([2, 4, 8], n),
+        f=rng.choice([0.2, 0.3], n),
     ))
     df["s_cat"] = df["s"].astype("category")
     return df
 
 
 @pytest.fixture
-def repeated_df():
+def repeated_df(rng):
 
     n = 100
-    rs = np.random.RandomState()
     return pd.DataFrame(dict(
         x=np.tile(np.arange(n // 2), 2),
-        y=rs.randn(n),
-        a=np.take(list("abc"), rs.randint(0, 3, n)),
+        y=rng.normal(size=n),
+        a=rng.choice(list("abc"), n),
         u=np.repeat(np.arange(2), n // 2),
     ))
 
 
 @pytest.fixture
-def missing_df():
+def missing_df(rng, long_df):
 
-    n = 100
-    rs = np.random.RandomState()
-    df = pd.DataFrame(dict(
-        x=rs.randint(0, 20, n),
-        y=rs.randn(n),
-        a=np.take(list("abc"), rs.randint(0, 3, n)),
-        b=np.take(list("mnop"), rs.randint(0, 4, n)),
-        s=np.take([2, 4, 8], rs.randint(0, 3, n)),
-    ))
+    df = long_df.copy()
     for col in df:
-        idx = rs.permutation(df.index)[:10]
+        idx = rng.permutation(df.index)[:10]
         df.loc[idx, col] = np.nan
     return df
 
