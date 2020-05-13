@@ -92,7 +92,7 @@ class _VectorPlotter:
                 data = data_dict
 
             # Pandas requires that dict values either be Series objects
-            # or all have the same mapping
+            # or all have the same length, but we want to allow "ragged" inputs
             if isinstance(data, Mapping):
                 data = {key: pd.Series(val) for key, val in data.items()}
 
@@ -142,7 +142,8 @@ class _VectorPlotter:
             Input data where variable names map to vector values.
         kwargs : variable -> data mappings
             Keys are seaborn variables (x, y, hue, ...) and values are vectors
-            in any format that can construct a :class:`pandas.DataFrame`.
+            in any format that can construct a :class:`pandas.DataFrame` or
+            names of columns or index levels in ``data``.
 
         Returns
         -------
