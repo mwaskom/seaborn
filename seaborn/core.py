@@ -32,7 +32,23 @@ class _VectorPlotter:
     def establish_variables_wideform(self, data=None, **kwargs):
         """Define plot variables given wide-form data.
 
-        TODO finish docstring.
+        Parameters
+        ----------
+        data : flat vector or collection of vectors
+            Data can be a vector or mapping that is coerceable to a Series
+            or a sequence- or mapping-based collection of such vectors, or a
+            rectangular numpy array, or a Pandas DataFrame.
+        kwargs : variable -> data mappings
+            Behavior with keyword arguments is currently undefined.
+
+        Returns
+        -------
+        plot_data : :class:`pandas.DataFrame`
+            Long-form data object mapping seaborn variables (x, y, hue, ...)
+            to data vectors.
+        variables : dict
+            Keys are defined seaborn variables; values are names inferred from
+            the inputs (or None when no name can be determined).
 
         """
         # TODO raise here if any kwarg values are not None,
