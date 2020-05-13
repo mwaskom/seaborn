@@ -118,13 +118,30 @@ def long_df(rng):
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n),
-        d=np.repeat(np.datetime64('2005-02-25'), n),
+        t=np.repeat(np.datetime64('2005-02-25'), n),
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))
     df["s_cat"] = df["s"].astype("category")
     return df
 
+
+@pytest.fixture
+def long_dict(long_df):
+
+    return long_df.to_dict()
+
+
+@pytest.fixture(params=[
+    dict(x="x", y="y"),
+    dict(x="t", y="y"),
+    dict(x="x", y="y", hue="a"),
+    dict(x="x", y="y", hue="a", style="a"),
+    dict(x="x", y="y", hue="a", style="b"),
+    dict(x="x", y="y", hue="a", size="b"),
+])
+def long_semantics(request):
+    return request.param
 
 @pytest.fixture
 def repeated_df(rng):

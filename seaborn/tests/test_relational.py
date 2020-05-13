@@ -83,6 +83,42 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["hue"] == wide_df.columns.name
         assert p.variables["style"] == wide_df.columns.name
 
+    def test_wide_df_with_nonnumeric_variables(self, long_df):
+
+        p = _RelationalPlotter()
+        p.establish_variables(data=long_df)
+        assert p.input_format == "wide"
+        assert list(p.variables) == ["x", "y", "hue", "style"]
+
+        numeric_df = long_df.select_dtypes("number")
+
+        assert len(p.plot_data) == np.product(numeric_df.shape)
+
+        x = p.plot_data["x"]
+        expected_x = np.tile(numeric_df.index, numeric_df.shape[1])
+        assert_array_equal(x, expected_x)
+
+        y = p.plot_data["y"]
+        expected_y = numeric_df.values.ravel(order="f")
+        assert_array_equal(y, expected_y)
+
+        hue = p.plot_data["hue"]
+        expected_hue = np.repeat(
+            numeric_df.columns.values, numeric_df.shape[0]
+        )
+        assert_array_equal(hue, expected_hue)
+
+        style = p.plot_data["style"]
+        expected_style = expected_hue
+        assert_array_equal(style, expected_style)
+
+        assert p.plot_data["size"].isnull().all()
+
+        assert p.variables["x"] == numeric_df.index.name
+        assert p.variables["y"] is None
+        assert p.variables["hue"] == numeric_df.columns.name
+        assert p.variables["style"] == numeric_df.columns.name
+
     def test_wide_array_variables(self, wide_array):
 
         p = _RelationalPlotter()
@@ -398,55 +434,61 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["hue"] is None
         assert p.variables["style"] is None
 
-    def test_long_df(self, long_df):
+    def test_long_df(self, long_df, long_semantics):
 
         p = _RelationalPlotter()
-        p.establish_variables(x="x", y="y", data=long_df)
+        p.establish_variables(long_df, **long_semantics)
         assert p.input_format == "long"
-        assert list(p.variables) == ["x", "y"]
+        assert p.variables == long_semantics
 
-        assert_array_equal(p.plot_data["x"], long_df["x"])
-        assert_array_equal(p.plot_data["y"], long_df["y"])
-        for col in ["hue", "style", "size"]:
+        for key, val in long_semantics.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+        for col in set(p.semantics) - set(long_semantics):
             assert p.plot_data[col].isnull().all()
-        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
 
-        p.establish_variables(x=long_df.x, y="y", data=long_df)
-        assert list(p.variables) == ["x", "y"]
-        assert_array_equal(p.plot_data["x"], long_df["x"])
-        assert_array_equal(p.plot_data["y"], long_df["y"])
-        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
+    def test_long_dict(self, long_dict, long_semantics):
 
-        p.establish_variables(x="x", y=long_df.y, data=long_df)
-        assert list(p.variables) == ["x", "y"]
-        assert_array_equal(p.plot_data["x"], long_df["x"])
-        assert_array_equal(p.plot_data["y"], long_df["y"])
-        assert (p.variables["x"], p.variables["y"]) == ("x", "y")
+        p = _RelationalPlotter()
+        p.establish_variables(long_dict, **long_semantics)
+        assert p.input_format == "long"
+        assert p.variables == long_semantics
 
-        p.establish_variables(x="x", y="y", hue="a", data=long_df)
-        assert list(p.variables) == ["x", "y", "hue"]
-        assert_array_equal(p.plot_data["hue"], long_df["a"])
-        for col in ["style", "size"]:
+        for key, val in long_semantics.items():
+            assert_array_equal(p.plot_data[key], pd.Series(long_dict[val]))
+
+        for col in set(p.semantics) - set(long_semantics):
             assert p.plot_data[col].isnull().all()
-        assert p.variables["hue"] == "a"
 
-        p.establish_variables(x="x", y="y", hue="a", style="a", data=long_df)
-        assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert_array_equal(p.plot_data["hue"], long_df["a"])
-        assert_array_equal(p.plot_data["style"], long_df["a"])
-        assert p.plot_data["size"].isnull().all()
-        assert p.variables["hue"] == p.variables["style"] == "a"
+    @pytest.mark.parametrize(
+        "vector_type",
+        ["series", "numpy", "list"],
+    )
+    def test_long_vectors(self, long_df, long_semantics, vector_type):
 
-        p.establish_variables(x="x", y="y", hue="a", style="b", data=long_df)
-        assert list(p.variables) == ["x", "y", "hue", "style"]
-        assert_array_equal(p.plot_data["hue"], long_df["a"])
-        assert_array_equal(p.plot_data["style"], long_df["b"])
-        assert p.plot_data["size"].isnull().all()
+        kws = {key: long_df[val] for key, val in long_semantics.items()}
+        if vector_type == "numpy":
+            # Requires pandas >= 0.24
+            # kws = {key: val.to_numpy() for key, val in kws.items()}
+            kws = {key: np.asarray(val) for key, val in kws.items()}
+        elif vector_type == "list":
+            # Requires pandas >= 0.24
+            # kws = {key: val.to_list() for key, val in kws.items()}
+            kws = {key: val.tolist() for key, val in kws.items()}
 
-        p.establish_variables(x="x", y="y", size="y", data=long_df)
-        assert list(p.variables) == ["x", "y", "size"]
-        assert_array_equal(p.plot_data["size"], long_df["y"])
-        assert p.variables["size"] == "y"
+        p = _RelationalPlotter()
+        p.establish_variables(**kws)
+        assert p.input_format == "long"
+
+        assert list(p.variables) == list(long_semantics)
+        if vector_type == "series":
+            assert p.variables == long_semantics
+
+        for key, val in long_semantics.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+        for col in set(p.semantics) - set(long_semantics):
+            assert p.plot_data[col].isnull().all()
 
     def test_bad_input(self, long_df):
 
@@ -562,7 +604,7 @@ class TestRelationalPlotter(Helpers):
         assert p.hue_type == "categorical"
 
         # Test Timestamp data
-        p = _LinePlotter(x="x", y="y", hue="d", data=long_df)
+        p = _LinePlotter(x="x", y="y", hue="t", data=long_df)
         assert p.hue_levels == [pd.Timestamp('2005-02-25')]
         assert p.hue_type == "categorical"
 

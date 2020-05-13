@@ -104,14 +104,7 @@ class _VectorPlotter:
 
             # At this point we should reduce the dataframe to numeric cols
             # TODO do we want any control over this?
-            numeric_cols = []
-            for col in wide_data:
-                try:
-                    wide_data[col].astype("float")
-                    numeric_cols.append(col)
-                except ValueError:
-                    pass
-            wide_data = wide_data[numeric_cols]
+            wide_data = wide_data.select_dtypes("number")
 
             # Now melt the data to long form
             melt_kws = {"var_name": "columns", "value_name": "values"}
