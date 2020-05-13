@@ -135,13 +135,17 @@ def long_dict(long_df):
 @pytest.fixture(params=[
     dict(x="x", y="y"),
     dict(x="t", y="y"),
+    dict(x="a", y="y"),
     dict(x="x", y="y", hue="a"),
+    dict(x="x", y="y", hue="y"),
     dict(x="x", y="y", hue="a", style="a"),
     dict(x="x", y="y", hue="a", style="b"),
-    dict(x="x", y="y", hue="a", size="b"),
+    dict(x="x", y="y", size="b"),
+    dict(x="x", y="y", size="s"),
 ])
 def long_semantics(request):
     return request.param
+
 
 @pytest.fixture
 def repeated_df(rng):

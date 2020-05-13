@@ -447,6 +447,32 @@ class TestRelationalPlotter(Helpers):
         for col in set(p.semantics) - set(long_semantics):
             assert p.plot_data[col].isnull().all()
 
+    def test_long_df_with_index(self, long_df, long_semantics):
+
+        p = _RelationalPlotter()
+        p.establish_variables(long_df.set_index("a"), **long_semantics)
+        assert p.input_format == "long"
+        assert p.variables == long_semantics
+
+        for key, val in long_semantics.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+        for col in set(p.semantics) - set(long_semantics):
+            assert p.plot_data[col].isnull().all()
+
+    def test_long_df_with_multiindex(self, long_df, long_semantics):
+
+        p = _RelationalPlotter()
+        p.establish_variables(long_df.set_index(["a", "x"]), **long_semantics)
+        assert p.input_format == "long"
+        assert p.variables == long_semantics
+
+        for key, val in long_semantics.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+        for col in set(p.semantics) - set(long_semantics):
+            assert p.plot_data[col].isnull().all()
+
     def test_long_dict(self, long_dict, long_semantics):
 
         p = _RelationalPlotter()
