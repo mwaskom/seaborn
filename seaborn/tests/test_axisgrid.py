@@ -306,6 +306,18 @@ class TestFacetGrid(object):
         g.map(plt.plot, "x", "y", linewidth=3)
         g.add_legend()
 
+    def test_legend_tight_layout(self):
+
+        g = ag.FacetGrid(self.df, hue='b')
+        g.map(plt.plot, "x", "y", linewidth=3)
+        g.add_legend()
+        g.tight_layout()
+
+        axes_right_edge = g.ax.get_window_extent().xmax
+        legend_left_edge = g._legend.get_window_extent().xmin
+
+        assert axes_right_edge < legend_left_edge
+
     def test_subplot_kws(self):
 
         g = ag.FacetGrid(self.df, despine=False,

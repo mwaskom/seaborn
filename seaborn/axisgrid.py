@@ -23,6 +23,10 @@ class Grid(object):
     _margin_titles = False
     _legend_out = True
 
+    def __init__(self):
+
+        self._tight_layout_rect = [0, 0, 1, 1]
+
     def set(self, **kwargs):
         """Set attributes on each subplot Axes."""
         for ax in self.axes.flat:
@@ -34,6 +38,12 @@ class Grid(object):
         kwargs = kwargs.copy()
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
+    def tight_layout(self, *args, **kwargs):
+        """Call fig.tight_layout within rect that exclude the legend."""
+        kwargs = kwargs.copy()
+        kwargs.setdefault("rect", self._tight_layout_rect)
+        self.fig.tight_layout(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
                    **kwargs):
@@ -125,6 +135,7 @@ class Grid(object):
 
             # Place the subplot axes to give space for the legend
             self.fig.subplots_adjust(right=right)
+            self._tight_layout_rect[2] = right
 
         else:
             # Draw a legend in the first axis
@@ -239,6 +250,8 @@ class FacetGrid(Grid):
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
         gridspec_kws=None, size=None
     ):
+
+        super(FacetGrid, self).__init__()
 
         # Handle deprecations
         if size is not None:
@@ -1284,6 +1297,8 @@ class PairGrid(Grid):
             >>> g = g.add_legend()
 
         """
+
+        super(PairGrid, self).__init__()
 
         # Handle deprecations
         if size is not None:
