@@ -24,10 +24,19 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 class _RelationalPlotter(_VectorPlotter):
 
     semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
+
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
 
+    # TODO where best to define default parameters?
+    sort = True
+
+    # Defaults for size semantic
+    # TODO this should match style of other defaults
+    _default_size_range = 0, 1
+
+    # Defaults for style semantic
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
@@ -179,12 +188,12 @@ class _RelationalPlotter(_VectorPlotter):
             if self.sort:
                 subset_data = subset_data.sort_values(["units", "x", "y"])
 
-            if self.units is None:
+            if "units" not in self.variables:
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
 
-    def parse_hue(self, data, palette, order, norm):
+    def parse_hue(self, data, palette=None, order=None, norm=None):
         """Determine what colors to use given data characteristics."""
         if self._empty_data(data):
 
@@ -243,7 +252,7 @@ class _RelationalPlotter(_VectorPlotter):
         # Update data as it may have changed dtype
         self.plot_data["hue"] = data
 
-    def parse_size(self, data, sizes, order, norm):
+    def parse_size(self, data, sizes=None, order=None, norm=None):
         """Determine the linewidths given data characteristics."""
 
         # TODO could break out two options like parse_hue does for clarity
@@ -344,7 +353,7 @@ class _RelationalPlotter(_VectorPlotter):
         # Update data as it may have changed dtype
         self.plot_data["size"] = data
 
-    def parse_style(self, data, markers, dashes, order):
+    def parse_style(self, data, markers=None, dashes=None, order=None):
         """Determine the markers and line dashes."""
 
         if self._empty_data(data):
