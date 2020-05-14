@@ -1513,8 +1513,10 @@ def relplot(
 
     # Check for attempt to plot onto specific axes and warn
     if "ax" in kwargs:
-        msg = ("relplot is a figure-level function and does not accept "
-               "target axes. You may wish to try {}".format(kind + "plot"))
+        msg = (
+            "relplot is a figure-level function and does not accept "
+            "the ax= paramter. You may wish to try {}".format(kind + "plot")
+        )
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
@@ -1527,6 +1529,7 @@ def relplot(
         legend=legend,
     )
 
+    # Extract the semantic mappings
     palette = p.palette if p.palette else None
     hue_order = p.hue_levels if any(p.hue_levels) else None
     hue_norm = p.hue_norm if p.hue_norm is not None else None
@@ -1539,6 +1542,11 @@ def relplot(
     dashes = p.dashes if p.dashes else None
     style_order = p.style_levels if any(p.style_levels) else None
 
+    # Now extract the data that would be used to draw a single plot
+    plot_data = p.plot_data
+    plot_semantics = p.semantics
+
+    # Define the common plotting parameters
     plot_kws = dict(
         palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
         sizes=sizes, size_order=size_order, size_norm=p.size_norm,
@@ -1549,22 +1557,45 @@ def relplot(
     if kind == "scatter":
         plot_kws.pop("dashes")
 
+    # Define the named variables for plotting on each facet
+    plot_variables = {key: key for key in p.variables}
+    plot_kws.update(plot_variables)
+
+    # Define grid_data with row/col semantics
+    grid_semantics = ["row", "col"]  # TODO define on FacetGrid?
+    p.semantics = plot_semantics + grid_semantics
+    full_data, full_variables = p.establish_variables(
+        data,
+        x=x, y=y,
+        hue=hue, size=size, style=style,
+        row=row, col=col,
+    )
+
+    # Assemble a data object with the plot_data from the original
+    # plotter and the row/col variables with their external names.
+    # This is so FacetGrid labels the subplots correctly.
+    # We can't use just full_data because the hue/size type inference can
+    # change the data type of variables with object type but numeric behavior.
+    grid_kws = {v: full_variables.get(v, None) for v in grid_semantics}
+    grid_data = full_data[grid_semantics].rename(columns=grid_kws)
+    plot_data = pd.concat([plot_data, grid_data], axis=1)
+
     # Set up the FacetGrid object
-    facet_kws = {} if facet_kws is None else facet_kws
+    facet_kws = {} if facet_kws is None else facet_kws.copy()
+    facet_kws.update(grid_kws)
     g = FacetGrid(
-        data=data, row=row, col=col, col_wrap=col_wrap,
-        row_order=row_order, col_order=col_order,
+        data=plot_data,
+        col_wrap=col_wrap, row_order=row_order, col_order=col_order,
         height=height, aspect=aspect, dropna=False,
         **facet_kws
     )
 
     # Draw the plot
-    g.map_dataframe(func, x, y,
-                    hue=hue, size=size, style=style,
-                    **plot_kws)
+    g.map_dataframe(func, **plot_kws)
 
     # Show the legend
     if legend:
+        p.plot_data = plot_data
         p.add_legend_data(g.axes.flat[0])
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
