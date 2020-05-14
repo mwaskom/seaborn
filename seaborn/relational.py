@@ -1543,6 +1543,7 @@ def relplot(
     style_order = p.style_levels if any(p.style_levels) else None
 
     # Now extract the data that would be used to draw a single plot
+    variables = p.variables
     plot_data = p.plot_data
     plot_semantics = p.semantics
 
@@ -1593,8 +1594,15 @@ def relplot(
     # Draw the plot
     g.map_dataframe(func, **plot_kws)
 
+    # Label the axes
+    g.set_axis_labels(
+        variables.get("x", None), variables.get("y", None)
+    )
+
     # Show the legend
     if legend:
+        # Replace the original plot data so the legend uses
+        # numeric data with the correct type
         p.plot_data = plot_data
         p.add_legend_data(g.axes.flat[0])
         if p.legend_data:

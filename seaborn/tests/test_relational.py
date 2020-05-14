@@ -21,6 +21,24 @@ from ..relational import (
 )
 
 
+@pytest.fixture(params=[
+    dict(x="x", y="y"),
+    dict(x="t", y="y"),
+    dict(x="a", y="y"),
+    dict(x="x", y="y", hue="y"),
+    dict(x="x", y="y", hue="a"),
+    dict(x="x", y="y", size="a"),
+    dict(x="x", y="y", style="a"),
+    dict(x="x", y="y", hue="s"),
+    dict(x="x", y="y", size="s"),
+    dict(x="x", y="y", style="s"),
+    dict(x="x", y="y", hue="a", style="a"),
+    dict(x="x", y="y", hue="a", size="b", style="b"),
+])
+def long_semantics(request):
+    return request.param
+
+
 class Helpers:
 
     # TODO Better place for these?
@@ -516,7 +534,7 @@ class TestRelationalPlotter(Helpers):
         for col in set(p.semantics) - set(long_semantics):
             assert p.plot_data[col].isnull().all()
 
-    def test_bad_input(self, long_df):
+    def test_long_undefined_variables(self, long_df):
 
         p = _RelationalPlotter()
 
@@ -527,7 +545,7 @@ class TestRelationalPlotter(Helpers):
             p.establish_variables(x="x", y="not_in_df", data=long_df)
 
         with pytest.raises(ValueError):
-            p.establish_variables(x="x", y="not_in_df", data=long_df)
+            p.establish_variables(x="x", y="y", hue="not_in_df", data=long_df)
 
     def test_empty_input(self):
 
@@ -544,10 +562,10 @@ class TestRelationalPlotter(Helpers):
         p.establish_variables(x="x", y="y", units="u", data=repeated_df)
         assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
-    def test_parse_hue_null(self, wide_df, null_column):
+    def test_parse_hue_null(self, wide_df, null_series):
 
-        p = _LinePlotter(data=wide_df)
-        p.parse_hue(null_column, "Blues", None, None)
+        p = _RelationalPlotter(data=wide_df)
+        p.parse_hue(null_series, "Blues", None, None)
         assert p.hue_levels == [None]
         assert p.palette == {}
         assert p.hue_type is None
@@ -555,7 +573,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_parse_hue_categorical(self, wide_df, long_df):
 
-        p = _LinePlotter(data=wide_df)
+        p = _RelationalPlotter(data=wide_df)
         assert p.hue_levels == wide_df.columns.tolist()
         assert p.hue_type == "categorical"
         assert p.cmap is None
@@ -595,7 +613,7 @@ class TestRelationalPlotter(Helpers):
         assert p.hue_levels == hue_order
 
         # Test long data
-        p = _LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="a", data=long_df)
         assert p.hue_levels == categorical_order(long_df.a)
         assert p.hue_type == "categorical"
         assert p.cmap is None
@@ -615,34 +633,34 @@ class TestRelationalPlotter(Helpers):
         assert p.palette == expected_palette
 
         # Test binary data
-        p = _LinePlotter(x="x", y="y", hue="c", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="c", data=long_df)
         assert p.hue_levels == [0, 1]
         assert p.hue_type == "categorical"
 
         df = long_df[long_df["c"] == 0]
-        p = _LinePlotter(x="x", y="y", hue="c", data=df)
+        p = _RelationalPlotter(x="x", y="y", hue="c", data=df)
         assert p.hue_levels == [0]
         assert p.hue_type == "categorical"
 
         df = long_df[long_df["c"] == 1]
-        p = _LinePlotter(x="x", y="y", hue="c", data=df)
+        p = _RelationalPlotter(x="x", y="y", hue="c", data=df)
         assert p.hue_levels == [1]
         assert p.hue_type == "categorical"
 
         # Test Timestamp data
-        p = _LinePlotter(x="x", y="y", hue="t", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="t", data=long_df)
         assert p.hue_levels == [pd.Timestamp('2005-02-25')]
         assert p.hue_type == "categorical"
 
         # Test numeric data with category type
-        p = _LinePlotter(x="x", y="y", hue="s_cat", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="s_cat", data=long_df)
         assert p.hue_levels == categorical_order(long_df.s_cat)
         assert p.hue_type == "categorical"
         assert p.cmap is None
 
         # Test categorical palette specified for numeric data
         palette = "deep"
-        p = _LinePlotter(
+        p = _RelationalPlotter(
             x="x", y="y", hue="s",
             palette=palette, data=long_df
         )
@@ -654,7 +672,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_parse_hue_numeric(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", hue="s", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="s", data=long_df)
         hue_levels = list(np.sort(long_df.s.unique()))
         assert p.hue_levels == hue_levels
         assert p.hue_type == "numeric"
@@ -737,7 +755,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_parse_size(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", size="s", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size="s", data=long_df)
 
         # Test default size limits and range
         default_linewidth = mpl.rcParams["lines.linewidth"]
@@ -779,7 +797,7 @@ class TestRelationalPlotter(Helpers):
         levels = long_df[var].unique()
         sizes = [1, 4, 6]
         size_order = [levels[1], levels[2], levels[0]]
-        p = _LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size=var, data=long_df)
         p.parse_size(p.plot_data["size"], sizes, size_order, None)
         assert p.sizes == dict(zip(size_order, sizes))
 
@@ -787,7 +805,7 @@ class TestRelationalPlotter(Helpers):
         var = "a"
         levels = categorical_order(long_df[var])
         sizes = list(np.random.rand(len(levels)))
-        p = _LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size=var, data=long_df)
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.sizes == dict(zip(levels, sizes))
 
@@ -795,7 +813,7 @@ class TestRelationalPlotter(Helpers):
         var = "a"
         levels = categorical_order(long_df[var])
         sizes = dict(zip(levels, np.random.rand(len(levels))))
-        p = _LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size=var, data=long_df)
         p.parse_size(p.plot_data["size"], sizes, None, None)
         assert p.sizes == sizes
 
@@ -816,13 +834,13 @@ class TestRelationalPlotter(Helpers):
 
         # Test bad norm argument
         size_norm = "not a norm"
-        p = _LinePlotter(x="x", y="y", size="s", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size="s", data=long_df)
         with pytest.raises(ValueError):
             p.parse_size(p.plot_data["size"], None, None, size_norm)
 
     def test_parse_style(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", style="a", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", style="a", data=long_df)
 
         # Test defaults
         markers, dashes = True, True
@@ -875,7 +893,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_subset_data_quantities(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", data=long_df)
         assert len(list(p.subset_data())) == 1
 
         # --
@@ -883,15 +901,15 @@ class TestRelationalPlotter(Helpers):
         var = "a"
         n_subsets = len(long_df[var].unique())
 
-        p = _LinePlotter(x="x", y="y", hue=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
-        p = _LinePlotter(x="x", y="y", style=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", style=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         n_subsets = len(long_df[var].unique())
 
-        p = _LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -899,7 +917,7 @@ class TestRelationalPlotter(Helpers):
         var = "a"
         n_subsets = len(long_df[var].unique())
 
-        p = _LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue=var, style=var, data=long_df)
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -907,10 +925,12 @@ class TestRelationalPlotter(Helpers):
         var1, var2 = "a", "s"
         n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
 
-        p = _LinePlotter(x="x", y="y", hue=var1, style=var2, data=long_df)
+        p = _RelationalPlotter(
+            x="x", y="y", hue=var1, style=var2, data=long_df
+        )
         assert len(list(p.subset_data())) == n_subsets
 
-        p = _LinePlotter(
+        p = _RelationalPlotter(
             x="x", y="y", hue=var1, size=var2, style=var1, data=long_df
         )
         assert len(list(p.subset_data())) == n_subsets
@@ -921,14 +941,14 @@ class TestRelationalPlotter(Helpers):
         cols = [var1, var2, var3]
         n_subsets = len(set(list(map(tuple, long_df[cols].values))))
 
-        p = _LinePlotter(
+        p = _RelationalPlotter(
             x="x", y="y", hue=var1, size=var2, style=var3, data=long_df
         )
         assert len(list(p.subset_data())) == n_subsets
 
     def test_subset_data_keys(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
@@ -938,25 +958,25 @@ class TestRelationalPlotter(Helpers):
 
         var = "a"
 
-        p = _LinePlotter(x="x", y="y", hue=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
             assert style is None
 
-        p = _LinePlotter(x="x", y="y", style=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", style=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
             assert style in long_df[var].values
 
-        p = _LinePlotter(x="x", y="y", hue=var, style=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue=var, style=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
             assert style in long_df[var].values
 
-        p = _LinePlotter(x="x", y="y", size=var, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", size=var, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size in long_df[var].values
@@ -966,7 +986,7 @@ class TestRelationalPlotter(Helpers):
 
         var1, var2 = "a", "s"
 
-        p = _LinePlotter(x="x", y="y", hue=var1, size=var2, data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue=var1, size=var2, data=long_df)
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var1].values
             assert size in long_df[var2].values
@@ -974,38 +994,38 @@ class TestRelationalPlotter(Helpers):
 
     def test_subset_data_values(self, long_df):
 
-        p = _LinePlotter(x="x", y="y", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", data=long_df)
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
         assert_array_equal(data.values, expected)
 
-        p = _LinePlotter(x="x", y="y", data=long_df, sort=False)
+        p = _RelationalPlotter(x="x", y="y", data=long_df, sort=False)
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]]
         assert_array_equal(data.values, expected)
 
-        p = _LinePlotter(x="x", y="y", hue="a", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert_array_equal(data.values, expected.values)
 
-        p = _LinePlotter(x="x", y="y", hue="a", data=long_df, sort=False)
+        p = _RelationalPlotter(x="x", y="y", hue="a", data=long_df, sort=False)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols]
             assert_array_equal(data.values, expected.values)
 
-        p = _LinePlotter(x="x", y="y", hue="a", style="a", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="a", style="a", data=long_df)
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
             cols = ["x", "y"]
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert_array_equal(data.values, expected.values)
 
-        p = _LinePlotter(x="x", y="y", hue="a", size="s", data=long_df)
+        p = _RelationalPlotter(x="x", y="y", hue="a", size="s", data=long_df)
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
             cols = ["x", "y"]

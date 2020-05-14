@@ -63,6 +63,26 @@ def flat_list(flat_series):
     return flat_series.tolist()
 
 
+@pytest.fixture(params=["series", "array", "list"])
+def flat_data(rng, request):
+
+    index = pd.Int64Index(np.arange(10, 30), name="t")
+    series = pd.Series(rng.normal(size=20), index, name="s")
+    if request.param == "series":
+        data = series
+    elif request.param == "array":
+        try:
+            data = series.to_numpy()  # Requires pandas >= 0.24
+        except AttributeError:
+            data = np.asarray(series)
+    elif request.param == "list":
+        try:
+            data = series.to_list()  # Requires pandas >= 0.24
+        except AttributeError:
+            data = series.tolist()
+    return data
+
+
 @pytest.fixture
 def wide_list_of_series(rng):
 
@@ -132,21 +152,6 @@ def long_dict(long_df):
     return long_df.to_dict()
 
 
-@pytest.fixture(params=[
-    dict(x="x", y="y"),
-    dict(x="t", y="y"),
-    dict(x="a", y="y"),
-    dict(x="x", y="y", hue="a"),
-    dict(x="x", y="y", hue="y"),
-    dict(x="x", y="y", hue="a", style="a"),
-    dict(x="x", y="y", hue="a", style="b"),
-    dict(x="x", y="y", size="b"),
-    dict(x="x", y="y", size="s"),
-])
-def long_semantics(request):
-    return request.param
-
-
 @pytest.fixture
 def repeated_df(rng):
 
@@ -170,6 +175,6 @@ def missing_df(rng, long_df):
 
 
 @pytest.fixture
-def null_column():
+def null_series():
 
     return pd.Series(index=np.arange(20), dtype='float64')
