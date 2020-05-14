@@ -23,6 +23,10 @@ class Grid(object):
     _margin_titles = False
     _legend_out = True
 
+    def __init__(self):
+
+        self._tight_layout_rect = [0, 0, 1, 1]
+
     def set(self, **kwargs):
         """Set attributes on each subplot Axes."""
         for ax in self.axes.flat:
@@ -34,6 +38,12 @@ class Grid(object):
         kwargs = kwargs.copy()
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
+    def tight_layout(self, *args, **kwargs):
+        """Call fig.tight_layout within rect that exclude the legend."""
+        kwargs = kwargs.copy()
+        kwargs.setdefault("rect", self._tight_layout_rect)
+        self.fig.tight_layout(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
                    **kwargs):
@@ -125,6 +135,7 @@ class Grid(object):
 
             # Place the subplot axes to give space for the legend
             self.fig.subplots_adjust(right=right)
+            self._tight_layout_rect[2] = right
 
         else:
             # Draw a legend in the first axis
@@ -239,6 +250,8 @@ class FacetGrid(Grid):
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
         gridspec_kws=None, size=None
     ):
+
+        super(FacetGrid, self).__init__()
 
         # Handle deprecations
         if size is not None:
@@ -385,7 +398,7 @@ class FacetGrid(Grid):
 
         # --- Make the axes look good
 
-        fig.tight_layout()
+        self.tight_layout()
         if despine:
             self.despine()
 
@@ -871,7 +884,7 @@ class FacetGrid(Grid):
         """Finalize the annotations and layout."""
         self.set_axis_labels(*axlabels)
         self.set_titles()
-        self.fig.tight_layout()
+        self.tight_layout()
 
     def facet_axis(self, row_i, col_j):
         """Make the axis identified by these indices active and return it."""
@@ -1285,6 +1298,8 @@ class PairGrid(Grid):
 
         """
 
+        super(PairGrid, self).__init__()
+
         # Handle deprecations
         if size is not None:
             height = size
@@ -1373,7 +1388,7 @@ class PairGrid(Grid):
         if despine:
             self._despine = True
             utils.despine(fig=fig)
-        fig.tight_layout(pad=layout_pad)
+        self.tight_layout(pad=layout_pad)
 
     def map(self, func, **kwargs):
         """Plot with the same function in every subplot.
