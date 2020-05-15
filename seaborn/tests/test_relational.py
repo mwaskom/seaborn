@@ -565,7 +565,6 @@ class TestRelationalPlotter(Helpers):
     def test_parse_hue_null(self, wide_df, null_series):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_df)
         p.parse_hue(null_series, "Blues", None, None)
         assert p.hue_levels == [None]
         assert p.palette == {}
@@ -1172,6 +1171,27 @@ class TestRelationalPlotter(Helpers):
                 x, y = ax.collections[0].get_offsets().T
                 assert_array_equal(x, grp_df["x"])
                 assert_array_equal(y, grp_df["y"])
+
+    @pytest.mark.parametrize(
+        "vector_type",
+        ["series", "numpy", "list"],
+    )
+    def test_relplot_vectors(self, long_df, vector_type):
+
+        semantics = dict(x="x", y="y", hue="f", col="c")
+        kws = {key: long_df[val] for key, val in semantics.items()}
+        g = relplot(data=long_df, **kws)
+        grouped = long_df.groupby("c")
+        for (_, grp_df), ax in zip(grouped, g.axes.flat):
+            x, y = ax.collections[0].get_offsets().T
+            assert_array_equal(x, grp_df["x"])
+            assert_array_equal(y, grp_df["y"])
+
+    def test_relplot_wide(self, wide_df):
+
+        g = relplot(data=wide_df)
+        x, y = g.ax.collections[0].get_offsets().T
+        assert_array_equal(y, wide_df.values.T.ravel())
 
     def test_relplot_hues(self, long_df):
 
