@@ -7,10 +7,10 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .core import _VectorPlotter
-from . import utils
+from .core import (_VectorPlotter, unique_dashes)
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
-                    remove_na, locator_to_legend_entries)
+                    remove_na, locator_to_legend_entries,
+                    ci as ci_func)
 from .algorithms import bootstrap
 from .palettes import (color_palette, cubehelix_palette,
                        _parse_cubehelix_args, QUAL_PALETTES)
@@ -38,9 +38,6 @@ class _RelationalPlotter(_VectorPlotter):
 
     # Defaults for style semantic
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
-    default_dashes = ["", (4, 1.5), (1, 1),
-                      (3, 1, 1.5, 1), (5, 1, 1, 1),
-                      (5, 1, 2, 1, 2, 1)]
 
     def categorical_to_palette(self, data, order, palette):
         """Determine colors when the hue variable is qualitative."""
@@ -250,6 +247,8 @@ class _RelationalPlotter(_VectorPlotter):
         self.cmap = cmap
 
         # Update data as it may have changed dtype
+        # TODO This is messy! We need to rethink the order of operations
+        # to avoid changing the plot data after we have it.
         self.plot_data["hue"] = data
 
     def parse_size(self, data, sizes=None, order=None, norm=None):
@@ -377,7 +376,7 @@ class _RelationalPlotter(_VectorPlotter):
             )
 
             dashes = self.style_to_attributes(
-                levels, dashes, self.default_dashes, "dashes"
+                levels, dashes, unique_dashes(len(levels)), "dashes"
             )
 
         paths = {}
@@ -592,7 +591,7 @@ class _LinePlotter(_RelationalPlotter):
                 return null_ci
 
             boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)
-            cis = utils.ci(boots, ci)
+            cis = ci_func(boots, ci)
             return pd.Series(cis, ["low", "high"])
 
         # Group and get the aggregation estimate

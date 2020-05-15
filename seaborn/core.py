@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Iterable, Sequence, Mapping
 import numpy as np
 import pandas as pd
@@ -228,3 +229,54 @@ class _VectorPlotter:
         }
 
         return plot_data, variables
+
+
+def unique_dashes(n):
+    """Build an arbitrarily long list of unique dash styles for lines.
+
+    Parameters
+    ----------
+    n : int
+        Number of unique dash specs to generate.
+    Returns
+    -------
+    dashes : list of tuples
+        Valid arguments for the ``dashes`` parameter on
+        :class:`matplotlib.lines.Line2D`. The first spec is a solid
+        line (``""``), the remainder are sequences of long and short
+        dashes.
+
+    """
+
+    # Start with 5 dash specs that are well distinguishable
+    dashes = [
+        "",
+        (4, 1.5),
+        (1, 1),
+        (3, 1.25, 1.5, 1.25),
+        (5, 1, 1, 1),
+    ]
+
+    # Now programatically build as many as we need
+    q = 3
+    while len(dashes) < n:
+
+        # Take combinations of long and short dashes
+        a = itertools.combinations_with_replacement([3, 1.5], q)
+        b = itertools.combinations_with_replacement([4, 1], q)
+
+        # Interleave the combinations, reversing one of the streams
+        segment_list = itertools.chain(*zip(
+            list(a)[1:-1][::-1],
+            list(b)[1:-1]
+        ))
+
+        # Now insert the "off" segments
+        for segments in segment_list:
+            off = min(segments)
+            spec = tuple(itertools.chain(*((on, off) for on in segments)))
+            dashes.append(spec)
+
+        q += 1
+
+    return dashes[:n]

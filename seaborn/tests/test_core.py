@@ -2,7 +2,10 @@ import numpy as np
 
 from numpy.testing import assert_array_equal
 
-from ..core import _VectorPlotter
+from ..core import (
+    _VectorPlotter,
+    unique_dashes,
+)
 
 
 class TestVectorPlotter:
@@ -33,3 +36,16 @@ class TestVectorPlotter:
 
         assert p.variables["x"] == expected_x_name
         assert p.variables["y"] == expected_y_name
+
+
+class TestCoreFunc:
+
+    def test_unique_dashes(self):
+
+        n = 24
+        dashes = unique_dashes(n)
+        assert len(set(dashes)) == n
+
+        assert dashes[0] == ""
+        for spec in dashes[1:]:
+            assert isinstance(spec, tuple)
