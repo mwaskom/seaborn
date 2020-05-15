@@ -565,6 +565,7 @@ class TestRelationalPlotter(Helpers):
     def test_parse_hue_null(self, wide_df, null_series):
 
         p = _RelationalPlotter()
+        p.establish_variables(wide_df)
         p.parse_hue(null_series, "Blues", None, None)
         assert p.hue_levels == [None]
         assert p.palette == {}
