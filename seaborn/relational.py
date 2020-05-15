@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from .core import _VectorPlotter
 from . import utils
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
                     remove_na, locator_to_legend_entries)
@@ -20,170 +21,26 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _RelationalPlotter(object):
+class _RelationalPlotter(_VectorPlotter):
 
+    semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
+
+    wide_structure = {
+        "x": "index", "y": "values", "hue": "columns", "style": "columns",
+    }
+
+    # TODO where best to define default parameters?
+    sort = True
+
+    # Defaults for size semantic
+    # TODO this should match style of other defaults
+    _default_size_range = 0, 1
+
+    # Defaults for style semantic
     default_markers = ["o", "X", "s", "P", "D", "^", "v", "p"]
     default_dashes = ["", (4, 1.5), (1, 1),
                       (3, 1, 1.5, 1), (5, 1, 1, 1),
                       (5, 1, 2, 1, 2, 1)]
-
-    def establish_variables(self, x=None, y=None,
-                            hue=None, size=None, style=None,
-                            units=None, data=None):
-        """Parse the inputs to define data for plotting."""
-        # Initialize label variables
-        x_label = y_label = hue_label = size_label = style_label = None
-
-        # Option 1:
-        # We have a wide-form datast
-        # --------------------------
-
-        if x is None and y is None:
-
-            self.input_format = "wide"
-
-            # Option 1a:
-            # The input data is a Pandas DataFrame
-            # ------------------------------------
-            # We will assign the index to x, the values to y,
-            # and the columns names to both hue and style
-
-            # TODO accept a dict and try to coerce to a dataframe?
-
-            if isinstance(data, pd.DataFrame):
-
-                # Enforce numeric values
-                try:
-                    data.astype(np.float)
-                except ValueError:
-                    err = "A wide-form input must have only numeric values."
-                    raise ValueError(err)
-
-                plot_data = data.copy()
-                plot_data.loc[:, "x"] = data.index
-                plot_data = pd.melt(plot_data, "x",
-                                    var_name="hue", value_name="y")
-                plot_data["style"] = plot_data["hue"]
-
-                x_label = getattr(data.index, "name", None)
-                hue_label = style_label = getattr(plot_data.columns,
-                                                  "name", None)
-
-            # Option 1b:
-            # The input data is an array or list
-            # ----------------------------------
-
-            else:
-
-                if not len(data):
-
-                    plot_data = pd.DataFrame(columns=["x", "y"])
-
-                elif np.isscalar(np.asarray(data)[0]):
-
-                    # The input data is a flat list(like):
-                    # We assign a numeric index for x and use the values for y
-
-                    x = getattr(data, "index", np.arange(len(data)))
-                    plot_data = pd.DataFrame(dict(x=x, y=data))
-
-                elif hasattr(data, "shape"):
-
-                    # The input data is an array(like):
-                    # We either use the index or assign a numeric index to x,
-                    # the values to y, and id keys to both hue and style
-
-                    plot_data = pd.DataFrame(data)
-                    plot_data.loc[:, "x"] = plot_data.index
-                    plot_data = pd.melt(plot_data, "x",
-                                        var_name="hue",
-                                        value_name="y")
-                    plot_data["style"] = plot_data["hue"]
-
-                else:
-
-                    # The input data is a nested list: We will either use the
-                    # index or assign a numeric index for x, use the values
-                    # for y, and use numeric hue/style identifiers.
-
-                    plot_data = []
-                    for i, data_i in enumerate(data):
-                        x = getattr(data_i, "index", np.arange(len(data_i)))
-                        n = getattr(data_i, "name", i)
-                        data_i = dict(x=x, y=data_i, hue=n, style=n, size=None)
-                        plot_data.append(pd.DataFrame(data_i))
-                    plot_data = pd.concat(plot_data)
-
-        # Option 2:
-        # We have long-form data
-        # ----------------------
-
-        elif x is not None and y is not None:
-
-            self.input_format = "long"
-
-            # Use variables as from the dataframe if specified
-            if data is not None:
-                x = data.get(x, x)
-                y = data.get(y, y)
-                hue = data.get(hue, hue)
-                size = data.get(size, size)
-                style = data.get(style, style)
-                units = data.get(units, units)
-
-            # Validate the inputs
-            for var in [x, y, hue, size, style, units]:
-                if isinstance(var, str):
-                    err = "Could not interpret input '{}'".format(var)
-                    raise ValueError(err)
-
-            # Extract variable names
-            x_label = getattr(x, "name", None)
-            y_label = getattr(y, "name", None)
-            hue_label = getattr(hue, "name", None)
-            size_label = getattr(size, "name", None)
-            style_label = getattr(style, "name", None)
-
-            # Reassemble into a DataFrame
-            plot_data = dict(
-                x=x, y=y,
-                hue=hue, style=style, size=size,
-                units=units
-            )
-            plot_data = pd.DataFrame(plot_data)
-
-        # Option 3:
-        # Only one variable argument
-        # --------------------------
-
-        else:
-            err = ("Either both or neither of `x` and `y` must be specified "
-                   "(but try passing to `data`, which is more flexible).")
-            raise ValueError(err)
-
-        # ---- Post-processing
-
-        # Assign default values for missing attribute variables
-        for attr in ["hue", "style", "size", "units"]:
-            if attr not in plot_data:
-                plot_data[attr] = None
-
-        # Determine which semantics have (some) data
-        plot_valid = plot_data.notnull().any()
-        semantics = ["x", "y"] + [
-            name for name in ["hue", "size", "style"]
-            if plot_valid[name]
-        ]
-
-        self.x_label = x_label
-        self.y_label = y_label
-        self.hue_label = hue_label
-        self.size_label = size_label
-        self.style_label = style_label
-        self.plot_data = plot_data
-        self.semantics = semantics
-
-        return plot_data
 
     def categorical_to_palette(self, data, order, palette):
         """Determine colors when the hue variable is qualitative."""
@@ -331,12 +188,12 @@ class _RelationalPlotter(object):
             if self.sort:
                 subset_data = subset_data.sort_values(["units", "x", "y"])
 
-            if self.units is None:
+            if "units" not in self.variables:
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
 
-    def parse_hue(self, data, palette, order, norm):
+    def parse_hue(self, data, palette=None, order=None, norm=None):
         """Determine what colors to use given data characteristics."""
         if self._empty_data(data):
 
@@ -395,7 +252,7 @@ class _RelationalPlotter(object):
         # Update data as it may have changed dtype
         self.plot_data["hue"] = data
 
-    def parse_size(self, data, sizes, order, norm):
+    def parse_size(self, data, sizes=None, order=None, norm=None):
         """Determine the linewidths given data characteristics."""
 
         # TODO could break out two options like parse_hue does for clarity
@@ -496,7 +353,7 @@ class _RelationalPlotter(object):
         # Update data as it may have changed dtype
         self.plot_data["size"] = data
 
-    def parse_style(self, data, markers, dashes, order):
+    def parse_style(self, data, markers=None, dashes=None, order=None):
         """Determine the markers and line dashes."""
 
         if self._empty_data(data):
@@ -568,12 +425,12 @@ class _RelationalPlotter(object):
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""
-        if self.x_label is not None:
+        if "x" in self.variables and self.variables["x"] is not None:
             x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.x_label, visible=x_visible)
-        if self.y_label is not None:
+            ax.set_xlabel(self.variables["x"], visible=x_visible)
+        if "y" in self.variables and self.variables["y"] is not None:
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.y_label, visible=y_visible)
+            ax.set_ylabel(self.variables["y"], visible=y_visible)
 
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
@@ -610,14 +467,15 @@ class _RelationalPlotter(object):
             hue_levels = hue_formatted_levels = self.hue_levels
 
         # Add the hue semantic subtitle
-        if self.hue_label is not None:
-            update((self.hue_label, "title"), self.hue_label, **title_kws)
+        if "hue" in self.variables and self.variables["hue"] is not None:
+            update((self.variables["hue"], "title"),
+                   self.variables["hue"], **title_kws)
 
         # Add the hue semantic labels
         for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
                 color = self.color_lookup(level)
-                update(self.hue_label, formatted_level, color=color)
+                update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
@@ -632,26 +490,28 @@ class _RelationalPlotter(object):
             size_levels = size_formatted_levels = self.size_levels
 
         # Add the size semantic subtitle
-        if self.size_label is not None:
-            update((self.size_label, "title"), self.size_label, **title_kws)
+        if "size" in self.variables and self.variables["size"] is not None:
+            update((self.variables["size"], "title"),
+                   self.variables["size"], **title_kws)
 
         # Add the size semantic labels
         for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(
-                    self.size_label, formatted_level, linewidth=size, s=size)
+                update(self.variables["size"],
+                       formatted_level, linewidth=size, s=size)
 
         # -- Add a legend for style semantics
 
         # Add the style semantic title
-        if self.style_label is not None:
-            update((self.style_label, "title"), self.style_label, **title_kws)
+        if "style" in self.variables and self.variables["style"] is not None:
+            update((self.variables["style"], "title"),
+                   self.variables["style"], **title_kws)
 
         # Add the style semantic labels
         for level in self.style_levels:
             if level is not None:
-                update(self.style_label, level,
+                update(self.variables["style"], level,
                        marker=self.markers.get(level, ""),
                        dashes=self.dashes.get(level, ""))
 
@@ -692,8 +552,8 @@ class _LinePlotter(_RelationalPlotter):
                  units=None, estimator=None, ci=None, n_boot=None, seed=None,
                  sort=True, err_style=None, err_kws=None, legend=None):
 
-        plot_data = self.establish_variables(
-            x, y, hue, size, style, units, data
+        plot_data, variables = self.establish_variables(
+            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 
         self._default_size_range = (
@@ -883,8 +743,8 @@ class _ScatterPlotter(_RelationalPlotter):
                  alpha=None, x_jitter=None, y_jitter=None,
                  legend=None):
 
-        plot_data = self.establish_variables(
-            x, y, hue, size, style, units, data
+        plot_data, variables = self.establish_variables(
+            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
         )
 
         self._default_size_range = (
@@ -934,12 +794,12 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # Assign arguments for plt.scatter and draw the plot
 
-        data = self.plot_data[self.semantics].dropna()
+        data = self.plot_data[list(self.variables)].dropna()
         if not data.size:
             return
 
-        x = data["x"]
-        y = data["y"]
+        x = data.get(["x"], np.full(len(data), np.nan))
+        y = data.get(["y"], np.full(len(data), np.nan))
 
         if self.palette:
             c = [self.palette.get(val) for val in data["hue"]]
@@ -1662,8 +1522,10 @@ def relplot(
 
     # Check for attempt to plot onto specific axes and warn
     if "ax" in kwargs:
-        msg = ("relplot is a figure-level function and does not accept "
-               "target axes. You may wish to try {}".format(kind + "plot"))
+        msg = (
+            "relplot is a figure-level function and does not accept "
+            "the ax= paramter. You may wish to try {}".format(kind + "plot")
+        )
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
@@ -1676,6 +1538,7 @@ def relplot(
         legend=legend,
     )
 
+    # Extract the semantic mappings
     palette = p.palette if p.palette else None
     hue_order = p.hue_levels if any(p.hue_levels) else None
     hue_norm = p.hue_norm if p.hue_norm is not None else None
@@ -1688,6 +1551,12 @@ def relplot(
     dashes = p.dashes if p.dashes else None
     style_order = p.style_levels if any(p.style_levels) else None
 
+    # Now extract the data that would be used to draw a single plot
+    variables = p.variables
+    plot_data = p.plot_data
+    plot_semantics = p.semantics
+
+    # Define the common plotting parameters
     plot_kws = dict(
         palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
         sizes=sizes, size_order=size_order, size_norm=p.size_norm,
@@ -1698,22 +1567,52 @@ def relplot(
     if kind == "scatter":
         plot_kws.pop("dashes")
 
+    # Define the named variables for plotting on each facet
+    plot_variables = {key: key for key in p.variables}
+    plot_kws.update(plot_variables)
+
+    # Define grid_data with row/col semantics
+    grid_semantics = ["row", "col"]  # TODO define on FacetGrid?
+    p.semantics = plot_semantics + grid_semantics
+    full_data, full_variables = p.establish_variables(
+        data,
+        x=x, y=y,
+        hue=hue, size=size, style=style,
+        row=row, col=col,
+    )
+
+    # Assemble a data object with the plot_data from the original
+    # plotter and the row/col variables with their external names.
+    # This is so FacetGrid labels the subplots correctly.
+    # We can't use just full_data because the hue/size type inference can
+    # change the data type of variables with object type but numeric behavior.
+    grid_kws = {v: full_variables.get(v, None) for v in grid_semantics}
+    grid_data = full_data[grid_semantics].rename(columns=grid_kws)
+    plot_data = pd.concat([plot_data, grid_data], axis=1)
+
     # Set up the FacetGrid object
-    facet_kws = {} if facet_kws is None else facet_kws
+    facet_kws = {} if facet_kws is None else facet_kws.copy()
+    facet_kws.update(grid_kws)
     g = FacetGrid(
-        data=data, row=row, col=col, col_wrap=col_wrap,
-        row_order=row_order, col_order=col_order,
+        data=plot_data,
+        col_wrap=col_wrap, row_order=row_order, col_order=col_order,
         height=height, aspect=aspect, dropna=False,
         **facet_kws
     )
 
     # Draw the plot
-    g.map_dataframe(func, x, y,
-                    hue=hue, size=size, style=style,
-                    **plot_kws)
+    g.map_dataframe(func, **plot_kws)
+
+    # Label the axes
+    g.set_axis_labels(
+        variables.get("x", None), variables.get("y", None)
+    )
 
     # Show the legend
     if legend:
+        # Replace the original plot data so the legend uses
+        # numeric data with the correct type
+        p.plot_data = plot_data
         p.add_legend_data(g.axes.flat[0])
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
