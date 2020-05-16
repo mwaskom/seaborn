@@ -870,10 +870,12 @@ class TestRelationalPlotter(Helpers):
         assert p.dashes == dict(zip(p.style_levels, unique_dashes(n)))
 
         actual_marker_paths = {
-            k: m.get_path() for k, m in p.markers.items()
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in p.markers.items()
         }
         expected_marker_paths = {
-            k: m.get_path() for k, m in zip(p.style_levels, unique_markers(n))
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(p.style_levels, unique_markers(n))
         }
         assert actual_marker_paths == expected_marker_paths
 
@@ -899,10 +901,12 @@ class TestRelationalPlotter(Helpers):
         assert p.dashes == dict(zip(style_order, unique_dashes(n)))
 
         actual_marker_paths = {
-            k: m.get_path() for k, m in p.markers.items()
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in p.markers.items()
         }
         expected_marker_paths = {
-            k: m.get_path() for k, m in zip(style_order, unique_markers(n))
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(style_order, unique_markers(n))
         }
         assert actual_marker_paths == expected_marker_paths
 

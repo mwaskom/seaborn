@@ -324,6 +324,6 @@ def unique_markers(n):
         s += 1
 
     # Convert to MarkerStyle object, using only exactly what we need
-    markers = [mpl.markers.MarkerStyle(m) for m in markers[:n]]
+    # markers = [mpl.markers.MarkerStyle(m) for m in markers[:n]]
 
-    return markers
+    return markers[:n]

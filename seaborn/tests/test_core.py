@@ -62,5 +62,4 @@ class TestCoreFunc:
         assert len(markers) == n
         assert len(set(markers)) == n
         for m in markers:
-            assert isinstance(m, mpl.markers.MarkerStyle)
-            assert m.is_filled()
+            assert mpl.markers.MarkerStyle(m).is_filled()
