@@ -1,7 +1,9 @@
 import itertools
 from collections.abc import Iterable, Sequence, Mapping
+
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 
 
 class _VectorPlotter:
@@ -238,17 +240,17 @@ def unique_dashes(n):
     ----------
     n : int
         Number of unique dash specs to generate.
+
     Returns
     -------
-    dashes : list of tuples
+    dashes : list of strings or tuples
         Valid arguments for the ``dashes`` parameter on
         :class:`matplotlib.lines.Line2D`. The first spec is a solid
         line (``""``), the remainder are sequences of long and short
         dashes.
 
     """
-
-    # Start with 5 dash specs that are well distinguishable
+    # Start with dash specs that are well distinguishable
     dashes = [
         "",
         (4, 1.5),
@@ -258,12 +260,12 @@ def unique_dashes(n):
     ]
 
     # Now programatically build as many as we need
-    q = 3
+    p = 3
     while len(dashes) < n:
 
         # Take combinations of long and short dashes
-        a = itertools.combinations_with_replacement([3, 1.5], q)
-        b = itertools.combinations_with_replacement([4, 1], q)
+        a = itertools.combinations_with_replacement([3, 1.25], p)
+        b = itertools.combinations_with_replacement([4, 1], p)
 
         # Interleave the combinations, reversing one of the streams
         segment_list = itertools.chain(*zip(
@@ -271,12 +273,57 @@ def unique_dashes(n):
             list(b)[1:-1]
         ))
 
-        # Now insert the "off" segments
+        # Now insert the gaps
         for segments in segment_list:
-            off = min(segments)
-            spec = tuple(itertools.chain(*((on, off) for on in segments)))
+            gap = min(segments)
+            spec = tuple(itertools.chain(*((seg, gap) for seg in segments)))
             dashes.append(spec)
 
-        q += 1
+        p += 1
 
     return dashes[:n]
+
+
+def unique_markers(n):
+    """Build an arbitrarily long list of unique marker styles for points.
+
+    Parameters
+    ----------
+    n : int
+        Number of unique marker specs to generate.
+
+    Returns
+    -------
+    markers : list of :class:`matplotlib.markers.MarkerStyle` objects
+        All markers will be filled.
+
+    """
+    # Start with marker specs that are well distinguishable
+    markers = [
+        "o",
+        "X",
+        (4, 0, 45),
+        "P",
+        (4, 0, 0),
+        (4, 1, 0),
+        "^",
+        (4, 1, 45),
+        "v",
+    ]
+
+    # Now generate more from regular polygons of increasing order
+    s = 5
+    while len(markers) < n:
+        a = 360 / (s + 1) / 2
+        markers.extend([
+            (s + 1, 1, a),
+            (s + 1, 0, a),
+            (s, 1, 0),
+            (s, 0, 0),
+        ])
+        s += 1
+
+    # Convert to MarkerStyle object, using only exactly what we need
+    markers = [mpl.markers.MarkerStyle(m) for m in markers[:n]]
+
+    return markers

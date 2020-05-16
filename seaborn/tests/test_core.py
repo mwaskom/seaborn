@@ -1,10 +1,12 @@
 import numpy as np
+import matplotlib as mpl
 
 from numpy.testing import assert_array_equal
 
 from ..core import (
     _VectorPlotter,
     unique_dashes,
+    unique_markers,
 )
 
 
@@ -44,8 +46,21 @@ class TestCoreFunc:
 
         n = 24
         dashes = unique_dashes(n)
-        assert len(set(dashes)) == n
 
+        assert len(dashes) == n
+        assert len(set(dashes)) == n
         assert dashes[0] == ""
         for spec in dashes[1:]:
             assert isinstance(spec, tuple)
+            assert not len(spec) % 2
+
+    def test_unique_markers(self):
+
+        n = 24
+        markers = unique_markers(n)
+
+        assert len(markers) == n
+        assert len(set(markers)) == n
+        for m in markers:
+            assert isinstance(m, mpl.markers.MarkerStyle)
+            assert m.is_filled()
