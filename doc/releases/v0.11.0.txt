@@ -2,9 +2,13 @@
 v0.11.0 (Unreleased)
 --------------------
 
+- TODO stub for explaining improvements to variable specificiation. Make this good!
+
 - Enforced keyword-only arguments for most parameters of most functions and classes.
 
 - Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.
+
+- Plots with a ``style`` semantic can now generate an infinite number of default dashes and/or markers. Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_.
 
 - Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend.
 

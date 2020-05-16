@@ -3,7 +3,6 @@ from collections.abc import Iterable, Sequence, Mapping
 
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
 
 
 class _VectorPlotter:
@@ -294,7 +293,8 @@ def unique_markers(n):
 
     Returns
     -------
-    markers : list of :class:`matplotlib.markers.MarkerStyle` objects
+    markers : list of string or tuples
+        Values for defining :class:`matplotlib.markers.MarkerStyle` objects.
         All markers will be filled.
 
     """
