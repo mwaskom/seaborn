@@ -774,7 +774,12 @@ class _ScatterPlotter(_RelationalPlotter):
 
         kws.pop("color", None)  # TODO is this optimal?
 
-        kws.setdefault("linewidth", .75)  # TODO scale with marker size?
+        if self.sizes:
+            size_ref = np.percentile(list(self.sizes.values()), 10)
+        else:
+            size_ref = np.percentile(s, 10)
+
+        kws.setdefault("linewidth", .05 * np.sqrt(size_ref))
         kws.setdefault("edgecolor", "w")
 
         if self.markers:

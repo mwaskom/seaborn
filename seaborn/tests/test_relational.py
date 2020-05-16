@@ -2062,6 +2062,42 @@ class TestScatterPlotter(Helpers):
         ax = scatterplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
+    def test_scatterplot_linewidths(self, long_df):
+
+        f, ax = plt.subplots()
+
+        scatterplot(data=long_df, x="x", y="y", s=10)
+        scatterplot(data=long_df, x="x", y="y", s=20)
+        points1, points2 = ax.collections
+        assert (
+            points1.get_linewidths().item() < points2.get_linewidths().item()
+        )
+
+        # These tests don't work because changes in matplotlib casue an error
+        # when we draw the scount with non-scalar s or c
+        """
+        ax.clear()
+        scatterplot(data=long_df, x="x", y="y", s=long_df["x"])
+        scatterplot(data=long_df, x="x", y="y", s=long_df["x"] * 2)
+        points1, points2 = ax.collections
+        assert (
+            points1.get_linewidths().item() < points2.get_linewidths().item()
+        )
+        """
+
+        ax.clear()
+        scatterplot(data=long_df, x="x", y="y", size=long_df["x"])
+        scatterplot(data=long_df, x="x", y="y", size=long_df["x"] * 2)
+        points1, points2, *_ = ax.collections
+        assert (
+            points1.get_linewidths().item() < points2.get_linewidths().item()
+        )
+
+        ax.clear()
+        lw = 2
+        scatterplot(data=long_df, x="x", y="y", linewidth=lw)
+        assert ax.collections[0].get_linewidths().item() == lw
+
     def test_scatterplot_smoke(
         self,
         wide_df, wide_array,
