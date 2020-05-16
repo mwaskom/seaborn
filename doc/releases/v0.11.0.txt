@@ -2,14 +2,18 @@
 v0.11.0 (Unreleased)
 --------------------
 
-- Enforced keyword-only arguments for most parameters of most functions and classes.
+- TODO stub for explaining improvements to variable specificiation. Make this good!  GH2017
 
-- Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.
+- Enforced keyword-only arguments for most parameters of most functions and classes.  GH2052
 
-- Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend.
+- Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.  GH2060
 
-- Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm.
+- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_. GH2075
 
-- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.
+- Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend. GH2073
 
-- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.
+- Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm. GH2045
+
+- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.  GH2046
+
+- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.  GH2046

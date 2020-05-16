@@ -1,4 +1,6 @@
+import itertools
 from collections.abc import Iterable, Sequence, Mapping
+
 import numpy as np
 import pandas as pd
 
@@ -228,3 +230,100 @@ class _VectorPlotter:
         }
 
         return plot_data, variables
+
+
+def unique_dashes(n):
+    """Build an arbitrarily long list of unique dash styles for lines.
+
+    Parameters
+    ----------
+    n : int
+        Number of unique dash specs to generate.
+
+    Returns
+    -------
+    dashes : list of strings or tuples
+        Valid arguments for the ``dashes`` parameter on
+        :class:`matplotlib.lines.Line2D`. The first spec is a solid
+        line (``""``), the remainder are sequences of long and short
+        dashes.
+
+    """
+    # Start with dash specs that are well distinguishable
+    dashes = [
+        "",
+        (4, 1.5),
+        (1, 1),
+        (3, 1.25, 1.5, 1.25),
+        (5, 1, 1, 1),
+    ]
+
+    # Now programatically build as many as we need
+    p = 3
+    while len(dashes) < n:
+
+        # Take combinations of long and short dashes
+        a = itertools.combinations_with_replacement([3, 1.25], p)
+        b = itertools.combinations_with_replacement([4, 1], p)
+
+        # Interleave the combinations, reversing one of the streams
+        segment_list = itertools.chain(*zip(
+            list(a)[1:-1][::-1],
+            list(b)[1:-1]
+        ))
+
+        # Now insert the gaps
+        for segments in segment_list:
+            gap = min(segments)
+            spec = tuple(itertools.chain(*((seg, gap) for seg in segments)))
+            dashes.append(spec)
+
+        p += 1
+
+    return dashes[:n]
+
+
+def unique_markers(n):
+    """Build an arbitrarily long list of unique marker styles for points.
+
+    Parameters
+    ----------
+    n : int
+        Number of unique marker specs to generate.
+
+    Returns
+    -------
+    markers : list of string or tuples
+        Values for defining :class:`matplotlib.markers.MarkerStyle` objects.
+        All markers will be filled.
+
+    """
+    # Start with marker specs that are well distinguishable
+    markers = [
+        "o",
+        "X",
+        (4, 0, 45),
+        "P",
+        (4, 0, 0),
+        (4, 1, 0),
+        "^",
+        (4, 1, 45),
+        "v",
+    ]
+
+    # Now generate more from regular polygons of increasing order
+    s = 5
+    while len(markers) < n:
+        a = 360 / (s + 1) / 2
+        markers.extend([
+            (s + 1, 1, a),
+            (s + 1, 0, a),
+            (s, 1, 0),
+            (s, 0, 0),
+        ])
+        s += 1
+
+    # Convert to MarkerStyle object, using only exactly what we need
+    # markers = [mpl.markers.MarkerStyle(m) for m in markers[:n]]
+
+    return markers[:n]

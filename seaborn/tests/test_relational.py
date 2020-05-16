@@ -11,6 +11,11 @@ from numpy.testing import assert_array_equal
 from ..palettes import color_palette
 from ..utils import categorical_order
 
+from ..core import (
+    unique_dashes,
+    unique_markers,
+)
+
 from ..relational import (
     _RelationalPlotter,
     _LinePlotter,
@@ -860,8 +865,19 @@ class TestRelationalPlotter(Helpers):
         # Test defaults
         markers, dashes = True, True
         p.parse_style(p.plot_data["style"], markers, dashes)
-        assert p.markers == dict(zip(p.style_levels, p.default_markers))
-        assert p.dashes == dict(zip(p.style_levels, p.default_dashes))
+
+        n = len(p.style_levels)
+        assert p.dashes == dict(zip(p.style_levels, unique_dashes(n)))
+
+        actual_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in p.markers.items()
+        }
+        expected_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(p.style_levels, unique_markers(n))
+        }
+        assert actual_marker_paths == expected_marker_paths
 
         # Test lists
         markers, dashes = ["o", "s", "d"], [(1, 0), (1, 1), (2, 1, 3, 1)]
@@ -880,8 +896,19 @@ class TestRelationalPlotter(Helpers):
         style_order = np.take(p.style_levels, [1, 2, 0])
         markers = dashes = True
         p.parse_style(p.plot_data["style"], markers, dashes, style_order)
-        assert p.markers == dict(zip(style_order, p.default_markers))
-        assert p.dashes == dict(zip(style_order, p.default_dashes))
+
+        n = len(style_order)
+        assert p.dashes == dict(zip(style_order, unique_dashes(n)))
+
+        actual_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in p.markers.items()
+        }
+        expected_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(style_order, unique_markers(n))
+        }
+        assert actual_marker_paths == expected_marker_paths
 
         # Test too many levels with style lists
         markers, dashes = ["o", "s"], False
