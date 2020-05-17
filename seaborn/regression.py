@@ -622,7 +622,10 @@ def lmplot(
         truncate=truncate, x_jitter=x_jitter, y_jitter=y_jitter,
         scatter_kws=scatter_kws, line_kws=line_kws,
     )
-    facets.map_dataframe(regplot, x, y, **regplot_kws)
+    facets.map_dataframe(regplot, x=x, y=y, **regplot_kws)
+
+    # TODO this will need to change when we relax string requirement
+    facets.set_axis_labels(x, y)
 
     # Add a legend
     if legend and (hue is not None) and (hue not in [col, row]):

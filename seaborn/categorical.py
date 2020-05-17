@@ -3328,7 +3328,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips,
+        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
         ...                  palette="Blues_d")
 
     Use ``hue`` without changing bar position or width:
@@ -3345,7 +3345,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips,
+        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
         ...                  color="salmon", saturation=.5)
 
     Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
@@ -3353,7 +3353,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("day", "total_bill", data=tips,
+        >>> ax = sns.barplot(x="day", y="total_bill", data=tips,
         ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
         ...                  errcolor=".2", edgecolor=".2")
 
@@ -3516,7 +3516,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot("time", y="total_bill", data=tips,
+        >>> ax = sns.pointplot(x="time", y="total_bill", data=tips,
         ...                    color="#bb3f3f")
 
     Use a different color palette for the points:
@@ -3831,7 +3831,12 @@ def catplot(
     g = FacetGrid(**facet_kws)
 
     # Draw the plot onto the facets
-    g.map_dataframe(plot_func, x, y, hue=hue, **plot_kws)
+    g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
+
+    if p.orient == "h":
+        g.set_axis_labels(p.value_label, p.group_label)
+    else:
+        g.set_axis_labels(p.group_label, p.value_label)
 
     # Special case axis labels for a count type plot
     if kind == "count":
@@ -3973,7 +3978,7 @@ catplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> titanic = sns.load_dataset("titanic")
-        >>> g = sns.catplot("alive", col="deck", col_wrap=4,
+        >>> g = sns.catplot(x="alive", col="deck", col_wrap=4,
         ...                 data=titanic[titanic.deck.notnull()],
         ...                 kind="count", height=2.5, aspect=.8)
 

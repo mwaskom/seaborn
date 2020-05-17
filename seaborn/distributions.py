@@ -116,7 +116,7 @@ def distplot(
         >>> import seaborn as sns, numpy as np
         >>> sns.set(); np.random.seed(0)
         >>> x = np.random.randn(100)
-        >>> ax = sns.distplot(x)
+        >>> ax = sns.distplot(x=x)
 
     Use Pandas objects to get an informative axis label:
 
@@ -125,14 +125,14 @@ def distplot(
 
         >>> import pandas as pd
         >>> x = pd.Series(x, name="x variable")
-        >>> ax = sns.distplot(x)
+        >>> ax = sns.distplot(x=x)
 
     Plot the distribution with a kernel density estimate and rug plot:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x, rug=True, hist=False)
+        >>> ax = sns.distplot(x=x, rug=True, hist=False)
 
     Plot the distribution with a histogram and maximum likelihood gaussian
     distribution fit:
@@ -141,14 +141,14 @@ def distplot(
         :context: close-figs
 
         >>> from scipy.stats import norm
-        >>> ax = sns.distplot(x, fit=norm, kde=False)
+        >>> ax = sns.distplot(x=x, fit=norm, kde=False)
 
     Plot the distribution on the vertical axis:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x, vertical=True)
+        >>> ax = sns.distplot(x=x, vertical=True)
 
     Change the color of all the plot elements:
 
@@ -156,14 +156,14 @@ def distplot(
         :context: close-figs
 
         >>> sns.set_color_codes()
-        >>> ax = sns.distplot(x, color="y")
+        >>> ax = sns.distplot(x=x, color="y")
 
     Pass specific parameters to the underlying plot functions:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
+        >>> ax = sns.distplot(x=x, rug=True, rug_kws={"color": "g"},
         ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
         ...                   hist_kws={"histtype": "step", "linewidth": 3,
         ...                             "alpha": 1, "color": "g"})
@@ -239,14 +239,14 @@ def distplot(
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        kdeplot(x=a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
         if kde_color != color:
             kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
         axis = "y" if vertical else "x"
-        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        rugplot(x=a, axis=axis, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
 
@@ -608,63 +608,63 @@ def kdeplot(
         >>> import seaborn as sns; sns.set(color_codes=True)
         >>> mean, cov = [0, 2], [(1, .5), (.5, 1)]
         >>> x, y = np.random.multivariate_normal(mean, cov, size=50).T
-        >>> ax = sns.kdeplot(x)
+        >>> ax = sns.kdeplot(x=x)
 
     Shade under the density curve and use a different color:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, shade=True, color="r")
+        >>> ax = sns.kdeplot(x=x, shade=True, color="r")
 
     Plot a bivariate density:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, y)
+        >>> ax = sns.kdeplot(x=x, y=y)
 
     Use filled contours:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, y, shade=True)
+        >>> ax = sns.kdeplot(x=x, y=y, shade=True)
 
     Use more contour levels and a different color palette:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, y, n_levels=30, cmap="Purples_d")
+        >>> ax = sns.kdeplot(x=x, y=y, n_levels=30, cmap="Purples_d")
 
     Use a narrower bandwith:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, bw=.15)
+        >>> ax = sns.kdeplot(x=x, bw=.15)
 
     Plot the density on the vertical axis:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(y, vertical=True)
+        >>> ax = sns.kdeplot(x=y, vertical=True)
 
     Limit the density curve within the range of the data:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, cut=0)
+        >>> ax = sns.kdeplot(x=x, cut=0)
 
     Add a colorbar for the contours:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x, y, cbar=True)
+        >>> ax = sns.kdeplot(x=x, y=y, cbar=True)
 
     Plot two shaded bivariate densities:
 
@@ -674,9 +674,9 @@ def kdeplot(
         >>> iris = sns.load_dataset("iris")
         >>> setosa = iris.loc[iris.species == "setosa"]
         >>> virginica = iris.loc[iris.species == "virginica"]
-        >>> ax = sns.kdeplot(setosa.sepal_width, setosa.sepal_length,
+        >>> ax = sns.kdeplot(x=setosa.sepal_width, y=setosa.sepal_length,
         ...                  cmap="Reds", shade=True, shade_lowest=False)
-        >>> ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
+        >>> ax = sns.kdeplot(x=virginica.sepal_width, y=virginica.sepal_length,
         ...                  cmap="Blues", shade=True, shade_lowest=False)
 
     """

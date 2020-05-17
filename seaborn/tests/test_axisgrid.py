@@ -503,7 +503,7 @@ class TestFacetGrid(object):
 
         x, y = np.arange(10), np.arange(10)
         df = pd.DataFrame(np.c_[x, y], columns=["x", "y"])
-        g = ag.FacetGrid(df).map(pointplot, "x", "y", order=x)
+        g = ag.FacetGrid(df).map_dataframe(pointplot, x="x", y="y", order=x)
         g.set_xticklabels(step=2)
         got_x = [int(l.get_text()) for l in g.axes[0, 0].get_xticklabels()]
         npt.assert_array_equal(x[::2], got_x)
@@ -1267,36 +1267,36 @@ class TestJointGrid(object):
 
     def test_margin_grid_from_lists(self):
 
-        g = ag.JointGrid(self.x.tolist(), self.y.tolist())
+        g = ag.JointGrid(x=self.x.tolist(), y=self.y.tolist())
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
 
     def test_margin_grid_from_arrays(self):
 
-        g = ag.JointGrid(self.x, self.y)
+        g = ag.JointGrid(x=self.x, y=self.y)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
 
     def test_margin_grid_from_series(self):
 
-        g = ag.JointGrid(self.data.x, self.data.y)
+        g = ag.JointGrid(x=self.data.x, y=self.data.y)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
 
     def test_margin_grid_from_dataframe(self):
 
-        g = ag.JointGrid("x", "y", data=self.data)
+        g = ag.JointGrid(x="x", y="y", data=self.data)
         npt.assert_array_equal(g.x, self.x)
         npt.assert_array_equal(g.y, self.y)
 
     def test_margin_grid_from_dataframe_bad_variable(self):
 
         with nt.assert_raises(ValueError):
-            ag.JointGrid("x", "bad_column", data=self.data)
+            ag.JointGrid(x="x", y="bad_column", data=self.data)
 
     def test_margin_grid_axis_labels(self):
 
-        g = ag.JointGrid("x", "y", data=self.data)
+        g = ag.JointGrid(x="x", y="y", data=self.data)
 
         xlabel, ylabel = g.ax_joint.get_xlabel(), g.ax_joint.get_ylabel()
         nt.assert_equal(xlabel, "x")
@@ -1309,16 +1309,16 @@ class TestJointGrid(object):
 
     def test_dropna(self):
 
-        g = ag.JointGrid("x_na", "y", data=self.data, dropna=False)
+        g = ag.JointGrid(x="x_na", y="y", data=self.data, dropna=False)
         nt.assert_equal(len(g.x), len(self.x_na))
 
-        g = ag.JointGrid("x_na", "y", data=self.data, dropna=True)
+        g = ag.JointGrid(x="x_na", y="y", data=self.data, dropna=True)
         nt.assert_equal(len(g.x), pd.notnull(self.x_na).sum())
 
     def test_axlims(self):
 
         lim = (-3, 3)
-        g = ag.JointGrid("x", "y", data=self.data, xlim=lim, ylim=lim)
+        g = ag.JointGrid(x="x", y="y", data=self.data, xlim=lim, ylim=lim)
 
         nt.assert_equal(g.ax_joint.get_xlim(), lim)
         nt.assert_equal(g.ax_joint.get_ylim(), lim)
@@ -1328,13 +1328,13 @@ class TestJointGrid(object):
 
     def test_marginal_ticks(self):
 
-        g = ag.JointGrid("x", "y", data=self.data)
+        g = ag.JointGrid(x="x", y="y", data=self.data)
         nt.assert_true(~len(g.ax_marg_x.get_xticks()))
         nt.assert_true(~len(g.ax_marg_y.get_yticks()))
 
     def test_bivariate_plot(self):
 
-        g = ag.JointGrid("x", "y", data=self.data)
+        g = ag.JointGrid(x="x", y="y", data=self.data)
         g.plot_joint(plt.plot)
 
         x, y = g.ax_joint.lines[0].get_xydata().T
@@ -1343,7 +1343,7 @@ class TestJointGrid(object):
 
     def test_univariate_plot(self):
 
-        g = ag.JointGrid("x", "x", data=self.data)
+        g = ag.JointGrid(x="x", y="x", data=self.data)
         g.plot_marginals(kdeplot)
 
         _, y1 = g.ax_marg_x.lines[0].get_xydata().T
@@ -1352,7 +1352,7 @@ class TestJointGrid(object):
 
     def test_plot(self):
 
-        g = ag.JointGrid("x", "x", data=self.data)
+        g = ag.JointGrid(x="x", y="x", data=self.data)
         g.plot(plt.plot, kdeplot)
 
         x, y = g.ax_joint.lines[0].get_xydata().T
@@ -1365,7 +1365,7 @@ class TestJointGrid(object):
 
     def test_annotate(self):
 
-        g = ag.JointGrid("x", "y", data=self.data)
+        g = ag.JointGrid(x="x", y="y", data=self.data)
         rp = stats.pearsonr(self.x, self.y)
 
         with pytest.warns(UserWarning):
@@ -1396,7 +1396,7 @@ class TestJointGrid(object):
 
     def test_space(self):
 
-        g = ag.JointGrid("x", "y", data=self.data, space=0)
+        g = ag.JointGrid(x="x", y="y", data=self.data, space=0)
 
         joint_bounds = g.ax_joint.bbox.bounds
         marg_x_bounds = g.ax_marg_x.bbox.bounds
@@ -1415,7 +1415,7 @@ class TestJointPlot(object):
 
     def test_scatter(self):
 
-        g = ag.jointplot("x", "y", data=self.data)
+        g = ag.jointplot(x="x", y="y", data=self.data)
         nt.assert_equal(len(g.ax_joint.collections), 1)
 
         x, y = g.ax_joint.collections[0].get_offsets().T
@@ -1430,7 +1430,7 @@ class TestJointPlot(object):
 
     def test_reg(self):
 
-        g = ag.jointplot("x", "y", data=self.data, kind="reg")
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="reg")
         nt.assert_equal(len(g.ax_joint.collections), 2)
 
         x, y = g.ax_joint.collections[0].get_offsets().T
@@ -1449,7 +1449,7 @@ class TestJointPlot(object):
 
     def test_resid(self):
 
-        g = ag.jointplot("x", "y", data=self.data, kind="resid")
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="resid")
         nt.assert_equal(len(g.ax_joint.collections), 1)
         nt.assert_equal(len(g.ax_joint.lines), 1)
         nt.assert_equal(len(g.ax_marg_x.lines), 0)
@@ -1457,7 +1457,7 @@ class TestJointPlot(object):
 
     def test_hex(self):
 
-        g = ag.jointplot("x", "y", data=self.data, kind="hex")
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="hex")
         nt.assert_equal(len(g.ax_joint.collections), 1)
 
         x_bins = _freedman_diaconis_bins(self.x)
@@ -1468,7 +1468,7 @@ class TestJointPlot(object):
 
     def test_kde(self):
 
-        g = ag.jointplot("x", "y", data=self.data, kind="kde")
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="kde")
 
         nt.assert_true(len(g.ax_joint.collections) > 0)
         nt.assert_equal(len(g.ax_marg_x.collections), 1)
@@ -1479,7 +1479,7 @@ class TestJointPlot(object):
 
     def test_color(self):
 
-        g = ag.jointplot("x", "y", data=self.data, color="purple")
+        g = ag.jointplot(x="x", y="y", data=self.data, color="purple")
 
         purple = mpl.colors.colorConverter.to_rgb("purple")
         scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
@@ -1491,17 +1491,17 @@ class TestJointPlot(object):
     def test_annotation(self):
 
         with pytest.warns(UserWarning):
-            g = ag.jointplot("x", "y", data=self.data,
+            g = ag.jointplot(x="x", y="y", data=self.data,
                              stat_func=stats.pearsonr)
         nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
 
-        g = ag.jointplot("x", "y", data=self.data, stat_func=None)
+        g = ag.jointplot(x="x", y="y", data=self.data, stat_func=None)
         nt.assert_is(g.ax_joint.legend_, None)
 
     def test_hex_customise(self):
 
         # test that default gridsize can be overridden
-        g = ag.jointplot("x", "y", data=self.data, kind="hex",
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="hex",
                          joint_kws=dict(gridsize=5))
         nt.assert_equal(len(g.ax_joint.collections), 1)
         a = g.ax_joint.collections[0].get_array()
@@ -1510,7 +1510,7 @@ class TestJointPlot(object):
     def test_bad_kind(self):
 
         with nt.assert_raises(ValueError):
-            ag.jointplot("x", "y", data=self.data, kind="not_a_kind")
+            ag.jointplot(x="x", y="y", data=self.data, kind="not_a_kind")
 
     def test_leaky_dict(self):
         # Validate input dicts are unchanged by jointplot plotting function
@@ -1518,6 +1518,6 @@ class TestJointPlot(object):
         for kwarg in ("joint_kws", "marginal_kws", "annot_kws"):
             for kind in ("hex", "kde", "resid", "reg", "scatter"):
                 empty_dict = {}
-                ag.jointplot("x", "y", data=self.data, kind=kind,
+                ag.jointplot(x="x", y="y", data=self.data, kind=kind,
                              **{kwarg: empty_dict})
                 assert empty_dict == {}

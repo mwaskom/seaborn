@@ -607,7 +607,7 @@ class FacetGrid(Grid):
             >>> def qqplot(x, y, **kwargs):
             ...     _, xr = stats.probplot(x, fit=False)
             ...     _, yr = stats.probplot(y, fit=False)
-            ...     sns.scatterplot(xr, yr, **kwargs)
+            ...     sns.scatterplot(x=xr, y=yr, **kwargs)
             >>> g = sns.FacetGrid(tips, col="smoker", hue="sex")
             >>> g = (g.map(qqplot, "total_bill", "tip", **kws)
             ...       .add_legend())
@@ -874,6 +874,12 @@ class FacetGrid(Grid):
     def _facet_plot(self, func, ax, plot_args, plot_kwargs):
 
         # Draw the plot
+        if func.__module__.startswith("seaborn"):
+            plot_kwargs = plot_kwargs.copy()
+            semantics = ["x", "y", "hue", "size", "style"]
+            for key, val in zip(semantics, plot_args):
+                plot_kwargs[key] = val
+            plot_args = []
         func(*plot_args, **plot_kwargs)
 
         # Sort out the supporting information
@@ -1528,7 +1534,10 @@ class PairGrid(Grid):
                 if self._dropna:
                     data_k = utils.remove_na(data_k)
 
-                func(data_k, label=label_k, color=color, **kwargs)
+                if func.__module__.startswith("seaborn"):
+                    func(x=data_k, label=label_k, color=color, **kwargs)
+                else:
+                    func(data_k, label=label_k, color=color, **kwargs)
 
             self._clean_axis(ax)
 
@@ -1574,7 +1583,10 @@ class PairGrid(Grid):
                 kwargs[kw] = val_list[k]
             color = self.palette[k] if kw_color is None else kw_color
 
-            func(x, y, label=label_k, color=color, **kwargs)
+            if func.__module__.startswith("seaborn"):
+                func(x=x, y=y, label=label_k, color=color, **kwargs)
+            else:
+                func(x, y, label=label_k, color=color, **kwargs)
 
         self._clean_axis(ax)
         self._update_legend_data(ax)
@@ -1829,7 +1841,11 @@ class JointGrid(object):
 
         """
         plt.sca(self.ax_joint)
-        func(self.x, self.y, **kwargs)
+
+        if func.__module__.startswith("seaborn"):
+            func(x=self.x, y=self.y, **kwargs)
+        else:
+            func(self.x, self.y, **kwargs)
 
         return self
 
@@ -1854,11 +1870,17 @@ class JointGrid(object):
         """
         kwargs["vertical"] = False
         plt.sca(self.ax_marg_x)
-        func(self.x, **kwargs)
+        if func.__module__.startswith("seaborn"):
+            func(x=self.x, **kwargs)
+        else:
+            func(self.x, **kwargs)
 
         kwargs["vertical"] = True
         plt.sca(self.ax_marg_y)
-        func(self.y, **kwargs)
+        if func.__module__.startswith("seaborn"):
+            func(x=self.y, **kwargs)
+        else:
+            func(self.y, **kwargs)
 
         return self
 
@@ -2266,14 +2288,14 @@ def jointplot(
     .. plot::
         :context: close-figs
 
-        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="reg")
+        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="reg")
 
     Replace the scatterplot with a joint histogram using hexagonal bins:
 
     .. plot::
         :context: close-figs
 
-        >>> g = sns.jointplot("total_bill", "tip", data=tips, kind="hex")
+        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="hex")
 
     Replace the scatterplots and histograms with density estimates and align
     the marginal Axes tightly with the joint Axes:
@@ -2282,7 +2304,7 @@ def jointplot(
         :context: close-figs
 
         >>> iris = sns.load_dataset("iris")
-        >>> g = sns.jointplot("sepal_width", "petal_length", data=iris,
+        >>> g = sns.jointplot(x="sepal_width", y="petal_length", data=iris,
         ...                   kind="kde", space=0, color="g")
 
     Draw a scatterplot, then add a joint density estimate:
@@ -2290,7 +2312,7 @@ def jointplot(
     .. plot::
         :context: close-figs
 
-        >>> g = (sns.jointplot("sepal_length", "sepal_width",
+        >>> g = (sns.jointplot(x="sepal_length", y="sepal_width",
         ...                    data=iris, color="k")
         ...         .plot_joint(sns.kdeplot, zorder=0, n_levels=6))
 
@@ -2300,7 +2322,7 @@ def jointplot(
         :context: close-figs
 
         >>> x, y = np.random.randn(2, 300)
-        >>> g = (sns.jointplot(x, y, kind="hex")
+        >>> g = (sns.jointplot(x=x, y=y, kind="hex")
         ...         .set_axis_labels("x", "y"))
 
     Draw a smaller figure with more space devoted to the marginal plots:
@@ -2308,7 +2330,7 @@ def jointplot(
     .. plot::
         :context: close-figs
 
-        >>> g = sns.jointplot("total_bill", "tip", data=tips,
+        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips,
         ...                   height=5, ratio=3, color="g")
 
     Pass keyword arguments down to the underlying plots:
@@ -2316,7 +2338,7 @@ def jointplot(
     .. plot::
         :context: close-figs
 
-        >>> g = sns.jointplot("petal_length", "sepal_length", data=iris,
+        >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
         ...                   marginal_kws=dict(bins=15, rug=True),
         ...                   annot_kws=dict(stat="r"),
         ...                   s=40, edgecolor="w", linewidth=1)
@@ -2345,7 +2367,7 @@ def jointplot(
 
     # Initialize the JointGrid object
     grid = JointGrid(
-        x, y, data=data,
+        data=data, x=x, y=y,
         dropna=dropna, height=height, ratio=ratio, space=space,
         xlim=xlim, ylim=ylim
     )
@@ -2404,8 +2426,8 @@ def jointplot(
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
         marginal_kws.setdefault("kde", False)
-        distplot(x, ax=grid.ax_marg_x, **marginal_kws)
-        distplot(y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
+        distplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
+        distplot(x=y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
                  **marginal_kws)
         stat_func = None
     else:
