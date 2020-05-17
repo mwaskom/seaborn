@@ -38,7 +38,8 @@ def _freedman_diaconis_bins(a):
 
 @_deprecate_positional_args
 def distplot(
-    x=None, *,
+    *,
+    x=None,
     bins=None, hist=True, kde=True, rug=False, fit=None,
     hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
     color=None, vertical=False, norm_hist=False, axlabel=None,
@@ -523,7 +524,8 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 @_deprecate_positional_args
 def kdeplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     shade=False, vertical=False, kernel="gau",
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
@@ -724,7 +726,8 @@ def kdeplot(
 
 @_deprecate_positional_args
 def rugplot(
-    x=None, *,
+    *,
+    x=None,
     height=.05, axis="x", ax=None,
     a=None,
     **kwargs

@@ -1607,7 +1607,8 @@ class JointGrid(object):
 
     @_deprecate_positional_args
     def __init__(
-        self, x, y, *,
+        self, *,
+        x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
         dropna=True, xlim=None, ylim=None, size=None
@@ -2192,7 +2193,8 @@ def pairplot(
 
 @_deprecate_positional_args
 def jointplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
