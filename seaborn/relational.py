@@ -774,12 +774,27 @@ class _ScatterPlotter(_RelationalPlotter):
 
         kws.pop("color", None)  # TODO is this optimal?
 
-        if self.sizes:
-            size_ref = np.percentile(list(self.sizes.values()), 10)
-        else:
-            size_ref = np.percentile(s, 10)
+        # --- Determine the visual attributes of the plot
 
-        kws.setdefault("linewidth", .05 * np.sqrt(size_ref))
+        data = self.plot_data[list(self.variables)].dropna()
+        if not data.size:
+            return
+
+        # Define the vectors of x and y positions
+        x = data.get(["x"], np.full(len(data), np.nan))
+        y = data.get(["y"], np.full(len(data), np.nan))
+
+        # Define vectors of hue and size values
+        # There must be some reason this doesn't use data[var].map(attr_dict)
+        # But I do not remember what it is!
+        if self.palette:
+            c = [self.palette.get(val) for val in data["hue"]]
+
+        if self.sizes:
+            s = [self.sizes.get(val) for val in data["size"]]
+
+        # Set defaults for other visual attributres
+        kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
         kws.setdefault("edgecolor", "w")
 
         if self.markers:
@@ -793,28 +808,13 @@ class _ScatterPlotter(_RelationalPlotter):
         # otherwise be useful? Should we just pass None?
         kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
 
-        # Assign arguments for plt.scatter and draw the plot
-
-        data = self.plot_data[list(self.variables)].dropna()
-        if not data.size:
-            return
-
-        x = data.get(["x"], np.full(len(data), np.nan))
-        y = data.get(["y"], np.full(len(data), np.nan))
-
-        if self.palette:
-            c = [self.palette.get(val) for val in data["hue"]]
-
-        if self.sizes:
-            s = [self.sizes.get(val) for val in data["size"]]
-
+        # Draw the scatter plot
         args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
         points = ax.scatter(*args, **kws)
 
-        # Update the paths to get different marker shapes. This has to be
-        # done here because plt.scatter allows varying sizes and colors
-        # but only a single marker shape per call.
-
+        # Update the paths to get different marker shapes.
+        # This has to be done here because ax.scatter allows varying sizes
+        # and colors but only a single marker shape per call.
         if self.paths:
             p = [self.paths.get(val) for val in data["style"]]
             points.set_paths(p)

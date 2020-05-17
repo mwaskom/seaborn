@@ -2062,7 +2062,7 @@ class TestScatterPlotter(Helpers):
         ax = scatterplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
-    def test_scatterplot_linewidths(self, long_df):
+    def test_linewidths(self, long_df):
 
         f, ax = plt.subplots()
 
