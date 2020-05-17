@@ -12,4 +12,4 @@ rs = np.random.RandomState(11)
 x = rs.gamma(2, size=1000)
 y = -.5 * x + rs.normal(size=1000)
 
-sns.jointplot(x, y, kind="hex", color="#4CB391")
+sns.jointplot(x=x, y=y, kind="hex", color="#4CB391")
