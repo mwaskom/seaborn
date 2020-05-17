@@ -767,7 +767,12 @@ class _ScatterPlotter(_RelationalPlotter):
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
 
-        scout = ax.scatter([], [], **kws)
+        scout_size = max(
+            np.atleast_1d(kws.get("s", [])).shape[0],
+            np.atleast_1d(kws.get("c", [])).shape[0],
+        )
+        scout_x = scout_y = np.full(scout_size, np.nan)
+        scout = ax.scatter(scout_x, scout_y, **kws)
         s = kws.pop("s", scout.get_sizes())
         c = kws.pop("c", scout.get_facecolors())
         scout.remove()
@@ -1254,7 +1259,7 @@ def scatterplot(
     markers=True, style_order=None,
     x_bins=None, y_bins=None,
     units=None, estimator=None, ci=95, n_boot=1000,
-    alpha="auto", x_jitter=None, y_jitter=None,
+    alpha=None, x_jitter=None, y_jitter=None,
     legend="brief", ax=None, **kwargs
 ):
 
