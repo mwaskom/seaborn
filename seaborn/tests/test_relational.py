@@ -2062,6 +2062,21 @@ class TestScatterPlotter(Helpers):
         ax = scatterplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
+    def test_literal_attribute_vectors(self):
+
+        f, ax = plt.subplots()
+
+        x = y = [1, 2, 3]
+        s = [5, 10, 15]
+        c = [(1, 1, 0, 1), (1, 0, 1, .5), (.5, 1, 0, 1)]
+
+        scatterplot(x=x, y=y, c=c, s=s, ax=ax)
+
+        points, = ax.collections
+
+        assert_array_equal(points.get_sizes().squeeze(), s)
+        assert_array_equal(points.get_facecolors(), c)
+
     def test_linewidths(self, long_df):
 
         f, ax = plt.subplots()
@@ -2073,9 +2088,6 @@ class TestScatterPlotter(Helpers):
             points1.get_linewidths().item() < points2.get_linewidths().item()
         )
 
-        # These tests don't work because changes in matplotlib casue an error
-        # when we draw the scount with non-scalar s or c
-        """
         ax.clear()
         scatterplot(data=long_df, x="x", y="y", s=long_df["x"])
         scatterplot(data=long_df, x="x", y="y", s=long_df["x"] * 2)
@@ -2083,7 +2095,6 @@ class TestScatterPlotter(Helpers):
         assert (
             points1.get_linewidths().item() < points2.get_linewidths().item()
         )
-        """
 
         ax.clear()
         scatterplot(data=long_df, x="x", y="y", size=long_df["x"])
