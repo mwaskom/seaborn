@@ -874,7 +874,7 @@ class FacetGrid(Grid):
     def _facet_plot(self, func, ax, plot_args, plot_kwargs):
 
         # Draw the plot
-        if func.__module__.startswith("seaborn"):
+        if str(func.__module__).startswith("seaborn"):
             plot_kwargs = plot_kwargs.copy()
             semantics = ["x", "y", "hue", "size", "style"]
             for key, val in zip(semantics, plot_args):
@@ -1534,7 +1534,7 @@ class PairGrid(Grid):
                 if self._dropna:
                     data_k = utils.remove_na(data_k)
 
-                if func.__module__.startswith("seaborn"):
+                if str(func.__module__).startswith("seaborn"):
                     func(x=data_k, label=label_k, color=color, **kwargs)
                 else:
                     func(data_k, label=label_k, color=color, **kwargs)
@@ -1583,7 +1583,7 @@ class PairGrid(Grid):
                 kwargs[kw] = val_list[k]
             color = self.palette[k] if kw_color is None else kw_color
 
-            if func.__module__.startswith("seaborn"):
+            if str(func.__module__).startswith("seaborn"):
                 func(x=x, y=y, label=label_k, color=color, **kwargs)
             else:
                 func(x, y, label=label_k, color=color, **kwargs)
@@ -1842,7 +1842,7 @@ class JointGrid(object):
         """
         plt.sca(self.ax_joint)
 
-        if func.__module__.startswith("seaborn"):
+        if str(func.__module__).startswith("seaborn"):
             func(x=self.x, y=self.y, **kwargs)
         else:
             func(self.x, self.y, **kwargs)
@@ -1870,14 +1870,14 @@ class JointGrid(object):
         """
         kwargs["vertical"] = False
         plt.sca(self.ax_marg_x)
-        if func.__module__.startswith("seaborn"):
+        if str(func.__module__).startswith("seaborn"):
             func(x=self.x, **kwargs)
         else:
             func(self.x, **kwargs)
 
         kwargs["vertical"] = True
         plt.sca(self.ax_marg_y)
-        if func.__module__.startswith("seaborn"):
+        if str(func.__module__).startswith("seaborn"):
             func(x=self.y, **kwargs)
         else:
             func(self.y, **kwargs)
