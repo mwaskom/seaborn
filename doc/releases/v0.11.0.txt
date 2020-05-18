@@ -4,7 +4,7 @@ v0.11.0 (Unreleased)
 
 - TODO stub for explaining improvements to variable specificiation. Make this good!  GH2017
 
-- Enforced keyword-only arguments for most parameters of most functions and classes.  GH2052
+- TODO stub for enforced keyword-only arguments for most parameters of most functions and classes.  GH2052, GH2081
 
 - Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.  GH2060
 
