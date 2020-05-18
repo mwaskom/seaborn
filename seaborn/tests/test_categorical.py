@@ -2713,17 +2713,28 @@ class TestBoxenPlotter(CategoricalFixture):
 
         npt.assert_equal(out_exp, out_calc)
 
+        # Test that setting outlier_prop=0 results with zero outliers
+        ax = cat.boxenplot("g", "y", data=self.df, outlier_prop=0)
+        assert len(list(filter(self.ispath, ax.collections))) == 0
+
+        plt.close("all")
+
+        ax = cat.boxenplot("g", "y", hue="h", data=self.df, outlier_prop=0)
+        assert len(list(filter(self.ispath, ax.collections))) == 0
+        plt.close("all")
+
     def test_showfliers(self):
 
-        ax = cat.boxenplot("g", "y", data=self.df)
-        for c in filter(self.ispath, ax.collections):
+        ax = cat.boxenplot("g", "y", data=self.df, showfliers=True)
+        ax_collections = list(filter(self.ispath, ax.collections))
+        assert len(ax_collections) != 0
+        for c in ax_collections:
             assert len(c.get_offsets()) == 2
 
         plt.close("all")
 
         ax = cat.boxenplot("g", "y", data=self.df, showfliers=False)
-        for c in filter(self.ispath, ax.collections):
-            assert len(c.get_offsets()) == 0
+        assert len(list(filter(self.ispath, ax.collections))) == 0
 
         plt.close("all")
 

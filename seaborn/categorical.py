@@ -1966,6 +1966,8 @@ class _LVPlotter(_CategoricalPlotter):
 
             # Calculate the outliers and plot (only if showfliers == True)
             outliers = []
+            if outlier_prop is not None and outlier_prop == 0:
+                self.showfliers = False
             if self.showfliers:
                 outliers = self._lv_outliers(box_data, k)
             hex_color = mpl.colors.rgb2hex(color)
@@ -1978,8 +1980,9 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([x - widths / 2, x + widths / 2], [y, y],
                         c='.15', alpha=.45, **kws)
 
-                ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=hex_color, **kws)
+                if len(outliers) > 0:
+                    ax.scatter(np.repeat(x, len(outliers)), outliers,
+                               marker='d', c=hex_color, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
@@ -1988,8 +1991,9 @@ class _LVPlotter(_CategoricalPlotter):
                 ax.plot([y, y], [x - widths / 2, x + widths / 2],
                         c='.15', alpha=.45, **kws)
 
-                ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=hex_color, **kws)
+                if len(outliers) > 0:
+                    ax.scatter(outliers, np.repeat(x, len(outliers)),
+                               marker='d', c=hex_color, **kws)
 
             # Construct a color map from the input color
             rgb = [[1, 1, 1], hex_color]
