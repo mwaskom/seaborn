@@ -385,6 +385,7 @@ class FacetGrid(Grid):
         self._col_var = col
 
         self._margin_titles = margin_titles
+        self._margin_titles_texts = []
         self._col_wrap = col_wrap
         self._hue_var = hue_var
         self._colors = colors
@@ -1005,16 +1006,24 @@ class FacetGrid(Grid):
         template = utils.to_utf8(template)
 
         if self._margin_titles:
+
+            # Remove any existing title texts
+            for text in self._margin_titles_texts:
+                text.remove()
+            self._margin_titles_texts = []
+
             if self.row_names is not None:
                 # Draw the row titles on the right edge of the grid
                 for i, row_name in enumerate(self.row_names):
                     ax = self.axes[i, -1]
                     args.update(dict(row_name=row_name))
                     title = row_template.format(**args)
-                    bgcolor = self.fig.get_facecolor()
-                    ax.annotate(title, xy=(1.02, .5), xycoords="axes fraction",
-                                rotation=270, ha="left", va="center",
-                                backgroundcolor=bgcolor, **kwargs)
+                    text = ax.annotate(
+                        title, xy=(1.02, .5), xycoords="axes fraction",
+                        rotation=270, ha="left", va="center",
+                        **kwargs
+                    )
+                    self._margin_titles_texts.append(text)
 
             if self.col_names is not None:
                 # Draw the column titles  as normal titles

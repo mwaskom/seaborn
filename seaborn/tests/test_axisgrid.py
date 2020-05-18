@@ -473,19 +473,23 @@ class TestFacetGrid(object):
         g.map(plt.plot, "x", "y")
 
         # Test the default titles
-        nt.assert_equal(g.axes[0, 0].get_title(), "b = m")
-        nt.assert_equal(g.axes[0, 1].get_title(), "b = n")
-        nt.assert_equal(g.axes[1, 0].get_title(), "")
+        assert g.axes[0, 0].get_title() == "b = m"
+        assert g.axes[0, 1].get_title() == "b = n"
+        assert g.axes[1, 0].get_title() == ""
 
         # Test the row "titles"
-        nt.assert_equal(g.axes[0, 1].texts[0].get_text(), "a = a")
-        nt.assert_equal(g.axes[1, 1].texts[0].get_text(), "a = b")
+        assert g.axes[0, 1].texts[0].get_text() == "a = a"
+        assert g.axes[1, 1].texts[0].get_text() == "a = b"
+        assert g.axes[0, 1].texts[0] is g._margin_titles_texts[0]
 
-        # Test a provided title
-        g.set_titles(col_template="{col_var} == {col_name}")
-        nt.assert_equal(g.axes[0, 0].get_title(), "b == m")
-        nt.assert_equal(g.axes[0, 1].get_title(), "b == n")
-        nt.assert_equal(g.axes[1, 0].get_title(), "")
+        # Test provided titles
+        g.set_titles(col_template="{col_name}", row_template="{row_name}")
+        assert g.axes[0, 0].get_title() == "m"
+        assert g.axes[0, 1].get_title() == "n"
+        assert g.axes[1, 0].get_title() == ""
+
+        assert len(g.axes[1, 1].texts) == 1
+        assert g.axes[1, 1].texts[0].get_text() == "b"
 
     def test_set_ticklabels(self):
 
