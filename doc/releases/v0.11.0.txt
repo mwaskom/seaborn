@@ -22,4 +22,4 @@ v0.11.0 (Unreleased)
 
 - Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.  GH2046
 
-- Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones.
+- Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones. GH2083
