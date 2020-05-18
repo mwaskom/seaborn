@@ -11,6 +11,7 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
+from .core import variable_type
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -68,11 +69,8 @@ class _CategoricalPlotter(object):
                     order = []
                     # Reduce to just numeric columns
                     for col in data:
-                        try:
-                            data[col].astype(np.float)
+                        if variable_type(data[col]) == "numeric":
                             order.append(col)
-                        except ValueError:
-                            pass
                 plot_data = data[order]
                 group_names = order
                 group_label = data.columns.name
@@ -325,17 +323,8 @@ class _CategoricalPlotter(object):
         """Determine how the plot should be oriented based on the data."""
         orient = str(orient)
 
-        def is_categorical(s):
-            return pd.api.types.is_categorical_dtype(s)
-
-        def is_not_numeric(s):
-            try:
-                np.asarray(s, dtype=np.float)
-            except ValueError:
-                return True
-            return False
-
-        no_numeric = "Neither the `x` nor `y` variable appears to be numeric."
+        x_type = None if x is None else variable_type(x)
+        y_type = None if y is None else variable_type(y)
 
         if orient.startswith("v"):
             return "v"
@@ -345,16 +334,13 @@ class _CategoricalPlotter(object):
             return "v"
         elif y is None:
             return "h"
-        elif is_categorical(y):
-            if is_categorical(x):
-                raise ValueError(no_numeric)
-            else:
-                return "h"
-        elif is_not_numeric(y):
-            if is_not_numeric(x):
-                raise ValueError(no_numeric)
-            else:
-                return "h"
+        elif x_type != "numeric" and y_type == "numeric":
+            return "v"
+        elif x_type == "numeric" and y_type != "numeric":
+            return "h"
+        elif x_type != "numeric" and y_type != "numeric":
+            err = "Neither the `x` nor `y` variable appears to be numeric."
+            raise ValueError(err)
         else:
             return "v"
 

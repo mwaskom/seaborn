@@ -222,7 +222,6 @@ class _RelationalPlotter(_VectorPlotter):
             if var_type == "numeric":
 
                 data = pd.to_numeric(data)
-
                 levels, palette, cmap, norm = self.numeric_to_palette(
                     data, order, palette, norm
                 )
@@ -406,7 +405,7 @@ class _RelationalPlotter(_VectorPlotter):
         if self.input_format == "wide":
             return "categorical"
         else:
-            return variable_type(data)
+            return variable_type(data, boolean_type="categorical")
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""

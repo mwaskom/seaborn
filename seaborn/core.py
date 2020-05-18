@@ -235,7 +235,7 @@ class _VectorPlotter:
         return plot_data, variables
 
 
-def variable_type(vector):
+def variable_type(vector, boolean_type="numeric"):
     """Determine whether a vector contains numeric, categorical, or dateime data.
 
     This function differs from the pandas typing API in two ways:
@@ -249,6 +249,8 @@ def variable_type(vector):
     ----------
     vector : :func:`pandas.Series`, :func:`numpy.ndarray`, or Python sequence
         Input data to test.
+    binary_type : 'numeric' or 'categorical'
+        Type to use for vectors containing only 0s and 1s (and NAs).
 
     Returns
     -------
@@ -262,7 +264,7 @@ def variable_type(vector):
 
     # Special-case binary/boolean data, which is always "categorical"
     if np.isin(vector, [0, 1, np.nan]).all():
-        return "categorical"
+        return boolean_type
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):

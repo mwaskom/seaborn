@@ -12,6 +12,8 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
+from .core import variable_type
+
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
@@ -542,15 +544,15 @@ def categorical_order(values, order=None):
             try:
                 order = values.cat.categories
             except (TypeError, AttributeError):
+
                 try:
                     order = values.unique()
                 except AttributeError:
                     order = pd.unique(values)
-                try:
-                    np.asarray(values).astype(np.float)
+
+                if variable_type(values) == "numeric":
                     order = np.sort(order)
-                except (ValueError, TypeError):
-                    order = order
+
         order = filter(pd.notnull, order)
     return list(order)
 
