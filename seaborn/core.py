@@ -1,6 +1,9 @@
 import itertools
 from collections.abc import Iterable, Sequence, Mapping
 
+from numbers import Number
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
 
@@ -121,8 +124,8 @@ class _VectorPlotter:
             wide_data = pd.DataFrame(data, copy=True)
 
             # At this point we should reduce the dataframe to numeric cols
-            # TODO do we want any control over this?
-            wide_data = wide_data.select_dtypes("number")
+            numeric_cols = wide_data.apply(variable_type) == "numeric"
+            wide_data = wide_data.loc[:, numeric_cols]
 
             # Now melt the data to long form
             melt_kws = {"var_name": "columns", "value_name": "values"}
@@ -230,6 +233,74 @@ class _VectorPlotter:
         }
 
         return plot_data, variables
+
+
+def variable_type(vector):
+    """Determine whether a vector contains numeric, categorical, or dateime data.
+
+    This function differs from the pandas typing API in two ways:
+
+    - Python sequences or object-typed PyData objects are considered numeric if
+      all of their entries are numeric.
+    - String or mixed-type data are considered categorical even if not
+      explicitly represented as a :class:pandas.api.types.CategoricalDtype`.
+
+    Parameters
+    ----------
+    vector : :func:`pandas.Series`, :func:`numpy.ndarray`, or Python sequence
+        Input data to test.
+
+    Returns
+    -------
+    var_type : 'numeric', 'categorical', or 'datetime'
+        Name identifying the type of data in the vector.
+
+    """
+    # Special-case all-na data, which is always "numeric"
+    if pd.isna(vector).all():
+        return "numeric"
+
+    # Special-case binary/boolean data, which is always "categorical"
+    if np.isin(vector, [0, 1, np.nan]).all():
+        return "categorical"
+
+    # Defer to positive pandas tests
+    if pd.api.types.is_numeric_dtype(vector):
+        return "numeric"
+
+    if pd.api.types.is_categorical_dtype(vector):
+        return "categorical"
+
+    if pd.api.types.is_datetime64_dtype(vector):
+        return "datetime"
+
+    # --- If we get to here, we need to check the entries
+
+    # Check for a collection where everything is a number
+
+    def all_numeric(x):
+        for x_i in x:
+            if not isinstance(x_i, Number):
+                return False
+        return True
+
+    if all_numeric(vector):
+        return "numeric"
+
+    # Check for a collection where everything is a datetime
+
+    def all_datetime(x):
+        for x_i in x:
+            if not isinstance(x_i, (datetime, np.datetime64)):
+                return False
+        return True
+
+    if all_datetime(vector):
+        return "datetime"
+
+    # Otherwise, our final fallback is to consider things categorical
+
+    return "categorical"
 
 
 def unique_dashes(n):

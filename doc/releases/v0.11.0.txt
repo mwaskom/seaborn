@@ -23,3 +23,5 @@ v0.11.0 (Unreleased)
 - Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.  GH2046
 
 - Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones. GH2083
+
+- Changed how functions that use different representations for numeric and categorical data handle vectors with an `object` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. This change means that numbers that are encoded as strings will now be treated as categorical data.

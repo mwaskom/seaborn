@@ -1,10 +1,12 @@
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 
 from numpy.testing import assert_array_equal
 
 from ..core import (
     _VectorPlotter,
+    variable_type,
     unique_dashes,
     unique_markers,
 )
@@ -63,3 +65,36 @@ class TestCoreFunc:
         assert len(set(markers)) == n
         for m in markers:
             assert mpl.markers.MarkerStyle(m).is_filled()
+
+    def test_variable_type(vector):
+
+        s = pd.Series([1., 2., 3.])
+
+        assert variable_type(s) == "numeric"
+        assert variable_type(s.astype(int)) == "numeric"
+        assert variable_type(s.astype(object)) == "numeric"
+        # assert variable_type(s.to_numpy()) == "numeric"
+        assert variable_type(s.values) == "numeric"
+        # assert variable_type(s.to_list()) == "numeric"
+        assert variable_type(s.tolist()) == "numeric"
+
+        s = pd.Series([1, 2, 3, np.nan], dtype=object)
+        assert variable_type(s) == "numeric"
+
+        s = pd.Series(["1", "2", "3"])
+        assert variable_type(s) == "categorical"
+        # assert variable_type(s.to_numpy()) == "categorical"
+        assert variable_type(s.values) == "categorical"
+        # assert variable_type(s.to_list()) == "categorical"
+        assert variable_type(s.tolist()) == "categorical"
+
+        s = pd.Series([True, False, False])
+        assert variable_type(s) == "categorical"
+
+        s = pd.Series([pd.Timestamp(1), pd.Timestamp(2)])
+        assert variable_type(s) == "datetime"
+        assert variable_type(s.astype(object)) == "datetime"
+        # assert variable_type(s.to_numpy()) == "datetime"
+        assert variable_type(s.values) == "datetime"
+        # assert variable_type(s.to_list()) == "datetime"
+        assert variable_type(s.tolist()) == "datetime"

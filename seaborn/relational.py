@@ -7,7 +7,12 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .core import (_VectorPlotter, unique_dashes, unique_markers)
+from .core import (
+    _VectorPlotter,
+    variable_type,
+    unique_dashes,
+    unique_markers,
+)
 from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
                     remove_na, locator_to_legend_entries,
                     ci as ci_func)
@@ -212,29 +217,28 @@ class _RelationalPlotter(_VectorPlotter):
             elif isinstance(palette, (dict, list)):
                 var_type = "categorical"
 
-        # -- Option 1: categorical color palette
+            # -- Option 1: quantitative color mapping
 
-        if var_type == "categorical":
+            if var_type == "numeric":
 
-            cmap = None
-            limits = None
-            levels, palette = self.categorical_to_palette(
-                # List comprehension here is required to
-                # overcome differences in the way pandas
-                # externalizes numpy datetime64
-                list(data), order, palette
-            )
+                data = pd.to_numeric(data)
 
-        # -- Option 2: sequential color palette
+                levels, palette, cmap, norm = self.numeric_to_palette(
+                    data, order, palette, norm
+                )
+                limits = norm.vmin, norm.vmax
 
-        elif var_type == "numeric":
+            # -- Option 2: qualitative color palette
 
-            data = pd.to_numeric(data)
+            else:
 
-            levels, palette, cmap, norm = self.numeric_to_palette(
-                data, order, palette, norm
-            )
-            limits = norm.vmin, norm.vmax
+                cmap = None
+                limits = None
+                levels, palette = self.categorical_to_palette(
+                    # Casting data to list to handle differences in the way
+                    # pandas represents numpy datetime64 data
+                    list(data), order, palette
+                )
 
         self.hue_levels = levels
         self.hue_norm = norm
@@ -242,11 +246,6 @@ class _RelationalPlotter(_VectorPlotter):
         self.hue_type = var_type
         self.palette = palette
         self.cmap = cmap
-
-        # Update data as it may have changed dtype
-        # TODO This is messy! We need to rethink the order of operations
-        # to avoid changing the plot data after we have it.
-        self.plot_data["hue"] = data
 
     def parse_size(self, data, sizes=None, order=None, norm=None):
         """Determine the linewidths given data characteristics."""
@@ -406,18 +405,8 @@ class _RelationalPlotter(_VectorPlotter):
         """Determine if data should considered numeric or categorical."""
         if self.input_format == "wide":
             return "categorical"
-        elif isinstance(data, pd.Series) and data.dtype.name == "category":
-            return "categorical"
         else:
-            try:
-                float_data = data.astype(np.float)
-                values = np.unique(float_data.dropna())
-                # TODO replace with isin when pinned np version >= 1.13
-                if np.all(np.in1d(values, np.array([0., 1.]))):
-                    return "categorical"
-                return "numeric"
-            except (ValueError, TypeError):
-                return "categorical"
+            return variable_type(data)
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""
@@ -1590,20 +1579,16 @@ def relplot(
         row=row, col=col,
     )
 
-    # Assemble a data object with the plot_data from the original
-    # plotter and the row/col variables with their external names.
-    # This is so FacetGrid labels the subplots correctly.
-    # We can't use just full_data because the hue/size type inference can
-    # change the data type of variables with object type but numeric behavior.
+    # Pass the row/col variables to FacetGrid with their original
+    # names so that the axes titles render correctly
     grid_kws = {v: full_variables.get(v, None) for v in grid_semantics}
-    grid_data = full_data[grid_semantics].rename(columns=grid_kws)
-    plot_data = pd.concat([plot_data, grid_data], axis=1)
+    full_data = full_data.rename(columns=grid_kws)
 
     # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws.copy()
     facet_kws.update(grid_kws)
     g = FacetGrid(
-        data=plot_data,
+        data=full_data,
         col_wrap=col_wrap, row_order=row_order, col_order=col_order,
         height=height, aspect=aspect, dropna=False,
         **facet_kws
