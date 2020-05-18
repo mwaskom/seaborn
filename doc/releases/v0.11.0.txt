@@ -21,3 +21,5 @@ v0.11.0 (Unreleased)
 - Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.  GH2046
 
 - Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.  GH2046
+
+- Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones.
