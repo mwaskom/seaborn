@@ -1321,7 +1321,7 @@ class TestRelationalPlotter(Helpers):
 
         f, ax = plt.subplots()
         with pytest.warns(UserWarning):
-            g = relplot("x", "y", data=long_df, ax=ax)
+            g = relplot(x="x", y="y", data=long_df, ax=ax)
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
 
@@ -1746,7 +1746,7 @@ class TestLinePlotter(Helpers):
 
         f, ax = plt.subplots()
 
-        lineplot([], [])
+        lineplot(x=[], y=[])
         ax.clear()
 
         lineplot(data=wide_df)
@@ -2119,7 +2119,7 @@ class TestScatterPlotter(Helpers):
 
         f, ax = plt.subplots()
 
-        scatterplot([], [])
+        scatterplot(x=[], y=[])
         ax.clear()
 
         scatterplot(data=wide_df)

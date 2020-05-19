@@ -2243,7 +2243,8 @@ _categorical_docs.update(_facet_docs)
 
 @_deprecate_positional_args
 def boxplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
@@ -2399,7 +2400,8 @@ boxplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def violinplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     bw="scott", cut=2, scale="area", scale_hue=True, gridsize=100,
@@ -2644,7 +2646,8 @@ def lvplot(*args, **kwargs):
 
 @_deprecate_positional_args
 def boxenplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
@@ -2805,7 +2808,8 @@ boxenplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def stripplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
@@ -3001,7 +3005,8 @@ stripplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def swarmplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
@@ -3181,7 +3186,8 @@ swarmplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def barplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
@@ -3326,7 +3332,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips,
+        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
         ...                  palette="Blues_d")
 
     Use ``hue`` without changing bar position or width:
@@ -3343,7 +3349,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("size", y="total_bill", data=tips,
+        >>> ax = sns.barplot(x="size", y="total_bill", data=tips,
         ...                  color="salmon", saturation=.5)
 
     Use :meth:`matplotlib.axes.Axes.bar` parameters to control the style.
@@ -3351,7 +3357,7 @@ barplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.barplot("day", "total_bill", data=tips,
+        >>> ax = sns.barplot(x="day", y="total_bill", data=tips,
         ...                  linewidth=2.5, facecolor=(1, 1, 1, 0),
         ...                  errcolor=".2", edgecolor=".2")
 
@@ -3373,7 +3379,8 @@ barplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def pointplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     estimator=np.mean, ci=95, n_boot=1000, units=None, seed=None,
@@ -3513,7 +3520,7 @@ pointplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.pointplot("time", y="total_bill", data=tips,
+        >>> ax = sns.pointplot(x="time", y="total_bill", data=tips,
         ...                    color="#bb3f3f")
 
     Use a different color palette for the points:
@@ -3580,7 +3587,8 @@ pointplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def countplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
@@ -3739,7 +3747,8 @@ def factorplot(*args, **kwargs):
 
 @_deprecate_positional_args
 def catplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     hue=None, data=None,
     row=None, col=None,  # TODO move in front of data when * is enforced
     col_wrap=None, estimator=np.mean, ci=95, n_boot=1000,
@@ -3826,7 +3835,12 @@ def catplot(
     g = FacetGrid(**facet_kws)
 
     # Draw the plot onto the facets
-    g.map_dataframe(plot_func, x, y, hue=hue, **plot_kws)
+    g.map_dataframe(plot_func, x=x, y=y, hue=hue, **plot_kws)
+
+    if p.orient == "h":
+        g.set_axis_labels(p.value_label, p.group_label)
+    else:
+        g.set_axis_labels(p.group_label, p.value_label)
 
     # Special case axis labels for a count type plot
     if kind == "count":
@@ -3968,7 +3982,7 @@ catplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> titanic = sns.load_dataset("titanic")
-        >>> g = sns.catplot("alive", col="deck", col_wrap=4,
+        >>> g = sns.catplot(x="alive", col="deck", col_wrap=4,
         ...                 data=titanic[titanic.deck.notnull()],
         ...                 kind="count", height=2.5, aspect=.8)
 
