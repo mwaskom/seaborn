@@ -310,7 +310,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
 
     For historical reasons, the convention is to call a plot "horizontally"
     or "vertically" oriented based on the axis representing its dependent
-    variable. Practically, this is used for determining the axis for
+    variable. Practically, this is used when determining the axis for
     numerical aggregation.
 
     Paramters
@@ -320,7 +320,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     orient : string or None
         Specified orientation, which must start with "v" or "h" if not None.
     require_numeric : bool
-        If set, raise if the implied dependent variable is not numeric.
+        If set, raise when the implied dependent variable is not numeric.
 
     Returns
     -------
@@ -329,7 +329,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     Raises
     ------
     ValueError: When `orient` is not None and does not start with "h" or "v"
-    TypeError: When dep. variable is not numeric, with `require_numeric`
+    TypeError: When dependant variable is not numeric, with `require_numeric`
 
     """
 
