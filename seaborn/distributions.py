@@ -14,12 +14,130 @@ try:
 except ImportError:
     _has_statsmodels = False
 
+from .core import (
+    _VectorPlotter,
+)
 from .utils import _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["distplot", "kdeplot", "rugplot"]
+
+
+class _DistributionPlotter(_VectorPlotter):
+
+    semantics = _VectorPlotter.semantics + ["hue"]
+
+    wide_structure = {
+        "x": "values", "hue": "columns",
+    }
+
+
+class _HistPlotter(_DistributionPlotter):
+
+    pass
+
+
+class _KDEPlotter(_DistributionPlotter):
+
+    pass
+
+
+class _RugPlotter(_DistributionPlotter):
+
+    def __init__(
+        self, data=None, x=None, y=None,
+        height=None,
+    ):
+
+        plot_data, variables = self.establish_variables(
+            data, x=x, y=y,
+        )
+
+        self.height = height
+
+    def plot(self, ax, kws):
+
+        # TODO we need to abstract this logic
+        scout, = ax.plot([], [], **kws)
+
+        kws = kws.copy()
+        kws["color"] = kws.pop("color", scout.get_color())
+
+        scout.remove()
+
+        # TODO handle more gracefully
+        alias_map = dict(linewidth="lw", linestyle="ls", color="c")
+        for attr, alias in alias_map.items():
+            if alias in kws:
+                kws[attr] = kws.pop(alias)
+        kws.setdefault("linewidth", 1)
+
+        # ---
+
+        if "x" in self.variables:
+            self._plot_single_rug("x", ax, kws)
+        if "y" in self.variables:
+            self._plot_single_rug("y", ax, kws)
+
+    def _plot_single_rug(self, var, ax, kws):
+
+        vector = self.plot_data[var]
+        n = len(vector)
+
+        if var == "x":
+
+            trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
+            xy_pairs = np.column_stack([
+                np.repeat(vector, 2), np.tile([0, self.height], n)
+            ])
+
+        if var == "y":
+
+            trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
+            xy_pairs = np.column_stack([
+                np.tile([0, self.height], n), np.repeat(vector, 2)
+            ])
+
+        line_segs = xy_pairs.reshape([n, 2, 2])
+        ax.add_collection(LineCollection(line_segs, transform=trans, **kws))
+
+        ax.autoscale_view(scalex=var == "x", scaley=var == "y")
+
+
+@_deprecate_positional_args
+def rugplot(
+    *,
+    x=None,
+    height=.05, axis="x", ax=None,
+    data=None, y=None,
+    a=None,
+    **kwargs
+):
+
+    # Handle deprecation of `a``
+    if a is not None:
+        msg = "The `a` parameter is now called `x`. Please update your code."
+        warnings.warn(msg, FutureWarning)
+        x = a
+
+    # TODO Handle deprecation of "axis"
+    # TODO Handle deprecation of "vertical"
+    if kwargs.pop("vertical", axis == "y"):
+        x, y = None, x
+
+    p = _RugPlotter(
+        data=data, x=x, y=y,
+        height=height,
+    )
+
+    if ax is None:
+        ax = plt.gca()
+
+    p.plot(ax, kwargs)
+
+    return ax
 
 
 def _freedman_diaconis_bins(a):
@@ -725,7 +843,7 @@ def kdeplot(
 
 
 @_deprecate_positional_args
-def rugplot(
+def _rugplot(
     *,
     x=None,
     height=.05, axis="x", ax=None,

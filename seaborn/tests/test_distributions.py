@@ -385,7 +385,7 @@ class TestRugPlot(object):
 
     def test_a_parameter_deprecation(self, series_data):
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(FutureWarning):
             ax = dist.rugplot(a=series_data)
         rug, = ax.collections
         segments = np.array(rug.get_segments())
