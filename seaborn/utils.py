@@ -99,7 +99,7 @@ def pmf_hist(a, bins=10):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
     n, x = np.histogram(a, bins)
     h = n / n.sum()
     w = x[1] - x[0]
@@ -186,7 +186,13 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
 
 
 def axlabel(xlabel, ylabel, **kwargs):
-    """Grab current axis and label it."""
+    """Grab current axis and label it.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
     ax = plt.gca()
     ax.set_xlabel(xlabel, **kwargs)
     ax.set_ylabel(ylabel, **kwargs)
@@ -323,7 +329,7 @@ def percentiles(a, pcts, axis=None):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
 
     scores = []
     try:
@@ -356,7 +362,7 @@ def sig_stars(p):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
 
     if p < 0.001:
         return "***"
@@ -370,7 +376,14 @@ def sig_stars(p):
 
 
 def iqr(a):
-    """Calculate the IQR for an array of numbers."""
+    """Calculate the IQR for an array of numbers.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
+
     a = np.asarray(a)
     q1 = stats.scoreatpercentile(a, 25)
     q3 = stats.scoreatpercentile(a, 75)
