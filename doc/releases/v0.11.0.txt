@@ -24,6 +24,6 @@ v0.11.0 (Unreleased)
 
 - Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones. GH2083
 
-- Changed how functions that use different representations for numeric and categorical data handle vectors with an `object` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. This change means that numbers that are encoded as strings will now be treated as categorical data.  GH2084
+- Changed how functions that use different representations for numeric and categorical data handle vectors with an `object` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data.  GH2084
 
 - Improved the error messages produced when categorical plots process the orientation parameter.
