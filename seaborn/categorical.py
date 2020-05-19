@@ -31,7 +31,7 @@ class _CategoricalPlotter(object):
 
     width = .8
     default_palette = "light"
-    require_numeric_dv = True
+    require_numeric = True
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None,
@@ -153,7 +153,7 @@ class _CategoricalPlotter(object):
 
             # Figure out the plotting orientation
             orient = infer_orient(
-                x, y, orient, require_numeric_dv=self.require_numeric_dv
+                x, y, orient, require_numeric=self.require_numeric
             )
 
             # Option 2a:
@@ -1044,7 +1044,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 class _CategoricalScatterPlotter(_CategoricalPlotter):
 
     default_palette = "dark"
-    require_numeric_dv = False
+    require_numeric = False
 
     @property
     def point_colors(self):
@@ -1421,7 +1421,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
 
-    require_numeric_dv = True
+    require_numeric = True
 
     @property
     def nested_width(self):
@@ -1787,7 +1787,7 @@ class _PointPlotter(_CategoricalStatPlotter):
 
 
 class _CountPlotter(_BarPlotter):
-    require_numeric_dv = False
+    require_numeric = False
 
 
 class _LVPlotter(_CategoricalPlotter):
@@ -3774,7 +3774,7 @@ def catplot(
         "count": _CountPlotter,
     }[kind]
     p = _CategoricalPlotter()
-    p.require_numeric_dv = plotter_class.require_numeric_dv
+    p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     order = p.group_names
     hue_order = p.hue_names

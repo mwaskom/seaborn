@@ -305,7 +305,7 @@ def variable_type(vector, boolean_type="numeric"):
     return "categorical"
 
 
-def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
+def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     """Determine how the plot should be oriented based on the data.
 
     For historical reasons, the convention is to call a plot "horizontally"
@@ -319,7 +319,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
         Positional data vectors for the plot.
     orient : string or None
         Specified orientation, which must start with "v" or "h" if not None.
-    require_numeric_dv : True
+    require_numeric : bool
         If set, raise if the implied dependent variable is not numeric.
 
     Returns
@@ -329,7 +329,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
     Raises
     ------
     ValueError: When `orient` is not None and does not start with "h" or "v"
-    TypeError: When dep. variable is not numeric, with `require_numeric_dv`
+    TypeError: When dep. variable is not numeric, with `require_numeric`
 
     """
 
@@ -342,24 +342,24 @@ def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
     if x is None:
         if str(orient).startswith("h"):
             warnings.warn(single_var_warning.format("Horizontal", "y"))
-        if require_numeric_dv and y_type != "numeric":
+        if require_numeric and y_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
         return "v"
 
     elif y is None:
         if str(orient).startswith("v"):
             warnings.warn(single_var_warning.format("Vertical", "x"))
-        if require_numeric_dv and x_type != "numeric":
+        if require_numeric and x_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
         return "h"
 
     elif str(orient).startswith("v"):
-        if require_numeric_dv and y_type != "numeric":
+        if require_numeric and y_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
         return "v"
 
     elif str(orient).startswith("h"):
-        if require_numeric_dv and x_type != "numeric":
+        if require_numeric and x_type != "numeric":
             raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
         return "h"
 
@@ -372,7 +372,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
     elif x_type == "numeric" and y_type != "numeric":
         return "h"
 
-    elif require_numeric_dv and "numeric" not in (x_type, y_type):
+    elif require_numeric and "numeric" not in (x_type, y_type):
         err = "Neither the `x` nor `y` variable appears to be numeric."
         raise TypeError(err)
 

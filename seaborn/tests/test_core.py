@@ -121,20 +121,20 @@ class TestCoreFunc:
         with pytest.warns(UserWarning, match="Horizontal .+ `y`"):
             assert infer_orient(None, nums, "h") == "v"
 
-        infer_orient(cats, None, require_numeric_dv=False) == "h"
+        infer_orient(cats, None, require_numeric=False) == "h"
         with pytest.raises(TypeError, match="Horizontal .+ `x`"):
             infer_orient(cats, None)
 
-        infer_orient(cats, None, require_numeric_dv=False) == "v"
+        infer_orient(cats, None, require_numeric=False) == "v"
         with pytest.raises(TypeError, match="Vertical .+ `y`"):
             infer_orient(None, cats)
 
         assert infer_orient(nums, nums, "vert") == "v"
         assert infer_orient(nums, nums, "hori") == "h"
 
-        assert infer_orient(cats, cats, "h", require_numeric_dv=False) == "h"
-        assert infer_orient(cats, cats, "v", require_numeric_dv=False) == "v"
-        assert infer_orient(cats, cats, require_numeric_dv=False) == "v"
+        assert infer_orient(cats, cats, "h", require_numeric=False) == "h"
+        assert infer_orient(cats, cats, "v", require_numeric=False) == "v"
+        assert infer_orient(cats, cats, require_numeric=False) == "v"
 
         with pytest.raises(TypeError, match="Vertical .+ `y`"):
             infer_orient(cats, cats, "v")
