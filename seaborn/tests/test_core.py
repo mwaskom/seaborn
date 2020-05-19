@@ -69,7 +69,6 @@ class TestCoreFunc:
     def test_variable_type(vector):
 
         s = pd.Series([1., 2., 3.])
-
         assert variable_type(s) == "numeric"
         assert variable_type(s.astype(int)) == "numeric"
         assert variable_type(s.astype(object)) == "numeric"
@@ -79,6 +78,10 @@ class TestCoreFunc:
         assert variable_type(s.tolist()) == "numeric"
 
         s = pd.Series([1, 2, 3, np.nan], dtype=object)
+        assert variable_type(s) == "numeric"
+
+        s = pd.Series([np.nan, np.nan])
+        # s = pd.Series([pd.NA, pd.NA])
         assert variable_type(s) == "numeric"
 
         s = pd.Series(["1", "2", "3"])
