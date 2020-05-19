@@ -341,30 +341,6 @@ class TestCategoricalPlotter(CategoricalFixture):
         for group, units in zip(["a", "b", "c"], p.plot_units):
             npt.assert_array_equal(units, self.u[self.g == group])
 
-    def test_infer_orient(self):
-
-        p = cat._CategoricalPlotter()
-
-        cats = pd.Series(["a", "b", "c"] * 10)
-        nums = pd.Series(self.rs.randn(30))
-
-        nt.assert_equal(p.infer_orient(cats, nums), "v")
-        nt.assert_equal(p.infer_orient(nums, cats), "h")
-        nt.assert_equal(p.infer_orient(nums, None), "h")
-        nt.assert_equal(p.infer_orient(None, nums), "v")
-        nt.assert_equal(p.infer_orient(nums, nums, "vert"), "v")
-        nt.assert_equal(p.infer_orient(nums, nums, "hori"), "h")
-
-        with nt.assert_raises(ValueError):
-            p.infer_orient(cats, cats)
-
-        cats = pd.Series([0, 1, 2] * 10, dtype="category")
-        nt.assert_equal(p.infer_orient(cats, nums), "v")
-        nt.assert_equal(p.infer_orient(nums, cats), "h")
-
-        with nt.assert_raises(ValueError):
-            p.infer_orient(cats, cats)
-
     def test_default_palettes(self):
 
         p = cat._CategoricalPlotter()

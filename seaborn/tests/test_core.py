@@ -2,11 +2,13 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
+import pytest
 from numpy.testing import assert_array_equal
 
 from ..core import (
     _VectorPlotter,
     variable_type,
+    infer_orient,
     unique_dashes,
     unique_markers,
 )
@@ -66,7 +68,7 @@ class TestCoreFunc:
         for m in markers:
             assert mpl.markers.MarkerStyle(m).is_filled()
 
-    def test_variable_type(vector):
+    def test_variable_type(self):
 
         s = pd.Series([1., 2., 3.])
         assert variable_type(s) == "numeric"
@@ -102,3 +104,41 @@ class TestCoreFunc:
         assert variable_type(s.values) == "datetime"
         # assert variable_type(s.to_list()) == "datetime"
         assert variable_type(s.tolist()) == "datetime"
+
+    def test_infer_orient(self):
+
+        nums = pd.Series(np.arange(6))
+        cats = pd.Series(["a", "b"] * 3)
+
+        assert infer_orient(cats, nums) == "v"
+        assert infer_orient(nums, cats) == "h"
+
+        assert infer_orient(nums, None) == "h"
+        with pytest.warns(UserWarning, match="Vertical .+ `x`"):
+            assert infer_orient(nums, None, "v") == "h"
+
+        assert infer_orient(None, nums) == "v"
+        with pytest.warns(UserWarning, match="Horizontal .+ `y`"):
+            assert infer_orient(None, nums, "h") == "v"
+
+        infer_orient(cats, None, require_numeric_dv=False) == "h"
+        with pytest.raises(TypeError, match="Horizontal .+ `x`"):
+            infer_orient(cats, None)
+
+        infer_orient(cats, None, require_numeric_dv=False) == "v"
+        with pytest.raises(TypeError, match="Vertical .+ `y`"):
+            infer_orient(None, cats)
+
+        assert infer_orient(nums, nums, "vert") == "v"
+        assert infer_orient(nums, nums, "hori") == "h"
+
+        assert infer_orient(cats, cats, "h", require_numeric_dv=False) == "h"
+        assert infer_orient(cats, cats, "v", require_numeric_dv=False) == "v"
+        assert infer_orient(cats, cats, require_numeric_dv=False) == "v"
+
+        with pytest.raises(TypeError, match="Vertical .+ `y`"):
+            infer_orient(cats, cats, "v")
+        with pytest.raises(TypeError, match="Horizontal .+ `x`"):
+            infer_orient(cats, cats, "h")
+        with pytest.raises(TypeError, match="Neither"):
+            infer_orient(cats, cats)

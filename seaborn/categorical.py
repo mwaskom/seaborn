@@ -11,7 +11,7 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
-from .core import variable_type
+from .core import variable_type, infer_orient
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -151,7 +151,7 @@ class _CategoricalPlotter(object):
                     raise ValueError(err)
 
             # Figure out the plotting orientation
-            orient = self.infer_orient(x, y, orient)
+            orient = infer_orient(x, y, orient)
 
             # Option 2a:
             # We are plotting a single set of data
@@ -318,31 +318,6 @@ class _CategoricalPlotter(object):
         # Assign object attributes
         self.colors = rgb_colors
         self.gray = gray
-
-    def infer_orient(self, x, y, orient=None):
-        """Determine how the plot should be oriented based on the data."""
-        orient = str(orient)
-
-        x_type = None if x is None else variable_type(x)
-        y_type = None if y is None else variable_type(y)
-
-        if orient.startswith("v"):
-            return "v"
-        elif orient.startswith("h"):
-            return "h"
-        elif x is None:
-            return "v"
-        elif y is None:
-            return "h"
-        elif x_type != "numeric" and y_type == "numeric":
-            return "v"
-        elif x_type == "numeric" and y_type != "numeric":
-            return "h"
-        elif x_type != "numeric" and y_type != "numeric":
-            err = "Neither the `x` nor `y` variable appears to be numeric."
-            raise ValueError(err)
-        else:
-            return "v"
 
     @property
     def hue_offsets(self):

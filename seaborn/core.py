@@ -1,6 +1,6 @@
 import itertools
+import warnings
 from collections.abc import Iterable, Sequence, Mapping
-
 from numbers import Number
 from datetime import datetime
 
@@ -303,6 +303,81 @@ def variable_type(vector, boolean_type="numeric"):
     # Otherwise, our final fallback is to consider things categorical
 
     return "categorical"
+
+
+def infer_orient(x=None, y=None, orient=None, require_numeric_dv=True):
+    """Determine how the plot should be oriented based on the data.
+
+    For historical reasons, the convention is to call a plot "horizontally"
+    or "vertically" oriented based on the axis representing its dependent
+    variable. Practically, this is used for determining the axis for
+    numerical aggregation.
+
+    Paramters
+    ---------
+    x, y : Vector data or None
+        Positional data vectors for the plot.
+    orient : string or None
+        Specified orientation, which must start with "v" or "h" if not None.
+    require_numeric_dv : True
+        If set, raise if the implied dependent variable is not numeric.
+
+    Returns
+    -------
+    orient : "v" or "h"
+
+    Raises
+    ------
+    ValueError: When `orient` is not None and does not start with "h" or "v"
+    TypeError: When dep. variable is not numeric, with `require_numeric_dv`
+
+    """
+
+    x_type = None if x is None else variable_type(x)
+    y_type = None if y is None else variable_type(y)
+
+    nonnumeric_dv_error = "{} orientation requires numeric `{}` variable."
+    single_var_warning = "{} orientation ignored with only `{}` specified."
+
+    if x is None:
+        if str(orient).startswith("h"):
+            warnings.warn(single_var_warning.format("Horizontal", "y"))
+        if require_numeric_dv and y_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
+        return "v"
+
+    elif y is None:
+        if str(orient).startswith("v"):
+            warnings.warn(single_var_warning.format("Vertical", "x"))
+        if require_numeric_dv and x_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
+        return "h"
+
+    elif str(orient).startswith("v"):
+        if require_numeric_dv and y_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
+        return "v"
+
+    elif str(orient).startswith("h"):
+        if require_numeric_dv and x_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
+        return "h"
+
+    elif orient is not None:
+        raise ValueError(f"Value for `orient` not understood: {orient}")
+
+    elif x_type != "numeric" and y_type == "numeric":
+        return "v"
+
+    elif x_type == "numeric" and y_type != "numeric":
+        return "h"
+
+    elif require_numeric_dv and "numeric" not in (x_type, y_type):
+        err = "Neither the `x` nor `y` variable appears to be numeric."
+        raise TypeError(err)
+
+    else:
+        return "v"
 
 
 def unique_dashes(n):
