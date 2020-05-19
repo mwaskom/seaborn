@@ -262,7 +262,7 @@ def variable_type(vector, boolean_type="numeric"):
     if pd.isna(vector).all():
         return "numeric"
 
-    # Special-case binary/boolean data, which is always "categorical"
+    # Special-case binary/boolean data, allow caller to determine
     if np.isin(vector, [0, 1, np.nan]).all():
         return boolean_type
 
