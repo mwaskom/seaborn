@@ -47,13 +47,13 @@ class _KDEPlotter(_DistributionPlotter):
 class _RugPlotter(_DistributionPlotter):
 
     def __init__(
-        self, data=None, x=None, y=None,
+        self,
+        data=None,
+        variables={},
         height=None,
     ):
 
-        plot_data, variables = self.establish_variables(
-            data, x=x, y=y,
-        )
+        self.establish_variables(data, **variables)
 
         self.height = height
 
@@ -111,7 +111,7 @@ def rugplot(
     *,
     x=None,
     height=.05, axis="x", ax=None,
-    data=None, y=None,
+    data=None, y=None, hue=None,
     a=None,
     **kwargs
 ):
@@ -121,14 +121,20 @@ def rugplot(
         msg = "The `a` parameter is now called `x`. Please update your code."
         warnings.warn(msg, FutureWarning)
         x = a
+        del a
 
     # TODO Handle deprecation of "axis"
     # TODO Handle deprecation of "vertical"
     if kwargs.pop("vertical", axis == "y"):
         x, y = None, x
 
+    # ----------
+
+    variables = _RugPlotter.get_variables(locals())
+
     p = _RugPlotter(
-        data=data, x=x, y=y,
+        data=data,
+        variables=variables,
         height=height,
     )
 

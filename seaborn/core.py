@@ -13,6 +13,14 @@ class _VectorPlotter:
 
     semantics = ["x", "y"]
 
+    def __init__(self, data=None, **kwargs):
+
+        plot_data, variables = self.establish_variables(data, **kwargs)
+
+    @classmethod
+    def get_variables(cls, arguments):
+        return {k: arguments[k] for k in cls.semantics}
+
     def establish_variables(self, data=None, **kwargs):
         """Define plot variables."""
         x = kwargs.get("x", None)
@@ -31,6 +39,8 @@ class _VectorPlotter:
 
         self.plot_data = plot_data
         self.variables = variables
+
+        # TODO establish default mappings here?
 
         return plot_data, variables
 
@@ -60,7 +70,7 @@ class _VectorPlotter:
         # # if we decide for "structure-only" wide API
 
         # First, determine if the data object actually has any data in it
-        empty = not len(data)
+        empty = data is None or not len(data)
 
         # Then, determine if we have "flat" data (a single vector)
         # TODO extract this into a separate function?
