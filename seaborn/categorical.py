@@ -11,6 +11,7 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
+from .core import variable_type, infer_orient
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -30,6 +31,7 @@ class _CategoricalPlotter(object):
 
     width = .8
     default_palette = "light"
+    require_numeric = True
 
     def establish_variables(self, x=None, y=None, hue=None, data=None,
                             orient=None, order=None, hue_order=None,
@@ -68,11 +70,8 @@ class _CategoricalPlotter(object):
                     order = []
                     # Reduce to just numeric columns
                     for col in data:
-                        try:
-                            data[col].astype(np.float)
+                        if variable_type(data[col]) == "numeric":
                             order.append(col)
-                        except ValueError:
-                            pass
                 plot_data = data[order]
                 group_names = order
                 group_label = data.columns.name
@@ -153,7 +152,9 @@ class _CategoricalPlotter(object):
                     raise ValueError(err)
 
             # Figure out the plotting orientation
-            orient = self.infer_orient(x, y, orient)
+            orient = infer_orient(
+                x, y, orient, require_numeric=self.require_numeric
+            )
 
             # Option 2a:
             # We are plotting a single set of data
@@ -320,43 +321,6 @@ class _CategoricalPlotter(object):
         # Assign object attributes
         self.colors = rgb_colors
         self.gray = gray
-
-    def infer_orient(self, x, y, orient=None):
-        """Determine how the plot should be oriented based on the data."""
-        orient = str(orient)
-
-        def is_categorical(s):
-            return pd.api.types.is_categorical_dtype(s)
-
-        def is_not_numeric(s):
-            try:
-                np.asarray(s, dtype=np.float)
-            except ValueError:
-                return True
-            return False
-
-        no_numeric = "Neither the `x` nor `y` variable appears to be numeric."
-
-        if orient.startswith("v"):
-            return "v"
-        elif orient.startswith("h"):
-            return "h"
-        elif x is None:
-            return "v"
-        elif y is None:
-            return "h"
-        elif is_categorical(y):
-            if is_categorical(x):
-                raise ValueError(no_numeric)
-            else:
-                return "h"
-        elif is_not_numeric(y):
-            if is_not_numeric(x):
-                raise ValueError(no_numeric)
-            else:
-                return "h"
-        else:
-            return "v"
 
     @property
     def hue_offsets(self):
@@ -1080,6 +1044,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 class _CategoricalScatterPlotter(_CategoricalPlotter):
 
     default_palette = "dark"
+    require_numeric = False
 
     @property
     def point_colors(self):
@@ -1456,6 +1421,8 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
 
 class _CategoricalStatPlotter(_CategoricalPlotter):
 
+    require_numeric = True
+
     @property
     def nested_width(self):
         """A float with the width of plot elements when hue nesting is used."""
@@ -1819,6 +1786,10 @@ class _PointPlotter(_CategoricalStatPlotter):
             ax.invert_yaxis()
 
 
+class _CountPlotter(_BarPlotter):
+    require_numeric = False
+
+
 class _LVPlotter(_CategoricalPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
@@ -2148,9 +2119,9 @@ _categorical_docs = dict(
     orient=dedent("""\
     orient : "v" | "h", optional
         Orientation of the plot (vertical or horizontal). This is usually
-        inferred from the dtype of the input variables, but can be used to
-        specify when the "categorical" variable is a numeric or when plotting
-        wide-form data.\
+        inferred based on the type of the input variables, but it can be used
+        to resolve ambiguitiy when both `x` and `y` are numeric or when
+        plotting wide-form data.\
     """),
     color=dedent("""\
     color : matplotlib color, optional
@@ -3607,14 +3578,14 @@ def countplot(
         orient = "v"
         y = x
     elif x is not None and y is not None:
-        raise TypeError("Cannot pass values for both `x` and `y`")
-    else:
-        raise TypeError("Must pass values for either `x` or `y`")
+        raise ValueError("Cannot pass values for both `x` and `y`")
 
-    plotter = _BarPlotter(x, y, hue, data, order, hue_order,
-                          estimator, ci, n_boot, units, seed,
-                          orient, color, palette, saturation,
-                          errcolor, errwidth, capsize, dodge)
+    plotter = _CountPlotter(
+        x, y, hue, data, order, hue_order,
+        estimator, ci, n_boot, units, seed,
+        orient, color, palette, saturation,
+        errcolor, errwidth, capsize, dodge
+    )
 
     plotter.value_label = "count"
 
@@ -3778,7 +3749,7 @@ def catplot(
         elif y is None and x is not None:
             x_, y_, orient = x, x, "v"
         else:
-            raise ValueError("Either `x` or `y` must be None for count plots")
+            raise ValueError("Either `x` or `y` must be None for kind='count'")
     else:
         x_, y_ = x, y
 
@@ -3791,7 +3762,19 @@ def catplot(
 
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
+    plotter_class = {
+        "box": _BoxPlotter,
+        "violin": _ViolinPlotter,
+        "boxen": _LVPlotter,
+        "lv": _LVPlotter,
+        "bar": _BarPlotter,
+        "point": _PointPlotter,
+        "strip": _StripPlotter,
+        "swarm": _SwarmPlotter,
+        "count": _CountPlotter,
+    }[kind]
     p = _CategoricalPlotter()
+    p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
     order = p.group_names
     hue_order = p.hue_names

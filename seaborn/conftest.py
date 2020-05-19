@@ -143,6 +143,7 @@ def long_df(rng):
         f=rng.choice([0.2, 0.3], n),
     ))
     df["s_cat"] = df["s"].astype("category")
+    df["s_str"] = df["s"].astype(str)
     return df
 
 

@@ -668,7 +668,7 @@ class TestRelationalPlotter(Helpers):
         p.establish_variables(data=long_df, x="x", y="y", hue="t")
         p.parse_hue(p.plot_data["hue"])
         assert p.hue_levels == [pd.Timestamp('2005-02-25')]
-        assert p.hue_type == "categorical"
+        assert p.hue_type == "datetime"
 
         # Test numeric data with category type
         p = _RelationalPlotter()

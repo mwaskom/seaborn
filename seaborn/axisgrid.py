@@ -10,6 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import utils
+from .core import variable_type
 from .palettes import color_palette, blend_palette
 from .distributions import distplot, kdeplot, _freedman_diaconis_bins
 from ._decorators import _deprecate_positional_args
@@ -1611,15 +1612,10 @@ class PairGrid(Grid):
 
     def _find_numeric_cols(self, data):
         """Find which variables in a DataFrame are numeric."""
-        # This can't be the best way to do this, but  I do not
-        # know what the best way might be, so this seems ok
         numeric_cols = []
         for col in data:
-            try:
-                data[col].astype(np.float)
+            if variable_type(data[col]) == "numeric":
                 numeric_cols.append(col)
-            except (ValueError, TypeError):
-                pass
         return numeric_cols
 
 
