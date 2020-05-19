@@ -37,7 +37,7 @@ a_norm = np.random.randn(100)
 
 def test_pmf_hist_basics():
     """Test the function to return barplot args for pmf hist."""
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         out = utils.pmf_hist(a_norm)
     assert_equal(len(out), 3)
     x, h, w = out
@@ -45,23 +45,23 @@ def test_pmf_hist_basics():
 
     # Test simple case
     a = np.arange(10)
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a, 10)
     nose.tools.assert_true(np.all(h == h[0]))
 
     # Test width
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm)
     assert_equal(x[1] - x[0], w)
 
     # Test normalization
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm)
     nose.tools.assert_almost_equal(sum(h), 1)
     nose.tools.assert_less_equal(h.max(), 1)
 
     # Test bins
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm, 20)
     assert_equal(len(x), 20)
 
@@ -112,7 +112,7 @@ def test_saturate():
 )
 def test_sig_stars(p, annot):
     """Test the sig stars function."""
-    with pytest.warns(UserWarning):
+    with pytest.warns(FutureWarning):
         stars = utils.sig_stars(p)
         assert_equal(stars, annot)
 
@@ -120,7 +120,8 @@ def test_sig_stars(p, annot):
 def test_iqr():
     """Test the IQR function."""
     a = np.arange(5)
-    iqr = utils.iqr(a)
+    with pytest.warns(FutureWarning):
+        iqr = utils.iqr(a)
     assert_equal(iqr, 2)
 
 
