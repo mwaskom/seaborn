@@ -2460,10 +2460,7 @@ class TestCountPlot(CategoricalFixture):
 
     def test_input_error(self):
 
-        with nt.assert_raises(TypeError):
-            cat.countplot()
-
-        with nt.assert_raises(TypeError):
+        with nt.assert_raises(ValueError):
             cat.countplot(x="g", y="h", data=self.df)
 
 
