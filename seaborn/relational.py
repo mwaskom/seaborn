@@ -13,12 +13,10 @@ from .core import (
     unique_dashes,
     unique_markers,
 )
-from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
+from .utils import (categorical_order, ci_to_errsize,
                     remove_na, locator_to_legend_entries,
                     ci as ci_func)
 from .algorithms import bootstrap
-from .palettes import (color_palette, cubehelix_palette,
-                       _parse_cubehelix_args, QUAL_PALETTES)
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args
 
@@ -41,96 +39,15 @@ class _RelationalPlotter(_VectorPlotter):
     # TODO this should match style of other defaults
     _default_size_range = 0, 1
 
-    def categorical_to_palette(self, data, order, palette):
-        """Determine colors when the hue variable is qualitative."""
-        # -- Identify the order and name of the levels
-
-        if order is None:
-            levels = categorical_order(data)
-        else:
-            levels = order
-        n_colors = len(levels)
-
-        # -- Identify the set of colors to use
-
-        if isinstance(palette, dict):
-
-            missing = set(levels) - set(palette)
-            if any(missing):
-                err = "The palette dictionary is missing keys: {}"
-                raise ValueError(err.format(missing))
-
-        else:
-
-            if palette is None:
-                if n_colors <= len(get_color_cycle()):
-                    colors = color_palette(None, n_colors)
-                else:
-                    colors = color_palette("husl", n_colors)
-            elif isinstance(palette, list):
-                if len(palette) != n_colors:
-                    err = "The palette list has the wrong number of colors."
-                    raise ValueError(err)
-                colors = palette
-            else:
-                colors = color_palette(palette, n_colors)
-
-            palette = dict(zip(levels, colors))
-
-        return levels, palette
-
-    def numeric_to_palette(self, data, order, palette, norm):
-        """Determine colors when the hue variable is quantitative."""
-        levels = list(np.sort(remove_na(data.unique())))
-
-        # TODO do we want to do something complicated to ensure contrast
-        # at the extremes of the colormap against the background?
-
-        # Identify the colormap to use
-        palette = "ch:" if palette is None else palette
-        if isinstance(palette, mpl.colors.Colormap):
-            cmap = palette
-        elif str(palette).startswith("ch:"):
-            args, kwargs = _parse_cubehelix_args(palette)
-            cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
-        elif isinstance(palette, dict):
-            colors = [palette[k] for k in sorted(palette)]
-            cmap = mpl.colors.ListedColormap(colors)
-        else:
-            try:
-                cmap = mpl.cm.get_cmap(palette)
-            except (ValueError, TypeError):
-                err = "Palette {} not understood"
-                raise ValueError(err)
-
-        if norm is None:
-            norm = mpl.colors.Normalize()
-        elif isinstance(norm, tuple):
-            norm = mpl.colors.Normalize(*norm)
-        elif not isinstance(norm, mpl.colors.Normalize):
-            err = "``hue_norm`` must be None, tuple, or Normalize object."
-            raise ValueError(err)
-
-        if not norm.scaled():
-            norm(np.asarray(data.dropna()))
-
-        # TODO this should also use color_lookup, but that needs the
-        # class attributes that get set after using this function...
-        if not isinstance(palette, dict):
-            palette = dict(zip(levels, cmap(norm(levels))))
-        # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
-
-        return levels, palette, cmap, norm
-
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
-        if self.hue_type == "numeric":
-            normed = self.hue_norm(key)
+        try:
+            return self._hue_map(key)
+        except KeyError:
+            normed = self._hue_map.norm(key)
             if np.ma.is_masked(normed):
                 normed = np.nan
-            return self.cmap(normed)
-        elif self.hue_type == "categorical":
-            return self.palette[key]
+            return self._hue_map.cmap(normed)
 
     def size_lookup(self, key):
         """Return the size corresponding to the size level."""
@@ -191,60 +108,6 @@ class _RelationalPlotter(_VectorPlotter):
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
-
-    def parse_hue(self, data, palette=None, order=None, norm=None):
-        """Determine what colors to use given data characteristics."""
-        if self._empty_data(data):
-
-            # Set default values when not using a hue mapping
-            levels = [None]
-            limits = None
-            norm = None
-            palette = {}
-            var_type = None
-            cmap = None
-
-        else:
-
-            # Determine what kind of hue mapping we want
-            var_type = self._semantic_type(data)
-
-            # Override depending on the type of the palette argument
-            if palette in QUAL_PALETTES:
-                var_type = "categorical"
-            elif norm is not None:
-                var_type = "numeric"
-            elif isinstance(palette, (dict, list)):
-                var_type = "categorical"
-
-            # -- Option 1: quantitative color mapping
-
-            if var_type == "numeric":
-
-                data = pd.to_numeric(data)
-                levels, palette, cmap, norm = self.numeric_to_palette(
-                    data, order, palette, norm
-                )
-                limits = norm.vmin, norm.vmax
-
-            # -- Option 2: qualitative color palette
-
-            else:
-
-                cmap = None
-                limits = None
-                levels, palette = self.categorical_to_palette(
-                    # Casting data to list to handle differences in the way
-                    # pandas represents numpy datetime64 data
-                    list(data), order, palette
-                )
-
-        self.hue_levels = levels
-        self.hue_norm = norm
-        self.hue_limits = limits
-        self.hue_type = var_type
-        self.palette = palette
-        self.cmap = cmap
 
     def parse_size(self, data, sizes=None, order=None, norm=None):
         """Determine the linewidths given data characteristics."""
@@ -439,16 +302,16 @@ class _RelationalPlotter(_VectorPlotter):
                 legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
-        if verbosity == "brief" and self.hue_type == "numeric":
-            if isinstance(self.hue_norm, mpl.colors.LogNorm):
+        if verbosity == "brief" and self._hue_map.map_type == "numeric":
+            if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, self.hue_limits, self.plot_data["hue"].dtype
+                locator, self._hue_map.limits, self.plot_data["hue"].dtype
             )
         else:
-            hue_levels = hue_formatted_levels = self.hue_levels
+            hue_levels = hue_formatted_levels = self._hue_map.levels
 
         # Add the hue semantic subtitle
         if "hue" in self.variables and self.variables["hue"] is not None:
@@ -544,7 +407,6 @@ class _LinePlotter(_RelationalPlotter):
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
         self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
@@ -717,25 +579,25 @@ class _ScatterPlotter(_RelationalPlotter):
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
 
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_norm=None,
-                 dashes=None, markers=None, style_order=None,
-                 x_bins=None, y_bins=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
-                 alpha=None, x_jitter=None, y_jitter=None,
-                 legend=None):
+    def __init__(
+        self,
+        data=None, variables={},
+        sizes=None, size_order=None, size_norm=None,
+        dashes=None, markers=None, style_order=None,
+        x_bins=None, y_bins=None,
+        units=None, estimator=None, ci=None, n_boot=None,
+        alpha=None, x_jitter=None, y_jitter=None,
+        legend=None
+    ):
 
-        plot_data, variables = self.establish_variables(
-            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
-        )
+        super().__init__(data=data, variables=variables)
+
+        plot_data = self.plot_data
 
         self._default_size_range = (
             np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
         self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, None, style_order)
         self.units = units
@@ -780,8 +642,8 @@ class _ScatterPlotter(_RelationalPlotter):
         # Define vectors of hue and size values
         # There must be some reason this doesn't use data[var].map(attr_dict)
         # But I do not remember what it is!
-        if self.palette:
-            c = [self.palette.get(val) for val in data["hue"]]
+        if "hue" in self.variables:
+            c = self._hue_map(data["hue"])
 
         if self.sizes:
             s = [self.sizes.get(val) for val in data["size"]]
@@ -986,6 +848,8 @@ def lineplot(
         units=units, estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()
@@ -1253,15 +1117,16 @@ def scatterplot(
     legend="brief", ax=None, **kwargs
 ):
 
+    variables = _ScatterPlotter.get_variables(locals())
     p = _ScatterPlotter(
-        x=x, y=y, hue=hue, style=style, size=size, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
+        data=data, variables=variables,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
         alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
     )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()

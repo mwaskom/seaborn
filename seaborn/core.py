@@ -39,7 +39,7 @@ class SemanticMapping:
         # TODO what about when we need values that aren't in the data
         # (i.e. for legends), we need some sort of continuous lookup
 
-        if isinstance(data, pd.Series):
+        if isinstance(data, (pd.Series, Sequence)):
             # TODO need to debug why data.map(self.lookup_table) doesn't work
             return [self.lookup_table.get(val) for val in data]
         else:
@@ -75,6 +75,8 @@ class HueMapping(SemanticMapping):
                 map_type = "numeric"
             elif isinstance(palette, (Mapping, Sequence)):
                 map_type = "categorical"
+            elif plotter.input_format == "wide":
+                map_type = "categorical"
             else:
                 # Otherwise, use the variable type
                 # TODO we will likely need to impelement datetime mapping
@@ -109,6 +111,7 @@ class HueMapping(SemanticMapping):
                     list(data), order, palette
                 )
 
+            self.map_type = map_type
             self.lookup_table = lookup_table
             self.palette = palette
             self.levels = levels
@@ -218,35 +221,40 @@ class _VectorPlotter:
 
     semantics = ("x", "y")
 
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, data=None, variables={}):
 
-        plot_data, variables = self.establish_variables(data, **kwargs)
+        plot_data, variables = self.establish_variables(data, variables)
 
         for var, cls in self._semantic_mappings.items():
             if var in self.semantics:
-                # TODO this can have a more generic name
+
+                # Create the mapping function
                 map_func = partial(cls.map, plotter=self)
                 setattr(self, f"map_{var}", map_func)
+
+                # Call the mapping function to initialize with default values
+                getattr(self, f"map_{var}")()
+
 
     @classmethod
     def get_variables(cls, arguments):
         return {k: arguments[k] for k in cls.semantics}
 
     # TODO while we're changing names ... call this assign?
-    def establish_variables(self, data=None, **kwargs):
+    def establish_variables(self, data=None, variables={}):
         """Define plot variables."""
-        x = kwargs.get("x", None)
-        y = kwargs.get("y", None)
+        x = variables.get("x", None)
+        y = variables.get("y", None)
 
         if x is None and y is None:
             self.input_format = "wide"
             plot_data, variables = self.establish_variables_wideform(
-                data, **kwargs
+                data, **variables,
             )
         else:
             self.input_format = "long"
             plot_data, variables = self.establish_variables_longform(
-                data, **kwargs
+                data, **variables,
             )
 
         self.plot_data = plot_data

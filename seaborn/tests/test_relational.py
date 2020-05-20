@@ -1825,7 +1825,11 @@ class TestScatterPlotter(Helpers):
 
         f, ax = plt.subplots()
 
-        p = _ScatterPlotter(x="x", y="y", data=long_df, legend="full")
+        p = _ScatterPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+            legend="full",
+        )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         assert handles == []
@@ -1834,29 +1838,33 @@ class TestScatterPlotter(Helpers):
 
         ax.clear()
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", data=long_df, legend="full"
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+            legend="full",
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
-        assert labels == ["a"] + p.hue_levels
+        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
+        assert labels == ["a"] + p._hue_map.levels
         assert self.colors_equal(colors, expected_colors)
 
         # --
 
         ax.clear()
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", style="a",
-            markers=True, legend="full", data=long_df
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", style="a"),
+            markers=True,
+            legend="full",
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
+        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
         paths = [h.get_paths()[0] for h in handles]
         expected_paths = [null_mark] + [p.paths[l] for l in p.style_levels]
-        assert labels == ["a"] + p.hue_levels == ["a"] + p.style_levels
+        assert labels == ["a"] + p._hue_map.levels == ["a"] + p.style_levels
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
@@ -1864,18 +1872,24 @@ class TestScatterPlotter(Helpers):
 
         ax.clear()
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", style="b",
-            markers=True, legend="full", data=long_df
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", style="b"),
+            markers=True,
+            legend="full",
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
         paths = [h.get_paths()[0] for h in handles]
-        expected_colors = (["w"] + [p.palette[l] for l in p.hue_levels]
-                           + ["w"] + [".2" for _ in p.style_levels])
-        expected_paths = ([null_mark] + [default_mark for _ in p.hue_levels]
-                          + [null_mark] + [p.paths[l] for l in p.style_levels])
-        assert labels == ["a"] + p.hue_levels + ["b"] + p.style_levels
+        expected_colors = (
+            ["w"] + p._hue_map(p._hue_map.levels)
+            + ["w"] + [".2" for _ in p.style_levels]
+        )
+        expected_paths = (
+            [null_mark] + [default_mark for _ in p._hue_map.levels]
+            + [null_mark] + [p.paths[l] for l in p.style_levels]
+        )
+        assert labels == ["a"] + p._hue_map.levels + ["b"] + p.style_levels
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
@@ -1883,15 +1897,17 @@ class TestScatterPlotter(Helpers):
 
         ax.clear()
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", size="a", data=long_df, legend="full"
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", size="a"),
+            legend="full"
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + [p.palette[l] for l in p.hue_levels]
+        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
         sizes = [h.get_sizes()[0] for h in handles]
         expected_sizes = [0] + [p.sizes[l] for l in p.size_levels]
-        assert labels == ["a"] + p.hue_levels == ["a"] + p.size_levels
+        assert labels == ["a"] + p._hue_map.levels == ["a"] + p.size_levels
         assert self.colors_equal(colors, expected_colors)
         assert sizes == expected_sizes
 
@@ -1900,8 +1916,10 @@ class TestScatterPlotter(Helpers):
         ax.clear()
         sizes_list = [10, 100, 200]
         p = _ScatterPlotter(
-            x="x", y="y", size="s", data=long_df,
-            legend="full", sizes=sizes_list,
+            data=long_df,
+            variables=dict(x="x", y="y", size="s"),
+            legend="full",
+            sizes=sizes_list,
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
@@ -1915,8 +1933,10 @@ class TestScatterPlotter(Helpers):
         ax.clear()
         sizes_dict = {2: 10, 4: 100, 8: 200}
         p = _ScatterPlotter(
-            x="x", y="y", size="s", sizes=sizes_dict,
-            data=long_df, legend="full"
+            data=long_df,
+            variables=dict(x="x", y="y", size="s"),
+            sizes=sizes_dict,
+            legend="full"
         )
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
@@ -1930,13 +1950,15 @@ class TestScatterPlotter(Helpers):
         x, y = np.random.randn(2, 40)
         z = np.tile(np.arange(20), 2)
 
-        p = _ScatterPlotter(x=x, y=y, hue=z)
+        p = _ScatterPlotter(
+            variables=dict(x=x, y=y, hue=z),
+        )
 
         ax.clear()
         p.legend = "full"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert labels == [str(l) for l in p.hue_levels]
+        assert labels == [str(l) for l in p._hue_map.levels]
 
         ax.clear()
         p.legend = "brief"
@@ -1944,7 +1966,9 @@ class TestScatterPlotter(Helpers):
         handles, labels = ax.get_legend_handles_labels()
         assert len(labels) == 4
 
-        p = _ScatterPlotter(x=x, y=y, size=z)
+        p = _ScatterPlotter(
+            variables=dict(x=x, y=y, size=z),
+        )
 
         ax.clear()
         p.legend = "full"
@@ -1967,7 +1991,7 @@ class TestScatterPlotter(Helpers):
 
         f, ax = plt.subplots()
 
-        p = _ScatterPlotter(x="x", y="y", data=long_df)
+        p = _ScatterPlotter(data=long_df, variables=dict(x="x", y="y"))
 
         p.plot(ax, {})
         points = ax.collections[0]
@@ -1979,16 +2003,20 @@ class TestScatterPlotter(Helpers):
         assert self.colors_equal(points.get_facecolor(), "k")
         assert points.get_label() == "test"
 
-        p = _ScatterPlotter(x="x", y="y", hue="a", data=long_df)
+        p = _ScatterPlotter(
+            data=long_df, variables=dict(x="x", y="y", hue="a")
+        )
 
         ax.clear()
         p.plot(ax, {})
         points = ax.collections[0]
-        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        expected_colors = p._hue_map(p.plot_data["hue"])
         assert self.colors_equal(points.get_facecolors(), expected_colors)
 
         p = _ScatterPlotter(
-            x="x", y="y", style="c", markers=["+", "x"], data=long_df
+            data=long_df,
+            variables=dict(x="x", y="y", style="c"),
+            markers=["+", "x"]
         )
 
         ax.clear()
@@ -1997,7 +2025,9 @@ class TestScatterPlotter(Helpers):
         points = ax.collections[0]
         assert self.colors_equal(points.get_edgecolors(), [color])
 
-        p = _ScatterPlotter(x="x", y="y", size="a", data=long_df)
+        p = _ScatterPlotter(
+            data=long_df, variables=dict(x="x", y="y", size="a"),
+        )
 
         ax.clear()
         p.plot(ax, {})
@@ -2006,33 +2036,41 @@ class TestScatterPlotter(Helpers):
         assert_array_equal(points.get_sizes(), expected_sizes)
 
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", style="a", markers=True, data=long_df
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", style="a"),
+            markers=True,
         )
 
         ax.clear()
         p.plot(ax, {})
-        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = [p.paths[k] for k in p.plot_data["style"]]
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
         p = _ScatterPlotter(
-            x="x", y="y", hue="a", style="b", markers=True, data=long_df
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", style="b"),
+            markers=True,
         )
 
         ax.clear()
         p.plot(ax, {})
-        expected_colors = [p.palette[k] for k in p.plot_data["hue"]]
+        expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = [p.paths[k] for k in p.plot_data["style"]]
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
         x_str = long_df["x"].astype(str)
-        p = _ScatterPlotter(x="x", y="y", hue=x_str, data=long_df)
+        p = _ScatterPlotter(
+            data=long_df, variables=dict(x="x", y="y", hue=x_str),
+        )
         ax.clear()
         p.plot(ax, {})
 
-        p = _ScatterPlotter(x="x", y="y", size=x_str, data=long_df)
+        p = _ScatterPlotter(
+            data=long_df, variables=dict(x="x", y="y", size=x_str),
+        )
         ax.clear()
         p.plot(ax, {})
 
@@ -2040,7 +2078,7 @@ class TestScatterPlotter(Helpers):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
-        p = _ScatterPlotter(x="x", y="y", data=long_df)
+        p = _ScatterPlotter(data=long_df, variables=dict(x="x", y="y"))
 
         p.plot(ax1, {})
         assert ax1.get_xlabel() == "x"

@@ -53,7 +53,7 @@ class _RugPlotter(_DistributionPlotter):
         height=None,
     ):
 
-        super().__init__(data, **variables)
+        super().__init__(data=data, variables=variables)
 
         self.height = height
 
