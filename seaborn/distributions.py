@@ -76,6 +76,11 @@ class _RugPlotter(_DistributionPlotter):
 
         # ---
 
+        # TODO expand the plot margins to account for the height of
+        # the rug (as an option?)
+
+        # ---
+
         if "x" in self.variables:
             self._plot_single_rug("x", ax, kws)
         if "y" in self.variables:
@@ -85,6 +90,13 @@ class _RugPlotter(_DistributionPlotter):
 
         vector = self.plot_data[var]
         n = len(vector)
+
+        # TODO
+        if "hue" in self.variables:
+            colors = self.hue_map.color_vector(self.plot_data["hue"])
+            kws.pop("color", None)
+        else:
+            colors = None
 
         if var == "x":
 
@@ -101,7 +113,9 @@ class _RugPlotter(_DistributionPlotter):
             ])
 
         line_segs = xy_pairs.reshape([n, 2, 2])
-        ax.add_collection(LineCollection(line_segs, transform=trans, **kws))
+        ax.add_collection(LineCollection(
+            line_segs, transform=trans, colors=colors, **kws
+        ))
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
 
