@@ -28,7 +28,7 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 
 class _RelationalPlotter(_VectorPlotter):
 
-    semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
+    semantics = _VectorPlotter.semantics + ("hue", "size", "style", "units")
 
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
@@ -1569,7 +1569,7 @@ def relplot(
     plot_kws.update(plot_variables)
 
     # Define grid_data with row/col semantics
-    grid_semantics = ["row", "col"]  # TODO define on FacetGrid?
+    grid_semantics = "row", "col"  # TODO define on FacetGrid?
     p.semantics = plot_semantics + grid_semantics
     full_data, full_variables = p.establish_variables(
         data,

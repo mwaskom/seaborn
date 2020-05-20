@@ -27,7 +27,7 @@ __all__ = ["distplot", "kdeplot", "rugplot"]
 
 class _DistributionPlotter(_VectorPlotter):
 
-    semantics = _VectorPlotter.semantics + ["hue"]
+    semantics = _VectorPlotter.semantics + ("hue",)
 
     wide_structure = {
         "x": "values", "hue": "columns",
