@@ -1,5 +1,7 @@
-import itertools
 import warnings
+import itertools
+import inspect
+from functools import partial
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
 from datetime import datetime
@@ -9,19 +11,228 @@ import pandas as pd
 import matplotlib as mpl
 
 
+# TODO move to decorators
+def share_init_params_with_map(cls):
+
+    map_sig = inspect.signature(cls.map)
+    init_sig = inspect.signature(cls.__init__)
+
+    new = [v for k, v in init_sig.parameters.items() if k != "self"]
+    new.insert(0, map_sig.parameters["cls"])
+    cls.map.__signature__ = map_sig.replace(parameters=new)
+    cls.map.__doc__ = cls.__init__.__doc__
+
+    cls.map = classmethod(cls.map)
+
+    return cls
+
+
+class SemanticMapping:
+
+    def map(cls, plotter, *args, **kwargs):
+        method_name = "_{}_map".format(cls.__name__[:-7].lower())
+        setattr(plotter, method_name, cls(plotter, *args, **kwargs))
+        return plotter
+
+    def __call__(self, data):
+
+        # TODO what about when we need values that aren't in the data
+        # (i.e. for legends), we need some sort of continuous lookup
+
+        if isinstance(data, pd.Series):
+            # TODO need to debug why data.map(self.lookup_table) doesn't work
+            return [self.lookup_table.get(val) for val in data]
+        else:
+            return self.lookup_table[data]
+
+
+@share_init_params_with_map
+class HueMapping(SemanticMapping):
+
+    # Default attributes (TODO use data class?)
+    map_type = None
+    levels = [None]  # TODO better if just None, but then subset_data fails
+    limits = None
+    norm = None
+    cmap = None
+    palette = None
+    lookup_table = {}
+
+    def __init__(
+        self, plotter, palette=None, order=None, norm=None,
+    ):
+
+        from .palettes import QUAL_PALETTES  # Avoid circular import
+
+        data = plotter.plot_data["hue"]
+
+        if data.notna().any():
+
+            # Infer the type of mapping to use from the parameters
+            if palette in QUAL_PALETTES:
+                map_type = "categorical"
+            elif norm is not None:
+                map_type = "numeric"
+            elif isinstance(palette, (Mapping, Sequence)):
+                map_type = "categorical"
+            else:
+                # Otherwise, use the variable type
+                # TODO we will likely need to impelement datetime mapping
+                if plotter.var_types["hue"] == "numeric":
+                    map_type = "numeric"
+                else:
+                    map_type = "categorical"
+
+            # Our goal is to end up with a dictionary mapping every unique
+            # value in `data` to a color. We will also keep track of the
+            # metadata about this mapping we will need for, e.g., a legend
+
+            # --- Option 1: numeric mapping with a matplotlib colormap
+
+            if map_type == "numeric":
+
+                data = pd.to_numeric(data)
+                levels, lookup_table, cmap, norm = self.numeric_mapping(
+                    data, order, palette, norm
+                )
+                limits = norm.vmin, norm.vmax
+
+            # --- Option 2: categorical mapping using seaborn palette
+
+            else:
+
+                cmap = None
+                limits = None
+                levels, lookup_table = self.categorical_mapping(
+                    # Casting data to list to handle differences in the way
+                    # pandas represents numpy datetime64 data
+                    list(data), order, palette
+                )
+
+            self.lookup_table = lookup_table
+            self.palette = palette
+            self.levels = levels
+            self.limits = limits
+            self.norm = norm
+            self.cmap = cmap
+
+    # TODO why not generic __call__ method that broadcasts?
+    def color_vector(self, data):
+
+        # TODO need to debug why data.map(self.palette) doesn't work
+        # TODO call this "mapping" and keep palette for the orig var?
+        return [self.palette.get(val) for val in data]
+
+    def categorical_mapping(self, data, order, palette):
+        """Determine colors when the hue mapping is categorical."""
+        # Avoid circular import
+        from .palettes import color_palette
+
+        # -- Identify the order and name of the levels
+
+        if order is None:
+            levels = categorical_order(data)
+        else:
+            levels = order
+        n_colors = len(levels)
+
+        # -- Identify the set of colors to use
+
+        if isinstance(palette, dict):
+
+            missing = set(levels) - set(palette)
+            if any(missing):
+                err = "The palette dictionary is missing keys: {}"
+                raise ValueError(err.format(missing))
+
+            lookup_table = palette
+
+        else:
+
+            if palette is None:
+                if n_colors <= len(get_color_cycle()):
+                    colors = color_palette(None, n_colors)
+                else:
+                    colors = color_palette("husl", n_colors)
+            elif isinstance(palette, list):
+                if len(palette) != n_colors:
+                    err = "The palette list has the wrong number of colors."
+                    raise ValueError(err)
+                colors = palette
+            else:
+                colors = color_palette(palette, n_colors)
+
+            lookup_table = dict(zip(levels, colors))
+
+        return levels, lookup_table
+
+    def numeric_mapping(self, data, order, palette, norm):
+        """Determine colors when the hue variable is quantitative."""
+        levels = list(np.sort(remove_na(data.unique())))
+
+        # TODO do we want to do something complicated to ensure contrast
+        # at the extremes of the colormap against the background?
+
+        # Identify the colormap to use
+        # Avoid circular import
+        from .palettes import cubehelix_palette, _parse_cubehelix_args
+
+        palette = "ch:" if palette is None else palette
+        if isinstance(palette, mpl.colors.Colormap):
+            cmap = palette
+        elif str(palette).startswith("ch:"):
+            args, kwargs = _parse_cubehelix_args(palette)
+            cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
+        elif isinstance(palette, dict):
+            colors = [palette[k] for k in sorted(palette)]
+            cmap = mpl.colors.ListedColormap(colors)
+        else:
+            try:
+                cmap = mpl.cm.get_cmap(palette)
+            except (ValueError, TypeError):
+                err = "Palette {} not understood"
+                raise ValueError(err)
+
+        if norm is None:
+            norm = mpl.colors.Normalize()
+        elif isinstance(norm, tuple):
+            norm = mpl.colors.Normalize(*norm)
+        elif not isinstance(norm, mpl.colors.Normalize):
+            err = "``hue_norm`` must be None, tuple, or Normalize object."
+            raise ValueError(err)
+
+        if not norm.scaled():
+            norm(np.asarray(data.dropna()))
+
+        lookup_table = dict(zip(levels, cmap(norm(levels))))
+
+        return levels, lookup_table, cmap, norm
+
+
 class _VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
-    semantics = ["x", "y"]
+    _semantic_mappings = {
+        "hue": HueMapping,
+    }
+
+    semantics = ("x", "y")
 
     def __init__(self, data=None, **kwargs):
 
         plot_data, variables = self.establish_variables(data, **kwargs)
 
+        for var, cls in self._semantic_mappings.items():
+            if var in self.semantics:
+                # TODO this can have a more generic name
+                map_func = partial(cls.map, plotter=self)
+                setattr(self, f"map_{var}", map_func)
+
     @classmethod
     def get_variables(cls, arguments):
         return {k: arguments[k] for k in cls.semantics}
 
+    # TODO while we're changing names ... call this assign?
     def establish_variables(self, data=None, **kwargs):
         """Define plot variables."""
         x = kwargs.get("x", None)
@@ -41,10 +252,6 @@ class _VectorPlotter:
         self.plot_data = plot_data
         self.variables = variables
         self.var_types = {v: variable_type(plot_data[v]) for v in variables}
-
-        # TODO establish default mappings here?
-        if "hue" in variables:
-            self.hue_map = HueMapping(self)
 
         # TODO maybe don't return
         return plot_data, variables

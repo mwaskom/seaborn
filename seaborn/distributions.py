@@ -91,10 +91,9 @@ class _RugPlotter(_DistributionPlotter):
         vector = self.plot_data[var]
         n = len(vector)
 
-        # TODO
         if "hue" in self.variables:
-            colors = self.hue_map.color_vector(self.plot_data["hue"])
-            kws.pop("color", None)
+            colors = self._hue_map(self.plot_data["hue"])
+            kws.pop("color", None)  # TODO simplify
         else:
             colors = None
 
@@ -126,6 +125,7 @@ def rugplot(
     x=None,
     height=.05, axis="x", ax=None,
     data=None, y=None, hue=None,
+    palette=None, hue_order=None, hue_norm=None,
     a=None,
     **kwargs
 ):
@@ -151,6 +151,7 @@ def rugplot(
         variables=variables,
         height=height,
     )
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()
