@@ -12,10 +12,10 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
-from .core import (
-    get_color_cycle,  # noqa  TODO
-    categorical_order,  # noqa  TODO
-    remove_na,  # noqa TODO
+from .core import (  # noqa  TODO now unused here, but do we need to deprecate?
+    get_color_cycle,
+    categorical_order,
+    remove_na,
 )
 
 
