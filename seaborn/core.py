@@ -260,7 +260,10 @@ class _VectorPlotter:
 
         self.plot_data = plot_data
         self.variables = variables
-        self.var_types = {v: variable_type(plot_data[v]) for v in variables}
+        self.var_types = {
+            v: variable_type(plot_data[v], boolean_type="categorical")
+            for v in variables
+        }
 
         # TODO maybe don't return
         return plot_data, variables
