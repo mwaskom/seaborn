@@ -1970,7 +1970,7 @@ class _LVPlotter(_CategoricalPlotter):
 
                 if len(outliers) > 0:
                     ax.scatter(np.repeat(x, len(outliers)), outliers,
-                               marker='d', c=hex_color, **kws)
+                               marker='d', c=self.gray, **kws)
             else:
                 boxes = [horz_perc_box(x, b[0], i, k, b[1])
                          for i, b in enumerate(zip(box_ends, w_area))]
@@ -1981,12 +1981,12 @@ class _LVPlotter(_CategoricalPlotter):
 
                 if len(outliers) > 0:
                     ax.scatter(outliers, np.repeat(x, len(outliers)),
-                               marker='d', c=hex_color, **kws)
+                               marker='d', c=self.gray, **kws)
 
             # Construct a color map from the input color
             rgb = [hex_color, (1, 1, 1)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            collection = PatchCollection(boxes, cmap=cmap)
+            collection = PatchCollection(boxes, cmap=cmap, edgecolor=self.gray)
 
             # Set the color gradation, first box will have color=hex_color
             collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
