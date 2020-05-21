@@ -12,10 +12,14 @@ from .core import (
     variable_type,
     unique_dashes,
     unique_markers,
+    categorical_order,
 )
-from .utils import (categorical_order, ci_to_errsize,
-                    remove_na, locator_to_legend_entries,
-                    ci as ci_func)
+from .utils import (
+    ci_to_errsize,
+    remove_na,
+    locator_to_legend_entries,
+    ci as ci_func
+)
 from .algorithms import bootstrap
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args

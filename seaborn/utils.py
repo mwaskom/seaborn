@@ -12,12 +12,6 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
-from .core import (  # noqa  TODO now unused here, but do we need to deprecate?
-    get_color_cycle,
-    categorical_order,
-    remove_na,
-)
-
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
@@ -183,6 +177,40 @@ def axlabel(xlabel, ylabel, **kwargs):
     ax = plt.gca()
     ax.set_xlabel(xlabel, **kwargs)
     ax.set_ylabel(ylabel, **kwargs)
+
+
+def remove_na(vector):
+    """Helper method for removing null values from data vectors.
+
+    Parameters
+    ----------
+    vector : vector object
+        Must implement boolean masking with [] subscript syntax.
+
+    Returns
+    -------
+    clean_clean : same type as ``vector``
+        Vector of data with null values removed. May be a copy or a view.
+
+    """
+    return vector[pd.notnull(vector)]
+
+
+def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    colors : list
+        List of matplotlib colors in the current cycle, or dark gray if
+        the current color cycle is empty.
+    """
+    cycler = mpl.rcParams['axes.prop_cycle']
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def despine(fig=None, ax=None, top=True, right=True, left=False,

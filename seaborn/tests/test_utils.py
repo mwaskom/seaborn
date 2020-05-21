@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from cycler import cycler
+import cycler
 
 import pytest
 import nose
@@ -27,6 +27,8 @@ except ImportError:
 from .. import utils, rcmod
 from ..utils import (
     get_dataset_names,
+    get_color_cycle,
+    remove_na,
     load_dataset,
     _network,
 )
@@ -328,52 +330,6 @@ def test_ticklabels_overlap():
     assert not y
 
 
-def test_categorical_order():
-
-    x = ["a", "c", "c", "b", "a", "d"]
-    y = [3, 2, 5, 1, 4]
-    order = ["a", "b", "c", "d"]
-
-    out = utils.categorical_order(x)
-    nt.assert_equal(out, ["a", "c", "b", "d"])
-
-    out = utils.categorical_order(x, order)
-    nt.assert_equal(out, order)
-
-    out = utils.categorical_order(x, ["b", "a"])
-    nt.assert_equal(out, ["b", "a"])
-
-    out = utils.categorical_order(np.array(x))
-    nt.assert_equal(out, ["a", "c", "b", "d"])
-
-    out = utils.categorical_order(pd.Series(x))
-    nt.assert_equal(out, ["a", "c", "b", "d"])
-
-    out = utils.categorical_order(y)
-    nt.assert_equal(out, [1, 2, 3, 4, 5])
-
-    out = utils.categorical_order(np.array(y))
-    nt.assert_equal(out, [1, 2, 3, 4, 5])
-
-    out = utils.categorical_order(pd.Series(y))
-    nt.assert_equal(out, [1, 2, 3, 4, 5])
-
-    x = pd.Categorical(x, order)
-    out = utils.categorical_order(x)
-    nt.assert_equal(out, list(x.categories))
-
-    x = pd.Series(x)
-    out = utils.categorical_order(x)
-    nt.assert_equal(out, list(x.cat.categories))
-
-    out = utils.categorical_order(x, ["b", "a"])
-    nt.assert_equal(out, ["b", "a"])
-
-    x = ["a", np.nan, "c", "c", "b", "a", "d"]
-    out = utils.categorical_order(x)
-    nt.assert_equal(out, ["a", "c", "b", "d"])
-
-
 def test_locator_to_legend_entries():
 
     locator = mpl.ticker.MaxNLocator(nbins=3)
@@ -405,23 +361,6 @@ def test_locator_to_legend_entries():
     )
     if LooseVersion(mpl.__version__) >= "3.1":
         assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
-
-
-@pytest.mark.parametrize(
-    "cycler,result",
-    [
-        (cycler(color=["y"]), ["y"]),
-        (cycler(color=["k"]), ["k"]),
-        (cycler(color=["k", "y"]), ["k", "y"]),
-        (cycler(color=["y", "k"]), ["y", "k"]),
-        (cycler(color=["b", "r"]), ["b", "r"]),
-        (cycler(color=["r", "b"]), ["r", "b"]),
-        (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
-    ],
-)
-def test_get_color_cycle(cycler, result):
-    with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
-        assert utils.get_color_cycle() == result
 
 
 def check_load_dataset(name):

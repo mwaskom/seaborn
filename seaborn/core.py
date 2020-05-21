@@ -10,6 +10,11 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
+from .utils import (
+    get_color_cycle,
+    remove_na,
+)
+
 
 # TODO move to decorators
 def share_init_params_with_map(cls):
@@ -711,23 +716,6 @@ def unique_markers(n):
     return markers[:n]
 
 
-def remove_na(arr):
-    """Helper method for removing NA values from array-like.
-
-    Parameters
-    ----------
-    arr : array-like
-        The array-like from which to remove NA values.
-
-    Returns
-    -------
-    clean_arr : array-like
-        The original array with NA values removed.
-
-    """
-    return arr[pd.notnull(arr)]
-
-
 def categorical_order(values, order=None):
     """Return a list of unique data values.
 
@@ -765,20 +753,3 @@ def categorical_order(values, order=None):
 
         order = filter(pd.notnull, order)
     return list(order)
-
-
-def get_color_cycle():
-    """Return the list of colors in the current matplotlib color cycle
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    colors : list
-        List of matplotlib colors in the current cycle, or dark gray if
-        the current color cycle is empty.
-    """
-    cycler = mpl.rcParams['axes.prop_cycle']
-    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]

@@ -9,11 +9,11 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from ..palettes import color_palette
-from ..utils import categorical_order
 
 from ..core import (
     unique_dashes,
     unique_markers,
+    categorical_order,
 )
 
 from ..relational import (
@@ -597,6 +597,7 @@ class TestRelationalPlotter(Helpers):
         assert m.palette is None
         assert m.map_type is None
         assert m.cmap is None
+
     def test_parse_size(self, long_df):
 
         p = _RelationalPlotter(

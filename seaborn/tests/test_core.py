@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+from cycler import cycler
 
 import pytest
 from numpy.testing import assert_array_equal
+from pandas.testing import assert_series_equal
 
 from ..core import (
     HueMapping,
@@ -13,6 +15,8 @@ from ..core import (
     unique_dashes,
     unique_markers,
     categorical_order,
+    get_color_cycle,
+    remove_na,
 )
 
 from ..palettes import color_palette
@@ -360,3 +364,74 @@ class TestCoreFunc:
             infer_orient(cats, cats, "h")
         with pytest.raises(TypeError, match="Neither"):
             infer_orient(cats, cats)
+
+    def test_categorical_order(self):
+
+        x = ["a", "c", "c", "b", "a", "d"]
+        y = [3, 2, 5, 1, 4]
+        order = ["a", "b", "c", "d"]
+
+        out = categorical_order(x)
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(x, order)
+        assert out == order
+
+        out = categorical_order(x, ["b", "a"])
+        assert out == ["b", "a"]
+
+        out = categorical_order(np.array(x))
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(pd.Series(x))
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(y)
+        assert out == [1, 2, 3, 4, 5]
+
+        out = categorical_order(np.array(y))
+        assert out == [1, 2, 3, 4, 5]
+
+        out = categorical_order(pd.Series(y))
+        assert out == [1, 2, 3, 4, 5]
+
+        x = pd.Categorical(x, order)
+        out = categorical_order(x)
+        assert out == list(x.categories)
+
+        x = pd.Series(x)
+        out = categorical_order(x)
+        assert out == list(x.cat.categories)
+
+        out = categorical_order(x, ["b", "a"])
+        assert out == ["b", "a"]
+
+        x = ["a", np.nan, "c", "c", "b", "a", "d"]
+        out = categorical_order(x)
+        assert out == ["a", "c", "b", "d"]
+
+    @pytest.mark.parametrize(
+        "cycler,result",
+        [
+            (cycler(color=["y"]), ["y"]),
+            (cycler(color=["k"]), ["k"]),
+            (cycler(color=["k", "y"]), ["k", "y"]),
+            (cycler(color=["y", "k"]), ["y", "k"]),
+            (cycler(color=["b", "r"]), ["b", "r"]),
+            (cycler(color=["r", "b"]), ["r", "b"]),
+            (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
+        ],
+    )
+    def test_get_color_cycle(self, cycler, result):
+        with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
+            assert get_color_cycle() == result
+
+    def test_remove_na(self):
+
+        a_array = np.array([1, 2, np.nan, 3])
+        a_array_rm = remove_na(a_array)
+        assert_array_equal(a_array_rm, np.array([1, 2, 3]))
+
+        a_series = pd.Series([1, 2, np.nan, 3])
+        a_series_rm = remove_na(a_series)
+        assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))

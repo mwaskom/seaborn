@@ -16,10 +16,10 @@ except ImportError:
 
 from .. import axisgrid as ag
 from .. import rcmod
+from ..core import categorical_order
 from ..palettes import color_palette
 from ..distributions import kdeplot, _freedman_diaconis_bins
 from ..categorical import pointplot
-from ..utils import categorical_order
 
 rs = np.random.RandomState(0)
 

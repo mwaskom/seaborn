@@ -11,8 +11,8 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
-from .core import variable_type, infer_orient
-from .utils import iqr, categorical_order, remove_na
+from .core import variable_type, infer_orient, categorical_order
+from .utils import iqr, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
