@@ -218,7 +218,10 @@ class _VectorPlotter:
         "hue": HueMapping,
     }
 
-    semantics = ("x", "y")
+    semantics = "x", "y", "hue", "size", "style", "units"
+    wide_structure = {
+        "x": "index", "y": "values", "hue": "columns", "style": "columns",
+    }
 
     def __init__(self, data=None, variables={}):
 

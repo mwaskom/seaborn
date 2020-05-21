@@ -26,8 +26,6 @@ __all__ = ["relplot", "scatterplot", "lineplot"]
 
 class _RelationalPlotter(_VectorPlotter):
 
-    semantics = _VectorPlotter.semantics + ("hue", "size", "style", "units")
-
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
