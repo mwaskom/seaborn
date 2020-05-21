@@ -5,17 +5,16 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import cycler
+from cycler import cycler
 
 import pytest
-import nose
-import nose.tools as nt
-from nose.tools import assert_equal, raises
-import numpy.testing as npt
-try:
-    import pandas.testing as pdt
-except ImportError:
-    import pandas.util.testing as pdt
+from numpy.testing import (
+    assert_array_equal,
+)
+from pandas.testing import (
+    assert_series_equal,
+    assert_frame_equal,
+)
 
 from distutils.version import LooseVersion
 
@@ -41,31 +40,31 @@ def test_pmf_hist_basics():
     """Test the function to return barplot args for pmf hist."""
     with pytest.warns(FutureWarning):
         out = utils.pmf_hist(a_norm)
-    assert_equal(len(out), 3)
+    assert len(out) == 3
     x, h, w = out
-    assert_equal(len(x), len(h))
+    assert len(x) == len(h)
 
     # Test simple case
     a = np.arange(10)
     with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a, 10)
-    nose.tools.assert_true(np.all(h == h[0]))
+    assert np.all(h == h[0])
 
     # Test width
     with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm)
-    assert_equal(x[1] - x[0], w)
+    assert x[1] - x[0] == w
 
     # Test normalization
     with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm)
-    nose.tools.assert_almost_equal(sum(h), 1)
-    nose.tools.assert_less_equal(h.max(), 1)
+    assert sum(h) == pytest.approx(1)
+    assert h.max() <= 1
 
     # Test bins
     with pytest.warns(FutureWarning):
         x, h, w = utils.pmf_hist(a_norm, 20)
-    assert_equal(len(x), 20)
+    assert len(x) == 20
 
 
 def test_ci_to_errsize():
@@ -79,34 +78,34 @@ def test_ci_to_errsize():
                                [.25, 0]])
 
     test_errsize = utils.ci_to_errsize(cis, heights)
-    npt.assert_array_equal(actual_errsize, test_errsize)
+    assert_array_equal(actual_errsize, test_errsize)
 
 
 def test_desaturate():
     """Test color desaturation."""
     out1 = utils.desaturate("red", .5)
-    assert_equal(out1, (.75, .25, .25))
+    assert out1 == (.75, .25, .25)
 
     out2 = utils.desaturate("#00FF00", .5)
-    assert_equal(out2, (.25, .75, .25))
+    assert out2 == (.25, .75, .25)
 
     out3 = utils.desaturate((0, 0, 1), .5)
-    assert_equal(out3, (.25, .25, .75))
+    assert out3 == (.25, .25, .75)
 
     out4 = utils.desaturate("red", .5)
-    assert_equal(out4, (.75, .25, .25))
+    assert out4 == (.75, .25, .25)
 
 
-@raises(ValueError)
 def test_desaturation_prop():
     """Test that pct outside of [0, 1] raises exception."""
-    utils.desaturate("blue", 50)
+    with pytest.raises(ValueError):
+        utils.desaturate("blue", 50)
 
 
 def test_saturate():
     """Test performance of saturation function."""
     out = utils.saturate((.75, .25, .25))
-    assert_equal(out, (1, 0, 0))
+    assert out == (1, 0, 0)
 
 
 @pytest.mark.parametrize(
@@ -116,7 +115,7 @@ def test_sig_stars(p, annot):
     """Test the sig stars function."""
     with pytest.warns(FutureWarning):
         stars = utils.sig_stars(p)
-        assert_equal(stars, annot)
+        assert stars == annot
 
 
 def test_iqr():
@@ -124,7 +123,7 @@ def test_iqr():
     a = np.arange(5)
     with pytest.warns(FutureWarning):
         iqr = utils.iqr(a)
-    assert_equal(iqr, 2)
+    assert iqr == 2
 
 
 @pytest.mark.parametrize(
@@ -144,8 +143,8 @@ def test_iqr():
 def test_to_utf8(s, exp):
     """Test the to_utf8 function: object to string"""
     u = utils.to_utf8(s)
-    assert_equal(type(u), str)
-    assert_equal(u, exp)
+    assert type(u) == str
+    assert u == exp
 
 
 class TestSpineUtils(object):
@@ -161,17 +160,17 @@ class TestSpineUtils(object):
     def test_despine(self):
         f, ax = plt.subplots()
         for side in self.sides:
-            nt.assert_true(ax.spines[side].get_visible())
+            assert ax.spines[side].get_visible()
 
         utils.despine()
         for side in self.outer_sides:
-            nt.assert_true(~ax.spines[side].get_visible())
+            assert ~ax.spines[side].get_visible()
         for side in self.inner_sides:
-            nt.assert_true(ax.spines[side].get_visible())
+            assert ax.spines[side].get_visible()
 
         utils.despine(**dict(zip(self.sides, [True] * 4)))
         for side in self.sides:
-            nt.assert_true(~ax.spines[side].get_visible())
+            assert ~ax.spines[side].get_visible()
 
     def test_despine_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
@@ -179,19 +178,19 @@ class TestSpineUtils(object):
         utils.despine(ax=ax2)
 
         for side in self.sides:
-            nt.assert_true(ax1.spines[side].get_visible())
+            assert ax1.spines[side].get_visible()
 
         for side in self.outer_sides:
-            nt.assert_true(~ax2.spines[side].get_visible())
+            assert ~ax2.spines[side].get_visible()
         for side in self.inner_sides:
-            nt.assert_true(ax2.spines[side].get_visible())
+            assert ax2.spines[side].get_visible()
 
     def test_despine_with_offset(self):
         f, ax = plt.subplots()
 
         for side in self.sides:
-            nt.assert_equal(ax.spines[side].get_position(),
-                            self.original_position)
+            pos = ax.spines[side].get_position()
+            assert pos == self.original_position
 
         utils.despine(ax=ax, offset=self.offset)
 
@@ -199,9 +198,9 @@ class TestSpineUtils(object):
             is_visible = ax.spines[side].get_visible()
             new_position = ax.spines[side].get_position()
             if is_visible:
-                nt.assert_equal(new_position, self.offset_position)
+                assert new_position == self.offset_position
             else:
-                nt.assert_equal(new_position, self.original_position)
+                assert new_position == self.original_position
 
     def test_despine_side_specific_offset(self):
 
@@ -212,9 +211,9 @@ class TestSpineUtils(object):
             is_visible = ax.spines[side].get_visible()
             new_position = ax.spines[side].get_position()
             if is_visible and side == "left":
-                nt.assert_equal(new_position, self.offset_position)
+                assert new_position == self.offset_position
             else:
-                nt.assert_equal(new_position, self.original_position)
+                assert new_position == self.original_position
 
     def test_despine_with_offset_specific_axes(self):
         f, (ax1, ax2) = plt.subplots(2, 1)
@@ -222,14 +221,13 @@ class TestSpineUtils(object):
         utils.despine(offset=self.offset, ax=ax2)
 
         for side in self.sides:
-            nt.assert_equal(ax1.spines[side].get_position(),
-                            self.original_position)
+            pos1 = ax1.spines[side].get_position()
+            pos2 = ax2.spines[side].get_position()
+            assert pos1 == self.original_position
             if ax2.spines[side].get_visible():
-                nt.assert_equal(ax2.spines[side].get_position(),
-                                self.offset_position)
+                assert pos2 == self.offset_position
             else:
-                nt.assert_equal(ax2.spines[side].get_position(),
-                                self.original_position)
+                assert pos2 == self.original_position
 
     def test_despine_trim_spines(self):
 
@@ -240,7 +238,7 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
         for side in self.inner_sides:
             bounds = ax.spines[side].get_bounds()
-            nt.assert_equal(bounds, (1, 3))
+            assert bounds == (1, 3)
 
     def test_despine_trim_inverted(self):
 
@@ -252,7 +250,7 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
         for side in self.inner_sides:
             bounds = ax.spines[side].get_bounds()
-            nt.assert_equal(bounds, (1, 3))
+            assert bounds == (1, 3)
 
     def test_despine_trim_noticks(self):
 
@@ -260,7 +258,7 @@ class TestSpineUtils(object):
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_yticks([])
         utils.despine(trim=True)
-        nt.assert_equal(ax.get_yticks().size, 0)
+        assert ax.get_yticks().size == 0
 
     def test_despine_trim_categorical(self):
 
@@ -270,10 +268,10 @@ class TestSpineUtils(object):
         utils.despine(trim=True)
 
         bounds = ax.spines["left"].get_bounds()
-        nt.assert_equal(bounds, (1, 3))
+        assert bounds == (1, 3)
 
         bounds = ax.spines["bottom"].get_bounds()
-        nt.assert_equal(bounds, (0, 2))
+        assert bounds == (0, 2)
 
     def test_despine_moved_ticks(self):
 
@@ -376,13 +374,13 @@ def check_load_cached_dataset(name):
 
         # use cached version
         ds2 = load_dataset(name, cache=True, data_home=tmpdir)
-        pdt.assert_frame_equal(ds, ds2)
+        assert_frame_equal(ds, ds2)
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_get_dataset_names():
     if not BeautifulSoup:
-        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+        pytest.skip("No BeautifulSoup available for parsing html")
     names = get_dataset_names()
     assert(len(names) > 0)
     assert("titanic" in names)
@@ -391,7 +389,7 @@ def test_get_dataset_names():
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_datasets():
     if not BeautifulSoup:
-        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+        raise pytest.skip("No BeautifulSoup available for parsing html")
 
     # Heavy test to verify that we can load all available datasets
     for name in get_dataset_names():
@@ -404,7 +402,7 @@ def test_load_datasets():
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_cached_datasets():
     if not BeautifulSoup:
-        raise nose.SkipTest("No BeautifulSoup available for parsing html")
+        raise pytest.skip("No BeautifulSoup available for parsing html")
 
     # Heavy test to verify that we can load all available datasets
     for name in get_dataset_names():
@@ -417,28 +415,45 @@ def test_load_cached_datasets():
 def test_relative_luminance():
     """Test relative luminance."""
     out1 = utils.relative_luminance("white")
-    assert_equal(out1, 1)
+    assert out1 == 1
 
     out2 = utils.relative_luminance("#000000")
-    assert_equal(out2, 0)
+    assert out2 == 0
 
     out3 = utils.relative_luminance((.25, .5, .75))
-    nose.tools.assert_almost_equal(out3, 0.201624536)
+    assert out3 == pytest.approx(0.201624536)
 
     rgbs = mpl.cm.RdBu(np.linspace(0, 1, 10))
     lums1 = [utils.relative_luminance(rgb) for rgb in rgbs]
     lums2 = utils.relative_luminance(rgbs)
 
     for lum1, lum2 in zip(lums1, lums2):
-        nose.tools.assert_almost_equal(lum1, lum2)
+        assert lum1 == pytest.approx(lum2)
+
+
+@pytest.mark.parametrize(
+    "cycler,result",
+    [
+        (cycler(color=["y"]), ["y"]),
+        (cycler(color=["k"]), ["k"]),
+        (cycler(color=["k", "y"]), ["k", "y"]),
+        (cycler(color=["y", "k"]), ["y", "k"]),
+        (cycler(color=["b", "r"]), ["b", "r"]),
+        (cycler(color=["r", "b"]), ["r", "b"]),
+        (cycler(lw=[1, 2]), [".15"]),  # no color in cycle
+    ],
+)
+def test_get_color_cycle(cycler, result):
+    with mpl.rc_context(rc={"axes.prop_cycle": cycler}):
+        assert get_color_cycle() == result
 
 
 def test_remove_na():
 
     a_array = np.array([1, 2, np.nan, 3])
-    a_array_rm = utils.remove_na(a_array)
-    npt.assert_array_equal(a_array_rm, np.array([1, 2, 3]))
+    a_array_rm = remove_na(a_array)
+    assert_array_equal(a_array_rm, np.array([1, 2, 3]))
 
     a_series = pd.Series([1, 2, np.nan, 3])
-    a_series_rm = utils.remove_na(a_series)
-    pdt.assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))
+    a_series_rm = remove_na(a_series)
+    assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))
