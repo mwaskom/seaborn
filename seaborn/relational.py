@@ -39,7 +39,7 @@ class _RelationalPlotter(VectorPlotter):
 
     # Defaults for size semantic
     # TODO this should match style of other defaults
-    _default_size_range = 0, 1
+    _default_size_limits = 0, 1
 
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
@@ -54,14 +54,15 @@ class _RelationalPlotter(VectorPlotter):
 
     def size_lookup(self, key):
         """Return the size corresponding to the size level."""
-        if self.size_type == "numeric":
-            min_size, max_size = self.size_range
-            val = self.size_norm(key)
+        # TODO move all of this logic into the SizeMapping
+        try:
+            return self._size_map(key, self._default_size_limits)
+        except KeyError:
+            norm = self._size_map.norm
+            val = norm(key)
             if np.ma.is_masked(val):
                 return 0
-            return min_size + val * (max_size - min_size)
-        elif self.size_type == "categorical":
-            return self.sizes[key]
+            return val
 
     def style_to_attributes(self, levels, style, defaults, name):
         """Convert a style argument to a dict of matplotlib attributes."""
@@ -88,7 +89,7 @@ class _RelationalPlotter(VectorPlotter):
         all_true = pd.Series(True, data.index)
 
         iter_levels = product(self._hue_map.levels,
-                              self.size_levels,
+                              self._size_map.levels,
                               self.style_levels)
 
         for hue, size, style in iter_levels:
@@ -167,7 +168,7 @@ class _RelationalPlotter(VectorPlotter):
 
                 # Infer the range of sizes to use
                 if sizes is None:
-                    min_width, max_width = self._default_size_range
+                    min_width, max_width = self._default_size_limits
                 else:
                     try:
                         min_width, max_width = sizes
@@ -329,15 +330,18 @@ class _RelationalPlotter(VectorPlotter):
 
         # -- Add a legend for size semantics
 
-        if verbosity == "brief" and self.size_type == "numeric":
-            if isinstance(self.size_norm, mpl.colors.LogNorm):
+        if verbosity == "brief" and self._size_map.map_type == "numeric":
+            if isinstance(self._size_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
+            # TODO this is confusing with limits now being in artist coords
+            limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
-                locator, self.size_limits, self.plot_data["size"].dtype)
+                locator, limits, self.plot_data["size"].dtype
+            )
         else:
-            size_levels = size_formatted_levels = self.size_levels
+            size_levels = size_formatted_levels = self._size_map.levels
 
         # Add the size semantic subtitle
         if "size" in self.variables and self.variables["size"] is not None:
@@ -348,8 +352,12 @@ class _RelationalPlotter(VectorPlotter):
         for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
                 size = self.size_lookup(level)
-                update(self.variables["size"],
-                       formatted_level, linewidth=size, s=size)
+                update(
+                    self.variables["size"],
+                    formatted_level,
+                    linewidth=size,
+                    s=size,
+                )
 
         # -- Add a legend for style semantics
 
@@ -398,7 +406,7 @@ class _LinePlotter(_RelationalPlotter):
         self, *,
         data=None, variables={},
         palette=None, hue_order=None, hue_norm=None,
-        sizes=None, size_order=None, size_norm=None,
+        # sizes=None, size_order=None, size_norm=None,
         dashes=None, markers=None, style_order=None,
         estimator=None, ci=None, n_boot=None, seed=None,
         sort=True, err_style=None, err_kws=None, legend=None
@@ -406,13 +414,12 @@ class _LinePlotter(_RelationalPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        self._default_size_range = (
+        self._default_size_limits = (
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
 
         plot_data = self.plot_data
 
-        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
         # TODO fix, just use plot data
@@ -510,6 +517,14 @@ class _LinePlotter(_RelationalPlotter):
             err = "`err_style` must be 'band' or 'bars', not {}"
             raise ValueError(err.format(self.err_style))
 
+        # Set the default artist keywords
+        kws.update(dict(
+            color=orig_color,
+            dashes=orig_dashes,
+            marker=orig_marker,
+            linewidth=orig_linewidth
+        ))
+
         # Loop over the semantic subsets and draw a line for each
 
         for semantics, data in self.subset_data():
@@ -525,10 +540,13 @@ class _LinePlotter(_RelationalPlotter):
             else:
                 y_ci = None
 
-            kws["color"] = orig_color if hue is None else self._hue_map(hue)
-            kws["dashes"] = self.dashes.get(style, orig_dashes)
-            kws["marker"] = self.markers.get(style, orig_marker)
-            kws["linewidth"] = self.sizes.get(size, orig_linewidth)
+            if hue is not None:
+                kws["color"] = self._hue_map(hue)
+            if size is not None:
+                kws["linewidth"] = self._size_map(size, self._default_size_limits)
+            if style is not None:
+                kws["dashes"] = self.dashes.get(style, orig_dashes)
+                kws["marker"] = self.markers.get(style, orig_marker)
 
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
@@ -590,7 +608,6 @@ class _ScatterPlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        sizes=None, size_order=None, size_norm=None,
         dashes=None, markers=None, style_order=None,
         x_bins=None, y_bins=None,
         estimator=None, ci=None, n_boot=None,
@@ -602,11 +619,10 @@ class _ScatterPlotter(_RelationalPlotter):
 
         plot_data = self.plot_data
 
-        self._default_size_range = (
+        self._default_size_limits = (
             np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
         )
 
-        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, None, style_order)
 
         # TODO fix, just use plot_data
@@ -650,14 +666,12 @@ class _ScatterPlotter(_RelationalPlotter):
         x = data.get(["x"], np.full(len(data), np.nan))
         y = data.get(["y"], np.full(len(data), np.nan))
 
-        # Define vectors of hue and size values
-        # There must be some reason this doesn't use data[var].map(attr_dict)
-        # But I do not remember what it is!
+        # Apply the mapping from semantic varibles to artist attributes
         if "hue" in self.variables:
             c = self._hue_map(data["hue"])
 
-        if self.sizes:
-            s = [self.sizes.get(val) for val in data["size"]]
+        if "size" in self.variables:
+            s = self._size_map(data["size"], self._default_size_limits)
 
         # Set defaults for other visual attributres
         kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
@@ -854,13 +868,13 @@ def lineplot(
     variables = _LinePlotter.get_variables(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
 
     if ax is None:
         ax = plt.gca()
@@ -1131,7 +1145,6 @@ def scatterplot(
     variables = _ScatterPlotter.get_variables(locals())
     p = _ScatterPlotter(
         data=data, variables=variables,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
@@ -1139,6 +1152,7 @@ def scatterplot(
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
 
     if ax is None:
         ax = plt.gca()
@@ -1368,7 +1382,7 @@ def relplot(
     *,
     x=None, y=None,
     hue=None, size=None, style=None, data=None,
-    row=None, col=None,  # TODO move in front of data when * is enforced
+    row=None, col=None,
     col_wrap=None, row_order=None, col_order=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
@@ -1408,11 +1422,11 @@ def relplot(
     p = plotter(
         data=data,
         variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
 
     # Extract the semantic mappings
     if "hue" in p.variables:
@@ -1422,9 +1436,10 @@ def relplot(
     else:
         palette = hue_order = hue_norm = None
 
-    sizes = p.sizes if p.sizes else None
-    size_order = p.size_levels if any(p.size_levels) else None
-    size_norm = p.size_norm if p.size_norm is not None else None
+    if "size" in p.variables:
+        sizes = p._size_map.lookup_table
+        size_order = p._size_map.levels
+        size_norm = p._size_map.norm
 
     markers = p.markers if p.markers else None
     dashes = p.dashes if p.dashes else None

@@ -24,21 +24,34 @@ from .utils import (
 
 class SemanticMapping:
 
+    scaled_mapping = False  # TODO better name
+
     def map(cls, plotter, *args, **kwargs):
         method_name = "_{}_map".format(cls.__name__[:-7].lower())
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 
-    def __call__(self, data):
+    def _lookup_single(self, key, default_limits):
+
+        value = self.lookup_table[key]
+
+        # TODO some flag that the value is a scaling factor
+        # Alternatiely, define subclass that overwrites this method
+        if self.scaled_mapping:
+            lo, hi = default_limits if self.limits is None else self.limits
+            value = lo + value * (hi - lo)
+        return value
+
+    def __call__(self, data, default_limits=None):
 
         # TODO what about when we need values that aren't in the data
         # (i.e. for legends), we need some sort of continuous lookup
 
         if isinstance(data, (list, np.ndarray, pd.Series)):
             # TODO need to debug why data.map(self.lookup_table) doesn't work
-            return [self.lookup_table.get(val) for val in data]
+            return [self._lookup_single(key, default_limits) for key in data]
         else:
-            return self.lookup_table[data]
+            return self._lookup_single(data, default_limits)
 
 
 @share_init_params_with_map
@@ -202,6 +215,8 @@ class HueMapping(SemanticMapping):
 @share_init_params_with_map
 class SizeMapping(SemanticMapping):
 
+    scaled_mapping = True  # TODO better name
+
     map_type = None
     levels = [None]  # TODO needs downstream fix so can just be None
     limits = None
@@ -232,7 +247,7 @@ class SizeMapping(SemanticMapping):
 
             if map_type == "numeric":
 
-                levels, lookup_table, norm = self.numeric_mapping(
+                levels, lookup_table, limits, norm = self.numeric_mapping(
                     data, sizes, norm,
                 )
 
@@ -240,7 +255,7 @@ class SizeMapping(SemanticMapping):
 
             else:
 
-                levels, lookup_table = self.categorical_mapping(
+                levels, lookup_table, limits = self.categorical_mapping(
                     data, sizes, order,
                 )
 
@@ -250,7 +265,7 @@ class SizeMapping(SemanticMapping):
 
             self.map_type = map_type
             self.levels = levels
-            # self.limits = limits  # TODO is this something we need to use?
+            self.limits = limits
             self.norm = norm
             self.sizes = sizes
             self.lookup_table = lookup_table
@@ -267,7 +282,8 @@ class SizeMapping(SemanticMapping):
                 err = f"Missing sizes for the following levels: {missing}"
                 raise ValueError(err)
 
-            lookup_table = sizes
+            limits = lo, hi = min(sizes.values()), max(sizes.values())  # TODO
+            lookup_table = {k: (v - lo) / (hi - lo) for k, v in sizes.items()}
 
         elif isinstance(sizes, list):
 
@@ -276,7 +292,10 @@ class SizeMapping(SemanticMapping):
                 err = "The `sizes` list has the wrong number of values."
                 raise ValueError(err)
 
-            lookup_table = dict(zip(levels, sizes))
+            limits = lo, hi = min(sizes), max(sizes)
+            lookup_table = dict(
+                zip(levels, [(s - lo) / (hi - lo) for s in sizes])
+            )  # TODO
 
         else:
 
@@ -286,26 +305,17 @@ class SizeMapping(SemanticMapping):
                 if len(sizes) != 2:
                     err = "A `sizes` tuple must have only 2 values"
                     raise ValueError(err)
-                size_range = sizes
+                limits = sizes  # TODO
 
             else:
 
-                # TODO the idea is that downstream plotters will check if the
-                # sizes attribute of this object is None and use the size
-                # values as a scaling for the default size of the artist.
-
-                # But is this too implicit/confusing? We don't want to have to
-                # know the default range at the point in time that we're
-                # defining the SizeMapping, but we do want to be able to
-                # specify sizes in the units that matplotlib artist wants
-
-                size_range = 0, 1
+                limits = None
 
             # For categorical sizes, use regularly-spaced increments
-            sizes = np.linspace(*size_range, num=len(levels))
+            sizes = np.linspace(0, 1, len(levels))
             lookup_table = dict(zip(levels, sizes))
 
-        return levels, lookup_table
+        return levels, lookup_table, limits
 
     def numeric_mapping(self, data, sizes, norm):
 
@@ -316,18 +326,18 @@ class SizeMapping(SemanticMapping):
             if len(sizes) != 2:
                 err = "A `sizes` tuple must have only 2 values"
                 raise ValueError(err)
-            size_range = sizes
+            limits = sizes
         else:
             # TODO see notes in corresponding section of categorical method
-            size_range = 0, 1
+            limits = None
 
         if norm is None:
             norm = mpl.colors.Normalize()
         elif isinstance(norm, tuple):
             norm = mpl.colors.Normalize(*norm)
-        elif isinstance(norm, mpl.colors.Normalize):
+        elif not isinstance(norm, mpl.colors.Normalize):
             err = f"Value for size `norm` parameter not understood: {norm}"
-            raise ValueError
+            raise ValueError(err)
         else:
             norm = copy(norm)
 
@@ -338,21 +348,20 @@ class SizeMapping(SemanticMapping):
 
         # Find size values for each unique data point
         scaled_levels = norm(levels)
-        sizes = np.asarray(
-            size_range[0] + scaled_levels * (size_range[1] - size_range[0])
-        )
-        lookup_table = dict(zip(levels, sizes))
+        lookup_table = dict(zip(levels, scaled_levels))
 
-        return levels, lookup_table, norm
+        return levels, lookup_table, limits, norm
 
 
 # =========================================================================== #
+
 
 class VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
     _semantic_mappings = {
         "hue": HueMapping,
+        "size": SizeMapping,
     }
 
     semantics = "x", "y", "hue", "size", "style", "units"
