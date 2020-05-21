@@ -21,7 +21,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = [
     "catplot", "factorplot",
     "stripplot", "swarmplot",
-    "boxplot", "violinplot", "boxenplot", "lvplot",
+    "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
 ]
 
@@ -2630,18 +2630,6 @@ violinplot.__doc__ = dedent("""\
         ...                 height=4, aspect=.7);
 
     """).format(**_categorical_docs)
-
-
-def lvplot(*args, **kwargs):
-    """Deprecated; please use `boxenplot`."""
-
-    msg = (
-        "The `lvplot` function has been renamed to `boxenplot`. The original "
-        "name will be removed in a future release. Please update your code. "
-    )
-    warnings.warn(msg)
-
-    return boxenplot(*args, **kwargs)
 
 
 @_deprecate_positional_args

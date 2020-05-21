@@ -2919,13 +2919,3 @@ class TestBoxenPlotter(CategoricalFixture):
             assert obs == exp
 
         plt.close("all")
-
-    def test_lvplot(self):
-
-        with pytest.warns(UserWarning):
-            ax = cat.lvplot(x="g", y="y", data=self.df)
-
-        patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(list(patches)), 3)
-
-        plt.close("all")
