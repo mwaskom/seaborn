@@ -1984,12 +1984,12 @@ class _LVPlotter(_CategoricalPlotter):
                                marker='d', c=hex_color, **kws)
 
             # Construct a color map from the input color
-            rgb = [[1, 1, 1], hex_color]
+            rgb = [hex_color, (1, 1, 1)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap)
 
-            # Set the color gradation
-            collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
+            # Set the color gradation, first box will have color=hex_color
+            collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
 
             # Plot the boxes
             ax.add_collection(collection)
