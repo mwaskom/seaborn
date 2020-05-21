@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal
 from .._core import (
     SemanticMapping,
     HueMapping,
-    _VectorPlotter,
+    VectorPlotter,
     variable_type,
     infer_orient,
     unique_dashes,
@@ -34,7 +34,7 @@ class TestHueMapping:
 
     def test_init_from_map(self, long_df):
 
-        p_orig = _VectorPlotter(
+        p_orig = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a")
         )
@@ -46,14 +46,14 @@ class TestHueMapping:
 
     def test_plotter_default_init(self, long_df):
 
-        p = _VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
         )
         assert isinstance(p._hue_map, HueMapping)
         assert p._hue_map.map_type is None
 
-        p = _VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
         )
@@ -62,7 +62,7 @@ class TestHueMapping:
 
     def test_plotter_reinit(self, long_df):
 
-        p_orig = _VectorPlotter(
+        p_orig = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
         )
@@ -75,7 +75,7 @@ class TestHueMapping:
 
     def test_hue_map_null(self, long_df, null_series):
 
-        p = _VectorPlotter(variables=dict(hue=null_series))
+        p = VectorPlotter(variables=dict(hue=null_series))
         m = HueMapping(p)
         assert m.levels == [None]
         assert m.palette is None
@@ -85,7 +85,7 @@ class TestHueMapping:
 
     def test_hue_map_categorical(self, wide_df, long_df):
 
-        p = _VectorPlotter(data=wide_df)
+        p = VectorPlotter(data=wide_df)
         m = HueMapping(p)
         assert m.levels == wide_df.columns.tolist()
         assert m.map_type == "categorical"
@@ -134,7 +134,7 @@ class TestHueMapping:
         assert m.levels == hue_order
 
         # Test long data
-        p = _VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
         m = HueMapping(p)
         assert m.levels == categorical_order(long_df["a"])
         assert m.map_type == "categorical"
@@ -150,20 +150,20 @@ class TestHueMapping:
         # Test default palette with many levels
         x = y = np.arange(26)
         hue = pd.Series(list("abcdefghijklmnopqrstuvwxyz"))
-        p = _VectorPlotter(variables=dict(x=x, y=y, hue=hue))
+        p = VectorPlotter(variables=dict(x=x, y=y, hue=hue))
         m = HueMapping(p)
         expected_colors = color_palette("husl", n_colors=len(hue))
         expected_lookup_table = dict(zip(hue, expected_colors))
         assert m.lookup_table == expected_lookup_table
 
         # Test binary data
-        p = _VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="c"))
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="c"))
         m = HueMapping(p)
         assert m.levels == [0, 1]
         assert m.map_type == "categorical"
 
         for val in [0, 1]:
-            p = _VectorPlotter(
+            p = VectorPlotter(
                 data=long_df[long_df["c"] == val],
                 variables=dict(x="x", y="y", hue="c"),
             )
@@ -172,13 +172,13 @@ class TestHueMapping:
             assert m.map_type == "categorical"
 
         # Test Timestamp data
-        p = _VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
         m = HueMapping(p)
         assert m.levels == [pd.Timestamp('2005-02-25')]
         assert m.map_type == "datetime"
 
         # Test numeric data with category type
-        p = _VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="s_cat")
         )
@@ -188,7 +188,7 @@ class TestHueMapping:
         assert m.cmap is None
 
         # Test categorical palette specified for numeric data
-        p = _VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="s")
         )
@@ -203,7 +203,7 @@ class TestHueMapping:
     def test_hue_map_numeric(self, long_df):
 
         # Test default colormap
-        p = _VectorPlotter(
+        p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="s")
         )
@@ -292,7 +292,7 @@ class TestVectorPlotter:
 
     def test_flat_variables(self, flat_data):
 
-        p = _VectorPlotter()
+        p = VectorPlotter()
         p.establish_variables(data=flat_data)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]

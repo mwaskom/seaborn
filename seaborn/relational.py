@@ -8,7 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from ._core import (
-    _VectorPlotter,
+    VectorPlotter,
     variable_type,
     unique_dashes,
     unique_markers,
@@ -28,7 +28,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _RelationalPlotter(_VectorPlotter):
+class _RelationalPlotter(VectorPlotter):
 
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",

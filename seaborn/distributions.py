@@ -15,7 +15,7 @@ except ImportError:
     _has_statsmodels = False
 
 from ._core import (
-    _VectorPlotter,
+    VectorPlotter,
 )
 from .utils import _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
@@ -25,7 +25,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["distplot", "kdeplot", "rugplot"]
 
 
-class _DistributionPlotter(_VectorPlotter):
+class _DistributionPlotter(VectorPlotter):
 
     semantics = "x", "y", "hue"
 

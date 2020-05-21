@@ -196,7 +196,7 @@ class HueMapping(SemanticMapping):
         return levels, lookup_table, cmap, norm
 
 
-class _VectorPlotter:
+class VectorPlotter:
     """Base class for objects underlying *plot functions."""
 
     _semantic_mappings = {
