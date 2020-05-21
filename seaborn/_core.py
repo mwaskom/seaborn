@@ -1,5 +1,6 @@
 import warnings
 import itertools
+from copy import copy
 from functools import partial
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
@@ -44,6 +45,7 @@ class SemanticMapping:
 class HueMapping(SemanticMapping):
 
     # Default attributes (TODO use data class?)
+    # TODO Add docs for what these are (maybe on the base class?)
     map_type = None
     levels = [None]  # TODO better if just None, but then subset_data fails
     limits = None
@@ -80,22 +82,23 @@ class HueMapping(SemanticMapping):
 
             if map_type == "numeric":
 
+                # TODO do we need levels for numeric map?
                 data = pd.to_numeric(data)
-                levels, lookup_table, cmap, norm = self.numeric_mapping(
-                    data, order, palette, norm
+                levels, lookup_table, norm, cmap = self.numeric_mapping(
+                    data, palette, norm,
                 )
+                # TODO what do we need limits for? Can we get this downstream?
                 limits = norm.vmin, norm.vmax
 
             # --- Option 2: categorical mapping using seaborn palette
 
             else:
 
-                cmap = None
-                limits = None
+                cmap = limits = norm = None
                 levels, lookup_table = self.categorical_mapping(
                     # Casting data to list to handle differences in the way
                     # pandas represents numpy datetime64 data
-                    list(data), order, palette
+                    list(data), palette, order,
                 )
 
             # --- Option 3: datetime mapping
@@ -106,11 +109,11 @@ class HueMapping(SemanticMapping):
             self.lookup_table = lookup_table
             self.palette = palette
             self.levels = levels
-            self.limits = limits
+            self.limits = limits  # TODO do we need this
             self.norm = norm
             self.cmap = cmap
 
-    def categorical_mapping(self, data, order, palette):
+    def categorical_mapping(self, data, palette, order):
         """Determine colors when the hue mapping is categorical."""
         # Avoid circular import
         from .palettes import color_palette
@@ -153,7 +156,7 @@ class HueMapping(SemanticMapping):
 
         return levels, lookup_table
 
-    def numeric_mapping(self, data, order, palette, norm):
+    def numeric_mapping(self, data, palette, norm):
         """Determine colors when the hue variable is quantitative."""
         levels = list(np.sort(remove_na(data.unique())))
 
@@ -193,8 +196,157 @@ class HueMapping(SemanticMapping):
 
         lookup_table = dict(zip(levels, cmap(norm(levels))))
 
-        return levels, lookup_table, cmap, norm
+        return levels, lookup_table, norm, cmap
 
+
+@share_init_params_with_map
+class SizeMapping(SemanticMapping):
+
+    map_type = None
+    levels = [None]  # TODO needs downstream fix so can just be None
+    limits = None
+    norm = None
+    sizes = None
+    lookup_table = {}
+
+    def __init__(
+        self, plotter, sizes=None, order=None, norm=None,
+    ):
+
+        # TODO putting this here but it needs a home in the docs:
+        # "sizes" are in matplotlib artist units, "norm" is in data units
+
+        data = plotter.plot_data["size"]
+
+        if data.notna().any():
+
+            # Infer the type of mapping to use
+            if norm is not None:
+                map_type = "numeric"
+            elif isinstance(sizes, (dict, list)):
+                map_type = "categorical"
+            else:
+                map_type = plotter.var_types["size"]
+
+            # --- Option 1: numeric mapping
+
+            if map_type == "numeric":
+
+                levels, lookup_table, norm = self.numeric_mapping(
+                    data, sizes, norm,
+                )
+
+            # --- Option 2: categorical mapping
+
+            else:
+
+                levels, lookup_table = self.categorical_mapping(
+                    data, sizes, order,
+                )
+
+            # --- Option 3: datetime mapping
+
+            # TODO this needs implementation; currently uses categorical
+
+            self.map_type = map_type
+            self.levels = levels
+            # self.limits = limits  # TODO is this something we need to use?
+            self.norm = norm
+            self.sizes = sizes
+            self.lookup_table = lookup_table
+
+    def categorical_mapping(self, data, sizes, order):
+
+        levels = categorical_order(data, order)
+
+        if isinstance(sizes, dict):
+
+            # Check entries in dict input
+            missing = set(levels) - set(sizes)
+            if any(missing):
+                err = f"Missing sizes for the following levels: {missing}"
+                raise ValueError(err)
+
+            lookup_table = sizes
+
+        elif isinstance(sizes, list):
+
+            # Check length of list input
+            if len(sizes) != len(levels):
+                err = "The `sizes` list has the wrong number of values."
+                raise ValueError(err)
+
+            lookup_table = dict(zip(levels, sizes))
+
+        else:
+
+            # Check length of tuple input
+            if isinstance(sizes, tuple):
+
+                if len(sizes) != 2:
+                    err = "A `sizes` tuple must have only 2 values"
+                    raise ValueError(err)
+                size_range = sizes
+
+            else:
+
+                # TODO the idea is that downstream plotters will check if the
+                # sizes attribute of this object is None and use the size
+                # values as a scaling for the default size of the artist.
+
+                # But is this too implicit/confusing? We don't want to have to
+                # know the default range at the point in time that we're
+                # defining the SizeMapping, but we do want to be able to
+                # specify sizes in the units that matplotlib artist wants
+
+                size_range = 0, 1
+
+            # For categorical sizes, use regularly-spaced increments
+            sizes = np.linspace(*size_range, num=len(levels))
+            lookup_table = dict(zip(levels, sizes))
+
+        return levels, lookup_table
+
+    def numeric_mapping(self, data, sizes, norm):
+
+        levels = list(np.sort(remove_na(data.unique())))
+
+        # Infer the range of sizes to use
+        if isinstance(sizes, tuple):
+            if len(sizes) != 2:
+                err = "A `sizes` tuple must have only 2 values"
+                raise ValueError(err)
+            size_range = sizes
+        else:
+            # TODO see notes in corresponding section of categorical method
+            size_range = 0, 1
+
+        if norm is None:
+            norm = mpl.colors.Normalize()
+        elif isinstance(norm, tuple):
+            norm = mpl.colors.Normalize(*norm)
+        elif isinstance(norm, mpl.colors.Normalize):
+            err = f"Value for size `norm` parameter not understood: {norm}"
+            raise ValueError
+        else:
+            norm = copy(norm)
+
+        # Initialize the normalization
+        norm.clip = True
+        if not norm.scaled():
+            norm(levels)
+
+        # Find size values for each unique data point
+        scaled_levels = norm(levels)
+        sizes = np.asarray(
+            size_range[0] + scaled_levels * (size_range[1] - size_range[0])
+        )
+        lookup_table = dict(zip(levels, sizes))
+
+        return levels, lookup_table, norm
+
+
+# =========================================================================== #
 
 class VectorPlotter:
     """Base class for objects underlying *plot functions."""
