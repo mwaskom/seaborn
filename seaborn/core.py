@@ -1,6 +1,5 @@
 import warnings
 import itertools
-import inspect
 from functools import partial
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
@@ -10,26 +9,13 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
+from ._decorators import (
+    share_init_params_with_map,
+)
 from .utils import (
     get_color_cycle,
     remove_na,
 )
-
-
-# TODO move to decorators
-def share_init_params_with_map(cls):
-
-    map_sig = inspect.signature(cls.map)
-    init_sig = inspect.signature(cls.__init__)
-
-    new = [v for k, v in init_sig.parameters.items() if k != "self"]
-    new.insert(0, map_sig.parameters["cls"])
-    cls.map.__signature__ = map_sig.replace(parameters=new)
-    cls.map.__doc__ = cls.__init__.__doc__
-
-    cls.map = classmethod(cls.map)
-
-    return cls
 
 
 class SemanticMapping:
