@@ -459,8 +459,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_long_df(self, long_df, long_semantics):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, **long_semantics)
+        p = _RelationalPlotter(data=long_df, variables=long_semantics)
         assert p.input_format == "long"
         assert p.variables == long_semantics
 
@@ -472,8 +471,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_long_df_with_index(self, long_df, long_semantics):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df.set_index("a"), **long_semantics)
+        p = _RelationalPlotter(
+            data=long_df.set_index("a"),
+            variables=long_semantics,
+        )
         assert p.input_format == "long"
         assert p.variables == long_semantics
 
@@ -485,8 +486,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_long_df_with_multiindex(self, long_df, long_semantics):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df.set_index(["a", "x"]), **long_semantics)
+        p = _RelationalPlotter(
+            data=long_df.set_index(["a", "x"]),
+            variables=long_semantics,
+        )
         assert p.input_format == "long"
         assert p.variables == long_semantics
 
@@ -498,8 +501,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_long_dict(self, long_dict, long_semantics):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_dict, **long_semantics)
+        p = _RelationalPlotter(
+            data=long_dict,
+            variables=long_semantics,
+        )
         assert p.input_format == "long"
         assert p.variables == long_semantics
 
@@ -515,18 +520,21 @@ class TestRelationalPlotter(Helpers):
     )
     def test_long_vectors(self, long_df, long_semantics, vector_type):
 
-        kws = {key: long_df[val] for key, val in long_semantics.items()}
+        variables = {key: long_df[val] for key, val in long_semantics.items()}
         if vector_type == "numpy":
             # Requires pandas >= 0.24
-            # kws = {key: val.to_numpy() for key, val in kws.items()}
-            kws = {key: np.asarray(val) for key, val in kws.items()}
+            # {key: val.to_numpy() for key, val in variables.items()}
+            variables = {
+                key: np.asarray(val) for key, val in variables.items()
+            }
         elif vector_type == "list":
             # Requires pandas >= 0.24
-            # kws = {key: val.to_list() for key, val in kws.items()}
-            kws = {key: val.tolist() for key, val in kws.items()}
+            # {key: val.to_list() for key, val in variables.items()}
+            variables = {
+                key: val.tolist() for key, val in variables.items()
+            }
 
-        p = _RelationalPlotter()
-        p.establish_variables(**kws)
+        p = _RelationalPlotter(variables=variables)
         assert p.input_format == "long"
 
         assert list(p.variables) == list(long_semantics)
@@ -544,38 +552,51 @@ class TestRelationalPlotter(Helpers):
         p = _RelationalPlotter()
 
         with pytest.raises(ValueError):
-            p.establish_variables(x="not_in_df", data=long_df)
+            p.establish_variables(
+                data=long_df, variables=dict(x="not_in_df"),
+            )
 
         with pytest.raises(ValueError):
-            p.establish_variables(x="x", y="not_in_df", data=long_df)
+            p.establish_variables(
+                data=long_df, variables=dict(x="x", y="not_in_df"),
+            )
 
         with pytest.raises(ValueError):
-            p.establish_variables(x="x", y="y", hue="not_in_df", data=long_df)
+            p.establish_variables(
+                data=long_df, variables=dict(x="x", y="y", hue="not_in_df"),
+            )
 
-    def test_empty_input(self):
+    @pytest.mark.parametrize(
+        "arg", [[], np.array([]), pd.DataFrame()],
+    )
+    def test_empty_data_input(self, arg):
 
-        p = _RelationalPlotter()
+        p = _RelationalPlotter(data=arg)
+        assert not p.variables
 
-        p.establish_variables(data=[])
-        p.establish_variables(data=np.array([]))
-        p.establish_variables(data=pd.DataFrame())
-        p.establish_variables(x=[], y=[])
+        if not isinstance(arg, pd.DataFrame):
+            p = _RelationalPlotter(variables=dict(x=arg, y=arg))
+            assert not p.variables
 
     def test_units(self, repeated_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(x="x", y="y", units="u", data=repeated_df)
+        p = _RelationalPlotter(
+            data=repeated_df,
+            variables=dict(x="x", y="y", units="u"),
+        )
         assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
-    def test_parse_hue_null(self, wide_df, null_series):
+    def test_parse_hue_null(self, long_df, null_series):
 
-        p = _RelationalPlotter()
-        p.establish_variables(wide_df)
-        p.parse_hue(null_series, "Blues", None, None)
-        assert p.hue_levels == [None]
-        assert p.palette == {}
-        assert p.hue_type is None
-        assert p.cmap is None
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=null_series)
+        )
+        m = p._hue_map
+        assert m.levels == [None]
+        assert m.palette is None
+        assert m.map_type is None
+        assert m.cmap is None
 
     def test_parse_hue_categorical(self, wide_df, long_df):
 
@@ -777,8 +798,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_parse_size(self, long_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", size="s")
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="s"),
+        )
 
         # Test default size limits and range
         default_limits = p.plot_data["size"].min(), p.plot_data["size"].max()
@@ -816,8 +839,10 @@ class TestRelationalPlotter(Helpers):
 
         # Use a categorical variable
         var = "a"
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", size=var)
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size=var),
+        )
 
         # Test specified size order
         levels = long_df[var].unique()
@@ -859,8 +884,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_parse_style(self, long_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", style="a")
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
 
         # Test defaults
         markers, dashes = True, True
@@ -935,11 +962,12 @@ class TestRelationalPlotter(Helpers):
 
     def test_subset_data_quantities(self, long_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
         p.parse_size(p.plot_data["size"])
-        p.parse_style(p.plot_data["size"])
+        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == 1
 
         # --
@@ -949,9 +977,10 @@ class TestRelationalPlotter(Helpers):
 
         for semantic in ["hue", "size", "style"]:
 
-            p = _RelationalPlotter()
-            p.establish_variables(long_df, x="x", y="y", **{semantic: var})
-            p.parse_hue(p.plot_data["hue"])
+            p = _RelationalPlotter(
+                data=long_df,
+                variables={"x": "x", "y": "y", semantic: var},
+            )
             p.parse_size(p.plot_data["size"])
             p.parse_style(p.plot_data["style"])
 
@@ -962,9 +991,10 @@ class TestRelationalPlotter(Helpers):
         var = "a"
         n_subsets = len(long_df[var].unique())
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue=var, style=var)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var, style=var),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
@@ -974,18 +1004,18 @@ class TestRelationalPlotter(Helpers):
         var1, var2 = "a", "s"
         n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue=var1, style=var2)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, style=var2),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
-        p = _RelationalPlotter()
-        p.establish_variables(
-            long_df, x="x", y="y", hue=var1, size=var2, style=var1,
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2, style=var1),
         )
-        p.parse_hue(p.plot_data["hue"])
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
@@ -996,20 +1026,20 @@ class TestRelationalPlotter(Helpers):
         cols = [var1, var2, var3]
         n_subsets = len(set(list(map(tuple, long_df[cols].values))))
 
-        p = _RelationalPlotter()
-        p.establish_variables(
-            long_df, x="x", y="y", hue=var1, size=var2, style=var3,
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2, style=var3),
         )
-        p.parse_hue(p.plot_data["hue"])
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
     def test_subset_data_keys(self, long_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1021,9 +1051,10 @@ class TestRelationalPlotter(Helpers):
 
         var = "a"
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue=var)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1031,9 +1062,10 @@ class TestRelationalPlotter(Helpers):
             assert size is None
             assert style is None
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", size=var)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size=var),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1041,9 +1073,10 @@ class TestRelationalPlotter(Helpers):
             assert size in long_df[var].values
             assert style is None
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", style=var)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style=var),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1051,9 +1084,10 @@ class TestRelationalPlotter(Helpers):
             assert size is None
             assert style in long_df[var].values
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue=var, style=var)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var, style=var),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1065,9 +1099,10 @@ class TestRelationalPlotter(Helpers):
 
         var1, var2 = "a", "s"
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue=var1, size=var2)
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
@@ -1077,9 +1112,10 @@ class TestRelationalPlotter(Helpers):
 
     def test_subset_data_values(self, long_df):
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = True
@@ -1087,9 +1123,10 @@ class TestRelationalPlotter(Helpers):
         expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
         assert_array_equal(data.values, expected)
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = False
@@ -1097,9 +1134,10 @@ class TestRelationalPlotter(Helpers):
         expected = p.plot_data.loc[:, ["x", "y"]]
         assert_array_equal(data.values, expected)
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue="a")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = True
@@ -1109,9 +1147,10 @@ class TestRelationalPlotter(Helpers):
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert_array_equal(data.values, expected.values)
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue="a")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = False
@@ -1121,9 +1160,10 @@ class TestRelationalPlotter(Helpers):
             expected = p.plot_data.loc[rows, cols]
             assert_array_equal(data.values, expected.values)
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", style="a")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = True
@@ -1133,9 +1173,10 @@ class TestRelationalPlotter(Helpers):
             expected = p.plot_data.loc[rows, cols].sort_values(cols)
             assert_array_equal(data.values, expected.values)
 
-        p = _RelationalPlotter()
-        p.establish_variables(long_df, x="x", y="y", hue="a", size="s")
-        p.parse_hue(p.plot_data["hue"])
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", size="s"),
+        )
         p.parse_size(p.plot_data["size"])
         p.parse_style(p.plot_data["style"])
         p.sort = True
