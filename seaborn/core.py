@@ -73,7 +73,7 @@ class HueMapping(SemanticMapping):
                 map_type = "categorical"
             elif norm is not None:
                 map_type = "numeric"
-            elif isinstance(palette, (Mapping, Sequence)):
+            elif isinstance(palette, (dict, list)):
                 map_type = "categorical"
             elif plotter.input_format == "wide":
                 map_type = "categorical"
