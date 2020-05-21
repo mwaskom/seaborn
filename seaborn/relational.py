@@ -43,6 +43,7 @@ class _RelationalPlotter(_VectorPlotter):
 
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
+        # TODO move all of this logic into the HueMapping
         try:
             return self._hue_map(key)
         except KeyError:

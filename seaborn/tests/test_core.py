@@ -6,6 +6,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from ..core import (
+    SemanticMapping,
     HueMapping,
     _VectorPlotter,
     variable_type,
@@ -13,14 +14,64 @@ from ..core import (
     unique_dashes,
     unique_markers,
     categorical_order,
-    get_color_cycle,
-    remove_na,
 )
 
 from ..palettes import color_palette
 
 
+class TestSemanticMapping:
+
+    def test_call_lookup(self):
+
+        lookup_table = dict(zip("abc", (1, 2, 3)))
+        m = SemanticMapping()
+        m.lookup_table = lookup_table
+        for key, val in lookup_table.items():
+            assert m(key) == val
+
+
 class TestHueMapping:
+
+    def test_init_from_map(self, long_df):
+
+        p_orig = _VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a")
+        )
+        palette = "Set2"
+        p = HueMapping.map(p_orig, palette=palette)
+        assert p is p_orig
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.palette == palette
+
+    def test_plotter_default_init(self, long_df):
+
+        p = _VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.map_type is None
+
+        p = _VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.map_type == p.var_types["hue"]
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = _VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
+        palette = "muted"
+        hue_order = ["b", "a", "c"]
+        p = p_orig.map_hue(palette=palette, order=hue_order)
+        assert p is p_orig
+        assert p._hue_map.palette == palette
+        assert p._hue_map.levels == hue_order
 
     def test_hue_map_null(self, long_df, null_series):
 
@@ -45,18 +96,21 @@ class TestHueMapping:
         expected_colors = color_palette(palette, wide_df.shape[1])
         expected_lookup_table = dict(zip(wide_df.columns, expected_colors))
         m = HueMapping(p, palette=palette)
+        assert m.palette == "Blues"
         assert m.lookup_table == expected_lookup_table
 
         # Test list palette
         palette = color_palette("Reds", wide_df.shape[1])
         expected_lookup_table = dict(zip(wide_df.columns, palette))
         m = HueMapping(p, palette=palette)
+        assert m.palette == palette
         assert m.lookup_table == expected_lookup_table
 
         # Test dict palette
         colors = color_palette("Set1", 8)
         palette = dict(zip(wide_df.columns, colors))
         m = HueMapping(p, palette=palette)
+        assert m.palette == palette
         assert m.lookup_table == palette
 
         # Test dict with missing keys
@@ -82,13 +136,13 @@ class TestHueMapping:
         # Test long data
         p = _VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
         m = HueMapping(p)
-        assert m.levels == categorical_order(long_df.a)
+        assert m.levels == categorical_order(long_df["a"])
         assert m.map_type == "categorical"
         assert m.cmap is None
 
         # Test default palette
         m = HueMapping(p)
-        hue_levels = categorical_order(long_df.a)
+        hue_levels = categorical_order(long_df["a"])
         expected_colors = color_palette(n_colors=len(hue_levels))
         expected_lookup_table = dict(zip(hue_levels, expected_colors))
         assert m.lookup_table == expected_lookup_table

@@ -12,6 +12,9 @@ import matplotlib as mpl
 from ._decorators import (
     share_init_params_with_map,
 )
+from .palettes import (
+    QUAL_PALETTES,
+)
 from .utils import (
     get_color_cycle,
     remove_na,
@@ -52,8 +55,6 @@ class HueMapping(SemanticMapping):
     def __init__(
         self, plotter, palette=None, order=None, norm=None,
     ):
-
-        from .palettes import QUAL_PALETTES  # Avoid circular import
 
         data = plotter.plot_data["hue"]
 
@@ -108,13 +109,6 @@ class HueMapping(SemanticMapping):
             self.limits = limits
             self.norm = norm
             self.cmap = cmap
-
-    # TODO why not generic __call__ method that broadcasts?
-    def color_vector(self, data):
-
-        # TODO need to debug why data.map(self.palette) doesn't work
-        # TODO call this "mapping" and keep palette for the orig var?
-        return [self.palette.get(val) for val in data]
 
     def categorical_mapping(self, data, order, palette):
         """Determine colors when the hue mapping is categorical."""
