@@ -1128,6 +1128,7 @@ def scatterplot(
     variables = _ScatterPlotter.get_variables(locals())
     p = _ScatterPlotter(
         data=data, variables=variables,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
@@ -1371,6 +1372,7 @@ def relplot(
     markers=None, dashes=None, style_order=None,
     legend="brief", kind="scatter",
     height=5, aspect=1, facet_kws=None,
+    units=None,
     **kwargs
 ):
 
@@ -1401,17 +1403,21 @@ def relplot(
 
     # Use the full dataset to establish how to draw the semantics
     p = plotter(
-        x=x, y=y, hue=hue, size=size, style=style, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        data=data,
+        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
         legend=legend,
     )
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     # Extract the semantic mappings
-    palette = p.palette if p.palette else None
-    hue_order = p.hue_levels if any(p.hue_levels) else None
-    hue_norm = p.hue_norm if p.hue_norm is not None else None
+    if "hue" in p.variables:
+        palette = p._hue_map.lookup_table
+        hue_order = p._hue_map.levels
+        hue_norm = p._hue_map.norm
+    else:
+        palette = hue_order = hue_norm = None
 
     sizes = p.sizes if p.sizes else None
     size_order = p.size_levels if any(p.size_levels) else None
@@ -1428,8 +1434,8 @@ def relplot(
 
     # Define the common plotting parameters
     plot_kws = dict(
-        palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=p.size_norm,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
         legend=False,
     )
@@ -1445,10 +1451,12 @@ def relplot(
     grid_semantics = "row", "col"  # TODO define on FacetGrid?
     p.semantics = plot_semantics + grid_semantics
     full_data, full_variables = p.establish_variables(
-        data,
-        x=x, y=y,
-        hue=hue, size=size, style=style,
-        row=row, col=col,
+        data=data,
+        variables=dict(
+            x=x, y=y,
+            hue=hue, size=size, style=style,
+            row=row, col=col,
+        ),
     )
 
     # Pass the row/col variables to FacetGrid with their original

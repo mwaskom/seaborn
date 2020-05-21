@@ -1188,31 +1188,31 @@ class TestRelationalPlotter(Helpers):
 
     def test_relplot_simple(self, long_df):
 
-        g = relplot(x="x", y="y", kind="scatter", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", kind="scatter")
         x, y = g.ax.collections[0].get_offsets().T
         assert_array_equal(x, long_df["x"])
         assert_array_equal(y, long_df["y"])
 
-        g = relplot(x="x", y="y", kind="line", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", kind="line")
         x, y = g.ax.lines[0].get_xydata().T
         expected = long_df.groupby("x").y.mean()
         assert_array_equal(x, expected.index)
         assert y == pytest.approx(expected.values)
 
         with pytest.raises(ValueError):
-            g = relplot(x="x", y="y", kind="not_a_kind", data=long_df)
+            g = relplot(data=long_df, x="x", y="y", kind="not_a_kind")
 
     def test_relplot_complex(self, long_df):
 
         for sem in ["hue", "size", "style"]:
-            g = relplot(x="x", y="y", data=long_df, **{sem: "a"})
+            g = relplot(data=long_df, x="x", y="y",  **{sem: "a"})
             x, y = g.ax.collections[0].get_offsets().T
             assert_array_equal(x, long_df["x"])
             assert_array_equal(y, long_df["y"])
 
         for sem in ["hue", "size", "style"]:
             g = relplot(
-                x="x", y="y", col="c", data=long_df, **{sem: "a"}
+                data=long_df, x="x", y="y", col="c", **{sem: "a"}
             )
             grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
@@ -1222,7 +1222,7 @@ class TestRelationalPlotter(Helpers):
 
         for sem in ["size", "style"]:
             g = relplot(
-                x="x", y="y", hue="b", col="c", data=long_df, **{sem: "a"}
+                data=long_df, x="x", y="y", hue="b", col="c", **{sem: "a"}
             )
             grouped = long_df.groupby("c")
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
@@ -1232,8 +1232,8 @@ class TestRelationalPlotter(Helpers):
 
         for sem in ["hue", "size", "style"]:
             g = relplot(
-                x="x", y="y", col="b", row="c",
-                data=long_df.sort_values(["c", "b"]), **{sem: "a"}
+                data=long_df.sort_values(["c", "b"]),
+                x="x", y="y", col="b", row="c", **{sem: "a"}
             )
             grouped = long_df.groupby(["c", "b"])
             for (_, grp_df), ax in zip(grouped, g.axes.flat):
@@ -1281,8 +1281,9 @@ class TestRelationalPlotter(Helpers):
 
         sizes = [5, 12, 7]
         g = relplot(
+            data=long_df,
             x="x", y="y", size="a", hue="b", col="c",
-            sizes=sizes, data=long_df
+            sizes=sizes,
         )
 
         sizes = dict(zip(long_df["a"].unique(), sizes))
@@ -1296,8 +1297,9 @@ class TestRelationalPlotter(Helpers):
 
         markers = ["o", "d", "s"]
         g = relplot(
+            data=long_df,
             x="x", y="y", style="a", hue="b", col="c",
-            markers=markers, data=long_df
+            markers=markers,
         )
 
         paths = []
@@ -1316,14 +1318,14 @@ class TestRelationalPlotter(Helpers):
 
         long_df["x_str"] = long_df["x"].astype(str)
 
-        g = relplot(x="x", y="y", hue="x_str", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", hue="x_str")
         points = g.ax.collections[0]
         xys = points.get_offsets()
         mask = np.ma.getmask(xys)
         assert not mask.any()
         assert_array_equal(xys, long_df[["x", "y"]])
 
-        g = relplot(x="x", y="y", size="x_str", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", size="x_str")
         points = g.ax.collections[0]
         xys = points.get_offsets()
         mask = np.ma.getmask(xys)
@@ -1332,27 +1334,28 @@ class TestRelationalPlotter(Helpers):
 
     def test_relplot_legend(self, long_df):
 
-        g = relplot(x="x", y="y", data=long_df)
+        g = relplot(data=long_df, x="x", y="y")
         assert g._legend is None
 
-        g = relplot(x="x", y="y", hue="a", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", hue="a")
         texts = [t.get_text() for t in g._legend.texts]
         expected_texts = np.append(["a"], long_df["a"].unique())
         assert_array_equal(texts, expected_texts)
 
-        g = relplot(x="x", y="y", hue="s", size="s", data=long_df)
+        g = relplot(data=long_df, x="x", y="y", hue="s", size="s")
         texts = [t.get_text() for t in g._legend.texts]
         assert_array_equal(texts[1:], np.sort(texts[1:]))
 
-        g = relplot(x="x", y="y", hue="a", legend=False, data=long_df)
+        g = relplot(data=long_df, x="x", y="y", hue="a", legend=False)
         assert g._legend is None
 
         palette = color_palette("deep", len(long_df["b"].unique()))
         a_like_b = dict(zip(long_df["a"].unique(), long_df["b"].unique()))
         long_df["a_like_b"] = long_df["a"].map(a_like_b)
         g = relplot(
+            data=long_df,
             x="x", y="y", hue="b", style="a_like_b",
-            palette=palette, kind="line", estimator=None, data=long_df
+            palette=palette, kind="line", estimator=None,
         )
         lines = g._legend.get_lines()[1:]  # Chop off title dummy
         for line, color in zip(lines, palette):
@@ -1362,7 +1365,7 @@ class TestRelationalPlotter(Helpers):
 
         f, ax = plt.subplots()
         with pytest.warns(UserWarning):
-            g = relplot(x="x", y="y", data=long_df, ax=ax)
+            g = relplot(data=long_df, x="x", y="y", ax=ax)
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
 
