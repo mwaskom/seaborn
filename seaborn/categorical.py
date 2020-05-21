@@ -1860,6 +1860,7 @@ class _LVPlotter(_CategoricalPlotter):
         vals = vals[np.isfinite(vals)]
         n = len(vals)
         p = self.outlier_prop
+
         # Select the depth, i.e. number of boxes to draw, based on the method
         if p == 0:
             # Zero outliers; extend boxes to 100% of the data
@@ -1870,16 +1871,17 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            k = int(np.log2(n / (2 * stats.norm.ppf((1 - p) / 2) ** 2))) + 1
+            k = int(np.log2(n / (2 * stats.norm.ppf((1 - p)) ** 2))) + 1
         else:
             k = int(self.k_depth)  # allow having k as input
         # If the number happens to be less than 1, set k to 1
         if k < 1:
             k = 1
+
         # Calculate the upper box ends
-        upper = [100 * (1 - 0.5 ** (i + 2)) for i in range(k, -1, -1)]
+        upper = [100 * (1 - 0.5 ** (i + 1)) for i in range(k, 0, -1)]
         # Calculate the lower box ends
-        lower = [100 * (0.5 ** (i + 2)) for i in range(k, -1, -1)]
+        lower = [100 * (0.5 ** (i + 1)) for i in range(k, 0, -1)]
         # Stitch the box ends together
         percentile_ends = [(i, j) for i, j in zip(lower, upper)]
         box_ends = [np.percentile(vals, q) for q in percentile_ends]
@@ -1887,7 +1889,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lv_outliers(self, vals, k):
         """Find the outliers based on the letter value depth."""
-        perc_ends = (100 * (0.5 ** (k + 2)), 100 * (1 - 0.5 ** (k + 2)))
+        perc_ends = (100 * (0.5 ** (k + 1)), 100 * (1 - 0.5 ** (k + 1)))
         edges = np.percentile(vals, perc_ends)
         lower_out = vals[np.where(vals < edges[0])[0]]
         upper_out = vals[np.where(vals > edges[1])[0]]
