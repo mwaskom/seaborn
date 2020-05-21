@@ -78,12 +78,7 @@ class HueMapping(SemanticMapping):
             elif plotter.input_format == "wide":
                 map_type = "categorical"
             else:
-                # Otherwise, use the variable type
-                # TODO we will likely need to impelement datetime mapping
-                if plotter.var_types["hue"] == "numeric":
-                    map_type = "numeric"
-                else:
-                    map_type = "categorical"
+                map_type = plotter.var_types["hue"]
 
             # Our goal is to end up with a dictionary mapping every unique
             # value in `data` to a color. We will also keep track of the
@@ -110,6 +105,10 @@ class HueMapping(SemanticMapping):
                     # pandas represents numpy datetime64 data
                     list(data), order, palette
                 )
+
+            # --- Option 3: datetime mapping
+
+            # TODO this needs implementation; currently uses categorical
 
             self.map_type = map_type
             self.lookup_table = lookup_table
@@ -234,7 +233,6 @@ class _VectorPlotter:
 
                 # Call the mapping function to initialize with default values
                 getattr(self, f"map_{var}")()
-
 
     @classmethod
     def get_variables(cls, arguments):
