@@ -5,7 +5,7 @@ import matplotlib as mpl
 import pytest
 from numpy.testing import assert_array_equal
 
-from ..core import (
+from .._core import (
     SemanticMapping,
     HueMapping,
     _VectorPlotter,

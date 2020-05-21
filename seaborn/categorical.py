@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import warnings
 from distutils.version import LooseVersion
 
+from ._core import variable_type, infer_orient, categorical_order
 from . import utils
-from .core import variable_type, infer_orient, categorical_order
 from .utils import iqr, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette

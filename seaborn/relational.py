@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .core import (
+from ._core import (
     _VectorPlotter,
     variable_type,
     unique_dashes,

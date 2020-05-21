@@ -10,7 +10,7 @@ from numpy.testing import assert_array_equal
 
 from ..palettes import color_palette
 
-from ..core import (
+from .._core import (
     unique_dashes,
     unique_markers,
     categorical_order,

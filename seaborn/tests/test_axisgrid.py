@@ -14,12 +14,12 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from .. import axisgrid as ag
+from .._core import categorical_order
 from .. import rcmod
-from ..core import categorical_order
 from ..palettes import color_palette
 from ..distributions import kdeplot, _freedman_diaconis_bins
 from ..categorical import pointplot
+from .. import axisgrid as ag
 
 rs = np.random.RandomState(0)
 

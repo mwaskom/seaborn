@@ -14,7 +14,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .core import (
+from ._core import (
     _VectorPlotter,
 )
 from .utils import _kde_support, remove_na
