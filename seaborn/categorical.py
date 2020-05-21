@@ -1,4 +1,5 @@
 from textwrap import dedent
+
 import colorsys
 import numpy as np
 from scipy import stats
@@ -11,6 +12,7 @@ import warnings
 from distutils.version import LooseVersion
 
 from . import utils
+from .rcmod import axes_style
 from .utils import iqr, categorical_order, remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -1961,27 +1963,30 @@ class _LVPlotter(_CategoricalPlotter):
             hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
-                boxes = [vert_perc_box(x, b[0], i, k, b[1])
-                         for i, b in enumerate(zip(box_ends, w_area))]
+                box_func = vert_perc_box
+                xs_median = [x - widths / 2, x + widths / 2]
+                ys_median = [y, y]
+                xs_outliers = np.repeat(x, len(outliers))
+                ys_outliers = outliers
 
-                # Plot the medians
-                ax.plot([x - widths / 2, x + widths / 2], [y, y],
-                        c='.15', alpha=.45, **kws)
-
-                if len(outliers) > 0:
-                    ax.scatter(np.repeat(x, len(outliers)), outliers,
-                               marker='d', c=self.gray, **kws)
             else:
-                boxes = [horz_perc_box(x, b[0], i, k, b[1])
-                         for i, b in enumerate(zip(box_ends, w_area))]
+                box_func = horz_perc_box
+                xs_median = [y, y]
+                ys_median = [x - widths / 2, x + widths / 2]
+                xs_outliers = outliers
+                ys_outliers = np.repeat(x, len(outliers))
 
-                # Plot the medians
-                ax.plot([y, y], [x - widths / 2, x + widths / 2],
-                        c='.15', alpha=.45, **kws)
+            boxes = [box_func(x, b[0], i, k, b[1])
+                     for i, b in enumerate(zip(box_ends, w_area))]
 
-                if len(outliers) > 0:
-                    ax.scatter(outliers, np.repeat(x, len(outliers)),
-                               marker='d', c=self.gray, **kws)
+            # Plot the medians
+            with axes_style(rc={"lines.solid_capstyle": "butt"}):
+                ax.plot(xs_median, ys_median, c='.15', alpha=.45, **kws)
+
+            # Plot outliers (if any)
+            if len(outliers) > 0:
+                ax.scatter(xs_outliers, ys_outliers, marker='d',
+                           c=self.gray, **kws)
 
             # Construct a color map from the input color
             rgb = [hex_color, (1, 1, 1)]
