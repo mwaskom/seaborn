@@ -39,7 +39,7 @@ class SemanticMapping:
         # TODO what about when we need values that aren't in the data
         # (i.e. for legends), we need some sort of continuous lookup
 
-        if isinstance(data, (pd.Series, Sequence)):
+        if isinstance(data, (list, np.ndarray, pd.Series)):
             # TODO need to debug why data.map(self.lookup_table) doesn't work
             return [self.lookup_table.get(val) for val in data]
         else:

@@ -84,7 +84,7 @@ class _RelationalPlotter(_VectorPlotter):
         data = self.plot_data
         all_true = pd.Series(True, data.index)
 
-        iter_levels = product(self.hue_levels,
+        iter_levels = product(self._hue_map.levels,
                               self.size_levels,
                               self.style_levels)
 
@@ -391,26 +391,31 @@ class _LinePlotter(_RelationalPlotter):
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
     _legend_func = "plot"
 
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_norm=None,
-                 dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None, seed=None,
-                 sort=True, err_style=None, err_kws=None, legend=None):
+    def __init__(
+        self, *,
+        data=None, variables={},
+        palette=None, hue_order=None, hue_norm=None,
+        sizes=None, size_order=None, size_norm=None,
+        dashes=None, markers=None, style_order=None,
+        estimator=None, ci=None, n_boot=None, seed=None,
+        sort=True, err_style=None, err_kws=None, legend=None
+    ):
 
-        plot_data, variables = self.establish_variables(
-            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
-        )
+        super().__init__(data=data, variables=variables)
 
         self._default_size_range = (
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
 
+        plot_data = self.plot_data
+
         self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, dashes, style_order)
 
-        self.units = units
+        # TODO fix, just use plot data
+        units = self.plot_data["units"]
+        self.units = units if units.notna().any() else None
+
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
@@ -517,7 +522,7 @@ class _LinePlotter(_RelationalPlotter):
             else:
                 y_ci = None
 
-            kws["color"] = self.palette.get(hue, orig_color)
+            kws["color"] = orig_color if hue is None else self._hue_map(hue)
             kws["dashes"] = self.dashes.get(style, orig_dashes)
             kws["marker"] = self.markers.get(style, orig_marker)
             kws["linewidth"] = self.sizes.get(size, orig_linewidth)
@@ -580,12 +585,12 @@ class _ScatterPlotter(_RelationalPlotter):
     _legend_func = "scatter"
 
     def __init__(
-        self,
+        self, *,
         data=None, variables={},
         sizes=None, size_order=None, size_norm=None,
         dashes=None, markers=None, style_order=None,
         x_bins=None, y_bins=None,
-        units=None, estimator=None, ci=None, n_boot=None,
+        estimator=None, ci=None, n_boot=None,
         alpha=None, x_jitter=None, y_jitter=None,
         legend=None
     ):
@@ -600,7 +605,10 @@ class _ScatterPlotter(_RelationalPlotter):
 
         self.parse_size(plot_data["size"], sizes, size_order, size_norm)
         self.parse_style(plot_data["style"], markers, None, style_order)
-        self.units = units
+
+        # TODO fix, just use plot_data
+        units = self.plot_data["units"]
+        self.units = units if units.notna().any() else None
 
         self.alpha = alpha
 
@@ -840,12 +848,12 @@ def lineplot(
     legend="brief", ax=None, **kwargs
 ):
 
+    variables = _LinePlotter.get_variables(locals())
     p = _LinePlotter(
-        x=x, y=y, hue=hue, size=size, style=style, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        data=data, variables=variables,
         sizes=sizes, size_order=size_order, size_norm=size_norm,
         dashes=dashes, markers=markers, style_order=style_order,
-        units=units, estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
+        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
