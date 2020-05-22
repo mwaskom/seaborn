@@ -459,7 +459,7 @@ class StyleMapping(SemanticMapping):
     lookup_table = {}
 
     def __init__(
-        self, plotter, order=None, markers=None, dashes=None,
+        self, plotter, markers=None, dashes=None, order=None,
     ):
 
         super().__init__(plotter)
@@ -502,14 +502,14 @@ class StyleMapping(SemanticMapping):
             err = "Filled and line art markers cannot be mixed"
             raise ValueError(err)
 
-        lookup_table = {
-            key: {
-                "marker": markers.get(key, None),
-                "paths": paths.get(key, None),
-                "dashes": dashes.get(key, None),
-            }
-            for key in levels
-        }
+        lookup_table = {}
+        for key in levels:
+            lookup_table[key] = {}
+            if markers:
+                lookup_table[key]["marker"] = markers[key]
+                lookup_table[key]["path"] = paths[key]
+            if dashes:
+                lookup_table[key]["dashes"] = dashes[key]
 
         self.levels = levels
         self.lookup_table = lookup_table
@@ -555,6 +555,7 @@ class VectorPlotter:
     _semantic_mappings = {
         "hue": HueMapping,
         "size": SizeMapping,
+        "style": StyleMapping,
     }
 
     semantics = "x", "y", "hue", "size", "style", "units"

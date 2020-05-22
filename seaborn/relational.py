@@ -62,7 +62,7 @@ class _RelationalPlotter(VectorPlotter):
 
         iter_levels = product(self._hue_map.levels,
                               self._size_map.levels,
-                              self.style_levels)
+                              self._style_map.levels)
 
         for hue, size, style in iter_levels:
 
@@ -239,11 +239,15 @@ class _RelationalPlotter(VectorPlotter):
                    self.variables["style"], **title_kws)
 
         # Add the style semantic labels
-        for level in self.style_levels:
+        for level in self._style_map.levels:
             if level is not None:
-                update(self.variables["style"], level,
-                       marker=self.markers.get(level, ""),
-                       dashes=self.dashes.get(level, ""))
+                attrs = self._style_map(level)
+                update(
+                    self.variables["style"],
+                    level,
+                    marker=attrs.get("marker", ""),
+                    dashes=attrs.get("dashes", ""),
+                )
 
         func = getattr(ax, self._legend_func)
 
@@ -277,8 +281,6 @@ class _LinePlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        palette=None, hue_order=None, hue_norm=None,
-        dashes=None, markers=None, style_order=None,
         estimator=None, ci=None, n_boot=None, seed=None,
         sort=True, err_style=None, err_kws=None, legend=None
     ):
@@ -291,10 +293,6 @@ class _LinePlotter(_RelationalPlotter):
         )
 
         super().__init__(data=data, variables=variables)
-
-        plot_data = self.plot_data
-
-        self.parse_style(plot_data["style"], markers, dashes, style_order)
 
         # TODO fix, just use plot data
         units = self.plot_data["units"]
@@ -419,8 +417,9 @@ class _LinePlotter(_RelationalPlotter):
             if size is not None:
                 kws["linewidth"] = self._size_map(size)
             if style is not None:
-                kws["dashes"] = self.dashes.get(style, orig_dashes)
-                kws["marker"] = self.markers.get(style, orig_marker)
+                attributes = self._style_map(style)
+                kws["dashes"] = attributes.get("dashes", orig_dashes)
+                kws["marker"] = attributes.get("marker", orig_marker)
 
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
@@ -482,7 +481,6 @@ class _ScatterPlotter(_RelationalPlotter):
     def __init__(
         self, *,
         data=None, variables={},
-        dashes=None, markers=None, style_order=None,
         x_bins=None, y_bins=None,
         estimator=None, ci=None, n_boot=None,
         alpha=None, x_jitter=None, y_jitter=None,
@@ -497,10 +495,6 @@ class _ScatterPlotter(_RelationalPlotter):
         )
 
         super().__init__(data=data, variables=variables)
-
-        plot_data = self.plot_data
-
-        self.parse_style(plot_data["style"], markers, None, style_order)
 
         # TODO fix, just use plot_data
         units = self.plot_data["units"]
@@ -555,11 +549,12 @@ class _ScatterPlotter(_RelationalPlotter):
         kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
         kws.setdefault("edgecolor", "w")
 
-        if self.markers:
+        if "style" in self.variables:
             # Use a representative marker so scatter sets the edgecolor
             # properly for line art markers. We currently enforce either
             # all or none line art so this works.
-            example_marker = list(self.markers.values())[0]
+            example_level = self._style_map.levels[0]
+            example_marker = self._style_map(example_level, "marker")
             kws.setdefault("marker", example_marker)
 
         # TODO this makes it impossible to vary alpha with hue which might
@@ -573,8 +568,8 @@ class _ScatterPlotter(_RelationalPlotter):
         # Update the paths to get different marker shapes.
         # This has to be done here because ax.scatter allows varying sizes
         # and colors but only a single marker shape per call.
-        if self.paths:
-            p = [self.paths.get(val) for val in data["style"]]
+        if "style" in self.variables:
+            p = [self._style_map(val, "path") for val in data["style"]]
             points.set_paths(p)
 
         # Finalize the axes details
@@ -746,13 +741,13 @@ def lineplot(
     variables = _LinePlotter.get_variables(locals())
     p = _LinePlotter(
         data=data, variables=variables,
-        dashes=dashes, markers=markers, style_order=style_order,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     if ax is None:
         ax = plt.gca()
@@ -1023,7 +1018,6 @@ def scatterplot(
     variables = _ScatterPlotter.get_variables(locals())
     p = _ScatterPlotter(
         data=data, variables=variables,
-        markers=markers, style_order=style_order,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
         alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
@@ -1031,6 +1025,7 @@ def scatterplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, order=style_order)
 
     if ax is None:
         ax = plt.gca()
@@ -1301,11 +1296,11 @@ def relplot(
         data=data,
         # TODO replace with get_variables()
         variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
-        markers=markers, dashes=dashes, style_order=style_order,
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
     p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     # Extract the semantic mappings
     if "hue" in p.variables:
@@ -1320,9 +1315,18 @@ def relplot(
         size_order = p._size_map.levels
         size_norm = p._size_map.norm
 
-    markers = p.markers if p.markers else None
-    dashes = p.dashes if p.dashes else None
-    style_order = p.style_levels if any(p.style_levels) else None
+    if "style" in p.variables:
+        style_order = p._style_map.levels
+        if markers:
+            markers = {k: p._style_map(k, "marker") for k in style_order}
+        else:
+            markers = None
+        if dashes:
+            dashes = {k: p._style_map(k, "dashes") for k in style_order}
+        else:
+            dashes = None
+    else:
+        markers = dashes = style_order = None
 
     # Now extract the data that would be used to draw a single plot
     variables = p.variables
