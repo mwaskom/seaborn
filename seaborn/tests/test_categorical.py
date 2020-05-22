@@ -2729,6 +2729,36 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
+    def test_valid_depths(self):
+
+        valid_depths = ["proportion", "tukey", "trustworthy"]
+        kws = self.default_kws.copy()
+
+        for depth in valid_depths + ["unknown_method"]:
+            kws["k_depth"] = depth
+            if depth not in valid_depths:
+                with pytest.raises(ValueError):
+                    cat._LVPlotter(**kws)
+            else:
+                cat._LVPlotter(**kws)
+
+        # Allow a number for k
+        kws["k_depth"] = 4
+        cat._LVPlotter(**kws)
+
+    def test_valid_scales(self):
+
+        valid_scales = ["linear", "exponential", "area"]
+        kws = self.default_kws.copy()
+
+        for scale in valid_scales + ["unknown_scale"]:
+            kws["scale"] = scale
+            if scale not in valid_scales:
+                with pytest.raises(ValueError):
+                    cat._LVPlotter(**kws)
+            else:
+                cat._LVPlotter(**kws)
+
     def test_hue_offsets(self):
 
         p = cat._LVPlotter(**self.default_kws)
@@ -2837,6 +2867,14 @@ class TestBoxenPlotter(CategoricalFixture):
 
         cat.boxenplot(x="g", y="y", hue="h", data=self.df)
         plt.close("all")
+
+        for scale in ("linear", "area", "exponential"):
+            cat.boxenplot(x="g", y="y", hue="h", scale=scale, data=self.df)
+            plt.close("all")
+
+        for depth in ("proportion", "tukey", "trustworthy"):
+            cat.boxenplot(x="g", y="y", hue="h", k_depth=depth, data=self.df)
+            plt.close("all")
 
         order = list("nabc")
         cat.boxenplot(x="g", y="y", hue="h", order=order, data=self.df)
