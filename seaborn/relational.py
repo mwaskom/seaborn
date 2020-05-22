@@ -48,7 +48,7 @@ class _RelationalPlotter(VectorPlotter):
             style_rows = all_true if style is None else data["style"] == style
 
             rows = hue_rows & size_rows & style_rows
-            data["units"] = data.units.fillna("")
+            data["units"] = data["units"].fillna("")
             subset_data = data.loc[rows, ["units", "x", "y"]].dropna()
 
             if not len(subset_data):
@@ -57,6 +57,7 @@ class _RelationalPlotter(VectorPlotter):
             if self.sort:
                 subset_data = subset_data.sort_values(["units", "x", "y"])
 
+            # TODO this is a little awkward, we should just treat it normally
             if "units" not in self.variables:
                 subset_data = subset_data.drop("units", axis=1)
 
@@ -211,10 +212,6 @@ class _LinePlotter(_RelationalPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        # TODO fix, just use plot data
-        units = self.plot_data["units"]
-        self.units = units if units.notna().any() else None
-
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
@@ -322,7 +319,7 @@ class _LinePlotter(_RelationalPlotter):
             x, y, units = data["x"], data["y"], data.get("units", None)
 
             if self.estimator is not None:
-                if self.units is not None:
+                if units is not None:
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
                 x, y, y_ci = self.aggregate(y, x, units)
@@ -348,9 +345,8 @@ class _LinePlotter(_RelationalPlotter):
 
             x, y = np.asarray(x), np.asarray(y)
 
-            if self.units is None:
+            if units is None:
                 line, = ax.plot(x, y, **kws)
-
             else:
                 for u in units.unique():
                     rows = np.asarray(units == u)
@@ -413,12 +409,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        # TODO fix, just use plot_data
-        units = self.plot_data["units"]
-        self.units = units if units.notna().any() else None
-
         self.alpha = alpha
-
         self.legend = legend
 
     def plot(self, ax, kws):
