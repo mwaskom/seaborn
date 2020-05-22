@@ -1,5 +1,8 @@
 import itertools
+import warnings
 from collections.abc import Iterable, Sequence, Mapping
+from numbers import Number
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -121,8 +124,8 @@ class _VectorPlotter:
             wide_data = pd.DataFrame(data, copy=True)
 
             # At this point we should reduce the dataframe to numeric cols
-            # TODO do we want any control over this?
-            wide_data = wide_data.select_dtypes("number")
+            numeric_cols = wide_data.apply(variable_type) == "numeric"
+            wide_data = wide_data.loc[:, numeric_cols]
 
             # Now melt the data to long form
             melt_kws = {"var_name": "columns", "value_name": "values"}
@@ -230,6 +233,151 @@ class _VectorPlotter:
         }
 
         return plot_data, variables
+
+
+def variable_type(vector, boolean_type="numeric"):
+    """Determine whether a vector contains numeric, categorical, or dateime data.
+
+    This function differs from the pandas typing API in two ways:
+
+    - Python sequences or object-typed PyData objects are considered numeric if
+      all of their entries are numeric.
+    - String or mixed-type data are considered categorical even if not
+      explicitly represented as a :class:pandas.api.types.CategoricalDtype`.
+
+    Parameters
+    ----------
+    vector : :func:`pandas.Series`, :func:`numpy.ndarray`, or Python sequence
+        Input data to test.
+    binary_type : 'numeric' or 'categorical'
+        Type to use for vectors containing only 0s and 1s (and NAs).
+
+    Returns
+    -------
+    var_type : 'numeric', 'categorical', or 'datetime'
+        Name identifying the type of data in the vector.
+
+    """
+    # Special-case all-na data, which is always "numeric"
+    if pd.isna(vector).all():
+        return "numeric"
+
+    # Special-case binary/boolean data, allow caller to determine
+    if np.isin(vector, [0, 1, np.nan]).all():
+        return boolean_type
+
+    # Defer to positive pandas tests
+    if pd.api.types.is_numeric_dtype(vector):
+        return "numeric"
+
+    if pd.api.types.is_categorical_dtype(vector):
+        return "categorical"
+
+    if pd.api.types.is_datetime64_dtype(vector):
+        return "datetime"
+
+    # --- If we get to here, we need to check the entries
+
+    # Check for a collection where everything is a number
+
+    def all_numeric(x):
+        for x_i in x:
+            if not isinstance(x_i, Number):
+                return False
+        return True
+
+    if all_numeric(vector):
+        return "numeric"
+
+    # Check for a collection where everything is a datetime
+
+    def all_datetime(x):
+        for x_i in x:
+            if not isinstance(x_i, (datetime, np.datetime64)):
+                return False
+        return True
+
+    if all_datetime(vector):
+        return "datetime"
+
+    # Otherwise, our final fallback is to consider things categorical
+
+    return "categorical"
+
+
+def infer_orient(x=None, y=None, orient=None, require_numeric=True):
+    """Determine how the plot should be oriented based on the data.
+
+    For historical reasons, the convention is to call a plot "horizontally"
+    or "vertically" oriented based on the axis representing its dependent
+    variable. Practically, this is used when determining the axis for
+    numerical aggregation.
+
+    Paramters
+    ---------
+    x, y : Vector data or None
+        Positional data vectors for the plot.
+    orient : string or None
+        Specified orientation, which must start with "v" or "h" if not None.
+    require_numeric : bool
+        If set, raise when the implied dependent variable is not numeric.
+
+    Returns
+    -------
+    orient : "v" or "h"
+
+    Raises
+    ------
+    ValueError: When `orient` is not None and does not start with "h" or "v"
+    TypeError: When dependant variable is not numeric, with `require_numeric`
+
+    """
+
+    x_type = None if x is None else variable_type(x)
+    y_type = None if y is None else variable_type(y)
+
+    nonnumeric_dv_error = "{} orientation requires numeric `{}` variable."
+    single_var_warning = "{} orientation ignored with only `{}` specified."
+
+    if x is None:
+        if str(orient).startswith("h"):
+            warnings.warn(single_var_warning.format("Horizontal", "y"))
+        if require_numeric and y_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
+        return "v"
+
+    elif y is None:
+        if str(orient).startswith("v"):
+            warnings.warn(single_var_warning.format("Vertical", "x"))
+        if require_numeric and x_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
+        return "h"
+
+    elif str(orient).startswith("v"):
+        if require_numeric and y_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Vertical", "y"))
+        return "v"
+
+    elif str(orient).startswith("h"):
+        if require_numeric and x_type != "numeric":
+            raise TypeError(nonnumeric_dv_error.format("Horizontal", "x"))
+        return "h"
+
+    elif orient is not None:
+        raise ValueError(f"Value for `orient` not understood: {orient}")
+
+    elif x_type != "numeric" and y_type == "numeric":
+        return "v"
+
+    elif x_type == "numeric" and y_type != "numeric":
+        return "h"
+
+    elif require_numeric and "numeric" not in (x_type, y_type):
+        err = "Neither the `x` nor `y` variable appears to be numeric."
+        raise TypeError(err)
+
+    else:
+        return "v"
 
 
 def unique_dashes(n):

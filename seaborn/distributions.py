@@ -14,7 +14,7 @@ try:
 except ImportError:
     _has_statsmodels = False
 
-from .utils import iqr, _kde_support, remove_na
+from .utils import _kde_support, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 
@@ -28,7 +28,7 @@ def _freedman_diaconis_bins(a):
     a = np.asarray(a)
     if len(a) < 2:
         return 1
-    h = 2 * iqr(a) / (len(a) ** (1 / 3))
+    h = 2 * stats.iqr(a) / (len(a) ** (1 / 3))
     # fall back to sqrt(a) bins if iqr is 0
     if h == 0:
         return int(np.sqrt(a.size))

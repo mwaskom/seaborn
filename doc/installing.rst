@@ -34,18 +34,18 @@ Dependencies
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <https://numpy.org/>`__ (>= 1.13.3)
+-  `numpy <https://numpy.org/>`__
 
--  `scipy <https://www.scipy.org/>`__ (>= 1.0.1)
+-  `scipy <https://www.scipy.org/>`__
 
--  `pandas <https://pandas.pydata.org/>`__ (>= 0.22.0)
+-  `pandas <https://pandas.pydata.org/>`__
 
--  `matplotlib <https://matplotlib.org>`__ (>= 2.1.2)
+-  `matplotlib <https://matplotlib.org>`__
 
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  `statsmodels <https://www.statsmodels.org/>`__ (>= 0.8.0)
+-  `statsmodels <https://www.statsmodels.org/>`__
 
 Bugs
 ~~~~
