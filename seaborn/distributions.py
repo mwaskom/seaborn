@@ -120,7 +120,7 @@ class _RugPlotter(_DistributionPlotter):
 
 
 @_deprecate_positional_args
-def rugplot(
+def _new_rugplot(
     *,
     x=None,
     height=.05, axis="x", ax=None,
@@ -864,7 +864,7 @@ def kdeplot(
 
 
 @_deprecate_positional_args
-def _rugplot(
+def rugplot(
     *,
     x=None,
     height=.05, axis="x", ax=None,
@@ -895,7 +895,7 @@ def _rugplot(
     # Handle deprecation of ``a```
     if a is not None:
         msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg)
+        warnings.warn(msg, FutureWarning)
     else:
         a = x  # TODO refactor
 
