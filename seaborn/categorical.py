@@ -2057,6 +2057,9 @@ class _LVPlotter(_CategoricalPlotter):
                                  ax=ax,
                                  **kws)
 
+        # Autoscale the values axis to make sure all patches are visible
+        ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
+
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
         self.draw_letter_value_plot(ax, boxplot_kws)

@@ -2727,6 +2727,10 @@ class TestBoxenPlotter(CategoricalFixture):
         ax = cat.boxenplot(x="g", y="y", data=self.df, showfliers=False)
         assert len(list(filter(self.ispath, ax.collections))) == 0
 
+        # Test that all data points are in the plot
+        assert ax.get_ylim()[0] < self.df["y"].min()
+        assert ax.get_ylim()[1] > self.df["y"].max()
+
         plt.close("all")
 
     def test_valid_depths(self):
