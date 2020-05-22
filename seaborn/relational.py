@@ -37,10 +37,6 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    # Defaults for size semantic
-    # TODO this should match style of other defaults
-    _default_size_limits = 0, 1
-
     def color_lookup(self, key):
         """Return the color corresponding to the hue level."""
         # TODO move all of this logic into the HueMapping
@@ -56,7 +52,7 @@ class _RelationalPlotter(VectorPlotter):
         """Return the size corresponding to the size level."""
         # TODO move all of this logic into the SizeMapping
         try:
-            return self._size_map(key, self._default_size_limits)
+            return self._size_map(key)
         except KeyError:
             norm = self._size_map.norm
             val = norm(key)
@@ -331,11 +327,12 @@ class _RelationalPlotter(VectorPlotter):
         # -- Add a legend for size semantics
 
         if verbosity == "brief" and self._size_map.map_type == "numeric":
+            # Define how ticks will interpolate between the min/max data values
             if isinstance(self._size_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
-            # TODO this is confusing with limits now being in artist coords
+            # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
                 locator, limits, self.plot_data["size"].dtype
@@ -406,17 +403,18 @@ class _LinePlotter(_RelationalPlotter):
         self, *,
         data=None, variables={},
         palette=None, hue_order=None, hue_norm=None,
-        # sizes=None, size_order=None, size_norm=None,
         dashes=None, markers=None, style_order=None,
         estimator=None, ci=None, n_boot=None, seed=None,
         sort=True, err_style=None, err_kws=None, legend=None
     ):
 
-        super().__init__(data=data, variables=variables)
-
-        self._default_size_limits = (
+        # TODO this is messy, we want the mapping to be agnoistic about
+        # the kind of plot to draw, but too much code assumes that it knows
+        self._default_size_range = (
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
+
+        super().__init__(data=data, variables=variables)
 
         plot_data = self.plot_data
 
@@ -543,7 +541,7 @@ class _LinePlotter(_RelationalPlotter):
             if hue is not None:
                 kws["color"] = self._hue_map(hue)
             if size is not None:
-                kws["linewidth"] = self._size_map(size, self._default_size_limits)
+                kws["linewidth"] = self._size_map(size)
             if style is not None:
                 kws["dashes"] = self.dashes.get(style, orig_dashes)
                 kws["marker"] = self.markers.get(style, orig_marker)
@@ -615,13 +613,15 @@ class _ScatterPlotter(_RelationalPlotter):
         legend=None
     ):
 
+        # TODO this is messy, we want the mapping to be agnoistic about
+        # the kind of plot to draw, but too much code assumes that it knows
+        self._default_size_range = (
+            np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
+        )
+
         super().__init__(data=data, variables=variables)
 
         plot_data = self.plot_data
-
-        self._default_size_limits = (
-            np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
-        )
 
         self.parse_style(plot_data["style"], markers, None, style_order)
 
@@ -671,7 +671,7 @@ class _ScatterPlotter(_RelationalPlotter):
             c = self._hue_map(data["hue"])
 
         if "size" in self.variables:
-            s = self._size_map(data["size"], self._default_size_limits)
+            s = self._size_map(data["size"])
 
         # Set defaults for other visual attributres
         kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))

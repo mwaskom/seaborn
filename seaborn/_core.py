@@ -24,34 +24,35 @@ from .utils import (
 
 class SemanticMapping:
 
-    scaled_mapping = False  # TODO better name
+    def __init__(self, plotter):
+
+        # TODO Putting this here so we can continue to use a lot of the
+        # logic that's built into the library, but the idea of this class
+        # is to move towards semantic mappings that are agnositic about the
+        # kind of plot they're going to be used to draw, which is going to
+        # take some rethinking.
+        self.plotter = plotter
 
     def map(cls, plotter, *args, **kwargs):
         method_name = "_{}_map".format(cls.__name__[:-7].lower())
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 
-    def _lookup_single(self, key, default_limits):
+    def _lookup_single(self, key):
 
         value = self.lookup_table[key]
 
-        # TODO some flag that the value is a scaling factor
-        # Alternatiely, define subclass that overwrites this method
-        if self.scaled_mapping:
-            lo, hi = default_limits if self.limits is None else self.limits
-            value = lo + value * (hi - lo)
+        # TODO implement norm-based interpolation here?
+
         return value
 
-    def __call__(self, data, default_limits=None):
-
-        # TODO what about when we need values that aren't in the data
-        # (i.e. for legends), we need some sort of continuous lookup
+    def __call__(self, data):
 
         if isinstance(data, (list, np.ndarray, pd.Series)):
             # TODO need to debug why data.map(self.lookup_table) doesn't work
-            return [self._lookup_single(key, default_limits) for key in data]
+            return [self._lookup_single(key) for key in data]
         else:
-            return self._lookup_single(data, default_limits)
+            return self._lookup_single(data)
 
 
 @share_init_params_with_map
@@ -70,6 +71,8 @@ class HueMapping(SemanticMapping):
     def __init__(
         self, plotter, palette=None, order=None, norm=None,
     ):
+
+        super().__init__(plotter)
 
         data = plotter.plot_data["hue"]
 
@@ -219,7 +222,6 @@ class SizeMapping(SemanticMapping):
 
     map_type = None
     levels = [None]  # TODO needs downstream fix so can just be None
-    limits = None
     norm = None
     sizes = None
     lookup_table = {}
@@ -227,6 +229,8 @@ class SizeMapping(SemanticMapping):
     def __init__(
         self, plotter, sizes=None, order=None, norm=None,
     ):
+
+        super().__init__(plotter)
 
         # TODO putting this here but it needs a home in the docs:
         # "sizes" are in matplotlib artist units, "norm" is in data units
@@ -247,7 +251,7 @@ class SizeMapping(SemanticMapping):
 
             if map_type == "numeric":
 
-                levels, lookup_table, limits, norm = self.numeric_mapping(
+                levels, lookup_table, norm = self.numeric_mapping(
                     data, sizes, norm,
                 )
 
@@ -255,7 +259,7 @@ class SizeMapping(SemanticMapping):
 
             else:
 
-                levels, lookup_table, limits = self.categorical_mapping(
+                levels, lookup_table = self.categorical_mapping(
                     data, sizes, order,
                 )
 
@@ -265,7 +269,6 @@ class SizeMapping(SemanticMapping):
 
             self.map_type = map_type
             self.levels = levels
-            self.limits = limits
             self.norm = norm
             self.sizes = sizes
             self.lookup_table = lookup_table
@@ -276,81 +279,131 @@ class SizeMapping(SemanticMapping):
 
         if isinstance(sizes, dict):
 
-            # Check entries in dict input
+            # Dict inputs map existing data values to the size attribute
             missing = set(levels) - set(sizes)
             if any(missing):
                 err = f"Missing sizes for the following levels: {missing}"
                 raise ValueError(err)
-
-            limits = lo, hi = min(sizes.values()), max(sizes.values())  # TODO
-            lookup_table = {k: (v - lo) / (hi - lo) for k, v in sizes.items()}
+            lookup_table = sizes.copy()
 
         elif isinstance(sizes, list):
 
-            # Check length of list input
+            # List inputs give size values in the same order as the levels
             if len(sizes) != len(levels):
                 err = "The `sizes` list has the wrong number of values."
                 raise ValueError(err)
 
-            limits = lo, hi = min(sizes), max(sizes)
-            lookup_table = dict(
-                zip(levels, [(s - lo) / (hi - lo) for s in sizes])
-            )  # TODO
+            lookup_table = dict(zip(levels, sizes))
 
         else:
 
-            # Check length of tuple input
             if isinstance(sizes, tuple):
+
+                # Tuple input sets the min, max size values
+                if len(sizes) != 2:
+                    err = "A `sizes` tuple must have only 2 values"
+                    raise ValueError(err)
+
+            else:
+
+                # Otherwise, we need to get the min, max size values from
+                # the plotter object we are attached to.
+
+                # TODO this is going to cause us trouble later, because we
+                # want to restructure things so that the plotter is generic
+                # across the visual representation of the data. But at this
+                # point, we don't know the visual representation. Likely we
+                # want to change the logic of this Mapping so that it gives
+                # points on a nornalized range that then gets unnormalized
+                # when we know what we're drawing. But given the way the
+                # package works now, this way is cleanest.
+                sizes = self.plotter._default_size_range
+
+            # For categorical sizes, use regularly-spaced linear steps
+            # between the minimum and maximum sizes
+            sizes = np.linspace(*sizes, len(levels))
+            lookup_table = dict(zip(levels, sizes))
+
+        return levels, lookup_table
+
+    def numeric_mapping(self, data, sizes, norm):
+
+        if isinstance(sizes, dict):
+            # The presence of a norm object overrides a dictionary of sizes
+            # in specifying a numeric mapping, so we need to process it
+            # dictionary here
+            levels = list(np.sort(list(sizes)))
+            size_values = sizes.values()
+            size_range = min(size_values), max(size_values)
+
+        else:
+
+            # The levels here will be the unique values in the data
+            levels = list(np.sort(remove_na(data.unique())))
+
+            if isinstance(sizes, tuple):
+
+                # For numeric inputs, the size can be parametrized by
+                # the minimum and maximum artist values to map to. The
+                # norm object that gets set up next specifies how to
+                # do the mapping.
 
                 if len(sizes) != 2:
                     err = "A `sizes` tuple must have only 2 values"
                     raise ValueError(err)
-                limits = sizes  # TODO
+
+                size_range = sizes
+
+            elif sizes is not None:
+
+                err = f"Value for `sizes` not understood: {sizes}"
+                raise ValueError(err)
 
             else:
 
-                limits = None
+                # When not provided, we get the size range from the plotter
+                # object we are attached to. See the note in the categorical
+                # method about how this is suboptimal for future development.:
+                size_range = self.plotter._default_size_range
 
-            # For categorical sizes, use regularly-spaced increments
-            sizes = np.linspace(0, 1, len(levels))
-            lookup_table = dict(zip(levels, sizes))
-
-        return levels, lookup_table, limits
-
-    def numeric_mapping(self, data, sizes, norm):
-
-        levels = list(np.sort(remove_na(data.unique())))
-
-        # Infer the range of sizes to use
-        if isinstance(sizes, tuple):
-            if len(sizes) != 2:
-                err = "A `sizes` tuple must have only 2 values"
-                raise ValueError(err)
-            limits = sizes
-        else:
-            # TODO see notes in corresponding section of categorical method
-            limits = None
+        # Now that we know the minimum and maximum sizes that will get drawn,
+        # we need to map the data values that we have into that range. We will
+        # use a matplotlib Normalize class, which is typically used for numeric
+        # color mapping but works fine here too. It takes data values and maps
+        # them into a [0, 1] interval, potentially nonlinear-ly.
 
         if norm is None:
+            # Default is a linear function between the min and max data values
             norm = mpl.colors.Normalize()
         elif isinstance(norm, tuple):
+            # It is also possible to give different limits in data space
             norm = mpl.colors.Normalize(*norm)
         elif not isinstance(norm, mpl.colors.Normalize):
             err = f"Value for size `norm` parameter not understood: {norm}"
             raise ValueError(err)
         else:
+            # If provided with Normalize object, copy it so we can modify
             norm = copy(norm)
 
-        # Initialize the normalization
+        # Set the mapping so all output values are in [0, 1]
         norm.clip = True
+
+        # If the input range is not set, use the full range of the data
         if not norm.scaled():
             norm(levels)
 
-        # Find size values for each unique data point
-        scaled_levels = norm(levels)
-        lookup_table = dict(zip(levels, scaled_levels))
+        # Map from data values to [0, 1] range
+        sizes_scaled = norm(levels)
 
-        return levels, lookup_table, limits, norm
+        # Now map from the scaled range into the artist units
+        if isinstance(sizes, dict):
+            lookup_table = sizes
+        else:
+            lo, hi = size_range
+            sizes = lo + sizes_scaled * (hi - lo)
+            lookup_table = dict(zip(levels, sizes))
+
+        return levels, lookup_table, norm
 
 
 # =========================================================================== #
