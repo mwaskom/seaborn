@@ -9,6 +9,7 @@ from .._core import (
     SemanticMapping,
     HueMapping,
     SizeMapping,
+    StyleMapping,
     VectorPlotter,
     variable_type,
     infer_orient,
@@ -366,6 +367,80 @@ class TestSizeMapping:
         # Test bad sizes argument
         with pytest.raises(ValueError):
             SizeMapping(p, sizes="bad_size")
+
+
+class TestStyleMapping:
+
+    def test_map_style(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+
+        # Test defaults
+        m = StyleMapping(p, markers=True, dashes=True)
+
+        n = len(m.levels)
+        for key, dashes in zip(m.levels, unique_dashes(n)):
+            assert m(key, "dashes") == dashes
+
+        actual_marker_paths = {
+            k: mpl.markers.MarkerStyle(m(k, "marker")).get_path()
+            for k in m.levels
+        }
+        expected_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(m.levels, unique_markers(n))
+        }
+        assert actual_marker_paths == expected_marker_paths
+
+        # Test lists
+        markers, dashes = ["o", "s", "d"], [(1, 0), (1, 1), (2, 1, 3, 1)]
+        m = StyleMapping(p, markers=markers, dashes=dashes)
+        for key, mark, dash in zip(m.levels, markers, dashes):
+            assert m(key, "marker") == mark
+            assert m(key, "dashes") == dash
+
+        # Test dicts
+        markers = dict(zip(p.plot_data["style"].unique(), markers))
+        dashes = dict(zip(p.plot_data["style"].unique(), dashes))
+        m = StyleMapping(p, markers=markers, dashes=dashes)
+        for key in m.levels:
+            assert m(key, "marker") == markers[key]
+            assert m(key, "dashes") == dashes[key]
+
+        # Test style order with defaults
+        order = p.plot_data["style"].unique()[[1, 2, 0]]
+        m = StyleMapping(p, markers=True, dashes=True, order=order)
+        n = len(order)
+        for key, mark, dash in zip(order, unique_markers(n), unique_dashes(n)):
+            assert m(key, "dashes") == dash
+            assert m(key, "marker") == mark
+            obj = mpl.markers.MarkerStyle(mark)
+            path = obj.get_path().transformed(obj.get_transform())
+            assert_array_equal(m(key, "path").vertices, path.vertices)
+
+        # Test too many levels with style lists
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=["o", "s"], dashes=False)
+
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=False, dashes=[(2, 1)])
+
+        # Test too many levels with style dicts
+        markers, dashes = {"a": "o", "b": "s"}, False
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
+
+        markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
+
+        # Test mixture of filled and unfilled markers
+        markers, dashes = ["o", "x", "s"], None
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
 
 
 class TestVectorPlotter:

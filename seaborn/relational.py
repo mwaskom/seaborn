@@ -9,10 +9,6 @@ import matplotlib.pyplot as plt
 
 from ._core import (
     VectorPlotter,
-    variable_type,
-    unique_dashes,
-    unique_markers,
-    categorical_order,
 )
 from .utils import (
     ci_to_errsize,
@@ -35,25 +31,6 @@ class _RelationalPlotter(VectorPlotter):
 
     # TODO where best to define default parameters?
     sort = True
-
-    def style_to_attributes(self, levels, style, defaults, name):
-        """Convert a style argument to a dict of matplotlib attributes."""
-        if style is True:
-            attrdict = dict(zip(levels, defaults))
-        elif style and isinstance(style, dict):
-            attrdict = style
-        elif style:
-            attrdict = dict(zip(levels, style))
-        else:
-            attrdict = {}
-
-        if attrdict:
-            missing_levels = set(levels) - set(attrdict)
-            if any(missing_levels):
-                err = "These `style` levels are missing {}: {}"
-                raise ValueError(err.format(name, missing_levels))
-
-        return attrdict
 
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
@@ -84,66 +61,6 @@ class _RelationalPlotter(VectorPlotter):
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
-
-    def parse_style(self, data, markers=None, dashes=None, order=None):
-        """Determine the markers and line dashes."""
-
-        if self._empty_data(data):
-
-            levels = [None]
-            dashes = {}
-            markers = {}
-
-        else:
-
-            if order is None:
-                # List comprehension here is required to
-                # overcome differences in the way pandas
-                # coerces numpy datatypes
-                levels = categorical_order(list(data))
-            else:
-                levels = order
-
-            markers = self.style_to_attributes(
-                levels, markers, unique_markers(len(levels)), "markers"
-            )
-
-            dashes = self.style_to_attributes(
-                levels, dashes, unique_dashes(len(levels)), "dashes"
-            )
-
-        paths = {}
-        filled_markers = []
-        for k, m in markers.items():
-            if not isinstance(m, mpl.markers.MarkerStyle):
-                m = mpl.markers.MarkerStyle(m)
-            paths[k] = m.get_path().transformed(m.get_transform())
-            filled_markers.append(m.is_filled())
-
-        # Mixture of filled and unfilled markers will show line art markers
-        # in the edge color, which defaults to white. This can be handled,
-        # but there would be additional complexity with specifying the
-        # weight of the line art markers without overwhelming the filled
-        # ones with the edges. So for now, we will disallow mixtures.
-        if any(filled_markers) and not all(filled_markers):
-            err = "Filled and line art markers cannot be mixed"
-            raise ValueError(err)
-
-        self.style_levels = levels
-        self.dashes = dashes
-        self.markers = markers
-        self.paths = paths
-
-    def _empty_data(self, data):
-        """Test if a series is completely missing."""
-        return data.isnull().all()
-
-    def _semantic_type(self, data):
-        """Determine if data should considered numeric or categorical."""
-        if self.input_format == "wide":
-            return "categorical"
-        else:
-            return variable_type(data, boolean_type="categorical")
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""

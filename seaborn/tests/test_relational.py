@@ -10,11 +10,6 @@ from numpy.testing import assert_array_equal
 
 from ..palettes import color_palette
 
-from .._core import (
-    unique_dashes,
-    unique_markers,
-)
-
 from ..relational import (
     _RelationalPlotter,
     _LinePlotter,
@@ -594,91 +589,12 @@ class TestRelationalPlotter(Helpers):
         )
         assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
-    def test_parse_style(self, long_df):
-
-        p = _RelationalPlotter(
-            data=long_df,
-            variables=dict(x="x", y="y", style="a"),
-        )
-
-        # Test defaults
-        markers, dashes = True, True
-        p.parse_style(p.plot_data["style"], markers, dashes)
-
-        n = len(p.style_levels)
-        assert p.dashes == dict(zip(p.style_levels, unique_dashes(n)))
-
-        actual_marker_paths = {
-            k: mpl.markers.MarkerStyle(m).get_path()
-            for k, m in p.markers.items()
-        }
-        expected_marker_paths = {
-            k: mpl.markers.MarkerStyle(m).get_path()
-            for k, m in zip(p.style_levels, unique_markers(n))
-        }
-        assert actual_marker_paths == expected_marker_paths
-
-        # Test lists
-        markers, dashes = ["o", "s", "d"], [(1, 0), (1, 1), (2, 1, 3, 1)]
-        p.parse_style(p.plot_data["style"], markers, dashes)
-        assert p.markers == dict(zip(p.style_levels, markers))
-        assert p.dashes == dict(zip(p.style_levels, dashes))
-
-        # Test dicts
-        markers = dict(zip(p.style_levels, markers))
-        dashes = dict(zip(p.style_levels, dashes))
-        p.parse_style(p.plot_data["style"], markers, dashes)
-        assert p.markers == markers
-        assert p.dashes == dashes
-
-        # Test style order with defaults
-        style_order = np.take(p.style_levels, [1, 2, 0])
-        markers = dashes = True
-        p.parse_style(p.plot_data["style"], markers, dashes, style_order)
-
-        n = len(style_order)
-        assert p.dashes == dict(zip(style_order, unique_dashes(n)))
-
-        actual_marker_paths = {
-            k: mpl.markers.MarkerStyle(m).get_path()
-            for k, m in p.markers.items()
-        }
-        expected_marker_paths = {
-            k: mpl.markers.MarkerStyle(m).get_path()
-            for k, m in zip(style_order, unique_markers(n))
-        }
-        assert actual_marker_paths == expected_marker_paths
-
-        # Test too many levels with style lists
-        markers, dashes = ["o", "s"], False
-        with pytest.raises(ValueError):
-            p.parse_style(p.plot_data["style"], markers, dashes)
-
-        markers, dashes = False, [(2, 1)]
-        with pytest.raises(ValueError):
-            p.parse_style(p.plot_data["style"], markers, dashes)
-
-        # Test too many levels with style dicts
-        markers, dashes = {"a": "o", "b": "s"}, False
-        with pytest.raises(ValueError):
-            p.parse_style(p.plot_data["style"], markers, dashes)
-
-        markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
-        with pytest.raises(ValueError):
-            p.parse_style(p.plot_data["style"], markers, dashes)
-
-        # Test mixture of filled and unfilled markers
-        markers, dashes = ["o", "x", "s"], None
-        with pytest.raises(ValueError):
-            p.parse_style(p.plot_data["style"], markers, dashes)
-
     def test_subset_data_quantities(self, long_df):
 
         p = _RelationalPlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == 1
 
         # --
@@ -692,7 +608,6 @@ class TestRelationalPlotter(Helpers):
                 data=long_df,
                 variables={"x": "x", "y": "y", semantic: var},
             )
-            p.parse_style(p.plot_data["style"])
 
             assert len(list(p.subset_data())) == n_subsets
 
@@ -705,7 +620,6 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var, style=var),
         )
-        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -717,14 +631,12 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, style=var2),
         )
-        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
         p = _RelationalPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var1),
         )
-        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
         # --
@@ -737,7 +649,6 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var3),
         )
-        p.parse_style(p.plot_data["style"])
         assert len(list(p.subset_data())) == n_subsets
 
     def test_subset_data_keys(self, long_df):
@@ -746,7 +657,6 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
@@ -760,7 +670,6 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var),
         )
-        p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
@@ -770,7 +679,6 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", size=var),
         )
-        p.parse_style(p.plot_data["style"])
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size in long_df[var].values
@@ -780,7 +688,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", style=var),
         )
-        p.parse_style(p.plot_data["style"])
+
         for (hue, size, style), _ in p.subset_data():
             assert hue is None
             assert size is None
@@ -790,7 +698,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var, style=var),
         )
-        p.parse_style(p.plot_data["style"])
+
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var].values
             assert size is None
@@ -804,7 +712,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2),
         )
-        p.parse_style(p.plot_data["style"])
+
         for (hue, size, style), _ in p.subset_data():
             assert hue in long_df[var1].values
             assert size in long_df[var2].values
@@ -816,7 +724,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = True
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]].sort_values(["x", "y"])
@@ -826,7 +734,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = False
         _, data = next(p.subset_data())
         expected = p.plot_data.loc[:, ["x", "y"]]
@@ -836,7 +744,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = True
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
@@ -848,7 +756,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = False
         for (hue, _, _), data in p.subset_data():
             rows = p.plot_data["hue"] == hue
@@ -860,7 +768,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", style="a"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = True
         for (_, _, style), data in p.subset_data():
             rows = p.plot_data["style"] == style
@@ -872,7 +780,7 @@ class TestRelationalPlotter(Helpers):
             data=long_df,
             variables=dict(x="x", y="y", hue="a", size="s"),
         )
-        p.parse_style(p.plot_data["style"])
+
         p.sort = True
         for (hue, size, _), data in p.subset_data():
             rows = (p.plot_data["hue"] == hue) & (p.plot_data["size"] == size)
