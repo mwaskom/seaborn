@@ -174,43 +174,59 @@ class HueMapping(SemanticMapping):
 
     def numeric_mapping(self, data, palette, norm):
         """Determine colors when the hue variable is quantitative."""
-        levels = list(np.sort(remove_na(data.unique())))
 
-        # TODO do we want to do something complicated to ensure contrast
-        # at the extremes of the colormap against the background?
-
-        # Identify the colormap to use
         # Avoid circular import
+        # TODO I think we've decided it's ok for core to import from palettes
         from .palettes import cubehelix_palette, _parse_cubehelix_args
 
-        palette = "ch:" if palette is None else palette
-        if isinstance(palette, mpl.colors.Colormap):
-            cmap = palette
-        elif str(palette).startswith("ch:"):
-            args, kwargs = _parse_cubehelix_args(palette)
-            cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
-        elif isinstance(palette, dict):
+        if isinstance(palette, dict):
+
+            # The presence of a norm object overrides a dictionary of hues
+            # in specifying a numeric mapping, so we need to process it here.
+            levels = list(np.sort(list(palette)))
             colors = [palette[k] for k in sorted(palette)]
             cmap = mpl.colors.ListedColormap(colors)
+            lookup_table = palette.copy()
+
         else:
-            try:
-                cmap = mpl.cm.get_cmap(palette)
-            except (ValueError, TypeError):
-                err = "Palette {} not understood"
+
+            # The levels are the sorted unique values in the data
+            levels = list(np.sort(remove_na(data.unique())))
+
+            # --- Sort out the colormap to use from the palette argument
+
+            # Default numeric palette is our default cubehelix palette
+            # TODO do we want to do something complicated to ensure contrast?
+            palette = "ch:" if palette is None else palette
+
+            if isinstance(palette, mpl.colors.Colormap):
+                cmap = palette
+            elif str(palette).startswith("ch:"):
+                args, kwargs = _parse_cubehelix_args(palette)
+                cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
+            elif isinstance(palette, dict):
+                colors = [palette[k] for k in sorted(palette)]
+                cmap = mpl.colors.ListedColormap(colors)
+            else:
+                try:
+                    cmap = mpl.cm.get_cmap(palette)
+                except (ValueError, TypeError):
+                    err = "Palette {} not understood"
+                    raise ValueError(err)
+
+            # Now sort out the data normalization
+            if norm is None:
+                norm = mpl.colors.Normalize()
+            elif isinstance(norm, tuple):
+                norm = mpl.colors.Normalize(*norm)
+            elif not isinstance(norm, mpl.colors.Normalize):
+                err = "``hue_norm`` must be None, tuple, or Normalize object."
                 raise ValueError(err)
 
-        if norm is None:
-            norm = mpl.colors.Normalize()
-        elif isinstance(norm, tuple):
-            norm = mpl.colors.Normalize(*norm)
-        elif not isinstance(norm, mpl.colors.Normalize):
-            err = "``hue_norm`` must be None, tuple, or Normalize object."
-            raise ValueError(err)
+            if not norm.scaled():
+                norm(np.asarray(data.dropna()))
 
-        if not norm.scaled():
-            norm(np.asarray(data.dropna()))
-
-        lookup_table = dict(zip(levels, cmap(norm(levels))))
+            lookup_table = dict(zip(levels, cmap(norm(levels))))
 
         return levels, lookup_table, norm, cmap
 

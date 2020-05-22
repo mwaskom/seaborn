@@ -63,13 +63,14 @@ class Helpers:
             mpl.colors.hex2color(a) if isinstance(a, str) else a for a in args
         ]
 
-        if isinstance(args[0], tuple):
+        if np.ndim(args[0]) < 2:
             args = [[a] for a in args]
 
         for c1, c2 in zip(*args):
             c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
             c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
             equal &= c1 == c2
+
         return equal
 
     def paths_equal(self, *args):

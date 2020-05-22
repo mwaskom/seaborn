@@ -665,8 +665,9 @@ class _ScatterPlotter(_RelationalPlotter):
             return
 
         # Define the vectors of x and y positions
-        x = data.get(["x"], np.full(len(data), np.nan))
-        y = data.get(["y"], np.full(len(data), np.nan))
+        empty = np.full(len(data), np.nan)
+        x = data.get("x", empty)
+        y = data.get("y", empty)
 
         # Apply the mapping from semantic varibles to artist attributes
         if "hue" in self.variables:
@@ -1423,6 +1424,7 @@ def relplot(
     # Use the full dataset to establish how to draw the semantics
     p = plotter(
         data=data,
+        # TODO replace with get_variables()
         variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
         markers=markers, dashes=dashes, style_order=style_order,
         legend=legend,
