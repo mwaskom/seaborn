@@ -1178,17 +1178,17 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="a"),
-            markers=True,
             legend="full",
         )
+        p.map_style(markers=True)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         markers = [h.get_marker() for h in handles]
         assert labels == ["a"] + p._hue_map.levels
-        assert labels == ["a"] + p.style_levels
+        assert labels == ["a"] + p._style_map.levels
         assert colors == ["w"] + p._hue_map(p._hue_map.levels)
-        assert markers == [""] + [p.markers[l] for l in p.style_levels]
+        assert markers == [""] + p._style_map(p._style_map.levels, "marker")
 
         # --
 
@@ -1196,18 +1196,27 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="b"),
-            markers=True,
             legend="full",
         )
+        p.map_style(markers=True)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         markers = [h.get_marker() for h in handles]
-        expected_colors = (["w"] + p._hue_map(p._hue_map.levels)
-                           + ["w"] + [".2" for _ in p.style_levels])
-        expected_markers = ([""] + ["None" for _ in p._hue_map.levels]
-                            + [""] + [p.markers[l] for l in p.style_levels])
-        assert labels == ["a"] + p._hue_map.levels + ["b"] + p.style_levels
+        expected_labels = (
+            ["a"]
+            + p._hue_map.levels
+            + ["b"] + p._style_map.levels
+        )
+        expected_colors = (
+            ["w"] + p._hue_map(p._hue_map.levels)
+            + ["w"] + [".2" for _ in p._style_map.levels]
+        )
+        expected_markers = (
+            [""] + ["None" for _ in p._hue_map.levels]
+            + [""] + p._style_map(p._style_map.levels, "marker")
+        )
+        assert labels == expected_labels
         assert colors == expected_colors
         assert markers == expected_markers
 
@@ -1367,29 +1376,31 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="a"),
-            markers=True,
         )
+        p.map_style(markers=True)
 
         ax.clear()
         p.plot(ax, {})
-        assert len(ax.lines) == len(p._hue_map.levels) == len(p.style_levels)
+        assert len(ax.lines) == len(p._hue_map.levels)
+        assert len(ax.lines) == len(p._style_map.levels)
         for line, level in zip(ax.lines, p._hue_map.levels):
             assert line.get_color() == p._hue_map(level)
-            assert line.get_marker() == p.markers[level]
+            assert line.get_marker() == p._style_map(level, "marker")
 
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="b"),
-            markers=True,
         )
+        p.map_style(markers=True)
 
         ax.clear()
         p.plot(ax, {})
-        levels = product(p._hue_map.levels, p.style_levels)
-        assert len(ax.lines) == (len(p._hue_map.levels) * len(p.style_levels))
+        levels = product(p._hue_map.levels, p._style_map.levels)
+        expected_line_count = len(p._hue_map.levels) * len(p._style_map.levels)
+        assert len(ax.lines) == expected_line_count
         for line, (hue, style) in zip(ax.lines, levels):
             assert line.get_color() == p._hue_map(hue)
-            assert line.get_marker() == p.markers[style]
+            assert line.get_marker() == p._style_map(style, "marker")
 
         p = _LinePlotter(
             data=long_df,
@@ -1626,7 +1637,7 @@ class TestScatterPlotter(Helpers):
         default_mark = m.get_path().transformed(m.get_transform())
 
         m = mpl.markers.MarkerStyle("")
-        null_mark = m.get_path().transformed(m.get_transform())
+        null = m.get_path().transformed(m.get_transform())
 
         f, ax = plt.subplots()
 
@@ -1660,16 +1671,17 @@ class TestScatterPlotter(Helpers):
         p = _ScatterPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="a"),
-            markers=True,
             legend="full",
         )
+        p.map_style(markers=True)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
         expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
         paths = [h.get_paths()[0] for h in handles]
-        expected_paths = [null_mark] + [p.paths[l] for l in p.style_levels]
-        assert labels == ["a"] + p._hue_map.levels == ["a"] + p.style_levels
+        expected_paths = [null] + p._style_map(p._style_map.levels, "path")
+        assert labels == ["a"] + p._hue_map.levels
+        assert labels == ["a"] + p._style_map.levels
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
@@ -1679,22 +1691,24 @@ class TestScatterPlotter(Helpers):
         p = _ScatterPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="b"),
-            markers=True,
             legend="full",
         )
+        p.map_style(markers=True)
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
         paths = [h.get_paths()[0] for h in handles]
         expected_colors = (
             ["w"] + p._hue_map(p._hue_map.levels)
-            + ["w"] + [".2" for _ in p.style_levels]
+            + ["w"] + [".2" for _ in p._style_map.levels]
         )
         expected_paths = (
-            [null_mark] + [default_mark for _ in p._hue_map.levels]
-            + [null_mark] + [p.paths[l] for l in p.style_levels]
+            [null] + [default_mark for _ in p._hue_map.levels]
+            + [null] + p._style_map(p._style_map.levels, "path")
         )
-        assert labels == ["a"] + p._hue_map.levels + ["b"] + p.style_levels
+        assert labels == (
+            ["a"] + p._hue_map.levels + ["b"] + p._style_map.levels
+        )
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
@@ -1822,8 +1836,8 @@ class TestScatterPlotter(Helpers):
         p = _ScatterPlotter(
             data=long_df,
             variables=dict(x="x", y="y", style="c"),
-            markers=["+", "x"]
         )
+        p.map_style(markers=["+", "x"])
 
         ax.clear()
         color = (1, .3, .8)
@@ -1844,26 +1858,26 @@ class TestScatterPlotter(Helpers):
         p = _ScatterPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="a"),
-            markers=True,
         )
+        p.map_style(markers=True)
 
         ax.clear()
         p.plot(ax, {})
         expected_colors = p._hue_map(p.plot_data["hue"])
-        expected_paths = [p.paths[k] for k in p.plot_data["style"]]
+        expected_paths = p._style_map(p.plot_data["style"], "path")
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
         p = _ScatterPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a", style="b"),
-            markers=True,
         )
+        p.map_style(markers=True)
 
         ax.clear()
         p.plot(ax, {})
         expected_colors = p._hue_map(p.plot_data["hue"])
-        expected_paths = [p.paths[k] for k in p.plot_data["style"]]
+        expected_paths = p._style_map(p.plot_data["style"], "path")
         assert self.colors_equal(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
