@@ -409,7 +409,8 @@ class _LinePlotter(_RelationalPlotter):
     ):
 
         # TODO this is messy, we want the mapping to be agnoistic about
-        # the kind of plot to draw, but too much code assumes that it knows
+        # the kind of plot to draw, but for the time being we need to set
+        # this information so the SizeMapping can use it
         self._default_size_range = (
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
@@ -614,7 +615,8 @@ class _ScatterPlotter(_RelationalPlotter):
     ):
 
         # TODO this is messy, we want the mapping to be agnoistic about
-        # the kind of plot to draw, but too much code assumes that it knows
+        # the kind of plot to draw, but for the time being we need to set
+        # this information so the SizeMapping can use it
         self._default_size_range = (
             np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
         )

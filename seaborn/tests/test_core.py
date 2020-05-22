@@ -8,6 +8,7 @@ from numpy.testing import assert_array_equal
 from .._core import (
     SemanticMapping,
     HueMapping,
+    SizeMapping,
     VectorPlotter,
     variable_type,
     infer_orient,
@@ -286,6 +287,94 @@ class TestHueMapping:
         # Test bad norm argument
         with pytest.raises(ValueError):
             HueMapping(p, norm="not a norm")
+
+
+class TestSizeMapping:
+
+    pass
+
+    def off(self, long_df):
+
+        p = None
+
+        # Test default size limits and range
+        default_limits = p.plot_data["size"].min(), p.plot_data["size"].max()
+        default_range = p._default_size_range
+        p.parse_size(p.plot_data["size"])
+        assert p.size_limits == default_limits
+        size_range = min(p.sizes.values()), max(p.sizes.values())
+        assert size_range == default_range
+
+        # Test specified size limits
+        size_limits = (1, 5)
+        p.parse_size(p.plot_data["size"], norm=size_limits)
+        assert p.size_limits == size_limits
+
+        # Test specified size range
+        sizes = (.1, .5)
+        p.parse_size(p.plot_data["size"], sizes=sizes)
+        assert p.size_limits == default_limits
+
+        # Test size values with normalization range
+        sizes = (1, 5)
+        size_norm = (1, 10)
+        p.parse_size(p.plot_data["size"], sizes=sizes, norm=size_norm)
+        normalize = mpl.colors.Normalize(*size_norm, clip=True)
+        for level, width in p.sizes.items():
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
+
+        # Test size values with normalization object
+        sizes = (1, 5)
+        size_norm = mpl.colors.LogNorm(1, 10, clip=False)
+        p.parse_size(p.plot_data["size"], sizes=sizes, norm=size_norm)
+        assert p.size_norm.clip
+        for level, width in p.sizes.items():
+            assert width == sizes[0] + (sizes[1] - sizes[0]) * size_norm(level)
+
+        # Use a categorical variable
+        var = "a"
+        p = _RelationalPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size=var),
+        )
+
+        # Test specified size order
+        levels = long_df[var].unique()
+        sizes = [1, 4, 6]
+        size_order = [levels[1], levels[2], levels[0]]
+        p.parse_size(p.plot_data["size"], sizes=sizes, order=size_order)
+        assert p.sizes == dict(zip(size_order, sizes))
+
+        # Test list of sizes
+        levels = categorical_order(long_df[var])
+        sizes = list(np.random.rand(len(levels)))
+        p.parse_size(p.plot_data["size"], sizes=sizes)
+        assert p.sizes == dict(zip(levels, sizes))
+
+        # Test dict of sizes
+        sizes = dict(zip(levels, np.random.rand(len(levels))))
+        p.parse_size(p.plot_data["size"], sizes=sizes)
+        assert p.sizes == sizes
+
+        # Test sizes list with wrong length
+        sizes = list(np.random.rand(len(levels) + 1))
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], sizes=sizes)
+
+        # Test sizes dict with missing levels
+        sizes = dict(zip(levels, np.random.rand(len(levels) - 1)))
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], sizes=sizes)
+
+        # Test bad sizes argument
+        sizes = "bad_size"
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], sizes=sizes)
+
+        # Test bad norm argument
+        size_norm = "not a norm"
+        with pytest.raises(ValueError):
+            p.parse_size(p.plot_data["size"], norm=size_norm)
 
 
 class TestVectorPlotter:

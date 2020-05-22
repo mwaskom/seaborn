@@ -58,6 +58,14 @@ class Helpers:
     def colors_equal(self, *args):
 
         equal = True
+
+        args = [
+            mpl.colors.hex2color(a) if isinstance(a, str) else a for a in args
+        ]
+
+        if isinstance(args[0], tuple):
+            args = [[a] for a in args]
+
         for c1, c2 in zip(*args):
             c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
             c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
@@ -1635,6 +1643,20 @@ class TestLinePlotter(Helpers):
         ax = lineplot(data=wide_df, ax=ax1)
         assert ax is ax1
 
+    def test_lineplot_vs_relplot(self, long_df, long_semantics):
+
+        ax = lineplot(data=long_df, **long_semantics)
+        g = relplot(data=long_df, kind="line", **long_semantics)
+
+        lin_lines = ax.lines
+        rel_lines = g.ax.lines
+
+        for l1, l2 in zip(lin_lines, rel_lines):
+            assert_array_equal(l1.get_xydata(), l2.get_xydata())
+            assert self.colors_equal(l1.get_color(), l2.get_color())
+            assert l1.get_linewidth() == l2.get_linewidth()
+            assert l1.get_linestyle() == l2.get_linestyle()
+
     def test_lineplot_smoke(
         self,
         wide_df, wide_array,
@@ -2046,6 +2068,18 @@ class TestScatterPlotter(Helpers):
         lw = 2
         scatterplot(data=long_df, x="x", y="y", linewidth=lw)
         assert ax.collections[0].get_linewidths().item() == lw
+
+    def test_scatterplot_vs_relplot(self, long_df, long_semantics):
+
+        ax = scatterplot(data=long_df, **long_semantics)
+        g = relplot(data=long_df, kind="scatter", **long_semantics)
+
+        for s_pts, r_pts in zip(ax.collections, g.ax.collections):
+
+            assert_array_equal(s_pts.get_offsets(), r_pts.get_offsets())
+            assert_array_equal(s_pts.get_sizes(), r_pts.get_sizes())
+            assert_array_equal(s_pts.get_facecolors(), r_pts.get_facecolors())
+            assert self.paths_equal(s_pts.get_paths(), r_pts.get_paths())
 
     def test_scatterplot_smoke(
         self,
