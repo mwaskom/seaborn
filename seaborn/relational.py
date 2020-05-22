@@ -16,7 +16,6 @@ from ._core import (
 )
 from .utils import (
     ci_to_errsize,
-    remove_na,
     locator_to_legend_entries,
     ci as ci_func
 )
@@ -85,107 +84,6 @@ class _RelationalPlotter(VectorPlotter):
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
-
-    def parse_size(self, data, sizes=None, order=None, norm=None):
-        """Determine the linewidths given data characteristics."""
-
-        # TODO could break out two options like parse_hue does for clarity
-
-        if self._empty_data(data):
-            levels = [None]
-            limits = None
-            norm = None
-            sizes = {}
-            var_type = None
-            width_range = None
-
-        else:
-
-            var_type = self._semantic_type(data)
-
-            # Override depending on the type of the sizes argument
-            if norm is not None:
-                var_type = "numeric"
-            elif isinstance(sizes, (dict, list)):
-                var_type = "categorical"
-
-            if var_type == "categorical":
-                levels = categorical_order(data, order)
-                numbers = np.arange(1, 1 + len(levels))[::-1]
-
-            elif var_type == "numeric":
-                data = pd.to_numeric(data)
-                levels = numbers = np.sort(remove_na(data.unique()))
-
-            if isinstance(sizes, (dict, list)):
-
-                # Use literal size values
-                if isinstance(sizes, list):
-                    if len(sizes) != len(levels):
-                        err = "The `sizes` list has wrong number of levels"
-                        raise ValueError(err)
-                    sizes = dict(zip(levels, sizes))
-
-                missing = set(levels) - set(sizes)
-                if any(missing):
-                    err = "Missing sizes for the following levels: {}"
-                    raise ValueError(err.format(missing))
-
-                width_range = min(sizes.values()), max(sizes.values())
-                try:
-                    limits = min(sizes.keys()), max(sizes.keys())
-                except TypeError:
-                    limits = None
-
-            else:
-
-                # Infer the range of sizes to use
-                if sizes is None:
-                    min_width, max_width = self._default_size_limits
-                else:
-                    try:
-                        min_width, max_width = sizes
-                    except (TypeError, ValueError):
-                        err = "sizes argument {} not understood".format(sizes)
-                        raise ValueError(err)
-                width_range = min_width, max_width
-
-                if norm is None:
-                    norm = mpl.colors.Normalize()
-                elif isinstance(norm, tuple):
-                    norm = mpl.colors.Normalize(*norm)
-                elif not isinstance(norm, mpl.colors.Normalize):
-                    err = ("``size_norm`` must be None, tuple, "
-                           "or Normalize object.")
-                    raise ValueError(err)
-
-                norm.clip = True
-                if not norm.scaled():
-                    norm(np.asarray(numbers))
-                limits = norm.vmin, norm.vmax
-
-                scl = norm(numbers)
-                widths = np.asarray(min_width + scl * (max_width - min_width))
-                if scl.mask.any():
-                    widths[scl.mask] = 0
-                sizes = dict(zip(levels, widths))
-                # sizes = {l: min_width + norm(n) * (max_width - min_width)
-                #          for l, n in zip(levels, numbers)}
-
-            if var_type == "categorical":
-                # Don't keep a reference to the norm, which will avoid
-                # downstream  code from switching to numerical interpretation
-                norm = None
-
-        self.sizes = sizes
-        self.size_type = var_type
-        self.size_levels = levels
-        self.size_norm = norm
-        self.size_limits = limits
-        self.size_range = width_range
-
-        # Update data as it may have changed dtype
-        self.plot_data["size"] = data
 
     def parse_style(self, data, markers=None, dashes=None, order=None):
         """Determine the markers and line dashes."""

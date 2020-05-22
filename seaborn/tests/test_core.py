@@ -24,8 +24,8 @@ class TestSemanticMapping:
 
     def test_call_lookup(self):
 
+        m = SemanticMapping(VectorPlotter())
         lookup_table = dict(zip("abc", (1, 2, 3)))
-        m = SemanticMapping()
         m.lookup_table = lookup_table
         for key, val in lookup_table.items():
             assert m(key) == val
@@ -291,90 +291,81 @@ class TestHueMapping:
 
 class TestSizeMapping:
 
-    pass
+    def test_map_size_numeric(self, long_df):
 
-    def off(self, long_df):
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="s"),
+        )
 
-        p = None
+        # Test default range of keys in the lookup table values
+        m = SizeMapping(p)
+        size_values = m.lookup_table.values()
+        value_range = min(size_values), max(size_values)
+        assert value_range == p._default_size_range
 
-        # Test default size limits and range
-        default_limits = p.plot_data["size"].min(), p.plot_data["size"].max()
-        default_range = p._default_size_range
-        p.parse_size(p.plot_data["size"])
-        assert p.size_limits == default_limits
-        size_range = min(p.sizes.values()), max(p.sizes.values())
-        assert size_range == default_range
-
-        # Test specified size limits
-        size_limits = (1, 5)
-        p.parse_size(p.plot_data["size"], norm=size_limits)
-        assert p.size_limits == size_limits
-
-        # Test specified size range
-        sizes = (.1, .5)
-        p.parse_size(p.plot_data["size"], sizes=sizes)
-        assert p.size_limits == default_limits
+        # Test specified range of size values
+        sizes = 1, 5
+        m = SizeMapping(p, sizes=sizes)
+        size_values = m.lookup_table.values()
+        assert min(size_values), max(size_values) == sizes
 
         # Test size values with normalization range
-        sizes = (1, 5)
-        size_norm = (1, 10)
-        p.parse_size(p.plot_data["size"], sizes=sizes, norm=size_norm)
-        normalize = mpl.colors.Normalize(*size_norm, clip=True)
-        for level, width in p.sizes.items():
-            assert width == sizes[0] + (sizes[1] - sizes[0]) * normalize(level)
+        norm = 1, 10
+        m = SizeMapping(p, sizes=sizes, norm=norm)
+        normalize = mpl.colors.Normalize(*norm, clip=True)
+        for key, val in m.lookup_table.items():
+            assert val == sizes[0] + (sizes[1] - sizes[0]) * normalize(key)
 
         # Test size values with normalization object
-        sizes = (1, 5)
-        size_norm = mpl.colors.LogNorm(1, 10, clip=False)
-        p.parse_size(p.plot_data["size"], sizes=sizes, norm=size_norm)
-        assert p.size_norm.clip
-        for level, width in p.sizes.items():
-            assert width == sizes[0] + (sizes[1] - sizes[0]) * size_norm(level)
+        norm = mpl.colors.LogNorm(1, 10, clip=False)
+        m = SizeMapping(p, sizes=sizes, norm=norm)
+        assert m.norm.clip
+        for key, val in m.lookup_table.items():
+            assert val == sizes[0] + (sizes[1] - sizes[0]) * norm(key)
 
-        # Use a categorical variable
-        var = "a"
-        p = _RelationalPlotter(
+        # Test bad norm argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, norm="bad_norm")
+
+    def test_map_size_categorical(self, long_df):
+
+        p = VectorPlotter(
             data=long_df,
-            variables=dict(x="x", y="y", size=var),
+            variables=dict(x="x", y="y", size="a"),
         )
 
         # Test specified size order
-        levels = long_df[var].unique()
+        levels = p.plot_data["size"].unique()
         sizes = [1, 4, 6]
-        size_order = [levels[1], levels[2], levels[0]]
-        p.parse_size(p.plot_data["size"], sizes=sizes, order=size_order)
-        assert p.sizes == dict(zip(size_order, sizes))
+        order = [levels[1], levels[2], levels[0]]
+        m = SizeMapping(p, sizes=sizes, order=order)
+        assert m.lookup_table == dict(zip(order, sizes))
 
         # Test list of sizes
-        levels = categorical_order(long_df[var])
+        order = categorical_order(p.plot_data["size"])
         sizes = list(np.random.rand(len(levels)))
-        p.parse_size(p.plot_data["size"], sizes=sizes)
-        assert p.sizes == dict(zip(levels, sizes))
+        m = SizeMapping(p, sizes=sizes)
+        assert m.lookup_table == dict(zip(order, sizes))
 
         # Test dict of sizes
         sizes = dict(zip(levels, np.random.rand(len(levels))))
-        p.parse_size(p.plot_data["size"], sizes=sizes)
-        assert p.sizes == sizes
+        m = SizeMapping(p, sizes=sizes)
+        assert m.lookup_table == sizes
 
         # Test sizes list with wrong length
         sizes = list(np.random.rand(len(levels) + 1))
         with pytest.raises(ValueError):
-            p.parse_size(p.plot_data["size"], sizes=sizes)
+            SizeMapping(p, sizes=sizes)
 
         # Test sizes dict with missing levels
         sizes = dict(zip(levels, np.random.rand(len(levels) - 1)))
         with pytest.raises(ValueError):
-            p.parse_size(p.plot_data["size"], sizes=sizes)
+            SizeMapping(p, sizes=sizes)
 
         # Test bad sizes argument
-        sizes = "bad_size"
         with pytest.raises(ValueError):
-            p.parse_size(p.plot_data["size"], sizes=sizes)
-
-        # Test bad norm argument
-        size_norm = "not a norm"
-        with pytest.raises(ValueError):
-            p.parse_size(p.plot_data["size"], norm=size_norm)
+            SizeMapping(p, sizes="bad_size")
 
 
 class TestVectorPlotter:

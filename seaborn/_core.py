@@ -341,6 +341,11 @@ class SizeMapping(SemanticMapping):
                     err = "A `sizes` tuple must have only 2 values"
                     raise ValueError(err)
 
+            elif sizes is not None:
+
+                err = f"Value for `sizes` not understood: {sizes}"
+                raise ValueError(err)
+
             else:
 
                 # Otherwise, we need to get the min, max size values from
@@ -458,6 +463,8 @@ class VectorPlotter:
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
+
+    _default_size_range = 1, 2  # Unused but needed in tests
 
     def __init__(self, data=None, variables={}):
 
