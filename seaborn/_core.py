@@ -43,13 +43,13 @@ class SemanticMapping:
         value = self.lookup_table[key]
         return value
 
-    def __call__(self, data):
+    def __call__(self, data, *args, **kwargs):
 
         if isinstance(data, (list, np.ndarray, pd.Series)):
             # TODO need to debug why data.map(self.lookup_table) doesn't work
-            return [self._lookup_single(key) for key in data]
+            return [self._lookup_single(key, *args, **kwargs) for key in data]
         else:
-            return self._lookup_single(data)
+            return self._lookup_single(data, *args, **kwargs)
 
 
 @share_init_params_with_map
@@ -446,6 +446,104 @@ class SizeMapping(SemanticMapping):
             lookup_table = dict(zip(levels, sizes))
 
         return levels, lookup_table, norm
+
+
+@share_init_params_with_map
+class StyleMapping(SemanticMapping):
+
+    # Default attributes (TODO use data class?)
+    # TODO define shared defaults on base class?
+    # TODO Add docs for what these are (maybe on the base class?)
+    map_type = None
+    levels = [None]  # TODO better if just None, but then subset_data fails
+    lookup_table = {}
+
+    def __init__(
+        self, plotter, order=None, markers=None, dashes=None,
+    ):
+
+        super().__init__(plotter)
+
+        data = plotter.plot_data["style"]
+
+        if data.notna().any():
+
+            # Find ordered unique values
+            # Cast to list to handle numpy/pandas datetime quirks
+            levels = categorical_order(list(data), order)
+
+            markers = self._map_attributes(
+                markers, levels, unique_markers(len(levels)), "markers",
+            )
+            dashes = self._map_attributes(
+                dashes, levels, unique_dashes(len(levels)), "dashes",
+            )
+        else:
+
+            levels = [None]
+            markers = {}
+            dashes = {}
+
+        # Build the paths matplotlib will use to draw the markers
+        paths = {}
+        filled_markers = []
+        for k, m in markers.items():
+            if not isinstance(m, mpl.markers.MarkerStyle):
+                m = mpl.markers.MarkerStyle(m)
+            paths[k] = m.get_path().transformed(m.get_transform())
+            filled_markers.append(m.is_filled())
+
+        # Mixture of filled and unfilled markers will show line art markers
+        # in the edge color, which defaults to white. This can be handled,
+        # but there would be additional complexity with specifying the
+        # weight of the line art markers without overwhelming the filled
+        # ones with the edges. So for now, we will disallow mixtures.
+        if any(filled_markers) and not all(filled_markers):
+            err = "Filled and line art markers cannot be mixed"
+            raise ValueError(err)
+
+        lookup_table = {
+            key: {
+                "marker": markers.get(key, None),
+                "paths": paths.get(key, None),
+                "dashes": dashes.get(key, None),
+            }
+            for key in levels
+        }
+
+        self.levels = levels
+        self.lookup_table = lookup_table
+
+    def _lookup_single(self, key, attr=None):
+
+        if attr is None:
+            value = self.lookup_table[key]
+        else:
+            value = self.lookup_table[key][attr]
+        return value
+
+    def _map_attributes(self, arg, levels, defaults, attr):
+        """Handle the specification for a given style attribute."""
+        if arg is True:
+            lookup_table = dict(zip(levels, defaults))
+        elif isinstance(arg, dict):
+            missing = set(levels) - set(arg)
+            if missing:
+                err = f"These `{attr}` levels are missing values: {missing}"
+                raise ValueError(err)
+            lookup_table = arg
+        elif isinstance(arg, Sequence):
+            if len(levels) != len(arg):
+                err = f"The `{attr}` argument has the wrong number of values"
+                raise ValueError(err)
+            lookup_table = dict(zip(levels, arg))
+        elif arg:
+            err = f"This `{attr}` argument was not understood: {arg}"
+            raise ValueError(err)
+        else:
+            lookup_table = {}
+
+        return lookup_table
 
 
 # =========================================================================== #
