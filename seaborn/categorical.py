@@ -1,5 +1,5 @@
 from textwrap import dedent
-
+import numbers
 import colorsys
 import numpy as np
 from scipy import stats
@@ -1832,7 +1832,9 @@ class _LVPlotter(_CategoricalPlotter):
         self.dodge = dodge
         self.saturation = saturation
 
-        if k_depth not in ('proportion', 'tukey', 'trustworthy'):
+        if k_depth not in ('proportion', 'tukey', 'trustworthy') and (
+            not isinstance(k_depth, numbers.Number)
+        ):
             raise ValueError(f'k_depth "{k_depth}" not recognized')
         self.k_depth = k_depth
 
