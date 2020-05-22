@@ -37,29 +37,6 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    def color_lookup(self, key):
-        """Return the color corresponding to the hue level."""
-        # TODO move all of this logic into the HueMapping
-        try:
-            return self._hue_map(key)
-        except KeyError:
-            normed = self._hue_map.norm(key)
-            if np.ma.is_masked(normed):
-                normed = np.nan
-            return self._hue_map.cmap(normed)
-
-    def size_lookup(self, key):
-        """Return the size corresponding to the size level."""
-        # TODO move all of this logic into the SizeMapping
-        try:
-            return self._size_map(key)
-        except KeyError:
-            norm = self._size_map.norm
-            val = norm(key)
-            if np.ma.is_masked(val):
-                return 0
-            return val
-
     def style_to_attributes(self, levels, style, defaults, name):
         """Convert a style argument to a dict of matplotlib attributes."""
         if style is True:
@@ -321,7 +298,7 @@ class _RelationalPlotter(VectorPlotter):
         # Add the hue semantic labels
         for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
-                color = self.color_lookup(level)
+                color = self._hue_map(level)
                 update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
@@ -348,7 +325,7 @@ class _RelationalPlotter(VectorPlotter):
         # Add the size semantic labels
         for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
-                size = self.size_lookup(level)
+                size = self._size_map(level)
                 update(
                     self.variables["size"],
                     formatted_level,

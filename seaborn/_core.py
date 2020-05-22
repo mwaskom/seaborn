@@ -41,9 +41,6 @@ class SemanticMapping:
     def _lookup_single(self, key):
 
         value = self.lookup_table[key]
-
-        # TODO implement norm-based interpolation here?
-
         return value
 
     def __call__(self, data):
@@ -128,6 +125,17 @@ class HueMapping(SemanticMapping):
             self.limits = limits  # TODO do we need this
             self.norm = norm
             self.cmap = cmap
+
+    def _lookup_single(self, key):
+
+        try:
+            value = self.lookup_table[key]
+        except KeyError:
+            normed = self.norm(key)
+            if np.ma.is_masked(normed):
+                normed = np.nan
+            value = self.cmap(normed)
+        return value
 
     def categorical_mapping(self, data, palette, order):
         """Determine colors when the hue mapping is categorical."""
@@ -288,6 +296,19 @@ class SizeMapping(SemanticMapping):
             self.norm = norm
             self.sizes = sizes
             self.lookup_table = lookup_table
+
+    def _lookup_single(self, key):
+
+        try:
+            value = self.lookup_table[key]
+        except KeyError:
+            normed = self.norm(key)
+            if np.ma.is_masked(normed):
+                normed = np.nan
+            size_values = self.lookup_table.values()
+            size_range = min(size_values), max(size_values)
+            value = size_range[0] + normed * np.ptp(size_range)
+        return value
 
     def categorical_mapping(self, data, sizes, order):
 
