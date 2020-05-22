@@ -292,6 +292,48 @@ class TestHueMapping:
 
 class TestSizeMapping:
 
+    def test_init_from_map(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a")
+        )
+        sizes = 1, 6
+        p = SizeMapping.map(p_orig, sizes=sizes)
+        assert p is p_orig
+        assert isinstance(p._size_map, SizeMapping)
+        assert min(p._size_map.lookup_table.values()) == sizes[0]
+        assert max(p._size_map.lookup_table.values()) == sizes[1]
+
+    def test_plotter_default_init(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._size_map, SizeMapping)
+        assert p._size_map.map_type is None
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a"),
+        )
+        assert isinstance(p._size_map, SizeMapping)
+        assert p._size_map.map_type == p.var_types["size"]
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a"),
+        )
+        sizes = [1, 4, 2]
+        size_order = ["b", "a", "c"]
+        p = p_orig.map_size(sizes=sizes, order=size_order)
+        assert p is p_orig
+        assert p._size_map.lookup_table == dict(zip(size_order, sizes))
+        assert p._size_map.levels == size_order
+
     def test_map_size_numeric(self, long_df):
 
         p = VectorPlotter(
@@ -370,6 +412,45 @@ class TestSizeMapping:
 
 
 class TestStyleMapping:
+
+    def test_init_from_map(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a")
+        )
+        markers = ["s", "p", "h"]
+        p = StyleMapping.map(p_orig, markers=markers)
+        assert p is p_orig
+        assert isinstance(p._style_map, StyleMapping)
+        assert p._style_map(p._style_map.levels, "marker") == markers
+
+    def test_plotter_default_init(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._style_map, StyleMapping)
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+        assert isinstance(p._style_map, StyleMapping)
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+        markers = ["s", "p", "h"]
+        style_order = ["b", "a", "c"]
+        p = p_orig.map_style(markers=markers, order=style_order)
+        assert p is p_orig
+        assert p._style_map.levels == style_order
+        assert p._style_map(style_order, "marker") == markers
 
     def test_map_style(self, long_df):
 
