@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import warnings
 from distutils.version import LooseVersion
 
+from ._core import variable_type, infer_orient, categorical_order
 from . import utils
-from .core import variable_type, infer_orient
-from .utils import iqr, categorical_order, remove_na
+from .utils import remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -947,7 +947,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         """Draw boxplot information at center of the density."""
         # Compute the boxplot statistics
         q25, q50, q75 = np.percentile(data, [25, 50, 75])
-        whisker_lim = 1.5 * iqr(data)
+        whisker_lim = 1.5 * stats.iqr(data)
         h1 = np.min(data[data >= (q25 - whisker_lim)])
         h2 = np.max(data[data <= (q75 + whisker_lim)])
 

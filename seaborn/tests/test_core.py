@@ -5,21 +5,550 @@ import matplotlib as mpl
 import pytest
 from numpy.testing import assert_array_equal
 
-from ..core import (
-    _VectorPlotter,
+from .._core import (
+    SemanticMapping,
+    HueMapping,
+    SizeMapping,
+    StyleMapping,
+    VectorPlotter,
     variable_type,
     infer_orient,
     unique_dashes,
     unique_markers,
+    categorical_order,
 )
+
+from ..palettes import color_palette
+
+
+class TestSemanticMapping:
+
+    def test_call_lookup(self):
+
+        m = SemanticMapping(VectorPlotter())
+        lookup_table = dict(zip("abc", (1, 2, 3)))
+        m.lookup_table = lookup_table
+        for key, val in lookup_table.items():
+            assert m(key) == val
+
+
+class TestHueMapping:
+
+    def test_init_from_map(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a")
+        )
+        palette = "Set2"
+        p = HueMapping.map(p_orig, palette=palette)
+        assert p is p_orig
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.palette == palette
+
+    def test_plotter_default_init(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.map_type is None
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
+        assert isinstance(p._hue_map, HueMapping)
+        assert p._hue_map.map_type == p.var_types["hue"]
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
+        palette = "muted"
+        hue_order = ["b", "a", "c"]
+        p = p_orig.map_hue(palette=palette, order=hue_order)
+        assert p is p_orig
+        assert p._hue_map.palette == palette
+        assert p._hue_map.levels == hue_order
+
+    def test_hue_map_null(self, long_df, null_series):
+
+        p = VectorPlotter(variables=dict(hue=null_series))
+        m = HueMapping(p)
+        assert m.levels is None
+        assert m.map_type is None
+        assert m.palette is None
+        assert m.cmap is None
+        assert m.norm is None
+        assert m.lookup_table is None
+
+    def test_hue_map_categorical(self, wide_df, long_df):
+
+        p = VectorPlotter(data=wide_df)
+        m = HueMapping(p)
+        assert m.levels == wide_df.columns.tolist()
+        assert m.map_type == "categorical"
+        assert m.cmap is None
+
+        # Test named palette
+        palette = "Blues"
+        expected_colors = color_palette(palette, wide_df.shape[1])
+        expected_lookup_table = dict(zip(wide_df.columns, expected_colors))
+        m = HueMapping(p, palette=palette)
+        assert m.palette == "Blues"
+        assert m.lookup_table == expected_lookup_table
+
+        # Test list palette
+        palette = color_palette("Reds", wide_df.shape[1])
+        expected_lookup_table = dict(zip(wide_df.columns, palette))
+        m = HueMapping(p, palette=palette)
+        assert m.palette == palette
+        assert m.lookup_table == expected_lookup_table
+
+        # Test dict palette
+        colors = color_palette("Set1", 8)
+        palette = dict(zip(wide_df.columns, colors))
+        m = HueMapping(p, palette=palette)
+        assert m.palette == palette
+        assert m.lookup_table == palette
+
+        # Test dict with missing keys
+        palette = dict(zip(wide_df.columns[:-1], colors))
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test dict with missing keys
+        palette = dict(zip(wide_df.columns[:-1], colors))
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test list with wrong number of colors
+        palette = colors[:-1]
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test hue order
+        hue_order = ["a", "c", "d"]
+        m = HueMapping(p, order=hue_order)
+        assert m.levels == hue_order
+
+        # Test long data
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="a"))
+        m = HueMapping(p)
+        assert m.levels == categorical_order(long_df["a"])
+        assert m.map_type == "categorical"
+        assert m.cmap is None
+
+        # Test default palette
+        m = HueMapping(p)
+        hue_levels = categorical_order(long_df["a"])
+        expected_colors = color_palette(n_colors=len(hue_levels))
+        expected_lookup_table = dict(zip(hue_levels, expected_colors))
+        assert m.lookup_table == expected_lookup_table
+
+        # Test default palette with many levels
+        x = y = np.arange(26)
+        hue = pd.Series(list("abcdefghijklmnopqrstuvwxyz"))
+        p = VectorPlotter(variables=dict(x=x, y=y, hue=hue))
+        m = HueMapping(p)
+        expected_colors = color_palette("husl", n_colors=len(hue))
+        expected_lookup_table = dict(zip(hue, expected_colors))
+        assert m.lookup_table == expected_lookup_table
+
+        # Test binary data
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="c"))
+        m = HueMapping(p)
+        assert m.levels == [0, 1]
+        assert m.map_type == "categorical"
+
+        for val in [0, 1]:
+            p = VectorPlotter(
+                data=long_df[long_df["c"] == val],
+                variables=dict(x="x", y="y", hue="c"),
+            )
+            m = HueMapping(p)
+            assert m.levels == [val]
+            assert m.map_type == "categorical"
+
+        # Test Timestamp data
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
+        m = HueMapping(p)
+        assert m.levels == [pd.Timestamp('2005-02-25')]
+        assert m.map_type == "datetime"
+
+        # Test numeric data with category type
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="s_cat")
+        )
+        m = HueMapping(p)
+        assert m.levels == categorical_order(long_df["s_cat"])
+        assert m.map_type == "categorical"
+        assert m.cmap is None
+
+        # Test categorical palette specified for numeric data
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="s")
+        )
+        palette = "deep"
+        levels = categorical_order(long_df["s"])
+        expected_colors = color_palette(palette, n_colors=len(levels))
+        expected_lookup_table = dict(zip(levels, expected_colors))
+        m = HueMapping(p, palette=palette)
+        assert m.lookup_table == expected_lookup_table
+        assert m.map_type == "categorical"
+
+    def test_hue_map_numeric(self, long_df):
+
+        # Test default colormap
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="s")
+        )
+        hue_levels = list(np.sort(long_df["s"].unique()))
+        m = HueMapping(p)
+        assert m.levels == hue_levels
+        assert m.map_type == "numeric"
+        assert m.cmap.name == "seaborn_cubehelix"
+
+        # Test named colormap
+        palette = "Purples"
+        m = HueMapping(p, palette=palette)
+        assert m.cmap is mpl.cm.get_cmap(palette)
+
+        # Test colormap object
+        palette = mpl.cm.get_cmap("Greens")
+        m = HueMapping(p, palette=palette)
+        assert m.cmap is mpl.cm.get_cmap(palette)
+
+        # Test cubehelix shorthand
+        palette = "ch:2,0,light=.2"
+        m = HueMapping(p, palette=palette)
+        assert isinstance(m.cmap, mpl.colors.ListedColormap)
+
+        # Test specified hue limits
+        hue_norm = 1, 4
+        m = HueMapping(p, norm=hue_norm)
+        assert isinstance(m.norm, mpl.colors.Normalize)
+        assert m.norm.vmin == hue_norm[0]
+        assert m.norm.vmax == hue_norm[1]
+
+        # Test Normalize object
+        hue_norm = mpl.colors.PowerNorm(2, vmin=1, vmax=10)
+        m = HueMapping(p, norm=hue_norm)
+        assert m.norm is hue_norm
+
+        # Test default colormap values
+        hmin, hmax = p.plot_data["hue"].min(), p.plot_data["hue"].max()
+        m = HueMapping(p)
+        assert m.lookup_table[hmin] == pytest.approx(m.cmap(0.0))
+        assert m.lookup_table[hmax] == pytest.approx(m.cmap(1.0))
+
+        # Test specified colormap values
+        hue_norm = hmin - 1, hmax - 1
+        m = HueMapping(p, norm=hue_norm)
+        norm_min = (hmin - hue_norm[0]) / (hue_norm[1] - hue_norm[0])
+        assert m.lookup_table[hmin] == pytest.approx(m.cmap(norm_min))
+        assert m.lookup_table[hmax] == pytest.approx(m.cmap(1.0))
+
+        # Test list of colors
+        hue_levels = list(np.sort(long_df["s"].unique()))
+        palette = color_palette("Blues", len(hue_levels))
+        m = HueMapping(p, palette=palette)
+        assert m.lookup_table == dict(zip(hue_levels, palette))
+
+        palette = color_palette("Blues", len(hue_levels) + 1)
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test dictionary of colors
+        palette = dict(zip(hue_levels, color_palette("Reds")))
+        m = HueMapping(p, palette=palette)
+        assert m.lookup_table == palette
+
+        palette.pop(hue_levels[0])
+        with pytest.raises(ValueError):
+            HueMapping(p, palette=palette)
+
+        # Test invalid palette
+        with pytest.raises(ValueError):
+            HueMapping(p, palette="not a valid palette")
+
+        # Test bad norm argument
+        with pytest.raises(ValueError):
+            HueMapping(p, norm="not a norm")
+
+
+class TestSizeMapping:
+
+    def test_init_from_map(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a")
+        )
+        sizes = 1, 6
+        p = SizeMapping.map(p_orig, sizes=sizes)
+        assert p is p_orig
+        assert isinstance(p._size_map, SizeMapping)
+        assert min(p._size_map.lookup_table.values()) == sizes[0]
+        assert max(p._size_map.lookup_table.values()) == sizes[1]
+
+    def test_plotter_default_init(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._size_map, SizeMapping)
+        assert p._size_map.map_type is None
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a"),
+        )
+        assert isinstance(p._size_map, SizeMapping)
+        assert p._size_map.map_type == p.var_types["size"]
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a"),
+        )
+        sizes = [1, 4, 2]
+        size_order = ["b", "a", "c"]
+        p = p_orig.map_size(sizes=sizes, order=size_order)
+        assert p is p_orig
+        assert p._size_map.lookup_table == dict(zip(size_order, sizes))
+        assert p._size_map.levels == size_order
+
+    def test_size_map_null(self, long_df, null_series):
+
+        p = VectorPlotter(variables=dict(size=null_series))
+        m = HueMapping(p)
+        assert m.levels is None
+        assert m.map_type is None
+        assert m.norm is None
+        assert m.lookup_table is None
+
+    def test_map_size_numeric(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="s"),
+        )
+
+        # Test default range of keys in the lookup table values
+        m = SizeMapping(p)
+        size_values = m.lookup_table.values()
+        value_range = min(size_values), max(size_values)
+        assert value_range == p._default_size_range
+
+        # Test specified range of size values
+        sizes = 1, 5
+        m = SizeMapping(p, sizes=sizes)
+        size_values = m.lookup_table.values()
+        assert min(size_values), max(size_values) == sizes
+
+        # Test size values with normalization range
+        norm = 1, 10
+        m = SizeMapping(p, sizes=sizes, norm=norm)
+        normalize = mpl.colors.Normalize(*norm, clip=True)
+        for key, val in m.lookup_table.items():
+            assert val == sizes[0] + (sizes[1] - sizes[0]) * normalize(key)
+
+        # Test size values with normalization object
+        norm = mpl.colors.LogNorm(1, 10, clip=False)
+        m = SizeMapping(p, sizes=sizes, norm=norm)
+        assert m.norm.clip
+        for key, val in m.lookup_table.items():
+            assert val == sizes[0] + (sizes[1] - sizes[0]) * norm(key)
+
+        # Test bad sizes argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes="bad_sizes")
+
+        # Test bad sizes argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes=(1, 2, 3))
+
+        # Test bad norm argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, norm="bad_norm")
+
+    def test_map_size_categorical(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="a"),
+        )
+
+        # Test specified size order
+        levels = p.plot_data["size"].unique()
+        sizes = [1, 4, 6]
+        order = [levels[1], levels[2], levels[0]]
+        m = SizeMapping(p, sizes=sizes, order=order)
+        assert m.lookup_table == dict(zip(order, sizes))
+
+        # Test list of sizes
+        order = categorical_order(p.plot_data["size"])
+        sizes = list(np.random.rand(len(levels)))
+        m = SizeMapping(p, sizes=sizes)
+        assert m.lookup_table == dict(zip(order, sizes))
+
+        # Test dict of sizes
+        sizes = dict(zip(levels, np.random.rand(len(levels))))
+        m = SizeMapping(p, sizes=sizes)
+        assert m.lookup_table == sizes
+
+        # Test sizes list with wrong length
+        sizes = list(np.random.rand(len(levels) + 1))
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes=sizes)
+
+        # Test sizes dict with missing levels
+        sizes = dict(zip(levels, np.random.rand(len(levels) - 1)))
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes=sizes)
+
+        # Test bad sizes argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes="bad_size")
+
+
+class TestStyleMapping:
+
+    def test_init_from_map(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a")
+        )
+        markers = ["s", "p", "h"]
+        p = StyleMapping.map(p_orig, markers=markers)
+        assert p is p_orig
+        assert isinstance(p._style_map, StyleMapping)
+        assert p._style_map(p._style_map.levels, "marker") == markers
+
+    def test_plotter_default_init(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        assert isinstance(p._style_map, StyleMapping)
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+        assert isinstance(p._style_map, StyleMapping)
+
+    def test_plotter_reinit(self, long_df):
+
+        p_orig = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+        markers = ["s", "p", "h"]
+        style_order = ["b", "a", "c"]
+        p = p_orig.map_style(markers=markers, order=style_order)
+        assert p is p_orig
+        assert p._style_map.levels == style_order
+        assert p._style_map(style_order, "marker") == markers
+
+    def test_style_map_null(self, long_df, null_series):
+
+        p = VectorPlotter(variables=dict(style=null_series))
+        m = HueMapping(p)
+        assert m.levels is None
+        assert m.map_type is None
+        assert m.lookup_table is None
+
+    def test_map_style(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", style="a"),
+        )
+
+        # Test defaults
+        m = StyleMapping(p, markers=True, dashes=True)
+
+        n = len(m.levels)
+        for key, dashes in zip(m.levels, unique_dashes(n)):
+            assert m(key, "dashes") == dashes
+
+        actual_marker_paths = {
+            k: mpl.markers.MarkerStyle(m(k, "marker")).get_path()
+            for k in m.levels
+        }
+        expected_marker_paths = {
+            k: mpl.markers.MarkerStyle(m).get_path()
+            for k, m in zip(m.levels, unique_markers(n))
+        }
+        assert actual_marker_paths == expected_marker_paths
+
+        # Test lists
+        markers, dashes = ["o", "s", "d"], [(1, 0), (1, 1), (2, 1, 3, 1)]
+        m = StyleMapping(p, markers=markers, dashes=dashes)
+        for key, mark, dash in zip(m.levels, markers, dashes):
+            assert m(key, "marker") == mark
+            assert m(key, "dashes") == dash
+
+        # Test dicts
+        markers = dict(zip(p.plot_data["style"].unique(), markers))
+        dashes = dict(zip(p.plot_data["style"].unique(), dashes))
+        m = StyleMapping(p, markers=markers, dashes=dashes)
+        for key in m.levels:
+            assert m(key, "marker") == markers[key]
+            assert m(key, "dashes") == dashes[key]
+
+        # Test style order with defaults
+        order = p.plot_data["style"].unique()[[1, 2, 0]]
+        m = StyleMapping(p, markers=True, dashes=True, order=order)
+        n = len(order)
+        for key, mark, dash in zip(order, unique_markers(n), unique_dashes(n)):
+            assert m(key, "dashes") == dash
+            assert m(key, "marker") == mark
+            obj = mpl.markers.MarkerStyle(mark)
+            path = obj.get_path().transformed(obj.get_transform())
+            assert_array_equal(m(key, "path").vertices, path.vertices)
+
+        # Test too many levels with style lists
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=["o", "s"], dashes=False)
+
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=False, dashes=[(2, 1)])
+
+        # Test too many levels with style dicts
+        markers, dashes = {"a": "o", "b": "s"}, False
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
+
+        markers, dashes = False, {"a": (1, 0), "b": (2, 1)}
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
+
+        # Test mixture of filled and unfilled markers
+        markers, dashes = ["o", "x", "s"], None
+        with pytest.raises(ValueError):
+            StyleMapping(p, markers=markers, dashes=dashes)
 
 
 class TestVectorPlotter:
 
     def test_flat_variables(self, flat_data):
 
-        p = _VectorPlotter()
-        p.establish_variables(data=flat_data)
+        p = VectorPlotter()
+        p.assign_variables(data=flat_data)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == len(flat_data)
@@ -142,3 +671,48 @@ class TestCoreFunc:
             infer_orient(cats, cats, "h")
         with pytest.raises(TypeError, match="Neither"):
             infer_orient(cats, cats)
+
+    def test_categorical_order(self):
+
+        x = ["a", "c", "c", "b", "a", "d"]
+        y = [3, 2, 5, 1, 4]
+        order = ["a", "b", "c", "d"]
+
+        out = categorical_order(x)
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(x, order)
+        assert out == order
+
+        out = categorical_order(x, ["b", "a"])
+        assert out == ["b", "a"]
+
+        out = categorical_order(np.array(x))
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(pd.Series(x))
+        assert out == ["a", "c", "b", "d"]
+
+        out = categorical_order(y)
+        assert out == [1, 2, 3, 4, 5]
+
+        out = categorical_order(np.array(y))
+        assert out == [1, 2, 3, 4, 5]
+
+        out = categorical_order(pd.Series(y))
+        assert out == [1, 2, 3, 4, 5]
+
+        x = pd.Categorical(x, order)
+        out = categorical_order(x)
+        assert out == list(x.categories)
+
+        x = pd.Series(x)
+        out = categorical_order(x)
+        assert out == list(x.cat.categories)
+
+        out = categorical_order(x, ["b", "a"])
+        assert out == ["b", "a"]
+
+        x = ["a", np.nan, "c", "c", "b", "a", "d"]
+        out = categorical_order(x)
+        assert out == ["a", "c", "b", "d"]

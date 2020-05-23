@@ -1,5 +1,9 @@
+import inspect
 import pytest
-from .._decorators import _deprecate_positional_args
+from .._decorators import (
+    _deprecate_positional_args,
+    share_init_params_with_map,
+)
 
 
 # This test was adapted from scikit-learn
@@ -79,3 +83,26 @@ def test_deprecate_positional_args_warns_for_class():
         match=r"Pass the following variables as keyword args: c, d\.",
     ):
         assert A2(1, 2, 3, 4).a == (1, 2, 3, 4)
+
+
+def test_share_init_params_with_map():
+
+    @share_init_params_with_map
+    class Thingie:
+
+        def map(cls, *args, **kwargs):
+            return cls(*args, **kwargs)
+
+        def __init__(self, a, b=1):
+            """Make a new thingie."""
+            self.a = a
+            self.b = b
+
+    thingie = Thingie.map(1, b=2)
+    assert thingie.a == 1
+    assert thingie.b == 2
+
+    assert "a" in inspect.signature(Thingie.map).parameters
+    assert "b" in inspect.signature(Thingie.map).parameters
+
+    assert Thingie.map.__doc__ == Thingie.__init__.__doc__

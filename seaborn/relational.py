@@ -7,18 +7,15 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .core import (
-    _VectorPlotter,
-    variable_type,
-    unique_dashes,
-    unique_markers,
+from ._core import (
+    VectorPlotter,
 )
-from .utils import (categorical_order, get_color_cycle, ci_to_errsize,
-                    remove_na, locator_to_legend_entries,
-                    ci as ci_func)
+from .utils import (
+    ci_to_errsize,
+    locator_to_legend_entries,
+    ci as ci_func
+)
 from .algorithms import bootstrap
-from .palettes import (color_palette, cubehelix_palette,
-                       _parse_cubehelix_args, QUAL_PALETTES)
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args
 
@@ -26,9 +23,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = ["relplot", "scatterplot", "lineplot"]
 
 
-class _RelationalPlotter(_VectorPlotter):
-
-    semantics = _VectorPlotter.semantics + ["hue", "size", "style", "units"]
+class _RelationalPlotter(VectorPlotter):
 
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
@@ -37,140 +32,22 @@ class _RelationalPlotter(_VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    # Defaults for size semantic
-    # TODO this should match style of other defaults
-    _default_size_range = 0, 1
-
-    def categorical_to_palette(self, data, order, palette):
-        """Determine colors when the hue variable is qualitative."""
-        # -- Identify the order and name of the levels
-
-        if order is None:
-            levels = categorical_order(data)
-        else:
-            levels = order
-        n_colors = len(levels)
-
-        # -- Identify the set of colors to use
-
-        if isinstance(palette, dict):
-
-            missing = set(levels) - set(palette)
-            if any(missing):
-                err = "The palette dictionary is missing keys: {}"
-                raise ValueError(err.format(missing))
-
-        else:
-
-            if palette is None:
-                if n_colors <= len(get_color_cycle()):
-                    colors = color_palette(None, n_colors)
-                else:
-                    colors = color_palette("husl", n_colors)
-            elif isinstance(palette, list):
-                if len(palette) != n_colors:
-                    err = "The palette list has the wrong number of colors."
-                    raise ValueError(err)
-                colors = palette
-            else:
-                colors = color_palette(palette, n_colors)
-
-            palette = dict(zip(levels, colors))
-
-        return levels, palette
-
-    def numeric_to_palette(self, data, order, palette, norm):
-        """Determine colors when the hue variable is quantitative."""
-        levels = list(np.sort(remove_na(data.unique())))
-
-        # TODO do we want to do something complicated to ensure contrast
-        # at the extremes of the colormap against the background?
-
-        # Identify the colormap to use
-        palette = "ch:" if palette is None else palette
-        if isinstance(palette, mpl.colors.Colormap):
-            cmap = palette
-        elif str(palette).startswith("ch:"):
-            args, kwargs = _parse_cubehelix_args(palette)
-            cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
-        elif isinstance(palette, dict):
-            colors = [palette[k] for k in sorted(palette)]
-            cmap = mpl.colors.ListedColormap(colors)
-        else:
-            try:
-                cmap = mpl.cm.get_cmap(palette)
-            except (ValueError, TypeError):
-                err = "Palette {} not understood"
-                raise ValueError(err)
-
-        if norm is None:
-            norm = mpl.colors.Normalize()
-        elif isinstance(norm, tuple):
-            norm = mpl.colors.Normalize(*norm)
-        elif not isinstance(norm, mpl.colors.Normalize):
-            err = "``hue_norm`` must be None, tuple, or Normalize object."
-            raise ValueError(err)
-
-        if not norm.scaled():
-            norm(np.asarray(data.dropna()))
-
-        # TODO this should also use color_lookup, but that needs the
-        # class attributes that get set after using this function...
-        if not isinstance(palette, dict):
-            palette = dict(zip(levels, cmap(norm(levels))))
-        # palette = {l: cmap(norm([l, 1]))[0] for l in levels}
-
-        return levels, palette, cmap, norm
-
-    def color_lookup(self, key):
-        """Return the color corresponding to the hue level."""
-        if self.hue_type == "numeric":
-            normed = self.hue_norm(key)
-            if np.ma.is_masked(normed):
-                normed = np.nan
-            return self.cmap(normed)
-        elif self.hue_type == "categorical":
-            return self.palette[key]
-
-    def size_lookup(self, key):
-        """Return the size corresponding to the size level."""
-        if self.size_type == "numeric":
-            min_size, max_size = self.size_range
-            val = self.size_norm(key)
-            if np.ma.is_masked(val):
-                return 0
-            return min_size + val * (max_size - min_size)
-        elif self.size_type == "categorical":
-            return self.sizes[key]
-
-    def style_to_attributes(self, levels, style, defaults, name):
-        """Convert a style argument to a dict of matplotlib attributes."""
-        if style is True:
-            attrdict = dict(zip(levels, defaults))
-        elif style and isinstance(style, dict):
-            attrdict = style
-        elif style:
-            attrdict = dict(zip(levels, style))
-        else:
-            attrdict = {}
-
-        if attrdict:
-            missing_levels = set(levels) - set(attrdict)
-            if any(missing_levels):
-                err = "These `style` levels are missing {}: {}"
-                raise ValueError(err.format(name, missing_levels))
-
-        return attrdict
-
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
         data = self.plot_data
         all_true = pd.Series(True, data.index)
 
-        iter_levels = product(self.hue_levels,
-                              self.size_levels,
-                              self.style_levels)
+        # TODO Define "grouping semantics" as class-level data?
+        semantic_levels = [
+            self._hue_map.levels,
+            self._size_map.levels,
+            self._style_map.levels,
+        ]
 
+        # Ensure that we can iterate over the levels of each semantic
+        semantic_levels = [[None] if x is None else x for x in semantic_levels]
+
+        iter_levels = product(*semantic_levels)
         for hue, size, style in iter_levels:
 
             hue_rows = all_true if hue is None else data["hue"] == hue
@@ -178,7 +55,7 @@ class _RelationalPlotter(_VectorPlotter):
             style_rows = all_true if style is None else data["style"] == style
 
             rows = hue_rows & size_rows & style_rows
-            data["units"] = data.units.fillna("")
+            data["units"] = data["units"].fillna("")
             subset_data = data.loc[rows, ["units", "x", "y"]].dropna()
 
             if not len(subset_data):
@@ -187,225 +64,11 @@ class _RelationalPlotter(_VectorPlotter):
             if self.sort:
                 subset_data = subset_data.sort_values(["units", "x", "y"])
 
+            # TODO this is a little awkward, we should just treat it normally
             if "units" not in self.variables:
                 subset_data = subset_data.drop("units", axis=1)
 
             yield (hue, size, style), subset_data
-
-    def parse_hue(self, data, palette=None, order=None, norm=None):
-        """Determine what colors to use given data characteristics."""
-        if self._empty_data(data):
-
-            # Set default values when not using a hue mapping
-            levels = [None]
-            limits = None
-            norm = None
-            palette = {}
-            var_type = None
-            cmap = None
-
-        else:
-
-            # Determine what kind of hue mapping we want
-            var_type = self._semantic_type(data)
-
-            # Override depending on the type of the palette argument
-            if palette in QUAL_PALETTES:
-                var_type = "categorical"
-            elif norm is not None:
-                var_type = "numeric"
-            elif isinstance(palette, (dict, list)):
-                var_type = "categorical"
-
-            # -- Option 1: quantitative color mapping
-
-            if var_type == "numeric":
-
-                data = pd.to_numeric(data)
-                levels, palette, cmap, norm = self.numeric_to_palette(
-                    data, order, palette, norm
-                )
-                limits = norm.vmin, norm.vmax
-
-            # -- Option 2: qualitative color palette
-
-            else:
-
-                cmap = None
-                limits = None
-                levels, palette = self.categorical_to_palette(
-                    # Casting data to list to handle differences in the way
-                    # pandas represents numpy datetime64 data
-                    list(data), order, palette
-                )
-
-        self.hue_levels = levels
-        self.hue_norm = norm
-        self.hue_limits = limits
-        self.hue_type = var_type
-        self.palette = palette
-        self.cmap = cmap
-
-    def parse_size(self, data, sizes=None, order=None, norm=None):
-        """Determine the linewidths given data characteristics."""
-
-        # TODO could break out two options like parse_hue does for clarity
-
-        if self._empty_data(data):
-            levels = [None]
-            limits = None
-            norm = None
-            sizes = {}
-            var_type = None
-            width_range = None
-
-        else:
-
-            var_type = self._semantic_type(data)
-
-            # Override depending on the type of the sizes argument
-            if norm is not None:
-                var_type = "numeric"
-            elif isinstance(sizes, (dict, list)):
-                var_type = "categorical"
-
-            if var_type == "categorical":
-                levels = categorical_order(data, order)
-                numbers = np.arange(1, 1 + len(levels))[::-1]
-
-            elif var_type == "numeric":
-                data = pd.to_numeric(data)
-                levels = numbers = np.sort(remove_na(data.unique()))
-
-            if isinstance(sizes, (dict, list)):
-
-                # Use literal size values
-                if isinstance(sizes, list):
-                    if len(sizes) != len(levels):
-                        err = "The `sizes` list has wrong number of levels"
-                        raise ValueError(err)
-                    sizes = dict(zip(levels, sizes))
-
-                missing = set(levels) - set(sizes)
-                if any(missing):
-                    err = "Missing sizes for the following levels: {}"
-                    raise ValueError(err.format(missing))
-
-                width_range = min(sizes.values()), max(sizes.values())
-                try:
-                    limits = min(sizes.keys()), max(sizes.keys())
-                except TypeError:
-                    limits = None
-
-            else:
-
-                # Infer the range of sizes to use
-                if sizes is None:
-                    min_width, max_width = self._default_size_range
-                else:
-                    try:
-                        min_width, max_width = sizes
-                    except (TypeError, ValueError):
-                        err = "sizes argument {} not understood".format(sizes)
-                        raise ValueError(err)
-                width_range = min_width, max_width
-
-                if norm is None:
-                    norm = mpl.colors.Normalize()
-                elif isinstance(norm, tuple):
-                    norm = mpl.colors.Normalize(*norm)
-                elif not isinstance(norm, mpl.colors.Normalize):
-                    err = ("``size_norm`` must be None, tuple, "
-                           "or Normalize object.")
-                    raise ValueError(err)
-
-                norm.clip = True
-                if not norm.scaled():
-                    norm(np.asarray(numbers))
-                limits = norm.vmin, norm.vmax
-
-                scl = norm(numbers)
-                widths = np.asarray(min_width + scl * (max_width - min_width))
-                if scl.mask.any():
-                    widths[scl.mask] = 0
-                sizes = dict(zip(levels, widths))
-                # sizes = {l: min_width + norm(n) * (max_width - min_width)
-                #          for l, n in zip(levels, numbers)}
-
-            if var_type == "categorical":
-                # Don't keep a reference to the norm, which will avoid
-                # downstream  code from switching to numerical interpretation
-                norm = None
-
-        self.sizes = sizes
-        self.size_type = var_type
-        self.size_levels = levels
-        self.size_norm = norm
-        self.size_limits = limits
-        self.size_range = width_range
-
-        # Update data as it may have changed dtype
-        self.plot_data["size"] = data
-
-    def parse_style(self, data, markers=None, dashes=None, order=None):
-        """Determine the markers and line dashes."""
-
-        if self._empty_data(data):
-
-            levels = [None]
-            dashes = {}
-            markers = {}
-
-        else:
-
-            if order is None:
-                # List comprehension here is required to
-                # overcome differences in the way pandas
-                # coerces numpy datatypes
-                levels = categorical_order(list(data))
-            else:
-                levels = order
-
-            markers = self.style_to_attributes(
-                levels, markers, unique_markers(len(levels)), "markers"
-            )
-
-            dashes = self.style_to_attributes(
-                levels, dashes, unique_dashes(len(levels)), "dashes"
-            )
-
-        paths = {}
-        filled_markers = []
-        for k, m in markers.items():
-            if not isinstance(m, mpl.markers.MarkerStyle):
-                m = mpl.markers.MarkerStyle(m)
-            paths[k] = m.get_path().transformed(m.get_transform())
-            filled_markers.append(m.is_filled())
-
-        # Mixture of filled and unfilled markers will show line art markers
-        # in the edge color, which defaults to white. This can be handled,
-        # but there would be additional complexity with specifying the
-        # weight of the line art markers without overwhelming the filled
-        # ones with the edges. So for now, we will disallow mixtures.
-        if any(filled_markers) and not all(filled_markers):
-            err = "Filled and line art markers cannot be mixed"
-            raise ValueError(err)
-
-        self.style_levels = levels
-        self.dashes = dashes
-        self.markers = markers
-        self.paths = paths
-
-    def _empty_data(self, data):
-        """Test if a series is completely missing."""
-        return data.isnull().all()
-
-    def _semantic_type(self, data):
-        """Determine if data should considered numeric or categorical."""
-        if self.input_format == "wide":
-            return "categorical"
-        else:
-            return variable_type(data, boolean_type="categorical")
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""
@@ -439,16 +102,19 @@ class _RelationalPlotter(_VectorPlotter):
                 legend_kwargs[key] = dict(**kws)
 
         # -- Add a legend for hue semantics
-        if verbosity == "brief" and self.hue_type == "numeric":
-            if isinstance(self.hue_norm, mpl.colors.LogNorm):
+        if verbosity == "brief" and self._hue_map.map_type == "numeric":
+            if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
+            limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, self.hue_limits, self.plot_data["hue"].dtype
+                locator, limits, self.plot_data["hue"].dtype
             )
+        elif self._hue_map.levels is None:
+            hue_levels = hue_formatted_levels = []
         else:
-            hue_levels = hue_formatted_levels = self.hue_levels
+            hue_levels = hue_formatted_levels = self._hue_map.levels
 
         # Add the hue semantic subtitle
         if "hue" in self.variables and self.variables["hue"] is not None:
@@ -458,20 +124,26 @@ class _RelationalPlotter(_VectorPlotter):
         # Add the hue semantic labels
         for level, formatted_level in zip(hue_levels, hue_formatted_levels):
             if level is not None:
-                color = self.color_lookup(level)
+                color = self._hue_map(level)
                 update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
 
-        if verbosity == "brief" and self.size_type == "numeric":
-            if isinstance(self.size_norm, mpl.colors.LogNorm):
+        if verbosity == "brief" and self._size_map.map_type == "numeric":
+            # Define how ticks will interpolate between the min/max data values
+            if isinstance(self._size_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
+            # Define the min/max data values
+            limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
-                locator, self.size_limits, self.plot_data["size"].dtype)
+                locator, limits, self.plot_data["size"].dtype
+            )
+        elif self._size_map.levels is None:
+            size_levels = size_formatted_levels = []
         else:
-            size_levels = size_formatted_levels = self.size_levels
+            size_levels = size_formatted_levels = self._size_map.levels
 
         # Add the size semantic subtitle
         if "size" in self.variables and self.variables["size"] is not None:
@@ -481,9 +153,13 @@ class _RelationalPlotter(_VectorPlotter):
         # Add the size semantic labels
         for level, formatted_level in zip(size_levels, size_formatted_levels):
             if level is not None:
-                size = self.size_lookup(level)
-                update(self.variables["size"],
-                       formatted_level, linewidth=size, s=size)
+                size = self._size_map(level)
+                update(
+                    self.variables["size"],
+                    formatted_level,
+                    linewidth=size,
+                    s=size,
+                )
 
         # -- Add a legend for style semantics
 
@@ -493,11 +169,16 @@ class _RelationalPlotter(_VectorPlotter):
                    self.variables["style"], **title_kws)
 
         # Add the style semantic labels
-        for level in self.style_levels:
-            if level is not None:
-                update(self.variables["style"], level,
-                       marker=self.markers.get(level, ""),
-                       dashes=self.dashes.get(level, ""))
+        if self._style_map.levels is not None:
+            for level in self._style_map.levels:
+                if level is not None:
+                    attrs = self._style_map(level)
+                    update(
+                        self.variables["style"],
+                        level,
+                        marker=attrs.get("marker", ""),
+                        dashes=attrs.get("dashes", ""),
+                    )
 
         func = getattr(ax, self._legend_func)
 
@@ -528,27 +209,22 @@ class _LinePlotter(_RelationalPlotter):
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
     _legend_func = "plot"
 
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_norm=None,
-                 dashes=None, markers=None, style_order=None,
-                 units=None, estimator=None, ci=None, n_boot=None, seed=None,
-                 sort=True, err_style=None, err_kws=None, legend=None):
+    def __init__(
+        self, *,
+        data=None, variables={},
+        estimator=None, ci=None, n_boot=None, seed=None,
+        sort=True, err_style=None, err_kws=None, legend=None
+    ):
 
-        plot_data, variables = self.establish_variables(
-            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
-        )
-
+        # TODO this is messy, we want the mapping to be agnoistic about
+        # the kind of plot to draw, but for the time being we need to set
+        # this information so the SizeMapping can use it
         self._default_size_range = (
             np.r_[.5, 2] * mpl.rcParams["lines.linewidth"]
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
-        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
-        self.parse_style(plot_data["style"], markers, dashes, style_order)
+        super().__init__(data=data, variables=variables)
 
-        self.units = units
         self.estimator = estimator
         self.ci = ci
         self.n_boot = n_boot
@@ -640,6 +316,14 @@ class _LinePlotter(_RelationalPlotter):
             err = "`err_style` must be 'band' or 'bars', not {}"
             raise ValueError(err.format(self.err_style))
 
+        # Set the default artist keywords
+        kws.update(dict(
+            color=orig_color,
+            dashes=orig_dashes,
+            marker=orig_marker,
+            linewidth=orig_linewidth
+        ))
+
         # Loop over the semantic subsets and draw a line for each
 
         for semantics, data in self.subset_data():
@@ -648,17 +332,21 @@ class _LinePlotter(_RelationalPlotter):
             x, y, units = data["x"], data["y"], data.get("units", None)
 
             if self.estimator is not None:
-                if self.units is not None:
+                if units is not None:
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
                 x, y, y_ci = self.aggregate(y, x, units)
             else:
                 y_ci = None
 
-            kws["color"] = self.palette.get(hue, orig_color)
-            kws["dashes"] = self.dashes.get(style, orig_dashes)
-            kws["marker"] = self.markers.get(style, orig_marker)
-            kws["linewidth"] = self.sizes.get(size, orig_linewidth)
+            if hue is not None:
+                kws["color"] = self._hue_map(hue)
+            if size is not None:
+                kws["linewidth"] = self._size_map(size)
+            if style is not None:
+                attributes = self._style_map(style)
+                kws["dashes"] = attributes.get("dashes", orig_dashes)
+                kws["marker"] = attributes.get("marker", orig_marker)
 
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
@@ -670,9 +358,8 @@ class _LinePlotter(_RelationalPlotter):
 
             x, y = np.asarray(x), np.asarray(y)
 
-            if self.units is None:
+            if units is None:
                 line, = ax.plot(x, y, **kws)
-
             else:
                 for u in units.unique():
                     rows = np.asarray(units == u)
@@ -717,31 +404,25 @@ class _ScatterPlotter(_RelationalPlotter):
     _legend_attributes = ["color", "s", "marker"]
     _legend_func = "scatter"
 
-    def __init__(self,
-                 x=None, y=None, hue=None, size=None, style=None, data=None,
-                 palette=None, hue_order=None, hue_norm=None,
-                 sizes=None, size_order=None, size_norm=None,
-                 dashes=None, markers=None, style_order=None,
-                 x_bins=None, y_bins=None,
-                 units=None, estimator=None, ci=None, n_boot=None,
-                 alpha=None, x_jitter=None, y_jitter=None,
-                 legend=None):
+    def __init__(
+        self, *,
+        data=None, variables={},
+        x_bins=None, y_bins=None,
+        estimator=None, ci=None, n_boot=None,
+        alpha=None, x_jitter=None, y_jitter=None,
+        legend=None
+    ):
 
-        plot_data, variables = self.establish_variables(
-            data, x=x, y=y, hue=hue, size=size, style=style, units=units,
-        )
-
+        # TODO this is messy, we want the mapping to be agnoistic about
+        # the kind of plot to draw, but for the time being we need to set
+        # this information so the SizeMapping can use it
         self._default_size_range = (
             np.r_[.5, 2] * np.square(mpl.rcParams["lines.markersize"])
         )
 
-        self.parse_hue(plot_data["hue"], palette, hue_order, hue_norm)
-        self.parse_size(plot_data["size"], sizes, size_order, size_norm)
-        self.parse_style(plot_data["style"], markers, None, style_order)
-        self.units = units
+        super().__init__(data=data, variables=variables)
 
         self.alpha = alpha
-
         self.legend = legend
 
     def plot(self, ax, kws):
@@ -774,27 +455,27 @@ class _ScatterPlotter(_RelationalPlotter):
             return
 
         # Define the vectors of x and y positions
-        x = data.get(["x"], np.full(len(data), np.nan))
-        y = data.get(["y"], np.full(len(data), np.nan))
+        empty = np.full(len(data), np.nan)
+        x = data.get("x", empty)
+        y = data.get("y", empty)
 
-        # Define vectors of hue and size values
-        # There must be some reason this doesn't use data[var].map(attr_dict)
-        # But I do not remember what it is!
-        if self.palette:
-            c = [self.palette.get(val) for val in data["hue"]]
+        # Apply the mapping from semantic varibles to artist attributes
+        if "hue" in self.variables:
+            c = self._hue_map(data["hue"])
 
-        if self.sizes:
-            s = [self.sizes.get(val) for val in data["size"]]
+        if "size" in self.variables:
+            s = self._size_map(data["size"])
 
         # Set defaults for other visual attributres
         kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
         kws.setdefault("edgecolor", "w")
 
-        if self.markers:
+        if "style" in self.variables:
             # Use a representative marker so scatter sets the edgecolor
             # properly for line art markers. We currently enforce either
             # all or none line art so this works.
-            example_marker = list(self.markers.values())[0]
+            example_level = self._style_map.levels[0]
+            example_marker = self._style_map(example_level, "marker")
             kws.setdefault("marker", example_marker)
 
         # TODO this makes it impossible to vary alpha with hue which might
@@ -808,8 +489,8 @@ class _ScatterPlotter(_RelationalPlotter):
         # Update the paths to get different marker shapes.
         # This has to be done here because ax.scatter allows varying sizes
         # and colors but only a single marker shape per call.
-        if self.paths:
-            p = [self.paths.get(val) for val in data["style"]]
+        if "style" in self.variables:
+            p = [self._style_map(val, "path") for val in data["style"]]
             points.set_paths(p)
 
         # Finalize the axes details
@@ -978,14 +659,16 @@ def lineplot(
     legend="brief", ax=None, **kwargs
 ):
 
+    variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
-        x=x, y=y, hue=hue, size=size, style=style, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
-        dashes=dashes, markers=markers, style_order=style_order,
-        units=units, estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
+        data=data, variables=variables,
+        estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
     )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     if ax is None:
         ax = plt.gca()
@@ -1150,7 +833,8 @@ lineplot.__doc__ = dedent("""\
         >>> from matplotlib.colors import LogNorm
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   hue_norm=LogNorm(), data=dots)
+        ...                   hue_norm=LogNorm(),
+        ...                   data=dots.query("coherence > 0"))
 
     Use a different color palette:
 
@@ -1253,15 +937,17 @@ def scatterplot(
     legend="brief", ax=None, **kwargs
 ):
 
+    variables = _ScatterPlotter.get_semantics(locals())
     p = _ScatterPlotter(
-        x=x, y=y, hue=hue, style=style, size=size, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
-        markers=markers, style_order=style_order,
+        data=data, variables=variables,
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
         alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
     )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, order=style_order)
 
     if ax is None:
         ax = plt.gca()
@@ -1491,13 +1177,14 @@ def relplot(
     *,
     x=None, y=None,
     hue=None, size=None, style=None, data=None,
-    row=None, col=None,  # TODO move in front of data when * is enforced
+    row=None, col=None,
     col_wrap=None, row_order=None, col_order=None,
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=None, dashes=None, style_order=None,
     legend="brief", kind="scatter",
     height=5, aspect=1, facet_kws=None,
+    units=None,
     **kwargs
 ):
 
@@ -1526,27 +1213,41 @@ def relplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    # Use the full dataset to establish how to draw the semantics
+    # Use the full dataset to map the semantics
     p = plotter(
-        x=x, y=y, hue=hue, size=size, style=style, data=data,
-        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
-        markers=markers, dashes=dashes, style_order=style_order,
+        data=data,
+        variables=plotter.get_semantics(locals()),
         legend=legend,
     )
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+    p.map_size(sizes=sizes, order=size_order, norm=size_norm)
+    p.map_style(markers=markers, dashes=dashes, order=style_order)
 
     # Extract the semantic mappings
-    palette = p.palette if p.palette else None
-    hue_order = p.hue_levels if any(p.hue_levels) else None
-    hue_norm = p.hue_norm if p.hue_norm is not None else None
+    if "hue" in p.variables:
+        palette = p._hue_map.lookup_table
+        hue_order = p._hue_map.levels
+        hue_norm = p._hue_map.norm
+    else:
+        palette = hue_order = hue_norm = None
 
-    sizes = p.sizes if p.sizes else None
-    size_order = p.size_levels if any(p.size_levels) else None
-    size_norm = p.size_norm if p.size_norm is not None else None
+    if "size" in p.variables:
+        sizes = p._size_map.lookup_table
+        size_order = p._size_map.levels
+        size_norm = p._size_map.norm
 
-    markers = p.markers if p.markers else None
-    dashes = p.dashes if p.dashes else None
-    style_order = p.style_levels if any(p.style_levels) else None
+    if "style" in p.variables:
+        style_order = p._style_map.levels
+        if markers:
+            markers = {k: p._style_map(k, "marker") for k in style_order}
+        else:
+            markers = None
+        if dashes:
+            dashes = {k: p._style_map(k, "dashes") for k in style_order}
+        else:
+            dashes = None
+    else:
+        markers = dashes = style_order = None
 
     # Now extract the data that would be used to draw a single plot
     variables = p.variables
@@ -1555,8 +1256,8 @@ def relplot(
 
     # Define the common plotting parameters
     plot_kws = dict(
-        palette=palette, hue_order=hue_order, hue_norm=p.hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=p.size_norm,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
+        sizes=sizes, size_order=size_order, size_norm=size_norm,
         markers=markers, dashes=dashes, style_order=style_order,
         legend=False,
     )
@@ -1568,20 +1269,22 @@ def relplot(
     plot_variables = {key: key for key in p.variables}
     plot_kws.update(plot_variables)
 
-    # Define grid_data with row/col semantics
-    grid_semantics = ["row", "col"]  # TODO define on FacetGrid?
+    # Add the grid semantics onto the plotter
+    grid_semantics = "row", "col"
     p.semantics = plot_semantics + grid_semantics
-    full_data, full_variables = p.establish_variables(
-        data,
-        x=x, y=y,
-        hue=hue, size=size, style=style,
-        row=row, col=col,
+    p.assign_variables(
+        data=data,
+        variables=dict(
+            x=x, y=y,
+            hue=hue, size=size, style=style, units=units,
+            row=row, col=col,
+        ),
     )
 
     # Pass the row/col variables to FacetGrid with their original
     # names so that the axes titles render correctly
-    grid_kws = {v: full_variables.get(v, None) for v in grid_semantics}
-    full_data = full_data.rename(columns=grid_kws)
+    grid_kws = {v: p.variables.get(v, None) for v in grid_semantics}
+    full_data = p.plot_data.rename(columns=grid_kws)
 
     # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws.copy()

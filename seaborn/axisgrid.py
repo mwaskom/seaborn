@@ -9,8 +9,8 @@ from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from ._core import variable_type, categorical_order
 from . import utils
-from .core import variable_type
 from .palettes import color_palette, blend_palette
 from .distributions import distplot, kdeplot, _freedman_diaconis_bins
 from ._decorators import _deprecate_positional_args
@@ -168,7 +168,7 @@ class Grid(object):
             palette = color_palette(n_colors=1)
 
         else:
-            hue_names = utils.categorical_order(data[hue], hue_order)
+            hue_names = categorical_order(data[hue], hue_order)
             n_colors = len(hue_names)
 
             # By default use either the current color palette or HUSL
@@ -266,7 +266,7 @@ class FacetGrid(Grid):
         if hue is None:
             hue_names = None
         else:
-            hue_names = utils.categorical_order(data[hue], hue_order)
+            hue_names = categorical_order(data[hue], hue_order)
 
         colors = self._get_palette(data, hue, hue_order, palette)
 
@@ -274,12 +274,12 @@ class FacetGrid(Grid):
         if row is None:
             row_names = []
         else:
-            row_names = utils.categorical_order(data[row], row_order)
+            row_names = categorical_order(data[row], row_order)
 
         if col is None:
             col_names = []
         else:
-            col_names = utils.categorical_order(data[col], col_order)
+            col_names = categorical_order(data[col], col_order)
 
         # Additional dict of kwarg -> list of values for mapping the hue var
         hue_kws = hue_kws if hue_kws is not None else {}
@@ -1387,7 +1387,7 @@ class PairGrid(Grid):
             self.hue_vals = pd.Series(["_nolegend_"] * len(data),
                                       index=data.index)
         else:
-            hue_names = utils.categorical_order(data[hue], hue_order)
+            hue_names = categorical_order(data[hue], hue_order)
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
