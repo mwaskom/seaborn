@@ -50,12 +50,14 @@ class _RugPlotter(_DistributionPlotter):
         self,
         data=None,
         variables={},
-        height=None,
+        height=None,  # TODO or length?
+        expand_margins=True,
     ):
 
         super().__init__(data=data, variables=variables)
 
         self.height = height
+        self.expand_margins = expand_margins
 
     def plot(self, ax, kws):
 
@@ -80,6 +82,14 @@ class _RugPlotter(_DistributionPlotter):
         # the rug (as an option?)
 
         # ---
+
+        if self.expand_margins:
+            xmarg, ymarg = ax.margins()
+            if "x" in self.variables:
+                xmarg += self.height * 2
+            if "y" in self.variables:
+                ymarg += self.height * 2
+            ax.margins(x=xmarg, y=ymarg)
 
         if "x" in self.variables:
             self._plot_single_rug("x", ax, kws)
@@ -120,12 +130,13 @@ class _RugPlotter(_DistributionPlotter):
 
 
 @_deprecate_positional_args
-def _new_rugplot(
+def rugplot(
     *,
     x=None,
-    height=.05, axis="x", ax=None,
+    height=.025, axis="x", ax=None,
     data=None, y=None, hue=None,
     palette=None, hue_order=None, hue_norm=None,
+    expand_margins=True,
     a=None,
     **kwargs
 ):
@@ -144,12 +155,13 @@ def _new_rugplot(
 
     # ----------
 
-    variables = _RugPlotter.get_variables(locals())
+    variables = _RugPlotter.get_semantics(locals())
 
     p = _RugPlotter(
         data=data,
         variables=variables,
         height=height,
+        expand_margins=expand_margins,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
@@ -864,7 +876,7 @@ def kdeplot(
 
 
 @_deprecate_positional_args
-def rugplot(
+def _rugplot(
     *,
     x=None,
     height=.05, axis="x", ax=None,
