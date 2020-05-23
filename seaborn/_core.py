@@ -15,6 +15,9 @@ from ._decorators import (
 )
 from .palettes import (
     QUAL_PALETTES,
+    color_palette,
+    cubehelix_palette,
+    _parse_cubehelix_args,
 )
 from .utils import (
     get_color_cycle,
@@ -58,12 +61,11 @@ class HueMapping(SemanticMapping):
     # Default attributes (TODO use data class?)
     # TODO Add docs for what these are (maybe on the base class?)
     map_type = None
-    levels = [None]  # TODO better if just None, but then subset_data fails
-    limits = None
+    levels = None
     norm = None
     cmap = None
     palette = None
-    lookup_table = {}
+    lookup_table = None
 
     def __init__(
         self, plotter, palette=None, order=None, norm=None,
@@ -75,17 +77,9 @@ class HueMapping(SemanticMapping):
 
         if data.notna().any():
 
-            # Infer the type of mapping to use from the parameters
-            if palette in QUAL_PALETTES:
-                map_type = "categorical"
-            elif norm is not None:
-                map_type = "numeric"
-            elif isinstance(palette, (dict, list)):
-                map_type = "categorical"
-            elif plotter.input_format == "wide":
-                map_type = "categorical"
-            else:
-                map_type = plotter.var_types["hue"]
+            map_type = self.infer_map_type(
+                palette, norm, plotter.input_format, plotter.var_types["hue"]
+            )
 
             # Our goal is to end up with a dictionary mapping every unique
             # value in `data` to a color. We will also keep track of the
@@ -137,10 +131,23 @@ class HueMapping(SemanticMapping):
             value = self.cmap(normed)
         return value
 
+    def infer_map_type(self, palette, norm, input_format, var_type):
+
+        if palette in QUAL_PALETTES:
+            map_type = "categorical"
+        elif norm is not None:
+            map_type = "numeric"
+        elif isinstance(palette, (dict, list)):
+            map_type = "categorical"
+        elif input_format == "wide":
+            map_type = "categorical"
+        else:
+            map_type = var_type
+
+        return map_type
+
     def categorical_mapping(self, data, palette, order):
         """Determine colors when the hue mapping is categorical."""
-        # Avoid circular import
-        from .palettes import color_palette
 
         # -- Identify the order and name of the levels
 
@@ -183,15 +190,11 @@ class HueMapping(SemanticMapping):
     def numeric_mapping(self, data, palette, norm):
         """Determine colors when the hue variable is quantitative."""
 
-        # Avoid circular import
-        # TODO I think we've decided it's ok for core to import from palettes
-        from .palettes import cubehelix_palette, _parse_cubehelix_args
-
         if isinstance(palette, dict):
 
             # The presence of a norm object overrides a dictionary of hues
             # in specifying a numeric mapping, so we need to process it here.
-            levels = list(np.sort(list(palette)))
+            levels = list(sorted(palette))
             colors = [palette[k] for k in sorted(palette)]
             cmap = mpl.colors.ListedColormap(colors)
             lookup_table = palette.copy()
@@ -242,13 +245,11 @@ class HueMapping(SemanticMapping):
 @share_init_params_with_map
 class SizeMapping(SemanticMapping):
 
-    scaled_mapping = True  # TODO better name
-
     map_type = None
-    levels = [None]  # TODO needs downstream fix so can just be None
+    levels = None
     norm = None
     sizes = None
-    lookup_table = {}
+    lookup_table = None
 
     def __init__(
         self, plotter, sizes=None, order=None, norm=None,
@@ -256,20 +257,13 @@ class SizeMapping(SemanticMapping):
 
         super().__init__(plotter)
 
-        # TODO putting this here but it needs a home in the docs:
-        # "sizes" are in matplotlib artist units, "norm" is in data units
-
         data = plotter.plot_data["size"]
 
         if data.notna().any():
 
-            # Infer the type of mapping to use
-            if norm is not None:
-                map_type = "numeric"
-            elif isinstance(sizes, (dict, list)):
-                map_type = "categorical"
-            else:
-                map_type = plotter.var_types["size"]
+            map_type = self.infer_map_type(
+                norm, sizes, plotter.var_types["size"]
+            )
 
             # --- Option 1: numeric mapping
 
@@ -296,6 +290,17 @@ class SizeMapping(SemanticMapping):
             self.norm = norm
             self.sizes = sizes
             self.lookup_table = lookup_table
+
+    def infer_map_type(self, norm, sizes, var_type):
+
+        if norm is not None:
+            map_type = "numeric"
+        elif isinstance(sizes, (dict, list)):
+            map_type = "categorical"
+        else:
+            map_type = var_type
+
+        return map_type
 
     def _lookup_single(self, key):
 
@@ -451,12 +456,11 @@ class SizeMapping(SemanticMapping):
 @share_init_params_with_map
 class StyleMapping(SemanticMapping):
 
-    # Default attributes (TODO use data class?)
     # TODO define shared defaults on base class?
     # TODO Add docs for what these are (maybe on the base class?)
     map_type = None
-    levels = [None]  # TODO better if just None, but then subset_data fails
-    lookup_table = {}
+    levels = None
+    lookup_table = None
 
     def __init__(
         self, plotter, markers=None, dashes=None, order=None,
@@ -478,41 +482,36 @@ class StyleMapping(SemanticMapping):
             dashes = self._map_attributes(
                 dashes, levels, unique_dashes(len(levels)), "dashes",
             )
-        else:
 
-            levels = [None]
-            markers = {}
-            dashes = {}
+            # Build the paths matplotlib will use to draw the markers
+            paths = {}
+            filled_markers = []
+            for k, m in markers.items():
+                if not isinstance(m, mpl.markers.MarkerStyle):
+                    m = mpl.markers.MarkerStyle(m)
+                paths[k] = m.get_path().transformed(m.get_transform())
+                filled_markers.append(m.is_filled())
 
-        # Build the paths matplotlib will use to draw the markers
-        paths = {}
-        filled_markers = []
-        for k, m in markers.items():
-            if not isinstance(m, mpl.markers.MarkerStyle):
-                m = mpl.markers.MarkerStyle(m)
-            paths[k] = m.get_path().transformed(m.get_transform())
-            filled_markers.append(m.is_filled())
+            # Mixture of filled and unfilled markers will show line art markers
+            # in the edge color, which defaults to white. This can be handled,
+            # but there would be additional complexity with specifying the
+            # weight of the line art markers without overwhelming the filled
+            # ones with the edges. So for now, we will disallow mixtures.
+            if any(filled_markers) and not all(filled_markers):
+                err = "Filled and line art markers cannot be mixed"
+                raise ValueError(err)
 
-        # Mixture of filled and unfilled markers will show line art markers
-        # in the edge color, which defaults to white. This can be handled,
-        # but there would be additional complexity with specifying the
-        # weight of the line art markers without overwhelming the filled
-        # ones with the edges. So for now, we will disallow mixtures.
-        if any(filled_markers) and not all(filled_markers):
-            err = "Filled and line art markers cannot be mixed"
-            raise ValueError(err)
+            lookup_table = {}
+            for key in levels:
+                lookup_table[key] = {}
+                if markers:
+                    lookup_table[key]["marker"] = markers[key]
+                    lookup_table[key]["path"] = paths[key]
+                if dashes:
+                    lookup_table[key]["dashes"] = dashes[key]
 
-        lookup_table = {}
-        for key in levels:
-            lookup_table[key] = {}
-            if markers:
-                lookup_table[key]["marker"] = markers[key]
-                lookup_table[key]["path"] = paths[key]
-            if dashes:
-                lookup_table[key]["dashes"] = dashes[key]
-
-        self.levels = levels
-        self.lookup_table = lookup_table
+            self.levels = levels
+            self.lookup_table = lookup_table
 
     def _lookup_single(self, key, attr=None):
 
@@ -580,10 +579,10 @@ class VectorPlotter:
                 getattr(self, f"map_{var}")()
 
     @classmethod
-    def get_variables(cls, arguments):
-        return {k: arguments[k] for k in cls.semantics}
+    def get_variables(cls, kwargs):
+        """Subset a dictionary` arguments with known semantic variables."""
+        return {k: kwargs[k] for k in cls.semantics}
 
-    # TODO while we're changing names ... call this assign?
     def assign_variables(self, data=None, variables={}):
         """Define plot variables."""
         x = variables.get("x", None)
@@ -591,12 +590,12 @@ class VectorPlotter:
 
         if x is None and y is None:
             self.input_format = "wide"
-            plot_data, variables = self.assign_variables_wideform(
+            plot_data, variables = self._assign_variables_wideform(
                 data, **variables,
             )
         else:
             self.input_format = "long"
-            plot_data, variables = self.assign_variables_longform(
+            plot_data, variables = self._assign_variables_longform(
                 data, **variables,
             )
 
@@ -607,10 +606,10 @@ class VectorPlotter:
             for v in variables
         }
 
-        # TODO maybe don't return
+        # TODO maybe don't return, or return self for chaining
         return plot_data, variables
 
-    def assign_variables_wideform(self, data=None, **kwargs):
+    def _assign_variables_wideform(self, data=None, **kwargs):
         """Define plot variables given wide-form data.
 
         Parameters
@@ -723,7 +722,7 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def assign_variables_longform(self, data=None, **kwargs):
+    def _assign_variables_longform(self, data=None, **kwargs):
         """Define plot variables given long-form data and/or vector inputs.
 
         Parameters

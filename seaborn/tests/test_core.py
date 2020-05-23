@@ -79,11 +79,12 @@ class TestHueMapping:
 
         p = VectorPlotter(variables=dict(hue=null_series))
         m = HueMapping(p)
-        assert m.levels == [None]
-        assert m.palette is None
+        assert m.levels is None
         assert m.map_type is None
+        assert m.palette is None
         assert m.cmap is None
-        assert m.lookup_table == {}
+        assert m.norm is None
+        assert m.lookup_table is None
 
     def test_hue_map_categorical(self, wide_df, long_df):
 
@@ -334,6 +335,15 @@ class TestSizeMapping:
         assert p._size_map.lookup_table == dict(zip(size_order, sizes))
         assert p._size_map.levels == size_order
 
+    def test_size_map_null(self, long_df, null_series):
+
+        p = VectorPlotter(variables=dict(size=null_series))
+        m = HueMapping(p)
+        assert m.levels is None
+        assert m.map_type is None
+        assert m.norm is None
+        assert m.lookup_table is None
+
     def test_map_size_numeric(self, long_df):
 
         p = VectorPlotter(
@@ -451,6 +461,14 @@ class TestStyleMapping:
         assert p is p_orig
         assert p._style_map.levels == style_order
         assert p._style_map(style_order, "marker") == markers
+
+    def test_style_map_null(self, long_df, null_series):
+
+        p = VectorPlotter(variables=dict(style=null_series))
+        m = HueMapping(p)
+        assert m.levels is None
+        assert m.map_type is None
+        assert m.lookup_table is None
 
     def test_map_style(self, long_df):
 

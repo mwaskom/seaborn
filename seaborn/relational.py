@@ -37,10 +37,18 @@ class _RelationalPlotter(VectorPlotter):
         data = self.plot_data
         all_true = pd.Series(True, data.index)
 
-        iter_levels = product(self._hue_map.levels,
-                              self._size_map.levels,
-                              self._style_map.levels)
+        # TODO :w
+        # Define "grouping semantics" as class-level data?
+        semantic_levels = [
+            self._hue_map.levels,
+            self._size_map.levels,
+            self._style_map.levels,
+        ]
 
+        # Ensure that we can iterate over the levels of each semantic
+        semantic_levels = [[None] if x is None else x for x in semantic_levels]
+
+        iter_levels = product(*semantic_levels)
         for hue, size, style in iter_levels:
 
             hue_rows = all_true if hue is None else data["hue"] == hue
@@ -103,6 +111,8 @@ class _RelationalPlotter(VectorPlotter):
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
                 locator, self._hue_map.limits, self.plot_data["hue"].dtype
             )
+        elif self._hue_map.levels is None:
+            hue_levels = hue_formatted_levels = []
         else:
             hue_levels = hue_formatted_levels = self._hue_map.levels
 
@@ -130,6 +140,8 @@ class _RelationalPlotter(VectorPlotter):
             size_levels, size_formatted_levels = locator_to_legend_entries(
                 locator, limits, self.plot_data["size"].dtype
             )
+        elif self._size_map.levels is None:
+            size_levels = size_formatted_levels = []
         else:
             size_levels = size_formatted_levels = self._size_map.levels
 
@@ -157,15 +169,16 @@ class _RelationalPlotter(VectorPlotter):
                    self.variables["style"], **title_kws)
 
         # Add the style semantic labels
-        for level in self._style_map.levels:
-            if level is not None:
-                attrs = self._style_map(level)
-                update(
-                    self.variables["style"],
-                    level,
-                    marker=attrs.get("marker", ""),
-                    dashes=attrs.get("dashes", ""),
-                )
+        if self._style_map.levels is not None:
+            for level in self._style_map.levels:
+                if level is not None:
+                    attrs = self._style_map(level)
+                    update(
+                        self.variables["style"],
+                        level,
+                        marker=attrs.get("marker", ""),
+                        dashes=attrs.get("dashes", ""),
+                    )
 
         func = getattr(ax, self._legend_func)
 
@@ -1199,11 +1212,10 @@ def relplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    # Use the full dataset to establish how to draw the semantics
+    # Use the full dataset to map the semantics
     p = plotter(
         data=data,
-        # TODO replace with get_variables()
-        variables=dict(x=x, y=y, hue=hue, size=size, style=style, units=units),
+        variables=plotter.get_variables(locals()),
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
