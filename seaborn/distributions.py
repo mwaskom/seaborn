@@ -91,19 +91,22 @@ class _RugPlotter(_DistributionPlotter):
                 ymarg += self.height * 2
             ax.margins(x=xmarg, y=ymarg)
 
+        if "hue" in self.variables:
+            kws.pop("c", None)
+            kws.pop("color", None)
+
         if "x" in self.variables:
             self._plot_single_rug("x", ax, kws)
         if "y" in self.variables:
             self._plot_single_rug("y", ax, kws)
 
     def _plot_single_rug(self, var, ax, kws):
-
+        """Draw a rugplot along one axis of the plot."""
         vector = self.plot_data[var]
         n = len(vector)
 
         if "hue" in self.variables:
             colors = self._hue_map(self.plot_data["hue"])
-            kws.pop("color", None)  # TODO simplify
         else:
             colors = None
 
