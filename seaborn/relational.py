@@ -1277,7 +1277,7 @@ def relplot(
         data=data,
         variables=dict(
             x=x, y=y,
-            hue=hue, size=size, style=style,
+            hue=hue, size=size, style=style, units=units,
             row=row, col=col,
         ),
     )
