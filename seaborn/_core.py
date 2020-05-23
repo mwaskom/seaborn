@@ -857,8 +857,14 @@ def variable_type(vector, boolean_type="numeric"):
         return "numeric"
 
     # Special-case binary/boolean data, allow caller to determine
-    if np.isin(vector, [0, 1, np.nan]).all():
-        return boolean_type
+    # This triggers a numpy warning when vector has strings/objects
+    # https://github.com/numpy/numpy/issues/6784
+    # Because we reduce with .all(), we are agnostic about whether the
+    # comparison returns a scalar or vector, so we will ignore the warning.
+    with warnings.catch_warnings():
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        if np.isin(vector, [0, 1, np.nan]).all():
+            return boolean_type
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
