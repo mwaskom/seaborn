@@ -370,6 +370,14 @@ class TestSizeMapping:
         for key, val in m.lookup_table.items():
             assert val == sizes[0] + (sizes[1] - sizes[0]) * norm(key)
 
+        # Test bad sizes argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes="bad_sizes")
+
+        # Test bad sizes argument
+        with pytest.raises(ValueError):
+            SizeMapping(p, sizes=(1, 2, 3))
+
         # Test bad norm argument
         with pytest.raises(ValueError):
             SizeMapping(p, norm="bad_norm")

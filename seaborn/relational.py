@@ -37,8 +37,7 @@ class _RelationalPlotter(VectorPlotter):
         data = self.plot_data
         all_true = pd.Series(True, data.index)
 
-        # TODO :w
-        # Define "grouping semantics" as class-level data?
+        # TODO Define "grouping semantics" as class-level data?
         semantic_levels = [
             self._hue_map.levels,
             self._size_map.levels,

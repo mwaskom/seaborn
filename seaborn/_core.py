@@ -229,9 +229,6 @@ class HueMapping(SemanticMapping):
             elif str(palette).startswith("ch:"):
                 args, kwargs = _parse_cubehelix_args(palette)
                 cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
-            elif isinstance(palette, dict):
-                colors = [palette[k] for k in sorted(palette)]
-                cmap = mpl.colors.ListedColormap(colors)
             else:
                 try:
                     cmap = mpl.cm.get_cmap(palette)
