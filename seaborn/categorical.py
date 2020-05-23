@@ -1908,7 +1908,7 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
-                vert=True, widths=1, ax=None, **kws):
+                widths=1, ax=None, **kws):
 
         vert = self.orient == "v"
         x = positions[0]

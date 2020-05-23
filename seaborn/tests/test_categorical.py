@@ -2750,6 +2750,13 @@ class TestBoxenPlotter(CategoricalFixture):
         kws["k_depth"] = 4
         cat._LVPlotter(**kws)
 
+        # Make sure illegal outlier_prop raises
+        kws["k_depth"] = "proportion"
+        for p in (-13, 37):
+            kws["outlier_prop"] = p
+            with pytest.raises(ValueError):
+                cat._LVPlotter(**kws)
+
     def test_valid_scales(self):
 
         valid_scales = ["linear", "exponential", "area"]
