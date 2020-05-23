@@ -529,7 +529,7 @@ class TestVectorPlotter:
     def test_flat_variables(self, flat_data):
 
         p = VectorPlotter()
-        p.establish_variables(data=flat_data)
+        p.assign_variables(data=flat_data)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == len(flat_data)

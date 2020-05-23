@@ -81,7 +81,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_df_variables(self, wide_df):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_df)
+        p.assign_variables(data=wide_df)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_df.shape)
@@ -112,7 +112,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_df_with_nonnumeric_variables(self, long_df):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=long_df)
+        p.assign_variables(data=long_df)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -148,7 +148,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_array_variables(self, wide_array):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_array)
+        p.assign_variables(data=wide_array)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
         assert len(p.plot_data) == np.product(wide_array.shape)
@@ -181,7 +181,7 @@ class TestRelationalPlotter(Helpers):
     def test_flat_array_variables(self, flat_array):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=flat_array)
+        p.assign_variables(data=flat_array)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == np.product(flat_array.shape)
@@ -204,7 +204,7 @@ class TestRelationalPlotter(Helpers):
     def test_flat_list_variables(self, flat_list):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=flat_list)
+        p.assign_variables(data=flat_list)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == len(flat_list)
@@ -227,7 +227,7 @@ class TestRelationalPlotter(Helpers):
     def test_flat_series_variables(self, flat_series):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=flat_series)
+        p.assign_variables(data=flat_series)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y"]
         assert len(p.plot_data) == len(flat_series)
@@ -246,7 +246,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_list_of_series_variables(self, wide_list_of_series):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_list_of_series)
+        p.assign_variables(data=wide_list_of_series)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -288,7 +288,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_list_of_arrays_variables(self, wide_list_of_arrays):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_list_of_arrays)
+        p.assign_variables(data=wide_list_of_arrays)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -323,7 +323,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_list_of_list_variables(self, wide_list_of_lists):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_list_of_lists)
+        p.assign_variables(data=wide_list_of_lists)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -358,7 +358,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_dict_of_series_variables(self, wide_dict_of_series):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_dict_of_series)
+        p.assign_variables(data=wide_dict_of_series)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -393,7 +393,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_dict_of_arrays_variables(self, wide_dict_of_arrays):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_dict_of_arrays)
+        p.assign_variables(data=wide_dict_of_arrays)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -428,7 +428,7 @@ class TestRelationalPlotter(Helpers):
     def test_wide_dict_of_lists_variables(self, wide_dict_of_lists):
 
         p = _RelationalPlotter()
-        p.establish_variables(data=wide_dict_of_lists)
+        p.assign_variables(data=wide_dict_of_lists)
         assert p.input_format == "wide"
         assert list(p.variables) == ["x", "y", "hue", "style"]
 
@@ -555,17 +555,17 @@ class TestRelationalPlotter(Helpers):
         p = _RelationalPlotter()
 
         with pytest.raises(ValueError):
-            p.establish_variables(
+            p.assign_variables(
                 data=long_df, variables=dict(x="not_in_df"),
             )
 
         with pytest.raises(ValueError):
-            p.establish_variables(
+            p.assign_variables(
                 data=long_df, variables=dict(x="x", y="not_in_df"),
             )
 
         with pytest.raises(ValueError):
-            p.establish_variables(
+            p.assign_variables(
                 data=long_df, variables=dict(x="x", y="y", hue="not_in_df"),
             )
 

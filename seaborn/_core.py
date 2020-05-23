@@ -567,7 +567,7 @@ class VectorPlotter:
 
     def __init__(self, data=None, variables={}):
 
-        plot_data, variables = self.establish_variables(data, variables)
+        plot_data, variables = self.assign_variables(data, variables)
 
         for var, cls in self._semantic_mappings.items():
             if var in self.semantics:
@@ -584,19 +584,19 @@ class VectorPlotter:
         return {k: arguments[k] for k in cls.semantics}
 
     # TODO while we're changing names ... call this assign?
-    def establish_variables(self, data=None, variables={}):
+    def assign_variables(self, data=None, variables={}):
         """Define plot variables."""
         x = variables.get("x", None)
         y = variables.get("y", None)
 
         if x is None and y is None:
             self.input_format = "wide"
-            plot_data, variables = self.establish_variables_wideform(
+            plot_data, variables = self.assign_variables_wideform(
                 data, **variables,
             )
         else:
             self.input_format = "long"
-            plot_data, variables = self.establish_variables_longform(
+            plot_data, variables = self.assign_variables_longform(
                 data, **variables,
             )
 
@@ -610,7 +610,7 @@ class VectorPlotter:
         # TODO maybe don't return
         return plot_data, variables
 
-    def establish_variables_wideform(self, data=None, **kwargs):
+    def assign_variables_wideform(self, data=None, **kwargs):
         """Define plot variables given wide-form data.
 
         Parameters
@@ -723,7 +723,7 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def establish_variables_longform(self, data=None, **kwargs):
+    def assign_variables_longform(self, data=None, **kwargs):
         """Define plot variables given long-form data and/or vector inputs.
 
         Parameters

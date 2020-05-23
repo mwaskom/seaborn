@@ -1259,7 +1259,7 @@ def relplot(
     # Define grid_data with row/col semantics
     grid_semantics = "row", "col"  # TODO define on FacetGrid?
     p.semantics = plot_semantics + grid_semantics
-    full_data, full_variables = p.establish_variables(
+    full_data, full_variables = p.assign_variables(
         data=data,
         variables=dict(
             x=x, y=y,
