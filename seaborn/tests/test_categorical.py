@@ -2706,22 +2706,14 @@ class TestBoxenPlotter(CategoricalFixture):
 
         plt.close("all")
 
-    def test_valid_depths(self):
+    def test_invalid_depths(self):
 
-        valid_depths = ["proportion", "tukey", "trustworthy"]
         kws = self.default_kws.copy()
 
-        for depth in valid_depths + ["unknown_method"]:
-            kws["k_depth"] = depth
-            if depth not in valid_depths:
-                with pytest.raises(ValueError):
-                    cat._LVPlotter(**kws)
-            else:
-                cat._LVPlotter(**kws)
-
-        # Allow a number for k
-        kws["k_depth"] = 4
-        cat._LVPlotter(**kws)
+        # Make sure illegal depth raises
+        kws["k_depth"] = "nosuchdepth"
+        with pytest.raises(ValueError):
+            cat._LVPlotter(**kws)
 
         # Make sure illegal outlier_prop raises
         kws["k_depth"] = "proportion"
@@ -2729,6 +2721,22 @@ class TestBoxenPlotter(CategoricalFixture):
             kws["outlier_prop"] = p
             with pytest.raises(ValueError):
                 cat._LVPlotter(**kws)
+
+    @pytest.mark.parametrize("power", [1, 3, 7, 11, 13, 17])
+    def test_valid_depths(self, power):
+
+        x = np.random.standard_t(10, 2 ** power)
+
+        valid_depths = ["proportion", "tukey", "trustworthy"]
+        kws = self.default_kws.copy()
+
+        for depth in valid_depths + [4]:
+            kws["k_depth"] = depth
+            cat._LVPlotter(**kws)._lv_box_ends(x)
+
+        # Test zero outlier_prop
+        kws.update(dict(k_depth="proportion", outlier_prop=0))
+        cat._LVPlotter(**kws)._lv_box_ends(x)
 
     def test_valid_scales(self):
 
