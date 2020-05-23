@@ -834,7 +834,8 @@ lineplot.__doc__ = dedent("""\
         >>> from matplotlib.colors import LogNorm
         >>> ax = sns.lineplot(x="time", y="firing_rate",
         ...                   hue="coherence", style="choice",
-        ...                   hue_norm=LogNorm(), data=dots)
+        ...                   hue_norm=LogNorm(),
+        ...                   data=dots.query("coherence > 0"))
 
     Use a different color palette:
 
