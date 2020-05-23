@@ -1993,6 +1993,9 @@ class _LVPlotter(_CategoricalPlotter):
             # Construct a color map from the input color
             rgb = [hex_color, (1, 1, 1)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+            # Make sure that the last boxes contain hue and are not pure white
+            rgb = [hex_color, cmap(.85)]
+            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
             collection = PatchCollection(boxes, cmap=cmap, edgecolor=self.gray)
 
             # Set the color gradation, first box will have color=hex_color
