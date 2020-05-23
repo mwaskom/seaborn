@@ -30,10 +30,10 @@ VERSION = '0.11.0.dev0'
 PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
-    'numpy>=1.13.3',
-    'scipy>=1.0.1',
-    'pandas>=0.22.0',
-    'matplotlib>=2.1.2',
+    'numpy>=1.13',
+    'scipy>=1.0',
+    'pandas>=0.23',
+    'matplotlib>=2.1',
 ]
 
 
