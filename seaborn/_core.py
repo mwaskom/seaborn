@@ -861,8 +861,13 @@ def variable_type(vector, boolean_type="numeric"):
     # https://github.com/numpy/numpy/issues/6784
     # Because we reduce with .all(), we are agnostic about whether the
     # comparison returns a scalar or vector, so we will ignore the warning.
+    # It triggers a separate DeprecationWarning when the vector has datetimes:
+    # https://github.com/numpy/numpy/issues/13548
+    # This is considered a bug by numpy and will likely go away.
     with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
+        warnings.simplefilter(
+            action='ignore', category=(FutureWarning, DeprecationWarning)
+        )
         if np.isin(vector, [0, 1, np.nan]).all():
             return boolean_type
 
