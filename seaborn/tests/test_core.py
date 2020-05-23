@@ -231,11 +231,6 @@ class TestHueMapping:
         m = HueMapping(p, palette=palette)
         assert isinstance(m.cmap, mpl.colors.ListedColormap)
 
-        # Test default hue limits
-        m = HueMapping(p)
-        data_range = p.plot_data["hue"].min(), p.plot_data["hue"].max()
-        assert m.limits == data_range
-
         # Test specified hue limits
         hue_norm = 1, 4
         m = HueMapping(p, norm=hue_norm)

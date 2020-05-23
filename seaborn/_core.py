@@ -26,51 +26,68 @@ from .utils import (
 
 
 class SemanticMapping:
+    """Base class for mapping data values to plot attributes."""
+
+    # -- Default attributes that all SemanticMapping subclasses must set
+
+    # Whether the mapping is numeric, categorical, or datetime
+    map_type = None
+
+    # Ordered list of unique values in the input data
+    levels = None
+
+    # A mapping from the data values to corresponding plot attributes
+    lookup_table = None
 
     def __init__(self, plotter):
 
         # TODO Putting this here so we can continue to use a lot of the
         # logic that's built into the library, but the idea of this class
         # is to move towards semantic mappings that are agnositic about the
-        # kind of plot they're going to be used to draw, which is going to
-        # take some rethinking.
+        # kind of plot they're going to be used to draw.
+        # Fully achieving that is going to take some thinking.
         self.plotter = plotter
 
     def map(cls, plotter, *args, **kwargs):
+        # This method is assigned the __init__ docstring
         method_name = "_{}_map".format(cls.__name__[:-7].lower())
         setattr(plotter, method_name, cls(plotter, *args, **kwargs))
         return plotter
 
     def _lookup_single(self, key):
+        """Apply the mapping to a single data value."""
+        return self.lookup_table[key]
 
-        value = self.lookup_table[key]
-        return value
-
-    def __call__(self, data, *args, **kwargs):
-
-        if isinstance(data, (list, np.ndarray, pd.Series)):
-            # TODO need to debug why data.map(self.lookup_table) doesn't work
-            return [self._lookup_single(key, *args, **kwargs) for key in data]
+    def __call__(self, key, *args, **kwargs):
+        """Get the attribute(s) values for the data key."""
+        if isinstance(key, (list, np.ndarray, pd.Series)):
+            return [self._lookup_single(k, *args, **kwargs) for k in key]
         else:
-            return self._lookup_single(data, *args, **kwargs)
+            return self._lookup_single(key, *args, **kwargs)
 
 
 @share_init_params_with_map
 class HueMapping(SemanticMapping):
-
-    # Default attributes (TODO use data class?)
-    # TODO Add docs for what these are (maybe on the base class?)
-    map_type = None
-    levels = None
-    norm = None
-    cmap = None
+    """Mapping that sets artist colors according to data values."""
+    # A specification of the colors that should appear in the plot
     palette = None
-    lookup_table = None
+
+    # An object that normalizes data values to [0, 1] range for color mapping
+    norm = None
+
+    # A continuous colormap object for interpolating in a numeric context
+    cmap = None
 
     def __init__(
         self, plotter, palette=None, order=None, norm=None,
     ):
+        """Map the levels of the `hue` variable to distinct colors.
 
+        Parameters
+        ----------
+        # TODO add generic parameters
+
+        """
         super().__init__(plotter)
 
         data = plotter.plot_data["hue"]
@@ -89,22 +106,19 @@ class HueMapping(SemanticMapping):
 
             if map_type == "numeric":
 
-                # TODO do we need levels for numeric map?
                 data = pd.to_numeric(data)
                 levels, lookup_table, norm, cmap = self.numeric_mapping(
                     data, palette, norm,
                 )
-                # TODO what do we need limits for? Can we get this downstream?
-                limits = norm.vmin, norm.vmax
 
             # --- Option 2: categorical mapping using seaborn palette
 
             else:
 
-                cmap = limits = norm = None
+                cmap = norm = None
                 levels, lookup_table = self.categorical_mapping(
                     # Casting data to list to handle differences in the way
-                    # pandas represents numpy datetime64 data
+                    # pandas and numpy represent datetime64 data
                     list(data), palette, order,
                 )
 
@@ -116,15 +130,17 @@ class HueMapping(SemanticMapping):
             self.lookup_table = lookup_table
             self.palette = palette
             self.levels = levels
-            self.limits = limits  # TODO do we need this
             self.norm = norm
             self.cmap = cmap
 
     def _lookup_single(self, key):
-
+        """Get the color for a single value, using colormap to interpolate."""
         try:
+            # Use a value that's in the original data vector
             value = self.lookup_table[key]
         except KeyError:
+            # Use the colormap to interpolate between existing datapoints
+            # (e.g. in the context of making a continuous legend)
             normed = self.norm(key)
             if np.ma.is_masked(normed):
                 normed = np.nan
@@ -132,7 +148,7 @@ class HueMapping(SemanticMapping):
         return value
 
     def infer_map_type(self, palette, norm, input_format, var_type):
-
+        """Determine how to implement the mapping."""
         if palette in QUAL_PALETTES:
             map_type = "categorical"
         elif norm is not None:
@@ -148,7 +164,6 @@ class HueMapping(SemanticMapping):
 
     def categorical_mapping(self, data, palette, order):
         """Determine colors when the hue mapping is categorical."""
-
         # -- Identify the order and name of the levels
 
         if order is None:
@@ -189,7 +204,6 @@ class HueMapping(SemanticMapping):
 
     def numeric_mapping(self, data, palette, norm):
         """Determine colors when the hue variable is quantitative."""
-
         if isinstance(palette, dict):
 
             # The presence of a norm object overrides a dictionary of hues
@@ -244,17 +258,20 @@ class HueMapping(SemanticMapping):
 
 @share_init_params_with_map
 class SizeMapping(SemanticMapping):
-
-    map_type = None
-    levels = None
+    """Mapping that sets artist sizes according to data values."""
+    # An object that normalizes data values to [0, 1] range
     norm = None
-    sizes = None
-    lookup_table = None
 
     def __init__(
         self, plotter, sizes=None, order=None, norm=None,
     ):
+        """Map the levels of the `size` variable to distinct values.
 
+        Parameters
+        ----------
+        # TODO add generic parameters
+
+        """
         super().__init__(plotter)
 
         data = plotter.plot_data["size"]
@@ -455,17 +472,21 @@ class SizeMapping(SemanticMapping):
 
 @share_init_params_with_map
 class StyleMapping(SemanticMapping):
+    """Mapping that sets artist style according to data values."""
 
-    # TODO define shared defaults on base class?
-    # TODO Add docs for what these are (maybe on the base class?)
-    map_type = None
-    levels = None
-    lookup_table = None
+    # Style mapping is always treated as categorical
+    map_type = "categorical"
 
     def __init__(
         self, plotter, markers=None, dashes=None, order=None,
     ):
+        """Map the levels of the `style` variable to distinct values.
 
+        Parameters
+        ----------
+        # TODO add generic parameters
+
+        """
         super().__init__(plotter)
 
         data = plotter.plot_data["style"]
@@ -514,7 +535,7 @@ class StyleMapping(SemanticMapping):
             self.lookup_table = lookup_table
 
     def _lookup_single(self, key, attr=None):
-
+        """Get attribute(s) for a given data point."""
         if attr is None:
             value = self.lookup_table[key]
         else:
@@ -566,7 +587,7 @@ class VectorPlotter:
 
     def __init__(self, data=None, variables={}):
 
-        plot_data, variables = self.assign_variables(data, variables)
+        self.assign_variables(data, variables)
 
         for var, cls in self._semantic_mappings.items():
             if var in self.semantics:
@@ -579,12 +600,12 @@ class VectorPlotter:
                 getattr(self, f"map_{var}")()
 
     @classmethod
-    def get_variables(cls, kwargs):
+    def get_semantics(cls, kwargs):
         """Subset a dictionary` arguments with known semantic variables."""
         return {k: kwargs[k] for k in cls.semantics}
 
     def assign_variables(self, data=None, variables={}):
-        """Define plot variables."""
+        """Define plot variables, optionally using lookup from `data`."""
         x = variables.get("x", None)
         y = variables.get("y", None)
 
@@ -606,8 +627,7 @@ class VectorPlotter:
             for v in variables
         }
 
-        # TODO maybe don't return, or return self for chaining
-        return plot_data, variables
+        return self
 
     def _assign_variables_wideform(self, data=None, **kwargs):
         """Define plot variables given wide-form data.
@@ -638,7 +658,6 @@ class VectorPlotter:
         empty = data is None or not len(data)
 
         # Then, determine if we have "flat" data (a single vector)
-        # TODO extract this into a separate function?
         if isinstance(data, dict):
             values = data.values()
         else:

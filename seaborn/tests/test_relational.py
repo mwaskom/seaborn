@@ -1185,7 +1185,7 @@ class TestLinePlotter(Helpers):
 
         ax.clear()
         p = _LinePlotter(
-            variables=dict(x=x, y=y, hue=z),
+            variables=dict(x=x, y=y, hue=z + 1),
             legend="brief"
         )
         p.map_hue(norm=mpl.colors.LogNorm()),

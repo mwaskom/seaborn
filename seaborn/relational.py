@@ -108,8 +108,9 @@ class _RelationalPlotter(VectorPlotter):
                 locator = mpl.ticker.LogLocator(numticks=3)
             else:
                 locator = mpl.ticker.MaxNLocator(nbins=3)
+            limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, self._hue_map.limits, self.plot_data["hue"].dtype
+                locator, limits, self.plot_data["hue"].dtype
             )
         elif self._hue_map.levels is None:
             hue_levels = hue_formatted_levels = []
@@ -659,7 +660,7 @@ def lineplot(
     legend="brief", ax=None, **kwargs
 ):
 
-    variables = _LinePlotter.get_variables(locals())
+    variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
@@ -936,7 +937,7 @@ def scatterplot(
     legend="brief", ax=None, **kwargs
 ):
 
-    variables = _ScatterPlotter.get_variables(locals())
+    variables = _ScatterPlotter.get_semantics(locals())
     p = _ScatterPlotter(
         data=data, variables=variables,
         x_bins=x_bins, y_bins=y_bins,
@@ -1215,7 +1216,7 @@ def relplot(
     # Use the full dataset to map the semantics
     p = plotter(
         data=data,
-        variables=plotter.get_variables(locals()),
+        variables=plotter.get_semantics(locals()),
         legend=legend,
     )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -1268,10 +1269,10 @@ def relplot(
     plot_variables = {key: key for key in p.variables}
     plot_kws.update(plot_variables)
 
-    # Define grid_data with row/col semantics
-    grid_semantics = "row", "col"  # TODO define on FacetGrid?
+    # Add the grid semantics onto the plotter
+    grid_semantics = "row", "col"
     p.semantics = plot_semantics + grid_semantics
-    full_data, full_variables = p.assign_variables(
+    p.assign_variables(
         data=data,
         variables=dict(
             x=x, y=y,
@@ -1282,8 +1283,8 @@ def relplot(
 
     # Pass the row/col variables to FacetGrid with their original
     # names so that the axes titles render correctly
-    grid_kws = {v: full_variables.get(v, None) for v in grid_semantics}
-    full_data = full_data.rename(columns=grid_kws)
+    grid_kws = {v: p.variables.get(v, None) for v in grid_semantics}
+    full_data = p.plot_data.rename(columns=grid_kws)
 
     # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws.copy()
