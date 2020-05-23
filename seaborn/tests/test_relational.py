@@ -1435,6 +1435,22 @@ class TestLinePlotter(Helpers):
         assert ax2.get_ylabel() == "y"
         assert not ax2.yaxis.label.get_visible()
 
+    def test_matplotlib_kwargs(self, long_df):
+
+        kws = {
+            "linestyle": "--",
+            "linewidth": 3,
+            "color": (1, .5, .2),
+            "markeredgecolor": (.2, .5, .2),
+            "markeredgewidth": 1,
+        }
+        ax = lineplot(data=long_df, x="x", y="y", **kws)
+
+        line, *_ = ax.lines
+        for key, val in kws.items():
+            plot_val = getattr(line, f"get_{key}")()
+            assert plot_val == val
+
     def test_lineplot_axes(self, wide_df):
 
         f1, ax1 = plt.subplots()
