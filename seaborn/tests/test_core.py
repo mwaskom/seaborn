@@ -234,7 +234,6 @@ class TestHueMapping:
         # Test specified hue limits
         hue_norm = 1, 4
         m = HueMapping(p, norm=hue_norm)
-        assert m.limits == hue_norm
         assert isinstance(m.norm, mpl.colors.Normalize)
         assert m.norm.vmin == hue_norm[0]
         assert m.norm.vmax == hue_norm[1]
@@ -242,7 +241,6 @@ class TestHueMapping:
         # Test Normalize object
         hue_norm = mpl.colors.PowerNorm(2, vmin=1, vmax=10)
         m = HueMapping(p, norm=hue_norm)
-        assert m.limits == (hue_norm.vmin, hue_norm.vmax)
         assert m.norm is hue_norm
 
         # Test default colormap values
