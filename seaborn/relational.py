@@ -170,8 +170,6 @@ class _LinePlotter(_RelationalPlotter):
     _legend_attributes = ["color", "linewidth", "marker", "dashes"]
     _legend_func = "plot"
 
-    _grouping_semantics = "hue", "size", "style"
-
     def __init__(
         self, *,
         data=None, variables={},

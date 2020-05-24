@@ -582,7 +582,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        assert len(list(p._semantic_subsets())) == 1
+        out = p._semantic_subsets("hue")
+        assert len(list(out)) == 1
 
         var = "a"
         n_subsets = len(long_df[var].unique())
@@ -594,7 +595,8 @@ class TestVectorPlotter:
                 data=long_df,
                 variables={"x": "x", "y": "y", semantic: var},
             )
-            assert len(list(p._semantic_subsets(semantics))) == n_subsets
+            out = p._semantic_subsets(semantics)
+            assert len(list(out)) == n_subsets
 
         var = "a"
         n_subsets = len(long_df[var].unique())
@@ -603,7 +605,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var, style=var),
         )
-        assert len(list(p._semantic_subsets(semantics))) == n_subsets
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
 
         # --
 
@@ -615,7 +618,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, style=var2),
         )
-        assert len(list(p._semantic_subsets(["hue"]))) == n_subsets
+        out = p._semantic_subsets(["hue"])
+        assert len(list(out)) == n_subsets
 
         n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
 
@@ -623,14 +627,15 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, style=var2),
         )
-        p._grouping_semantics = semantics
-        assert len(list(p._semantic_subsets())) == n_subsets
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
 
         p = VectorPlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var1),
         )
-        assert len(list(p._semantic_subsets(semantics))) == n_subsets
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
 
         # --
 
@@ -642,7 +647,8 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var1, size=var2, style=var3),
         )
-        assert len(list(p._semantic_subsets(semantics))) == n_subsets
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
 
     def test_semantic_subset_keys(self, long_df):
 
@@ -652,7 +658,7 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y"),
         )
-        for sub_vars, _ in p._semantic_subsets():
+        for sub_vars, _ in p._semantic_subsets("hue"):
             assert sub_vars == {}
 
         # --
@@ -663,7 +669,7 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", hue=var),
         )
-        for sub_vars, _ in p._semantic_subsets():
+        for sub_vars, _ in p._semantic_subsets("hue"):
             assert list(sub_vars) == ["hue"]
             assert sub_vars["hue"] in long_df[var].values
 
@@ -671,8 +677,7 @@ class TestVectorPlotter:
             data=long_df,
             variables=dict(x="x", y="y", size=var),
         )
-        p._grouping_semantics = "hue", "size",
-        for sub_vars, _ in p._semantic_subsets():
+        for sub_vars, _ in p._semantic_subsets("size"):
             assert list(sub_vars) == ["size"]
             assert sub_vars["size"] in long_df[var].values
 
@@ -705,7 +710,7 @@ class TestVectorPlotter:
         )
 
         p.sort = True
-        _, sub_data = next(p._semantic_subsets())
+        _, sub_data = next(p._semantic_subsets("hue"))
         assert_frame_equal(sub_data, p.plot_data)
 
         p = VectorPlotter(
@@ -713,7 +718,7 @@ class TestVectorPlotter:
             variables=dict(x="x", y="y", hue="a"),
         )
 
-        for sub_vars, sub_data in p._semantic_subsets():
+        for sub_vars, sub_data in p._semantic_subsets("hue"):
             rows = p.plot_data["hue"] == sub_vars["hue"]
             assert_frame_equal(sub_data, p.plot_data[rows])
 

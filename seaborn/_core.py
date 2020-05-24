@@ -580,10 +580,6 @@ class VectorPlotter:
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
 
-    # TODO arguably not necessary to have this defined at the class level
-    # since the plotting functions cna just ask for the semantics they want
-    _grouping_semantics = "hue",
-
     _default_size_range = 1, 2  # Unused but needed in tests
 
     def __init__(self, data=None, variables={}):
@@ -829,7 +825,7 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def _semantic_subsets(self, grouping_semantics=None):
+    def _semantic_subsets(self, grouping_semantics):
         """Generator for getting subsets of data defined by semantic variables.
 
         Parameters
@@ -845,9 +841,8 @@ class VectorPlotter:
             Subset of ``plot_data`` for this combination of semantic values.
 
         """
-        # TODO this may not be necessary, but leaving it for now
-        if grouping_semantics is None:
-            grouping_semantics = self._grouping_semantics
+        if isinstance(grouping_semantics, str):
+            grouping_semantics = [grouping_semantics]
 
         # Reduce to the semantics used in this plot
         grouping_semantics = [
