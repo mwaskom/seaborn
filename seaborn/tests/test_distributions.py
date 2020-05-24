@@ -9,6 +9,9 @@ import nose.tools as nt
 import numpy.testing as npt
 
 from .. import distributions as dist
+from ..distributions import (
+    rugplot,
+)
 
 _no_statsmodels = not dist._has_statsmodels
 
@@ -321,7 +324,7 @@ class TestKDE(object):
             assert level_rgb == rgb
 
 
-class TestRugPlot(object):
+class TestRugPlotter:
 
     @pytest.fixture
     def list_data(self):
@@ -342,7 +345,7 @@ class TestRugPlot(object):
         for x in [list_data, array_data, series_data]:
 
             f, ax = plt.subplots()
-            dist.rugplot(x=x, height=h)
+            rugplot(x=x, height=h)
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 
@@ -355,7 +358,7 @@ class TestRugPlot(object):
             plt.close(f)
 
             f, ax = plt.subplots()
-            dist.rugplot(x=x, height=h, axis="y")
+            rugplot(x=x, height=h, axis="y")
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 
@@ -368,16 +371,16 @@ class TestRugPlot(object):
             plt.close(f)
 
         f, ax = plt.subplots()
-        dist.rugplot(x=x, axis="y")
-        dist.rugplot(x=x, vertical=True)
+        rugplot(x=x, axis="y")
+        rugplot(x=x, vertical=True)
         c1, c2 = ax.collections
         assert np.array_equal(c1.get_segments(), c2.get_segments())
         plt.close(f)
 
         f, ax = plt.subplots()
-        dist.rugplot(x=x)
-        dist.rugplot(x=x, lw=2)
-        dist.rugplot(x=x, linewidth=3, alpha=.5)
+        rugplot(x=x)
+        rugplot(x=x, lw=2)
+        rugplot(x=x, linewidth=3, alpha=.5)
         for c, lw in zip(ax.collections, [1, 2, 3]):
             assert np.squeeze(c.get_linewidth()).item() == lw
         assert c.get_alpha() == .5
@@ -385,8 +388,8 @@ class TestRugPlot(object):
 
     def test_a_parameter_deprecation(self, series_data):
 
-        with pytest.warns(UserWarning):
-            ax = dist.rugplot(a=series_data)
+        with pytest.warns(FutureWarning):
+            ax = rugplot(a=series_data)
         rug, = ax.collections
         segments = np.array(rug.get_segments())
         assert len(segments) == len(series_data)
