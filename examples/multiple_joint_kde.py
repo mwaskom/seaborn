@@ -19,9 +19,9 @@ f, ax = plt.subplots(figsize=(8, 8))
 ax.set_aspect("equal")
 
 # Draw the two density plots
-ax = sns.kdeplot(setosa.sepal_width, setosa.sepal_length,
+ax = sns.kdeplot(x=setosa.sepal_width, y=setosa.sepal_length,
                  cmap="Reds", shade=True, shade_lowest=False)
-ax = sns.kdeplot(virginica.sepal_width, virginica.sepal_length,
+ax = sns.kdeplot(x=virginica.sepal_width, y=virginica.sepal_length,
                  cmap="Blues", shade=True, shade_lowest=False)
 
 # Add labels to the plot
