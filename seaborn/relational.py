@@ -299,7 +299,8 @@ class _LinePlotter(_RelationalPlotter):
         orig_linewidth = kws.pop("linewidth",
                                  kws.pop("lw", scout.get_linewidth()))
 
-        orig_dashes = kws.pop("dashes", "")
+        # Note that scout.get_linestyle() is` not correct as of mpl 3.2
+        orig_linestyle = kws.pop("linestyle", kws.pop("ls", None))
 
         kws.setdefault("markeredgewidth", kws.pop("mew", .75))
         kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
@@ -319,9 +320,9 @@ class _LinePlotter(_RelationalPlotter):
         # Set the default artist keywords
         kws.update(dict(
             color=orig_color,
-            dashes=orig_dashes,
             marker=orig_marker,
-            linewidth=orig_linewidth
+            linewidth=orig_linewidth,
+            linestyle=orig_linestyle,
         ))
 
         # Loop over the semantic subsets and draw a line for each
@@ -345,8 +346,10 @@ class _LinePlotter(_RelationalPlotter):
                 kws["linewidth"] = self._size_map(size)
             if style is not None:
                 attributes = self._style_map(style)
-                kws["dashes"] = attributes.get("dashes", orig_dashes)
-                kws["marker"] = attributes.get("marker", orig_marker)
+                if "dashes" in attributes:
+                    kws["dashes"] = attributes["dashes"]
+                if "marker" in attributes:
+                    kws["marker"] = attributes["marker"]
 
             line, = ax.plot([], [], **kws)
             line_color = line.get_color()
