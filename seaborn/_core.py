@@ -580,6 +580,10 @@ class VectorPlotter:
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
 
+    # TODO arguably not necessary to have this defined at the class level
+    # since the plotting functions cna just ask for the semantics they want
+    _grouping_semantics = "hue",
+
     _default_size_range = 1, 2  # Unused but needed in tests
 
     def __init__(self, data=None, variables={}):
@@ -824,6 +828,59 @@ class VectorPlotter:
         }
 
         return plot_data, variables
+
+    def _semantic_subsets(self, grouping_semantics=None):
+        """Generator for getting subsets of data defined by semantic variables.
+
+        Parameters
+        ----------
+        grouping_semantics : list of strings
+            Semantic variables that define the subsets of data.
+
+        Yields
+        ------
+        sub_vars : dict
+            Keys are semantic names, values are the level of that semantic.
+        sub_data : :class:`pandas.DataFrame`
+            Subset of ``plot_data`` for this combination of semantic values.
+
+        """
+        # TODO this may not be necessary, but leaving it for now
+        if grouping_semantics is None:
+            grouping_semantics = self._grouping_semantics
+
+        # Reduce to the semantics used in this plot
+        grouping_semantics = [
+            var for var in grouping_semantics if var in self.variables
+        ]
+
+        if grouping_semantics:
+
+            grouped_data = self.plot_data.groupby(
+                grouping_semantics, sort=False, as_index=False
+            )
+
+            grouping_keys = []
+            for var in grouping_semantics:
+                # TODO this is messy, add "semantic levels" property?
+                map_obj = getattr(self, f"_{var}_map")
+                grouping_keys.append(map_obj.levels)
+
+            for key in itertools.product(*grouping_keys):
+
+                # Pandas fails with singleton tuple inputs
+                pd_key = key[0] if len(key) == 1 else key
+
+                try:
+                    data_subset = grouped_data.get_group(pd_key)
+                except KeyError:
+                    continue
+
+                yield dict(zip(grouping_semantics, key)), data_subset
+
+        else:
+
+            yield {}, self.plot_data
 
 
 def variable_type(vector, boolean_type="numeric"):
