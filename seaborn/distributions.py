@@ -41,6 +41,32 @@ class _HistPlotter(_DistributionPlotter):
 
 class _KDEPlotter(_DistributionPlotter):
 
+    def __init__(
+        self,
+        data=None,
+        variables={},
+    ):
+
+        super().__init__(data=data, variables=variables)
+
+        pass
+
+    def plot(self, ax, kws):
+
+        pass
+
+
+def kdeplot(
+    *,
+    x=None, y=None,
+    shade=False, vertical=False, kernel="gau",
+    bw="scott", gridsize=100, cut=3, clip=None, legend=True,
+    cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
+    cbar_kws=None, ax=None,
+    data=None, data2=None,
+    **kwargs,
+):
+
     pass
 
 
@@ -105,11 +131,13 @@ class _RugPlotter(_DistributionPlotter):
         vector = self.plot_data[var]
         n = len(vector)
 
+        # We'll always add a single collection with varying colors
         if "hue" in self.variables:
             colors = self._hue_map(self.plot_data["hue"])
         else:
             colors = None
 
+        # Build the array of values for the LineCollection
         if var == "x":
 
             trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
@@ -124,6 +152,7 @@ class _RugPlotter(_DistributionPlotter):
                 np.tile([0, self.height], n), np.repeat(vector, 2)
             ])
 
+        # Draw the lines on the plot
         line_segs = xy_pairs.reshape([n, 2, 2])
         ax.add_collection(LineCollection(
             line_segs, transform=trans, colors=colors, **kws
@@ -136,11 +165,11 @@ class _RugPlotter(_DistributionPlotter):
 def rugplot(
     *,
     x=None,
-    height=.025, axis="x", ax=None,
+    height=.025, ax=None,
     data=None, y=None, hue=None,
     palette=None, hue_order=None, hue_norm=None,
     expand_margins=True,
-    a=None,
+    a=None, axis=None,
     **kwargs
 ):
 
@@ -153,8 +182,19 @@ def rugplot(
 
     # TODO Handle deprecation of "axis"
     # TODO Handle deprecation of "vertical"
+    if axis is not None:
+        msg = (
+            "The `axis` variable is no longer used. "
+            "Instead, assign variables directly to `x` or `y`."
+            # TODO or use orient in case of wide data?
+        )
+        warnings.warn(msg, UserWarning)
     if kwargs.pop("vertical", axis == "y"):
         x, y = None, x
+        msg = (
+            "Using `vertical=True` to control the orientation of the plot  "
+            "is deprecated. Instead, assign the data directly to `y`. "
+        )
 
     # ----------
 
@@ -677,7 +717,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
 
 
 @_deprecate_positional_args
-def kdeplot(
+def _kdeplot(
     *,
     x=None, y=None,
     shade=False, vertical=False, kernel="gau",
