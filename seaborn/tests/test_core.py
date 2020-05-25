@@ -181,6 +181,12 @@ class TestHueMapping:
         assert m.levels == [pd.Timestamp('2005-02-25')]
         assert m.map_type == "datetime"
 
+        # Test excplicit categories
+        p = VectorPlotter(data=long_df, variables=dict(x="x", hue="a_cat"))
+        m = HueMapping(p)
+        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.map_type == "categorical"
+
         # Test numeric data with category type
         p = VectorPlotter(
             data=long_df,
@@ -408,6 +414,12 @@ class TestSizeMapping:
         m = SizeMapping(p, sizes=sizes)
         assert m.lookup_table == sizes
 
+        # Test excplicit categories
+        p = VectorPlotter(data=long_df, variables=dict(x="x", size="a_cat"))
+        m = SizeMapping(p)
+        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.map_type == "categorical"
+
         # Test sizes list with wrong length
         sizes = list(np.random.rand(len(levels) + 1))
         with pytest.raises(ValueError):
@@ -510,6 +522,11 @@ class TestStyleMapping:
         for key in m.levels:
             assert m(key, "marker") == markers[key]
             assert m(key, "dashes") == dashes[key]
+
+        # Test excplicit categories
+        p = VectorPlotter(data=long_df, variables=dict(x="x", style="a_cat"))
+        m = StyleMapping(p)
+        assert m.levels == long_df["a_cat"].cat.categories.tolist()
 
         # Test style order with defaults
         order = p.plot_data["style"].unique()[[1, 2, 0]]
