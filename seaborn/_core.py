@@ -113,7 +113,7 @@ class HueMapping(SemanticMapping):
 
             # --- Option 2: categorical mapping using seaborn palette
 
-            elif map_type == "categorial":
+            elif map_type == "categorical":
 
                 cmap = norm = None
                 levels, lookup_table = self.categorical_mapping(
