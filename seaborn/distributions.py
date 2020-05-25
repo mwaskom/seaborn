@@ -49,11 +49,80 @@ class _KDEPlotter(_DistributionPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        pass
+    def plot(self, shade, ax, kws):
 
-    def plot(self, ax, kws):
+        if "hue" in self.variables:
+            hue_props = self.plot_data["hue"].value_counts(normalize=True)
 
-        pass
+        for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            if "hue" in sub_vars:
+                kws["color"] = self._hue_map(sub_vars["hue"])
+                kws["label"] = sub_vars["hue"]
+
+            univariate = bool({"x", "y"} - set(self.variables))
+
+            if univariate:
+
+                if "x" in self.variables:
+                    vector = sub_data["x"]
+                    vertical = False
+                elif "y" in self.variables:
+                    vector = sub_data["y"]
+                    vertical = True
+                else:
+                    return
+
+                _univariate_kdeplot(
+                    vector,
+                    shade=shade,
+                    vertical=vertical,
+                    kernel="gau",
+                    bw="scott",
+                    gridsize=1000,
+                    cut=3,
+                    clip=(-np.inf, np.inf),
+                    legend=True,
+                    ax=ax,
+                    cumulative=False,
+                    **kws,
+                )
+
+                if "hue" in sub_vars:
+                    # TODO we should do this on the way in
+                    norm = hue_props[sub_vars["hue"]]
+                    curve = ax.lines[-1]
+                    if vertical:
+                        curve.set_xdata(curve.get_xdata() * norm)
+                    else:
+                        curve.set_ydata(curve.get_ydata() * norm)
+
+                    fill = ax.collections[-1]
+                    paths = fill.get_paths()
+                    if vertical:
+                        paths[0].vertices[:, 0] *= norm
+                    else:
+                        paths[0].vertices[:, 1] *= norm
+
+            else:
+
+                _bivariate_kdeplot(
+                    x=sub_data["x"],
+                    y=sub_data["y"],
+                    filled=shade,
+                    fill_lowest=False,
+                    kernel="gau",
+                    bw="scott",
+                    gridsize=100,
+                    cut=3,
+                    clip=[(-np.inf, np.inf), (-np.inf, np.inf)],
+                    axlabel=None,
+                    cbar=False,
+                    cbar_ax=None,
+                    cbar_kws={},
+                    ax=ax,
+                    **kws,
+                )
 
 
 def kdeplot(
@@ -63,11 +132,44 @@ def kdeplot(
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
+    hue=None, palette=None, hue_order=None, hue_norm=None,
     data=None, data2=None,
     **kwargs,
 ):
 
-    pass
+    # Handle deprecation of `data` as name for x variable
+    # TODO this can be removed once refactored to do centralized preprocessing
+    # of input variables, because a vector input to `data` will be treated like
+    # an input to `x`. Warning is probably not necessary.
+    x_passed_as_data = (
+        x is None
+        and data is not None
+        and np.ndim(data) == 1
+    )
+    if x_passed_as_data:
+        x = data
+
+    # Handle deprecation of `data2` as name for y variable
+    if data2 is not None:
+        msg = "The `data2` param is now named `y`; please update your code."
+        warnings.warn(msg)
+        y = data2
+
+    # TODO handle deprecation of `vertical`
+
+    p = _KDEPlotter(
+        data=data,
+        variables=_KDEPlotter.get_semantics(locals()),
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    if ax is None:
+        ax = plt.gca()
+
+    p.plot(shade, ax, kwargs)
+
+    return ax
 
 
 class _RugPlotter(_DistributionPlotter):
