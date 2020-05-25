@@ -825,6 +825,58 @@ class VectorPlotter:
 
         return plot_data, variables
 
+    def _semantic_subsets(self, grouping_semantics):
+        """Generator for getting subsets of data defined by semantic variables.
+
+        Parameters
+        ----------
+        grouping_semantics : list of strings
+            Semantic variables that define the subsets of data.
+
+        Yields
+        ------
+        sub_vars : dict
+            Keys are semantic names, values are the level of that semantic.
+        sub_data : :class:`pandas.DataFrame`
+            Subset of ``plot_data`` for this combination of semantic values.
+
+        """
+        if isinstance(grouping_semantics, str):
+            grouping_semantics = [grouping_semantics]
+
+        # Reduce to the semantics used in this plot
+        grouping_semantics = [
+            var for var in grouping_semantics if var in self.variables
+        ]
+
+        if grouping_semantics:
+
+            grouped_data = self.plot_data.groupby(
+                grouping_semantics, sort=False, as_index=False
+            )
+
+            grouping_keys = []
+            for var in grouping_semantics:
+                # TODO this is messy, add "semantic levels" property?
+                map_obj = getattr(self, f"_{var}_map")
+                grouping_keys.append(map_obj.levels)
+
+            for key in itertools.product(*grouping_keys):
+
+                # Pandas fails with singleton tuple inputs
+                pd_key = key[0] if len(key) == 1 else key
+
+                try:
+                    data_subset = grouped_data.get_group(pd_key)
+                except KeyError:
+                    continue
+
+                yield dict(zip(grouping_semantics, key)), data_subset
+
+        else:
+
+            yield {}, self.plot_data
+
 
 def variable_type(vector, boolean_type="numeric"):
     """Determine whether a vector contains numeric, categorical, or dateime data.

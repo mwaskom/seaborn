@@ -4,6 +4,7 @@ import matplotlib as mpl
 
 import pytest
 from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
 
 from .._core import (
     SemanticMapping,
@@ -571,6 +572,164 @@ class TestVectorPlotter:
 
         assert p.variables["x"] == expected_x_name
         assert p.variables["y"] == expected_y_name
+
+    # TODO note that most of the other tests that excercise the core
+    # variable assignment code still live in test_relational
+
+    def test_semantic_subset_quantitites(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        out = p._semantic_subsets("hue")
+        assert len(list(out)) == 1
+
+        var = "a"
+        n_subsets = len(long_df[var].unique())
+
+        semantics = ["hue", "size", "style"]
+        for semantic in semantics:
+
+            p = VectorPlotter(
+                data=long_df,
+                variables={"x": "x", "y": "y", semantic: var},
+            )
+            out = p._semantic_subsets(semantics)
+            assert len(list(out)) == n_subsets
+
+        var = "a"
+        n_subsets = len(long_df[var].unique())
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var, style=var),
+        )
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
+
+        # --
+
+        var1, var2 = "a", "s"
+
+        n_subsets = len(long_df[var1].unique())
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, style=var2),
+        )
+        out = p._semantic_subsets(["hue"])
+        assert len(list(out)) == n_subsets
+
+        n_subsets = len(set(list(map(tuple, long_df[[var1, var2]].values))))
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, style=var2),
+        )
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2, style=var1),
+        )
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
+
+        # --
+
+        var1, var2, var3 = "a", "s", "b"
+        cols = [var1, var2, var3]
+        n_subsets = len(set(list(map(tuple, long_df[cols].values))))
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2, style=var3),
+        )
+        out = p._semantic_subsets(semantics)
+        assert len(list(out)) == n_subsets
+
+    def test_semantic_subset_keys(self, long_df):
+
+        semantics = ["hue", "size", "style"]
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+        for sub_vars, _ in p._semantic_subsets("hue"):
+            assert sub_vars == {}
+
+        # --
+
+        var = "a"
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var),
+        )
+        for sub_vars, _ in p._semantic_subsets("hue"):
+            assert list(sub_vars) == ["hue"]
+            assert sub_vars["hue"] in long_df[var].values
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size=var),
+        )
+        for sub_vars, _ in p._semantic_subsets("size"):
+            assert list(sub_vars) == ["size"]
+            assert sub_vars["size"] in long_df[var].values
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var, style=var),
+        )
+        for sub_vars, _ in p._semantic_subsets(semantics):
+            assert list(sub_vars) == ["hue", "style"]
+            assert sub_vars["hue"] in long_df[var].values
+            assert sub_vars["style"] in long_df[var].values
+            assert sub_vars["hue"] == sub_vars["style"]
+
+        var1, var2 = "a", "s"
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, size=var2),
+        )
+        for sub_vars, _ in p._semantic_subsets(semantics):
+            assert list(sub_vars) == ["hue", "size"]
+            assert sub_vars["hue"] in long_df[var1].values
+            assert sub_vars["size"] in long_df[var2].values
+
+    def test_semantic_subset_values(self, long_df):
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y"),
+        )
+
+        p.sort = True
+        _, sub_data = next(p._semantic_subsets("hue"))
+        assert_frame_equal(sub_data, p.plot_data)
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+        )
+
+        for sub_vars, sub_data in p._semantic_subsets("hue"):
+            rows = p.plot_data["hue"] == sub_vars["hue"]
+            assert_frame_equal(sub_data, p.plot_data[rows])
+
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", size="s"),
+        )
+        for sub_vars, sub_data in p._semantic_subsets(["hue", "size"]):
+            rows = p.plot_data["hue"] == sub_vars["hue"]
+            rows &= p.plot_data["size"] == sub_vars["size"]
+            assert_frame_equal(sub_data, p.plot_data[rows])
 
 
 class TestCoreFunc:

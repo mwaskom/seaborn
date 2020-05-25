@@ -1,4 +1,3 @@
-from itertools import product
 from textwrap import dedent
 import warnings
 
@@ -31,44 +30,6 @@ class _RelationalPlotter(VectorPlotter):
 
     # TODO where best to define default parameters?
     sort = True
-
-    def subset_data(self):
-        """Return (x, y) data for each subset defined by semantics."""
-        data = self.plot_data
-        all_true = pd.Series(True, data.index)
-
-        # TODO Define "grouping semantics" as class-level data?
-        semantic_levels = [
-            self._hue_map.levels,
-            self._size_map.levels,
-            self._style_map.levels,
-        ]
-
-        # Ensure that we can iterate over the levels of each semantic
-        semantic_levels = [[None] if x is None else x for x in semantic_levels]
-
-        iter_levels = product(*semantic_levels)
-        for hue, size, style in iter_levels:
-
-            hue_rows = all_true if hue is None else data["hue"] == hue
-            size_rows = all_true if size is None else data["size"] == size
-            style_rows = all_true if style is None else data["style"] == style
-
-            rows = hue_rows & size_rows & style_rows
-            data["units"] = data["units"].fillna("")
-            subset_data = data.loc[rows, ["units", "x", "y"]].dropna()
-
-            if not len(subset_data):
-                continue
-
-            if self.sort:
-                subset_data = subset_data.sort_values(["units", "x", "y"])
-
-            # TODO this is a little awkward, we should just treat it normally
-            if "units" not in self.variables:
-                subset_data = subset_data.drop("units", axis=1)
-
-            yield (hue, size, style), subset_data
 
     def label_axes(self, ax):
         """Set x and y labels with visibility that matches the ticklabels."""
@@ -325,27 +286,31 @@ class _LinePlotter(_RelationalPlotter):
             linestyle=orig_linestyle,
         ))
 
-        # Loop over the semantic subsets and draw a line for each
+        # Loop over the semantic subsets and add to the plot
+        grouping_semantics = "hue", "size", "style"
+        for sub_vars, sub_data in self._semantic_subsets(grouping_semantics):
 
-        for semantics, data in self.subset_data():
+            if self.sort:
+                sub_data = sub_data.sort_values(["units", "x", "y"])
 
-            hue, size, style = semantics
-            x, y, units = data["x"], data["y"], data.get("units", None)
+            x = sub_data["x"]
+            y = sub_data["y"]
+            u = sub_data["units"]
 
             if self.estimator is not None:
-                if units is not None:
+                if "units" in self.variables:
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                x, y, y_ci = self.aggregate(y, x, units)
+                x, y, y_ci = self.aggregate(y, x, u)
             else:
                 y_ci = None
 
-            if hue is not None:
-                kws["color"] = self._hue_map(hue)
-            if size is not None:
-                kws["linewidth"] = self._size_map(size)
-            if style is not None:
-                attributes = self._style_map(style)
+            if "hue" in sub_vars:
+                kws["color"] = self._hue_map(sub_vars["hue"])
+            if "size" in sub_vars:
+                kws["linewidth"] = self._size_map(sub_vars["size"])
+            if "style" in sub_vars:
+                attributes = self._style_map(sub_vars["style"])
                 if "dashes" in attributes:
                     kws["dashes"] = attributes["dashes"]
                 if "marker" in attributes:
@@ -361,12 +326,12 @@ class _LinePlotter(_RelationalPlotter):
 
             x, y = np.asarray(x), np.asarray(y)
 
-            if units is None:
-                line, = ax.plot(x, y, **kws)
-            else:
-                for u in units.unique():
-                    rows = np.asarray(units == u)
+            if "units" in self.variables:
+                for u_i in u.unique():
+                    rows = np.asarray(u == u_i)
                     ax.plot(x[rows], y[rows], **kws)
+            else:
+                line, = ax.plot(x, y, **kws)
 
             # --- Draw the confidence intervals
 
