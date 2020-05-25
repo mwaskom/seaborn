@@ -43,6 +43,8 @@ class _HistPlotter(_DistributionPlotter):
 
 class _KDEPlotter(_DistributionPlotter):
 
+    semantics = _DistributionPlotter.semantics + ("weights",)
+
     def __init__(
         self,
         data=None,
@@ -53,7 +55,8 @@ class _KDEPlotter(_DistributionPlotter):
 
     def _plot_univariate(
         self,
-        bw, gridsize, cut, clip, cumulative,
+        bw_method, bw_adjust,
+        gridsize, cut, clip, cumulative,
         shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
         fill_kws, line_kws,
         ax,
@@ -74,11 +77,16 @@ class _KDEPlotter(_DistributionPlotter):
             fill_kws.setdefault("linewidth", 0)
 
             if "x" in self.variables:
-                vector = sub_data["x"]
+                observations = sub_data["x"]
             elif "y" in self.variables:
-                vector = sub_data["y"]
+                observations = sub_data["y"]
             else:
                 return
+
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
 
             if "hue" in sub_vars:
 
@@ -87,17 +95,21 @@ class _KDEPlotter(_DistributionPlotter):
                 fill_kws["facecolor"] = self._hue_map(sub_vars["hue"])
 
             support, density = _kde_univariate(
-                vector,
-                bw,
+                observations,
+                bw_method,
+                bw_adjust,
+                weights,
                 gridsize,
                 cut,
                 clip,
                 cumulative,
             )
 
-            # TODO probably parameterize this
+            # TODO probably parameterize this. What's a good parameter name?
             if "hue" in sub_vars and not cumulative:
                 density *= hue_props[sub_vars["hue"]]
+
+            # TODO if we implement stacking, do it here
 
             if "x" in self.variables:
 
@@ -119,7 +131,8 @@ class _KDEPlotter(_DistributionPlotter):
 
     def plot(
         self,
-        bw, gridsize, cut, clip, cumulative,
+        bw_method, bw_adjust,
+        gridsize, cut, clip, cumulative,
         shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
         fill_kws, kws,
         ax,
@@ -130,7 +143,11 @@ class _KDEPlotter(_DistributionPlotter):
         if univariate:
 
             self._plot_univariate(
-                bw, gridsize, cut, clip, cumulative, shade, fill_kws, kws, ax,
+                bw_method, bw_adjust,
+                gridsize, cut, clip,
+                cumulative,
+                shade,
+                fill_kws, kws, ax,
             )
 
         else:
@@ -160,11 +177,16 @@ def kdeplot(
     *,
     x=None, y=None,
     shade=False, vertical=False, kernel="gau",
-    bw="scott", gridsize=100, cut=3, clip=None, legend=True,
+    bw=None, gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
+
+    # New params
     hue=None, palette=None, hue_order=None, hue_norm=None,
+    bw_method="scott", bw_adjust=1, weights=None,
     fill_kws=None,
+
+    # Renamed params
     data=None, data2=None,
     **kwargs,
 ):
@@ -184,17 +206,27 @@ def kdeplot(
     # Handle deprecation of `data2` as name for y variable
     if data2 is not None:
         msg = "The `data2` param is now named `y`; please update your code."
-        warnings.warn(msg)
+        warnings.warn(msg, FutureWarning)
         y = data2
 
-    # TODO handle deprecation of `vertical`
+    # Handle deprecation of `vertical`
     if vertical:
         msg = (
             "The `vertical` parameter is deprecated and will be removed in a "
             "future version. Assign the data to the `y` variable instead."
         )
-        warnings.warn(msg)
+        warnings.warn(msg, FutureWarning)
         x, y = y, x
+
+    # Handle deprecation of `bw`
+    if bw is not None:
+        msg = (
+            "The `bw` parameter is deprecated in favor of `bw_method` and "
+            f"`bw_adjust`. Using {bw} for `bw_method`, but please "
+            "see the docs for the new parameters and update your code."
+        )
+        warnings.warn(msg, FutureWarning)
+        bw_method = bw
 
     p = _KDEPlotter(
         data=data,
@@ -209,7 +241,13 @@ def kdeplot(
     if fill_kws is None:
         fill_kws = {}
 
-    p.plot(bw, gridsize, cut, clip, cumulative, shade, fill_kws, kwargs, ax)
+    p.plot(
+        bw_method, bw_adjust,
+        gridsize, cut, clip,
+        cumulative,
+        shade,
+        fill_kws, kwargs, ax
+    )
 
     return ax
 
@@ -1106,8 +1144,10 @@ def _rugplot(
 # TODO Find a home for these so they can be used by violinplot too
 # Move _kde_support to that home
 def _kde_univariate(
-    values,
-    bw,
+    observations,
+    bw_method,
+    bw_adjust,
+    weights,
     gridsize,
     cut,
     clip,
@@ -1117,9 +1157,12 @@ def _kde_univariate(
     if clip is None:
         clip = -np.inf, np.inf
 
-    kde = stats.gaussian_kde(values, bw_method=bw)
-    bw_val = (kde.factor * kde.covariance).squeeze()
-    support = _kde_support(values, bw_val, gridsize, cut, clip)
+    kde = stats.gaussian_kde(
+        observations, bw_method=bw_method, weights=weights
+    )
+    kde.set_bandwidth(kde.factor * bw_adjust)
+    bw = np.sqrt(kde.covariance.squeeze())
+    support = _kde_support(observations, bw, gridsize, cut, clip)
 
     if cumulative:
         density = [kde.integrate_box_1d(support[0], s_i) for s_i in support]
