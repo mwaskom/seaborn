@@ -1,4 +1,6 @@
 """Plotting functions for visualizing distributions."""
+import warnings
+
 import numpy as np
 from scipy import stats
 import pandas as pd
@@ -6,7 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.collections import LineCollection
-import warnings
+from matplotlib.cbook import normalize_kwargs
 
 try:
     import statsmodels.nonparametric.api as smnp
@@ -49,63 +51,91 @@ class _KDEPlotter(_DistributionPlotter):
 
         super().__init__(data=data, variables=variables)
 
-    def plot(self, shade, ax, kws):
+    def _plot_univariate(
+        self,
+        bw, gridsize, cut, clip, cumulative,
+        shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
+        fill_kws, line_kws,
+        ax,
+    ):
+
+        # TODO define a common support for all hue levels?
 
         if "hue" in self.variables:
             hue_props = self.plot_data["hue"].value_counts(normalize=True)
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
 
+            line_kws = normalize_kwargs(line_kws, mpl.lines.Line2D)
+            fill_kws = normalize_kwargs(
+                fill_kws, mpl.collections.PolyCollection
+            )
+            fill_kws.setdefault("alpha", .25)
+            fill_kws.setdefault("linewidth", 0)
+
+            if "x" in self.variables:
+                vector = sub_data["x"]
+            elif "y" in self.variables:
+                vector = sub_data["y"]
+            else:
+                return
+
             if "hue" in sub_vars:
-                kws["color"] = self._hue_map(sub_vars["hue"])
-                kws["label"] = sub_vars["hue"]
 
-            univariate = bool({"x", "y"} - set(self.variables))
+                line_kws["color"] = self._hue_map(sub_vars["hue"])
+                line_kws["label"] = sub_vars["hue"]
+                fill_kws["facecolor"] = self._hue_map(sub_vars["hue"])
 
-            if univariate:
+            support, density = _kde_univariate(
+                vector,
+                bw,
+                gridsize,
+                cut,
+                clip,
+                cumulative,
+            )
 
-                if "x" in self.variables:
-                    vector = sub_data["x"]
-                    vertical = False
-                elif "y" in self.variables:
-                    vector = sub_data["y"]
-                    vertical = True
-                else:
-                    return
+            # TODO probably parameterize this
+            if "hue" in sub_vars and not cumulative:
+                density *= hue_props[sub_vars["hue"]]
 
-                _univariate_kdeplot(
-                    vector,
-                    shade=shade,
-                    vertical=vertical,
-                    kernel="gau",
-                    bw="scott",
-                    gridsize=1000,
-                    cut=3,
-                    clip=(-np.inf, np.inf),
-                    legend=True,
-                    ax=ax,
-                    cumulative=False,
-                    **kws,
-                )
+            if "x" in self.variables:
 
-                if "hue" in sub_vars:
-                    # TODO we should do this on the way in
-                    norm = hue_props[sub_vars["hue"]]
-                    curve = ax.lines[-1]
-                    if vertical:
-                        curve.set_xdata(curve.get_xdata() * norm)
-                    else:
-                        curve.set_ydata(curve.get_ydata() * norm)
+                line, = ax.plot(support, density, **line_kws)
+                line.sticky_edges.y[:] = 0, np.inf
 
-                    fill = ax.collections[-1]
-                    paths = fill.get_paths()
-                    if vertical:
-                        paths[0].vertices[:, 0] *= norm
-                    else:
-                        paths[0].vertices[:, 1] *= norm
+                if shade:
+                    fill = ax.fill_between(support, 0, density, **fill_kws)
+                    fill.sticky_edges.y[:] = 0, np.inf
 
             else:
 
+                line, = ax.plot(density, support, **line_kws)
+                line.sticky_edges.x[:] = 0, np.inf
+
+                if shade:
+                    fill = ax.fill_between(density, 0, support, **fill_kws)
+                    fill.sticky_edges.x[:] = 0, np.inf
+
+    def plot(
+        self,
+        bw, gridsize, cut, clip, cumulative,
+        shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
+        fill_kws, kws,
+        ax,
+    ):
+
+        univariate = bool({"x", "y"} - set(self.variables))
+
+        if univariate:
+
+            self._plot_univariate(
+                bw, gridsize, cut, clip, cumulative, shade, fill_kws, kws, ax,
+            )
+
+        else:
+
+            for sub_vars, sub_data in self._semantic_subsets("hue"):
                 _bivariate_kdeplot(
                     x=sub_data["x"],
                     y=sub_data["y"],
@@ -125,6 +155,7 @@ class _KDEPlotter(_DistributionPlotter):
                 )
 
 
+@_deprecate_positional_args
 def kdeplot(
     *,
     x=None, y=None,
@@ -133,6 +164,7 @@ def kdeplot(
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
     hue=None, palette=None, hue_order=None, hue_norm=None,
+    fill_kws=None,
     data=None, data2=None,
     **kwargs,
 ):
@@ -156,6 +188,13 @@ def kdeplot(
         y = data2
 
     # TODO handle deprecation of `vertical`
+    if vertical:
+        msg = (
+            "The `vertical` parameter is deprecated and will be removed in a "
+            "future version. Assign the data to the `y` variable instead."
+        )
+        warnings.warn(msg)
+        x, y = y, x
 
     p = _KDEPlotter(
         data=data,
@@ -167,7 +206,10 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
-    p.plot(shade, ax, kwargs)
+    if fill_kws is None:
+        fill_kws = {}
+
+    p.plot(bw, gridsize, cut, clip, cumulative, shade, fill_kws, kwargs, ax)
 
     return ax
 
@@ -178,45 +220,27 @@ class _RugPlotter(_DistributionPlotter):
         self,
         data=None,
         variables={},
-        height=None,  # TODO or length?
-        expand_margins=True,
     ):
 
         super().__init__(data=data, variables=variables)
 
-        self.height = height
-        self.expand_margins = expand_margins
+    def plot(self, height, expand_margins, ax, kws):
 
-    def plot(self, ax, kws):
+        kws = normalize_kwargs(kws, mpl.lines.Line2D)
 
         # TODO we need to abstract this logic
         scout, = ax.plot([], [], **kws)
-
-        kws = kws.copy()
         kws["color"] = kws.pop("color", scout.get_color())
-
         scout.remove()
 
-        # TODO handle more gracefully
-        alias_map = dict(linewidth="lw", linestyle="ls", color="c")
-        for attr, alias in alias_map.items():
-            if alias in kws:
-                kws[attr] = kws.pop(alias)
         kws.setdefault("linewidth", 1)
 
-        # ---
-
-        # TODO expand the plot margins to account for the height of
-        # the rug (as an option?)
-
-        # ---
-
-        if self.expand_margins:
+        if expand_margins:
             xmarg, ymarg = ax.margins()
             if "x" in self.variables:
-                xmarg += self.height * 2
+                xmarg += height * 2
             if "y" in self.variables:
-                ymarg += self.height * 2
+                ymarg += height * 2
             ax.margins(x=xmarg, y=ymarg)
 
         if "hue" in self.variables:
@@ -224,11 +248,11 @@ class _RugPlotter(_DistributionPlotter):
             kws.pop("color", None)
 
         if "x" in self.variables:
-            self._plot_single_rug("x", ax, kws)
+            self._plot_single_rug("x", height, ax, kws)
         if "y" in self.variables:
-            self._plot_single_rug("y", ax, kws)
+            self._plot_single_rug("y", height, ax, kws)
 
-    def _plot_single_rug(self, var, ax, kws):
+    def _plot_single_rug(self, var, height, ax, kws):
         """Draw a rugplot along one axis of the plot."""
         vector = self.plot_data[var]
         n = len(vector)
@@ -244,14 +268,14 @@ class _RugPlotter(_DistributionPlotter):
 
             trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
             xy_pairs = np.column_stack([
-                np.repeat(vector, 2), np.tile([0, self.height], n)
+                np.repeat(vector, 2), np.tile([0, height], n)
             ])
 
         if var == "y":
 
             trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
             xy_pairs = np.column_stack([
-                np.tile([0, self.height], n), np.repeat(vector, 2)
+                np.tile([0, height], n), np.repeat(vector, 2)
             ])
 
         # Draw the lines on the plot
@@ -302,18 +326,15 @@ def rugplot(
 
     variables = _RugPlotter.get_semantics(locals())
 
-    p = _RugPlotter(
-        data=data,
-        variables=variables,
-        height=height,
-        expand_margins=expand_margins,
-    )
+    # TODO do we even need the special class now?
+    # TODO (well, we would need to call plot plot_rug or similar)
+    p = _RugPlotter(data=data, variables=variables)
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()
 
-    p.plot(ax, kwargs)
+    p.plot(height, expand_margins, ax, kwargs)
 
     return ax
 
@@ -818,9 +839,7 @@ def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
     return xx, yy, z
 
 
-@_deprecate_positional_args
 def _kdeplot(
-    *,
     x=None, y=None,
     shade=False, vertical=False, kernel="gau",
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
@@ -1082,3 +1101,37 @@ def _rugplot(
     ax.autoscale_view(scalex=not vertical, scaley=vertical)
 
     return ax
+
+
+# TODO Find a home for these so they can be used by violinplot too
+# Move _kde_support to that home
+def _kde_univariate(
+    values,
+    bw,
+    gridsize,
+    cut,
+    clip,
+    cumulative,
+):
+
+    if clip is None:
+        clip = -np.inf, np.inf
+
+    kde = stats.gaussian_kde(values, bw_method=bw)
+    bw_val = (kde.factor * kde.covariance).squeeze()
+    support = _kde_support(values, bw_val, gridsize, cut, clip)
+
+    if cumulative:
+        density = [kde.integrate_box_1d(support[0], s_i) for s_i in support]
+    else:
+        density = kde(support)
+
+    return support, density
+
+
+def _kde_bivariate(
+    x,
+    y,
+):
+
+    pass
