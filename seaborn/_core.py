@@ -113,18 +113,23 @@ class HueMapping(SemanticMapping):
 
             # --- Option 2: categorical mapping using seaborn palette
 
-            else:
+            elif map_type == "categorial":
 
+                cmap = norm = None
+                levels, lookup_table = self.categorical_mapping(
+                    data, palette, order,
+                )
+
+            # --- Option 3: datetime mapping
+
+            else:
+                # TODO this needs actual implementation
                 cmap = norm = None
                 levels, lookup_table = self.categorical_mapping(
                     # Casting data to list to handle differences in the way
                     # pandas and numpy represent datetime64 data
                     list(data), palette, order,
                 )
-
-            # --- Option 3: datetime mapping
-
-            # TODO this needs implementation; currently uses categorical
 
             self.map_type = map_type
             self.lookup_table = lookup_table
@@ -166,10 +171,7 @@ class HueMapping(SemanticMapping):
         """Determine colors when the hue mapping is categorical."""
         # -- Identify the order and name of the levels
 
-        if order is None:
-            levels = categorical_order(data)
-        else:
-            levels = order
+        levels = categorical_order(data, order)
         n_colors = len(levels)
 
         # -- Identify the set of colors to use
@@ -289,7 +291,7 @@ class SizeMapping(SemanticMapping):
 
             # --- Option 2: categorical mapping
 
-            else:
+            elif map_type == "categorical":
 
                 levels, lookup_table = self.categorical_mapping(
                     data, sizes, order,
@@ -297,7 +299,14 @@ class SizeMapping(SemanticMapping):
 
             # --- Option 3: datetime mapping
 
-            # TODO this needs implementation; currently uses categorical
+            # TODO this needs an actual implementation
+            else:
+
+                levels, lookup_table = self.categorical_mapping(
+                    # Casting data to list to handle differences in the way
+                    # pandas and numpy represent datetime64 data
+                    list(data), sizes, order,
+                )
 
             self.map_type = map_type
             self.levels = levels
@@ -490,9 +499,12 @@ class StyleMapping(SemanticMapping):
 
         if data.notna().any():
 
-            # Find ordered unique values
             # Cast to list to handle numpy/pandas datetime quirks
-            levels = categorical_order(list(data), order)
+            if variable_type(data) == "datetime":
+                data = list(data)
+
+            # Find ordered unique values
+            levels = categorical_order(data, order)
 
             markers = self._map_attributes(
                 markers, levels, unique_markers(len(levels)), "markers",
@@ -1131,14 +1143,14 @@ def unique_markers(n):
     return markers[:n]
 
 
-def categorical_order(values, order=None):
+def categorical_order(vector, order=None):
     """Return a list of unique data values.
 
     Determine an ordered list of levels in ``values``.
 
     Parameters
     ----------
-    values : list, array, Categorical, or Series
+    vector : list, array, Categorical, or Series
         Vector of "categorical" values
     order : list-like, optional
         Desired order of category levels to override the order determined
@@ -1151,19 +1163,19 @@ def categorical_order(values, order=None):
 
     """
     if order is None:
-        if hasattr(values, "categories"):
-            order = values.categories
+        if hasattr(vector, "categories"):
+            order = vector.categories
         else:
             try:
-                order = values.cat.categories
+                order = vector.cat.categories
             except (TypeError, AttributeError):
 
                 try:
-                    order = values.unique()
+                    order = vector.unique()
                 except AttributeError:
-                    order = pd.unique(values)
+                    order = pd.unique(vector)
 
-                if variable_type(values) == "numeric":
+                if variable_type(vector) == "numeric":
                     order = np.sort(order)
 
         order = filter(pd.notnull, order)

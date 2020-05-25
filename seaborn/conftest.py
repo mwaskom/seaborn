@@ -142,6 +142,9 @@ def long_df(rng):
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))
+    df["a_cat"] = df["a"].astype("category")
+    new_order = df["a_cat"].cat.categories[[1, 2, 0]]
+    df["a_cat"] = df["a_cat"].cat.reorder_categories(new_order)
     df["s_cat"] = df["s"].astype("category")
     df["s_str"] = df["s"].astype(str)
     return df
