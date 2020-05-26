@@ -55,19 +55,45 @@ class _KDEPlotter(_DistributionPlotter):
 
     def _plot_univariate(
         self,
-        bw_method, bw_adjust,
-        gridsize, cut, clip, cumulative,
-        shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
+        bw_method, bw_adjust, cumulative,
+        gridsize, cut, clip,
+        hue_method, scale_by_hue, cut_by_hue,
+        shade,
         fill_kws, line_kws,
         ax,
     ):
 
-        # TODO define a common support for all hue levels?
+        try:
+            data_variable = (set(self.variables) & {"x", "y"}).pop()
+        except KeyError:
+            return
 
+        global_support = None
         if "hue" in self.variables:
             hue_props = self.plot_data["hue"].value_counts(normalize=True)
 
+            # TODO raise if specified wrong?
+            cut_by_hue = cut_by_hue or hue_method not in ("stack", "fill")
+
+            if not cut_by_hue:
+                (start, stop), _ = _kde_univariate(
+                    self.plot_data[data_variable],
+                    bw_method=bw_method,
+                    bw_adjust=bw_adjust,
+                    weights=None,
+                    gridsize=2,
+                    cut=cut,
+                    clip=clip,
+                    cumulative=False,
+                    support=None
+                )
+                global_support = np.linspace(start, stop, gridsize)
+
+        supports = {}
+        densities = {}
         for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            hue_level = sub_vars.get("hue", None)
 
             line_kws = normalize_kwargs(line_kws, mpl.lines.Line2D)
             fill_kws = normalize_kwargs(
@@ -76,65 +102,100 @@ class _KDEPlotter(_DistributionPlotter):
             fill_kws.setdefault("alpha", .25)
             fill_kws.setdefault("linewidth", 0)
 
-            if "x" in self.variables:
-                observations = sub_data["x"]
-            elif "y" in self.variables:
-                observations = sub_data["y"]
-            else:
-                return
+            observations = sub_data[data_variable]
+
+            # TODO gotta handle nulls
+
+            if not observations.any():
+                # TODO what do we need for downstream?
+                continue
 
             if "weights" in self.variables:
                 weights = sub_data["weights"]
             else:
                 weights = None
 
-            if "hue" in sub_vars:
-
-                line_kws["color"] = self._hue_map(sub_vars["hue"])
-                line_kws["label"] = sub_vars["hue"]
-                fill_kws["facecolor"] = self._hue_map(sub_vars["hue"])
-
             support, density = _kde_univariate(
-                observations,
-                bw_method,
-                bw_adjust,
-                weights,
-                gridsize,
-                cut,
-                clip,
-                cumulative,
+                observations=observations,
+                bw_method=bw_method,
+                bw_adjust=bw_adjust,
+                weights=weights,
+                gridsize=gridsize,
+                cut=cut,
+                clip=clip,
+                cumulative=cumulative,
+                support=global_support,
             )
 
-            # TODO probably parameterize this. What's a good parameter name?
-            if "hue" in sub_vars and not cumulative:
+            if "hue" in sub_vars and scale_by_hue and not cumulative:
                 density *= hue_props[sub_vars["hue"]]
 
-            # TODO if we implement stacking, do it here
+            supports[hue_level] = support
+            densities[hue_level] = density
+
+        if "hue" in self.variables:
+            iter_levels = self._hue_map.levels[::-1]
+        else:
+            iter_levels = [None]
+
+        density = np.zeros_like(density)
+
+        if hue_method == "fill":
+            stacked_densities = [d for d in densities.values()]
+            fill_norm = np.stack(stacked_densities, axis=0).sum(axis=0)
+        else:
+            fill_norm = 1
+
+        # TODO needs a check on hue being used?
+        stickies = (0, 1) if hue_method == "fill" else (0, np.inf)
+        # TODO also sticky on range of support?
+
+        for hue_level in iter_levels:
+
+            support = supports[hue_level]
+
+            if hue_method in ("stack", "fill"):
+                fill_from = density.copy()
+                density += densities[hue_level] / fill_norm
+            else:
+                fill_from = 0
+                density = densities[hue_level]
+
+            if "hue" in self.variables:
+
+                line_kws["label"] = hue_level  # TODO is this how we do legend?
+                line_kws["color"] = self._hue_map(hue_level)
+                fill_kws["facecolor"] = self._hue_map(hue_level)
 
             if "x" in self.variables:
 
                 line, = ax.plot(support, density, **line_kws)
-                line.sticky_edges.y[:] = 0, np.inf
+                # TODO stick at 1 for hue_method == fill
+                line.sticky_edges.y[:] = stickies
 
                 if shade:
-                    fill = ax.fill_between(support, 0, density, **fill_kws)
-                    fill.sticky_edges.y[:] = 0, np.inf
+                    fill = ax.fill_between(
+                        support, fill_from, density, **fill_kws
+                    )
+                    fill.sticky_edges.y[:] = stickies
 
             else:
 
                 line, = ax.plot(density, support, **line_kws)
-                line.sticky_edges.x[:] = 0, np.inf
+                line.sticky_edges.x[:] = stickies
 
                 if shade:
-                    fill = ax.fill_between(density, 0, support, **fill_kws)
-                    fill.sticky_edges.x[:] = 0, np.inf
+                    fill = ax.fill_between(
+                        density, fill_from, support, **fill_kws
+                    )
+                    fill.sticky_edges.x[:] = stickies
 
     def plot(
         self,
-        bw_method, bw_adjust,
-        gridsize, cut, clip, cumulative,
-        shade,  # TODO rename fill?  If not, change fill_kws to shade_kws.
-        fill_kws, kws,
+        bw_method, bw_adjust, cumulative,
+        gridsize, cut, clip,
+        hue_method, scale_by_hue, cut_by_hue,
+        shade, shade_kws, kws,
         ax,
     ):
 
@@ -142,12 +203,16 @@ class _KDEPlotter(_DistributionPlotter):
 
         if univariate:
 
+            if hue_method not in ("layer", "stack", "fill"):
+                # TODO handle error
+                raise ValueError
+
             self._plot_univariate(
-                bw_method, bw_adjust,
+                bw_method, bw_adjust, cumulative,
                 gridsize, cut, clip,
-                cumulative,
-                shade,
-                fill_kws, kws, ax,
+                hue_method, scale_by_hue, cut_by_hue,
+                shade, shade_kws,
+                kws, ax,
             )
 
         else:
@@ -176,38 +241,47 @@ class _KDEPlotter(_DistributionPlotter):
 def kdeplot(
     *,
     x=None, y=None,
-    shade=False, vertical=False, kernel="gau",
-    bw=None, gridsize=100, cut=3, clip=None, legend=True,
+    shade=False, vertical=False, kernel=None,
+    bw=None, gridsize=500, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
 
     # New params
     hue=None, palette=None, hue_order=None, hue_norm=None,
+    hue_method="layer",  # or stack or fill
+    scale_by_hue=True,  # TODO Good name? Is the meaning of True/False clear?
+    cut_by_hue=False,
     bw_method="scott", bw_adjust=1, weights=None,
-    fill_kws=None,
+    shade_kws=None,
 
     # Renamed params
     data=None, data2=None,
     **kwargs,
 ):
 
-    # Handle deprecation of `data` as name for x variable
-    # TODO this can be removed once refactored to do centralized preprocessing
-    # of input variables, because a vector input to `data` will be treated like
-    # an input to `x`. Warning is probably not necessary.
-    x_passed_as_data = (
-        x is None
-        and data is not None
-        and np.ndim(data) == 1
-    )
-    if x_passed_as_data:
-        x = data
-
     # Handle deprecation of `data2` as name for y variable
     if data2 is not None:
-        msg = "The `data2` param is now named `y`; please update your code."
-        warnings.warn(msg, FutureWarning)
+
         y = data2
+
+        # If `data2` is present, we need to check for the `data` kwarg being
+        # used to pass a vector for `x`. We'll reassign the vectors and warn.
+        # We need this check because just passing a vector to `data` is now
+        # technically valid.  # TODO test this well.
+
+        x_passed_as_data = (
+            x is None
+            and data is not None
+            and np.ndim(data) == 1
+        )
+
+        if x_passed_as_data:
+            msg = "Use `x` and `y` rather than `data` `and `data2`"
+            x = data
+        else:
+            msg = "The `data2` param is now named `y`; please update your code"
+
+        warnings.warn(msg, FutureWarning)
 
     # Handle deprecation of `vertical`
     if vertical:
@@ -228,6 +302,20 @@ def kdeplot(
         warnings.warn(msg, FutureWarning)
         bw_method = bw
 
+    # TODO handle deprecation of kernel
+    if kernel is not None:
+        msg = (
+            "Support for alternate kernels has been removed. "
+            "Using Gaussian kernel."
+        )
+        warnings.warn(msg, UserWarning)
+
+    # TODO (?) rename shade -> fill?
+    # This is probably too wideley used and underjustifed for removal,
+    # but could add fill and soft-deprecate shade
+
+    # ----------------------------------------------------------------------- #
+
     p = _KDEPlotter(
         data=data,
         variables=_KDEPlotter.get_semantics(locals()),
@@ -238,15 +326,23 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
-    if fill_kws is None:
-        fill_kws = {}
+    if shade_kws is None:
+        shade_kws = {}
 
     p.plot(
-        bw_method, bw_adjust,
-        gridsize, cut, clip,
-        cumulative,
-        shade,
-        fill_kws, kwargs, ax
+        bw_method=bw_method,
+        bw_adjust=bw_adjust,
+        cumulative=cumulative,
+        gridsize=gridsize,
+        cut=cut,
+        clip=clip,
+        hue_method=hue_method,
+        scale_by_hue=scale_by_hue,
+        cut_by_hue=cut_by_hue,
+        shade=shade,
+        shade_kws=shade_kws,
+        kws=kwargs,
+        ax=ax
     )
 
     return ax
@@ -1145,13 +1241,14 @@ def _rugplot(
 # Move _kde_support to that home
 def _kde_univariate(
     observations,
-    bw_method,
-    bw_adjust,
-    weights,
-    gridsize,
-    cut,
-    clip,
-    cumulative,
+    bw_method=None,
+    bw_adjust=1,
+    weights=None,
+    gridsize=500,
+    cut=3,
+    clip=(-np.inf, +np.inf),
+    cumulative=False,
+    support=None,
 ):
 
     if clip is None:
@@ -1162,7 +1259,9 @@ def _kde_univariate(
     )
     kde.set_bandwidth(kde.factor * bw_adjust)
     bw = np.sqrt(kde.covariance.squeeze())
-    support = _kde_support(observations, bw, gridsize, cut, clip)
+
+    if support is None:
+        support = _kde_support(observations, bw, gridsize, cut, clip)
 
     if cumulative:
         density = [kde.integrate_box_1d(support[0], s_i) for s_i in support]
