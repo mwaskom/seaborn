@@ -106,8 +106,9 @@ class _KDEPlotter(_DistributionPlotter):
             hue_props = (self.plot_data.loc[all_observations.index, "hue"]
                          .value_counts(normalize=True))
 
-            # TODO raise if specified wrong?
-            cut_by_hue = cut_by_hue or hue_method not in ("stack", "fill")
+            if hue_method in ("stack", "fill"):
+                # TODO raise if specified wrong?
+                cut_by_hue = False
 
             # Define a single grid of support for the PDFs
             # Re-use the full KDE function, evalute on only 2 points for speed
@@ -128,10 +129,9 @@ class _KDEPlotter(_DistributionPlotter):
             # Extract the data points from this sub set and remove nulls
             observations = remove_na(sub_data[data_variable])
 
-            if not observations.any():
-                # TODO what do we need for downstream?
-                # i.e. for stacked plots do we want to have a line
-                # representing the level with no values? or just no have it
+            if not observations.var():
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
                 continue
 
             # Extract the weights for this subset of observations
@@ -143,7 +143,6 @@ class _KDEPlotter(_DistributionPlotter):
             # If data axis is log scaled, fit the KDE in logspace
             if log_scale:
                 observations = np.log(observations)
-                # TODO log scale for clip?
 
             # Estimate the density of observations at this level
             support, density = _kde_univariate(
@@ -184,12 +183,11 @@ class _KDEPlotter(_DistributionPlotter):
 
         # Initialize an array we'll use to keep track density stacking
         if hue_method in ("stack", "fill"):
-            index = np.exp(global_support) if log_scale else global_support
-            pedestal = pd.Series(0, index)
+            pedestal = np.array(0)
 
-        # Better to iterate _semantic_subsets, but we need to add a way
-        # to reverse the order of subsets (i.el reversed=True)
-        # for sub_vars, sub_data in self._semantic_subsets("hue", ...):
+        # Better to iterate on _semantic_subsets, but we need to add a way
+        # to reverse the order of subsets (i.e. reversed=True)
+        # for sub_vars, _ in self._semantic_subsets("hue", reversed=True):
         for hue_level in iter_levels:
 
             # Extract the support grid and density curve for this level
@@ -250,9 +248,9 @@ def kdeplot(
 
     # New params
     hue=None, palette=None, hue_order=None, hue_norm=None,
-    hue_method="layer",  # or stack or fill
+    hue_method="layer",  # or stack or fill  TODO what about mirror?
     scale_by_hue=True,  # TODO Good name? Is the meaning of True/False clear?
-    cut_by_hue=False,
+    cut_by_hue=False,  # TODO limit ourselves just to hue?
     bw_method="scott", bw_adjust=1, weights=None,
     shade_kws=None,
 
@@ -369,7 +367,16 @@ def kdeplot(
 
     else:
 
-        pass  # TODO
+        if cumulative:
+            raise TypeError("Cumulative distribution plots are not"
+                            "supported for bivariate distributions.")
+
+        _bivariate_kdeplot(
+            p.plot_data["x"], p.plot_data["y"],
+            shade, shade_lowest,
+            kernel, bw, 100, cut, clip, legend,
+            cbar, cbar_ax, cbar_kws, ax, **kwargs
+        )
 
     return ax
 
