@@ -89,21 +89,31 @@ class _KDEPlotter(_DistributionPlotter):
         except KeyError:
             return
 
+        # Check for log scaling on the data axis
+        data_axis = getattr(ax, f"{data_variable}axis")
+        log_scale = data_axis.get_scale() == "log"
+
         # Initialize the variable that will provide a single support grid
         global_support = None
 
         if "hue" in self.variables:
 
+            all_observations = remove_na(self.plot_data[data_variable])
+            if log_scale:
+                all_observations = np.log(all_observations)
+
             # Compute the reletive proportion of each hue level
-            hue_props = self.plot_data["hue"].value_counts(normalize=True)
+            hue_props = (self.plot_data.loc[all_observations.index, "hue"]
+                         .value_counts(normalize=True))
 
             # TODO raise if specified wrong?
             cut_by_hue = cut_by_hue or hue_method not in ("stack", "fill")
 
             # Define a single grid of support for the PDFs
+            # Re-use the full KDE function, evalute on only 2 points for speed
             if not cut_by_hue:
                 (start, stop), _ = _kde_univariate(
-                    self.plot_data[data_variable],
+                    all_observations,
                     gridsize=2,
                     **estimate_kws,
                 )
@@ -115,10 +125,8 @@ class _KDEPlotter(_DistributionPlotter):
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
 
-            # Extract the data points from this sub set
-            observations = sub_data[data_variable]
-
-            # TODO gotta handle nulls
+            # Extract the data points from this sub set and remove nulls
+            observations = remove_na(sub_data[data_variable])
 
             if not observations.any():
                 # TODO what do we need for downstream?
@@ -132,6 +140,11 @@ class _KDEPlotter(_DistributionPlotter):
             else:
                 weights = None
 
+            # If data axis is log scaled, fit the KDE in logspace
+            if log_scale:
+                observations = np.log(observations)
+                # TODO log scale for clip?
+
             # Estimate the density of observations at this level
             support, density = _kde_univariate(
                 observations=observations,
@@ -139,8 +152,12 @@ class _KDEPlotter(_DistributionPlotter):
                 gridsize=gridsize,
                 cumulative=cumulative,
                 support=global_support,
+                log_scale=log_scale,
                 **estimate_kws,
             )
+
+            if log_scale:
+                support = np.exp(support)
 
             # Apply a scaling factor so that the integral over all subsets is 1
             # TODO set scale_by_hue to False if no hue, for cleaner if clauses
@@ -167,7 +184,8 @@ class _KDEPlotter(_DistributionPlotter):
 
         # Initialize an array we'll use to keep track density stacking
         if hue_method in ("stack", "fill"):
-            pedestal = pd.Series(0, global_support)
+            index = np.exp(global_support) if log_scale else global_support
+            pedestal = pd.Series(0, index)
 
         # Better to iterate _semantic_subsets, but we need to add a way
         # to reverse the order of subsets (i.el reversed=True)
@@ -308,11 +326,16 @@ def kdeplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
+    if shade_kws is None:
+        shade_kws = {}
+
     if ax is None:
         ax = plt.gca()
 
-    if shade_kws is None:
-        shade_kws = {}
+    # TODO add log scaling parameter that can log scale out here, and then
+    # internal function just needs to listen to that. Question: do we want
+    # to be able to force the kde fit to ignore the scale of the axis and
+    # always use the original data scale?
 
     # TODO better to abstract out the concept of Estimator object?
     # TODO let's write tests against this implementation first
@@ -1251,6 +1274,7 @@ def _kde_univariate(
     cut=3,
     clip=(-np.inf, +np.inf),
     cumulative=False,
+    log_scale=False,
     support=None,
 ):
 
@@ -1267,8 +1291,9 @@ def _kde_univariate(
         support = _kde_support(observations, bw, gridsize, cut, clip)
 
     if cumulative:
-        density = [kde.integrate_box_1d(support[0], s_i) for s_i in support]
-        density = np.array(density)
+        density = np.array([
+            kde.integrate_box_1d(support[0], s_i) for s_i in support
+        ])
     else:
         density = kde(support)
 
