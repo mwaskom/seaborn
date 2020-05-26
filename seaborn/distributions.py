@@ -60,25 +60,47 @@ class _KDEPlotter(_DistributionPlotter):
         cut_by_hue,
         cumulative,
         gridsize,
-        shade,
+        shade,  # TODO at least use fill internally
         estimate_kws,
         fill_kws,
         line_kws,
         ax,
     ):
 
+        # Preprocess the matplotlib keyward dictionaries
+        line_kws = normalize_kwargs(line_kws, mpl.lines.Line2D)
+        fill_kws = normalize_kwargs(
+            fill_kws, mpl.collections.PolyCollection
+        )
+
+        # Set shared default values for the matplotlib attributes
+        fill_kws.setdefault("alpha", .25)
+        fill_kws.setdefault("linewidth", 0)
+
+        # Control the interaction with autoscaling by defining sticky_edges
+        # i.e. we don't want autoscale margins below the density curve
+        # TODO needs a check on hue being used?
+        stickies = (0, 1) if hue_method == "fill" else (0, np.inf)
+        # TODO also sticky on range of support for hue_method="fill"?
+
+        # Identify the axis with the data values
         try:
             data_variable = (set(self.variables) & {"x", "y"}).pop()
         except KeyError:
             return
 
+        # Initialize the variable that will provide a single support grid
         global_support = None
+
         if "hue" in self.variables:
+
+            # Compute the reletive proportion of each hue level
             hue_props = self.plot_data["hue"].value_counts(normalize=True)
 
             # TODO raise if specified wrong?
             cut_by_hue = cut_by_hue or hue_method not in ("stack", "fill")
 
+            # Define a single grid of support for the PDFs
             if not cut_by_hue:
                 (start, stop), _ = _kde_univariate(
                     self.plot_data[data_variable],
@@ -87,32 +109,30 @@ class _KDEPlotter(_DistributionPlotter):
                 )
                 global_support = np.linspace(start, stop, gridsize)
 
+        # We will do two loops through the semantic subsets
+        # The first is to estimate the density of observations in each subset
         densities = {}
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
 
-            hue_level = sub_vars.get("hue", None)
-
-            line_kws = normalize_kwargs(line_kws, mpl.lines.Line2D)
-            fill_kws = normalize_kwargs(
-                fill_kws, mpl.collections.PolyCollection
-            )
-            fill_kws.setdefault("alpha", .25)
-            fill_kws.setdefault("linewidth", 0)
-
+            # Extract the data points from this sub set
             observations = sub_data[data_variable]
 
             # TODO gotta handle nulls
 
             if not observations.any():
                 # TODO what do we need for downstream?
+                # i.e. for stacked plots do we want to have a line
+                # representing the level with no values? or just no have it
                 continue
 
+            # Extract the weights for this subset of observations
             if "weights" in self.variables:
                 weights = sub_data["weights"]
             else:
                 weights = None
 
+            # Estimate the density of observations at this level
             support, density = _kde_univariate(
                 observations=observations,
                 weights=weights,
@@ -122,33 +142,43 @@ class _KDEPlotter(_DistributionPlotter):
                 **estimate_kws,
             )
 
-            if "hue" in sub_vars and scale_by_hue and not cumulative:
+            # Apply a scaling factor so that the integral over all subsets is 1
+            # TODO set scale_by_hue to False if no hue, for cleaner if clauses
+            if "hue" in sub_vars and scale_by_hue:
                 density *= hue_props[sub_vars["hue"]]
 
-            densities[hue_level] = pd.Series(density, index=support)
+            # Store the density for this level
+            level = sub_vars.get("hue", None)
+            densities[level] = pd.Series(density, index=support)
 
-        if "hue" in self.variables:
-            iter_levels = self._hue_map.levels[::-1]
-        else:
-            iter_levels = [None]
-
-        if hue_method in ("stack", "fill"):
-            pedestal = pd.Series(0, global_support)
-
+        # Now we might need to normalize at each point in the grid
         if hue_method == "fill":
             fill_norm = pd.concat(densities, axis=1).sum(axis=1)
         else:
             fill_norm = 1
 
-        # TODO needs a check on hue being used?
-        stickies = (0, 1) if hue_method == "fill" else (0, np.inf)
-        # TODO also sticky on range of support?
+        # We are going to loop through the subsets again, but this time
+        # we want to go in reverse order. This is so that stacked densities
+        # will read from top to bottom in the same order as the legend.
+        if "hue" in self.variables:
+            iter_levels = self._hue_map.levels[::-1]
+        else:
+            iter_levels = [None]
 
+        # Initialize an array we'll use to keep track density stacking
+        if hue_method in ("stack", "fill"):
+            pedestal = pd.Series(0, global_support)
+
+        # Better to iterate _semantic_subsets, but we need to add a way
+        # to reverse the order of subsets (i.el reversed=True)
+        # for sub_vars, sub_data in self._semantic_subsets("hue", ...):
         for hue_level in iter_levels:
 
+            # Extract the support grid and density curve for this level
             density = densities[hue_level]
             support = density.index
 
+            # Handle density stacking
             if hue_method in ("stack", "fill"):
                 fill_from = pedestal.copy()
                 density = pedestal + density / fill_norm
@@ -156,16 +186,17 @@ class _KDEPlotter(_DistributionPlotter):
             else:
                 fill_from = 0
 
+            # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
-
                 line_kws["color"] = self._hue_map(hue_level)
                 fill_kws["facecolor"] = self._hue_map(hue_level)
 
+            # Plot a curve with observation values on the x axis
             if "x" in self.variables:
 
                 line, = ax.plot(support, density, **line_kws)
-                # TODO stick at 1 for hue_method == fill
                 line.sticky_edges.y[:] = stickies
+                # TODO stick at 1 for hue_method == fill
 
                 if shade:
                     fill = ax.fill_between(
@@ -173,6 +204,7 @@ class _KDEPlotter(_DistributionPlotter):
                     )
                     fill.sticky_edges.y[:] = stickies
 
+            # Plot a curve with observation values on the y axis
             else:
 
                 line, = ax.plot(density, support, **line_kws)
@@ -259,7 +291,7 @@ def kdeplot(
         warnings.warn(msg, UserWarning)
 
     # TODO (?) rename shade -> fill?
-    # This is probably too wideley used and underjustifed for removal,
+    # This is probably too widely used and underjustifed for removal,
     # but could add fill and soft-deprecate shade
     # TODO we would also need shade_lowest -> fill_lowest, ugh
 
@@ -278,6 +310,8 @@ def kdeplot(
     if shade_kws is None:
         shade_kws = {}
 
+    # TODO better to abstract out the concept of Estimator object?
+    # TODO let's write tests against this implementation first
     estimate_kws = dict(
         bw_method=bw_method,
         bw_adjust=bw_adjust,
@@ -291,7 +325,7 @@ def kdeplot(
 
     if univariate:
 
-        # TODO arg checking on hue_method
+        # TODO arg checking on hue_method, other inputs
 
         p.plot_univariate(
             hue_method=hue_method,
