@@ -1,25 +1,31 @@
 language: python
 
 
+dist: xenial
+services:
+  - xvfb
+
+
 env:
-  - PYTHON=2.7 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=2.7 DEPS=pinned BACKEND=agg DOCTESTS=false
-  - PYTHON=2.7 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.5 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=pinned BACKEND=agg DOCTESTS=true
   - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.6 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.6 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
 
 
 before_install:
   - sudo apt-get update -yq
   - sudo sh testing/getmsfonts.sh
-  - wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - conda config --set always_yes yes --set changeps1 no
+  - conda config --set always_yes yes --set changeps1 no 
+  - conda config --add channels conda-forge
   - conda update -q conda
+  - conda config --set channel_priority false
   - conda info -a
 
 

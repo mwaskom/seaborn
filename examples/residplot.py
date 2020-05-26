@@ -13,4 +13,4 @@ x = rs.normal(2, 1, 75)
 y = 2 + 1.5 * x + rs.normal(0, 2, 75)
 
 # Plot the residuals after fitting a linear model
-sns.residplot(x, y, lowess=True, color="g")
+sns.residplot(x=x, y=y, lowess=True, color="g")

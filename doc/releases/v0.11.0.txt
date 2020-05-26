@@ -1,0 +1,35 @@
+
+v0.11.0 (Unreleased)
+--------------------
+
+- TODO stub for explaining improvements to variable specificiation. Make this good!  GH2017
+
+- TODO stub for enforced keyword-only arguments for most parameters of most functions and classes.  GH2052, GH2081
+
+- Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.  GH2060
+
+- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_. GH2075
+
+- Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend. GH2073
+
+- Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behaviot is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to repoduce the previous behavior. GH2078
+
+- Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot`.  GH2079
+
+- Added an explicit warning in :func:`swarmplot` when more than 2% of the points are overlap in the "gutters" of the swarm. GH2045
+
+- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes.  GH2046
+
+- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes.  GH2046
+
+- Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones. GH2083
+
+- Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib. GH2095
+
+- Changed how functions that use different representations for numeric and categorical data handle vectors with an `object` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data.  GH2084
+
+- Improved the error messages produced when categorical plots process the orientation parameter.
+
+- Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
+
+- Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.

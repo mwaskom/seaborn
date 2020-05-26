@@ -1,12 +1,10 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
-from distutils.version import LooseVersion
+import warnings
 import functools
+from distutils.version import LooseVersion
 import matplotlib as mpl
-from . import palettes, _orig_rc_params
-
-
-mpl_ge_150 = LooseVersion(mpl.__version__) >= '1.5.0'
-mpl_ge_2 = LooseVersion(mpl.__version__) >= '2.0'
+from cycler import cycler
+from . import palettes
 
 
 __all__ = ["set", "reset_defaults", "reset_orig",
@@ -36,30 +34,23 @@ _style_keys = [
     "lines.solid_capstyle",
 
     "patch.edgecolor",
+    "patch.force_edgecolor",
 
     "image.cmap",
     "font.family",
     "font.sans-serif",
 
-    ]
+    "xtick.bottom",
+    "xtick.top",
+    "ytick.left",
+    "ytick.right",
 
-if mpl_ge_2:
+    "axes.spines.left",
+    "axes.spines.bottom",
+    "axes.spines.right",
+    "axes.spines.top",
 
-    _style_keys.extend([
-
-        "patch.force_edgecolor",
-
-        "xtick.bottom",
-        "xtick.top",
-        "ytick.left",
-        "ytick.right",
-
-        "axes.spines.left",
-        "axes.spines.bottom",
-        "axes.spines.right",
-        "axes.spines.top",
-
-    ])
+]
 
 _context_keys = [
 
@@ -86,7 +77,10 @@ _context_keys = [
     "xtick.minor.size",
     "ytick.minor.size",
 
-    ]
+]
+
+if LooseVersion(mpl.__version__) >= "3.0":
+    _context_keys.append("legend.title_fontsize")
 
 
 def set(context="notebook", style="darkgrid", palette="deep",
@@ -130,7 +124,10 @@ def reset_defaults():
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
-    mpl.rcParams.update(_orig_rc_params)
+    from . import _orig_rc_params
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', mpl.cbook.MatplotlibDeprecationWarning)
+        mpl.rcParams.update(_orig_rc_params)
 
 
 def axes_style(style=None, rc=None):
@@ -214,17 +211,17 @@ def axes_style(style=None, rc=None):
             "xtick.top": False,
             "ytick.right": False,
 
-            }
+        }
 
         # Set grid on or off
         if "grid" in style:
             style_dict.update({
                 "axes.grid": True,
-                })
+            })
         else:
             style_dict.update({
                 "axes.grid": False,
-                })
+            })
 
         # Set the color of the background, spines, and grids
         if style.startswith("dark"):
@@ -239,7 +236,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style == "whitegrid":
             style_dict.update({
@@ -253,7 +250,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
@@ -267,19 +264,19 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         # Show or hide the axes ticks
         if style == "ticks":
             style_dict.update({
                 "xtick.bottom": True,
                 "ytick.left": True,
-                })
+            })
         else:
             style_dict.update({
                 "xtick.bottom": False,
                 "ytick.left": False,
-                })
+            })
 
     # Remove entries that are not defined in the base list of valid keys
     # This lets us handle matplotlib <=/> 2.0
@@ -411,7 +408,10 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "xtick.minor.size": 4,
             "ytick.minor.size": 4,
 
-            }
+        }
+
+        if LooseVersion(mpl.__version__) >= "3.0":
+            base_context["legend.title_fontsize"] = 12
 
         # Scale all the parameters by the same factor depending on the context
         scaling = dict(paper=.8, notebook=1, talk=1.5, poster=2)[context]
@@ -537,15 +537,11 @@ def set_palette(palette, n_colors=None, desat=None, color_codes=False):
 
     """
     colors = palettes.color_palette(palette, n_colors, desat)
-    if mpl_ge_150:
-        from cycler import cycler
-        cyl = cycler('color', colors)
-        mpl.rcParams['axes.prop_cycle'] = cyl
-    else:
-        mpl.rcParams["axes.color_cycle"] = list(colors)
+    cyl = cycler('color', colors)
+    mpl.rcParams['axes.prop_cycle'] = cyl
     mpl.rcParams["patch.facecolor"] = colors[0]
     if color_codes:
         try:
             palettes.set_color_codes(palette)
-        except ValueError:
+        except (ValueError, TypeError):
             pass

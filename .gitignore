@@ -7,5 +7,7 @@ seaborn.egg-info/
 .cache/
 .coverage
 cover/
-.idea
+.idea/
+.vscode/
 .pytest_cache/
+notes/

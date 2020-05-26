@@ -1,7 +1,9 @@
-"""Small plotting-related utility functions."""
-from __future__ import print_function, division
-import colorsys
+"""Utility functions, mostly for internal use."""
 import os
+import colorsys
+import warnings
+from urllib.request import urlopen, urlretrieve
+from http.client import HTTPException
 
 import numpy as np
 from scipy import stats
@@ -10,37 +12,15 @@ import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
 
-from .external.six.moves.urllib.request import urlopen, urlretrieve
-from .external.six.moves.http_client import HTTPException
-
-from distutils.version import LooseVersion
-pandas_has_categoricals = LooseVersion(pd.__version__) >= "0.15"
-mpl_ge_150 = LooseVersion(mpl.__version__) >= "1.5.0"
-
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
-           "despine", "get_dataset_names", "load_dataset"]
-
-
-def remove_na(arr):
-    """Helper method for removing NA values from array-like.
-
-    Parameters
-    ----------
-    arr : array-like
-        The array-like from which to remove NA values.
-
-    Returns
-    -------
-    clean_arr : array-like
-        The original array with NA values removed.
-
-    """
-    return arr[pd.notnull(arr)]
+           "despine", "get_dataset_names", "get_data_home", "load_dataset"]
 
 
 def sort_df(df, *args, **kwargs):
     """Wrapper to handle different pandas sorting API pre/post 0.17."""
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg)
     try:
         return df.sort_values(*args, **kwargs)
     except AttributeError:
@@ -80,6 +60,8 @@ def ci_to_errsize(cis, heights):
 def pmf_hist(a, bins=10):
     """Return arguments to plt.bar for pmf-like histogram of an array.
 
+    DEPRECATED: will be removed in a future version.
+
     Parameters
     ----------
     a: array-like
@@ -97,6 +79,8 @@ def pmf_hist(a, bins=10):
         width of bars
 
     """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
     n, x = np.histogram(a, bins)
     h = n / n.sum()
     w = x[1] - x[0]
@@ -143,7 +127,7 @@ def saturate(color):
 
     Parameters
     ----------
-    color :  matplotlib color
+    color : matplotlib color
         hex, rgb-tuple, or html color name
 
     Returns
@@ -171,7 +155,7 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
         new color code in RGB tuple representation
 
     """
-    # Get rgb tuple representation
+    # Get an RGB tuple representation
     rgb = mplcol.colorConverter.to_rgb(color)
     vals = list(colorsys.rgb_to_hls(*rgb))
     for i, val in enumerate([h, l, s]):
@@ -183,10 +167,50 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
 
 
 def axlabel(xlabel, ylabel, **kwargs):
-    """Grab current axis and label it."""
+    """Grab current axis and label it.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
     ax = plt.gca()
     ax.set_xlabel(xlabel, **kwargs)
     ax.set_ylabel(ylabel, **kwargs)
+
+
+def remove_na(vector):
+    """Helper method for removing null values from data vectors.
+
+    Parameters
+    ----------
+    vector : vector object
+        Must implement boolean masking with [] subscript syntax.
+
+    Returns
+    -------
+    clean_clean : same type as ``vector``
+        Vector of data with null values removed. May be a copy or a view.
+
+    """
+    return vector[pd.notnull(vector)]
+
+
+def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    colors : list
+        List of matplotlib colors in the current cycle, or dark gray if
+        the current color cycle is empty.
+    """
+    cycler = mpl.rcParams['axes.prop_cycle']
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def despine(fig=None, ax=None, top=True, right=True, left=False,
@@ -231,30 +255,42 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                     val = offset.get(side, 0)
                 except AttributeError:
                     val = offset
-                _set_spine_position(ax_i.spines[side], ('outward', val))
+                ax_i.spines[side].set_position(('outward', val))
 
         # Potentially move the ticks
         if left and not right:
-            maj_on = any(t.tick1On for t in ax_i.yaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.yaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.yaxis.minorTicks
+            )
             ax_i.yaxis.set_ticks_position("right")
             for t in ax_i.yaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.yaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if bottom and not top:
-            maj_on = any(t.tick1On for t in ax_i.xaxis.majorTicks)
-            min_on = any(t.tick1On for t in ax_i.xaxis.minorTicks)
+            maj_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.majorTicks
+            )
+            min_on = any(
+                t.tick1line.get_visible()
+                for t in ax_i.xaxis.minorTicks
+            )
             ax_i.xaxis.set_ticks_position("top")
             for t in ax_i.xaxis.majorTicks:
-                t.tick2On = maj_on
+                t.tick2line.set_visible(maj_on)
             for t in ax_i.xaxis.minorTicks:
-                t.tick2On = min_on
+                t.tick2line.set_visible(min_on)
 
         if trim:
             # clip off the parts of the spines that extend past major ticks
-            xticks = ax_i.get_xticks()
+            xticks = np.asarray(ax_i.get_xticks())
             if xticks.size:
                 firsttick = np.compress(xticks >= min(ax_i.get_xlim()),
                                         xticks)[0]
@@ -266,7 +302,7 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 newticks = newticks.compress(newticks >= firsttick)
                 ax_i.set_xticks(newticks)
 
-            yticks = ax_i.get_yticks()
+            yticks = np.asarray(ax_i.get_yticks())
             if yticks.size:
                 firsttick = np.compress(yticks >= min(ax_i.get_ylim()),
                                         yticks)[0]
@@ -279,24 +315,6 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
                 ax_i.set_yticks(newticks)
 
 
-def _set_spine_position(spine, position):
-    """
-    Set the spine's position without resetting an associated axis.
-
-    As of matplotlib v. 1.0.0, if a spine has an associated axis, then
-    spine.set_position() calls axis.cla(), which resets locators, formatters,
-    etc.  We temporarily replace that call with axis.reset_ticks(), which is
-    sufficient for our purposes.
-    """
-    axis = spine.axis
-    if axis is not None:
-        cla = axis.cla
-        axis.cla = axis.reset_ticks
-    spine.set_position(position)
-    if axis is not None:
-        axis.cla = cla
-
-
 def _kde_support(data, bw, gridsize, cut, clip):
     """Establish support for a kernel density estimate."""
     support_min = max(data.min() - bw * cut, clip[0])
@@ -306,6 +324,8 @@ def _kde_support(data, bw, gridsize, cut, clip):
 
 def percentiles(a, pcts, axis=None):
     """Like scoreatpercentile but can take and return array of percentiles.
+
+    DEPRECATED: will be removed in a future version.
 
     Parameters
     ----------
@@ -323,6 +343,9 @@ def percentiles(a, pcts, axis=None):
         first dimension is length of object passed to ``pcts``
 
     """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
+
     scores = []
     try:
         n = len(pcts)
@@ -344,11 +367,18 @@ def percentiles(a, pcts, axis=None):
 def ci(a, which=95, axis=None):
     """Return a percentile range from an array of values."""
     p = 50 - which / 2, 50 + which / 2
-    return percentiles(a, p, axis)
+    return np.percentile(a, p, axis)
 
 
 def sig_stars(p):
-    """Return a R-style significance string corresponding to p values."""
+    """Return a R-style significance string corresponding to p values.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
+
     if p < 0.001:
         return "***"
     elif p < 0.01:
@@ -361,7 +391,14 @@ def sig_stars(p):
 
 
 def iqr(a):
-    """Calculate the IQR for an array of numbers."""
+    """Calculate the IQR for an array of numbers.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
+
     a = np.asarray(a)
     q1 = stats.scoreatpercentile(a, 25)
     q3 = stats.scoreatpercentile(a, 75)
@@ -381,15 +418,13 @@ def get_dataset_names():
 
 
 def get_data_home(data_home=None):
-    """Return the path of the seaborn data directory.
+    """Return a path to the cache directory for example datasets.
 
-    This is used by the ``load_dataset`` function.
+    This directory is then used by :func:`load_dataset`.
 
-    If the ``data_home`` argument is not specified, the default location
-    is ``~/seaborn-data``.
+    If the ``data_home`` argument is not specified, it tries to read from the
+    ``SEABORN_DATA`` environment variable and defaults to ``~/seaborn-data``.
 
-    Alternatively, a different default location can be specified using the
-    environment variable ``SEABORN_DATA``.
     """
     if data_home is None:
         data_home = os.environ.get('SEABORN_DATA',
@@ -401,20 +436,35 @@ def get_data_home(data_home=None):
 
 
 def load_dataset(name, cache=True, data_home=None, **kws):
-    """Load a dataset from the online repository (requires internet).
+    """Load an example dataset from the online repository (requires internet).
+
+    This function provides quick access to a small number of example datasets
+    that are useful for documenting seaborn or generating reproducible examples
+    for bug reports. It is not necessary for normal usage.
+
+    Note that some of the datasets have a small amount of preprocessing applied
+    to define a proper ordering for categorical variables.
+
+    Use :func:`get_dataset_names` to see a list of available datasets.
 
     Parameters
     ----------
     name : str
-        Name of the dataset (`name`.csv on
-        https://github.com/mwaskom/seaborn-data).  You can obtain list of
-        available datasets using :func:`get_dataset_names`
+        Name of the dataset (``{name}.csv`` on
+        https://github.com/mwaskom/seaborn-data).
     cache : boolean, optional
-        If True, then cache data locally and use the cache on subsequent calls
+        If True, try to load from the local cache first, and save to the cache
+        if a download is required.
     data_home : string, optional
-        The directory in which to cache data. By default, uses ~/seaborn-data/
-    kws : dict, optional
-        Passed to pandas.read_csv
+        The directory in which to cache data; see :func:`get_data_home`.
+    kws : keys and values, optional
+        Additional keyword arguments are passed to passed through to
+        :func:`pandas.read_csv`.
+
+    Returns
+    -------
+    df : :class:`pandas.DataFrame`
+        Tabular data, possibly with some preprocessing applied.
 
     """
     path = ("https://raw.githubusercontent.com/"
@@ -431,9 +481,6 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     df = pd.read_csv(full_path, **kws)
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
-
-    if not pandas_has_categoricals:
-        return df
 
     # Set some columns as a categorical type with ordered levels
 
@@ -463,7 +510,7 @@ def axis_ticklabels_overlap(labels):
 
     Parameters
     ----------
-    labels : list of ticklabels
+    labels : list of matplotlib ticklabels
 
     Returns
     -------
@@ -478,7 +525,7 @@ def axis_ticklabels_overlap(labels):
         overlaps = [b.count_overlaps(bboxes) for b in bboxes]
         return max(overlaps) > 1
     except RuntimeError:
-        # Issue on macosx backend rasies an error in the above code
+        # Issue on macos backend raises an error in the above code
         return False
 
 
@@ -499,58 +546,27 @@ def axes_ticklabels_overlap(ax):
             axis_ticklabels_overlap(ax.get_yticklabels()))
 
 
-def categorical_order(values, order=None):
-    """Return a list of unique data values.
+def locator_to_legend_entries(locator, limits, dtype):
+    """Return levels and formatted levels for brief numeric legends."""
+    raw_levels = locator.tick_values(*limits).astype(dtype)
 
-    Determine an ordered list of levels in ``values``.
+    class dummy_axis:
+        def get_view_interval(self):
+            return limits
 
-    Parameters
-    ----------
-    values : list, array, Categorical, or Series
-        Vector of "categorical" values
-    order : list-like, optional
-        Desired order of category levels to override the order determined
-        from the ``values`` object.
+    if isinstance(locator, mpl.ticker.LogLocator):
+        formatter = mpl.ticker.LogFormatter()
+    else:
+        formatter = mpl.ticker.ScalarFormatter()
+    formatter.axis = dummy_axis()
 
-    Returns
-    -------
-    order : list
-        Ordered list of category levels not including null values.
+    # TODO: The following two lines should be replaced
+    # once pinned matplotlib>=3.1.0 with:
+    # formatted_levels = formatter.format_ticks(raw_levels)
+    formatter.set_locs(raw_levels)
+    formatted_levels = [formatter(x) for x in raw_levels]
 
-    """
-    if order is None:
-        if hasattr(values, "categories"):
-            order = values.categories
-        else:
-            try:
-                order = values.cat.categories
-            except (TypeError, AttributeError):
-                try:
-                    order = values.unique()
-                except AttributeError:
-                    order = pd.unique(values)
-                try:
-                    np.asarray(values).astype(np.float)
-                    order = np.sort(order)
-                except (ValueError, TypeError):
-                    order = order
-        order = filter(pd.notnull, order)
-    return list(order)
-
-
-def get_color_cycle():
-    """Return the list of colors in the current matplotlib color cycle."""
-    if mpl_ge_150:
-        cyl = mpl.rcParams['axes.prop_cycle']
-        # matplotlib 1.5 verifies that axes.prop_cycle *is* a cycler
-        # but no garuantee that there's a `color` key.
-        # so users could have a custom rcParmas w/ no color...
-        try:
-            return [x['color'] for x in cyl]
-        except KeyError:
-            pass  # just return axes.color style below
-
-    return mpl.rcParams['axes.color_cycle']
+    return raw_levels, formatted_levels
 
 
 def relative_luminance(color):
@@ -576,16 +592,14 @@ def relative_luminance(color):
 
 
 def to_utf8(obj):
-    """Return a Unicode string representing a Python object.
+    """Return a string representing a Python object.
 
-    Unicode strings (i.e. type ``unicode`` in Python 2.7 and type ``str`` in
-    Python 3.x) are returned unchanged.
+    Strings (i.e. type ``str``) are returned unchanged.
 
-    Byte strings (i.e. type ``str`` in Python 2.7 and type ``bytes`` in
-    Python 3.x) are returned as UTF-8-encoded strings.
+    Byte strings (i.e. type ``bytes``) are returned as UTF-8-decoded strings.
 
     For other objects, the method ``__str__()`` is called, and the result is
-    returned as a UTF-8-encoded string.
+    returned as a string.
 
     Parameters
     ----------
@@ -594,35 +608,16 @@ def to_utf8(obj):
 
     Returns
     -------
-    s : unicode (Python 2.7) / str (Python 3.x)
-        UTF-8-encoded string representation of ``obj``
+    s : str
+        UTF-8-decoded string representation of ``obj``
+
     """
     if isinstance(obj, str):
-        try:
-            # If obj is a string, try to return it as a Unicode-encoded
-            # string:
-            return obj.decode("utf-8")
-        except AttributeError:
-            # Python 3.x strings are already Unicode, and do not have a
-            # decode() method, so the unchanged string is returned
-            return obj
-
+        return obj
     try:
-        if isinstance(obj, unicode):
-            # do not attemt a conversion if string is already a Unicode
-            # string:
-            return obj
-        else:
-            # call __str__() for non-string object, and return the
-            # result to Unicode:
-            return obj.__str__().decode("utf-8")
-    except NameError:
-        # NameError is raised in Python 3.x as type 'unicode' is not
-        # defined.
-        if isinstance(obj, bytes):
-            return obj.decode("utf-8")
-        else:
-            return obj.__str__()
+        return obj.decode(encoding="utf-8")
+    except AttributeError:  # obj is not bytes-like
+        return str(obj)
 
 
 def _network(t=None, url='https://google.com'):
@@ -633,6 +628,7 @@ def _network(t=None, url='https://google.com'):
     ----------
     t : function, optional
     url : str, optional
+
     """
     import nose
 

@@ -1,5 +1,6 @@
 import itertools
 import tempfile
+import copy
 
 import numpy as np
 import matplotlib as mpl
@@ -14,11 +15,10 @@ try:
     import pandas.testing as pdt
 except ImportError:
     import pandas.util.testing as pdt
-from numpy.testing.decorators import skipif
+import pytest
 
 from .. import matrix as mat
 from .. import color_palette
-from ..external.six.moves import range
 
 try:
     import fastcluster
@@ -96,6 +96,25 @@ class TestHeatmap(object):
         plot_data = np.ma.masked_where(mask, self.x_norm)
 
         npt.assert_array_equal(p.plot_data, plot_data)
+
+    def test_mask_limits(self):
+        """Make sure masked cells are not used to calculate extremes"""
+
+        kws = self.default_kws.copy()
+
+        mask = self.x_norm > 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+
+        mask = self.x_norm < 0
+        kws['mask'] = mask
+        p = mat._HeatMapper(self.x_norm, **kws)
+
+        assert p.vmin == np.ma.array(self.x_norm, mask=mask).min()
+        assert p.vmax == np.ma.array(self.x_norm, mask=mask).max()
 
     def test_default_vlims(self):
 
@@ -200,6 +219,45 @@ class TestHeatmap(object):
         ax = mat.heatmap([vals], center=.5, cmap=cmap)
         fc = ax.collections[0].get_facecolors()
         npt.assert_array_almost_equal(fc, cmap(vals), 2)
+
+    def test_cmap_with_properties(self):
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_bad("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(
+            cmap(np.ma.masked_invalid([np.nan])),
+            hm.cmap(np.ma.masked_invalid([np.nan])))
+
+        kws["center"] = 0.5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(
+            cmap(np.ma.masked_invalid([np.nan])),
+            hm.cmap(np.ma.masked_invalid([np.nan])))
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_under("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws["center"] = .5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws = self.default_kws.copy()
+        cmap = copy.copy(mpl.cm.get_cmap("BrBG"))
+        cmap.set_over("red")
+        kws["cmap"] = cmap
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(-np.inf), hm.cmap(-np.inf))
+
+        kws["center"] = .5
+        hm = mat._HeatMapper(self.df_unif, **kws)
+        npt.assert_array_equal(cmap(np.inf), hm.cmap(np.inf))
 
     def test_tickabels_off(self):
         kws = self.default_kws.copy()
@@ -306,6 +364,8 @@ class TestHeatmap(object):
         nt.assert_equal(len(f.axes), 2)
         plt.close(f)
 
+    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
+                       reason="matplotlib 3.1.1 bug")
     def test_heatmap_axes(self):
 
         ax = mat.heatmap(self.df_norm)
@@ -388,14 +448,11 @@ class TestHeatmap(object):
         npt.assert_array_equal(mask_out, [[True, True], [False, False]])
 
     def test_cbar_ticks(self):
-        max_n_ticks = 3
 
-        locator = mpl.ticker.MaxNLocator(max_n_ticks)
         f, (ax1, ax2) = plt.subplots(2)
         mat.heatmap(self.df_norm, ax=ax1, cbar_ax=ax2,
-                    cbar_kws=dict(ticks=locator))
-        nt.assert_equal(len(ax2.yaxis.get_ticklabels()), max_n_ticks)
-        plt.close(f)
+                    cbar_kws=dict(drawedges=True))
+        assert len(ax2.collections) == 2
 
 
 class TestDendrogram(object):
@@ -557,7 +614,7 @@ class TestDendrogram(object):
 
         npt.assert_array_equal(scipy_linkage, linkage)
 
-    @skipif(_no_fastcluster)
+    @pytest.mark.skipif(_no_fastcluster, reason="fastcluster not installed")
     def test_fastcluster_other_method(self):
         import fastcluster
 
@@ -568,7 +625,7 @@ class TestDendrogram(object):
         p = mat._DendrogramPlotter(self.x_norm, **kws)
         npt.assert_array_equal(p.linkage, linkage)
 
-    @skipif(_no_fastcluster)
+    @pytest.mark.skipif(_no_fastcluster, reason="fastcluster not installed")
     def test_fastcluster_non_euclidean(self):
         import fastcluster
 
@@ -594,6 +651,8 @@ class TestDendrogram(object):
         nt.assert_equal(len(ax.collections[0].get_paths()),
                         len(d.dependent_coord))
 
+    @pytest.mark.xfail(mpl.__version__ == "3.1.1",
+                       reason="matplotlib 3.1.1 bug")
     def test_dendrogram_rotate(self):
         kws = self.default_kws.copy()
         kws['rotate'] = True
@@ -663,12 +722,15 @@ class TestClustermap(object):
     df_norm_leaves = np.asarray(df_norm.columns[x_norm_leaves])
 
     default_kws = dict(pivot_kws=None, z_score=None, standard_scale=None,
-                       figsize=None, row_colors=None, col_colors=None)
+                       figsize=(10, 10), row_colors=None, col_colors=None,
+                       dendrogram_ratio=.2, colors_ratio=.03,
+                       cbar_pos=(0, .8, .05, .2))
 
     default_plot_kws = dict(metric='euclidean', method='average',
                             colorbar_kws=None,
                             row_cluster=True, col_cluster=True,
-                            row_linkage=None, col_linkage=None)
+                            row_linkage=None, col_linkage=None,
+                            tree_kws=None)
 
     row_colors = color_palette('Set2', df_norm.shape[0])
     col_colors = color_palette('Dark2', df_norm.shape[1])
@@ -787,7 +849,7 @@ class TestClustermap(object):
         kws['z_score'] = True
         kws['standard_scale'] = True
         with nt.assert_raises(ValueError):
-            cm = mat.ClusterGrid(self.df_norm, **kws)
+            mat.ClusterGrid(self.df_norm, **kws)
 
     def test_color_list_to_matrix_and_cmap(self):
         matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
@@ -1049,6 +1111,25 @@ class TestClustermap(object):
         nt.assert_equal(list(cm.row_colors),
                         [(1.0, 1.0, 1.0)] + list(self.row_colors[1:]))
 
+    def test_row_col_colors_ignore_heatmap_kwargs(self):
+
+        g = mat.clustermap(self.rs.uniform(0, 200, self.df_norm.shape),
+                           row_colors=self.row_colors,
+                           col_colors=self.col_colors,
+                           cmap="Spectral",
+                           norm=mpl.colors.LogNorm(),
+                           vmax=100)
+
+        assert np.array_equal(
+            np.array(self.row_colors)[g.dendrogram_row.reordered_ind],
+            g.ax_row_colors.collections[0].get_facecolors()[:, :3]
+        )
+
+        assert np.array_equal(
+            np.array(self.col_colors)[g.dendrogram_col.reordered_ind],
+            g.ax_col_colors.collections[0].get_facecolors()[:, :3]
+        )
+
     def test_mask_reorganization(self):
 
         kws = self.default_kws.copy()
@@ -1096,3 +1177,109 @@ class TestClustermap(object):
         ytl_actual = [t.get_text() for t in g.ax_heatmap.get_yticklabels()]
         nt.assert_equal(xtl_actual, [])
         nt.assert_equal(ytl_actual, [])
+
+    def test_size_ratios(self):
+
+        # The way that wspace/hspace work in GridSpec, the mapping from input
+        # ratio to actual width/height of each axes is complicated, so this
+        # test is just going to assert comparative relationships
+
+        kws1 = self.default_kws.copy()
+        kws1.update(dendrogram_ratio=.2, colors_ratio=.03,
+                    col_colors=self.col_colors, row_colors=self.row_colors)
+
+        kws2 = kws1.copy()
+        kws2.update(dendrogram_ratio=.3, colors_ratio=.05)
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_col_dendrogram.get_position().height
+                > g1.ax_col_dendrogram.get_position().height)
+
+        assert (g2.ax_col_colors.get_position().height
+                > g1.ax_col_colors.get_position().height)
+
+        assert (g2.ax_heatmap.get_position().height
+                < g1.ax_heatmap.get_position().height)
+
+        assert (g2.ax_row_dendrogram.get_position().width
+                > g1.ax_row_dendrogram.get_position().width)
+
+        assert (g2.ax_row_colors.get_position().width
+                > g1.ax_row_colors.get_position().width)
+
+        assert (g2.ax_heatmap.get_position().width
+                < g1.ax_heatmap.get_position().width)
+
+        kws1 = self.default_kws.copy()
+        kws1.update(col_colors=self.col_colors)
+        kws2 = kws1.copy()
+        kws2.update(col_colors=[self.col_colors, self.col_colors])
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_col_colors.get_position().height
+                > g1.ax_col_colors.get_position().height)
+
+        kws1 = self.default_kws.copy()
+        kws1.update(dendrogram_ratio=(.2, .2))
+
+        kws2 = kws1.copy()
+        kws2.update(dendrogram_ratio=(.2, .3))
+
+        g1 = mat.clustermap(self.df_norm, **kws1)
+        g2 = mat.clustermap(self.df_norm, **kws2)
+
+        assert (g2.ax_row_dendrogram.get_position().width
+                == g1.ax_row_dendrogram.get_position().width)
+
+        assert (g2.ax_col_dendrogram.get_position().height
+                > g1.ax_col_dendrogram.get_position().height)
+
+    def test_cbar_pos(self):
+
+        kws = self.default_kws.copy()
+        kws["cbar_pos"] = (.2, .1, .4, .3)
+
+        g = mat.clustermap(self.df_norm, **kws)
+        pos = g.ax_cbar.get_position()
+        assert pytest.approx(tuple(pos.p0)) == kws["cbar_pos"][:2]
+        assert pytest.approx(pos.width) == kws["cbar_pos"][2]
+        assert pytest.approx(pos.height) == kws["cbar_pos"][3]
+
+        kws["cbar_pos"] = None
+        g = mat.clustermap(self.df_norm, **kws)
+        assert g.ax_cbar is None
+
+    def test_square_warning(self):
+
+        kws = self.default_kws.copy()
+        g1 = mat.clustermap(self.df_norm, **kws)
+
+        with pytest.warns(UserWarning):
+            kws["square"] = True
+            g2 = mat.clustermap(self.df_norm, **kws)
+
+        g1_shape = g1.ax_heatmap.get_position().get_points()
+        g2_shape = g2.ax_heatmap.get_position().get_points()
+        assert np.array_equal(g1_shape, g2_shape)
+
+    def test_clustermap_annotation(self):
+
+        g = mat.clustermap(self.df_norm, annot=True, fmt=".1f")
+        for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
+            assert text.get_text() == "{:.1f}".format(val)
+
+        g = mat.clustermap(self.df_norm, annot=self.df_norm, fmt=".1f")
+        for val, text in zip(np.asarray(g.data2d).flat, g.ax_heatmap.texts):
+            assert text.get_text() == "{:.1f}".format(val)
+
+    def test_tree_kws(self):
+
+        rgb = (1, .5, .2)
+        g = mat.clustermap(self.df_norm, tree_kws=dict(color=rgb))
+        for ax in [g.ax_col_dendrogram, g.ax_row_dendrogram]:
+            tree, = ax.collections
+            assert tuple(tree.get_color().squeeze())[:3] == rgb

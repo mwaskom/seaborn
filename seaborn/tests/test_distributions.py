@@ -1,25 +1,100 @@
+import itertools
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+from scipy import stats
 
 import pytest
-from distutils.version import LooseVersion
 import nose.tools as nt
 import numpy.testing as npt
-from numpy.testing.decorators import skipif
 
 from .. import distributions as dist
+from ..distributions import (
+    rugplot,
+)
 
-try:
-    import statsmodels.nonparametric.api
-    assert statsmodels.nonparametric.api
-    _no_statsmodels = False
-except ImportError:
-    _no_statsmodels = True
+_no_statsmodels = not dist._has_statsmodels
+
+if not _no_statsmodels:
+    import statsmodels.nonparametric as smnp
+else:
+    _old_statsmodels = False
 
 
-_old_matplotlib = LooseVersion(mpl.__version__) < "1.5"
+class TestDistPlot(object):
+
+    rs = np.random.RandomState(0)
+    x = rs.randn(100)
+
+    def test_hist_bins(self):
+
+        try:
+            fd_edges = np.histogram_bin_edges(self.x, "fd")
+        except AttributeError:
+            pytest.skip("Requires numpy >= 1.15")
+        ax = dist.distplot(x=self.x)
+        for edge, bar in zip(fd_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+        plt.close(ax.figure)
+        n = 25
+        n_edges = np.histogram_bin_edges(self.x, n)
+        ax = dist.distplot(x=self.x, bins=n)
+        for edge, bar in zip(n_edges, ax.patches):
+            assert pytest.approx(edge) == bar.get_x()
+
+    def test_elements(self):
+
+        n = 10
+        ax = dist.distplot(x=self.x, bins=n,
+                           hist=True, kde=False, rug=False, fit=None)
+        assert len(ax.patches) == 10
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(x=self.x,
+                           hist=False, kde=True, rug=False, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+        plt.close(ax.figure)
+        ax = dist.distplot(x=self.x,
+                           hist=False, kde=False, rug=True, fit=None)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 1
+
+        plt.close(ax.figure)
+        ax = dist.distplot(x=self.x,
+                           hist=False, kde=False, rug=False, fit=stats.norm)
+        assert len(ax.patches) == 0
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 0
+
+    def test_distplot_with_nans(self):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        x_null = np.append(self.x, [np.nan])
+
+        dist.distplot(x=self.x, ax=ax1)
+        dist.distplot(x=x_null, ax=ax2)
+
+        line1 = ax1.lines[0]
+        line2 = ax2.lines[0]
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
+
+        for bar1, bar2 in zip(ax1.patches, ax2.patches):
+            assert bar1.get_xy() == bar2.get_xy()
+            assert bar1.get_height() == bar2.get_height()
+
+    def test_a_parameter_deprecation(self):
+
+        n = 10
+        with pytest.warns(UserWarning):
+            ax = dist.distplot(a=self.x, bins=n)
+        assert len(ax.patches) == n
 
 
 class TestKDE(object):
@@ -33,6 +108,38 @@ class TestKDE(object):
     clip = (-np.inf, np.inf)
     cut = 3
 
+    def test_kde_1d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x)
+        dist.kdeplot(x=pd.Series(self.x))
+        dist.kdeplot(x=self.x.tolist())
+        dist.kdeplot(data=self.x)
+
+        supports = [l.get_xdata() for l in ax.lines]
+        for a, b in itertools.product(supports, supports):
+            assert np.array_equal(a, b)
+
+        densities = [l.get_ydata() for l in ax.lines]
+        for a, b in itertools.product(densities, densities):
+            assert np.array_equal(a, b)
+
+    def test_kde_2d_input_output(self):
+        """Test that array/series/list inputs give the same output."""
+        f, ax = plt.subplots()
+
+        dist.kdeplot(x=self.x, y=self.y)
+        dist.kdeplot(x=pd.Series(self.x), y=pd.Series(self.y))
+        dist.kdeplot(x=self.x.tolist(), y=self.y.tolist())
+
+        contours = ax.collections
+        n = len(contours) // 3
+
+        for i in range(n):
+            for a, b in itertools.product(contours[i::n], contours[i::n]):
+                assert np.array_equal(a.get_offsets(), b.get_offsets())
+
     def test_scipy_univariate_kde(self):
         """Test the univariate KDE estimation with scipy."""
         grid, y = dist._scipy_univariate_kde(self.x, self.bw, self.gridsize,
@@ -43,7 +150,7 @@ class TestKDE(object):
             dist._scipy_univariate_kde(self.x, bw, self.gridsize,
                                        self.cut, self.clip)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_univariate_kde(self):
         """Test the univariate KDE estimation with statsmodels."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
@@ -75,7 +182,7 @@ class TestKDE(object):
             dist._scipy_bivariate_kde(self.x, self.y, (1, 2),
                                       self.gridsize, self.cut, clip)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_bivariate_kde(self):
         """Test the bivariate KDE estimation with statsmodels."""
         clip = [self.clip, self.clip]
@@ -86,7 +193,7 @@ class TestKDE(object):
         nt.assert_equal(y.shape, (self.gridsize, self.gridsize))
         nt.assert_equal(len(z), self.gridsize)
 
-    @skipif(_no_statsmodels)
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_statsmodels_kde_cumulative(self):
         """Test computation of cumulative KDE."""
         grid, y = dist._statsmodels_univariate_kde(self.x, self.kernel,
@@ -101,24 +208,79 @@ class TestKDE(object):
     def test_kde_cummulative_2d(self):
         """Check error if args indicate bivariate KDE and cumulative."""
         with npt.assert_raises(TypeError):
-            dist.kdeplot(self.x, data2=self.y, cumulative=True)
+            dist.kdeplot(x=self.x, y=self.y, cumulative=True)
+
+    def test_kde_singular(self):
+        """Check that kdeplot warns and skips on singular inputs."""
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(np.ones(10))
+        line = ax.lines[0]
+        assert not line.get_xydata().size
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(np.ones(10) * np.nan)
+        line = ax.lines[1]
+        assert not line.get_xydata().size
+
+    def test_data2_input_deprecation(self):
+        """Using data2 kwarg should warn but still draw a bivariate plot."""
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(self.x, data2=self.y)
+        assert len(ax.collections)
+
+    @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
+    def test_statsmodels_zero_bandwidth(self):
+        """Test handling of 0 bandwidth data in statsmodels."""
+        x = np.zeros(100)
+        x[0] = 1
+
+        try:
+
+            smnp.kde.bandwidths.select_bandwidth(x, "scott", "gau")
+
+        except RuntimeError:
+
+            # Only execute the actual test in the except clause, this should
+            # allot the test to pass on versions of statsmodels predating 0.11
+            # and keep the test from failing in the future if statsmodels
+            # reverts its behavior to avoid raising the error in the futures
+            # Track at https://github.com/statsmodels/statsmodels/issues/5419
+
+            with pytest.warns(UserWarning):
+                ax = dist.kdeplot(x)
+            line = ax.lines[0]
+            assert not line.get_xydata().size
+
+    @pytest.mark.parametrize("cumulative", [True, False])
+    def test_kdeplot_with_nans(self, cumulative):
+
+        if cumulative and _no_statsmodels:
+            pytest.skip("no statsmodels")
+
+        x_missing = np.append(self.x, [np.nan, np.nan])
+
+        f, ax = plt.subplots()
+        dist.kdeplot(x=self.x, cumulative=cumulative)
+        dist.kdeplot(x=x_missing, cumulative=cumulative)
+
+        line1, line2 = ax.lines
+        assert np.array_equal(line1.get_xydata(), line2.get_xydata())
 
     def test_bivariate_kde_series(self):
         df = pd.DataFrame({'x': self.x, 'y': self.y})
 
-        ax_series = dist.kdeplot(df.x, df.y)
-        ax_values = dist.kdeplot(df.x.values, df.y.values)
+        ax_series = dist.kdeplot(x=df.x, y=df.y)
+        ax_values = dist.kdeplot(x=df.x.values, y=df.y.values)
 
         nt.assert_equal(len(ax_series.collections),
                         len(ax_values.collections))
         nt.assert_equal(ax_series.collections[0].get_paths(),
                         ax_values.collections[0].get_paths())
 
-    @skipif(_old_matplotlib)
     def test_bivariate_kde_colorbar(self):
 
         f, ax = plt.subplots()
-        dist.kdeplot(self.x, self.y,
+        dist.kdeplot(x=self.x, y=self.y,
                      cbar=True, cbar_kws=dict(label="density"),
                      ax=ax)
         nt.assert_equal(len(f.axes), 2)
@@ -127,12 +289,12 @@ class TestKDE(object):
     def test_legend(self):
 
         f, ax = plt.subplots()
-        dist.kdeplot(self.x, self.y, label="test1")
+        dist.kdeplot(x=self.x, y=self.y, label="test1")
         line = ax.lines[-1]
         assert line.get_label() == "test1"
 
         f, ax = plt.subplots()
-        dist.kdeplot(self.x, self.y, shade=True, label="test2")
+        dist.kdeplot(x=self.x, y=self.y, shade=True, label="test2")
         fill = ax.collections[-1]
         assert fill.get_label() == "test2"
 
@@ -141,7 +303,7 @@ class TestKDE(object):
         rgb = (.1, .5, .7)
         f, ax = plt.subplots()
 
-        dist.kdeplot(self.x, self.y, color=rgb)
+        dist.kdeplot(x=self.x, y=self.y, color=rgb)
         contour = ax.collections[-1]
         assert np.array_equal(contour.get_color()[0, :3], rgb)
         low = ax.collections[0].get_color().mean()
@@ -149,14 +311,20 @@ class TestKDE(object):
         assert low < high
 
         f, ax = plt.subplots()
-        dist.kdeplot(self.x, self.y, shade=True, color=rgb)
+        dist.kdeplot(x=self.x, y=self.y, shade=True, color=rgb)
         contour = ax.collections[-1]
         low = ax.collections[0].get_facecolor().mean()
         high = ax.collections[-1].get_facecolor().mean()
         assert low > high
 
+        f, ax = plt.subplots()
+        dist.kdeplot(x=self.x, y=self.y, shade=True, colors=[rgb])
+        for level in ax.collections:
+            level_rgb = tuple(level.get_facecolor().squeeze()[:3])
+            assert level_rgb == rgb
 
-class TestRugPlot(object):
+
+class TestRugPlotter:
 
     @pytest.fixture
     def list_data(self):
@@ -174,46 +342,54 @@ class TestRugPlot(object):
 
         h = .1
 
-        for data in [list_data, array_data, series_data]:
+        for x in [list_data, array_data, series_data]:
 
             f, ax = plt.subplots()
-            dist.rugplot(data, h)
+            rugplot(x=x, height=h)
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 
-            assert len(segments) == len(data)
-            assert np.array_equal(segments[:, 0, 0], data)
-            assert np.array_equal(segments[:, 1, 0], data)
-            assert np.array_equal(segments[:, 0, 1], np.zeros_like(data))
-            assert np.array_equal(segments[:, 1, 1], np.ones_like(data) * h)
+            assert len(segments) == len(x)
+            assert np.array_equal(segments[:, 0, 0], x)
+            assert np.array_equal(segments[:, 1, 0], x)
+            assert np.array_equal(segments[:, 0, 1], np.zeros_like(x))
+            assert np.array_equal(segments[:, 1, 1], np.ones_like(x) * h)
 
             plt.close(f)
 
             f, ax = plt.subplots()
-            dist.rugplot(data, h, axis="y")
+            rugplot(x=x, height=h, axis="y")
             rug, = ax.collections
             segments = np.array(rug.get_segments())
 
-            assert len(segments) == len(data)
-            assert np.array_equal(segments[:, 0, 1], data)
-            assert np.array_equal(segments[:, 1, 1], data)
-            assert np.array_equal(segments[:, 0, 0], np.zeros_like(data))
-            assert np.array_equal(segments[:, 1, 0], np.ones_like(data) * h)
+            assert len(segments) == len(x)
+            assert np.array_equal(segments[:, 0, 1], x)
+            assert np.array_equal(segments[:, 1, 1], x)
+            assert np.array_equal(segments[:, 0, 0], np.zeros_like(x))
+            assert np.array_equal(segments[:, 1, 0], np.ones_like(x) * h)
 
             plt.close(f)
 
         f, ax = plt.subplots()
-        dist.rugplot(data, axis="y")
-        dist.rugplot(data, vertical=True)
+        rugplot(x=x, axis="y")
+        rugplot(x=x, vertical=True)
         c1, c2 = ax.collections
         assert np.array_equal(c1.get_segments(), c2.get_segments())
         plt.close(f)
 
         f, ax = plt.subplots()
-        dist.rugplot(data)
-        dist.rugplot(data, lw=2)
-        dist.rugplot(data, linewidth=3, alpha=.5)
+        rugplot(x=x)
+        rugplot(x=x, lw=2)
+        rugplot(x=x, linewidth=3, alpha=.5)
         for c, lw in zip(ax.collections, [1, 2, 3]):
             assert np.squeeze(c.get_linewidth()).item() == lw
         assert c.get_alpha() == .5
         plt.close(f)
+
+    def test_a_parameter_deprecation(self, series_data):
+
+        with pytest.warns(FutureWarning):
+            ax = rugplot(a=series_data)
+        rug, = ax.collections
+        segments = np.array(rug.get_segments())
+        assert len(segments) == len(series_data)

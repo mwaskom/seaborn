@@ -43,8 +43,6 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
-    jointplot
-    pairplot
     distplot
     kdeplot
     rugplot
@@ -93,6 +91,7 @@ Pair grids
 .. autosummary::
    :toctree: generated/
 
+    pairplot
     PairGrid
     PairGrid.map
     PairGrid.map_diag
@@ -106,6 +105,7 @@ Joint grids
 .. autosummary::
    :toctree: generated/
 
+    jointplot
     JointGrid
     JointGrid.plot
     JointGrid.plot_joint
@@ -169,6 +169,8 @@ Utility functions
     :toctree: generated/
 
     load_dataset
+    get_dataset_names
+    get_data_home
     despine
     desaturate
     saturate

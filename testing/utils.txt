@@ -1,4 +1,4 @@
-pytest
+pytest!=5.3.4
 pytest-cov
 flake8
 nose

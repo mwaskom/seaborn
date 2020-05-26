@@ -1,10 +1,7 @@
 """Algorithms to support fitting routines in seaborn plotting functions."""
-from __future__ import division
+import numbers
 import numpy as np
-from scipy import stats
 import warnings
-from .external.six import string_types
-from .external.six.moves import range
 
 
 def bootstrap(*args, **kwargs):
@@ -22,14 +19,10 @@ def bootstrap(*args, **kwargs):
             Array of sampling unit IDs. When used the bootstrap resamples units
             and then observations within units instead of individual
             datapoints.
-        smooth : bool, default False
-            If True, performs a smoothed bootstrap (draws samples from a kernel
-            destiny estimate); only works for one-dimensional inputs and cannot
-            be used `units` is present.
         func : string or callable, default np.mean
             Function to call on the args that are passed in. If string, tries
             to use as named method on numpy array.
-        random_seed : int | None, default None
+        seed : Generator | SeedSequence | RandomState | int | None
             Seed for the random number generator; useful if you want
             reproducible resamples.
 
@@ -49,15 +42,18 @@ def bootstrap(*args, **kwargs):
     func = kwargs.get("func", np.mean)
     axis = kwargs.get("axis", None)
     units = kwargs.get("units", None)
-    smooth = kwargs.get("smooth", False)
     random_seed = kwargs.get("random_seed", None)
+    if random_seed is not None:
+        msg = "`random_seed` has been renamed to `seed` and will be removed"
+        warnings.warn(msg)
+    seed = kwargs.get("seed", random_seed)
     if axis is None:
         func_kwargs = dict()
     else:
         func_kwargs = dict(axis=axis)
 
     # Initialize the resampler
-    rs = np.random.RandomState(random_seed)
+    rng = _handle_random_seed(seed)
 
     # Coerce to arrays
     args = list(map(np.asarray, args))
@@ -65,31 +61,32 @@ def bootstrap(*args, **kwargs):
         units = np.asarray(units)
 
     # Allow for a function that is the name of a method on an array
-    if isinstance(func, string_types):
+    if isinstance(func, str):
         def f(x):
             return getattr(x, func)()
     else:
         f = func
 
-    # Do the bootstrap
-    if smooth:
-        msg = "Smooth bootstraps are deprecated and will be removed."
-        warnings.warn(msg)
-        return _smooth_bootstrap(args, n_boot, f, func_kwargs)
+    # Handle numpy changes
+    try:
+        integers = rng.integers
+    except AttributeError:
+        integers = rng.randint
 
+    # Do the bootstrap
     if units is not None:
         return _structured_bootstrap(args, n_boot, units, f,
-                                     func_kwargs, rs)
+                                     func_kwargs, integers)
 
     boot_dist = []
     for i in range(int(n_boot)):
-        resampler = rs.randint(0, n, n)
+        resampler = integers(0, n, n, dtype=np.intp)  # intp is indexing dtype
         sample = [a.take(resampler, axis=0) for a in args]
         boot_dist.append(f(*sample, **func_kwargs))
     return np.array(boot_dist)
 
 
-def _structured_bootstrap(args, n_boot, units, func, func_kwargs, rs):
+def _structured_bootstrap(args, n_boot, units, func, func_kwargs, integers):
     """Resample units instead of datapoints."""
     unique_units = np.unique(units)
     n_units = len(unique_units)
@@ -98,10 +95,10 @@ def _structured_bootstrap(args, n_boot, units, func, func_kwargs, rs):
 
     boot_dist = []
     for i in range(int(n_boot)):
-        resampler = rs.randint(0, n_units, n_units)
+        resampler = integers(0, n_units, n_units, dtype=np.intp)
         sample = [np.take(a, resampler, axis=0) for a in args]
         lengths = map(len, sample[0])
-        resampler = [rs.randint(0, n, n) for n in lengths]
+        resampler = [integers(0, n, n, dtype=np.intp) for n in lengths]
         sample = [[c.take(r, axis=0) for c, r in zip(a, resampler)]
                   for a in sample]
         sample = list(map(np.concatenate, sample))
@@ -109,12 +106,25 @@ def _structured_bootstrap(args, n_boot, units, func, func_kwargs, rs):
     return np.array(boot_dist)
 
 
-def _smooth_bootstrap(args, n_boot, func, func_kwargs):
-    """Bootstrap by resampling from a kernel density estimate."""
-    n = len(args[0])
-    boot_dist = []
-    kde = [stats.gaussian_kde(np.transpose(a)) for a in args]
-    for i in range(int(n_boot)):
-        sample = [a.resample(n).T for a in kde]
-        boot_dist.append(func(*sample, **func_kwargs))
-    return np.array(boot_dist)
+def _handle_random_seed(seed=None):
+    """Given a seed in one of many formats, return a random number generator.
+
+    Generalizes across the numpy 1.17 changes, preferring newer functionality.
+
+    """
+    if isinstance(seed, np.random.RandomState):
+        rng = seed
+    else:
+        try:
+            # General interface for seeding on numpy >= 1.17
+            rng = np.random.default_rng(seed)
+        except AttributeError:
+            # We are on numpy < 1.17, handle options ourselves
+            if isinstance(seed, (numbers.Integral, np.integer)):
+                rng = np.random.RandomState(seed)
+            elif seed is None:
+                rng = np.random.RandomState()
+            else:
+                err = "{} cannot be used to seed the randomn number generator"
+                raise ValueError(err.format(seed))
+    return rng

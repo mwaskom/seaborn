@@ -1,0 +1,85 @@
+
+v0.9.1 (January 2020)
+---------------------
+
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3629445.svg
+   :target: https://doi.org/10.5281/zenodo.3629445
+
+
+This is a minor release with a number of bug fixes and adaptations to changes in seaborn's dependencies. There are also several new features.
+
+This is the final version of seaborn that will support Python 2.7 or 3.5.
+
+New features
+~~~~~~~~~~~~
+
+- Added more control over the arrangement of the elements drawn by :func:`clustermap` with the ``{dendrogram,colors}_ratio`` and ``cbar_pos`` parameters. Additionally, the default organization and scaling with different figure sizes has been improved.
+
+- Added the ``corner`` option to :class:`PairGrid` and :func:`pairplot` to make a grid without the upper triangle of bivariate axes.
+
+- Added the ability to seed the random number generator for the bootstrap used to define error bars in several plots. Relevant functions now have a ``seed`` parameter, which can take either fixed seed (typically an ``int``) or a numpy random number generator object (either the newer :class:`numpy.random.Generator` or the older :class:`numpy.random.mtrand.RandomState`).
+
+- Generalized the idea of "diagonal" axes in :class:`PairGrid` to any axes that share an x and y variable.
+
+- In :class:`PairGrid`, the ``hue`` variable is now excluded from the default list of variables that make up the rows and columns of the grid.
+
+- Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
+
+- It is now possible to force a categorical interpretation of the ``hue`` variable in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passing a list/dict of colors.
+
+- Added the ``tree_kws`` parameter to :func:`clustermap` to control the properties of the lines in the dendrogram.
+
+- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in different semantics.
+
+- Improved support for grouping observations based on pandas index information in categorical plots.
+
+Bug fixes and adaptations
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Avoided an error when singular data is passed to :func:`kdeplot`, issuing a warning instead. This makes :func:`pairplot` more robust.
+
+- Fixed the behavior of ``dropna`` in :class:`PairGrid` to properly exclude null datapoints from each plot when set to ``True``.
+
+- Fixed an issue where :func:`regplot` could interfere with other axes in a multi-plot matplotlib figure.
+
+- Semantic variables with a ``category`` data type will always be treated as categorical in relational plots.
+
+- Avoided a warning about color specifications that arose from :func:`boxenplot` on newer matplotlibs.
+
+- Adapted to a change in how matplotlib scales axis margins, which caused multiple calls to :func:`regplot` with ``truncate=False`` to progressively expand the x axis limits. Because there are currently limitations on how autoscaling works in matplotlib, the default value for ``truncate`` in seaborn has also been changed to ``True``.
+
+- Relational plots no longer error when hue/size data are inferred to be numeric but stored with a string datatype.
+
+- Relational plots now consider semantics with only a single value that can be interpreted as boolean (0 or 1) to be categorical, not numeric.
+
+- Relational plots now handle list or dict specifications for ``sizes`` correctly.
+
+- Fixed an issue in :func:`pointplot` where missing levels of a hue variable would cause an exception after a recent update in matplotlib.
+
+- Fixed a bug when setting the rotation of x tick labels on a :class:`FacetGrid`.
+
+- Fixed a bug where values would be excluded from categorical plots when only one variable was a pandas ``Series`` with a non-default index.
+
+- Fixed a bug when using ``Series`` objects as arguments for ``x_partial`` or ``y_partial`` in :func:`regplot`.
+
+- Fixed a bug when passing a ``norm`` object and using color annotations in :func:`clustermap`.
+
+- Fixed a bug where annotations were not rearranged to match the clustering in :func:`clustermap`.
+
+- Fixed a bug when trying to call :func:`set` while specifying a list of colors for the palette.
+
+- Fixed a bug when resetting the color code short-hands to the matplotlib default.
+
+- Avoided errors from stricter type checking in upcoming ``numpy`` changes.
+
+- Avoided error/warning in :func:`lineplot` when plotting categoricals with empty levels.
+
+- Allowed ``colors`` to be passed through to a bivariate :func:`kdeplot`.
+
+- Standardized the output format of custom color palette functions.
+
+- Fixed a bug where legends for numerical variables in a relational plot could show a surprisingly large number of decimal places.
+
+- Improved robustness to missing values in distribution plots.
+
+- Made it possible to specify the location of the :class:`FacetGrid` legend using matplotlib keyword arguments.

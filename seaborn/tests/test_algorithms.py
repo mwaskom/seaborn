@@ -1,8 +1,9 @@
 import numpy as np
-from ..external.six.moves import range
+import numpy.random as npr
 
-from numpy.testing import assert_array_equal
 import pytest
+from numpy.testing import assert_array_equal
+from distutils.version import LooseVersion
 
 from .. import algorithms as algo
 
@@ -67,22 +68,13 @@ def test_bootstrap_axis(random):
     assert out_axis.shape, (n_boot, x.shape[1])
 
 
-def test_bootstrap_random_seed(random):
+def test_bootstrap_seed(random):
     """Test that we can get reproducible resamples by seeding the RNG."""
     data = np.random.randn(50)
     seed = 42
-    boots1 = algo.bootstrap(data, random_seed=seed)
-    boots2 = algo.bootstrap(data, random_seed=seed)
+    boots1 = algo.bootstrap(data, seed=seed)
+    boots2 = algo.bootstrap(data, seed=seed)
     assert_array_equal(boots1, boots2)
-
-
-def test_smooth_bootstrap(random):
-    """Test smooth bootstrap."""
-    x = np.random.randn(15)
-    n_boot = 100
-    out_smooth = algo.bootstrap(x, n_boot=n_boot,
-                                smooth=True, func=np.median)
-    assert not np.median(out_smooth) in x
 
 
 def test_bootstrap_ols(random):
@@ -118,8 +110,8 @@ def test_bootstrap_units(random):
     data_rm = data + bwerr
     seed = 77
 
-    boots_orig = algo.bootstrap(data_rm, random_seed=seed)
-    boots_rm = algo.bootstrap(data_rm, units=ids, random_seed=seed)
+    boots_orig = algo.bootstrap(data_rm, seed=seed)
+    boots_rm = algo.bootstrap(data_rm, units=ids, seed=seed)
     assert boots_rm.std() > boots_orig.std()
 
 
@@ -133,13 +125,78 @@ def test_bootstrap_string_func():
     """Test that named numpy methods are the same as the numpy function."""
     x = np.random.randn(100)
 
-    res_a = algo.bootstrap(x, func="mean", random_seed=0)
-    res_b = algo.bootstrap(x, func=np.mean, random_seed=0)
+    res_a = algo.bootstrap(x, func="mean", seed=0)
+    res_b = algo.bootstrap(x, func=np.mean, seed=0)
     assert np.array_equal(res_a, res_b)
 
-    res_a = algo.bootstrap(x, func="std", random_seed=0)
-    res_b = algo.bootstrap(x, func=np.std, random_seed=0)
+    res_a = algo.bootstrap(x, func="std", seed=0)
+    res_b = algo.bootstrap(x, func=np.std, seed=0)
     assert np.array_equal(res_a, res_b)
 
     with pytest.raises(AttributeError):
         algo.bootstrap(x, func="not_a_method_name")
+
+
+def test_bootstrap_reproducibility(random):
+    """Test that bootstrapping uses the internal random state."""
+    data = np.random.randn(50)
+    boots1 = algo.bootstrap(data, seed=100)
+    boots2 = algo.bootstrap(data, seed=100)
+    assert_array_equal(boots1, boots2)
+
+    with pytest.warns(UserWarning):
+        # Deprecatd, remove when removing random_seed
+        boots1 = algo.bootstrap(data, random_seed=100)
+        boots2 = algo.bootstrap(data, random_seed=100)
+        assert_array_equal(boots1, boots2)
+
+
+@pytest.mark.skipif(LooseVersion(np.__version__) < "1.17",
+                    reason="Tests new numpy random functionality")
+def test_seed_new():
+
+    # Can't use pytest parametrize because tests will fail where the new
+    # Generator object and related function are not defined
+
+    test_bank = [
+        (None, None, npr.Generator, False),
+        (npr.RandomState(0), npr.RandomState(0), npr.RandomState, True),
+        (npr.RandomState(0), npr.RandomState(1), npr.RandomState, False),
+        (npr.default_rng(1), npr.default_rng(1), npr.Generator, True),
+        (npr.default_rng(1), npr.default_rng(2), npr.Generator, False),
+        (npr.SeedSequence(10), npr.SeedSequence(10), npr.Generator, True),
+        (npr.SeedSequence(10), npr.SeedSequence(20), npr.Generator, False),
+        (100, 100, npr.Generator, True),
+        (100, 200, npr.Generator, False),
+    ]
+    for seed1, seed2, rng_class, match in test_bank:
+        rng1 = algo._handle_random_seed(seed1)
+        rng2 = algo._handle_random_seed(seed2)
+        assert isinstance(rng1, rng_class)
+        assert isinstance(rng2, rng_class)
+        assert (rng1.uniform() == rng2.uniform()) == match
+
+
+@pytest.mark.skipif(LooseVersion(np.__version__) >= "1.17",
+                    reason="Tests old numpy random functionality")
+@pytest.mark.parametrize("seed1, seed2, match", [
+    (None, None, False),
+    (npr.RandomState(0), npr.RandomState(0), True),
+    (npr.RandomState(0), npr.RandomState(1), False),
+    (100, 100, True),
+    (100, 200, False),
+])
+def test_seed_old(seed1, seed2, match):
+    rng1 = algo._handle_random_seed(seed1)
+    rng2 = algo._handle_random_seed(seed2)
+    assert isinstance(rng1, np.random.RandomState)
+    assert isinstance(rng2, np.random.RandomState)
+    assert (rng1.uniform() == rng2.uniform()) == match
+
+
+@pytest.mark.skipif(LooseVersion(np.__version__) >= "1.17",
+                    reason="Tests old numpy random functionality")
+def test_bad_seed_old():
+
+    with pytest.raises(ValueError):
+        algo._handle_random_seed("not_a_random_seed")

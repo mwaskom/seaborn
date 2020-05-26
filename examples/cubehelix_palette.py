@@ -22,7 +22,7 @@ for ax, s in zip(axes.flat, np.linspace(0, 3, 10)):
 
     # Generate and plot a random bivariate dataset
     x, y = rs.randn(2, 50)
-    sns.kdeplot(x, y, cmap=cmap, shade=True, cut=5, ax=ax)
+    sns.kdeplot(x=x, y=y, cmap=cmap, shade=True, cut=5, ax=ax)
     ax.set(xlim=(-3, 3), ylim=(-3, 3))
 
 f.tight_layout()

@@ -1,0 +1,5 @@
+sphinx==2.3.1
+sphinx_bootstrap_theme==0.6.5  # Later versions mess up the css somehow
+numpydoc
+nbconvert
+ipykernel

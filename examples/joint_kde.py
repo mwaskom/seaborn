@@ -18,4 +18,4 @@ x1 = pd.Series(x1, name="$X_1$")
 x2 = pd.Series(x2, name="$X_2$")
 
 # Show the joint distribution using kernel density estimation
-g = sns.jointplot(x1, x2, kind="kde", height=7, space=0)
+g = sns.jointplot(x=x1, y=x2, kind="kde", height=7, space=0)
