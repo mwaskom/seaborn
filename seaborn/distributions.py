@@ -53,13 +53,17 @@ class _KDEPlotter(_DistributionPlotter):
 
         super().__init__(data=data, variables=variables)
 
-    def _plot_univariate(
+    def plot_univariate(
         self,
-        bw_method, bw_adjust, cumulative,
-        gridsize, cut, clip,
-        hue_method, scale_by_hue, cut_by_hue,
+        hue_method,
+        scale_by_hue,
+        cut_by_hue,
+        cumulative,
+        gridsize,
         shade,
-        fill_kws, line_kws,
+        estimate_kws,
+        fill_kws,
+        line_kws,
         ax,
     ):
 
@@ -78,19 +82,13 @@ class _KDEPlotter(_DistributionPlotter):
             if not cut_by_hue:
                 (start, stop), _ = _kde_univariate(
                     self.plot_data[data_variable],
-                    bw_method=bw_method,
-                    bw_adjust=bw_adjust,
-                    weights=None,
                     gridsize=2,
-                    cut=cut,
-                    clip=clip,
-                    cumulative=False,
-                    support=None
+                    **estimate_kws,
                 )
                 global_support = np.linspace(start, stop, gridsize)
 
-        supports = {}
         densities = {}
+
         for sub_vars, sub_data in self._semantic_subsets("hue"):
 
             hue_level = sub_vars.get("hue", None)
@@ -117,32 +115,28 @@ class _KDEPlotter(_DistributionPlotter):
 
             support, density = _kde_univariate(
                 observations=observations,
-                bw_method=bw_method,
-                bw_adjust=bw_adjust,
                 weights=weights,
                 gridsize=gridsize,
-                cut=cut,
-                clip=clip,
                 cumulative=cumulative,
                 support=global_support,
+                **estimate_kws,
             )
 
             if "hue" in sub_vars and scale_by_hue and not cumulative:
                 density *= hue_props[sub_vars["hue"]]
 
-            supports[hue_level] = support
-            densities[hue_level] = density
+            densities[hue_level] = pd.Series(density, index=support)
 
         if "hue" in self.variables:
             iter_levels = self._hue_map.levels[::-1]
         else:
             iter_levels = [None]
 
-        density = np.zeros_like(density)
+        if hue_method in ("stack", "fill"):
+            pedestal = pd.Series(0, global_support)
 
         if hue_method == "fill":
-            stacked_densities = [d for d in densities.values()]
-            fill_norm = np.stack(stacked_densities, axis=0).sum(axis=0)
+            fill_norm = pd.concat(densities, axis=1).sum(axis=1)
         else:
             fill_norm = 1
 
@@ -152,18 +146,18 @@ class _KDEPlotter(_DistributionPlotter):
 
         for hue_level in iter_levels:
 
-            support = supports[hue_level]
+            density = densities[hue_level]
+            support = density.index
 
             if hue_method in ("stack", "fill"):
-                fill_from = density.copy()
-                density += densities[hue_level] / fill_norm
+                fill_from = pedestal.copy()
+                density = pedestal + density / fill_norm
+                pedestal = density
             else:
                 fill_from = 0
-                density = densities[hue_level]
 
             if "hue" in self.variables:
 
-                line_kws["label"] = hue_level  # TODO is this how we do legend?
                 line_kws["color"] = self._hue_map(hue_level)
                 fill_kws["facecolor"] = self._hue_map(hue_level)
 
@@ -189,52 +183,6 @@ class _KDEPlotter(_DistributionPlotter):
                         density, fill_from, support, **fill_kws
                     )
                     fill.sticky_edges.x[:] = stickies
-
-    def plot(
-        self,
-        bw_method, bw_adjust, cumulative,
-        gridsize, cut, clip,
-        hue_method, scale_by_hue, cut_by_hue,
-        shade, shade_kws, kws,
-        ax,
-    ):
-
-        univariate = bool({"x", "y"} - set(self.variables))
-
-        if univariate:
-
-            if hue_method not in ("layer", "stack", "fill"):
-                # TODO handle error
-                raise ValueError
-
-            self._plot_univariate(
-                bw_method, bw_adjust, cumulative,
-                gridsize, cut, clip,
-                hue_method, scale_by_hue, cut_by_hue,
-                shade, shade_kws,
-                kws, ax,
-            )
-
-        else:
-
-            for sub_vars, sub_data in self._semantic_subsets("hue"):
-                _bivariate_kdeplot(
-                    x=sub_data["x"],
-                    y=sub_data["y"],
-                    filled=shade,
-                    fill_lowest=False,
-                    kernel="gau",
-                    bw="scott",
-                    gridsize=100,
-                    cut=3,
-                    clip=[(-np.inf, np.inf), (-np.inf, np.inf)],
-                    axlabel=None,
-                    cbar=False,
-                    cbar_ax=None,
-                    cbar_kws={},
-                    ax=ax,
-                    **kws,
-                )
 
 
 @_deprecate_positional_args
@@ -313,8 +261,9 @@ def kdeplot(
     # TODO (?) rename shade -> fill?
     # This is probably too wideley used and underjustifed for removal,
     # but could add fill and soft-deprecate shade
+    # TODO we would also need shade_lowest -> fill_lowest, ugh
 
-    # ----------------------------------------------------------------------- #
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
     p = _KDEPlotter(
         data=data,
@@ -329,21 +278,37 @@ def kdeplot(
     if shade_kws is None:
         shade_kws = {}
 
-    p.plot(
+    estimate_kws = dict(
         bw_method=bw_method,
         bw_adjust=bw_adjust,
-        cumulative=cumulative,
-        gridsize=gridsize,
         cut=cut,
         clip=clip,
-        hue_method=hue_method,
-        scale_by_hue=scale_by_hue,
-        cut_by_hue=cut_by_hue,
-        shade=shade,
-        shade_kws=shade_kws,
-        kws=kwargs,
-        ax=ax
     )
+
+    univariate = bool({"x", "y"} - set(p.variables))
+
+    # TODO handle log scaling better
+
+    if univariate:
+
+        # TODO arg checking on hue_method
+
+        p.plot_univariate(
+            hue_method=hue_method,
+            scale_by_hue=scale_by_hue,
+            cut_by_hue=cut_by_hue,
+            cumulative=cumulative,
+            gridsize=gridsize,
+            shade=shade,
+            estimate_kws=estimate_kws,
+            fill_kws=shade_kws,  # TODO
+            line_kws=kwargs,
+            ax=ax
+        )
+
+    else:
+
+        pass  # TODO
 
     return ax
 
@@ -1241,9 +1206,9 @@ def _rugplot(
 # Move _kde_support to that home
 def _kde_univariate(
     observations,
+    weights=None,
     bw_method=None,
     bw_adjust=1,
-    weights=None,
     gridsize=500,
     cut=3,
     clip=(-np.inf, +np.inf),
