@@ -175,7 +175,10 @@ class _KDEPlotter(_DistributionPlotter):
         for hue_level in iter_levels:
 
             # Extract the support grid and density curve for this level
-            density = densities[hue_level]
+            try:
+                density = densities[hue_level]
+            except KeyError:
+                continue
             support = density.index
 
             # Handle density stacking
@@ -194,6 +197,7 @@ class _KDEPlotter(_DistributionPlotter):
             # Plot a curve with observation values on the x axis
             if "x" in self.variables:
 
+                # TODO any reason to make a Line2D and add ourselves?
                 line, = ax.plot(support, density, **line_kws)
                 line.sticky_edges.y[:] = stickies
                 # TODO stick at 1 for hue_method == fill
@@ -1264,6 +1268,7 @@ def _kde_univariate(
 
     if cumulative:
         density = [kde.integrate_box_1d(support[0], s_i) for s_i in support]
+        density = np.array(density)
     else:
         density = kde(support)
 
