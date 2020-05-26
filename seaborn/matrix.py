@@ -196,7 +196,7 @@ class _HeatMapper(object):
         """Use some heuristics to set good defaults for colorbar and range."""
 
         # plot_data is a np.ma.array instance
-        calc_data = plot_data.filled(np.nan)
+        calc_data = plot_data.astype(np.float).filled(np.nan)
         if vmin is None:
             if robust:
                 vmin = np.nanpercentile(calc_data, 2)

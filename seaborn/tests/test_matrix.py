@@ -87,13 +87,15 @@ class TestHeatmap(object):
         npt.assert_array_equal(p.xticklabels, combined_tick_labels)
         nt.assert_equal(p.xlabel, "letter-number")
 
-    def test_mask_input(self):
+    @pytest.mark.parametrize("dtype", [np.float, np.int64, np.object])
+    def test_mask_input(self, dtype):
         kws = self.default_kws.copy()
 
         mask = self.x_norm > 0
         kws['mask'] = mask
-        p = mat._HeatMapper(self.x_norm, **kws)
-        plot_data = np.ma.masked_where(mask, self.x_norm)
+        data = self.x_norm.astype(dtype)
+        p = mat._HeatMapper(data, **kws)
+        plot_data = np.ma.masked_where(mask, data)
 
         npt.assert_array_equal(p.plot_data, plot_data)
 
