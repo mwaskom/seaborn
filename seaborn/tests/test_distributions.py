@@ -395,7 +395,7 @@ class TestKDEPlot:
             > np.abs(np.diff(l3.get_ydata())).mean()
         )
 
-    def test_log_scale(self, rng):
+    def test_log_scale_implicit(self, rng):
 
         x = rng.lognormal(0, 1, 100)
 
@@ -403,12 +403,57 @@ class TestKDEPlot:
         ax1.set_xscale("log")
 
         kdeplot(x=x, ax=ax1)
-        kdeplot(x=x, ax=ax2)
+        kdeplot(x=x, ax=ax1)
 
         xdata_log = ax1.lines[0].get_xdata()
         assert (xdata_log > 0).all()
         assert (np.diff(xdata_log, 2) > 0).all()
         assert np.allclose(np.diff(np.log(xdata_log), 2), 0)
+
+        f, ax = plt.subplots()
+        ax.set_yscale("log")
+        kdeplot(y=x, ax=ax)
+        assert_array_equal(ax.lines[0].get_xdata(), ax1.lines[0].get_ydata())
+
+    def test_log_scale_explicit(self, rng):
+
+        x = rng.lognormal(0, 1, 100)
+
+        f, (ax1, ax2, ax3) = plt.subplots(ncols=3)
+
+        ax1.set_xscale("log")
+        kdeplot(x=x, ax=ax1)
+        kdeplot(x=x, log_scale=True, ax=ax2)
+        kdeplot(x=x, log_scale=10, ax=ax3)
+
+        for ax in f.axes:
+            assert ax.get_xscale() == "log"
+
+        supports = [ax.lines[0].get_xdata() for ax in f.axes]
+        for a, b in itertools.product(supports, supports):
+            assert_array_equal(a, b)
+
+        densities = [ax.lines[0].get_ydata() for ax in f.axes]
+        for a, b in itertools.product(densities, densities):
+            assert_array_equal(a, b)
+
+        f, ax = plt.subplots()
+        kdeplot(y=x, log_scale=True, ax=ax)
+        assert ax.get_yscale() == "log"
+
+    def test_log_scale_with_hue(self, rng):
+
+        data = rng.lognormal(0, 1, 50), rng.lognormal(0, 2, 100)
+        ax = kdeplot(data=data, log_scale=True)
+        assert_array_equal(ax.lines[0].get_xdata(), ax.lines[1].get_xdata())
+
+    def test_log_scale_normalization(self, rng):
+
+        x = rng.lognormal(0, 1, 100)
+        ax = kdeplot(x=x, log_scale=True, cut=10)
+        xdata, ydata = ax.lines[0].get_xydata().T
+        integral = integrate.trapz(ydata, np.log10(xdata))
+        assert integral == pytest.approx(1)
 
     def test_weights(self):
 
@@ -423,6 +468,56 @@ class TestKDEPlot:
         y2 = ydata[np.argwhere(np.abs(xdata - 2).min())]
 
         assert y1 == pytest.approx(2 * y2)
+
+    def test_sticky_edges(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(data=long_df, x="x", shade=True, ax=ax1)
+        assert ax1.get_ylim()[0] == 0
+
+        kdeplot(
+            data=long_df, x="x", hue="a", hue_method="fill", shade=True, ax=ax2
+        )
+        assert ax2.get_ylim() == (0, 1)
+
+    def test_line_kws(self, flat_array):
+
+        lw = 3
+        color = (.2, .5, .8)
+        ax = kdeplot(x=flat_array, linewidth=lw, color=color)
+        line, = ax.lines
+        assert line.get_linewidth() == lw
+        assert line.get_color() == color
+
+    def test_fill_kws(self, flat_array):
+
+        color = (.2, .5, .8)
+        alpha = .5
+        shade_kws = dict(
+            alpha=alpha,
+        )
+        ax = kdeplot(
+            x=flat_array, shade=True, shade_kws=shade_kws, color=color
+        )
+        fill = ax.collections[0]
+        assert tuple(fill.get_facecolor().squeeze()) == color + (alpha,)
+
+    def test_input_checking(self, long_df):
+
+        err = (
+            "kdeplot requires a numeric 'x' variable, "
+            "but a datetime was passed"
+        )
+        with pytest.raises(TypeError, match=err):
+            kdeplot(data=long_df, x="t")
+
+        err = (
+            "kdeplot requires a numeric 'x' variable, "
+            "but a categorical was passed"
+        )
+        with pytest.raises(TypeError, match=err):
+            kdeplot(data=long_df, x="a")
 
 
 class TestKDE(object):
