@@ -573,28 +573,27 @@ def rugplot(
         x = a
         del a
 
-    # TODO Handle deprecation of "axis"
-    # TODO Handle deprecation of "vertical"
+    # Handle deprecation of "axis"
     if axis is not None:
         msg = (
-            "The `axis` variable is no longer used. "
+            "The `axis` variable is no longer used and will be removed. "
             "Instead, assign variables directly to `x` or `y`."
-            # TODO or use orient in case of wide data?
         )
-        warnings.warn(msg, UserWarning)
+        warnings.warn(msg, FutureWarning)
+
+    # Handle deprecation of "vertical"
     if kwargs.pop("vertical", axis == "y"):
         x, y = None, x
         msg = (
             "Using `vertical=True` to control the orientation of the plot  "
             "is deprecated. Instead, assign the data directly to `y`. "
         )
+        warnings.warn(msg, FutureWarning)
 
-    # ----------
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
     variables = _RugPlotter.get_semantics(locals())
 
-    # TODO do we even need the special class now?
-    # TODO (well, we would need to call plot plot_rug or similar)
     p = _RugPlotter(data=data, variables=variables)
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
