@@ -632,7 +632,10 @@ class VectorPlotter:
         self.plot_data = plot_data
         self.variables = variables
         self.var_types = {
-            v: variable_type(plot_data[v], boolean_type="categorical")
+            v: variable_type(
+                plot_data[v],
+                boolean_type="numeric" if v in "xy" else "categorical"
+            )
             for v in variables
         }
 
