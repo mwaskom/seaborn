@@ -156,6 +156,10 @@ class TestKDEPlot:
             ax = dist.kdeplot(x=np.ones(10))
         assert not ax.lines
 
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(x=[5])
+        assert not ax.lines
+
     def test_variable_assignment(self, long_df):
 
         f, ax = plt.subplots()

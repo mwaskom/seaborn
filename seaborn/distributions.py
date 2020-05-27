@@ -131,7 +131,8 @@ class _KDEPlotter(_DistributionPlotter):
             # Extract the data points from this sub set and remove nulls
             observations = remove_na(sub_data[data_variable])
 
-            if not observations.var():
+            observation_variance = observations.var()
+            if not observation_variance or np.isnan(observation_variance):
                 msg = "Dataset has 0 variance; skipping density estimate."
                 warnings.warn(msg, UserWarning)
                 continue
