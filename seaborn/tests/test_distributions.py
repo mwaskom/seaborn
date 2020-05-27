@@ -3,6 +3,7 @@ from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy
 from scipy import stats, integrate
@@ -13,6 +14,9 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from .. import distributions as dist
 from ..palettes import (
     color_palette,
+)
+from .._core import (
+    categorical_order,
 )
 from ..distributions import (
     rugplot,
@@ -540,6 +544,28 @@ class TestKDEPlot:
         kdeplot(data=long_df, y="y", ax=ax2)
         assert ax2.get_xlabel() == "Density"
         assert ax2.get_ylabel() == "y"
+
+    def test_legend(self, long_df):
+
+        ax = kdeplot(data=long_df, x="x", hue="a")
+
+        assert ax.legend_.get_title().get_text() == "a"
+
+        legend_labels = ax.legend_.get_texts()
+        order = categorical_order(long_df["a"])
+        for label, level in zip(legend_labels, order):
+            assert label.get_text() == level
+
+        legend_artists = ax.legend_.findobj(mpl.lines.Line2D)[::2]
+        palette = color_palette()
+        for artist, color in zip(legend_artists, palette):
+            assert artist.get_color() == color
+
+        ax.clear()
+
+        kdeplot(data=long_df, x="x", hue="a", legend=False)
+
+        assert ax.legend_ is None
 
 
 class TestKDE(object):

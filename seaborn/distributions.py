@@ -1,4 +1,5 @@
 """Plotting functions for visualizing distributions."""
+from functools import partial
 import warnings
 from distutils.version import LooseVersion
 
@@ -43,6 +44,24 @@ class _DistributionPlotter(VectorPlotter):
 
         super().__init__(data=data, variables=variables)
 
+    def _add_legend(self, ax, artist, hue_attrs, artist_kws, legend_kws):
+
+        artist_kws = artist_kws.copy()
+
+        if isinstance(hue_attrs, str):
+            hue_attrs = [hue_attrs]
+
+        handles = []
+        labels = []
+        for level in self._hue_map.levels:
+            val = self._hue_map(level)
+            for attr in hue_attrs:
+                artist_kws[attr] = val
+            handles.append(artist(**artist_kws))
+            labels.append(level)
+
+        ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+
 
 class _HistPlotter(_DistributionPlotter):
 
@@ -63,6 +82,7 @@ class _KDEPlotter(_DistributionPlotter):
         cumulative,
         gridsize,  # TODO pack in estimate kws, then unpack where needed?
         shade,  # TODO at least use fill internally
+        legend,
         estimate_kws,
         fill_kws,
         line_kws,
@@ -239,13 +259,37 @@ class _KDEPlotter(_DistributionPlotter):
                     )
                     fill.sticky_edges.x[:] = stickies
 
-        # --- Finalize the plot
+        # --- Finalize the plot ----
         default_x = default_y = ""
         if data_variable == "x":
             default_y = "Density"
         if data_variable == "y":
             default_x = "Density"
         self._add_axis_labels(ax, default_x, default_y)
+
+        if "hue" in self.variables and legend:
+
+            # TODO what i would like in the case of shaded densities
+            # is to have the legend artist be filled at the alpha of
+            # the fill between and with an edge that looks like either the
+            # line or the line of the fill
+            # This is possible to hack here, or we might want to just draw
+            # the shaded densities with a fill_between artist.
+            # I am punting for now
+
+            fill_kws = fill_kws.copy()
+            if shade:
+                artist = partial(mpl.patches.Patch)
+                hue_attrs = ["facecolor", "edgecolor"]
+                artist_kws = fill_kws
+            else:
+                artist = partial(mpl.lines.Line2D, [], [])
+                hue_attrs = "color"
+                artist_kws = line_kws
+
+            self._add_legend(
+                ax, artist, hue_attrs, artist_kws, {},
+            )
 
 
 @_deprecate_positional_args
@@ -391,6 +435,7 @@ def kdeplot(
             cumulative=cumulative,
             gridsize=gridsize,
             shade=shade,
+            legend=legend,
             estimate_kws=estimate_kws,
             fill_kws=shade_kws,  # TODO
             line_kws=kwargs,
