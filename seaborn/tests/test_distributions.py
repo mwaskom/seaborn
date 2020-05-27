@@ -530,6 +530,18 @@ class TestKDEPlot:
         with pytest.raises(TypeError, match=err):
             kdeplot(data=long_df, x="a")
 
+    def test_axis_labels(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(data=long_df, x="x", ax=ax1)
+        assert ax1.get_xlabel() == "x"
+        assert ax1.get_ylabel() == "Density"
+
+        kdeplot(data=long_df, y="y", ax=ax2)
+        assert ax2.get_xlabel() == "Density"
+        assert ax2.get_ylabel() == "y"
+
 
 class TestKDE(object):
 

@@ -892,6 +892,13 @@ class VectorPlotter:
 
             yield {}, self.plot_data
 
+    def _add_axis_labels(self, ax, default_x="", default_y=""):
+
+        if not ax.get_xlabel():
+            ax.set_xlabel(self.variables.get("x", default_x))
+        if not ax.get_ylabel():
+            ax.set_ylabel(self.variables.get("y", default_y))
+
 
 def variable_type(vector, boolean_type="numeric"):
     """Determine whether a vector contains numeric, categorical, or dateime data.

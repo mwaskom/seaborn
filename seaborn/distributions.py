@@ -240,6 +240,14 @@ class _KDEPlotter(_DistributionPlotter):
                     )
                     fill.sticky_edges.x[:] = stickies
 
+        # --- Finalize the plot
+        default_x = default_y = ""
+        if data_variable == "x":
+            default_y = "Density"
+        if data_variable == "y":
+            default_x = "Density"
+        self._add_axis_labels(ax, default_x, default_y)
+
 
 @_deprecate_positional_args
 def kdeplot(
