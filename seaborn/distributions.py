@@ -59,7 +59,7 @@ class _KDEPlotter(_DistributionPlotter):
         scale_by_hue,
         cut_by_hue,
         cumulative,
-        gridsize,
+        gridsize,  # TODO pack in estimate kws, then unpack where needed?
         shade,  # TODO at least use fill internally
         estimate_kws,
         fill_kws,
@@ -239,7 +239,7 @@ class _KDEPlotter(_DistributionPlotter):
 
 @_deprecate_positional_args
 def kdeplot(
-    *,
+    *,  # Maybe allow positional x
     x=None, y=None,
     shade=False, vertical=False, kernel=None,
     bw=None, gridsize=500, cut=3, clip=None, legend=True,

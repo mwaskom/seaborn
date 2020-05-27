@@ -2,11 +2,15 @@ import itertools
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy import stats
+from scipy import stats, integrate
 
 import pytest
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from .. import distributions as dist
+from ..palettes import (
+    color_palette,
+)
 from ..distributions import (
     rugplot,
     kdeplot,
@@ -98,7 +102,327 @@ class TestDistPlot(object):
 
 class TestKDEPlot:
 
-    pass
+    @pytest.mark.parametrize(
+        "variable", ["x", "y"],
+    )
+    def test_long_vectors(self, long_df, variable):
+
+        vector = long_df[variable]
+        vectors = [
+            vector, np.asarray(vector), vector.tolist(),
+        ]
+
+        f, ax = plt.subplots()
+        for vector in vectors:
+            kdeplot(**{variable: vector})
+
+        xdata = [l.get_xdata() for l in ax.lines]
+        for a, b in itertools.product(xdata, xdata):
+            assert_array_equal(a, b)
+
+        ydata = [l.get_ydata() for l in ax.lines]
+        for a, b in itertools.product(ydata, ydata):
+            assert_array_equal(a, b)
+
+    def test_wide_vs_long_data(self, wide_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        kdeplot(data=wide_df, ax=ax1, scale_by_hue=False, cut_by_hue=True)
+        for col in wide_df:
+            kdeplot(data=wide_df, x=col, ax=ax2)
+
+        for l1, l2 in zip(ax1.lines[::-1], ax2.lines):
+            np.testing.assert_array_equal(l1.get_xydata(), l2.get_xydata())
+
+    @pytest.mark.xfail
+    def test_flat_vector(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df["x"])
+        kdeplot(x=long_df["x"])
+        assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
+
+    def test_empty_data(self):
+
+        ax = dist.kdeplot(x=[])
+        assert not ax.lines
+
+    def test_singular_data(self):
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(x=np.ones(10))
+        assert not ax.lines
+
+    def test_variable_assignment(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x", shade=True)
+        kdeplot(data=long_df, y="x", shade=True)
+
+        assert_array_equal(ax.lines[0].get_xdata(), ax.lines[1].get_ydata())
+        assert_array_equal(ax.lines[0].get_ydata(), ax.lines[1].get_xdata())
+
+        v0 = ax.collections[0].get_paths()[0].vertices
+        v1 = ax.collections[1].get_paths()[0].vertices
+
+        assert np.in1d(ax.lines[0].get_ydata(), v0).all()
+        assert np.in1d(ax.lines[1].get_ydata(), v1).all()
+
+    def test_vertical_deprecation(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, y="x")
+
+        with pytest.warns(FutureWarning):
+            kdeplot(data=long_df, x="x", vertical=True)
+
+        assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
+
+    def test_bw_deprecation(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x", bw_method="silverman")
+
+        with pytest.warns(FutureWarning):
+            kdeplot(data=long_df, x="x", bw="silverman")
+
+        assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
+
+    def test_kernel_deprecation(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x")
+
+        with pytest.warns(UserWarning):
+            kdeplot(data=long_df, x="x", kernel="epi")
+
+        assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
+
+    @pytest.mark.parametrize(
+        "hue_method", ["layer", "stack", "fill"],
+    )
+    def test_hue_colors(self, long_df, hue_method):
+
+        # TODO test against fill?
+        ax = kdeplot(
+            data=long_df, x="x", hue="a",
+            hue_method=hue_method,
+            shade=True, legend=False
+        )
+
+        # Hue order is reversed
+        lines = ax.lines[::-1]
+        fills = ax.collections[::-1]
+
+        palette = color_palette()
+
+        for line, fill, color in zip(lines, fills, palette):
+            assert line.get_color() == color
+            assert tuple(fill.get_facecolor().squeeze()) == color + (.25,)
+
+    def test_hue_stacking(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(
+            data=long_df, x="x", hue="a",
+            hue_method="layer", cut_by_hue=False,
+            legend=False, ax=ax1,
+        )
+        kdeplot(
+            data=long_df, x="x", hue="a",
+            hue_method="stack",
+            legend=False, ax=ax2,
+        )
+
+        layered_densities = np.stack([
+            l.get_ydata() for l in ax1.lines
+        ])
+        stacked_densities = np.stack([
+            l.get_ydata() for l in ax2.lines
+        ])
+
+        assert_array_equal(layered_densities.cumsum(axis=0), stacked_densities)
+
+    def test_hue_filling(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(
+            data=long_df, x="x", hue="a",
+            hue_method="layer", cut_by_hue=False,
+            legend=False, ax=ax1,
+        )
+        kdeplot(
+            data=long_df, x="x", hue="a",
+            hue_method="fill",
+            legend=False, ax=ax2,
+        )
+
+        layered = np.stack([l.get_ydata() for l in ax1.lines])
+        filled = np.stack([l.get_ydata() for l in ax2.lines])
+
+        assert_array_almost_equal(
+            (layered / layered.sum(axis=0)).cumsum(axis=0),
+            filled,
+        )
+
+    def test_cut(self, rng):
+
+        x = rng.normal(0, 3, 1000)
+
+        f, ax = plt.subplots()
+        kdeplot(x=x, cut=0, legend=False)
+
+        xdata_0 = ax.lines[0].get_xdata()
+        assert xdata_0.min() == x.min()
+        assert xdata_0.max() == x.max()
+
+        kdeplot(x=x, cut=2, legend=False)
+
+        xdata_2 = ax.lines[1].get_xdata()
+        assert xdata_2.min() < xdata_0.min()
+        assert xdata_2.max() > xdata_0.max()
+
+        assert len(xdata_0) == len(xdata_2)
+
+    def test_clip(self, rng):
+
+        x = rng.normal(0, 3, 1000)
+
+        clip = -1, 1
+        ax = kdeplot(x=x, clip=clip)
+
+        xdata = ax.lines[0].get_xdata()
+
+        assert xdata.min() >= clip[0]
+        assert xdata.max() <= clip[1]
+
+    def test_line_is_density(self, long_df):
+
+        ax = kdeplot(data=long_df, x="x", cut=5)
+        x, y = ax.lines[0].get_xydata().T
+        assert integrate.trapz(y, x) == pytest.approx(1)
+
+    def test_cumulative(self, long_df):
+
+        ax = kdeplot(data=long_df, x="x", cut=5, cumulative=True)
+        y = ax.lines[0].get_ydata()
+        assert y[0] == pytest.approx(0)
+        assert y[-1] == pytest.approx(1)
+
+    def test_scale_by_hue(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(
+            data=long_df, x="x", hue="a", scale_by_hue=True, cut=10, ax=ax1
+        )
+        kdeplot(
+            data=long_df, x="x", hue="a", scale_by_hue=False, cut=10, ax=ax2
+        )
+
+        total_area = 0
+        for line in ax1.lines:
+            xdata, ydata = line.get_xydata().T
+            total_area += integrate.trapz(ydata, xdata)
+        assert total_area == pytest.approx(1)
+
+        for line in ax2.lines:
+            xdata, ydata = line.get_xydata().T
+            assert integrate.trapz(ydata, xdata) == pytest.approx(1)
+
+    def test_cut_by_hue(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        order = "a", "b", "c"
+
+        kdeplot(
+            data=long_df, x="x", hue="a", hue_order=order,
+            cut_by_hue=True, cut=0, ax=ax1,
+        )
+        kdeplot(
+            data=long_df, x="x", hue="a", hue_order=order,
+            cut_by_hue=False, cut=0, ax=ax2,
+        )
+
+        for line, level in zip(ax1.lines[::-1], order):
+            xdata = line.get_xdata()
+            assert xdata.min() == long_df.loc[long_df["a"] == level, "x"].min()
+            assert xdata.max() == long_df.loc[long_df["a"] == level, "x"].max()
+
+        for line in ax2.lines:
+            xdata = line.get_xdata().T
+            assert xdata.min() == long_df["x"].min()
+            assert xdata.max() == long_df["x"].max()
+
+    def test_bw_method(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x", bw_method=0.2, legend=False)
+        kdeplot(data=long_df, x="x", bw_method=1.0, legend=False)
+        kdeplot(data=long_df, x="x", bw_method=3.0, legend=False)
+
+        l1, l2, l3 = ax.lines
+
+        assert (
+            np.abs(np.diff(l1.get_ydata())).mean()
+            > np.abs(np.diff(l2.get_ydata())).mean()
+        )
+
+        assert (
+            np.abs(np.diff(l2.get_ydata())).mean()
+            > np.abs(np.diff(l3.get_ydata())).mean()
+        )
+
+    def test_bw_adjust(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x", bw_adjust=0.2, legend=False)
+        kdeplot(data=long_df, x="x", bw_adjust=1.0, legend=False)
+        kdeplot(data=long_df, x="x", bw_adjust=3.0, legend=False)
+
+        l1, l2, l3 = ax.lines
+
+        assert (
+            np.abs(np.diff(l1.get_ydata())).mean()
+            > np.abs(np.diff(l2.get_ydata())).mean()
+        )
+
+        assert (
+            np.abs(np.diff(l2.get_ydata())).mean()
+            > np.abs(np.diff(l3.get_ydata())).mean()
+        )
+
+    def test_log_scale(self, rng):
+
+        x = rng.lognormal(0, 1, 100)
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        ax1.set_xscale("log")
+
+        kdeplot(x=x, ax=ax1)
+        kdeplot(x=x, ax=ax2)
+
+        xdata_log = ax1.lines[0].get_xdata()
+        assert (xdata_log > 0).all()
+        assert (np.diff(xdata_log, 2) > 0).all()
+        assert np.allclose(np.diff(np.log(xdata_log), 2), 0)
+
+    def test_weights(self):
+
+        x = [1, 2]
+        weights = [2, 1]
+
+        ax = kdeplot(x=x, weights=weights)
+
+        xdata, ydata = ax.lines[0].get_xydata().T
+
+        y1 = ydata[np.argwhere(np.abs(xdata - 1).min())]
+        y2 = ydata[np.argwhere(np.abs(xdata - 2).min())]
+
+        assert y1 == pytest.approx(2 * y2)
 
 
 class TestKDE(object):
