@@ -1,7 +1,10 @@
 import itertools
+from distutils.version import LooseVersion
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy
 from scipy import stats, integrate
 
 import pytest
@@ -455,6 +458,10 @@ class TestKDEPlot:
         integral = integrate.trapz(ydata, np.log10(xdata))
         assert integral == pytest.approx(1)
 
+    @pytest.mark.skipif(
+        LooseVersion(scipy.__version__) < "1.2.0",
+        reason="Weights require scipy >= 1.2.0"
+    )
     def test_weights(self):
 
         x = [1, 2]
@@ -479,7 +486,7 @@ class TestKDEPlot:
         kdeplot(
             data=long_df, x="x", hue="a", hue_method="fill", shade=True, ax=ax2
         )
-        assert ax2.get_ylim() == (0, 1)
+        assert ax2.get_ylim() == pytest.approx((0, 1))  # old mpl needs approx?
 
     def test_line_kws(self, flat_array):
 

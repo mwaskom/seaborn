@@ -1,14 +1,15 @@
 """Plotting functions for visualizing distributions."""
 import warnings
+from distutils.version import LooseVersion
 
 import numpy as np
+import scipy
 from scipy import stats
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.collections import LineCollection
-from matplotlib.cbook import normalize_kwargs
 
 try:
     import statsmodels.nonparametric.api as smnp
@@ -19,7 +20,7 @@ except ImportError:
 from ._core import (
     VectorPlotter,
 )
-from .utils import _kde_support, remove_na
+from .utils import _kde_support, _normalize_kwargs, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 
@@ -70,8 +71,8 @@ class _KDEPlotter(_DistributionPlotter):
     ):
 
         # Preprocess the matplotlib keyward dictionaries
-        line_kws = normalize_kwargs(line_kws, mpl.lines.Line2D)
-        fill_kws = normalize_kwargs(
+        line_kws = _normalize_kwargs(line_kws, mpl.lines.Line2D)
+        fill_kws = _normalize_kwargs(
             fill_kws, mpl.collections.PolyCollection
         )
 
@@ -416,7 +417,7 @@ class _RugPlotter(_DistributionPlotter):
 
     def plot(self, height, expand_margins, ax, kws):
 
-        kws = normalize_kwargs(kws, mpl.lines.Line2D)
+        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
         # TODO we need to abstract this logic
         scout, = ax.plot([], [], **kws)
@@ -1307,11 +1308,21 @@ def _kde_univariate(
     support=None,
 ):
 
+    # Handle the lack of support for weighted KDE on older scipy
+    has_weights = weights is not None and weights.notna().any()
+    if LooseVersion(scipy.__version__) < "1.2.0":
+        if has_weights:
+            msg = "Weighted kernel density estimate requires scipy >= 1.2.0"
+            raise RuntimeError(msg)
+        scipy_kws = {}
+    else:
+        scipy_kws = {"weights": weights}
+
     if clip is None:
         clip = -np.inf, np.inf
 
     kde = stats.gaussian_kde(
-        observations, bw_method=bw_method, weights=weights
+        observations, bw_method=bw_method, **scipy_kws,
     )
     kde.set_bandwidth(kde.factor * bw_adjust)
     bw = np.sqrt(kde.covariance.squeeze())
