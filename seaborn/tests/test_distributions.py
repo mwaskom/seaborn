@@ -166,8 +166,8 @@ class TestKDEPlot:
     def test_variable_assignment(self, long_df):
 
         f, ax = plt.subplots()
-        kdeplot(data=long_df, x="x", shade=True)
-        kdeplot(data=long_df, y="x", shade=True)
+        kdeplot(data=long_df, x="x", fill=True)
+        kdeplot(data=long_df, y="x", fill=True)
 
         assert_array_equal(ax.lines[0].get_xdata(), ax.lines[1].get_ydata())
         assert_array_equal(ax.lines[0].get_ydata(), ax.lines[1].get_xdata())
@@ -208,19 +208,28 @@ class TestKDEPlot:
 
         assert_array_equal(ax.lines[0].get_xydata(), ax.lines[1].get_xydata())
 
+    def test_shade_deprecation(self, long_df):
+
+        f, ax = plt.subplots()
+        kdeplot(data=long_df, x="x", shade=True)
+        kdeplot(data=long_df, x="x", fill=True)
+        fill1, fill2 = ax.collections
+        assert_array_equal(
+            fill1.get_paths()[0].vertices, fill2.get_paths()[0].vertices
+        )
+
     @pytest.mark.parametrize(
         "hue_method", ["layer", "stack", "fill"],
     )
     def test_hue_colors(self, long_df, hue_method):
 
-        # TODO test against fill?
         ax = kdeplot(
             data=long_df, x="x", hue="a",
             hue_method=hue_method,
-            shade=True, legend=False
+            fill=True, legend=False
         )
 
-        # Hue order is reversed
+        # Note that hue order is reversed in the plot
         lines = ax.lines[::-1]
         fills = ax.collections[::-1]
 
@@ -487,11 +496,11 @@ class TestKDEPlot:
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
-        kdeplot(data=long_df, x="x", shade=True, ax=ax1)
+        kdeplot(data=long_df, x="x", fill=True, ax=ax1)
         assert ax1.get_ylim()[0] == 0
 
         kdeplot(
-            data=long_df, x="x", hue="a", hue_method="fill", shade=True, ax=ax2
+            data=long_df, x="x", hue="a", hue_method="fill", fill=True, ax=ax2
         )
         assert ax2.get_ylim() == pytest.approx((0, 1))  # old mpl needs approx?
 
@@ -508,11 +517,11 @@ class TestKDEPlot:
 
         color = (.2, .5, .8)
         alpha = .5
-        shade_kws = dict(
+        fill_kws = dict(
             alpha=alpha,
         )
         ax = kdeplot(
-            x=flat_array, shade=True, shade_kws=shade_kws, color=color
+            x=flat_array, fill=True, fill_kws=fill_kws, color=color
         )
         fill = ax.collections[0]
         assert tuple(fill.get_facecolor().squeeze()) == color + (alpha,)

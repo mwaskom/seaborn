@@ -81,7 +81,7 @@ class _KDEPlotter(_DistributionPlotter):
         cut_by_hue,
         cumulative,
         gridsize,  # TODO pack in estimate kws, then unpack where needed?
-        shade,  # TODO at least use fill internally
+        fill,
         legend,
         estimate_kws,
         fill_kws,
@@ -239,7 +239,7 @@ class _KDEPlotter(_DistributionPlotter):
                 line.sticky_edges.y[:] = stickies
                 # TODO stick at 1 for hue_method == fill
 
-                if shade:
+                if fill:
                     fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         support, fill_from, density, **fill_kws
@@ -252,7 +252,7 @@ class _KDEPlotter(_DistributionPlotter):
                 line, = ax.plot(density, support, **line_kws)
                 line.sticky_edges.x[:] = stickies
 
-                if shade:
+                if fill:
                     fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         density, fill_from, support, **fill_kws
@@ -278,7 +278,7 @@ class _KDEPlotter(_DistributionPlotter):
             # I am punting for now
 
             fill_kws = fill_kws.copy()
-            if shade:
+            if fill:
                 artist = partial(mpl.patches.Patch)
                 hue_attrs = ["facecolor", "edgecolor"]
                 artist_kws = fill_kws
@@ -296,20 +296,21 @@ class _KDEPlotter(_DistributionPlotter):
 def kdeplot(
     *,  # Maybe allow positional x
     x=None, y=None,
-    shade=False, vertical=False, kernel=None,
-    bw=None, gridsize=500, cut=3, clip=None, legend=True,
-    cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
-    cbar_kws=None, ax=None,
+    shade=None,  # Note "soft" deprecation, explained below
+    vertical=False,  # Deprecated
+    kernel=None,  # Deprecated
+    bw=None, gridsize=500, cut=3, clip=None, legend=True, cumulative=False,
+    shade_lowest=None,  # Note "soft" deprecation, explained below
+    cbar=False, cbar_ax=None, cbar_kws=None,
+    ax=None,
 
     # New params
-    hue=None, palette=None, hue_order=None, hue_norm=None,
-    hue_method="layer",  # or stack or fill  TODO what about mirror?
+    hue=None, palette=None, hue_order=None, hue_norm=None, hue_method="layer",
     scale_by_hue=True,  # TODO Good name? Is the meaning of True/False clear?
     cut_by_hue=False,  # TODO limit ourselves just to hue?
-    bw_method="scott", bw_adjust=1,
-    weights=None,  # TODO note that weights is grouped with semanticse
-    shade_kws=None,
-    log_scale=None,
+    bw_method="scott", bw_adjust=1, log_scale=None,
+    weights=None,  # TODO note that weights is grouped with semantics
+    fill=False, fill_lowest=False, fill_kws=None,
 
     # Renamed params
     data=None, data2=None,
@@ -360,13 +361,26 @@ def kdeplot(
         warnings.warn(msg, FutureWarning)
         bw_method = bw
 
-    # TODO handle deprecation of kernel
+    # Handle deprecation of kernel
     if kernel is not None:
         msg = (
             "Support for alternate kernels has been removed. "
             "Using Gaussian kernel."
         )
         warnings.warn(msg, UserWarning)
+
+    # Handle "soft" deprecation of shade `shade` is not really the right
+    # terminology here, but unlike some of the other deprecated parameters it
+    # is probably very commonly used and much hard to remove. This is therefore
+    # going to be a longer process where, first, `fill` will be introduced and
+    # be used throughout the documentation. In 0.12, when kwarg-only
+    # enforcement hits, we can remove the shade/shade_lowest out of the
+    # function signature all together and pull them out of the kwargs. Then we
+    # can actually fire a FutureWarning, and eventually remove.
+    if shade is not None:
+        fill = shade
+        if shade_lowest is not None:
+            fill_lowest = shade_lowest
 
     # TODO (?) rename shade -> fill?
     # This is probably too widely used and underjustifed for removal,
@@ -382,8 +396,8 @@ def kdeplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
-    if shade_kws is None:
-        shade_kws = {}
+    if fill_kws is None:
+        fill_kws = {}
 
     if ax is None:
         ax = plt.gca()
@@ -434,10 +448,10 @@ def kdeplot(
             cut_by_hue=cut_by_hue,
             cumulative=cumulative,
             gridsize=gridsize,
-            shade=shade,
+            fill=fill,
             legend=legend,
             estimate_kws=estimate_kws,
-            fill_kws=shade_kws,  # TODO
+            fill_kws=fill_kws,
             line_kws=kwargs,
             ax=ax
         )
