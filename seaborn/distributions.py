@@ -35,6 +35,14 @@ class _DistributionPlotter(VectorPlotter):
         "x": "values", "hue": "columns",
     }
 
+    def __init__(
+        self,
+        data=None,
+        variables={},
+    ):
+
+        super().__init__(data=data, variables=variables)
+
 
 class _HistPlotter(_DistributionPlotter):
 
@@ -43,15 +51,9 @@ class _HistPlotter(_DistributionPlotter):
 
 class _KDEPlotter(_DistributionPlotter):
 
+    # TODO we maybe need a different category for variables that do not
+    # map to semantics of the plot, like weights
     semantics = _DistributionPlotter.semantics + ("weights",)
-
-    def __init__(
-        self,
-        data=None,
-        variables={},
-    ):
-
-        super().__init__(data=data, variables=variables)
 
     def plot_univariate(
         self,
@@ -84,10 +86,7 @@ class _KDEPlotter(_DistributionPlotter):
         # TODO also sticky on range of support for hue_method="fill"?
 
         # Identify the axis with the data values
-        try:
-            data_variable = (set(self.variables) & {"x", "y"}).pop()
-        except KeyError:
-            return
+        data_variable = {"x", "y"}.intersection(self.variables).pop()
 
         # Check for log scaling on the data axis
         data_axis = getattr(ax, f"{data_variable}axis")
@@ -100,7 +99,7 @@ class _KDEPlotter(_DistributionPlotter):
 
             all_observations = remove_na(self.plot_data[data_variable])
             if log_scale:
-                all_observations = np.log(all_observations)
+                all_observations = np.log10(all_observations)
 
             # Compute the reletive proportion of each hue level
             hue_props = (self.plot_data.loc[all_observations.index, "hue"]
@@ -109,6 +108,8 @@ class _KDEPlotter(_DistributionPlotter):
             if hue_method in ("stack", "fill"):
                 # TODO raise if specified wrong?
                 cut_by_hue = False
+                # TODO draw with shaded density by default?
+                # (if so, maybe set that externally)
 
             # Define a single grid of support for the PDFs
             # Re-use the full KDE function, evalute on only 2 points for speed
@@ -142,7 +143,7 @@ class _KDEPlotter(_DistributionPlotter):
 
             # If data axis is log scaled, fit the KDE in logspace
             if log_scale:
-                observations = np.log(observations)
+                observations = np.log10(observations)
 
             # Estimate the density of observations at this level
             support, density = _kde_univariate(
@@ -151,12 +152,11 @@ class _KDEPlotter(_DistributionPlotter):
                 gridsize=gridsize,
                 cumulative=cumulative,
                 support=global_support,
-                log_scale=log_scale,
                 **estimate_kws,
             )
 
             if log_scale:
-                support = np.exp(support)
+                support = np.power(10, support)
 
             # Apply a scaling factor so that the integral over all subsets is 1
             # TODO set scale_by_hue to False if no hue, for cleaner if clauses
@@ -219,6 +219,7 @@ class _KDEPlotter(_DistributionPlotter):
                 # TODO stick at 1 for hue_method == fill
 
                 if shade:
+                    fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         support, fill_from, density, **fill_kws
                     )
@@ -231,6 +232,7 @@ class _KDEPlotter(_DistributionPlotter):
                 line.sticky_edges.x[:] = stickies
 
                 if shade:
+                    fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         density, fill_from, support, **fill_kws
                     )
@@ -251,11 +253,14 @@ def kdeplot(
     hue_method="layer",  # or stack or fill  TODO what about mirror?
     scale_by_hue=True,  # TODO Good name? Is the meaning of True/False clear?
     cut_by_hue=False,  # TODO limit ourselves just to hue?
-    bw_method="scott", bw_adjust=1, weights=None,
+    bw_method="scott", bw_adjust=1,
+    weights=None,  # TODO note that weights is grouped with semanticse
     shade_kws=None,
+    log_scale=None,
 
     # Renamed params
     data=None, data2=None,
+
     **kwargs,
 ):
 
@@ -330,11 +335,6 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
-    # TODO add log scaling parameter that can log scale out here, and then
-    # internal function just needs to listen to that. Question: do we want
-    # to be able to force the kde fit to ignore the scale of the axis and
-    # always use the original data scale?
-
     # TODO better to abstract out the concept of Estimator object?
     # TODO let's write tests against this implementation first
     estimate_kws = dict(
@@ -344,11 +344,34 @@ def kdeplot(
         clip=clip,
     )
 
+    # Check for a specification that lacks x/y data and return early
+    any_data = bool({"x", "y"} & set(p.variables))
+    if not any_data:
+        return ax
+
+    # Determine the kind of plot to use
     univariate = bool({"x", "y"} - set(p.variables))
 
-    # TODO handle log scaling better
-
     if univariate:
+
+        data_variable = (set(p.variables) & {"x", "y"}).pop()
+
+        # Catch some inputs we cannot do anything with
+        data_var_type = p.var_types[data_variable]
+        if data_var_type != "numeric":
+            msg = (
+                f"kdeplot requires a numeric '{data_variable}' variable, "
+                f"but a {data_var_type} was passed."
+            )
+            raise TypeError(msg)
+
+        # Possibly log scale the data axis
+        if log_scale is not None:
+            set_scale = getattr(ax, f"set_{data_variable}scale")
+            if log_scale is True:
+                set_scale("log")
+            else:
+                set_scale("log", **{f"base{data_variable}": log_scale})
 
         # TODO arg checking on hue_method, other inputs
 
@@ -1281,7 +1304,6 @@ def _kde_univariate(
     cut=3,
     clip=(-np.inf, +np.inf),
     cumulative=False,
-    log_scale=False,
     support=None,
 ):
 
