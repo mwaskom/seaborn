@@ -294,8 +294,9 @@ class _KDEPlotter(_DistributionPlotter):
 
 @_deprecate_positional_args
 def kdeplot(
-    *,  # Maybe allow positional x
-    x=None, y=None,
+    x=None,  # Allow positional x, because behavior will not change with reorg
+    *,
+    y=None,
     shade=None,  # Note "soft" deprecation, explained below
     vertical=False,  # Deprecated
     kernel=None,  # Deprecated
@@ -550,13 +551,18 @@ class _RugPlotter(_DistributionPlotter):
 
 @_deprecate_positional_args
 def rugplot(
+    x=None,  # Allow positional x, because behavior won't change
     *,
-    x=None,
-    height=.025, ax=None,
+    height=.025, axis=None, ax=None,
+
+    # New parameters
     data=None, y=None, hue=None,
     palette=None, hue_order=None, hue_norm=None,
     expand_margins=True,
-    a=None, axis=None,
+
+    # Renamed parameter
+    a=None,
+
     **kwargs
 ):
 
