@@ -137,7 +137,6 @@ class TestKDEPlot:
         for l1, l2 in zip(ax1.lines[::-1], ax2.lines):
             np.testing.assert_array_equal(l1.get_xydata(), l2.get_xydata())
 
-    @pytest.mark.xfail
     def test_flat_vector(self, long_df):
 
         f, ax = plt.subplots()

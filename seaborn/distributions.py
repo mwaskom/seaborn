@@ -32,9 +32,8 @@ class _DistributionPlotter(VectorPlotter):
 
     semantics = "x", "y", "hue"
 
-    wide_structure = {
-        "x": "values", "hue": "columns",
-    }
+    wide_structure = {"x": "values", "hue": "columns"}
+    flat_structure = {"x": "values"}
 
     def __init__(
         self,
@@ -451,6 +450,9 @@ class _RugPlotter(_DistributionPlotter):
             self._plot_single_rug("x", height, ax, kws)
         if "y" in self.variables:
             self._plot_single_rug("y", height, ax, kws)
+
+        # --- Finalize the plot
+        self._add_axis_labels(ax)
 
     def _plot_single_rug(self, var, height, ax, kws):
         """Draw a rugplot along one axis of the plot."""

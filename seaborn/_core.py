@@ -587,12 +587,15 @@ class VectorPlotter:
         "style": StyleMapping,
     }
 
+    # TODO units is another example of a non-mapping "semantic"
+    # we need a general name for this and separate handling
     semantics = "x", "y", "hue", "size", "style", "units"
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
+    flat_structure = {"x": "index", "y": "values"}
 
-    _default_size_range = 1, 2  # Unused but needed in tests
+    _default_size_range = 1, 2  # Unused but needed in tests, ugh
 
     def __init__(self, data=None, variables={}):
 
@@ -687,19 +690,25 @@ class VectorPlotter:
 
         elif flat:
 
-            # Coerce the data into a pandas Series such that the values
-            # become the y variable and the index becomes the x variable
-            # No other semantics are defined.
+            # Handle flat data by converting to pandas Series and using the
+            # index and/or values to define x and/or y
             # (Could be accomplished with a more general to_series() interface)
-            flat_data = pd.Series(data, name="y").copy()
-            flat_data.index.name = "x"
-            plot_data = flat_data.reset_index().reindex(columns=self.semantics)
-
-            orig_index = getattr(data, "index", None)
-            variables = {
-                "x": getattr(orig_index, "name", None),
-                "y": getattr(data, "name", None)
+            flat_data = pd.Series(data).copy()
+            names = {
+                "values": flat_data.name,
+                "index": flat_data.index.name
             }
+
+            plot_data = {}
+            variables = {}
+
+            for var in ["x", "y"]:
+                if var in self.flat_structure:
+                    attr = self.flat_structure[var]
+                    plot_data[var] = getattr(flat_data, attr)
+                    variables[var] = names[self.flat_structure[var]]
+
+            plot_data = pd.DataFrame(plot_data).reindex(columns=self.semantics)
 
         else:
 
