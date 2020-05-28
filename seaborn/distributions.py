@@ -1,4 +1,5 @@
 """Plotting functions for visualizing distributions."""
+from numbers import Number
 from functools import partial
 import warnings
 
@@ -80,7 +81,6 @@ class _KDEPlotter(_DistributionPlotter):
         hue_method,
         common_norm,
         common_grid,
-        gridsize,  # TODO pack in estimate kws, then unpack where needed?
         fill,
         legend,
         estimate_kws,
@@ -126,19 +126,19 @@ class _KDEPlotter(_DistributionPlotter):
 
         if "hue" in self.variables:
 
+            # Access and clean the data
             all_observations = remove_na(self.plot_data[data_variable])
             if log_scale:
                 all_observations = np.log10(all_observations)
 
             # Compute the reletive proportion of each hue level
-            hue_props = (self.plot_data.loc[all_observations.index, "hue"]
+            rows = all_observations.index
+            hue_props = (self.plot_data.loc[rows, "hue"]
                          .value_counts(normalize=True))
 
+            # Always share the evaluation grid when stacking
             if hue_method in ("stack", "fill"):
-                # TODO raise if specified wrong?
                 common_grid = True
-                # TODO draw with shaded density by default?
-                # (if so, maybe set that externally)
 
             # Define a single grid of support for the PDFs
             if common_grid:
@@ -292,6 +292,123 @@ class _KDEPlotter(_DistributionPlotter):
                 ax, artist, hue_attrs, artist_kws, {},
             )
 
+    def plot_bivariate(
+        self,
+        common_norm,
+        fill,
+        fill_lowest,
+        levels,
+        thresh,
+        legend,
+        log_scale,
+        estimate_kws,
+        contour_kws,
+        ax,
+    ):
+
+        estimator = KDE(**estimate_kws)
+
+        if "hue" in self.variables:
+
+            # Compute the reletive proportion of each hue level
+            rows = remove_na(self.plot_data[["x", "y"]]).index
+            hue_props = (self.plot_data.loc[rows, "hue"]
+                         .value_counts(normalize=True))
+
+        else:
+
+            common_norm = False
+
+        # Loop through the subsets and estimate the KDEs
+        densities, supports = {}, {}
+
+        for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            # Extract the data points from this sub set and remove nulls
+            observations = remove_na(sub_data[["x", "y"]])
+
+            observation_variance = observations.var().any()
+            if not observation_variance or np.isnan(observation_variance):
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
+            # Extract the weights for this subset of observations
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
+
+            # If data axis is log scaled, fit the KDE in logspace
+            if log_scale:
+                observations = np.log10(observations)
+
+            # Estimate the density of observations at this level
+            observations = observations["x"], observations["y"]
+            density, support = estimator(*observations, weights=weights)
+
+            if log_scale:
+                support = np.power(10, support)
+
+            # Apply a scaling factor so that the integral over all subsets is 1
+            if common_norm:
+                density *= hue_props[sub_vars["hue"]]
+
+            key = tuple(sub_vars.items())
+            densities[key] = density
+            supports[key] = support
+
+        if isinstance(levels, Number):
+            levels = np.linspace(thresh, 1, levels)
+        else:
+            if min(levels) < 0 or max(levels > 1):
+                raise ValueError("levels must be in [0, 1]")
+
+        if common_norm:
+            common_levels = self._find_contour_levels(
+                list(densities.values()), levels,
+            )
+            draw_levels = {k: common_levels for k in densities}
+        else:
+            draw_levels = {
+                k: self._find_contour_levels(d, levels)
+                for k, d in densities.items()
+            }
+
+        # TODO need to handle the logic of drawing unfilled contours with
+        # default, given color, given cmap, or hued colors, and filled
+        # contours with default cmap, given cmap, or hued cmaps
+
+        # Now loop through again and plot the data
+        color = "C0"  # TODO?
+        for sub_vars, _ in self._semantic_subsets("hue"):
+
+            if "hue" in sub_vars:
+                color = [self._hue_map(sub_vars["hue"])]
+
+            key = tuple(sub_vars.items())
+            density = densities[key]
+            support = supports[key]
+            xx, yy = support
+
+            contour_func = ax.contourf if fill else ax.contour
+            _ = contour_func(
+                xx, yy, density,
+                levels=draw_levels[key],
+                colors=color,
+                **contour_kws,
+            )
+
+            # TODO implement fill_lowest logic
+
+    def _find_contour_levels(self, density, isoprop):
+        """Return contour levels to draw density at given iso-propotions."""
+        values = np.ravel(density)
+        sorted_values = np.sort(values)[::-1]
+        normalized_values = np.cumsum(sorted_values) / values.sum()
+        levels = sorted_values[np.searchsorted(normalized_values, 1 - isoprop)]
+        return levels
+
 
 @_deprecate_positional_args
 def kdeplot(
@@ -313,6 +430,7 @@ def kdeplot(
     common_grid=False,
     bw_method="scott", bw_adjust=1, log_scale=None,
     weights=None,  # TODO note that weights is grouped with semantics
+    levels=6, thresh=.05,  # TODO rethink names
     fill=None, fill_lowest=False, fill_kws=None,
 
     # Renamed params
@@ -447,7 +565,6 @@ def kdeplot(
             hue_method=hue_method,
             common_norm=common_norm,
             common_grid=common_grid,
-            gridsize=gridsize,
             fill=fill,
             legend=legend,
             estimate_kws=estimate_kws,
@@ -458,11 +575,17 @@ def kdeplot(
 
     else:
 
-        _bivariate_kdeplot(
-            p.plot_data["x"], p.plot_data["y"],
-            shade, shade_lowest,
-            kernel, bw, 100, cut, clip, legend,
-            cbar, cbar_ax, cbar_kws, ax, **kwargs
+        p.plot_bivariate(
+            common_norm=common_norm,
+            fill=fill,
+            fill_lowest=fill_lowest,
+            levels=levels,
+            thresh=thresh,
+            legend=legend,
+            log_scale=log_scale,
+            estimate_kws=estimate_kws,
+            contour_kws=kwargs,
+            ax=ax,
         )
 
     return ax
