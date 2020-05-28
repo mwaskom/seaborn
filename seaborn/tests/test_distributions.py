@@ -434,6 +434,11 @@ class TestKDEPlot:
             filled,
         )
 
+    def test_hue_method_input_check(self, long_df):
+
+        with pytest.raises(ValueError, match="hue_method must be"):
+            kdeplot(data=long_df, x="x", hue="a", hue_method="bad_input")
+
     def test_cut(self, rng):
 
         x = rng.normal(0, 3, 1000)

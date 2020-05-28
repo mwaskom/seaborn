@@ -99,6 +99,15 @@ class _KDEPlotter(_DistributionPlotter):
         fill_kws.setdefault("alpha", .25)
         fill_kws.setdefault("linewidth", 0)
 
+        # Input checking
+        hue_method_options = {"layer", "stack", "fill"}
+        if hue_method not in hue_method_options:
+            msg = (
+                f"hue_method must be one of {hue_method_options}, "
+                f"but {hue_method} was passed."
+            )
+            raise ValueError(msg)
+
         # Control the interaction with autoscaling by defining sticky_edges
         # i.e. we don't want autoscale margins below the density curve
         # TODO needs a check on hue being used?
@@ -333,7 +342,7 @@ def kdeplot(
         # If `data2` is present, we need to check for the `data` kwarg being
         # used to pass a vector for `x`. We'll reassign the vectors and warn.
         # We need this check because just passing a vector to `data` is now
-        # technically valid.  # TODO test this well.
+        # technically valid.
 
         x_passed_as_data = (
             x is None
@@ -388,11 +397,6 @@ def kdeplot(
         fill = shade
         if shade_lowest is not None:
             fill_lowest = shade_lowest
-
-    # TODO (?) rename shade -> fill?
-    # This is probably too widely used and underjustifed for removal,
-    # but could add fill and soft-deprecate shade
-    # TODO we would also need shade_lowest -> fill_lowest, ugh
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
@@ -1269,9 +1273,6 @@ def _kdeplot(
 
     """
     # Handle deprecation of `data` as name for x variable
-    # TODO this can be removed once refactored to do centralized preprocessing
-    # of input variables, because a vector input to `data` will be treated like
-    # an input to `x`. Warning is probably not necessary.
     x_passed_as_data = (
         x is None
         and data is not None
