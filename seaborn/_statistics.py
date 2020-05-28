@@ -10,7 +10,7 @@ class KDE:
         self, *,
         bw_method=None,
         bw_adjust=1,
-        gridsize=500,
+        gridsize=200,
         cut=3,
         clip=None,
         cumulative=False,
@@ -56,13 +56,28 @@ class KDE:
         """Create a 1D grid of evaluation points."""
         kde = self._fit(x, weights)
         bw = np.sqrt(kde.covariance.squeeze())
-        return self._define_support_grid(
+        grid = self._define_support_grid(
             x, bw, self.cut, self.clip, self.gridsize
         )
+        return grid
 
     def _define_support_bivariate(self, x1, x2, weights):
         """Create a 2D grid of evaluation points."""
-        pass
+        clip = self.clip
+        if np.isscalar(clip[0]):
+            clip = (clip, clip)
+
+        kde = self._fit([x1, x2], weights)
+        bw = np.sqrt(kde.covariance.squeeze())
+
+        grid1 = self._define_support_grid(
+            x1, bw[0, 0], self.cut, clip[0], self.gridsize
+        )
+        grid2 = self._define_support_grid(
+            x2, bw[1, 1], self.cut, clip[1], self.gridsize
+        )
+
+        return grid1, grid2
 
     def define_support(self, x1, x2=None, weights=None, cache=True):
         """Create the evaluation grid for a given data set."""
@@ -92,11 +107,11 @@ class KDE:
 
     def _eval_univariate(self, x, weights=None):
         """Fit and evaluate a univariate on univariate data."""
-        kde = self._fit(x, weights)
-        if self.support is None:
+        support = self.support
+        if support is None:
             support = self.define_support(x, cache=False)
-        else:
-            support = self.support
+
+        kde = self._fit(x, weights)
 
         if self.cumulative:
             s_0 = support[0]
@@ -110,7 +125,27 @@ class KDE:
 
     def _eval_bivariate(self, x1, x2, weights=None):
         """Fit and evaluate a univariate on bivariate data."""
-        pass
+        support = self.support
+        if support is None:
+            support = self.define_support(x1, x2, cache=False)
+
+        kde = self._fit([x1, x2], weights)
+
+        if self.cumulative:
+
+            grid1, grid2 = support
+            density = np.zeros((grid1.size, grid2.size))
+            p0 = grid1.min(), grid2.min()
+            for i, xi in enumerate(grid1):
+                for j, xj in enumerate(grid2):
+                    density[i, j] = kde.integrate_box(p0, (xi, xj))
+
+        else:
+
+            xx1, xx2 = np.meshgrid(*support)
+            density = kde([xx1.ravel(), xx2.ravel()]).reshape(xx1.shape)
+
+        return density, support
 
     def __call__(self, x1, x2=None, weights=None):
         """Fit and evaluate on univariate or bivariate data."""

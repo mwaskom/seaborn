@@ -302,7 +302,7 @@ def kdeplot(
     vertical=False,  # Deprecated
     kernel=None,  # Deprecated
     bw=None,  # Deprecated
-    gridsize=500, cut=3, clip=None, legend=True, cumulative=False,
+    gridsize=200, cut=3, clip=None, legend=True, cumulative=False,
     shade_lowest=None,  # Note "soft" deprecation, explained below
     cbar=False, cbar_ax=None, cbar_kws=None,
     ax=None,
@@ -457,10 +457,6 @@ def kdeplot(
         )
 
     else:
-
-        if cumulative:
-            raise TypeError("Cumulative distribution plots are not"
-                            "supported for bivariate distributions.")
 
         _bivariate_kdeplot(
             p.plot_data["x"], p.plot_data["y"],

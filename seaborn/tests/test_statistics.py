@@ -92,3 +92,35 @@ class TestKDE:
         d2, _ = kde2(x)
 
         assert np.abs(np.diff(d1)).mean() > np.abs(np.diff(d2)).mean()
+
+    def test_bivariate_grid(self, rng):
+
+        n = 100
+        x, y = rng.normal(0, 3, (2, 50))
+        kde = KDE(gridsize=n)
+        density, (xx, yy) = kde(x, y)
+
+        assert density.shape == (n, n)
+        assert xx.size == n
+        assert yy.size == n
+
+    def test_bivariate_normalization(self, rng):
+
+        x, y = rng.normal(0, 3, (2, 50))
+        kde = KDE(gridsize=100)
+        density, (xx, yy) = kde(x, y)
+
+        dx = xx[1] - xx[0]
+        dy = yy[1] - yy[0]
+
+        total = density.sum() * (dx * dy)
+        assert total == pytest.approx(1, abs=1e-2)
+
+    def test_bivariate_cumulative(self, rng):
+
+        x, y = rng.normal(0, 3, (2, 50))
+        kde = KDE(gridsize=100, cumulative=True)
+        density, _ = kde(x, y)
+
+        assert density[0, 0] == pytest.approx(0, abs=1e-2)
+        assert density[-1, -1] == pytest.approx(1, abs=1e-2)
