@@ -1,10 +1,8 @@
 """Plotting functions for visualizing distributions."""
 from functools import partial
 import warnings
-from distutils.version import LooseVersion
 
 import numpy as np
-import scipy
 from scipy import stats
 import pandas as pd
 import matplotlib as mpl
@@ -20,6 +18,9 @@ except ImportError:
 
 from ._core import (
     VectorPlotter,
+)
+from ._statistics import (
+    KDE,
 )
 from .utils import _kde_support, _normalize_kwargs, remove_na
 from .palettes import color_palette, light_palette, dark_palette, blend_palette
@@ -79,7 +80,6 @@ class _KDEPlotter(_DistributionPlotter):
         hue_method,
         common_norm,
         common_grid,
-        cumulative,
         gridsize,  # TODO pack in estimate kws, then unpack where needed?
         fill,
         legend,
@@ -121,8 +121,8 @@ class _KDEPlotter(_DistributionPlotter):
         data_axis = getattr(ax, f"{data_variable}axis")
         log_scale = data_axis.get_scale() == "log"
 
-        # Initialize the variable that will provide a single support grid
-        global_support = None
+        # Initialize the estimator object
+        estimator = KDE(**estimate_kws)
 
         if "hue" in self.variables:
 
@@ -141,14 +141,8 @@ class _KDEPlotter(_DistributionPlotter):
                 # (if so, maybe set that externally)
 
             # Define a single grid of support for the PDFs
-            # Re-use the full KDE function, evalute on only 2 points for speed
             if common_grid:
-                (start, stop), _ = _kde_univariate(
-                    all_observations,
-                    gridsize=2,
-                    **estimate_kws,
-                )
-                global_support = np.linspace(start, stop, gridsize)
+                estimator.define_support(all_observations)
 
         else:
 
@@ -180,14 +174,7 @@ class _KDEPlotter(_DistributionPlotter):
                 observations = np.log10(observations)
 
             # Estimate the density of observations at this level
-            support, density = _kde_univariate(
-                observations=observations,
-                weights=weights,
-                gridsize=gridsize,
-                cumulative=cumulative,
-                support=global_support,
-                **estimate_kws,
-            )
+            density, support = estimator(observations, weights=weights)
 
             if log_scale:
                 support = np.power(10, support)
@@ -420,6 +407,7 @@ def kdeplot(
         bw_adjust=bw_adjust,
         cut=cut,
         clip=clip,
+        cumulative=cumulative,
     )
 
     # Check for a specification that lacks x/y data and return early
@@ -459,7 +447,6 @@ def kdeplot(
             hue_method=hue_method,
             common_norm=common_norm,
             common_grid=common_grid,
-            cumulative=cumulative,
             gridsize=gridsize,
             fill=fill,
             legend=legend,
@@ -1379,57 +1366,3 @@ def _rugplot(
     ax.autoscale_view(scalex=not vertical, scaley=vertical)
 
     return ax
-
-
-# TODO Find a home for these so they can be used by violinplot too
-# Move _kde_support to that home
-def _kde_univariate(
-    observations,
-    weights=None,
-    bw_method=None,
-    bw_adjust=1,
-    gridsize=500,
-    cut=3,
-    clip=(-np.inf, +np.inf),
-    cumulative=False,
-    support=None,
-):
-
-    # Handle the lack of support for weighted KDE on older scipy
-    has_weights = weights is not None and weights.notna().any()
-    if LooseVersion(scipy.__version__) < "1.2.0":
-        if has_weights:
-            msg = "Weighted kernel density estimate requires scipy >= 1.2.0"
-            raise RuntimeError(msg)
-        scipy_kws = {}
-    else:
-        scipy_kws = {"weights": weights}
-
-    if clip is None:
-        clip = -np.inf, np.inf
-
-    kde = stats.gaussian_kde(
-        observations, bw_method=bw_method, **scipy_kws,
-    )
-    kde.set_bandwidth(kde.factor * bw_adjust)
-    bw = np.sqrt(kde.covariance.squeeze())
-
-    if support is None:
-        support = _kde_support(observations, bw, gridsize, cut, clip)
-
-    if cumulative:
-        density = np.array([
-            kde.integrate_box_1d(support[0], s_i) for s_i in support
-        ])
-    else:
-        density = kde(support)
-
-    return support, density
-
-
-def _kde_bivariate(
-    x,
-    y,
-):
-
-    pass
