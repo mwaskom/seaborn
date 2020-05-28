@@ -1706,7 +1706,7 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
             >>> g = g.plot_joint(sns.kdeplot, cmap="Blues_d")
-            >>> g = g.plot_marginals(sns.kdeplot, shade=True)
+            >>> g = g.plot_marginals(sns.kdeplot, fill=True)
 
         Draw a smaller plot with relatively larger marginal axes:
 
@@ -1716,7 +1716,7 @@ class JointGrid(object):
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   height=5, ratio=2)
             >>> g = g.plot_joint(sns.kdeplot, cmap="Reds_d")
-            >>> g = g.plot_marginals(sns.kdeplot, color="r", shade=True)
+            >>> g = g.plot_marginals(sns.kdeplot, color="r", fill=True)
 
         Set limits on the axes:
 
@@ -1726,7 +1726,7 @@ class JointGrid(object):
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   xlim=(0, 50), ylim=(0, 8))
             >>> g = g.plot_joint(sns.kdeplot, cmap="Purples_d")
-            >>> g = g.plot_marginals(sns.kdeplot, color="m", shade=True)
+            >>> g = g.plot_marginals(sns.kdeplot, color="m", fill=True)
 
         """
         # Handle deprecations
@@ -2146,7 +2146,7 @@ def pairplot(
 
         >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
         ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
-        ...                  diag_kws=dict(shade=True))
+        ...                  diag_kws=dict(fill=True))
 
     """
     # Handle deprecations
