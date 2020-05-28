@@ -77,8 +77,8 @@ class _KDEPlotter(_DistributionPlotter):
     def plot_univariate(
         self,
         hue_method,
-        scale_by_hue,
-        cut_by_hue,
+        common_norm,
+        common_grid,
         cumulative,
         gridsize,  # TODO pack in estimate kws, then unpack where needed?
         fill,
@@ -127,19 +127,23 @@ class _KDEPlotter(_DistributionPlotter):
 
             if hue_method in ("stack", "fill"):
                 # TODO raise if specified wrong?
-                cut_by_hue = False
+                common_grid = True
                 # TODO draw with shaded density by default?
                 # (if so, maybe set that externally)
 
             # Define a single grid of support for the PDFs
             # Re-use the full KDE function, evalute on only 2 points for speed
-            if not cut_by_hue:
+            if common_grid:
                 (start, stop), _ = _kde_univariate(
                     all_observations,
                     gridsize=2,
                     **estimate_kws,
                 )
                 global_support = np.linspace(start, stop, gridsize)
+
+        else:
+
+            common_norm = False
 
         # We will do two loops through the semantic subsets
         # The first is to estimate the density of observations in each subset
@@ -180,8 +184,7 @@ class _KDEPlotter(_DistributionPlotter):
                 support = np.power(10, support)
 
             # Apply a scaling factor so that the integral over all subsets is 1
-            # TODO set scale_by_hue to False if no hue, for cleaner if clauses
-            if "hue" in sub_vars and scale_by_hue:
+            if common_norm:
                 density *= hue_props[sub_vars["hue"]]
 
             # Store the density for this level
@@ -310,8 +313,8 @@ def kdeplot(
 
     # New params
     hue=None, palette=None, hue_order=None, hue_norm=None, hue_method="layer",
-    scale_by_hue=True,  # TODO Good name? Is the meaning of True/False clear?
-    cut_by_hue=False,  # TODO limit ourselves just to hue?
+    common_norm=True,
+    common_grid=False,
     bw_method="scott", bw_adjust=1, log_scale=None,
     weights=None,  # TODO note that weights is grouped with semantics
     fill=False, fill_lowest=False, fill_kws=None,
@@ -444,12 +447,10 @@ def kdeplot(
             else:
                 set_scale("log", **{f"base{data_variable}": log_scale})
 
-        # TODO arg checking on hue_method, other inputs
-
         p.plot_univariate(
             hue_method=hue_method,
-            scale_by_hue=scale_by_hue,
-            cut_by_hue=cut_by_hue,
+            common_norm=common_norm,
+            common_grid=common_grid,
             cumulative=cumulative,
             gridsize=gridsize,
             fill=fill,

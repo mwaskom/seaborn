@@ -282,7 +282,7 @@ class TestKDEPlot:
     def test_wide_vs_long_data(self, wide_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
-        kdeplot(data=wide_df, ax=ax1, scale_by_hue=False, cut_by_hue=True)
+        kdeplot(data=wide_df, ax=ax1, common_norm=False, common_grid=False)
         for col in wide_df:
             kdeplot(data=wide_df, x=col, ax=ax2)
 
@@ -393,7 +393,7 @@ class TestKDEPlot:
 
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="layer", cut_by_hue=False,
+            hue_method="layer", common_grid=True,
             legend=False, ax=ax1,
         )
         kdeplot(
@@ -417,7 +417,7 @@ class TestKDEPlot:
 
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="layer", cut_by_hue=False,
+            hue_method="layer", common_grid=True,
             legend=False, ax=ax1,
         )
         kdeplot(
@@ -478,15 +478,15 @@ class TestKDEPlot:
         assert y[0] == pytest.approx(0)
         assert y[-1] == pytest.approx(1)
 
-    def test_scale_by_hue(self, long_df):
+    def test_common_norm(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
         kdeplot(
-            data=long_df, x="x", hue="a", scale_by_hue=True, cut=10, ax=ax1
+            data=long_df, x="x", hue="a", common_norm=True, cut=10, ax=ax1
         )
         kdeplot(
-            data=long_df, x="x", hue="a", scale_by_hue=False, cut=10, ax=ax2
+            data=long_df, x="x", hue="a", common_norm=False, cut=10, ax=ax2
         )
 
         total_area = 0
@@ -499,7 +499,7 @@ class TestKDEPlot:
             xdata, ydata = line.get_xydata().T
             assert integrate.trapz(ydata, xdata) == pytest.approx(1)
 
-    def test_cut_by_hue(self, long_df):
+    def test_common_grid(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
@@ -507,11 +507,11 @@ class TestKDEPlot:
 
         kdeplot(
             data=long_df, x="x", hue="a", hue_order=order,
-            cut_by_hue=True, cut=0, ax=ax1,
+            common_grid=False, cut=0, ax=ax1,
         )
         kdeplot(
             data=long_df, x="x", hue="a", hue_order=order,
-            cut_by_hue=False, cut=0, ax=ax2,
+            common_grid=True, cut=0, ax=ax2,
         )
 
         for line, level in zip(ax1.lines[::-1], order):
@@ -611,7 +611,7 @@ class TestKDEPlot:
     def test_log_scale_with_hue(self, rng):
 
         data = rng.lognormal(0, 1, 50), rng.lognormal(0, 2, 100)
-        ax = kdeplot(data=data, log_scale=True)
+        ax = kdeplot(data=data, log_scale=True, common_grid=True)
         assert_array_equal(ax.lines[0].get_xdata(), ax.lines[1].get_xdata())
 
     def test_log_scale_normalization(self, rng):
