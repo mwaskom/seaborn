@@ -107,6 +107,154 @@ class TestDistPlot(object):
         assert len(ax.patches) == n
 
 
+class TestRugPlot:
+
+    def assert_rug_equal(self, a, b):
+
+        assert_array_equal(a.get_segments(), b.get_segments())
+
+    @pytest.mark.parametrize("variable", ["x", "y"])
+    def test_long_data(self, long_df, variable):
+
+        vector = long_df[variable]
+        vectors = [
+            variable, vector, np.asarray(vector), vector.tolist(),
+        ]
+
+        f, ax = plt.subplots()
+        for vector in vectors:
+            rugplot(data=long_df, **{variable: vector})
+
+        for a, b in itertools.product(ax.collections, ax.collections):
+            self.assert_rug_equal(a, b)
+
+    def test_bivariate_data(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        rugplot(data=long_df, x="x", y="y", ax=ax1)
+        rugplot(data=long_df, x="x", ax=ax2)
+        rugplot(data=long_df, y="y", ax=ax2)
+
+        self.assert_rug_equal(ax1.collections[0], ax2.collections[0])
+        self.assert_rug_equal(ax1.collections[1], ax2.collections[1])
+
+    def test_wide_vs_long_data(self, wide_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        rugplot(data=wide_df, ax=ax1)
+        for col in wide_df:
+            rugplot(data=wide_df, x=col, ax=ax2)
+
+        wide_segments = np.sort(
+            np.array(ax1.collections[0].get_segments())
+        )
+        long_segments = np.sort(
+            np.concatenate([c.get_segments() for c in ax2.collections])
+        )
+
+        assert_array_equal(wide_segments, long_segments)
+
+    def test_flat_vector(self, long_df):
+
+        f, ax = plt.subplots()
+        rugplot(data=long_df["x"])
+        rugplot(x=long_df["x"])
+        self.assert_rug_equal(*ax.collections)
+
+    def test_empty_data(self):
+
+        ax = rugplot(x=[])
+        assert not ax.collections
+
+    def test_a_deprecation(self, flat_series):
+
+        f, ax = plt.subplots()
+
+        with pytest.warns(FutureWarning):
+            rugplot(a=flat_series)
+        rugplot(x=flat_series)
+
+        self.assert_rug_equal(*ax.collections)
+
+    @pytest.mark.parametrize("variable", ["x", "y"])
+    def test_axis_deprecation(self, flat_series, variable):
+
+        f, ax = plt.subplots()
+
+        with pytest.warns(FutureWarning):
+            rugplot(flat_series, axis=variable)
+        rugplot(**{variable: flat_series})
+
+        self.assert_rug_equal(*ax.collections)
+
+    def test_vertical_deprecation(self, flat_series):
+
+        f, ax = plt.subplots()
+
+        with pytest.warns(FutureWarning):
+            rugplot(flat_series, vertical=True)
+        rugplot(y=flat_series)
+
+        self.assert_rug_equal(*ax.collections)
+
+    def test_rug_data(self, flat_array):
+
+        height = .05
+        ax = rugplot(x=flat_array, height=height)
+        segments = np.stack(ax.collections[0].get_segments())
+
+        n = flat_array.size
+        assert_array_equal(segments[:, 0, 1], np.zeros(n))
+        assert_array_equal(segments[:, 1, 1], np.full(n, height))
+        assert_array_equal(segments[:, 1, 0], flat_array)
+
+    def test_rug_colors(self, long_df):
+
+        ax = rugplot(data=long_df, x="x", hue="a")
+
+        order = categorical_order(long_df["a"])
+        palette = color_palette()
+
+        expected_colors = np.ones((len(long_df), 4))
+        for i, val in enumerate(long_df["a"]):
+            expected_colors[i, :3] = palette[order.index(val)]
+
+        assert_array_equal(ax.collections[0].get_color(), expected_colors)
+
+    def test_expand_margins(self, flat_array):
+
+        f, ax = plt.subplots()
+        x1, y1 = ax.margins()
+        rugplot(x=flat_array, expand_margins=False)
+        x2, y2 = ax.margins()
+        assert x1 == x2
+        assert y1 == y2
+
+        f, ax = plt.subplots()
+        x1, y1 = ax.margins()
+        height = .05
+        rugplot(x=flat_array, height=height)
+        x2, y2 = ax.margins()
+        assert x1 == x2
+        assert y1 + height * 2 == pytest.approx(y2)
+
+    def test_matplotlib_kwargs(self, flat_series):
+
+        lw = 2
+        alpha = .2
+        ax = rugplot(y=flat_series, linewidth=lw, alpha=alpha)
+        rug = ax.collections[0]
+        assert np.all(rug.get_alpha() == alpha)
+        assert np.all(rug.get_linewidth() == lw)
+
+    def test_axis_labels(self, flat_series):
+
+        ax = rugplot(x=flat_series)
+        assert ax.get_xlabel() == flat_series.name
+        assert not ax.get_ylabel()
+
+
 class TestKDEPlot:
 
     @pytest.mark.parametrize(
@@ -116,12 +264,12 @@ class TestKDEPlot:
 
         vector = long_df[variable]
         vectors = [
-            vector, np.asarray(vector), vector.tolist(),
+            variable, vector, np.asarray(vector), vector.tolist(),
         ]
 
         f, ax = plt.subplots()
         for vector in vectors:
-            kdeplot(**{variable: vector})
+            kdeplot(data=long_df, **{variable: vector})
 
         xdata = [l.get_xdata() for l in ax.lines]
         for a, b in itertools.product(xdata, xdata):
@@ -139,7 +287,7 @@ class TestKDEPlot:
             kdeplot(data=wide_df, x=col, ax=ax2)
 
         for l1, l2 in zip(ax1.lines[::-1], ax2.lines):
-            np.testing.assert_array_equal(l1.get_xydata(), l2.get_xydata())
+            assert_array_equal(l1.get_xydata(), l2.get_xydata())
 
     def test_flat_vector(self, long_df):
 
@@ -150,7 +298,7 @@ class TestKDEPlot:
 
     def test_empty_data(self):
 
-        ax = dist.kdeplot(x=[])
+        ax = kdeplot(x=[])
         assert not ax.lines
 
     def test_singular_data(self):

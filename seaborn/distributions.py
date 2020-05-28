@@ -197,6 +197,8 @@ class _KDEPlotter(_DistributionPlotter):
         # We are going to loop through the subsets again, but this time
         # we want to go in reverse order. This is so that stacked densities
         # will read from top to bottom in the same order as the legend.
+        # TODO we should make iterlevels tuple(sub_vars.items()) to be more
+        # flexible about adding additional semantics in the future
         if "hue" in self.variables:
             iter_levels = self._hue_map.levels[::-1]
         else:
@@ -300,7 +302,8 @@ def kdeplot(
     shade=None,  # Note "soft" deprecation, explained below
     vertical=False,  # Deprecated
     kernel=None,  # Deprecated
-    bw=None, gridsize=500, cut=3, clip=None, legend=True, cumulative=False,
+    bw=None,  # Deprecated
+    gridsize=500, cut=3, clip=None, legend=True, cumulative=False,
     shade_lowest=None,  # Note "soft" deprecation, explained below
     cbar=False, cbar_ax=None, cbar_kws=None,
     ax=None,
@@ -497,9 +500,9 @@ class _RugPlotter(_DistributionPlotter):
         if expand_margins:
             xmarg, ymarg = ax.margins()
             if "x" in self.variables:
-                xmarg += height * 2
-            if "y" in self.variables:
                 ymarg += height * 2
+            if "y" in self.variables:
+                xmarg += height * 2
             ax.margins(x=xmarg, y=ymarg)
 
         if "hue" in self.variables:
@@ -565,6 +568,9 @@ def rugplot(
 
     **kwargs
 ):
+
+    # A note: if we want to add a style semantic to rugplot,
+    # we could make an option that draws the rug using scatterplot
 
     # Handle deprecation of `a``
     if a is not None:
@@ -757,7 +763,7 @@ def distplot(
         msg = "The `a` parameter is now called `x`. Please update your code."
         warnings.warn(msg)
     else:
-        a = x  # TODO refactor
+        a = x
 
     # Default to drawing on the currently-active axes
     if ax is None:
@@ -1111,7 +1117,7 @@ def _kdeplot(
     bw="scott", gridsize=100, cut=3, clip=None, legend=True,
     cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
     cbar_kws=None, ax=None,
-    data=None, data2=None,  # TODO move data once * is enforced
+    data=None, data2=None,
     **kwargs,
 ):
     """Fit and plot a univariate or bivariate kernel density estimate.
