@@ -326,7 +326,7 @@ def kdeplot(
     common_grid=False,
     bw_method="scott", bw_adjust=1, log_scale=None,
     weights=None,  # TODO note that weights is grouped with semantics
-    fill=False, fill_lowest=False, fill_kws=None,
+    fill=None, fill_lowest=False, fill_kws=None,
 
     # Renamed params
     data=None, data2=None,
@@ -450,6 +450,10 @@ def kdeplot(
                 set_scale("log")
             else:
                 set_scale("log", **{f"base{data_variable}": log_scale})
+
+        # Set defaults that depend on other parameters
+        if fill is None:
+            fill = hue_method in ("stack", "fill")
 
         p.plot_univariate(
             hue_method=hue_method,

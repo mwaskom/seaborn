@@ -255,7 +255,7 @@ class TestRugPlot:
         assert not ax.get_ylabel()
 
 
-class TestKDEPlot:
+class TestUnivariateKDEPlot:
 
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
@@ -411,6 +411,9 @@ class TestKDEPlot:
 
         assert_array_equal(layered_densities.cumsum(axis=0), stacked_densities)
 
+        assert len(ax1.collections) == 0
+        assert len(ax2.collections) > 0
+
     def test_hue_filling(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
@@ -433,6 +436,21 @@ class TestKDEPlot:
             (layered / layered.sum(axis=0)).cumsum(axis=0),
             filled,
         )
+
+        assert len(ax1.collections) == 0
+        assert len(ax2.collections) > 0
+
+    @pytest.mark.parametrize("hue_method", ["layer", "stack", "fill"])
+    def test_fill_nondefault(self, long_df, hue_method):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kws = dict(data=long_df, x="x", hue="a")
+        kdeplot(**kws, hue_method=hue_method, fill=False, ax=ax1)
+        kdeplot(**kws, hue_method=hue_method, fill=True, ax=ax2)
+
+        assert len(ax1.collections) == 0
+        assert len(ax2.collections) > 0
 
     def test_hue_method_input_check(self, long_df):
 
