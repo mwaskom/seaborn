@@ -300,6 +300,9 @@ class _KDEPlotter(_DistributionPlotter):
         thresh,
         legend,
         log_scale,
+        cbar,
+        cbar_ax,
+        cbar_kws,
         estimate_kws,
         contour_kws,
         ax,
@@ -434,8 +437,15 @@ class _KDEPlotter(_DistributionPlotter):
                 **contour_kws,
             )
 
-        # TODO handle colorbar
+        # Add a color bar representing the contour heights
+        # Note: this shows iso densities, not iso proportions
+        if cbar:
+            # TODO what to do about hue here?
+            # TODO maybe use the legend instead?
+            cbar_kws = {} if cbar_kws is None else cbar_kws
+            ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
+        # --- Finalize the plot
         self._add_axis_labels(ax)
 
         # TODO handle legend
@@ -648,6 +658,9 @@ def kdeplot(
             thresh=thresh,
             legend=legend,
             log_scale=log_scale,
+            cbar=cbar,
+            cbar_ax=cbar_ax,
+            cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
             contour_kws=kwargs,
             ax=ax,
