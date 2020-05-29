@@ -1887,6 +1887,9 @@ class JointGrid(object):
         else:
             func(self.y, **kwargs)
 
+        self.ax_marg_x.yaxis.get_label().set_visible(False)
+        self.ax_marg_y.xaxis.get_label().set_visible(False)
+
         return self
 
     def annotate(self, func, template=None, stat=None, loc="best", **kwargs):
