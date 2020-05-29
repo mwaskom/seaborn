@@ -748,7 +748,7 @@ class TestUnivariateKDEPlot:
         assert ax.legend_ is None
 
 
-class TestKDE(object):
+class TestKDEOrig(object):
 
     rs = np.random.RandomState(0)
     x = rs.randn(50)
@@ -856,6 +856,7 @@ class TestKDE(object):
         # make sure y is monotonically increasing
         assert (np.diff(y) > 0).all()
 
+    @pytest.mark.xfail
     def test_kde_cummulative_2d(self):
         """Check error if args indicate bivariate KDE and cumulative."""
         with pytest.raises(TypeError):
@@ -940,6 +941,7 @@ class TestKDE(object):
         assert len(f.axes) == 2
         assert f.axes[1].get_ylabel() == "density"
 
+    @pytest.mark.xfail
     def test_legend(self):
 
         f, ax = plt.subplots()
@@ -952,6 +954,7 @@ class TestKDE(object):
         fill = ax.collections[-1]
         assert fill.get_label() == "test2"
 
+    @pytest.mark.xfail
     def test_contour_color(self):
 
         rgb = (.1, .5, .7)
