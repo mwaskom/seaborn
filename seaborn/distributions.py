@@ -128,8 +128,6 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Access and clean the data
             all_observations = remove_na(self.plot_data[data_variable])
-            if log_scale:
-                all_observations = np.log10(all_observations)
 
             # Compute the reletive proportion of each hue level
             rows = all_observations.index
@@ -142,6 +140,8 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Define a single grid of support for the PDFs
             if common_grid:
+                if log_scale:
+                    all_observations = np.log10(all_observations)
                 estimator.define_support(all_observations)
 
         else:
@@ -296,7 +296,6 @@ class _KDEPlotter(_DistributionPlotter):
         self,
         common_norm,
         fill,
-        fill_lowest,
         levels,
         thresh,
         legend,
@@ -305,6 +304,8 @@ class _KDEPlotter(_DistributionPlotter):
         contour_kws,
         ax,
     ):
+
+        contour_kws = contour_kws.copy()
 
         estimator = KDE(**estimate_kws)
 
@@ -375,38 +376,62 @@ class _KDEPlotter(_DistributionPlotter):
                 for k, d in densities.items()
             }
 
-        # TODO need to handle the logic of drawing unfilled contours with
-        # default, given color, given cmap, or hued colors, and filled
-        # contours with default cmap, given cmap, or hued cmaps
+        scout, = ax.plot([])
+        default_color = scout.get_color()
+        scout.remove()
 
-        # Now loop through again and plot the data
-        color = "C0"  # TODO?
+        if "hue" in self.variables:
+            for param in ["cmap", "color", "colors"]:
+                if param in contour_kws:
+                    msg = f"{param} parameter ignored when using hue mapping."
+                    warnings.warn(msg, UserWarning)
+                    contour_kws.pop(param)
+        else:
+            coloring_given = set(contour_kws) & {"cmap", "colors"}
+            if fill and not coloring_given:
+                default_cmap = light_palette(default_color, as_cmap=True)
+                contour_kws["cmap"] = default_cmap
+            if not fill and not coloring_given:
+                contour_kws["colors"] = [default_color]
+
         for sub_vars, _ in self._semantic_subsets("hue"):
 
             if "hue" in sub_vars:
-                color = [self._hue_map(sub_vars["hue"])]
+                color = self._hue_map(sub_vars["hue"])
+                if fill:
+                    contour_kws["cmap"] = light_palette(color, as_cmap=True)
+                else:
+                    contour_kws["colors"] = [color]
 
             key = tuple(sub_vars.items())
             density = densities[key]
             support = supports[key]
             xx, yy = support
 
-            contour_func = ax.contourf if fill else ax.contour
+            if fill:
+                contour_func = ax.contourf
+            else:
+                contour_func = ax.contour
+
             _ = contour_func(
                 xx, yy, density,
                 levels=draw_levels[key],
-                colors=color,
                 **contour_kws,
             )
 
-            # TODO implement fill_lowest logic
+        # TODO handle colorbar
+
+        self._add_axis_labels(ax)
+
+        # TODO handle legend
 
     def _find_contour_levels(self, density, isoprop):
         """Return contour levels to draw density at given iso-propotions."""
         values = np.ravel(density)
         sorted_values = np.sort(values)[::-1]
         normalized_values = np.cumsum(sorted_values) / values.sum()
-        levels = sorted_values[np.searchsorted(normalized_values, 1 - isoprop)]
+        idx = np.searchsorted(normalized_values, 1 - isoprop)
+        levels = np.take(sorted_values, idx, mode="clip")
         return levels
 
 
@@ -419,8 +444,9 @@ def kdeplot(
     vertical=False,  # Deprecated
     kernel=None,  # Deprecated
     bw=None,  # Deprecated
-    gridsize=200, cut=3, clip=None, legend=True, cumulative=False,
-    shade_lowest=None,  # Note "soft" deprecation, explained below
+    gridsize=200,  # TODO maybe depend on uni/bivariate?
+    cut=3, clip=None, legend=True, cumulative=False,
+    shade_lowest=None,  # Deprecated, controlled with levels now
     cbar=False, cbar_ax=None, cbar_kws=None,
     ax=None,
 
@@ -430,8 +456,8 @@ def kdeplot(
     common_grid=False,
     bw_method="scott", bw_adjust=1, log_scale=None,
     weights=None,  # TODO note that weights is grouped with semantics
-    levels=6, thresh=.05,  # TODO rethink names
-    fill=None, fill_lowest=False, fill_kws=None,
+    levels=10, thresh=.05,  # TODO rethink names
+    fill=None, fill_kws=None,
 
     # Renamed params
     data=None, data2=None,
@@ -490,6 +516,8 @@ def kdeplot(
         )
         warnings.warn(msg, UserWarning)
 
+    # TODO handle deprecation of shade_lowest
+
     # Handle "soft" deprecation of shade `shade` is not really the right
     # terminology here, but unlike some of the other deprecated parameters it
     # is probably very commonly used and much hard to remove. This is therefore
@@ -500,8 +528,6 @@ def kdeplot(
     # can actually fire a FutureWarning, and eventually remove.
     if shade is not None:
         fill = shade
-        if shade_lowest is not None:
-            fill_lowest = shade_lowest
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
@@ -518,11 +544,11 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
-    # TODO better to abstract out the concept of Estimator object?
-    # TODO let's write tests against this implementation first
+    # Pack the kwargs for statistics.KDE
     estimate_kws = dict(
         bw_method=bw_method,
         bw_adjust=bw_adjust,
+        gridsize=gridsize,
         cut=cut,
         clip=clip,
         cumulative=cumulative,
@@ -575,10 +601,13 @@ def kdeplot(
 
     else:
 
+        # TODO input checking?
+
+        # TODO log_scale? how to parametrize? (x, y)?
+
         p.plot_bivariate(
             common_norm=common_norm,
             fill=fill,
-            fill_lowest=fill_lowest,
             levels=levels,
             thresh=thresh,
             legend=legend,
