@@ -14,11 +14,16 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from .. import distributions as dist
 from ..palettes import (
     color_palette,
+    light_palette,
 )
 from .._core import (
     categorical_order,
 )
+from .._statistics import (
+    KDE
+)
 from ..distributions import (
+    _KDEPlotter,
     rugplot,
     kdeplot,
 )
@@ -255,7 +260,7 @@ class TestRugPlot:
         assert not ax.get_ylabel()
 
 
-class TestUnivariateKDEPlot:
+class TestKDEUnivariate:
 
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
@@ -366,9 +371,7 @@ class TestUnivariateKDEPlot:
             fill1.get_paths()[0].vertices, fill2.get_paths()[0].vertices
         )
 
-    @pytest.mark.parametrize(
-        "hue_method", ["layer", "stack", "fill"],
-    )
+    @pytest.mark.parametrize("hue_method", ["layer", "stack", "fill"])
     def test_hue_colors(self, long_df, hue_method):
 
         ax = kdeplot(
@@ -746,6 +749,176 @@ class TestUnivariateKDEPlot:
         kdeplot(data=long_df, x="x", hue="a", legend=False)
 
         assert ax.legend_ is None
+
+
+class TestKDEBivariate:
+
+    def test_long_vectors(self, long_df):
+
+        ax1 = kdeplot(data=long_df, x="x", y="y")
+
+        x = long_df["x"]
+        x_values = [x, np.asarray(x), x.tolist()]
+
+        y = long_df["y"]
+        y_values = [y, np.asarray(y), y.tolist()]
+
+        for x, y in zip(x_values, y_values):
+            f, ax2 = plt.subplots()
+            kdeplot(x=x, y=y, ax=ax2)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            assert_array_equal(c1.get_offsets(), c2.get_offsets())
+
+    def test_singular_data(self):
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(x=np.ones(10), y=np.arange(10))
+        assert not ax.lines
+
+        with pytest.warns(UserWarning):
+            ax = dist.kdeplot(x=[5], y=[6])
+        assert not ax.lines
+
+    def test_fill_artists(self, long_df):
+
+        for fill in [True, False]:
+            f, ax = plt.subplots()
+            kdeplot(data=long_df, x="x", y="y", hue="c", fill=fill)
+            for c in ax.collections:
+                if fill:
+                    assert isinstance(c, mpl.collections.PathCollection)
+                else:
+                    assert isinstance(c, mpl.collections.LineCollection)
+
+    def test_common_norm(self, rng):
+
+        hue = np.repeat(["a", "a", "a", "b"], 40)
+        x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], len(hue)).T
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        kdeplot(x=x, y=y, hue=hue, common_norm=True, ax=ax1)
+        kdeplot(x=x, y=y, hue=hue, common_norm=False, ax=ax2)
+        assert not ax1.collections[-2].get_segments()
+        assert ax2.collections[-2].get_segments()
+
+    def test_log_scale(self, rng):
+
+        x = rng.lognormal(0, 1, 100)
+        y = rng.uniform(0, 1, 100)
+
+        levels = .2, .5, 1
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        kdeplot(x=x, y=y, log_scale=True, levels=levels, ax=ax1)
+        assert ax1.get_xscale() == "log"
+        assert ax1.get_yscale() == "log"
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        kdeplot(x=x, y=y, log_scale=(10, False), levels=levels, ax=ax1)
+        assert ax1.get_xscale() == "log"
+        assert ax1.get_yscale() == "linear"
+
+        p = _KDEPlotter()
+        kde = KDE()
+        density, (xx, yy) = kde(np.log10(x), y)
+        levels = p._find_contour_levels(density, levels)
+        ax2.contour(10 ** xx, yy, density, levels=levels)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            assert_array_equal(c1.get_segments(), c2.get_segments())
+
+    def test_bandwiddth(self, rng):
+
+        n = 100
+        x, y = rng.multivariate_normal([0, 0], [(.2, .5), (.5, 2)], n).T
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        kdeplot(x=x, y=y, ax=ax1)
+        kdeplot(x=x, y=y, bw_adjust=2, ax=ax2)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            seg1, seg2 = c1.get_segments(), c2.get_segments()
+            if seg1 + seg2:
+                x1 = seg1[0][:, 0]
+                x2 = seg2[0][:, 0]
+                assert np.abs(x2).max() > np.abs(x1).max()
+
+    def test_weights(self, rng):
+
+        n = 100
+        x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], n).T
+        hue = np.repeat([0, 1], n // 2)
+        weights = rng.uniform(0, 1, n)
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+        kdeplot(x=x, y=y, hue=hue, ax=ax1)
+        kdeplot(x=x, y=y, hue=hue, weights=weights, ax=ax2)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            if c1.get_segments():
+                assert not np.array_equal(c1.get_segments(), c2.get_segments())
+
+    def test_hue_ignores_cmap(self, long_df):
+
+        with pytest.warns(UserWarning, match="cmap parameter ignored"):
+            ax = kdeplot(data=long_df, x="x", y="y", hue="c", cmap="viridis")
+
+        color = tuple(ax.collections[0].get_color().squeeze())
+        assert color == mpl.colors.colorConverter.to_rgba("C0")
+
+    def test_contour_line_colors(self, long_df):
+
+        color = (.2, .9, .8, 1)
+        ax = kdeplot(data=long_df, x="x", y="y", color=color)
+
+        for c in ax.collections:
+            assert tuple(c.get_color().squeeze()) == color
+
+    def test_contour_fill_colors(self, long_df):
+
+        n = 6
+        color = (.2, .9, .8, 1)
+        ax = kdeplot(
+            data=long_df, x="x", y="y", fill=True, color=color, levels=n,
+        )
+
+        cmap = light_palette(color, reverse=True, as_cmap=True)
+        lut = cmap(np.linspace(0, 1, 256))
+        for c in ax.collections:
+            color = c.get_facecolor().squeeze()
+            assert color in lut
+
+    def test_colorbar(self, long_df):
+
+        ax = kdeplot(data=long_df, x="x", y="y", fill=True, cbar=True)
+        assert len(ax.figure.axes) == 2
+
+    def test_levels_and_thresh(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(ncols=2)
+
+        n = 8
+        thresh = .1
+        plot_kws = dict(data=long_df, x="x", y="y")
+        kdeplot(**plot_kws, levels=n, thresh=thresh, ax=ax1)
+        kdeplot(**plot_kws, levels=np.linspace(thresh, 1, n), ax=ax2)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            assert_array_equal(c1.get_segments(), c2.get_segments())
+
+        with pytest.raises(ValueError):
+            kdeplot(**plot_kws, levels=[0, 1, 2])
+
+    def test_contour_levels(self, rng):
+
+        x = rng.uniform(0, 1, 100000)
+        isoprop = np.linspace(.1, 1, 6)
+
+        levels = _KDEPlotter()._find_contour_levels(x, isoprop)
+        for h, p in zip(levels, isoprop):
+            assert (x[x <= h].sum() / x.sum()) == pytest.approx(p, abs=1e-4)
 
 
 class TestKDEOrig(object):

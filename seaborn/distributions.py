@@ -351,6 +351,13 @@ class _KDEPlotter(_DistributionPlotter):
                 if log_scale[1]:
                     observations["y"] = np.log10(observations["y"])
 
+            # Check that KDE will not error out
+            variance = observations[["x", "y"]].var()
+            if not variance.all() or variance.isna().any():
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
             # Estimate the density of observations at this level
             observations = observations["x"], observations["y"]
             density, support = estimator(*observations, weights=weights)
@@ -376,7 +383,7 @@ class _KDEPlotter(_DistributionPlotter):
         if isinstance(levels, Number):
             levels = np.linspace(thresh, 1, levels)
         else:
-            if min(levels) < 0 or max(levels > 1):
+            if min(levels) < 0 or max(levels) > 1:
                 raise ValueError("levels must be in [0, 1]")
 
         # Transfrom from iso-proportions to iso-densities
@@ -432,6 +439,8 @@ class _KDEPlotter(_DistributionPlotter):
                     contour_kws["colors"] = [color]
 
             key = tuple(sub_vars.items())
+            if key not in densities:
+                continue
             density = densities[key]
             xx, yy = supports[key]
 
@@ -472,6 +481,7 @@ class _KDEPlotter(_DistributionPlotter):
 
     def _find_contour_levels(self, density, isoprop):
         """Return contour levels to draw density at given iso-propotions."""
+        isoprop = np.asarray(isoprop)
         values = np.ravel(density)
         sorted_values = np.sort(values)[::-1]
         normalized_values = np.cumsum(sorted_values) / values.sum()
@@ -665,7 +675,6 @@ def kdeplot(
 
         # Possibly log-scale one or both axes
         if log_scale is not None:
-
             # Allow single value or x, y tuple
             try:
                 scalex, scaley = log_scale
