@@ -2734,9 +2734,10 @@ boxenplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips,
+        ...                    showfliers=False)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, color="gray")
+        ...                    size=4, color=".26")
 
     Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using
