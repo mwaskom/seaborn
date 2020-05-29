@@ -300,6 +300,7 @@ class _KDEPlotter(_DistributionPlotter):
         thresh,
         legend,
         log_scale,
+        color,
         cbar,
         cbar_ax,
         cbar_kws,
@@ -391,7 +392,7 @@ class _KDEPlotter(_DistributionPlotter):
             }
 
         # Get a default single color from the attribute cycle
-        scout, = ax.plot([])
+        scout, = ax.plot([], color=color)
         default_color = scout.get_color()
         scout.remove()
 
@@ -406,13 +407,12 @@ class _KDEPlotter(_DistributionPlotter):
                     warnings.warn(msg, UserWarning)
                     contour_kws.pop(param)
         else:
-            seed_color = contour_kws.pop("color", default_color)
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
-                cmap = color_map(seed_color)
+                cmap = color_map(default_color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
-                contour_kws["colors"] = [seed_color]
+                contour_kws["colors"] = [default_color]
 
         # Choose the function to plot with
         # TODO could add a pcolormesh based option as well
@@ -480,13 +480,12 @@ def kdeplot(
     ax=None,
 
     # New params
-    hue=None, palette=None, hue_order=None, hue_norm=None, hue_method="layer",
-    common_norm=True,
-    common_grid=False,
-    bw_method="scott", bw_adjust=1, log_scale=None,
     weights=None,  # TODO note that weights is grouped with semantics
+    hue=None, palette=None, hue_order=None, hue_norm=None, hue_method="layer",
+    common_norm=True, common_grid=False,
     levels=10, thresh=.05,  # TODO rethink names
-    fill=None, fill_kws=None,
+    bw_method="scott", bw_adjust=1, log_scale=None,
+    color=None, fill=None, fill_kws=None,
 
     # Renamed params
     data=None, data2=None,
@@ -630,6 +629,8 @@ def kdeplot(
         if fill is None:
             fill = hue_method in ("stack", "fill")
 
+        kwargs["color"] = color
+
         p.plot_univariate(
             hue_method=hue_method,
             common_norm=common_norm,
@@ -671,6 +672,7 @@ def kdeplot(
             thresh=thresh,
             legend=legend,
             log_scale=log_scale,
+            color=color,
             cbar=cbar,
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
