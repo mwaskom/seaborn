@@ -1715,7 +1715,7 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   height=5, ratio=2)
-            >>> g = g.plot_joint(sns.kdeplot, cmap="Reds_d")
+            >>> g = g.plot_joint(sns.kdeplot, color="r")
             >>> g = g.plot_marginals(sns.kdeplot, color="r", fill=True)
 
         Set limits on the axes:
@@ -1725,7 +1725,7 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   xlim=(0, 50), ylim=(0, 8))
-            >>> g = g.plot_joint(sns.kdeplot, cmap="Purples_d")
+            >>> g = g.plot_joint(sns.kdeplot, color="m")
             >>> g = g.plot_marginals(sns.kdeplot, color="m", fill=True)
 
         """

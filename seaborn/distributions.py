@@ -452,7 +452,23 @@ class _KDEPlotter(_DistributionPlotter):
         # --- Finalize the plot
         self._add_axis_labels(ax)
 
-        # TODO handle legend
+        if "hue" in self.variables and legend:
+
+            # TODO if possible, I would like to move the contour
+            # intensity information into the legend too and label the
+            # iso proportions rather than the raw density values
+
+            artist_kws = {}
+            if fill:
+                artist = partial(mpl.patches.Patch)
+                hue_attrs = "facecolor", "edgecolor"
+            else:
+                artist = partial(mpl.lines.Line2D, [], [])
+                hue_attrs = "color"
+
+            self._add_legend(
+                ax, artist, hue_attrs, artist_kws, {},
+            )
 
     def _find_contour_levels(self, density, isoprop):
         """Return contour levels to draw density at given iso-propotions."""
@@ -694,7 +710,7 @@ class _RugPlotter(_DistributionPlotter):
 
         super().__init__(data=data, variables=variables)
 
-    def plot(self, height, expand_margins, ax, kws):
+    def plot(self, height, expand_margins, legend, ax, kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
@@ -724,6 +740,12 @@ class _RugPlotter(_DistributionPlotter):
 
         # --- Finalize the plot
         self._add_axis_labels(ax)
+        if "hue" in self.variables and legend:
+            # TODO ideally i'd like the legend artist to look like a rug
+            legend_artist = partial(mpl.lines.Line2D, [], [])
+            self._add_legend(
+                ax, legend_artist, "color", {}, {},
+            )
 
     def _plot_single_rug(self, var, height, ax, kws):
         """Draw a rugplot along one axis of the plot."""
@@ -770,6 +792,7 @@ def rugplot(
     data=None, y=None, hue=None,
     palette=None, hue_order=None, hue_norm=None,
     expand_margins=True,
+    legend=True,  # TODO or maybe default to False?
 
     # Renamed parameter
     a=None,
@@ -814,7 +837,7 @@ def rugplot(
     if ax is None:
         ax = plt.gca()
 
-    p.plot(height, expand_margins, ax, kwargs)
+    p.plot(height, expand_margins, legend, ax, kwargs)
 
     return ax
 
