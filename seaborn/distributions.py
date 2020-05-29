@@ -110,9 +110,7 @@ class _KDEPlotter(_DistributionPlotter):
 
         # Control the interaction with autoscaling by defining sticky_edges
         # i.e. we don't want autoscale margins below the density curve
-        # TODO needs a check on hue being used?
-        stickies = (0, 1) if hue_method == "fill" else (0, np.inf)
-        # TODO also sticky on range of support for hue_method="fill"?
+        sticky_y = (0, 1) if hue_method == "fill" else (0, np.inf)
 
         # Identify the axis with the data values
         data_variable = {"x", "y"}.intersection(self.variables).pop()
@@ -184,24 +182,14 @@ class _KDEPlotter(_DistributionPlotter):
                 density *= hue_props[sub_vars["hue"]]
 
             # Store the density for this level
-            level = sub_vars.get("hue", None)
-            densities[level] = pd.Series(density, index=support)
+            key = tuple(sub_vars.items())
+            densities[key] = pd.Series(density, index=support)
 
         # Now we might need to normalize at each point in the grid
         if hue_method == "fill":
             fill_norm = pd.concat(densities, axis=1).sum(axis=1)
         else:
             fill_norm = 1
-
-        # We are going to loop through the subsets again, but this time
-        # we want to go in reverse order. This is so that stacked densities
-        # will read from top to bottom in the same order as the legend.
-        # TODO we should make iterlevels tuple(sub_vars.items()) to be more
-        # flexible about adding additional semantics in the future
-        if "hue" in self.variables:
-            iter_levels = self._hue_map.levels[::-1]
-        else:
-            iter_levels = [None]
 
         # Initialize an array we'll use to keep track density stacking
         if hue_method in ("stack", "fill"):
@@ -210,11 +198,12 @@ class _KDEPlotter(_DistributionPlotter):
         # Better to iterate on _semantic_subsets, but we need to add a way
         # to reverse the order of subsets (i.e. reversed=True)
         # for sub_vars, _ in self._semantic_subsets("hue", reversed=True):
-        for hue_level in iter_levels:
+        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
 
             # Extract the support grid and density curve for this level
+            key = tuple(sub_vars.items())
             try:
-                density = densities[hue_level]
+                density = densities[key]
             except KeyError:
                 continue
             support = density.index
@@ -229,15 +218,15 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
-                line_kws["color"] = self._hue_map(hue_level)
-                fill_kws["facecolor"] = self._hue_map(hue_level)
+                line_kws["color"] = self._hue_map(sub_vars["hue"])
+                fill_kws["facecolor"] = self._hue_map(sub_vars["hue"])
 
             # Plot a curve with observation values on the x axis
             if "x" in self.variables:
 
                 # TODO any reason to make a Line2D and add ourselves?
                 line, = ax.plot(support, density, **line_kws)
-                line.sticky_edges.y[:] = stickies
+                line.sticky_edges.y[:] = sticky_y
                 # TODO stick at 1 for hue_method == fill
 
                 if fill:
@@ -245,20 +234,20 @@ class _KDEPlotter(_DistributionPlotter):
                     fill = ax.fill_between(
                         support, fill_from, density, **fill_kws
                     )
-                    fill.sticky_edges.y[:] = stickies
+                    fill.sticky_edges.y[:] = sticky_y
 
             # Plot a curve with observation values on the y axis
             else:
 
                 line, = ax.plot(density, support, **line_kws)
-                line.sticky_edges.x[:] = stickies
+                line.sticky_edges.x[:] = sticky_y
 
                 if fill:
                     fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         density, fill_from, support, **fill_kws
                     )
-                    fill.sticky_edges.x[:] = stickies
+                    fill.sticky_edges.x[:] = sticky_y
 
         # --- Finalize the plot ----
         default_x = default_y = ""

@@ -849,13 +849,15 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def _semantic_subsets(self, grouping_semantics):
+    def _semantic_subsets(self, grouping_semantics, reverse=False):
         """Generator for getting subsets of data defined by semantic variables.
 
         Parameters
         ----------
         grouping_semantics : list of strings
             Semantic variables that define the subsets of data.
+        reverse : bool, optional
+            If True, reverse the order of iteration.
 
         Yields
         ------
@@ -885,7 +887,11 @@ class VectorPlotter:
                 map_obj = getattr(self, f"_{var}_map")
                 grouping_keys.append(map_obj.levels)
 
-            for key in itertools.product(*grouping_keys):
+            iter_keys = itertools.product(*grouping_keys)
+            if reverse:
+                iter_keys = reversed(list(iter_keys))
+
+            for key in iter_keys:
 
                 # Pandas fails with singleton tuple inputs
                 pd_key = key[0] if len(key) == 1 else key
