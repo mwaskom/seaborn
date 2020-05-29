@@ -445,11 +445,16 @@ class _KDEPlotter(_DistributionPlotter):
             density = densities[key]
             xx, yy = supports[key]
 
+            label = contour_kws.pop("label", None)
+
             cset = contour_func(
                 xx, yy, density,
                 levels=draw_levels[key],
                 **contour_kws,
             )
+
+            if "hue" not in self.variables:
+                cset.collections[0].set_label(label)
 
         # Add a color bar representing the contour heights
         # Note: this shows iso densities, not iso proportions
