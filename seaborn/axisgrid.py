@@ -1299,7 +1299,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_upper(sns.scatterplot)
-            >>> g = g.map_lower(sns.kdeplot, colors="C0")
+            >>> g = g.map_lower(sns.kdeplot, color="C0")
             >>> g = g.map_diag(sns.kdeplot, lw=2)
 
         Use different colors and markers for each categorical level:
@@ -2197,7 +2197,7 @@ def pairplot(
         if diag_kind == "hist":
             grid.map_diag(plt.hist, **diag_kws)
         elif diag_kind == "kde":
-            diag_kws.setdefault("shade", True)
+            diag_kws.setdefault("fill", True)
             diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
@@ -2322,7 +2322,7 @@ def jointplot(
 
         >>> g = (sns.jointplot(x="sepal_length", y="sepal_width",
         ...                    data=iris, color="k")
-        ...         .plot_joint(sns.kdeplot, zorder=0, n_levels=6))
+        ...         .plot_joint(sns.kdeplot, zorder=0, levels=6))
 
     Pass vectors in directly without using Pandas, then name the axes:
 

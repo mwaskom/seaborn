@@ -8,7 +8,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="dark")
+sns.set(style="white")
 rs = np.random.RandomState(50)
 
 # Set up the matplotlib figure
@@ -22,7 +22,16 @@ for ax, s in zip(axes.flat, np.linspace(0, 3, 10)):
 
     # Generate and plot a random bivariate dataset
     x, y = rs.randn(2, 50)
-    sns.kdeplot(x=x, y=y, cmap=cmap, shade=True, cut=5, ax=ax)
-    ax.set(xlim=(-3, 3), ylim=(-3, 3))
+    sns.kdeplot(
+        x=x, y=y,
+        cmap=cmap,
+        fill=True,
+        cut=4,
+        thresh=.05,
+        levels=100,
+        ax=ax,
+    )
+    ax.set_axis_off()
 
+ax.set(xlim=(-3.5, 3.5), ylim=(-3.5, 3.5))
 f.tight_layout()
