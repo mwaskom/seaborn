@@ -185,19 +185,36 @@ class _KDEPlotter(_DistributionPlotter):
             key = tuple(sub_vars.items())
             densities[key] = pd.Series(density, index=support)
 
-        # Now we might need to normalize at each point in the grid
-        if hue_method == "fill":
-            fill_norm = pd.concat(densities, axis=1).sum(axis=1)
-        else:
-            fill_norm = 1
-
-        # Initialize an array we'll use to keep track density stacking
+        # Implement the density stacking (and filling)
         if hue_method in ("stack", "fill"):
-            pedestal = np.array(0)
 
-        # Better to iterate on _semantic_subsets, but we need to add a way
-        # to reverse the order of subsets (i.e. reversed=True)
-        # for sub_vars, _ in self._semantic_subsets("hue", reversed=True):
+            # The densities share a support grid, so we can make a dataframe
+            densities = pd.DataFrame(densities).iloc[:, ::-1]
+            norm_constant = densities.sum(axis="columns")
+
+            # Take the cumulative sum to stack
+            densities = densities.cumsum(axis="columns")
+
+            # Normalize by row sum to fill
+            if hue_method == "fill":
+                densities = densities.div(norm_constant, axis="index")
+
+            # Define where each segment starts
+            baselines = densities.shift(1, axis=1).fillna(0)
+
+        else:
+
+            # All densities will start at 0
+            baselines = {k: np.zeros_like(v) for k, v in densities.items()}
+
+        # Filled plots should not have any margins
+        if hue_method == "fill":
+            sticky_x = densities.index.min(), densities.index.max()
+        else:
+            sticky_x = []
+
+        # Now iterate through again and draw the densities
+        # We go backwards so stacked densities read from top-to-bottom
         for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
 
             # Extract the support grid and density curve for this level
@@ -207,14 +224,7 @@ class _KDEPlotter(_DistributionPlotter):
             except KeyError:
                 continue
             support = density.index
-
-            # Handle density stacking
-            if hue_method in ("stack", "fill"):
-                fill_from = pedestal.copy()
-                density = pedestal + density / fill_norm
-                pedestal = density
-            else:
-                fill_from = 0
+            fill_from = baselines[key]
 
             # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
@@ -224,16 +234,16 @@ class _KDEPlotter(_DistributionPlotter):
             # Plot a curve with observation values on the x axis
             if "x" in self.variables:
 
-                # TODO any reason to make a Line2D and add ourselves?
                 line, = ax.plot(support, density, **line_kws)
+                line.sticky_edges.x[:] = sticky_x
                 line.sticky_edges.y[:] = sticky_y
-                # TODO stick at 1 for hue_method == fill
 
                 if fill:
                     fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         support, fill_from, density, **fill_kws
                     )
+                    fill.sticky_edges.x[:] = sticky_x
                     fill.sticky_edges.y[:] = sticky_y
 
             # Plot a curve with observation values on the y axis
@@ -241,6 +251,7 @@ class _KDEPlotter(_DistributionPlotter):
 
                 line, = ax.plot(density, support, **line_kws)
                 line.sticky_edges.x[:] = sticky_y
+                line.sticky_edges.y[:] = sticky_x
 
                 if fill:
                     fill_kws.setdefault("facecolor", line.get_color())
@@ -248,6 +259,7 @@ class _KDEPlotter(_DistributionPlotter):
                         density, fill_from, support, **fill_kws
                     )
                     fill.sticky_edges.x[:] = sticky_y
+                    fill.sticky_edges.y[:] = sticky_x
 
         # --- Finalize the plot ----
         default_x = default_y = ""
