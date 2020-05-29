@@ -509,10 +509,10 @@ class TestKDEUnivariate:
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
         kdeplot(
-            data=long_df, x="x", hue="a", common_norm=True, cut=10, ax=ax1
+            data=long_df, x="x", hue="c", common_norm=True, cut=10, ax=ax1
         )
         kdeplot(
-            data=long_df, x="x", hue="a", common_norm=False, cut=10, ax=ax2
+            data=long_df, x="x", hue="c", common_norm=False, cut=10, ax=ax2
         )
 
         total_area = 0
@@ -794,13 +794,17 @@ class TestKDEBivariate:
     def test_common_norm(self, rng):
 
         hue = np.repeat(["a", "a", "a", "b"], 40)
-        x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], len(hue)).T
+        x, y = rng.multivariate_normal([0, 0], [(.2, .5), (.5, 2)], len(hue)).T
+        x[hue == "a"] -= 2
+        x[hue == "b"] += 2
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
         kdeplot(x=x, y=y, hue=hue, common_norm=True, ax=ax1)
         kdeplot(x=x, y=y, hue=hue, common_norm=False, ax=ax2)
-        assert not ax1.collections[-2].get_segments()
-        assert ax2.collections[-2].get_segments()
+
+        n_seg_1 = sum([len(c.get_segments()) > 0 for c in ax1.collections])
+        n_seg_2 = sum([len(c.get_segments()) > 0 for c in ax2.collections])
+        assert n_seg_2 > n_seg_1
 
     def test_log_scale(self, rng):
 
@@ -845,6 +849,10 @@ class TestKDEBivariate:
                 x2 = seg2[0][:, 0]
                 assert np.abs(x2).max() > np.abs(x1).max()
 
+    @pytest.mark.skipif(
+        LooseVersion(scipy.__version__) < "1.2.0",
+        reason="Weights require scipy >= 1.2.0"
+    )
     def test_weights(self, rng):
 
         n = 100
