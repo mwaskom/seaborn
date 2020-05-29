@@ -341,15 +341,24 @@ class _KDEPlotter(_DistributionPlotter):
                 weights = None
 
             # If data axis is log scaled, fit the KDE in logspace
-            if log_scale:
-                observations = np.log10(observations)
+            if log_scale is not None:
+                if log_scale[0]:
+                    observations["x"] = np.log10(observations["x"])
+                if log_scale[1]:
+                    observations["y"] = np.log10(observations["y"])
 
             # Estimate the density of observations at this level
             observations = observations["x"], observations["y"]
             density, support = estimator(*observations, weights=weights)
 
-            if log_scale:
-                support = np.power(10, support)
+            # Transform the support grid back to the original scale
+            if log_scale is not None:
+                xx, yy = support
+                if log_scale[0]:
+                    xx = np.power(10, xx)
+                if log_scale[1]:
+                    yy = np.power(10, yy)
+                support = xx, yy
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
@@ -359,12 +368,14 @@ class _KDEPlotter(_DistributionPlotter):
             densities[key] = density
             supports[key] = support
 
+        # Define a grid of iso-proportion levels
         if isinstance(levels, Number):
             levels = np.linspace(thresh, 1, levels)
         else:
             if min(levels) < 0 or max(levels > 1):
                 raise ValueError("levels must be in [0, 1]")
 
+        # Transfrom from iso-proportions to iso-densities
         if common_norm:
             common_levels = self._find_contour_levels(
                 list(densities.values()), levels,
@@ -376,25 +387,29 @@ class _KDEPlotter(_DistributionPlotter):
                 for k, d in densities.items()
             }
 
+        # Get a default single color from the attribut cycle
         scout, = ax.plot([])
         default_color = scout.get_color()
         scout.remove()
 
+        # Define the coloring of the contours
         if "hue" in self.variables:
-            for param in ["cmap", "color", "colors"]:
+            for param in ["cmap", "colors"]:
                 if param in contour_kws:
                     msg = f"{param} parameter ignored when using hue mapping."
                     warnings.warn(msg, UserWarning)
                     contour_kws.pop(param)
         else:
+            seed_color = contour_kws.pop("color", default_color)
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
-                default_cmap = light_palette(default_color, as_cmap=True)
-                contour_kws["cmap"] = default_cmap
+                cmap = light_palette(seed_color, as_cmap=True)
+                contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
-                contour_kws["colors"] = [default_color]
+                contour_kws["colors"] = [seed_color]
 
-        for sub_vars, _ in self._semantic_subsets("hue"):
+        # Loop through the subsets again and plot the data
+        for sub_varkos, _ in self._semantic_subsets("hue"):
 
             if "hue" in sub_vars:
                 color = self._hue_map(sub_vars["hue"])
@@ -508,7 +523,7 @@ def kdeplot(
         warnings.warn(msg, FutureWarning)
         bw_method = bw
 
-    # Handle deprecation of kernel
+    # Handle deprecation of `kernel`
     if kernel is not None:
         msg = (
             "Support for alternate kernels has been removed. "
@@ -517,6 +532,11 @@ def kdeplot(
         warnings.warn(msg, UserWarning)
 
     # TODO handle deprecation of shade_lowest
+
+    # Handle `n_levels`
+    # This was never in the formal API but it was processed, and appeared in an
+    # example. We can treat as an alias for `levels` now and deprecate later.
+    levels = kwargs.pop("n_levels", levels)
 
     # Handle "soft" deprecation of shade `shade` is not really the right
     # terminology here, but unlike some of the other deprecated parameters it
@@ -603,7 +623,23 @@ def kdeplot(
 
         # TODO input checking?
 
-        # TODO log_scale? how to parametrize? (x, y)?
+        # Possibly log-scale one or both axes
+        if log_scale is not None:
+
+            # Allow single value or x, y tuple
+            try:
+                scalex, scaley = log_scale
+            except TypeError:
+                scalex = scaley = log_scale
+                log_scale = scalex, scaley  # Tupelize for downstream
+
+            for axis, scale in zip("xy", (scalex, scaley)):
+                if scale:
+                    set_scale = getattr(ax, f"set_{axis}scale")
+                    if scale is True:
+                        set_scale("log")
+                    else:
+                        set_scale("log", **{f"base{axis}": scale})
 
         p.plot_bivariate(
             common_norm=common_norm,
@@ -1367,7 +1403,7 @@ def _kdeplot(
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.kdeplot(x=x, y=y, n_levels=30, cmap="Purples_d")
+        >>> ax = sns.kdeplot(x=x, y=y, n_levels=30, cmap="Purples")
 
     Use a narrower bandwith:
 

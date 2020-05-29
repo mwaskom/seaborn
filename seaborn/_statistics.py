@@ -68,13 +68,13 @@ class KDE:
             clip = (clip, clip)
 
         kde = self._fit([x1, x2], weights)
-        bw = np.sqrt(kde.covariance.squeeze())
+        bw = np.sqrt(np.diag(kde.covariance).squeeze())
 
         grid1 = self._define_support_grid(
-            x1, bw[0, 0], self.cut, clip[0], self.gridsize
+            x1, bw[0], self.cut, clip[0], self.gridsize
         )
         grid2 = self._define_support_grid(
-            x2, bw[1, 1], self.cut, clip[1], self.gridsize
+            x2, bw[1], self.cut, clip[1], self.gridsize
         )
 
         return grid1, grid2
