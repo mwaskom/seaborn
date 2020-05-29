@@ -390,10 +390,13 @@ class _KDEPlotter(_DistributionPlotter):
                 for k, d in densities.items()
             }
 
-        # Get a default single color from the attribut cycle
+        # Get a default single color from the attribute cycle
         scout, = ax.plot([])
         default_color = scout.get_color()
         scout.remove()
+
+        # Apply a common color-mapping to single color specificiations
+        color_map = partial(light_palette, reverse=True, as_cmap=True)
 
         # Define the coloring of the contours
         if "hue" in self.variables:
@@ -406,32 +409,33 @@ class _KDEPlotter(_DistributionPlotter):
             seed_color = contour_kws.pop("color", default_color)
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
-                cmap = light_palette(seed_color, as_cmap=True)
+                cmap = color_map(seed_color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
                 contour_kws["colors"] = [seed_color]
 
+        # Choose the function to plot with
+        # TODO could add a pcolormesh based option as well
+        if fill:
+            contour_func = ax.contourf
+        else:
+            contour_func = ax.contour
+
         # Loop through the subsets again and plot the data
-        for sub_varkos, _ in self._semantic_subsets("hue"):
+        for sub_vars, _ in self._semantic_subsets("hue"):
 
             if "hue" in sub_vars:
                 color = self._hue_map(sub_vars["hue"])
                 if fill:
-                    contour_kws["cmap"] = light_palette(color, as_cmap=True)
+                    contour_kws["cmap"] = color_map(color)
                 else:
                     contour_kws["colors"] = [color]
 
             key = tuple(sub_vars.items())
             density = densities[key]
-            support = supports[key]
-            xx, yy = support
+            xx, yy = supports[key]
 
-            if fill:
-                contour_func = ax.contourf
-            else:
-                contour_func = ax.contour
-
-            _ = contour_func(
+            cset = contour_func(
                 xx, yy, density,
                 levels=draw_levels[key],
                 **contour_kws,
