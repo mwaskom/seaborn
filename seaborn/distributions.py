@@ -545,7 +545,16 @@ def kdeplot(
         )
         warnings.warn(msg, UserWarning)
 
-    # TODO handle deprecation of shade_lowest
+    # Handle deprecation of shade_lowest
+    # TODO check that we still use `thresh` before merging
+    if shade_lowest is not None:
+        if shade_lowest:
+            thresh = 0
+        msg = (
+            "`shade_lowest` is now deprecated in favor of `thresh`. "
+            f"Setting `thresh={thresh}`, but please update your code."
+        )
+        warnings.warn(msg, UserWarning)
 
     # Handle `n_levels`
     # This was never in the formal API but it was processed, and appeared in an
