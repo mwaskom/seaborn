@@ -116,7 +116,13 @@ class _RelationalPlotter(VectorPlotter):
         elif self._hue_map.levels is None:
             hue_levels = hue_formatted_levels = []
         else:
-            hue_levels = hue_formatted_levels = self._hue_map.levels
+            hue_levels = self._hue_map.levels
+            if self.hue_fmt and self._hue_map.map_type == "numeric":
+                full_hue_format_string = "{:%s}" % self.hue_fmt
+                hue_formatted_levels = list(
+                    map(full_hue_format_string.format, hue_levels))
+            else:
+                hue_formatted_levels = hue_levels
 
         # Add the hue semantic subtitle
         if "hue" in self.variables and self.variables["hue"] is not None:
@@ -145,7 +151,13 @@ class _RelationalPlotter(VectorPlotter):
         elif self._size_map.levels is None:
             size_levels = size_formatted_levels = []
         else:
-            size_levels = size_formatted_levels = self._size_map.levels
+            size_levels = self._size_map.levels
+            if self.size_fmt and self._size_map.map_type == "numeric":
+                full_size_format_string = "{:%s}" % self.size_fmt
+                size_formatted_levels = list(
+                    map(full_size_format_string.format, size_levels))
+            else:
+                size_formatted_levels = size_levels
 
         # Add the size semantic subtitle
         if "size" in self.variables and self.variables["size"] is not None:

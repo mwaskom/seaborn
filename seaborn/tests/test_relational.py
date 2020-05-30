@@ -1085,6 +1085,34 @@ class TestLinePlotter(Helpers):
         ax.clear()
         p = _LinePlotter(
             data=long_df,
+            variables=dict(x="x", y="y", hue="a"),
+            legend="full", hue_fmt=".1f"  # Should be ignored.
+        )
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        assert labels == ["a"] + p._hue_map.levels
+        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
+
+        # --
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="f"),
+            legend="full", hue_fmt="+.1f"
+        )
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        assert labels == ["f", "+0.2", "+0.3"]
+        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
+
+        # --
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
             variables=dict(x="x", y="y", hue="a", style="a"),
             legend="full",
         )
@@ -1144,6 +1172,35 @@ class TestLinePlotter(Helpers):
         assert labels == ["a"] + p._size_map.levels
         assert colors == ["w"] + p._hue_map(p._hue_map.levels)
         assert widths == [0] + p._size_map(p._size_map.levels)
+
+        # --
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a", size="a"),
+            legend="full", size_fmt="G"  # Should be ignored.
+        )
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        colors = [h.get_color() for h in handles]
+        widths = [h.get_linewidth() for h in handles]
+        assert labels == ["a"] + p._hue_map.levels
+        assert labels == ["a"] + p._size_map.levels
+        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
+        assert widths == [0] + p._size_map(p._size_map.levels)
+
+        # --
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="f"),
+            legend="full", size_fmt="+.1f"
+        )
+        p.add_legend_data(ax)
+        _, labels = ax.get_legend_handles_labels()
+        assert labels == ["f", "+0.2", "+0.3"]
 
         # --
 
@@ -1217,11 +1274,33 @@ class TestLinePlotter(Helpers):
         ax.clear()
         p = _LinePlotter(
             data=long_df,
+            variables=dict(x="x", y="y", hue="f"),
+            legend="brief", hue_fmt="+.3f"
+        )
+        p.add_legend_data(ax)
+        expected_levels = ['+0.200', '+0.240', '+0.280', '+0.320']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
             variables=dict(x="x", y="y", size="f"),
             legend="brief",
         )
         p.add_legend_data(ax)
         expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["f"] + expected_levels
+
+        ax.clear()
+        p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", size="f"),
+            legend="brief", size_fmt="+.3f"
+        )
+        p.add_legend_data(ax)
+        expected_levels = ['+0.200', '+0.240', '+0.280', '+0.320']
         handles, labels = ax.get_legend_handles_labels()
         assert labels == ["f"] + expected_levels
 
