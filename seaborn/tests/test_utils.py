@@ -158,7 +158,7 @@ class TestSpineUtils(object):
     offset_position = ("outward", offset)
 
     def test_despine(self):
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         for side in self.sides:
             assert ax.spines[side].get_visible()
 
@@ -173,7 +173,7 @@ class TestSpineUtils(object):
             assert ~ax.spines[side].get_visible()
 
     def test_despine_specific_axes(self):
-        f, (ax1, ax2) = plt.subplots(2, 1)
+        _, (ax1, ax2) = plt.subplots(2, 1)
 
         utils.despine(ax=ax2)
 
@@ -186,7 +186,7 @@ class TestSpineUtils(object):
             assert ax2.spines[side].get_visible()
 
     def test_despine_with_offset(self):
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         for side in self.sides:
             pos = ax.spines[side].get_position()
@@ -204,7 +204,7 @@ class TestSpineUtils(object):
 
     def test_despine_side_specific_offset(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         utils.despine(ax=ax, offset=dict(left=self.offset))
 
         for side in self.sides:
@@ -216,7 +216,7 @@ class TestSpineUtils(object):
                 assert new_position == self.original_position
 
     def test_despine_with_offset_specific_axes(self):
-        f, (ax1, ax2) = plt.subplots(2, 1)
+        _, (ax1, ax2) = plt.subplots(2, 1)
 
         utils.despine(offset=self.offset, ax=ax2)
 
@@ -231,7 +231,7 @@ class TestSpineUtils(object):
 
     def test_despine_trim_spines(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_xlim(.75, 3.25)
 
@@ -242,7 +242,7 @@ class TestSpineUtils(object):
 
     def test_despine_trim_inverted(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_ylim(.85, 3.15)
         ax.invert_yaxis()
@@ -254,7 +254,7 @@ class TestSpineUtils(object):
 
     def test_despine_trim_noticks(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.plot([1, 2, 3], [1, 2, 3])
         ax.set_yticks([])
         utils.despine(trim=True)
@@ -262,7 +262,7 @@ class TestSpineUtils(object):
 
     def test_despine_trim_categorical(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         ax.plot(["a", "b", "c"], [1, 2, 3])
 
         utils.despine(trim=True)
@@ -279,7 +279,7 @@ class TestSpineUtils(object):
         for t in ax.yaxis.majorTicks:
             t.tick1line.set_visible(True)
         utils.despine(ax=ax, left=True, right=False)
-        for y in ax.yaxis.majorTicks:
+        for t in ax.yaxis.majorTicks:
             assert t.tick2line.get_visible()
         plt.close(f)
 
@@ -287,7 +287,7 @@ class TestSpineUtils(object):
         for t in ax.yaxis.majorTicks:
             t.tick1line.set_visible(False)
         utils.despine(ax=ax, left=True, right=False)
-        for y in ax.yaxis.majorTicks:
+        for t in ax.yaxis.majorTicks:
             assert not t.tick2line.get_visible()
         plt.close(f)
 
@@ -295,7 +295,7 @@ class TestSpineUtils(object):
         for t in ax.xaxis.majorTicks:
             t.tick1line.set_visible(True)
         utils.despine(ax=ax, bottom=True, top=False)
-        for y in ax.xaxis.majorTicks:
+        for t in ax.xaxis.majorTicks:
             assert t.tick2line.get_visible()
         plt.close(f)
 
@@ -303,7 +303,7 @@ class TestSpineUtils(object):
         for t in ax.xaxis.majorTicks:
             t.tick1line.set_visible(False)
         utils.despine(ax=ax, bottom=True, top=False)
-        for y in ax.xaxis.majorTicks:
+        for t in ax.xaxis.majorTicks:
             assert not t.tick2line.get_visible()
         plt.close(f)
 
@@ -332,29 +332,29 @@ def test_locator_to_legend_entries():
 
     locator = mpl.ticker.MaxNLocator(nbins=3)
     limits = (0.09, 0.4)
-    levels, str_levels = utils.locator_to_legend_entries(
+    _, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
     assert str_levels == ["0.00", "0.15", "0.30", "0.45"]
 
     limits = (0.8, 0.9)
-    levels, str_levels = utils.locator_to_legend_entries(
+    _, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
     assert str_levels == ["0.80", "0.84", "0.88", "0.92"]
 
     limits = (1, 6)
-    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    _, str_levels = utils.locator_to_legend_entries(locator, limits, int)
     assert str_levels == ["0", "2", "4", "6"]
 
     locator = mpl.ticker.LogLocator(numticks=3)
     limits = (5, 1425)
-    levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
+    _, str_levels = utils.locator_to_legend_entries(locator, limits, int)
     if LooseVersion(mpl.__version__) >= "3.1":
         assert str_levels == ['0', '1', '100', '10000', '1e+06']
 
     limits = (0.00003, 0.02)
-    levels, str_levels = utils.locator_to_legend_entries(
+    _, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
     if LooseVersion(mpl.__version__) >= "3.1":
