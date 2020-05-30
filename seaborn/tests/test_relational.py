@@ -1631,6 +1631,18 @@ class TestLinePlotter(Helpers):
         lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
         ax.clear()
 
+        lineplot(x="x", y="y", hue="a", size="s", data=long_df, hue_fmt="G", size_fmt="G")
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="f", size="f", data=long_df, hue_fmt="G", size_fmt="G")
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="a", size="s", data=long_df, hue_fmt="G", size_fmt="G", legend="full")
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="f", size="f", data=long_df, hue_fmt="G", size_fmt="G", legend="full")
+        ax.clear()
+
 
 class TestScatterPlotter(Helpers):
 
@@ -2132,4 +2144,16 @@ class TestScatterPlotter(Helpers):
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="a", size="s", data=long_df, hue_fmt="G", size_fmt="G")
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="f", size="f", data=long_df, hue_fmt="G", size_fmt="G")
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="a", size="s", data=long_df, hue_fmt="G", size_fmt="G", legend="full")
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="f", size="f", data=long_df, hue_fmt="G", size_fmt="G", legend="full")
         ax.clear()
