@@ -38,6 +38,8 @@ hue_norm : tuple or :class:`matplotlib.colors.Normalize`
     for numeric ``hue`` mapping. Can also bean object that will map from data
     units into a [0, 1] interval.
     """,
+
+    # TODO add a generic matplotlib color entry with intersphinx link
 )
 
 
@@ -50,8 +52,20 @@ ax : :class:`matplotlib.axes.Axes`
 
 
 _seealso_blurbs = dict(
+
+    # Distribution plots
     rugplot="""\
-rugplot : Plot a tick for each data value along the x and/or y axes.
+rugplot : Plot a tick at each observation value along the x and/or y axes.
+    """,
+
+    # Categorical plots
+    violinplot="""\
+violinplot : Draw an enhanced boxplot using kernel density estimation.
+    """,
+
+    # Multiples
+    jointplot="""\
+jointplot : Draw a bivariate plot with univariate marginal distributions.
     """,
 )
 

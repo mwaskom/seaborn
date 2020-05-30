@@ -236,6 +236,8 @@ class _KDEPlotter(_DistributionPlotter):
                 line.sticky_edges.y[:] = sticky_y
 
                 if fill:
+                    # TODO Do we want to see the edges of the fills on both
+                    # sides, at least for "fill" (and maybe "stack"?)
                     fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
                         support, fill_from, density, **fill_kws
@@ -725,16 +727,16 @@ kdeplot.__doc__ = """\
 Plot univariate or bivariate distributions using kernel density estimation.
 
 A kernel density estimate (KDE) plot is a method for visualizing the
-distribution of observations in a dataset, analagous to a histogram.
-KDE represents the distribution using a continuous probability density
-curve in one or more dimensions.
+distribution of observations in a dataset, analagous to a histogram. KDE
+represents the data using a continuous probability density curve in one or
+more dimensions.
 
-The computational method is explained in the :ref:`user guide <userguide_kde>`.
+The approach is explained further in the :ref:`user guide <userguide_kde>`.
 
 Relative to a histogram, KDE can produce a plot that is less cluttered and
 more interpretable, especially when drawing multiple distributions. But it
-has the potential to introduce distortions when the underlying distribution
-is bounded or not smooth. Like a histogram, the quality of the representation
+has the potential to introduce distortions if the underlying distribution is
+bounded or not smooth. Like a histogram, the quality of the representation
 also depends on the selection of good smoothing parameters.
 
 Parameters
@@ -797,11 +799,11 @@ common_norm : bool
     If True, scale each conditional density by the number of observations
     such that the total area under all densities sums to 1. Otherwise,
     normalize each density independently.
-common_grid, bool
+common_grid : bool
     If True, use the same evaluation grid for each kernel density estimate.
     Only relevant with univariate data.
 levels : int or vector
-    Number of contour levels or levels to draw contours at. A vector argument
+    Number of contour levels or values to draw contours at. A vector argument
     must have increasing values in [0, 1]. Levels correspond to iso-proportions
     of the density: e.g., 20% of the probability mass will lie below the
     contour drawn for 0.2. Only relevant with bivariate data.
@@ -817,7 +819,7 @@ bw_adjust : number
 log_scale : bool or number, or pair of bools or numbers
     Set a log scale on the data axis (or axes, with bivariate data) with the
     given base (default 10), and evaluate the KDE in log space.
-color : matplotlib color
+color : :ref:`matplotlib color <matplotlib:tutorials-colors>`
     Color value for drawing lines or seed value for :func:`light_palette` when
     drawing filled contours.
 fill : bool
@@ -840,6 +842,9 @@ Returns
 See Also
 --------
 {seealso.rugplot}
+{seealso.violinplot}
+{seealso.jointplot}
+distplot
 
 Notes
 -----
@@ -873,6 +878,165 @@ at each point gives a density, not a probability. A probability can be obtained
 only by integrating the density across a range. The curve is normalized so
 that the integral over all possible values is 1, meaning that the scale of
 the density axis depends on the data values.
+
+Examples
+--------
+
+Plot a univariate distribution along the x axis:
+
+.. plot::
+    :context: close-figs
+
+    >>> import seaborn as sns, numpy as np
+    >>> sns.set(); np.random.seed(sum(map(ord, "kdeplot")))
+    >>> tips = sns.load_dataset("tips")
+    >>> ax = sns.kdeplot(data=tips, x="total_bill")
+
+Flip the plot by assigning the data variable to the y axis:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, y="total_bill")
+
+Plot distributions for each column of a wide-form dataset:
+
+.. plot::
+    :context: close-figs
+
+    >>> iris = sns.load_dataset("iris")
+    >>> ax = sns.kdeplot(data=iris)
+
+Use less smoothing:
+
+.. plot::
+    :context: close-figs
+
+    >>> sns.kdeplot(data=tips, x="total_bill", bw_adjust=.2)
+
+Use more smoothing, but don't smooth past the extreme data points:
+
+.. plot::
+    :context: close-figs
+
+    >>> sns.kdeplot(data=tips, x="total_bill", bw_adjust=5, cut=0)
+
+Plot conditional distributions with hue mapping of a second variable:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", hue="time")
+
+"Stack" the conditional distributions:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time", hue_method="stack"
+    ... )
+
+Normalize the stacked distribution at each value in the grid:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time", hue_method="fill"
+    ... )
+
+Estimate the cumulative distribution function(s), normalizing each subset:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time",
+    ...     cumulative=True, common_norm=False, common_grid=True,
+    ... )
+
+Estimate distribution from aggregated data, using weights:
+
+.. plot::
+    :context: close-figs
+
+    >>> tips_agg = (tips
+    ...     .groupby("size")
+    ...     .agg(total_bill=("total_bill", "mean"), n=("total_bill", "count"))
+    ... )
+    >>> ax = sns.kdeplot(data=tips_agg, x="total_bill", weights="n")
+
+Map the data variable with log scaling:
+
+.. plot::
+    :context: close-figs
+
+    >>> diamonds = sns.load_dataset("diamonds")
+    >>> ax = sns.kdeplot(data=diamonds, x="price", log_scale=True)
+
+Use numeric hue mapping:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", hue="size")
+
+Modify the appearance of the plot:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...    data=tips, x="total_bill", hue="size",
+    ...    fill=True, common_norm=False, palette="viridis",
+    ...    fill_kws=dict(alpha=.5), linewidth=0,
+    ... )
+
+Plot a bivariate distribution:
+
+.. plot::
+    :context: close-figs
+
+    >>> geyser = sns.load_dataset("geyser")
+    >>> ax = sns.kdeplot(data=geyser, x="waiting", y="duration")
+
+Map a third variable with a hue semantic to show conditional distributions:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=geyser, x="waiting", y="duration", hue="kind")
+
+Show filled contours:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration", hue="kind", fill=True,
+    ... )
+
+Show fewer contour levels, covering less of the distribution:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration", hue="kind",
+    ...     levels=5, thresh=.2,
+    ... )
+
+Fill the axes extent with a smooth distribution, using a different colormap:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration",
+    ...     fill=True, thresh=0, levels=100, cmap="mako",
+    ... )
+
 
 """.format(**_core_docs)  # Add in distribution docs
 
