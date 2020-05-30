@@ -861,7 +861,7 @@ class TestRelationalPlotter(Helpers):
     def test_relplot_wide(self, wide_df):
 
         g = relplot(data=wide_df)
-        x, y = g.ax.collections[0].get_offsets().T
+        _, y = g.ax.collections[0].get_offsets().T
         assert_array_equal(y, wide_df.values.T.ravel())
 
     def test_relplot_hues(self, long_df):
@@ -965,7 +965,7 @@ class TestRelationalPlotter(Helpers):
 
     def test_ax_kwarg_removal(self, long_df):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
         with pytest.warns(UserWarning):
             g = relplot(data=long_df, x="x", y="y", ax=ax)
         assert len(ax.collections) == 0
@@ -1055,7 +1055,7 @@ class TestLinePlotter(Helpers):
 
     def test_legend_data(self, long_df):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         p = _LinePlotter(
             data=long_df,
@@ -1227,7 +1227,7 @@ class TestLinePlotter(Helpers):
 
     def test_plot(self, long_df, repeated_df):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         p = _LinePlotter(
             data=long_df,
@@ -1419,7 +1419,7 @@ class TestLinePlotter(Helpers):
 
     def test_axis_labels(self, long_df):
 
-        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+        _, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
         p = _LinePlotter(
             data=long_df,
@@ -1453,8 +1453,8 @@ class TestLinePlotter(Helpers):
 
     def test_lineplot_axes(self, wide_df):
 
-        f1, ax1 = plt.subplots()
-        f2, ax2 = plt.subplots()
+        _, ax1 = plt.subplots()
+        _, ax2 = plt.subplots()
 
         ax = lineplot(data=wide_df)
         assert ax is ax2
@@ -1484,7 +1484,7 @@ class TestLinePlotter(Helpers):
         long_df, missing_df
     ):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         lineplot(x=[], y=[])
         ax.clear()
@@ -1563,7 +1563,7 @@ class TestScatterPlotter(Helpers):
         m = mpl.markers.MarkerStyle("")
         null = m.get_path().transformed(m.get_transform())
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         p = _ScatterPlotter(
             data=long_df,
@@ -1733,7 +1733,7 @@ class TestScatterPlotter(Helpers):
 
     def test_plot(self, long_df, repeated_df):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         p = _ScatterPlotter(data=long_df, variables=dict(x="x", y="y"))
 
@@ -1820,7 +1820,7 @@ class TestScatterPlotter(Helpers):
 
     def test_axis_labels(self, long_df):
 
-        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+        _, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
         p = _ScatterPlotter(data=long_df, variables=dict(x="x", y="y"))
 
@@ -1835,8 +1835,8 @@ class TestScatterPlotter(Helpers):
 
     def test_scatterplot_axes(self, wide_df):
 
-        f1, ax1 = plt.subplots()
-        f2, ax2 = plt.subplots()
+        _, ax1 = plt.subplots()
+        _, ax2 = plt.subplots()
 
         ax = scatterplot(data=wide_df)
         assert ax is ax2
@@ -1846,7 +1846,7 @@ class TestScatterPlotter(Helpers):
 
     def test_literal_attribute_vectors(self):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         x = y = [1, 2, 3]
         s = [5, 10, 15]
@@ -1861,7 +1861,7 @@ class TestScatterPlotter(Helpers):
 
     def test_linewidths(self, long_df):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         scatterplot(data=long_df, x="x", y="y", s=10)
         scatterplot(data=long_df, x="x", y="y", s=20)
@@ -1911,7 +1911,7 @@ class TestScatterPlotter(Helpers):
         long_df, missing_df
     ):
 
-        f, ax = plt.subplots()
+        _, ax = plt.subplots()
 
         scatterplot(x=[], y=[])
         ax.clear()
