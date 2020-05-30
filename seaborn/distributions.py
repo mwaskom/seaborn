@@ -20,6 +20,9 @@ from ._statistics import (
 from .utils import _kde_support, _normalize_kwargs, remove_na
 from .palettes import light_palette
 from ._decorators import _deprecate_positional_args
+from ._docstrings import (
+    _core_docs,
+)
 
 
 __all__ = ["distplot", "kdeplot", "rugplot"]
@@ -83,7 +86,7 @@ class _KDEPlotter(_DistributionPlotter):
         ax,
     ):
 
-        # Preprocess the matplotlib keyward dictionaries
+        # Preprocess the matplotlib keyword dictionaries
         line_kws = _normalize_kwargs(line_kws, mpl.lines.Line2D)
         fill_kws = _normalize_kwargs(
             fill_kws, mpl.collections.PolyCollection
@@ -507,7 +510,8 @@ def kdeplot(
 
     # New params
     weights=None,  # TODO note that weights is grouped with semantics
-    hue=None, palette=None, hue_order=None, hue_norm=None, hue_method="layer",
+    hue=None, palette=None, hue_order=None, hue_norm=None,
+    hue_method="layer",  # TODO change to "multi_method" for flexibility?
     common_norm=True, common_grid=False,
     levels=10, thresh=.05,  # TODO rethink names
     bw_method="scott", bw_adjust=1, log_scale=None,
@@ -709,6 +713,162 @@ def kdeplot(
     return ax
 
 
+kdeplot.__doc__ = """\
+Plot univariate or bivariate distributions using kernel density estimation.
+
+A kernel density estimate (KDE) plot is a method for visualizing the
+distribution of observations in a dataset, analagous to a histogram.
+KDE represents the distribution using a continuous probability density
+curve in one or more dimensions.
+
+The computational method is explained in the :ref:`user guide <userguide_kde>`.
+
+Relative to a histogram, KDE can produce a plot that is less cluttered and
+more interpretable, especially when drawing multiple distributions. But it
+has the potential to introduce distortions when the underlying distribution
+is bounded or not smooth. Like a histogram, the quality of the representation
+also depends on the selection of good smoothing parameters.
+
+Parameters
+----------
+{params.xy}
+shade : bool
+    Alias for ``fill``. Using ``fill`` is recommended.
+vertical : bool
+    Orientation parameter.
+
+    .. deprecated:: 0.11.0
+       specify orientation by assigning variables to ``x`` or ``y``.
+
+kernel : str
+    Function that defines the kernel.
+
+    .. deprecated:: 0.11.0
+       support for non-Gaussian kernels has been removed.
+
+bw : str, number, or callable
+    Smoothing parameter.
+
+    .. deprecated:: 0.11.0
+       see ``bw_method`` and ``bw_adjust``.
+
+gridsize : int
+    Number of points on each dimension of the evaluation grid.
+cut : number
+    Factor, multiplied by the smoothing bandwidth, that determines how far
+    the evaluation grid extends past the extreme datapoints.
+clip : tuple or pair of tuples
+    Truncate the evaluation grid at these data values.
+legend : bool
+    If False, suppress the legend for semantic variables.
+cumulative : bool
+    If True, estimate and plot the cumulative distribution function.
+shade_lowest : bool
+    If False, the area below the lowest contour will be transparent
+
+    .. deprecated:: 0.11.0
+       see ``thresh``.
+
+cbar : bool
+    If True, add a colorbar to annotate the contour levels. Only relevant
+    with bivariate data.
+cbar_ax : :class:`matplotlib.axes.Axes`
+    Pre-existing axes for the colorbar.
+cbar_kws : dict
+    Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
+{params.ax}
+weights : vector or key in ``data``
+    If provided, perform weighted kernel density estimation.
+{params.hue}
+{params.palette}
+{params.hue_order}
+{params.hue_norm}
+hue_method : {{"layer", "stack", "fill"}}
+    Approach to drawing multiple densities. Only relevant with univariate data.
+common_norm : bool
+    If True, scale each conditional density by the number of observations
+    such that the total area under all densities sums to 1. Otherwise,
+    normalize each density independently.
+common_grid, bool
+    If True, use the same evaluation grid for each kernel density estimate.
+    Only relevant with univariate data.
+levels : int or vector
+    Number of contour levels or levels to draw contours at. A vector argument
+    must have increasing values in [0, 1]. Levels correspond to iso-proportions
+    of the density: e.g., 20% of the probability mass will lie below the
+    contour drawn for 0.2. Only relevant with bivariate data.
+thresh : number in [0, 1]
+    Lowest iso-proportion level at which to draw a contour line. Ignored when
+    ``levels`` is a vector. Only relevant with bivariate data.
+bw_method : str, number, or callable
+    Method for choosing the bandwidth, passed directly to
+    :class:`scipy.stats.gaussian_kde`.
+bw_adjust : number
+    Factor that multiplicatively scales the bandwdith chosen by ``scipy``.
+    Increasing will make the curve more smooth.
+log_scale : bool or number, or pair of bools or numbers
+    Set a log scale on the data axis (or axes, with bivariate data) with the
+    given base (default 10), and evaluate the KDE in log space.
+color : matplotlib color
+    Color value for drawing lines or seed value for :func:`light_palette` when
+    drawing filled contours.
+fill : bool
+    If True, fill in the area under univariate density curves or between
+    bivariate contours.
+fill_kws : dict
+    Keyword arguments for :meth:`matplotlib.axes.Axes.fill_between` with
+    univariate data and ``fill=True``.
+{params.data}
+kwargs
+    Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.plot`
+    (for univariate data), :meth:`matplotlib.axes.Axes.contour` (for bivariate
+    data when ``fill=False``), or :meth:`matplotlib.axes.contourf` (for
+    bivariate data when ``fill=True``).
+
+Returns
+-------
+{returns.ax}
+
+See Also
+--------
+{seealso.rugplot}
+
+Notes
+-----
+
+The *bandwidth*, or standard deviation of the smoothing kernel, is an
+important parameter. Misspecification of the bandwidth can produce a
+distorted representation of the data. Much like the choice of bin width in a
+histogram, an over-smoothed curve can erase true features of a
+distribution, while an under-smoothed curve can create false features out of
+random variability. The rule-of-thumb that sets the default bandwidth works
+best when the true distribution is smooth, unimodal, and roughly bell-shaped.
+It is always a good idea to check the default behavior by using ``bw_adjust``
+to increase or decrease the amount of smoothing.
+
+Because the smoothing algorithm uses a Gaussian kernel, the estimated density
+curve can extend to values that do not make sense for a particular dataset.
+For example, the curve may be drawn over negative values when smoothing data
+that are naturally positive. The ``cut`` and ``clip`` parameters can be used
+to control the extent of the curve, but datasets that have many observations
+close to a natural boundary may be better served by a different visualization
+method.
+
+Similar considerations apply when a dataset is naturally discrete or "spiky"
+(containing many repeated observations of the same value). Kernel density
+estimation will always produce a smooth curve, which would be misleading
+in these situations.
+
+The units on the density axis are a common source of confusion. While kernel
+density estimation produces a probability distribution, the height of the curve
+at each point gives a density, not a probability. A probability can be obtained
+only by integrating the density across a range. The curve is normalized so
+that the integral over all possible values is 1, meaning that the scale of
+the density axis depends on the data values.
+
+""".format(**_core_docs)  # Add in distribution docs
+
+
 class _RugPlotter(_DistributionPlotter):
 
     def __init__(
@@ -742,6 +902,7 @@ class _RugPlotter(_DistributionPlotter):
             kws.pop("c", None)
             kws.pop("color", None)
 
+        # TODO change so we always have one collection?
         if "x" in self.variables:
             self._plot_single_rug("x", height, ax, kws)
         if "y" in self.variables:
