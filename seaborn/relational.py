@@ -31,6 +31,8 @@ class _RelationalPlotter(VectorPlotter):
 
     # TODO where best to define default parameters?
     sort = True
+    hue_fmt = None  # Optional new-style formatting string for hue levels in legend.
+    size_fmt = None  # Optional new-style formatting string for size levels in legend.
 
     def subset_data(self):
         """Return (x, y) data for each subset defined by semantics."""
@@ -109,7 +111,7 @@ class _RelationalPlotter(VectorPlotter):
                 locator = mpl.ticker.MaxNLocator(nbins=3)
             limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["hue"].dtype
+                locator, limits, self.plot_data["hue"].dtype, fmt=self.hue_fmt
             )
         elif self._hue_map.levels is None:
             hue_levels = hue_formatted_levels = []
@@ -138,7 +140,7 @@ class _RelationalPlotter(VectorPlotter):
             # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["size"].dtype
+                locator, limits, self.plot_data["size"].dtype, fmt=self.size_fmt
             )
         elif self._size_map.levels is None:
             size_levels = size_formatted_levels = []
@@ -213,10 +215,11 @@ class _LinePlotter(_RelationalPlotter):
         self, *,
         data=None, variables={},
         estimator=None, ci=None, n_boot=None, seed=None,
-        sort=True, err_style=None, err_kws=None, legend=None
+        sort=True, err_style=None, err_kws=None, legend=None,
+        hue_fmt=None, size_fmt=None,
     ):
 
-        # TODO this is messy, we want the mapping to be agnoistic about
+        # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
         # this information so the SizeMapping can use it
         self._default_size_range = (
@@ -234,6 +237,8 @@ class _LinePlotter(_RelationalPlotter):
         self.err_kws = {} if err_kws is None else err_kws
 
         self.legend = legend
+        self.hue_fmt = hue_fmt
+        self.size_fmt = size_fmt
 
     def aggregate(self, vals, grouper, units=None):
         """Compute an estimate and confidence interval using grouper."""
@@ -413,10 +418,10 @@ class _ScatterPlotter(_RelationalPlotter):
         x_bins=None, y_bins=None,
         estimator=None, ci=None, n_boot=None,
         alpha=None, x_jitter=None, y_jitter=None,
-        legend=None
+        legend=None, hue_fmt=None, size_fmt=None,
     ):
 
-        # TODO this is messy, we want the mapping to be agnoistic about
+        # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
         # this information so the SizeMapping can use it
         self._default_size_range = (
@@ -427,6 +432,8 @@ class _ScatterPlotter(_RelationalPlotter):
 
         self.alpha = alpha
         self.legend = legend
+        self.hue_fmt = hue_fmt
+        self.size_fmt = size_fmt
 
     def plot(self, ax, kws):
 
@@ -563,6 +570,11 @@ _relational_docs = dict(
         Normalization in data units for colormap applied to the ``hue``
         variable when it is numeric. Not relevant if it is categorical.\
     """),
+    hue_fmt=dedent("""\
+    hue_fmt : string, optional
+        New-style formatting string (e.g. '.2f') for legend tick levels of the
+        ``hue`` variable when it is numeric. Not relevant if it is categorical.\
+    """),
     sizes=dedent("""\
     sizes : list, dict, or tuple, optional
         An object that determines how sizes are chosen when ``size`` is used.
@@ -581,6 +593,11 @@ _relational_docs = dict(
     size_norm : tuple or Normalize object, optional
         Normalization in data units for scaling plot objects when the
         ``size`` variable is numeric.\
+    """),
+    size_fmt=dedent("""\
+    size_fmt : string, optional
+        New-style formatting string (e.g. '.2f') for legend tick levels of the
+        ``size`` variable when it is numeric. Not relevant if it is categorical.\
     """),
     markers=dedent("""\
     markers : boolean, list, or dictionary, optional
@@ -654,8 +671,8 @@ def lineplot(
     x=None, y=None,
     hue=None, size=None, style=None,
     data=None,
-    palette=None, hue_order=None, hue_norm=None,
-    sizes=None, size_order=None, size_norm=None,
+    palette=None, hue_order=None, hue_norm=None, hue_fmt=None,
+    sizes=None, size_order=None, size_norm=None, size_fmt=None,
     dashes=True, markers=None, style_order=None,
     units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
     sort=True, err_style="band", err_kws=None,
@@ -667,6 +684,7 @@ def lineplot(
         data=data, variables=variables,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
+        hue_fmt=hue_fmt, size_fmt=size_fmt,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -710,9 +728,11 @@ lineplot.__doc__ = dedent("""\
     {palette}
     {hue_order}
     {hue_norm}
+    {hue_fmt}
     {sizes}
     {size_order}
     {size_norm}
+    {size_fmt}
     dashes : boolean, list, or dictionary, optional
         Object determining how to draw the lines for different levels of the
         ``style`` variable. Setting to ``True`` will use default dash codes, or
@@ -931,8 +951,8 @@ def scatterplot(
     *,
     x=None, y=None,
     hue=None, style=None, size=None, data=None,
-    palette=None, hue_order=None, hue_norm=None,
-    sizes=None, size_order=None, size_norm=None,
+    palette=None, hue_order=None, hue_norm=None, hue_fmt=None,
+    sizes=None, size_order=None, size_norm=None, size_fmt=None,
     markers=True, style_order=None,
     x_bins=None, y_bins=None,
     units=None, estimator=None, ci=95, n_boot=1000,
@@ -946,6 +966,7 @@ def scatterplot(
         x_bins=x_bins, y_bins=y_bins,
         estimator=estimator, ci=ci, n_boot=n_boot,
         alpha=alpha, x_jitter=x_jitter, y_jitter=y_jitter, legend=legend,
+        hue_fmt=hue_fmt, size_fmt=size_fmt,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -985,9 +1006,11 @@ scatterplot.__doc__ = dedent("""\
     {palette}
     {hue_order}
     {hue_norm}
+    {hue_fmt}
     {sizes}
     {size_order}
     {size_norm}
+    {size_fmt}
     {markers}
     {style_order}
     {{x,y}}_bins : lists or arrays or functions
@@ -1182,8 +1205,8 @@ def relplot(
     hue=None, size=None, style=None, data=None,
     row=None, col=None,
     col_wrap=None, row_order=None, col_order=None,
-    palette=None, hue_order=None, hue_norm=None,
-    sizes=None, size_order=None, size_norm=None,
+    palette=None, hue_order=None, hue_norm=None, hue_fmt=None,
+    sizes=None, size_order=None, size_norm=None, size_fmt=None,
     markers=None, dashes=None, style_order=None,
     legend="brief", kind="scatter",
     height=5, aspect=1, facet_kws=None,
@@ -1260,9 +1283,9 @@ def relplot(
     # Define the common plotting parameters
     plot_kws = dict(
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
-        sizes=sizes, size_order=size_order, size_norm=size_norm,
-        markers=markers, dashes=dashes, style_order=style_order,
-        legend=False,
+        hue_fmt=hue_fmt, sizes=sizes, size_order=size_order,
+        size_norm=size_norm, size_fmt=size_fmt, markers=markers,
+        dashes=dashes, style_order=style_order, legend=False,
     )
     plot_kws.update(kwargs)
     if kind == "scatter":
@@ -1370,9 +1393,11 @@ relplot.__doc__ = dedent("""\
     {palette}
     {hue_order}
     {hue_norm}
+    {hue_fmt}
     {sizes}
     {size_order}
     {size_norm}
+    {size_fmt}
     {legend}
     kind : string, optional
         Kind of plot to draw, corresponding to a seaborn relational plot.
