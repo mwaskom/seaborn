@@ -919,3 +919,8 @@ class TestKDEPlotBivariate:
         levels = _KDEPlotter()._find_contour_levels(x, isoprop)
         for h, p in zip(levels, isoprop):
             assert (x[x <= h].sum() / x.sum()) == pytest.approx(p, abs=1e-4)
+
+    def test_input_checking(self, long_df):
+
+        with pytest.raises(TypeError, match="kdeplot requires a numeric 'x'"):
+            kdeplot(data=long_df, x="a", y="y")

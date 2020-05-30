@@ -675,7 +675,15 @@ def kdeplot(
 
     else:
 
-        # TODO input checking?
+        # Check input types
+        for var in "xy":
+            var_type = p.var_types[var]
+            if var_type != "numeric":
+                msg = (
+                    f"kdeplot requires a numeric '{var}' variable, "
+                    f"but a {var_type} was passed."
+                )
+                raise TypeError(msg)
 
         # Possibly log-scale one or both axes
         if log_scale is not None:
