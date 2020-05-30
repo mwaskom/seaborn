@@ -352,7 +352,7 @@ def percentiles(a, pcts, axis=None):
     except TypeError:
         pcts = [pcts]
         n = 0
-    for i, p in enumerate(pcts):
+    for p in pcts:
         if axis is None:
             score = stats.scoreatpercentile(a.ravel(), p)
         else:
@@ -546,18 +546,36 @@ def axes_ticklabels_overlap(ax):
             axis_ticklabels_overlap(ax.get_yticklabels()))
 
 
-def locator_to_legend_entries(locator, limits, dtype):
-    """Return levels and formatted levels for brief numeric legends."""
+def locator_to_legend_entries(locator, limits, dtype, fmt=None):
+    """Return levels and formatted levels for brief numeric legends.
+    
+    Parameters
+    ----------
+    locator : matplotlib.ticker.Locator instance.
+    limits : Tuple of min and max values in the data.
+    dtype : Type of level values .
+    fmt : Optional new-style formatting string for formatted levels,
+        e.g. ".2g".
+
+    Returns
+    -------
+    raw_levels, formatted_levels : lists
+        Raw tick levels (of type `dtype`) and their formatted values
+        (strings).
+    """
     raw_levels = locator.tick_values(*limits).astype(dtype)
 
     class dummy_axis:
         def get_view_interval(self):
             return limits
 
-    if isinstance(locator, mpl.ticker.LogLocator):
-        formatter = mpl.ticker.LogFormatter()
+    if not fmt:
+        if isinstance(locator, mpl.ticker.LogLocator):
+            formatter = mpl.ticker.LogFormatter()
+        else:
+            formatter = mpl.ticker.ScalarFormatter()
     else:
-        formatter = mpl.ticker.ScalarFormatter()
+        formatter = mpl.ticker.StrMethodFormatter("{x:%s}" % fmt)
     formatter.axis = dummy_axis()
 
     # TODO: The following two lines should be replaced

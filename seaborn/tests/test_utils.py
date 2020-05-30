@@ -361,6 +361,55 @@ def test_locator_to_legend_entries():
         assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
 
 
+def test_locator_to_legend_entries_custom_format():
+    locator = mpl.ticker.MaxNLocator(nbins=3)
+
+    # Round numbers to 1 decimal place.
+    limits = (0.09, 0.4)
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float, fmt=".1f"
+    )
+    assert str_levels == ["0.0", "0.2", "0.3", "0.5"]
+
+    # Force scientific notation and padding.
+    limits = (-100005, 625015)
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float, fmt=" =6.0G"
+    )
+    assert str_levels == ["-2E+05", "     0", " 2E+05", " 5E+05", " 8E+05"]
+
+    # Display percentage levels.
+    limits = (0.2, 0.75)
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, float, fmt=".0%"
+    )
+    assert str_levels == ["20%", "40%", "60%", "80%"]
+
+    limits = (2, 6459)
+    # Pad numbers with zeros.
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, int, fmt="04d"
+    )
+    assert str_levels == ["0000", "2500", "5000", "7500"]
+    # Pad numbers with spaces.
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, int, fmt="4d"
+    )
+    assert str_levels == ["   0", "2500", "5000", "7500"]
+    # Use comma as a thousands separator.
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, int, fmt=",d"
+    )
+    assert str_levels == ["0", "2,500", "5,000", "7,500"]
+
+    locator = mpl.ticker.LogLocator(numticks=3)
+    limits = (5, 1425)
+    _, str_levels = utils.locator_to_legend_entries(
+        locator, limits, int, fmt=".0E")
+    if LooseVersion(mpl.__version__) >= "3.1":
+        assert str_levels == ['0E+00', '1E+00', '1E+02', '1E+04', '1E+06']
+
+
 def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
     assert(isinstance(ds, pd.DataFrame))
