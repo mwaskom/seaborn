@@ -4,12 +4,12 @@ from functools import partial
 import warnings
 
 import numpy as np
-from scipy import stats
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.collections import LineCollection
+from scipy import stats
 
 from ._core import (
     VectorPlotter,
@@ -97,7 +97,7 @@ class _KDEPlotter(_DistributionPlotter):
         fill_kws.setdefault("linewidth", 0)
 
         # Input checking
-        hue_method_options = {"layer", "stack", "fill"}
+        hue_method_options = ["layer", "stack", "fill"]
         if hue_method not in hue_method_options:
             msg = (
                 f"hue_method must be one of {hue_method_options}, "
@@ -123,11 +123,6 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Access and clean the data
             all_observations = remove_na(self.plot_data[data_variable])
-
-            # Compute the reletive proportion of each hue level
-            rows = all_observations.index
-            hue_props = (self.plot_data.loc[rows, "hue"]
-                         .value_counts(normalize=True))
 
             # Always share the evaluation grid when stacking
             if hue_method in ("stack", "fill"):
@@ -176,13 +171,13 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
-                density *= hue_props[sub_vars["hue"]]
+                density *= len(sub_data) / len(self.plot_data)
 
             # Store the density for this level
             key = tuple(sub_vars.items())
             densities[key] = pd.Series(density, index=support)
 
-        # Implement the density stacking (and filling)
+        # Modify the density data structure to implement the hue_method
         if hue_method in ("stack", "fill"):
 
             # The densities share a support grid, so we can make a dataframe
@@ -313,15 +308,7 @@ class _KDEPlotter(_DistributionPlotter):
 
         estimator = KDE(**estimate_kws)
 
-        if "hue" in self.variables:
-
-            # Compute the reletive proportion of each hue level
-            rows = remove_na(self.plot_data[["x", "y"]]).index
-            hue_props = (self.plot_data.loc[rows, "hue"]
-                         .value_counts(normalize=True))
-
-        else:
-
+        if "hue" not in self.variables:
             common_norm = False
 
         # Loop through the subsets and estimate the KDEs
@@ -373,7 +360,7 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
-                density *= hue_props[sub_vars["hue"]]
+                density *= len(sub_data) / len(self.plot_data)
 
             key = tuple(sub_vars.items())
             densities[key] = density
