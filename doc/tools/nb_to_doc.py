@@ -2,7 +2,10 @@
 """
 Convert empty IPython notebook to a sphinx doc page.
 
+TODO this should be rewritten to use the nbconvert Python API.
+
 """
+import os
 import sys
 from subprocess import check_call as sh
 
@@ -10,8 +13,19 @@ from subprocess import check_call as sh
 def convert_nb(nbname):
 
     # Execute the notebook
-    sh(["jupyter", "nbconvert", "--to", "notebook",
-        "--execute", "--inplace", nbname])
+    exec_cmdline = [
+        "jupyter", "nbconvert",
+        "--to", "notebook",
+        "--execute",
+        "--inplace",
+        nbname,
+    ]
+
+    kernel = os.environ.get("NB_KERNEL", "")
+    if kernel:
+        exec_cmdline.append(f"--ExecutePreprocessor.kernel_name={kernel}")
+
+    sh(exec_cmdline)
 
     # Convert to .rst for Sphinx
     sh(["jupyter", "nbconvert", "--to", "rst", nbname,
