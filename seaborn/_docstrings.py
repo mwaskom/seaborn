@@ -22,7 +22,7 @@ ax : :class:`matplotlib.axes.Axes`
     internally.\
     """,  # noqa: E501
     palette="""\
-palette : str, list, dict, or :class:`matplotlib.colors.Colormap`
+palette : string, list, dict, or :class:`matplotlib.colors.Colormap`
     Method for choosing the colors to use when mapping the ``hue`` semantic.
     String values are passed to :func:`color_palette`. List or dict values
     imply categorical mapping, while a colormap object implies numeric mapping.
@@ -32,7 +32,7 @@ hue_order : vector of strings
     Specify the order of processing and plotting for categorical levels of the
     ``hue`` semantic.
     """,
-    hue_norm="""\
+    hue_norm="""
 hue_norm : tuple or :class:`matplotlib.colors.Normalize`
     Either a pair of values that set the normalization range in data units
     for numeric ``hue`` mapping. Can also bean object that will map from data
@@ -40,6 +40,11 @@ hue_norm : tuple or :class:`matplotlib.colors.Normalize`
     """,
 
     # TODO add a generic matplotlib color entry with intersphinx link
+)
+
+
+_core_params["hue_mapping"] = "\n".join(
+    _core_params[k] for k in ["palette", "hue_order", "hue_norm"]
 )
 
 

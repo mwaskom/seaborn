@@ -748,7 +748,7 @@ vertical : bool
     Orientation parameter.
 
     .. deprecated:: 0.11.0
-       specify orientation by assigning variables to ``x`` or ``y``.
+       specify orientation by assigning the ``x`` or ``y`` variables.
 
 kernel : str
     Function that defines the kernel.
@@ -790,9 +790,7 @@ cbar_kws : dict
 weights : vector or key in ``data``
     If provided, perform weighted kernel density estimation.
 {params.hue}
-{params.palette}
-{params.hue_order}
-{params.hue_norm}
+{params.hue_mapping}
 hue_method : {{"layer", "stack", "fill"}}
     Approach to drawing multiple densities. Only relevant with univariate data.
 common_norm : bool
@@ -819,7 +817,7 @@ bw_adjust : number
 log_scale : bool or number, or pair of bools or numbers
     Set a log scale on the data axis (or axes, with bivariate data) with the
     given base (default 10), and evaluate the KDE in log space.
-color : :ref:`matplotlib color <matplotlib:tutorials-colors>`
+color : :module:`matplotlib color <matplotlib.colors>`
     Color value for drawing lines or seed value for :func:`light_palette` when
     drawing filled contours.
 fill : bool
@@ -887,8 +885,7 @@ Plot a univariate distribution along the x axis:
 .. plot::
     :context: close-figs
 
-    >>> import seaborn as sns, numpy as np
-    >>> sns.set(); np.random.seed(sum(map(ord, "kdeplot")))
+    >>> import seaborn as sns; sns.set()
     >>> tips = sns.load_dataset("tips")
     >>> ax = sns.kdeplot(data=tips, x="total_bill")
 
@@ -912,14 +909,14 @@ Use less smoothing:
 .. plot::
     :context: close-figs
 
-    >>> sns.kdeplot(data=tips, x="total_bill", bw_adjust=.2)
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", bw_adjust=.2)
 
 Use more smoothing, but don't smooth past the extreme data points:
 
 .. plot::
     :context: close-figs
 
-    >>> sns.kdeplot(data=tips, x="total_bill", bw_adjust=5, cut=0)
+    >>> ax= sns.kdeplot(data=tips, x="total_bill", bw_adjust=5, cut=0)
 
 Plot conditional distributions with hue mapping of a second variable:
 
@@ -1182,6 +1179,99 @@ def rugplot(
     p.plot(height, expand_margins, legend, ax, kwargs)
 
     return ax
+
+
+rugplot.__doc__ = """\
+Plot marginal distributions by drawing ticks along the x and y axes.
+
+This function is intended to complement other plots by showing the location
+of individual observations in an unobstrusive way.
+
+Parameters
+----------
+{params.xy}
+height : number
+    Proportion of axes extent covered by each rug element.
+axis : {{"x", "y"}}
+    Axis to draw the rug on.
+
+    .. deprecated:: 0.11.0
+       specify axis by assigning the ``x`` or ``y`` variables.
+
+{params.ax}
+{params.data}
+{params.hue}
+{params.hue_mapping}
+expand_margins : bool
+    If True, increase the axes margins by the height of the rug to avoid
+    overlap with other elements.
+legend : bool
+    If False, do not add a legend for semantic variables.
+
+Returns
+-------
+{returns.ax}
+
+Examples
+--------
+
+Add a rug along one of the axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> import seaborn as sns; sns.set()
+    >>> tips = sns.load_dataset("tips")
+    >>> ax = sns.kdeplot(data=tips, x="total_bill")
+    >>> ax = sns.rugplot(data=tips, x="total_bill")
+
+Add a rug along both axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip")
+
+Represent a third variable with hue mapping:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", hue="time")
+
+Draw a taller rug:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", height=.1)
+
+Put the rug outside the axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip",
+    ...     height=-.02, clip_on=False,
+    ... )
+
+Show the density of a larger dataset using thinner lines and alpha blending:
+
+.. plot::
+    :context: close-figs
+
+    >>> diamonds = sns.load_dataset("diamonds")
+    >>> ax = sns.scatterplot(data=diamonds, x="carat", y="price", s=5)
+    >>> ax = sns.rugplot(data=diamonds, x="carat", y="price", lw=1, alpha=.005)
+
+""".format(**_core_docs)
+
+
+# =========================================================================== #
 
 
 def _freedman_diaconis_bins(a):
