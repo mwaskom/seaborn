@@ -11,7 +11,7 @@ env:
 
 jobs:
 
-  setup:
+  checks:
     runs-on: ubuntu-latest
     steps:
 
@@ -31,14 +31,6 @@ jobs:
         run: |
           pip install -r doc/requirements.txt
 
-          #      - name: Build docs
-          #        run: |
-          #          make -C doc notebooks html
-
-  check-gallery:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - name: Check gallery
+      - name: Build docs
         run: |
-          python ci/check_gallery.py
+          make -C doc notebooks html
