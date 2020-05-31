@@ -19,6 +19,10 @@ class RCParamTester(object):
     def assert_rc_params(self, params):
 
         for k, v in params.items():
+            # Various subtle issues in matplotlib lead to unexpected
+            # values for the backend rcParam, which isn't relevant here
+            if k == "backend":
+                continue
             if isinstance(v, np.ndarray):
                 npt.assert_array_equal(mpl.rcParams[k], v)
             else:
