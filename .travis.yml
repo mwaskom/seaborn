@@ -7,7 +7,7 @@ services:
 
 
 env:
-  - PYTHON=3.6 DEPS=pinned MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=pinned MPLBACKEND=agg DOCTESTS=false
   - PYTHON=3.6 DEPS=latest MPLBACKEND=agg DOCTESTS=true
   - PYTHON=3.7 DEPS=latest MPLBACKEND=agg DOCTESTS=true
   - PYTHON=3.8 DEPS=latest MPLBACKEND=agg DOCTESTS=true
