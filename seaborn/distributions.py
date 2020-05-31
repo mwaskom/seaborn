@@ -817,7 +817,7 @@ bw_adjust : number
 log_scale : bool or number, or pair of bools or numbers
     Set a log scale on the data axis (or axes, with bivariate data) with the
     given base (default 10), and evaluate the KDE in log space.
-color : :module:`matplotlib color <matplotlib.colors>`
+color : :mod:`matplotlib color <matplotlib.colors>`
     Color value for drawing lines or seed value for :func:`light_palette` when
     drawing filled contours.
 fill : bool
