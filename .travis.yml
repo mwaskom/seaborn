@@ -7,12 +7,12 @@ services:
 
 
 env:
-  - PYTHON=3.6 DEPS=pinned BACKEND=agg DOCTESTS=true
-  - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.6 DEPS=pinned MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.6 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.7 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest MPLBACKEND=qtagg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal MPLBACKEND=agg DOCTESTS=false
 
 
 before_install:
@@ -38,8 +38,7 @@ install:
 
 
 before_script:
-  - cp testing/matplotlibrc_${BACKEND} matplotlibrc
-  - if [ $BACKEND == "qtagg" ]; then
+  - if [ $MPLBACKEND == "qtagg" ]; then
     export DISPLAY=:99.0;
     sh -e /etc/init.d/xvfb start;
     sleep 3;
