@@ -17,7 +17,7 @@ env:
 
 before_install:
   - sudo apt-get update -yq
-  - sudo sh testing/getmsfonts.sh
+  - sudo sh ci/getmsfonts.sh
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -32,7 +32,7 @@ before_install:
 install:
   - conda create -n testenv pip python=$PYTHON
   - source activate testenv
-  - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
+  - cat ci/deps_${DEPS}.txt ci/utils.txt > deps.txt
   - conda install --file deps.txt
   - pip install .
 
