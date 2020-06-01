@@ -716,12 +716,12 @@ class TestKDEPlotUnivariate:
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
         kdeplot(data=long_df, x="x", fill=True, ax=ax1)
-        assert ax1.get_ylim()[0] == 0
+        assert ax1.collections[0].sticky_edges.y[:] == [0, np.inf]
 
         kdeplot(
             data=long_df, x="x", hue="a", multiple="fill", fill=True, ax=ax2
         )
-        assert ax2.get_ylim() == pytest.approx((0, 1))  # old mpl needs approx?
+        assert ax2.collections[0].sticky_edges.y[:] == [0, 1]
 
     def test_line_kws(self, flat_array):
 

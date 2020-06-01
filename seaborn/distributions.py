@@ -114,7 +114,7 @@ class _KDEPlotter(_DistributionPlotter):
 
         # Control the interaction with autoscaling by defining sticky_edges
         # i.e. we don't want autoscale margins below the density curve
-        sticky_y = (0, 1) if multiple == "fill" else (0, np.inf)
+        sticky_density = (0, 1) if multiple == "fill" else (0, np.inf)
 
         # Identify the axis with the data values
         data_variable = {"x", "y"}.intersection(self.variables).pop()
@@ -208,9 +208,9 @@ class _KDEPlotter(_DistributionPlotter):
 
         # Filled plots should not have any margins
         if multiple == "fill":
-            sticky_x = densities.index.min(), densities.index.max()
+            sticky_support = densities.index.min(), densities.index.max()
         else:
-            sticky_x = []
+            sticky_support = []
 
         # Handle default visual attributes
         if "hue" not in self.variables:
@@ -253,33 +253,26 @@ class _KDEPlotter(_DistributionPlotter):
             if "x" in self.variables:
 
                 if fill:
-                    fill = ax.fill_between(
+                    artist = ax.fill_between(
                         support, fill_from, density, **artist_kws
                     )
-                    fill.sticky_edges.x[:] = sticky_x
-                    fill.sticky_edges.y[:] = sticky_y
-
                 else:
+                    artist, = ax.plot(support, density, **artist_kws)
 
-                    line, = ax.plot(support, density, **artist_kws)
-                    line.sticky_edges.x[:] = sticky_x
-                    line.sticky_edges.y[:] = sticky_y
+                artist.sticky_edges.x[:] = sticky_support
+                artist.sticky_edges.y[:] = sticky_density
 
             # Plot a curve with observation values on the y axis
             else:
-
                 if fill:
-                    fill = ax.fill_betweenx(
+                    artist = ax.fill_betweenx(
                         support, fill_from, density, **artist_kws
                     )
-                    fill.sticky_edges.x[:] = sticky_y
-                    fill.sticky_edges.y[:] = sticky_x
-
                 else:
+                    artist, = ax.plot(density, support, **artist_kws)
 
-                    line, = ax.plot(density, support, **artist_kws)
-                    line.sticky_edges.x[:] = sticky_y
-                    line.sticky_edges.y[:] = sticky_x
+                artist.sticky_edges.x[:] = sticky_density
+                artist.sticky_edges.y[:] = sticky_support
 
         # --- Finalize the plot ----
         default_x = default_y = ""
