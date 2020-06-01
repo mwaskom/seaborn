@@ -35,7 +35,7 @@ class KDE:
 
         """
         if clip is None:
-            clip = -np.inf, +np.inf
+            clip = None, None
 
         self.bw_method = bw_method
         self.bw_adjust = bw_adjust
@@ -48,8 +48,10 @@ class KDE:
 
     def _define_support_grid(self, x, bw, cut, clip, gridsize):
         """Create the grid of evaluation points depending for vector x."""
-        gridmin = max(x.min() - bw * cut, clip[0])
-        gridmax = min(x.max() + bw * cut, clip[1])
+        clip_lo = -np.inf if clip[0] is None else clip[0]
+        clip_hi = +np.inf if clip[1] is None else clip[1]
+        gridmin = max(x.min() - bw * cut, clip_lo)
+        gridmax = min(x.max() + bw * cut, clip_hi)
         return np.linspace(gridmin, gridmax, gridsize)
 
     def _define_support_univariate(self, x, weights):
@@ -64,7 +66,7 @@ class KDE:
     def _define_support_bivariate(self, x1, x2, weights):
         """Create a 2D grid of evaluation points."""
         clip = self.clip
-        if np.isscalar(clip[0]):
+        if clip[0] is None or np.isscalar(clip[0]):
             clip = (clip, clip)
 
         kde = self._fit([x1, x2], weights)
