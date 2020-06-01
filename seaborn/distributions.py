@@ -831,10 +831,13 @@ fill_kws : dict
     univariate data and ``fill=True``.
 {params.data}
 kwargs
-    Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.plot`
-    (for univariate data), :meth:`matplotlib.axes.Axes.contour` (for bivariate
-    data when ``fill=False``), or :meth:`matplotlib.axes.contourf` (for
-    bivariate data when ``fill=True``).
+    Other keyword arguments are passed to one of the following matplotlib
+    functions:
+
+    - :meth:`matplotlib.axes.Axes.plot` (univariate data, ``fill=False``),
+    - :meth:`matplotlib.axes.Axes.fill_between` (univariate data, ``fill=True``),
+    - :meth:`matplotlib.axes.Axes.contour` (bivariate data, ``fill=False``),
+    - :meth:`matplotlib.axes.contourf` (bivariate data, ``fille=True``).
 
 Returns
 -------
