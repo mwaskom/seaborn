@@ -363,12 +363,12 @@ class TestKDEPlotUnivariate:
             fill1.get_paths()[0].vertices, fill2.get_paths()[0].vertices
         )
 
-    @pytest.mark.parametrize("hue_method", ["layer", "stack", "fill"])
-    def test_hue_colors(self, long_df, hue_method):
+    @pytest.mark.parametrize("multiple", ["layer", "stack", "fill"])
+    def test_hue_colors(self, long_df, multiple):
 
         ax = kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method=hue_method,
+            multiple=multiple,
             fill=True, legend=False
         )
 
@@ -388,12 +388,12 @@ class TestKDEPlotUnivariate:
 
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="layer", common_grid=True,
+            multiple="layer", common_grid=True,
             legend=False, ax=ax1,
         )
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="stack",
+            multiple="stack",
             legend=False, ax=ax2,
         )
 
@@ -415,12 +415,12 @@ class TestKDEPlotUnivariate:
 
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="layer", common_grid=True,
+            multiple="layer", common_grid=True,
             legend=False, ax=ax1,
         )
         kdeplot(
             data=long_df, x="x", hue="a",
-            hue_method="fill",
+            multiple="fill",
             legend=False, ax=ax2,
         )
 
@@ -435,22 +435,22 @@ class TestKDEPlotUnivariate:
         assert len(ax1.collections) == 0
         assert len(ax2.collections) > 0
 
-    @pytest.mark.parametrize("hue_method", ["layer", "stack", "fill"])
-    def test_fill_nondefault(self, long_df, hue_method):
+    @pytest.mark.parametrize("multiple", ["layer", "stack", "fill"])
+    def test_fill_nondefault(self, long_df, multiple):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
 
         kws = dict(data=long_df, x="x", hue="a")
-        kdeplot(**kws, hue_method=hue_method, fill=False, ax=ax1)
-        kdeplot(**kws, hue_method=hue_method, fill=True, ax=ax2)
+        kdeplot(**kws, multiple=multiple, fill=False, ax=ax1)
+        kdeplot(**kws, multiple=multiple, fill=True, ax=ax2)
 
         assert len(ax1.collections) == 0
         assert len(ax2.collections) > 0
 
-    def test_hue_method_input_check(self, long_df):
+    def test_multiple_input_check(self, long_df):
 
-        with pytest.raises(ValueError, match="hue_method must be"):
-            kdeplot(data=long_df, x="x", hue="a", hue_method="bad_input")
+        with pytest.raises(ValueError, match="multiple must be"):
+            kdeplot(data=long_df, x="x", hue="a", multiple="bad_input")
 
     def test_cut(self, rng):
 
@@ -666,7 +666,7 @@ class TestKDEPlotUnivariate:
         assert ax1.get_ylim()[0] == 0
 
         kdeplot(
-            data=long_df, x="x", hue="a", hue_method="fill", fill=True, ax=ax2
+            data=long_df, x="x", hue="a", multiple="fill", fill=True, ax=ax2
         )
         assert ax2.get_ylim() == pytest.approx((0, 1))  # old mpl needs approx?
 

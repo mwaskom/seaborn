@@ -75,7 +75,7 @@ class _KDEPlotter(_DistributionPlotter):
 
     def plot_univariate(
         self,
-        hue_method,
+        multiple,
         common_norm,
         common_grid,
         fill,
@@ -97,17 +97,17 @@ class _KDEPlotter(_DistributionPlotter):
         fill_kws.setdefault("linewidth", 0)
 
         # Input checking
-        hue_method_options = ["layer", "stack", "fill"]
-        if hue_method not in hue_method_options:
+        multiple_options = ["layer", "stack", "fill"]
+        if multiple not in multiple_options:
             msg = (
-                f"hue_method must be one of {hue_method_options}, "
-                f"but {hue_method} was passed."
+                f"multiple must be one of {multiple_options}, "
+                f"but {multiple} was passed."
             )
             raise ValueError(msg)
 
         # Control the interaction with autoscaling by defining sticky_edges
         # i.e. we don't want autoscale margins below the density curve
-        sticky_y = (0, 1) if hue_method == "fill" else (0, np.inf)
+        sticky_y = (0, 1) if multiple == "fill" else (0, np.inf)
 
         # Identify the axis with the data values
         data_variable = {"x", "y"}.intersection(self.variables).pop()
@@ -125,7 +125,7 @@ class _KDEPlotter(_DistributionPlotter):
             all_observations = remove_na(self.plot_data[data_variable])
 
             # Always share the evaluation grid when stacking
-            if hue_method in ("stack", "fill"):
+            if multiple in ("stack", "fill"):
                 common_grid = True
 
             # Define a single grid of support for the PDFs
@@ -177,8 +177,8 @@ class _KDEPlotter(_DistributionPlotter):
             key = tuple(sub_vars.items())
             densities[key] = pd.Series(density, index=support)
 
-        # Modify the density data structure to implement the hue_method
-        if hue_method in ("stack", "fill"):
+        # Modify the density data structure to handle multiple densities
+        if multiple in ("stack", "fill"):
 
             # The densities share a support grid, so we can make a dataframe
             densities = pd.DataFrame(densities).iloc[:, ::-1]
@@ -188,7 +188,7 @@ class _KDEPlotter(_DistributionPlotter):
             densities = densities.cumsum(axis="columns")
 
             # Normalize by row sum to fill
-            if hue_method == "fill":
+            if multiple == "fill":
                 densities = densities.div(norm_constant, axis="index")
 
             # Define where each segment starts
@@ -200,7 +200,7 @@ class _KDEPlotter(_DistributionPlotter):
             baselines = {k: np.zeros_like(v) for k, v in densities.items()}
 
         # Filled plots should not have any margins
-        if hue_method == "fill":
+        if multiple == "fill":
             sticky_x = densities.index.min(), densities.index.max()
         else:
             sticky_x = []
@@ -500,9 +500,8 @@ def kdeplot(
     # New params
     weights=None,  # TODO note that weights is grouped with semantics
     hue=None, palette=None, hue_order=None, hue_norm=None,
-    hue_method="layer",  # TODO change to "multi_method" for flexibility?
-    common_norm=True, common_grid=False,
-    levels=10, thresh=.05,  # TODO rethink names
+    multiple="layer", common_norm=True, common_grid=False,
+    levels=10, thresh=.05,
     bw_method="scott", bw_adjust=1, log_scale=None,
     color=None, fill=None, fill_kws=None,
 
@@ -646,12 +645,12 @@ def kdeplot(
 
         # Set defaults that depend on other parameters
         if fill is None:
-            fill = hue_method in ("stack", "fill")
+            fill = multiple in ("stack", "fill")
 
         kwargs["color"] = color
 
         p.plot_univariate(
-            hue_method=hue_method,
+            multiple=multiple,
             common_norm=common_norm,
             common_grid=common_grid,
             fill=fill,
@@ -778,8 +777,9 @@ weights : vector or key in ``data``
     If provided, perform weighted kernel density estimation.
 {params.hue}
 {params.hue_mapping}
-hue_method : {{"layer", "stack", "fill"}}
-    Approach to drawing multiple densities. Only relevant with univariate data.
+multiple : {{"layer", "stack", "fill"}}
+    Method for drawing multiple elements when semantic mapping creates subsets.
+    Only relevant with univariate data.
 common_norm : bool
     If True, scale each conditional density by the number of observations
     such that the total area under all densities sums to 1. Otherwise,
@@ -918,7 +918,7 @@ Plot conditional distributions with hue mapping of a second variable:
     :context: close-figs
 
     >>> ax = sns.kdeplot(
-    ...     data=tips, x="total_bill", hue="time", hue_method="stack"
+    ...     data=tips, x="total_bill", hue="time", multiple="stack"
     ... )
 
 Normalize the stacked distribution at each value in the grid:
@@ -927,7 +927,7 @@ Normalize the stacked distribution at each value in the grid:
     :context: close-figs
 
     >>> ax = sns.kdeplot(
-    ...     data=tips, x="total_bill", hue="time", hue_method="fill"
+    ...     data=tips, x="total_bill", hue="time", multiple="fill"
     ... )
 
 Estimate the cumulative distribution function(s), normalizing each subset:
