@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
+from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
 from scipy import stats
 
@@ -43,23 +44,33 @@ class _DistributionPlotter(VectorPlotter):
 
         super().__init__(data=data, variables=variables)
 
-    def _add_legend(self, ax, artist, hue_attrs, artist_kws, legend_kws):
-
-        artist_kws = artist_kws.copy()
-
-        if isinstance(hue_attrs, str):
-            hue_attrs = [hue_attrs]
+    def _add_legend(
+        self, ax, artist, fill, multiple, alpha, artist_kws, legend_kws
+    ):
 
         handles = []
         labels = []
         for level in self._hue_map.levels:
-            val = self._hue_map(level)
-            for attr in hue_attrs:
-                artist_kws[attr] = val
-            handles.append(artist(**artist_kws))
+            color = self._hue_map(level)
+            handles.append(artist(
+                **self._artist_kws(artist_kws, fill, multiple, color, alpha)
+            ))
             labels.append(level)
 
         ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+
+    def _artist_kws(self, kws, fill, multiple, color, alpha):
+        """Handle differences between artists in filled/unfilled plots."""
+        kws = kws.copy()
+        if fill:
+            kws.setdefault("facecolor", to_rgba(color, alpha))
+            if multiple == "layer":
+                kws.setdefault("edgecolor", to_rgba(color, 1))
+            else:
+                kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
+        else:
+            kws["color"] = color
+        return kws
 
 
 class _HistPlotter(_DistributionPlotter):
@@ -91,10 +102,6 @@ class _KDEPlotter(_DistributionPlotter):
         fill_kws = _normalize_kwargs(
             fill_kws, mpl.collections.PolyCollection
         )
-
-        # Set shared default values for the matplotlib attributes
-        fill_kws.setdefault("alpha", .25)
-        fill_kws.setdefault("linewidth", 0)
 
         # Input checking
         multiple_options = ["layer", "stack", "fill"]
@@ -205,6 +212,20 @@ class _KDEPlotter(_DistributionPlotter):
         else:
             sticky_x = []
 
+        # Handle default visual attributes
+        if "hue" not in self.variables:
+            if fill:
+                scout = ax.fill_between([], [], **fill_kws)
+                default_color = tuple(scout.get_facecolor().squeeze())
+            else:
+                scout, = ax.plot([], [], **line_kws)
+                default_color = scout.get_color()
+            scout.remove()
+        fill_kws.pop("color", None)
+
+        default_alpha = .25 if multiple == "layer" else .75
+        alpha = fill_kws.pop("alpha", default_alpha)  # TODO make parameter?
+
         # Now iterate through again and draw the densities
         # We go backwards so stacked densities read from top-to-bottom
         for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
@@ -220,40 +241,46 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
-                line_kws["color"] = self._hue_map(sub_vars["hue"])
-                fill_kws["facecolor"] = self._hue_map(sub_vars["hue"])
+                color = self._hue_map(sub_vars["hue"])
+            else:
+                color = default_color
+
+            use_kws = fill_kws if fill else line_kws
+            artist_kws = self._artist_kws(
+                use_kws, fill, multiple, color, alpha
+            )
 
             # Plot a curve with observation values on the x axis
             if "x" in self.variables:
 
-                line, = ax.plot(support, density, **line_kws)
-                line.sticky_edges.x[:] = sticky_x
-                line.sticky_edges.y[:] = sticky_y
-
                 if fill:
-                    # TODO Do we want to see the edges of the fills on both
-                    # sides, at least for "fill" (and maybe "stack"?)
-                    fill_kws.setdefault("facecolor", line.get_color())
                     fill = ax.fill_between(
-                        support, fill_from, density, **fill_kws
+                        support, fill_from, density, **artist_kws
                     )
                     fill.sticky_edges.x[:] = sticky_x
                     fill.sticky_edges.y[:] = sticky_y
 
+                else:
+
+                    line, = ax.plot(support, density, **artist_kws)
+                    line.sticky_edges.x[:] = sticky_x
+                    line.sticky_edges.y[:] = sticky_y
+
             # Plot a curve with observation values on the y axis
             else:
 
-                line, = ax.plot(density, support, **line_kws)
-                line.sticky_edges.x[:] = sticky_y
-                line.sticky_edges.y[:] = sticky_x
-
                 if fill:
-                    fill_kws.setdefault("facecolor", line.get_color())
-                    fill = ax.fill_between(
-                        density, fill_from, support, **fill_kws
+                    fill = ax.fill_betweenx(
+                        support, fill_from, density, **artist_kws
                     )
                     fill.sticky_edges.x[:] = sticky_y
                     fill.sticky_edges.y[:] = sticky_x
+
+                else:
+
+                    line, = ax.plot(density, support, **artist_kws)
+                    line.sticky_edges.x[:] = sticky_y
+                    line.sticky_edges.y[:] = sticky_x
 
         # --- Finalize the plot ----
         default_x = default_y = ""
@@ -265,26 +292,15 @@ class _KDEPlotter(_DistributionPlotter):
 
         if "hue" in self.variables and legend:
 
-            # TODO what i would like in the case of shaded densities
-            # is to have the legend artist be filled at the alpha of
-            # the fill between and with an edge that looks like either the
-            # line or the line of the fill
-            # This is possible to hack here, or we might want to just draw
-            # the shaded densities with a fill_between artist.
-            # I am punting for now
-
-            fill_kws = fill_kws.copy()
             if fill:
                 artist = partial(mpl.patches.Patch)
-                hue_attrs = ["facecolor", "edgecolor"]
                 artist_kws = fill_kws
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
-                hue_attrs = "color"
                 artist_kws = line_kws
 
             self._add_legend(
-                ax, artist, hue_attrs, artist_kws, {},
+                ax, artist, fill, multiple, alpha, artist_kws, {},
             )
 
     def plot_bivariate(
@@ -462,13 +478,11 @@ class _KDEPlotter(_DistributionPlotter):
             artist_kws = {}
             if fill:
                 artist = partial(mpl.patches.Patch)
-                hue_attrs = "facecolor", "edgecolor"
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
-                hue_attrs = "color"
 
             self._add_legend(
-                ax, artist, hue_attrs, artist_kws, {},
+                ax, artist, fill, "layer", 1, artist_kws, {},
             )
 
     def _find_contour_levels(self, density, isoprop):
@@ -563,7 +577,6 @@ def kdeplot(
         warnings.warn(msg, UserWarning)
 
     # Handle deprecation of shade_lowest
-    # TODO check that we still use `thresh` before merging
     if shade_lowest is not None:
         if shade_lowest:
             thresh = 0
@@ -647,7 +660,10 @@ def kdeplot(
         if fill is None:
             fill = multiple in ("stack", "fill")
 
-        kwargs["color"] = color
+        line_kws = kwargs.copy()
+        if color is not None:
+            fill_kws["color"] = color
+            line_kws["color"] = color
 
         p.plot_univariate(
             multiple=multiple,
@@ -657,7 +673,7 @@ def kdeplot(
             legend=legend,
             estimate_kws=estimate_kws,
             fill_kws=fill_kws,
-            line_kws=kwargs,
+            line_kws=line_kws,
             ax=ax
         )
 
@@ -807,9 +823,9 @@ log_scale : bool or number, or pair of bools or numbers
 color : :mod:`matplotlib color <matplotlib.colors>`
     Color value for drawing lines or seed value for :func:`light_palette` when
     drawing filled contours.
-fill : bool
+fill : bool or None
     If True, fill in the area under univariate density curves or between
-    bivariate contours.
+    bivariate contours. If None, the default depends on ``multiple``.
 fill_kws : dict
     Keyword arguments for :meth:`matplotlib.axes.Axes.fill_between` with
     univariate data and ``fill=True``.
@@ -1058,7 +1074,6 @@ class _RugPlotter(_DistributionPlotter):
             kws.pop("c", None)
             kws.pop("color", None)
 
-        # TODO change so we always have one collection?
         if "x" in self.variables:
             self._plot_single_rug("x", height, ax, kws)
         if "y" in self.variables:
@@ -1070,7 +1085,7 @@ class _RugPlotter(_DistributionPlotter):
             # TODO ideally i'd like the legend artist to look like a rug
             legend_artist = partial(mpl.lines.Line2D, [], [])
             self._add_legend(
-                ax, legend_artist, "color", {}, {},
+                ax, legend_artist, False, None, 1, {}, {},
             )
 
     def _plot_single_rug(self, var, height, ax, kws):

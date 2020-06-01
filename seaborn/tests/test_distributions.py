@@ -4,6 +4,7 @@ from distutils.version import LooseVersion
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import to_rgb, to_rgba
 import scipy
 from scipy import stats, integrate
 
@@ -314,14 +315,10 @@ class TestKDEPlotUnivariate:
         kdeplot(data=long_df, x="x", fill=True)
         kdeplot(data=long_df, y="x", fill=True)
 
-        assert_array_equal(ax.lines[0].get_xdata(), ax.lines[1].get_ydata())
-        assert_array_equal(ax.lines[0].get_ydata(), ax.lines[1].get_xdata())
-
         v0 = ax.collections[0].get_paths()[0].vertices
-        v1 = ax.collections[1].get_paths()[0].vertices
+        v1 = ax.collections[1].get_paths()[0].vertices[:, [1, 0]]
 
-        assert np.in1d(ax.lines[0].get_ydata(), v0).all()
-        assert np.in1d(ax.lines[1].get_ydata(), v1).all()
+        assert_array_equal(v0, v1)
 
     def test_vertical_deprecation(self, long_df):
 
@@ -393,7 +390,7 @@ class TestKDEPlotUnivariate:
         )
         kdeplot(
             data=long_df, x="x", hue="a",
-            multiple="stack",
+            multiple="stack", fill=False,
             legend=False, ax=ax2,
         )
 
@@ -406,9 +403,6 @@ class TestKDEPlotUnivariate:
 
         assert_array_equal(layered_densities.cumsum(axis=0), stacked_densities)
 
-        assert len(ax1.collections) == 0
-        assert len(ax2.collections) > 0
-
     def test_hue_filling(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
@@ -420,7 +414,7 @@ class TestKDEPlotUnivariate:
         )
         kdeplot(
             data=long_df, x="x", hue="a",
-            multiple="fill",
+            multiple="fill", fill=False,
             legend=False, ax=ax2,
         )
 
@@ -432,8 +426,14 @@ class TestKDEPlotUnivariate:
             filled,
         )
 
-        assert len(ax1.collections) == 0
-        assert len(ax2.collections) > 0
+    @pytest.mark.parametrize("multiple", ["stack", "fill"])
+    def test_fill_default(self, long_df, multiple):
+
+        ax = kdeplot(
+            data=long_df, x="x", hue="a", multiple=multiple, fill=None
+        )
+
+        assert len(ax.collections) > 0
 
     @pytest.mark.parametrize("multiple", ["layer", "stack", "fill"])
     def test_fill_nondefault(self, long_df, multiple):
@@ -446,6 +446,60 @@ class TestKDEPlotUnivariate:
 
         assert len(ax1.collections) == 0
         assert len(ax2.collections) > 0
+
+    def test_color_cycle_interaction(self, flat_series):
+
+        color = (.2, 1, .6)
+        C0, C1 = to_rgb("C0"), to_rgb("C1")
+
+        f, ax = plt.subplots()
+        kdeplot(flat_series)
+        kdeplot(flat_series)
+        assert to_rgb(ax.lines[0].get_color()) == C0
+        assert to_rgb(ax.lines[1].get_color()) == C1
+        plt.close(f)
+
+        f, ax = plt.subplots()
+        kdeplot(flat_series, color=color)
+        kdeplot(flat_series)
+        assert ax.lines[0].get_color() == color
+        assert to_rgb(ax.lines[1].get_color()) == C0
+        plt.close(f)
+
+        f, ax = plt.subplots()
+        kdeplot(flat_series, fill=True)
+        kdeplot(flat_series, fill=True)
+        assert (
+            to_rgba(ax.collections[0].get_facecolor().squeeze())
+            == to_rgba(C0, .25)
+        )
+        assert (
+            to_rgba(ax.collections[1].get_facecolor().squeeze())
+            == to_rgba(C1, .25)
+        )
+        plt.close(f)
+
+    def test_color(self, long_df):
+
+        color = (.2, 1, .6)
+        alpha = .5
+
+        f, ax = plt.subplots()
+
+        kdeplot(long_df["x"], fill=True, color=color)
+        c = ax.collections[-1]
+        assert (
+            to_rgba(c.get_facecolor().squeeze())
+            == to_rgba(color, .25)
+        )
+
+        fill_kws = {"alpha": alpha}
+        kdeplot(long_df["x"], fill=True, color=color, fill_kws=fill_kws)
+        c = ax.collections[-1]
+        assert (
+            to_rgba(c.get_facecolor().squeeze())
+            == to_rgba(color, alpha)
+        )
 
     def test_multiple_input_check(self, long_df):
 
