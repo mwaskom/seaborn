@@ -279,7 +279,7 @@ class TestSpineUtils(object):
         for t in ax.yaxis.majorTicks:
             t.tick1line.set_visible(True)
         utils.despine(ax=ax, left=True, right=False)
-        for y in ax.yaxis.majorTicks:
+        for t in ax.yaxis.majorTicks:
             assert t.tick2line.get_visible()
         plt.close(f)
 
@@ -287,7 +287,7 @@ class TestSpineUtils(object):
         for t in ax.yaxis.majorTicks:
             t.tick1line.set_visible(False)
         utils.despine(ax=ax, left=True, right=False)
-        for y in ax.yaxis.majorTicks:
+        for t in ax.yaxis.majorTicks:
             assert not t.tick2line.get_visible()
         plt.close(f)
 
@@ -295,7 +295,7 @@ class TestSpineUtils(object):
         for t in ax.xaxis.majorTicks:
             t.tick1line.set_visible(True)
         utils.despine(ax=ax, bottom=True, top=False)
-        for y in ax.xaxis.majorTicks:
+        for t in ax.xaxis.majorTicks:
             assert t.tick2line.get_visible()
         plt.close(f)
 
@@ -303,7 +303,7 @@ class TestSpineUtils(object):
         for t in ax.xaxis.majorTicks:
             t.tick1line.set_visible(False)
         utils.despine(ax=ax, bottom=True, top=False)
-        for y in ax.xaxis.majorTicks:
+        for t in ax.xaxis.majorTicks:
             assert not t.tick2line.get_visible()
         plt.close(f)
 
