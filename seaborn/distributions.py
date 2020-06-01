@@ -806,8 +806,8 @@ log_scale : bool or number, or pair of bools or numbers
     Set a log scale on the data axis (or axes, with bivariate data) with the
     given base (default 10), and evaluate the KDE in log space.
 color : :mod:`matplotlib color <matplotlib.colors>`
-    Color value for drawing lines or seed value for :func:`light_palette` when
-    drawing filled contours.
+    Color value for drawing lines or fills or passed to :func:`light_palette`
+    when drawing filled contours.
 fill : bool or None
     If True, fill in the area under univariate density curves or between
     bivariate contours. If None, the default depends on ``multiple``.
@@ -819,7 +819,7 @@ kwargs
     - :meth:`matplotlib.axes.Axes.plot` (univariate, ``fill=False``),
     - :meth:`matplotlib.axes.Axes.fill_between` (univariate, ``fill=True``),
     - :meth:`matplotlib.axes.Axes.contour` (bivariate, ``fill=False``),
-    - :meth:`matplotlib.axes.contourf` (bivariate, ``fille=True``).
+    - :meth:`matplotlib.axes.contourf` (bivariate, ``fill=True``).
 
 Returns
 -------

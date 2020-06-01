@@ -1,6 +1,9 @@
 
 from types import SimpleNamespace
 
+# TODO is "vector" the best term here? We mean to imply 1D data with a variety
+# of types, but vectors are actually 2D (row or columns...)
+
 _core_params = dict(
     data="""\
 data : :class:`pandas.DataFrame`, :class:`numpy.ndarray`, mapping, or sequence
@@ -35,8 +38,8 @@ hue_order : vector of strings
     hue_norm="""
 hue_norm : tuple or :class:`matplotlib.colors.Normalize`
     Either a pair of values that set the normalization range in data units
-    for numeric ``hue`` mapping. Can also bean object that will map from data
-    units into a [0, 1] interval.
+    for numeric ``hue`` mapping. Can also be an object that will map from data
+    units into a [0, 1] interval. Usage implies numeric mapping.
     """,
 
     # TODO add a generic matplotlib color entry with intersphinx link
