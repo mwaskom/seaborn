@@ -2645,20 +2645,22 @@ boxenplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    k_depth : "proportion" | "tukey" | "trustworthy", optional
+    k_depth : "proportion", "tukey", "trustworthy" or scalar, optional
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
-        statistical properties.
+        statistical properties. If `"proportion"`, draw no more than
+        `outlier_prop` extreme observations.
     {linewidth}
-    scale : "linear" | "exponential" | "area", optional
+    scale : "linear", "exponential" or "area", optional
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
     outlier_prop : float, optional
         Proportion of data believed to be outliers. Used to determine the
-        number of percentiles to draw when `k_depth="proportion`.
+        number of boxes to plot when `k_depth="proportion"`. If
+        `outlier_prop=0`, the plot will contain `log(n)+1` boxes.
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
