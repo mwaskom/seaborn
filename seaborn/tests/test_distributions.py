@@ -493,8 +493,7 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, .25)
         )
 
-        fill_kws = {"alpha": alpha}
-        kdeplot(long_df["x"], fill=True, color=color, fill_kws=fill_kws)
+        kdeplot(long_df["x"], fill=True, color=color, alpha=alpha)
         c = ax.collections[-1]
         assert (
             to_rgba(c.get_facecolor().squeeze())
@@ -732,19 +731,6 @@ class TestKDEPlotUnivariate:
         line, = ax.lines
         assert line.get_linewidth() == lw
         assert line.get_color() == color
-
-    def test_fill_kws(self, flat_array):
-
-        color = (.2, .5, .8)
-        alpha = .5
-        fill_kws = dict(
-            alpha=alpha,
-        )
-        ax = kdeplot(
-            x=flat_array, fill=True, fill_kws=fill_kws, color=color
-        )
-        fill = ax.collections[0]
-        assert tuple(fill.get_facecolor().squeeze()) == color + (alpha,)
 
     def test_input_checking(self, long_df):
 

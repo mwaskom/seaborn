@@ -24,8 +24,8 @@ g = sns.FacetGrid(df, row="g", hue="g", aspect=15, height=.5, palette=pal)
 
 # Draw the densities in a few steps
 g.map(sns.kdeplot, "x",
-      bw_adjust=.5, clip_on=False, lw=1.5,
-      fill=True, fill_kws=dict(alpha=1))
+      bw_adjust=.5, clip_on=False,
+      fill=True, alpha=1, linewidth=1.5)
 g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
 g.map(plt.axhline, y=0, lw=2, clip_on=False)
 

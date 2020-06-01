@@ -92,16 +92,16 @@ class _KDEPlotter(_DistributionPlotter):
         fill,
         legend,
         estimate_kws,
-        fill_kws,
-        line_kws,
+        plot_kws,
         ax,
     ):
 
         # Preprocess the matplotlib keyword dictionaries
-        line_kws = _normalize_kwargs(line_kws, mpl.lines.Line2D)
-        fill_kws = _normalize_kwargs(
-            fill_kws, mpl.collections.PolyCollection
-        )
+        if fill:
+            artist = mpl.collections.PolyCollection
+        else:
+            artist = mpl.lines.Line2D
+        plot_kws = _normalize_kwargs(plot_kws, artist)
 
         # Input checking
         multiple_options = ["layer", "stack", "fill"]
@@ -215,16 +215,16 @@ class _KDEPlotter(_DistributionPlotter):
         # Handle default visual attributes
         if "hue" not in self.variables:
             if fill:
-                scout = ax.fill_between([], [], **fill_kws)
+                scout = ax.fill_between([], [], **plot_kws)
                 default_color = tuple(scout.get_facecolor().squeeze())
+                plot_kws.pop("color", None)
             else:
-                scout, = ax.plot([], [], **line_kws)
+                scout, = ax.plot([], [], **plot_kws)
                 default_color = scout.get_color()
             scout.remove()
-        fill_kws.pop("color", None)
 
         default_alpha = .25 if multiple == "layer" else .75
-        alpha = fill_kws.pop("alpha", default_alpha)  # TODO make parameter?
+        alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
         # Now iterate through again and draw the densities
         # We go backwards so stacked densities read from top-to-bottom
@@ -245,9 +245,8 @@ class _KDEPlotter(_DistributionPlotter):
             else:
                 color = default_color
 
-            use_kws = fill_kws if fill else line_kws
             artist_kws = self._artist_kws(
-                use_kws, fill, multiple, color, alpha
+                plot_kws, fill, multiple, color, alpha
             )
 
             # Plot a curve with observation values on the x axis
@@ -294,13 +293,11 @@ class _KDEPlotter(_DistributionPlotter):
 
             if fill:
                 artist = partial(mpl.patches.Patch)
-                artist_kws = fill_kws
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
-                artist_kws = line_kws
 
             self._add_legend(
-                ax, artist, fill, multiple, alpha, artist_kws, {},
+                ax, artist, fill, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate(
@@ -517,7 +514,7 @@ def kdeplot(
     multiple="layer", common_norm=True, common_grid=False,
     levels=10, thresh=.05,
     bw_method="scott", bw_adjust=1, log_scale=None,
-    color=None, fill=None, fill_kws=None,
+    color=None, fill=None,
 
     # Renamed params
     data=None, data2=None,
@@ -611,9 +608,6 @@ def kdeplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
-    if fill_kws is None:
-        fill_kws = {}
-
     if ax is None:
         ax = plt.gca()
 
@@ -660,10 +654,9 @@ def kdeplot(
         if fill is None:
             fill = multiple in ("stack", "fill")
 
-        line_kws = kwargs.copy()
+        plot_kws = kwargs.copy()
         if color is not None:
-            fill_kws["color"] = color
-            line_kws["color"] = color
+            plot_kws["color"] = color
 
         p.plot_univariate(
             multiple=multiple,
@@ -672,8 +665,7 @@ def kdeplot(
             fill=fill,
             legend=legend,
             estimate_kws=estimate_kws,
-            fill_kws=fill_kws,
-            line_kws=line_kws,
+            plot_kws=plot_kws,
             ax=ax
         )
 
@@ -826,18 +818,15 @@ color : :mod:`matplotlib color <matplotlib.colors>`
 fill : bool or None
     If True, fill in the area under univariate density curves or between
     bivariate contours. If None, the default depends on ``multiple``.
-fill_kws : dict
-    Keyword arguments for :meth:`matplotlib.axes.Axes.fill_between` with
-    univariate data and ``fill=True``.
 {params.data}
 kwargs
     Other keyword arguments are passed to one of the following matplotlib
     functions:
 
-    - :meth:`matplotlib.axes.Axes.plot` (univariate data, ``fill=False``),
-    - :meth:`matplotlib.axes.Axes.fill_between` (univariate data, ``fill=True``),
-    - :meth:`matplotlib.axes.Axes.contour` (bivariate data, ``fill=False``),
-    - :meth:`matplotlib.axes.contourf` (bivariate data, ``fille=True``).
+    - :meth:`matplotlib.axes.Axes.plot` (univariate, ``fill=False``),
+    - :meth:`matplotlib.axes.Axes.fill_between` (univariate, ``fill=True``),
+    - :meth:`matplotlib.axes.Axes.contour` (bivariate, ``fill=False``),
+    - :meth:`matplotlib.axes.contourf` (bivariate, ``fille=True``).
 
 Returns
 -------
@@ -993,7 +982,7 @@ Modify the appearance of the plot:
     >>> ax = sns.kdeplot(
     ...    data=tips, x="total_bill", hue="size",
     ...    fill=True, common_norm=False, palette="viridis",
-    ...    fill_kws=dict(alpha=.5), linewidth=0,
+    ...    alpha=.5, linewidth=0,
     ... )
 
 Plot a bivariate distribution:
