@@ -20,18 +20,21 @@ class KDE:
         Parameters
         ----------
         bw_method : string, scalar, or callable, optional
-            Method for determining the bandwidth to use; passed to
+            Method for determining the smoothing bandwidth to use; passed to
             :class:`scipy.stats.gaussian_kde`.
-        bw_adjust : scalar, optional
-            Scaling factor for adjusting the scipy bandwidth.
+        bw_adjust : number, optional
+            Factor that multiplicatively scales the value chosen using
+            ``bw_method``. Increasing will make the curve smoother. See Notes.
         gridsize : int, optional
-            Number of points in the evaluation grid.
-        cut : scalar, optional
-            Evaluate the density up to `cut * bw` past the extreme data points.
-        clip : min, max, optional
-            Do not evaluate outside this range.
+            Number of points on each dimension of the evaluation grid.
+        cut : number, optional
+            Factor, multiplied by the smoothing bandwidth, that determines how
+            far the evaluation grid extends past the extreme datapoints. When
+            set to 0, truncate the curve at the data limits.
+        clip : pair of numbers None, or a pair of such pairs
+            Do not evaluate the density outside of these limits.
         cumulative : bool, optional
-            If True, return the estimated cumulative distribution function.
+            If True, estimate a cumulative distribution function.
 
         """
         if clip is None:

@@ -22,11 +22,18 @@ from .utils import _kde_support, _normalize_kwargs, remove_na
 from .palettes import light_palette
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
+    DocstringComponents,
     _core_docs,
 )
 
 
 __all__ = ["distplot", "kdeplot", "rugplot"]
+
+
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
+    kde=DocstringComponents.from_function_params(KDE.__init__),
+)
 
 
 class _DistributionPlotter(VectorPlotter):
@@ -728,7 +735,7 @@ also depends on the selection of good smoothing parameters.
 
 Parameters
 ----------
-{params.xy}
+{params.core.xy}
 shade : bool
     Alias for ``fill``. Using ``fill`` is recommended.
 vertical : bool
@@ -751,15 +758,11 @@ bw : str, number, or callable
 
 gridsize : int
     Number of points on each dimension of the evaluation grid.
-cut : number
-    Factor, multiplied by the smoothing bandwidth, that determines how far
-    the evaluation grid extends past the extreme datapoints.
-clip : tuple or pair of tuples
-    Truncate the evaluation grid at these data values.
+{params.kde.cut}
+{params.kde.clip}
 legend : bool
     If False, suppress the legend for semantic variables.
-cumulative : bool
-    If True, estimate and plot the cumulative distribution function.
+{params.kde.cumulative}
 shade_lowest : bool
     If False, the area below the lowest contour will be transparent
 
@@ -773,11 +776,13 @@ cbar_ax : :class:`matplotlib.axes.Axes`
     Pre-existing axes for the colorbar.
 cbar_kws : dict
     Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
-{params.ax}
+{params.core.ax}
 weights : vector or key in ``data``
     If provided, perform weighted kernel density estimation.
-{params.hue}
-{params.hue_mapping}
+{params.core.hue}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
 multiple : {{"layer", "stack", "fill"}}
     Method for drawing multiple elements when semantic mapping creates subsets.
     Only relevant with univariate data.
@@ -796,22 +801,16 @@ levels : int or vector
 thresh : number in [0, 1]
     Lowest iso-proportion level at which to draw a contour line. Ignored when
     ``levels`` is a vector. Only relevant with bivariate data.
-bw_method : str, number, or callable
-    Method for choosing the bandwidth, passed directly to
-    :class:`scipy.stats.gaussian_kde`.
-bw_adjust : number
-    Factor that multiplicatively scales the bandwdith chosen by ``scipy``.
-    Increasing will make the curve more smooth.
+{params.kde.bw_method}
+{params.kde.bw_adjust}
 log_scale : bool or number, or pair of bools or numbers
     Set a log scale on the data axis (or axes, with bivariate data) with the
     given base (default 10), and evaluate the KDE in log space.
-color : :mod:`matplotlib color <matplotlib.colors>`
-    Color value for drawing lines or fills or passed to :func:`light_palette`
-    when drawing filled contours.
+{params.core.color}
 fill : bool or None
     If True, fill in the area under univariate density curves or between
     bivariate contours. If None, the default depends on ``multiple``.
-{params.data}
+{params.core.data}
 kwargs
     Other keyword arguments are passed to one of the following matplotlib
     functions:
@@ -1023,7 +1022,11 @@ Fill the axes extent with a smooth distribution, using a different colormap:
     ... )
 
 
-""".format(**_core_docs)  # Add in distribution docs
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 class _RugPlotter(_DistributionPlotter):
@@ -1176,7 +1179,7 @@ of individual observations in an unobstrusive way.
 
 Parameters
 ----------
-{params.xy}
+{params.core.xy}
 height : number
     Proportion of axes extent covered by each rug element.
 axis : {{"x", "y"}}
@@ -1185,10 +1188,12 @@ axis : {{"x", "y"}}
     .. deprecated:: 0.11.0
        specify axis by assigning the ``x`` or ``y`` variables.
 
-{params.ax}
-{params.data}
-{params.hue}
-{params.hue_mapping}
+{params.core.ax}
+{params.core.data}
+{params.core.hue}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
 expand_margins : bool
     If True, increase the axes margins by the height of the rug to avoid
     overlap with other elements.
@@ -1255,7 +1260,11 @@ Show the density of a larger dataset using thinner lines and alpha blending:
     >>> ax = sns.scatterplot(data=diamonds, x="carat", y="price", s=5)
     >>> ax = sns.rugplot(data=diamonds, x="carat", y="price", lw=1, alpha=.005)
 
-""".format(**_core_docs)
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 # =========================================================================== #
