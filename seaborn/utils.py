@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+from matplotlib.cbook import normalize_kwargs
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
@@ -319,7 +320,9 @@ def _kde_support(data, bw, gridsize, cut, clip):
     """Establish support for a kernel density estimate."""
     support_min = max(data.min() - bw * cut, clip[0])
     support_max = min(data.max() + bw * cut, clip[1])
-    return np.linspace(support_min, support_max, gridsize)
+    support = np.linspace(support_min, support_max, gridsize)
+
+    return support
 
 
 def percentiles(a, pcts, axis=None):
@@ -645,3 +648,23 @@ def _network(t=None, url='https://google.com'):
             f.close()
             return t(*args, **kwargs)
     return wrapper
+
+
+def _normalize_kwargs(kws, artist):
+    """Wrapper for mpl.cbook.normalize_kwargs that supports <= 3.2.1."""
+    _alias_map = {
+        'color': ['c'],
+        'linewidth': ['lw'],
+        'linestyle': ['ls'],
+        'facecolor': ['fc'],
+        'edgecolor': ['ec'],
+        'markerfacecolor': ['mfc'],
+        'markeredgecolor': ['mec'],
+        'markeredgewidth': ['mew'],
+        'markersize': ['ms']
+    }
+    try:
+        kws = normalize_kwargs(kws, artist)
+    except AttributeError:
+        kws = normalize_kwargs(kws, _alias_map)
+    return kws

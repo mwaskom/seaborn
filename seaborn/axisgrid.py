@@ -1299,7 +1299,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_upper(sns.scatterplot)
-            >>> g = g.map_lower(sns.kdeplot, colors="C0")
+            >>> g = g.map_lower(sns.kdeplot, color="C0")
             >>> g = g.map_diag(sns.kdeplot, lw=2)
 
         Use different colors and markers for each categorical level:
@@ -1705,8 +1705,8 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
-            >>> g = g.plot_joint(sns.kdeplot, cmap="Blues_d")
-            >>> g = g.plot_marginals(sns.kdeplot, shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, color="b")
+            >>> g = g.plot_marginals(sns.kdeplot, fill=True)
 
         Draw a smaller plot with relatively larger marginal axes:
 
@@ -1715,8 +1715,8 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   height=5, ratio=2)
-            >>> g = g.plot_joint(sns.kdeplot, cmap="Reds_d")
-            >>> g = g.plot_marginals(sns.kdeplot, color="r", shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, color="r")
+            >>> g = g.plot_marginals(sns.kdeplot, color="r", fill=True)
 
         Set limits on the axes:
 
@@ -1725,8 +1725,8 @@ class JointGrid(object):
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
             ...                   xlim=(0, 50), ylim=(0, 8))
-            >>> g = g.plot_joint(sns.kdeplot, cmap="Purples_d")
-            >>> g = g.plot_marginals(sns.kdeplot, color="m", shade=True)
+            >>> g = g.plot_joint(sns.kdeplot, color="m")
+            >>> g = g.plot_marginals(sns.kdeplot, color="m", fill=True)
 
         """
         # Handle deprecations
@@ -1886,6 +1886,9 @@ class JointGrid(object):
             func(x=self.y, **kwargs)
         else:
             func(self.y, **kwargs)
+
+        self.ax_marg_x.yaxis.get_label().set_visible(False)
+        self.ax_marg_y.xaxis.get_label().set_visible(False)
 
         return self
 
@@ -2146,7 +2149,7 @@ def pairplot(
 
         >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
         ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
-        ...                  diag_kws=dict(shade=True))
+        ...                  diag_kws=dict(fill=True))
 
     """
     # Handle deprecations
@@ -2194,7 +2197,7 @@ def pairplot(
         if diag_kind == "hist":
             grid.map_diag(plt.hist, **diag_kws)
         elif diag_kind == "kde":
-            diag_kws.setdefault("shade", True)
+            diag_kws.setdefault("fill", True)
             diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
@@ -2319,7 +2322,7 @@ def jointplot(
 
         >>> g = (sns.jointplot(x="sepal_length", y="sepal_width",
         ...                    data=iris, color="k")
-        ...         .plot_joint(sns.kdeplot, zorder=0, n_levels=6))
+        ...         .plot_joint(sns.kdeplot, zorder=0, levels=6))
 
     Pass vectors in directly without using Pandas, then name the axes:
 

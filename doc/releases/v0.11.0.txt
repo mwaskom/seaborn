@@ -6,7 +6,31 @@ v0.11.0 (Unreleased)
 
 - TODO stub for enforced keyword-only arguments for most parameters of most functions and classes.  GH2052, GH2081
 
-- Standardized the parameter names for the oldest functions (:func:`distplot`, :func:`kdeplot`, and :func:`rugplot`) to be `x` and `y`, as in other functions. Using the old names will warn now and break in the future.  GH2060
+Modernization of distribution functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Completely overhauled :func:`kdeplot` and :func:`rugplot`. Two of the oldest functions in the library, these lacked aspects of the otherwise-common seaborn API, such as the ability to assign variables by name from a ``data`` object; they had no capacity for semantic mapping; and they had numerous other inconsistencies and smaller issues.
+
+The new functions now share a common API with the rest of seaborn, can show conditional distributions by mapping a third variable with a ``hue`` semantic, have been improved in numerous other ways. The `github pull request (GH2104) <https://github.com/mwaskom/seaborn/pull/2104>`_ has a longer explanation of the changes and the motivation behind them.
+
+This is a necessarily API-breaking change. The parameter names for the positional variables
+are now ``x`` and ``y``, and the old names have been deprecated. Efforts were made to handle and warn when using the deprecated API, but it is strongly suggested to check your plots carefully.
+
+Additionally, the optional statsmodels-based computation of the KDE has been removed. Because there were some inconsistencies between the way different parameters (specifically, ``bw``, ``clip``, and ``cut``) were implemented by each backend, this may cause plots to look different after an upgrade. Support for using non-Gaussian kernels, which was available only in the statsmodels backend, has been removed. Support for drawing a cumulative distribution function, which was not previously available with the scipy backend, has been added, including for bivariate densities.
+
+Other new features include:
+
+- Several options for representing multiple densities from subsets of data defined by semantic variables (with the new ``multiple`` and ``common_norm`` parameters)
+- Weighted KDE (using the new ``weights=`` parameter)
+- Better control over the smoothing bandwidth (using the new ``bw_adjust`` parameter)
+- More meaningful and configurable selection of the contours that represent a bivariate density (using the new ``thresh`` and ``levels`` parameters)
+- Log-space density estimation (using the new ``log_scale`` parameter, or by scaling the data axis before plotting)
+- "Bivariate" rug plots with a single function call (by assigning both ``x`` and ``y``)
+
+GH2060, GH2104
+
+Other
+~~~~~
 
 - Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_. GH2075
 

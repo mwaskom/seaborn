@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -627,6 +628,11 @@ class TestVectorPlotter:
 
         # --
 
+        out = p._semantic_subsets(semantics, reverse=True)
+        assert len(list(out)) == n_subsets
+
+        # --
+
         var1, var2 = "a", "s"
 
         n_subsets = len(long_df[var1].unique())
@@ -747,6 +753,53 @@ class TestVectorPlotter:
             rows = p.plot_data["hue"] == sub_vars["hue"]
             rows &= p.plot_data["size"] == sub_vars["size"]
             assert_frame_equal(sub_data, p.plot_data[rows])
+
+    def test_semantic_subset_reverse(self, long_df):
+
+        reversed_order = categorical_order(long_df["a"])[::-1]
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue="a")
+        )
+        iterator = p._semantic_subsets("hue", reverse=True)
+        for i, (sub_vars, _) in enumerate(iterator):
+            assert sub_vars["hue"] == reversed_order[i]
+
+    def test_axis_labels(self, long_df):
+
+        f, ax = plt.subplots()
+
+        p = VectorPlotter(data=long_df, variables=dict(x="a"))
+
+        p._add_axis_labels(ax)
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == ""
+        ax.clear()
+
+        p = VectorPlotter(data=long_df, variables=dict(y="a"))
+        p._add_axis_labels(ax)
+        assert ax.get_xlabel() == ""
+        assert ax.get_ylabel() == "a"
+        ax.clear()
+
+        p = VectorPlotter(data=long_df, variables=dict(x="a"))
+
+        p._add_axis_labels(ax, default_y="default")
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == "default"
+        ax.clear()
+
+        p = VectorPlotter(data=long_df, variables=dict(y="a"))
+        p._add_axis_labels(ax, default_x="default", default_y="default")
+        assert ax.get_xlabel() == "default"
+        assert ax.get_ylabel() == "a"
+        ax.clear()
+
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="a"))
+        ax.set(xlabel="existing", ylabel="also existing")
+        p._add_axis_labels(ax)
+        assert ax.get_xlabel() == "existing"
+        assert ax.get_ylabel() == "also existing"
 
 
 class TestCoreFunc:

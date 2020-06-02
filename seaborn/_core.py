@@ -587,12 +587,15 @@ class VectorPlotter:
         "style": StyleMapping,
     }
 
+    # TODO units is another example of a non-mapping "semantic"
+    # we need a general name for this and separate handling
     semantics = "x", "y", "hue", "size", "style", "units"
     wide_structure = {
         "x": "index", "y": "values", "hue": "columns", "style": "columns",
     }
+    flat_structure = {"x": "index", "y": "values"}
 
-    _default_size_range = 1, 2  # Unused but needed in tests
+    _default_size_range = 1, 2  # Unused but needed in tests, ugh
 
     def __init__(self, data=None, variables={}):
 
@@ -632,7 +635,10 @@ class VectorPlotter:
         self.plot_data = plot_data
         self.variables = variables
         self.var_types = {
-            v: variable_type(plot_data[v], boolean_type="categorical")
+            v: variable_type(
+                plot_data[v],
+                boolean_type="numeric" if v in "xy" else "categorical"
+            )
             for v in variables
         }
 
@@ -684,19 +690,25 @@ class VectorPlotter:
 
         elif flat:
 
-            # Coerce the data into a pandas Series such that the values
-            # become the y variable and the index becomes the x variable
-            # No other semantics are defined.
+            # Handle flat data by converting to pandas Series and using the
+            # index and/or values to define x and/or y
             # (Could be accomplished with a more general to_series() interface)
-            flat_data = pd.Series(data, name="y").copy()
-            flat_data.index.name = "x"
-            plot_data = flat_data.reset_index().reindex(columns=self.semantics)
-
-            orig_index = getattr(data, "index", None)
-            variables = {
-                "x": getattr(orig_index, "name", None),
-                "y": getattr(data, "name", None)
+            flat_data = pd.Series(data).copy()
+            names = {
+                "values": flat_data.name,
+                "index": flat_data.index.name
             }
+
+            plot_data = {}
+            variables = {}
+
+            for var in ["x", "y"]:
+                if var in self.flat_structure:
+                    attr = self.flat_structure[var]
+                    plot_data[var] = getattr(flat_data, attr)
+                    variables[var] = names[self.flat_structure[var]]
+
+            plot_data = pd.DataFrame(plot_data).reindex(columns=self.semantics)
 
         else:
 
@@ -837,13 +849,15 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def _semantic_subsets(self, grouping_semantics):
+    def _semantic_subsets(self, grouping_semantics, reverse=False):
         """Generator for getting subsets of data defined by semantic variables.
 
         Parameters
         ----------
         grouping_semantics : list of strings
             Semantic variables that define the subsets of data.
+        reverse : bool, optional
+            If True, reverse the order of iteration.
 
         Yields
         ------
@@ -873,7 +887,11 @@ class VectorPlotter:
                 map_obj = getattr(self, f"_{var}_map")
                 grouping_keys.append(map_obj.levels)
 
-            for key in itertools.product(*grouping_keys):
+            iter_keys = itertools.product(*grouping_keys)
+            if reverse:
+                iter_keys = reversed(list(iter_keys))
+
+            for key in iter_keys:
 
                 # Pandas fails with singleton tuple inputs
                 pd_key = key[0] if len(key) == 1 else key
@@ -888,6 +906,13 @@ class VectorPlotter:
         else:
 
             yield {}, self.plot_data
+
+    def _add_axis_labels(self, ax, default_x="", default_y=""):
+
+        if not ax.get_xlabel():
+            ax.set_xlabel(self.variables.get("x", default_x))
+        if not ax.get_ylabel():
+            ax.set_ylabel(self.variables.get("y", default_y))
 
 
 def variable_type(vector, boolean_type="numeric"):

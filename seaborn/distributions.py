@@ -1,37 +1,83 @@
 """Plotting functions for visualizing distributions."""
+from numbers import Number
+from functools import partial
+import warnings
+
 import numpy as np
-from scipy import stats
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
+from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
-import warnings
-
-try:
-    import statsmodels.nonparametric.api as smnp
-    _has_statsmodels = True
-except ImportError:
-    _has_statsmodels = False
+from scipy import stats
 
 from ._core import (
     VectorPlotter,
 )
-from .utils import _kde_support, remove_na
-from .palettes import color_palette, light_palette, dark_palette, blend_palette
+from ._statistics import (
+    KDE,
+)
+from .utils import _kde_support, _normalize_kwargs, remove_na
+from .palettes import light_palette
 from ._decorators import _deprecate_positional_args
+from ._docstrings import (
+    DocstringComponents,
+    _core_docs,
+)
 
 
 __all__ = ["distplot", "kdeplot", "rugplot"]
+
+
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
+    kde=DocstringComponents.from_function_params(KDE.__init__),
+)
 
 
 class _DistributionPlotter(VectorPlotter):
 
     semantics = "x", "y", "hue"
 
-    wide_structure = {
-        "x": "values", "hue": "columns",
-    }
+    wide_structure = {"x": "values", "hue": "columns"}
+    flat_structure = {"x": "values"}
+
+    def __init__(
+        self,
+        data=None,
+        variables={},
+    ):
+
+        super().__init__(data=data, variables=variables)
+
+    def _add_legend(
+        self, ax, artist, fill, multiple, alpha, artist_kws, legend_kws
+    ):
+
+        handles = []
+        labels = []
+        for level in self._hue_map.levels:
+            color = self._hue_map(level)
+            handles.append(artist(
+                **self._artist_kws(artist_kws, fill, multiple, color, alpha)
+            ))
+            labels.append(level)
+
+        ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+
+    def _artist_kws(self, kws, fill, multiple, color, alpha):
+        """Handle differences between artists in filled/unfilled plots."""
+        kws = kws.copy()
+        if fill:
+            kws.setdefault("facecolor", to_rgba(color, alpha))
+            if multiple == "layer":
+                kws.setdefault("edgecolor", to_rgba(color, 1))
+            else:
+                kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
+        else:
+            kws["color"] = color
+        return kws
 
 
 class _HistPlotter(_DistributionPlotter):
@@ -41,7 +87,946 @@ class _HistPlotter(_DistributionPlotter):
 
 class _KDEPlotter(_DistributionPlotter):
 
-    pass
+    # TODO we maybe need a different category for variables that do not
+    # map to semantics of the plot, like weights
+    semantics = _DistributionPlotter.semantics + ("weights",)
+
+    def plot_univariate(
+        self,
+        multiple,
+        common_norm,
+        common_grid,
+        fill,
+        legend,
+        estimate_kws,
+        plot_kws,
+        ax,
+    ):
+
+        # Preprocess the matplotlib keyword dictionaries
+        if fill:
+            artist = mpl.collections.PolyCollection
+        else:
+            artist = mpl.lines.Line2D
+        plot_kws = _normalize_kwargs(plot_kws, artist)
+
+        # Input checking
+        multiple_options = ["layer", "stack", "fill"]
+        if multiple not in multiple_options:
+            msg = (
+                f"multiple must be one of {multiple_options}, "
+                f"but {multiple} was passed."
+            )
+            raise ValueError(msg)
+
+        # Control the interaction with autoscaling by defining sticky_edges
+        # i.e. we don't want autoscale margins below the density curve
+        sticky_density = (0, 1) if multiple == "fill" else (0, np.inf)
+
+        # Identify the axis with the data values
+        data_variable = {"x", "y"}.intersection(self.variables).pop()
+
+        # Check for log scaling on the data axis
+        data_axis = getattr(ax, f"{data_variable}axis")
+        log_scale = data_axis.get_scale() == "log"
+
+        # Initialize the estimator object
+        estimator = KDE(**estimate_kws)
+
+        if "hue" in self.variables:
+
+            # Access and clean the data
+            all_observations = remove_na(self.plot_data[data_variable])
+
+            # Always share the evaluation grid when stacking
+            if multiple in ("stack", "fill"):
+                common_grid = True
+
+            # Define a single grid of support for the PDFs
+            if common_grid:
+                if log_scale:
+                    all_observations = np.log10(all_observations)
+                estimator.define_support(all_observations)
+
+        else:
+
+            common_norm = False
+
+        # We will do two loops through the semantic subsets
+        # The first is to estimate the density of observations in each subset
+        densities = {}
+
+        for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            # Extract the data points from this sub set and remove nulls
+            observations = remove_na(sub_data[data_variable])
+
+            observation_variance = observations.var()
+            if not observation_variance or np.isnan(observation_variance):
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
+            # Extract the weights for this subset of observations
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
+
+            # If data axis is log scaled, fit the KDE in logspace
+            if log_scale:
+                observations = np.log10(observations)
+
+            # Estimate the density of observations at this level
+            density, support = estimator(observations, weights=weights)
+
+            if log_scale:
+                support = np.power(10, support)
+
+            # Apply a scaling factor so that the integral over all subsets is 1
+            if common_norm:
+                density *= len(sub_data) / len(self.plot_data)
+
+            # Store the density for this level
+            key = tuple(sub_vars.items())
+            densities[key] = pd.Series(density, index=support)
+
+        # Modify the density data structure to handle multiple densities
+        if multiple in ("stack", "fill"):
+
+            # The densities share a support grid, so we can make a dataframe
+            densities = pd.DataFrame(densities).iloc[:, ::-1]
+            norm_constant = densities.sum(axis="columns")
+
+            # Take the cumulative sum to stack
+            densities = densities.cumsum(axis="columns")
+
+            # Normalize by row sum to fill
+            if multiple == "fill":
+                densities = densities.div(norm_constant, axis="index")
+
+            # Define where each segment starts
+            baselines = densities.shift(1, axis=1).fillna(0)
+
+        else:
+
+            # All densities will start at 0
+            baselines = {k: np.zeros_like(v) for k, v in densities.items()}
+
+        # Filled plots should not have any margins
+        if multiple == "fill":
+            sticky_support = densities.index.min(), densities.index.max()
+        else:
+            sticky_support = []
+
+        # Handle default visual attributes
+        if "hue" not in self.variables:
+            if fill:
+                scout = ax.fill_between([], [], **plot_kws)
+                default_color = tuple(scout.get_facecolor().squeeze())
+                plot_kws.pop("color", None)
+            else:
+                scout, = ax.plot([], [], **plot_kws)
+                default_color = scout.get_color()
+            scout.remove()
+
+        default_alpha = .25 if multiple == "layer" else .75
+        alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
+
+        # Now iterate through again and draw the densities
+        # We go backwards so stacked densities read from top-to-bottom
+        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+
+            # Extract the support grid and density curve for this level
+            key = tuple(sub_vars.items())
+            try:
+                density = densities[key]
+            except KeyError:
+                continue
+            support = density.index
+            fill_from = baselines[key]
+
+            # Modify the matplotlib attributes from semantic mapping
+            if "hue" in self.variables:
+                color = self._hue_map(sub_vars["hue"])
+            else:
+                color = default_color
+
+            artist_kws = self._artist_kws(
+                plot_kws, fill, multiple, color, alpha
+            )
+
+            # Plot a curve with observation values on the x axis
+            if "x" in self.variables:
+
+                if fill:
+                    artist = ax.fill_between(
+                        support, fill_from, density, **artist_kws
+                    )
+                else:
+                    artist, = ax.plot(support, density, **artist_kws)
+
+                artist.sticky_edges.x[:] = sticky_support
+                artist.sticky_edges.y[:] = sticky_density
+
+            # Plot a curve with observation values on the y axis
+            else:
+                if fill:
+                    artist = ax.fill_betweenx(
+                        support, fill_from, density, **artist_kws
+                    )
+                else:
+                    artist, = ax.plot(density, support, **artist_kws)
+
+                artist.sticky_edges.x[:] = sticky_density
+                artist.sticky_edges.y[:] = sticky_support
+
+        # --- Finalize the plot ----
+        default_x = default_y = ""
+        if data_variable == "x":
+            default_y = "Density"
+        if data_variable == "y":
+            default_x = "Density"
+        self._add_axis_labels(ax, default_x, default_y)
+
+        if "hue" in self.variables and legend:
+
+            if fill:
+                artist = partial(mpl.patches.Patch)
+            else:
+                artist = partial(mpl.lines.Line2D, [], [])
+
+            self._add_legend(
+                ax, artist, fill, multiple, alpha, plot_kws, {},
+            )
+
+    def plot_bivariate(
+        self,
+        common_norm,
+        fill,
+        levels,
+        thresh,
+        legend,
+        log_scale,
+        color,
+        cbar,
+        cbar_ax,
+        cbar_kws,
+        estimate_kws,
+        contour_kws,
+        ax,
+    ):
+
+        contour_kws = contour_kws.copy()
+
+        estimator = KDE(**estimate_kws)
+
+        if "hue" not in self.variables:
+            common_norm = False
+
+        # Loop through the subsets and estimate the KDEs
+        densities, supports = {}, {}
+
+        for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            # Extract the data points from this sub set and remove nulls
+            observations = remove_na(sub_data[["x", "y"]])
+
+            observation_variance = observations.var().any()
+            if not observation_variance or np.isnan(observation_variance):
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
+            # Extract the weights for this subset of observations
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
+
+            # If data axis is log scaled, fit the KDE in logspace
+            if log_scale is not None:
+                if log_scale[0]:
+                    observations["x"] = np.log10(observations["x"])
+                if log_scale[1]:
+                    observations["y"] = np.log10(observations["y"])
+
+            # Check that KDE will not error out
+            variance = observations[["x", "y"]].var()
+            if not variance.all() or variance.isna().any():
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
+            # Estimate the density of observations at this level
+            observations = observations["x"], observations["y"]
+            density, support = estimator(*observations, weights=weights)
+
+            # Transform the support grid back to the original scale
+            if log_scale is not None:
+                xx, yy = support
+                if log_scale[0]:
+                    xx = np.power(10, xx)
+                if log_scale[1]:
+                    yy = np.power(10, yy)
+                support = xx, yy
+
+            # Apply a scaling factor so that the integral over all subsets is 1
+            if common_norm:
+                density *= len(sub_data) / len(self.plot_data)
+
+            key = tuple(sub_vars.items())
+            densities[key] = density
+            supports[key] = support
+
+        # Define a grid of iso-proportion levels
+        if isinstance(levels, Number):
+            levels = np.linspace(thresh, 1, levels)
+        else:
+            if min(levels) < 0 or max(levels) > 1:
+                raise ValueError("levels must be in [0, 1]")
+
+        # Transfrom from iso-proportions to iso-densities
+        if common_norm:
+            common_levels = self._find_contour_levels(
+                list(densities.values()), levels,
+            )
+            draw_levels = {k: common_levels for k in densities}
+        else:
+            draw_levels = {
+                k: self._find_contour_levels(d, levels)
+                for k, d in densities.items()
+            }
+
+        # Get a default single color from the attribute cycle
+        scout, = ax.plot([], color=color)
+        default_color = scout.get_color()
+        scout.remove()
+
+        # Apply a common color-mapping to single color specificiations
+        color_map = partial(light_palette, reverse=True, as_cmap=True)
+
+        # Define the coloring of the contours
+        if "hue" in self.variables:
+            for param in ["cmap", "colors"]:
+                if param in contour_kws:
+                    msg = f"{param} parameter ignored when using hue mapping."
+                    warnings.warn(msg, UserWarning)
+                    contour_kws.pop(param)
+        else:
+            coloring_given = set(contour_kws) & {"cmap", "colors"}
+            if fill and not coloring_given:
+                cmap = color_map(default_color)
+                contour_kws["cmap"] = cmap
+            if not fill and not coloring_given:
+                contour_kws["colors"] = [default_color]
+
+        # Choose the function to plot with
+        # TODO could add a pcolormesh based option as well
+        if fill:
+            contour_func = ax.contourf
+        else:
+            contour_func = ax.contour
+
+        # Loop through the subsets again and plot the data
+        for sub_vars, _ in self._semantic_subsets("hue"):
+
+            if "hue" in sub_vars:
+                color = self._hue_map(sub_vars["hue"])
+                if fill:
+                    contour_kws["cmap"] = color_map(color)
+                else:
+                    contour_kws["colors"] = [color]
+
+            key = tuple(sub_vars.items())
+            if key not in densities:
+                continue
+            density = densities[key]
+            xx, yy = supports[key]
+
+            label = contour_kws.pop("label", None)
+
+            cset = contour_func(
+                xx, yy, density,
+                levels=draw_levels[key],
+                **contour_kws,
+            )
+
+            if "hue" not in self.variables:
+                cset.collections[0].set_label(label)
+
+        # Add a color bar representing the contour heights
+        # Note: this shows iso densities, not iso proportions
+        if cbar:
+            # TODO what to do about hue here?
+            # TODO maybe use the legend instead?
+            cbar_kws = {} if cbar_kws is None else cbar_kws
+            ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
+
+        # --- Finalize the plot
+        self._add_axis_labels(ax)
+
+        if "hue" in self.variables and legend:
+
+            # TODO if possible, I would like to move the contour
+            # intensity information into the legend too and label the
+            # iso proportions rather than the raw density values
+
+            artist_kws = {}
+            if fill:
+                artist = partial(mpl.patches.Patch)
+            else:
+                artist = partial(mpl.lines.Line2D, [], [])
+
+            self._add_legend(
+                ax, artist, fill, "layer", 1, artist_kws, {},
+            )
+
+    def _find_contour_levels(self, density, isoprop):
+        """Return contour levels to draw density at given iso-propotions."""
+        isoprop = np.asarray(isoprop)
+        values = np.ravel(density)
+        sorted_values = np.sort(values)[::-1]
+        normalized_values = np.cumsum(sorted_values) / values.sum()
+        idx = np.searchsorted(normalized_values, 1 - isoprop)
+        levels = np.take(sorted_values, idx, mode="clip")
+        return levels
+
+
+@_deprecate_positional_args
+def kdeplot(
+    x=None,  # Allow positional x, because behavior will not change with reorg
+    *,
+    y=None,
+    shade=None,  # Note "soft" deprecation, explained below
+    vertical=False,  # Deprecated
+    kernel=None,  # Deprecated
+    bw=None,  # Deprecated
+    gridsize=200,  # TODO maybe depend on uni/bivariate?
+    cut=3, clip=None, legend=True, cumulative=False,
+    shade_lowest=None,  # Deprecated, controlled with levels now
+    cbar=False, cbar_ax=None, cbar_kws=None,
+    ax=None,
+
+    # New params
+    weights=None,  # TODO note that weights is grouped with semantics
+    hue=None, palette=None, hue_order=None, hue_norm=None,
+    multiple="layer", common_norm=True, common_grid=False,
+    levels=10, thresh=.05,
+    bw_method="scott", bw_adjust=1, log_scale=None,
+    color=None, fill=None,
+
+    # Renamed params
+    data=None, data2=None,
+
+    **kwargs,
+):
+
+    # Handle deprecation of `data2` as name for y variable
+    if data2 is not None:
+
+        y = data2
+
+        # If `data2` is present, we need to check for the `data` kwarg being
+        # used to pass a vector for `x`. We'll reassign the vectors and warn.
+        # We need this check because just passing a vector to `data` is now
+        # technically valid.
+
+        x_passed_as_data = (
+            x is None
+            and data is not None
+            and np.ndim(data) == 1
+        )
+
+        if x_passed_as_data:
+            msg = "Use `x` and `y` rather than `data` `and `data2`"
+            x = data
+        else:
+            msg = "The `data2` param is now named `y`; please update your code"
+
+        warnings.warn(msg, FutureWarning)
+
+    # Handle deprecation of `vertical`
+    if vertical:
+        msg = (
+            "The `vertical` parameter is deprecated and will be removed in a "
+            "future version. Assign the data to the `y` variable instead."
+        )
+        warnings.warn(msg, FutureWarning)
+        x, y = y, x
+
+    # Handle deprecation of `bw`
+    if bw is not None:
+        msg = (
+            "The `bw` parameter is deprecated in favor of `bw_method` and "
+            f"`bw_adjust`. Using {bw} for `bw_method`, but please "
+            "see the docs for the new parameters and update your code."
+        )
+        warnings.warn(msg, FutureWarning)
+        bw_method = bw
+
+    # Handle deprecation of `kernel`
+    if kernel is not None:
+        msg = (
+            "Support for alternate kernels has been removed. "
+            "Using Gaussian kernel."
+        )
+        warnings.warn(msg, UserWarning)
+
+    # Handle deprecation of shade_lowest
+    if shade_lowest is not None:
+        if shade_lowest:
+            thresh = 0
+        msg = (
+            "`shade_lowest` is now deprecated in favor of `thresh`. "
+            f"Setting `thresh={thresh}`, but please update your code."
+        )
+        warnings.warn(msg, UserWarning)
+
+    # Handle `n_levels`
+    # This was never in the formal API but it was processed, and appeared in an
+    # example. We can treat as an alias for `levels` now and deprecate later.
+    levels = kwargs.pop("n_levels", levels)
+
+    # Handle "soft" deprecation of shade `shade` is not really the right
+    # terminology here, but unlike some of the other deprecated parameters it
+    # is probably very commonly used and much hard to remove. This is therefore
+    # going to be a longer process where, first, `fill` will be introduced and
+    # be used throughout the documentation. In 0.12, when kwarg-only
+    # enforcement hits, we can remove the shade/shade_lowest out of the
+    # function signature all together and pull them out of the kwargs. Then we
+    # can actually fire a FutureWarning, and eventually remove.
+    if shade is not None:
+        fill = shade
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+    p = _KDEPlotter(
+        data=data,
+        variables=_KDEPlotter.get_semantics(locals()),
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    if ax is None:
+        ax = plt.gca()
+
+    # Pack the kwargs for statistics.KDE
+    estimate_kws = dict(
+        bw_method=bw_method,
+        bw_adjust=bw_adjust,
+        gridsize=gridsize,
+        cut=cut,
+        clip=clip,
+        cumulative=cumulative,
+    )
+
+    # Check for a specification that lacks x/y data and return early
+    any_data = bool({"x", "y"} & set(p.variables))
+    if not any_data:
+        return ax
+
+    # Determine the kind of plot to use
+    univariate = bool({"x", "y"} - set(p.variables))
+
+    if univariate:
+
+        data_variable = (set(p.variables) & {"x", "y"}).pop()
+
+        # Catch some inputs we cannot do anything with
+        data_var_type = p.var_types[data_variable]
+        if data_var_type != "numeric":
+            msg = (
+                f"kdeplot requires a numeric '{data_variable}' variable, "
+                f"but a {data_var_type} was passed."
+            )
+            raise TypeError(msg)
+
+        # Possibly log scale the data axis
+        if log_scale is not None:
+            set_scale = getattr(ax, f"set_{data_variable}scale")
+            if log_scale is True:
+                set_scale("log")
+            else:
+                set_scale("log", **{f"base{data_variable}": log_scale})
+
+        # Set defaults that depend on other parameters
+        if fill is None:
+            fill = multiple in ("stack", "fill")
+
+        plot_kws = kwargs.copy()
+        if color is not None:
+            plot_kws["color"] = color
+
+        p.plot_univariate(
+            multiple=multiple,
+            common_norm=common_norm,
+            common_grid=common_grid,
+            fill=fill,
+            legend=legend,
+            estimate_kws=estimate_kws,
+            plot_kws=plot_kws,
+            ax=ax
+        )
+
+    else:
+
+        # Check input types
+        for var in "xy":
+            var_type = p.var_types[var]
+            if var_type != "numeric":
+                msg = (
+                    f"kdeplot requires a numeric '{var}' variable, "
+                    f"but a {var_type} was passed."
+                )
+                raise TypeError(msg)
+
+        # Possibly log-scale one or both axes
+        if log_scale is not None:
+            # Allow single value or x, y tuple
+            try:
+                scalex, scaley = log_scale
+            except TypeError:
+                scalex = scaley = log_scale
+                log_scale = scalex, scaley  # Tupelize for downstream
+
+            for axis, scale in zip("xy", (scalex, scaley)):
+                if scale:
+                    set_scale = getattr(ax, f"set_{axis}scale")
+                    if scale is True:
+                        set_scale("log")
+                    else:
+                        set_scale("log", **{f"base{axis}": scale})
+
+        p.plot_bivariate(
+            common_norm=common_norm,
+            fill=fill,
+            levels=levels,
+            thresh=thresh,
+            legend=legend,
+            log_scale=log_scale,
+            color=color,
+            cbar=cbar,
+            cbar_ax=cbar_ax,
+            cbar_kws=cbar_kws,
+            estimate_kws=estimate_kws,
+            contour_kws=kwargs,
+            ax=ax,
+        )
+
+    return ax
+
+
+kdeplot.__doc__ = """\
+Plot univariate or bivariate distributions using kernel density estimation.
+
+A kernel density estimate (KDE) plot is a method for visualizing the
+distribution of observations in a dataset, analagous to a histogram. KDE
+represents the data using a continuous probability density curve in one or
+more dimensions.
+
+The approach is explained further in the :ref:`user guide <userguide_kde>`.
+
+Relative to a histogram, KDE can produce a plot that is less cluttered and
+more interpretable, especially when drawing multiple distributions. But it
+has the potential to introduce distortions if the underlying distribution is
+bounded or not smooth. Like a histogram, the quality of the representation
+also depends on the selection of good smoothing parameters.
+
+Parameters
+----------
+{params.core.xy}
+shade : bool
+    Alias for ``fill``. Using ``fill`` is recommended.
+vertical : bool
+    Orientation parameter.
+
+    .. deprecated:: 0.11.0
+       specify orientation by assigning the ``x`` or ``y`` variables.
+
+kernel : str
+    Function that defines the kernel.
+
+    .. deprecated:: 0.11.0
+       support for non-Gaussian kernels has been removed.
+
+bw : str, number, or callable
+    Smoothing parameter.
+
+    .. deprecated:: 0.11.0
+       see ``bw_method`` and ``bw_adjust``.
+
+gridsize : int
+    Number of points on each dimension of the evaluation grid.
+{params.kde.cut}
+{params.kde.clip}
+legend : bool
+    If False, suppress the legend for semantic variables.
+{params.kde.cumulative}
+shade_lowest : bool
+    If False, the area below the lowest contour will be transparent
+
+    .. deprecated:: 0.11.0
+       see ``thresh``.
+
+cbar : bool
+    If True, add a colorbar to annotate the contour levels. Only relevant
+    with bivariate data.
+cbar_ax : :class:`matplotlib.axes.Axes`
+    Pre-existing axes for the colorbar.
+cbar_kws : dict
+    Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
+{params.core.ax}
+weights : vector or key in ``data``
+    If provided, perform weighted kernel density estimation.
+{params.core.hue}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+multiple : {{"layer", "stack", "fill"}}
+    Method for drawing multiple elements when semantic mapping creates subsets.
+    Only relevant with univariate data.
+common_norm : bool
+    If True, scale each conditional density by the number of observations
+    such that the total area under all densities sums to 1. Otherwise,
+    normalize each density independently.
+common_grid : bool
+    If True, use the same evaluation grid for each kernel density estimate.
+    Only relevant with univariate data.
+levels : int or vector
+    Number of contour levels or values to draw contours at. A vector argument
+    must have increasing values in [0, 1]. Levels correspond to iso-proportions
+    of the density: e.g., 20% of the probability mass will lie below the
+    contour drawn for 0.2. Only relevant with bivariate data.
+thresh : number in [0, 1]
+    Lowest iso-proportion level at which to draw a contour line. Ignored when
+    ``levels`` is a vector. Only relevant with bivariate data.
+{params.kde.bw_method}
+{params.kde.bw_adjust}
+log_scale : bool or number, or pair of bools or numbers
+    Set a log scale on the data axis (or axes, with bivariate data) with the
+    given base (default 10), and evaluate the KDE in log space.
+{params.core.color}
+fill : bool or None
+    If True, fill in the area under univariate density curves or between
+    bivariate contours. If None, the default depends on ``multiple``.
+{params.core.data}
+kwargs
+    Other keyword arguments are passed to one of the following matplotlib
+    functions:
+
+    - :meth:`matplotlib.axes.Axes.plot` (univariate, ``fill=False``),
+    - :meth:`matplotlib.axes.Axes.fill_between` (univariate, ``fill=True``),
+    - :meth:`matplotlib.axes.Axes.contour` (bivariate, ``fill=False``),
+    - :meth:`matplotlib.axes.contourf` (bivariate, ``fill=True``).
+
+Returns
+-------
+{returns.ax}
+
+See Also
+--------
+{seealso.rugplot}
+{seealso.violinplot}
+{seealso.jointplot}
+distplot
+
+Notes
+-----
+
+The *bandwidth*, or standard deviation of the smoothing kernel, is an
+important parameter. Misspecification of the bandwidth can produce a
+distorted representation of the data. Much like the choice of bin width in a
+histogram, an over-smoothed curve can erase true features of a
+distribution, while an under-smoothed curve can create false features out of
+random variability. The rule-of-thumb that sets the default bandwidth works
+best when the true distribution is smooth, unimodal, and roughly bell-shaped.
+It is always a good idea to check the default behavior by using ``bw_adjust``
+to increase or decrease the amount of smoothing.
+
+Because the smoothing algorithm uses a Gaussian kernel, the estimated density
+curve can extend to values that do not make sense for a particular dataset.
+For example, the curve may be drawn over negative values when smoothing data
+that are naturally positive. The ``cut`` and ``clip`` parameters can be used
+to control the extent of the curve, but datasets that have many observations
+close to a natural boundary may be better served by a different visualization
+method.
+
+Similar considerations apply when a dataset is naturally discrete or "spiky"
+(containing many repeated observations of the same value). Kernel density
+estimation will always produce a smooth curve, which would be misleading
+in these situations.
+
+The units on the density axis are a common source of confusion. While kernel
+density estimation produces a probability distribution, the height of the curve
+at each point gives a density, not a probability. A probability can be obtained
+only by integrating the density across a range. The curve is normalized so
+that the integral over all possible values is 1, meaning that the scale of
+the density axis depends on the data values.
+
+Examples
+--------
+
+Plot a univariate distribution along the x axis:
+
+.. plot::
+    :context: close-figs
+
+    >>> import seaborn as sns; sns.set()
+    >>> tips = sns.load_dataset("tips")
+    >>> ax = sns.kdeplot(data=tips, x="total_bill")
+
+Flip the plot by assigning the data variable to the y axis:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, y="total_bill")
+
+Plot distributions for each column of a wide-form dataset:
+
+.. plot::
+    :context: close-figs
+
+    >>> iris = sns.load_dataset("iris")
+    >>> ax = sns.kdeplot(data=iris)
+
+Use less smoothing:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", bw_adjust=.2)
+
+Use more smoothing, but don't smooth past the extreme data points:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax= sns.kdeplot(data=tips, x="total_bill", bw_adjust=5, cut=0)
+
+Plot conditional distributions with hue mapping of a second variable:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", hue="time")
+
+"Stack" the conditional distributions:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time", multiple="stack"
+    ... )
+
+Normalize the stacked distribution at each value in the grid:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time", multiple="fill"
+    ... )
+
+Estimate the cumulative distribution function(s), normalizing each subset:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=tips, x="total_bill", hue="time",
+    ...     cumulative=True, common_norm=False, common_grid=True,
+    ... )
+
+Estimate distribution from aggregated data, using weights:
+
+.. plot::
+    :context: close-figs
+
+    >>> tips_agg = (tips
+    ...     .groupby("size")
+    ...     .agg(total_bill=("total_bill", "mean"), n=("total_bill", "count"))
+    ... )
+    >>> ax = sns.kdeplot(data=tips_agg, x="total_bill", weights="n")
+
+Map the data variable with log scaling:
+
+.. plot::
+    :context: close-figs
+
+    >>> diamonds = sns.load_dataset("diamonds")
+    >>> ax = sns.kdeplot(data=diamonds, x="price", log_scale=True)
+
+Use numeric hue mapping:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=tips, x="total_bill", hue="size")
+
+Modify the appearance of the plot:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...    data=tips, x="total_bill", hue="size",
+    ...    fill=True, common_norm=False, palette="viridis",
+    ...    alpha=.5, linewidth=0,
+    ... )
+
+Plot a bivariate distribution:
+
+.. plot::
+    :context: close-figs
+
+    >>> geyser = sns.load_dataset("geyser")
+    >>> ax = sns.kdeplot(data=geyser, x="waiting", y="duration")
+
+Map a third variable with a hue semantic to show conditional distributions:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(data=geyser, x="waiting", y="duration", hue="kind")
+
+Show filled contours:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration", hue="kind", fill=True,
+    ... )
+
+Show fewer contour levels, covering less of the distribution:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration", hue="kind",
+    ...     levels=5, thresh=.2,
+    ... )
+
+Fill the axes extent with a smooth distribution, using a different colormap:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.kdeplot(
+    ...     data=geyser, x="waiting", y="duration",
+    ...     fill=True, thresh=0, levels=100, cmap="mako",
+    ... )
+
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 class _RugPlotter(_DistributionPlotter):
@@ -50,67 +1035,74 @@ class _RugPlotter(_DistributionPlotter):
         self,
         data=None,
         variables={},
-        height=None,
     ):
 
         super().__init__(data=data, variables=variables)
 
-        self.height = height
+    def plot(self, height, expand_margins, legend, ax, kws):
 
-    def plot(self, ax, kws):
+        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
         # TODO we need to abstract this logic
         scout, = ax.plot([], [], **kws)
-
-        kws = kws.copy()
         kws["color"] = kws.pop("color", scout.get_color())
-
         scout.remove()
 
-        # TODO handle more gracefully
-        alias_map = dict(linewidth="lw", linestyle="ls", color="c")
-        for attr, alias in alias_map.items():
-            if alias in kws:
-                kws[attr] = kws.pop(alias)
         kws.setdefault("linewidth", 1)
 
-        # ---
+        if expand_margins:
+            xmarg, ymarg = ax.margins()
+            if "x" in self.variables:
+                ymarg += height * 2
+            if "y" in self.variables:
+                xmarg += height * 2
+            ax.margins(x=xmarg, y=ymarg)
 
-        # TODO expand the plot margins to account for the height of
-        # the rug (as an option?)
-
-        # ---
+        if "hue" in self.variables:
+            kws.pop("c", None)
+            kws.pop("color", None)
 
         if "x" in self.variables:
-            self._plot_single_rug("x", ax, kws)
+            self._plot_single_rug("x", height, ax, kws)
         if "y" in self.variables:
-            self._plot_single_rug("y", ax, kws)
+            self._plot_single_rug("y", height, ax, kws)
 
-    def _plot_single_rug(self, var, ax, kws):
+        # --- Finalize the plot
+        self._add_axis_labels(ax)
+        if "hue" in self.variables and legend:
+            # TODO ideally i'd like the legend artist to look like a rug
+            legend_artist = partial(mpl.lines.Line2D, [], [])
+            self._add_legend(
+                ax, legend_artist, False, None, 1, {}, {},
+            )
 
+    def _plot_single_rug(self, var, height, ax, kws):
+        """Draw a rugplot along one axis of the plot."""
         vector = self.plot_data[var]
         n = len(vector)
 
+        # We'll always add a single collection with varying colors
         if "hue" in self.variables:
             colors = self._hue_map(self.plot_data["hue"])
-            kws.pop("color", None)  # TODO simplify
         else:
             colors = None
 
+        # Build the array of values for the LineCollection
         if var == "x":
 
             trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
             xy_pairs = np.column_stack([
-                np.repeat(vector, 2), np.tile([0, self.height], n)
+                np.repeat(vector, 2), np.tile([0, height], n)
             ])
 
         if var == "y":
 
             trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
             xy_pairs = np.column_stack([
-                np.tile([0, self.height], n), np.repeat(vector, 2)
+                np.tile([0, height], n), np.repeat(vector, 2)
             ])
 
+        # Draw the lines on the plot
         line_segs = xy_pairs.reshape([n, 2, 2])
         ax.add_collection(LineCollection(
             line_segs, transform=trans, colors=colors, **kws
@@ -120,15 +1112,25 @@ class _RugPlotter(_DistributionPlotter):
 
 
 @_deprecate_positional_args
-def _new_rugplot(
+def rugplot(
+    x=None,  # Allow positional x, because behavior won't change
     *,
-    x=None,
-    height=.05, axis="x", ax=None,
+    height=.025, axis=None, ax=None,
+
+    # New parameters
     data=None, y=None, hue=None,
     palette=None, hue_order=None, hue_norm=None,
+    expand_margins=True,
+    legend=True,  # TODO or maybe default to False?
+
+    # Renamed parameter
     a=None,
+
     **kwargs
 ):
+
+    # A note: if we want to add a style semantic to rugplot,
+    # we could make an option that draws the rug using scatterplot
 
     # Handle deprecation of `a``
     if a is not None:
@@ -137,28 +1139,135 @@ def _new_rugplot(
         x = a
         del a
 
-    # TODO Handle deprecation of "axis"
-    # TODO Handle deprecation of "vertical"
+    # Handle deprecation of "axis"
+    if axis is not None:
+        msg = (
+            "The `axis` variable is no longer used and will be removed. "
+            "Instead, assign variables directly to `x` or `y`."
+        )
+        warnings.warn(msg, FutureWarning)
+
+    # Handle deprecation of "vertical"
     if kwargs.pop("vertical", axis == "y"):
         x, y = None, x
+        msg = (
+            "Using `vertical=True` to control the orientation of the plot  "
+            "is deprecated. Instead, assign the data directly to `y`. "
+        )
+        warnings.warn(msg, FutureWarning)
 
-    # ----------
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
-    variables = _RugPlotter.get_variables(locals())
+    variables = _RugPlotter.get_semantics(locals())
 
-    p = _RugPlotter(
-        data=data,
-        variables=variables,
-        height=height,
-    )
+    p = _RugPlotter(data=data, variables=variables)
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()
 
-    p.plot(ax, kwargs)
+    p.plot(height, expand_margins, legend, ax, kwargs)
 
     return ax
+
+
+rugplot.__doc__ = """\
+Plot marginal distributions by drawing ticks along the x and y axes.
+
+This function is intended to complement other plots by showing the location
+of individual observations in an unobstrusive way.
+
+Parameters
+----------
+{params.core.xy}
+height : number
+    Proportion of axes extent covered by each rug element.
+axis : {{"x", "y"}}
+    Axis to draw the rug on.
+
+    .. deprecated:: 0.11.0
+       specify axis by assigning the ``x`` or ``y`` variables.
+
+{params.core.ax}
+{params.core.data}
+{params.core.hue}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+expand_margins : bool
+    If True, increase the axes margins by the height of the rug to avoid
+    overlap with other elements.
+legend : bool
+    If False, do not add a legend for semantic variables.
+
+Returns
+-------
+{returns.ax}
+
+Examples
+--------
+
+Add a rug along one of the axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> import seaborn as sns; sns.set()
+    >>> tips = sns.load_dataset("tips")
+    >>> ax = sns.kdeplot(data=tips, x="total_bill")
+    >>> ax = sns.rugplot(data=tips, x="total_bill")
+
+Add a rug along both axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip")
+
+Represent a third variable with hue mapping:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", hue="time")
+
+Draw a taller rug:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", height=.1)
+
+Put the rug outside the axes:
+
+.. plot::
+    :context: close-figs
+
+    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
+    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip",
+    ...     height=-.02, clip_on=False,
+    ... )
+
+Show the density of a larger dataset using thinner lines and alpha blending:
+
+.. plot::
+    :context: close-figs
+
+    >>> diamonds = sns.load_dataset("diamonds")
+    >>> ax = sns.scatterplot(data=diamonds, x="carat", y="price", s=5)
+    >>> ax = sns.rugplot(data=diamonds, x="carat", y="price", lw=1, alpha=.005)
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
+
+
+# =========================================================================== #
 
 
 def _freedman_diaconis_bins(a):
@@ -313,7 +1422,7 @@ def distplot(
         msg = "The `a` parameter is now called `x`. Please update your code."
         warnings.warn(msg)
     else:
-        a = x  # TODO refactor
+        a = x
 
     # Default to drawing on the currently-active axes
     if ax is None:
@@ -413,515 +1522,5 @@ def distplot(
             ax.set_ylabel(axlabel)
         else:
             ax.set_xlabel(axlabel)
-
-    return ax
-
-
-def _univariate_kdeplot(data, shade, vertical, kernel, bw, gridsize, cut,
-                        clip, legend, ax, cumulative=False, **kwargs):
-    """Plot a univariate kernel density estimate on one of the axes."""
-
-    # Sort out the clipping
-    if clip is None:
-        clip = (-np.inf, np.inf)
-
-    # Preprocess the data
-    data = remove_na(data)
-
-    # Calculate the KDE
-
-    if np.nan_to_num(data.var()) == 0:
-        # Don't try to compute KDE on singular data
-        msg = "Data must have variance to compute a kernel density estimate."
-        warnings.warn(msg, UserWarning)
-        x, y = np.array([]), np.array([])
-
-    elif _has_statsmodels:
-        # Prefer using statsmodels for kernel flexibility
-        x, y = _statsmodels_univariate_kde(data, kernel, bw,
-                                           gridsize, cut, clip,
-                                           cumulative=cumulative)
-    else:
-        # Fall back to scipy if missing statsmodels
-        if kernel != "gau":
-            kernel = "gau"
-            msg = "Kernel other than `gau` requires statsmodels."
-            warnings.warn(msg, UserWarning)
-        if cumulative:
-            raise ImportError("Cumulative distributions are currently "
-                              "only implemented in statsmodels. "
-                              "Please install statsmodels.")
-        x, y = _scipy_univariate_kde(data, bw, gridsize, cut, clip)
-
-    # Make sure the density is nonnegative
-    y = np.amax(np.c_[np.zeros_like(y), y], axis=1)
-
-    # Flip the data if the plot should be on the y axis
-    if vertical:
-        x, y = y, x
-
-    # Check if a label was specified in the call
-    label = kwargs.pop("label", None)
-
-    # Otherwise check if the data object has a name
-    if label is None and hasattr(data, "name"):
-        label = data.name
-
-    # Decide if we're going to add a legend
-    legend = label is not None and legend
-    label = "_nolegend_" if label is None else label
-
-    # Use the active color cycle to find the plot color
-    facecolor = kwargs.pop("facecolor", None)
-    line, = ax.plot(x, y, **kwargs)
-    color = line.get_color()
-    line.remove()
-    kwargs.pop("color", None)
-    facecolor = color if facecolor is None else facecolor
-
-    # Draw the KDE plot and, optionally, shade
-    ax.plot(x, y, color=color, label=label, **kwargs)
-    shade_kws = dict(
-        facecolor=facecolor,
-        alpha=kwargs.get("alpha", 0.25),
-        clip_on=kwargs.get("clip_on", True),
-        zorder=kwargs.get("zorder", 1),
-    )
-    if shade:
-        if vertical:
-            ax.fill_betweenx(y, 0, x, **shade_kws)
-        else:
-            ax.fill_between(x, 0, y, **shade_kws)
-
-    # Set the density axis minimum to 0
-    if vertical:
-        ax.set_xlim(0, auto=None)
-    else:
-        ax.set_ylim(0, auto=None)
-
-    # Draw the legend here
-    handles, labels = ax.get_legend_handles_labels()
-    if legend and handles:
-        ax.legend(loc="best")
-
-    return ax
-
-
-def _statsmodels_univariate_kde(data, kernel, bw, gridsize, cut, clip,
-                                cumulative=False):
-    """Compute a univariate kernel density estimate using statsmodels."""
-    # statsmodels 0.8 fails on int type data
-    data = data.astype(np.float64)
-
-    fft = kernel == "gau"
-    kde = smnp.KDEUnivariate(data)
-
-    try:
-        kde.fit(kernel, bw, fft, gridsize=gridsize, cut=cut, clip=clip)
-    except RuntimeError as err:  # GH#1990
-        if stats.iqr(data) > 0:
-            raise err
-        msg = "Default bandwidth for data is 0; skipping density estimation."
-        warnings.warn(msg, UserWarning)
-        return np.array([]), np.array([])
-
-    if cumulative:
-        grid, y = kde.support, kde.cdf
-    else:
-        grid, y = kde.support, kde.density
-    return grid, y
-
-
-def _scipy_univariate_kde(data, bw, gridsize, cut, clip):
-    """Compute a univariate kernel density estimate using scipy."""
-    kde = stats.gaussian_kde(data, bw_method=bw)
-    if isinstance(bw, str):
-        bw = "scotts" if bw == "scott" else bw
-        bw = getattr(kde, "%s_factor" % bw)() * np.std(data)
-    grid = _kde_support(data, bw, gridsize, cut, clip)
-    y = kde(grid)
-    return grid, y
-
-
-def _bivariate_kdeplot(x, y, filled, fill_lowest,
-                       kernel, bw, gridsize, cut, clip,
-                       axlabel, cbar, cbar_ax, cbar_kws, ax, **kwargs):
-    """Plot a joint KDE estimate as a bivariate contour plot."""
-    # Determine the clipping
-    if clip is None:
-        clip = [(-np.inf, np.inf), (-np.inf, np.inf)]
-    elif np.ndim(clip) == 1:
-        clip = [clip, clip]
-
-    # Calculate the KDE
-    if _has_statsmodels:
-        xx, yy, z = _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip)
-    else:
-        xx, yy, z = _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip)
-
-    # Plot the contours
-    n_levels = kwargs.pop("n_levels", 10)
-
-    scout, = ax.plot([], [])
-    default_color = scout.get_color()
-    scout.remove()
-
-    cmap = kwargs.pop("cmap", None)
-    color = kwargs.pop("color", None)
-    if cmap is None and "colors" not in kwargs:
-        if color is None:
-            color = default_color
-        if filled:
-            cmap = light_palette(color, as_cmap=True)
-        else:
-            cmap = dark_palette(color, as_cmap=True)
-    if isinstance(cmap, str):
-        if cmap.endswith("_d"):
-            pal = ["#333333"]
-            pal.extend(color_palette(cmap.replace("_d", "_r"), 2))
-            cmap = blend_palette(pal, as_cmap=True)
-        else:
-            cmap = mpl.cm.get_cmap(cmap)
-
-    label = kwargs.pop("label", None)
-
-    kwargs["cmap"] = cmap
-    contour_func = ax.contourf if filled else ax.contour
-    cset = contour_func(xx, yy, z, n_levels, **kwargs)
-    if filled and not fill_lowest:
-        cset.collections[0].set_alpha(0)
-    kwargs["n_levels"] = n_levels
-
-    if cbar:
-        cbar_kws = {} if cbar_kws is None else cbar_kws
-        ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
-
-    # Label the axes
-    if hasattr(x, "name") and axlabel:
-        ax.set_xlabel(x.name)
-    if hasattr(y, "name") and axlabel:
-        ax.set_ylabel(y.name)
-
-    if label is not None:
-        legend_color = cmap(.95) if color is None else color
-        if filled:
-            ax.fill_between([], [], color=legend_color, label=label)
-        else:
-            ax.plot([], [], color=legend_color, label=label)
-
-    return ax
-
-
-def _statsmodels_bivariate_kde(x, y, bw, gridsize, cut, clip):
-    """Compute a bivariate kde using statsmodels."""
-    # statsmodels 0.8 fails on int type data
-    x = x.astype(np.float64)
-    y = y.astype(np.float64)
-
-    if isinstance(bw, str):
-        bw_func = getattr(smnp.bandwidths, "bw_" + bw)
-        x_bw = bw_func(x)
-        y_bw = bw_func(y)
-        bw = [x_bw, y_bw]
-    elif np.isscalar(bw):
-        bw = [bw, bw]
-
-    if isinstance(x, pd.Series):
-        x = x.values
-    if isinstance(y, pd.Series):
-        y = y.values
-
-    kde = smnp.KDEMultivariate([x, y], "cc", bw)
-    x_support = _kde_support(x, kde.bw[0], gridsize, cut, clip[0])
-    y_support = _kde_support(y, kde.bw[1], gridsize, cut, clip[1])
-    xx, yy = np.meshgrid(x_support, y_support)
-    z = kde.pdf([xx.ravel(), yy.ravel()]).reshape(xx.shape)
-    return xx, yy, z
-
-
-def _scipy_bivariate_kde(x, y, bw, gridsize, cut, clip):
-    """Compute a bivariate kde using scipy."""
-    data = np.c_[x, y]
-    kde = stats.gaussian_kde(data.T, bw_method=bw)
-    data_std = data.std(axis=0, ddof=1)
-    if isinstance(bw, str):
-        bw = "scotts" if bw == "scott" else bw
-        bw_x = getattr(kde, "%s_factor" % bw)() * data_std[0]
-        bw_y = getattr(kde, "%s_factor" % bw)() * data_std[1]
-    elif np.isscalar(bw):
-        bw_x, bw_y = bw, bw
-    else:
-        msg = ("Cannot specify a different bandwidth for each dimension "
-               "with the scipy backend. You should install statsmodels.")
-        raise ValueError(msg)
-    x_support = _kde_support(data[:, 0], bw_x, gridsize, cut, clip[0])
-    y_support = _kde_support(data[:, 1], bw_y, gridsize, cut, clip[1])
-    xx, yy = np.meshgrid(x_support, y_support)
-    z = kde([xx.ravel(), yy.ravel()]).reshape(xx.shape)
-    return xx, yy, z
-
-
-@_deprecate_positional_args
-def kdeplot(
-    *,
-    x=None, y=None,
-    shade=False, vertical=False, kernel="gau",
-    bw="scott", gridsize=100, cut=3, clip=None, legend=True,
-    cumulative=False, shade_lowest=True, cbar=False, cbar_ax=None,
-    cbar_kws=None, ax=None,
-    data=None, data2=None,  # TODO move data once * is enforced
-    **kwargs,
-):
-    """Fit and plot a univariate or bivariate kernel density estimate.
-
-    Parameters
-    ----------
-    x : 1d array-like
-        Input data.
-    y: 1d array-like, optional
-        Second input data. If present, a bivariate KDE will be estimated.
-    shade : bool, optional
-        If True, shade in the area under the KDE curve (or draw with filled
-        contours when data is bivariate).
-    vertical : bool, optional
-        If True, density is on x-axis.
-    kernel : {'gau' | 'cos' | 'biw' | 'epa' | 'tri' | 'triw' }, optional
-        Code for shape of kernel to fit with. Bivariate KDE can only use
-        gaussian kernel.
-    bw : {'scott' | 'silverman' | scalar | pair of scalars }, optional
-        Name of reference method to determine kernel size, scalar factor,
-        or scalar for each dimension of the bivariate plot. Note that the
-        underlying computational libraries have different interperetations
-        for this parameter: ``statsmodels`` uses it directly, but ``scipy``
-        treats it as a scaling factor for the standard deviation of the
-        data.
-    gridsize : int, optional
-        Number of discrete points in the evaluation grid.
-    cut : scalar, optional
-        Draw the estimate to cut * bw from the extreme data points.
-    clip : pair of scalars, or pair of pair of scalars, optional
-        Lower and upper bounds for datapoints used to fit KDE. Can provide
-        a pair of (low, high) bounds for bivariate plots.
-    legend : bool, optional
-        If True, add a legend or label the axes when possible.
-    cumulative : bool, optional
-        If True, draw the cumulative distribution estimated by the kde.
-    shade_lowest : bool, optional
-        If True, shade the lowest contour of a bivariate KDE plot. Not
-        relevant when drawing a univariate plot or when ``shade=False``.
-        Setting this to ``False`` can be useful when you want multiple
-        densities on the same Axes.
-    cbar : bool, optional
-        If True and drawing a bivariate KDE plot, add a colorbar.
-    cbar_ax : matplotlib axes, optional
-        Existing axes to draw the colorbar onto, otherwise space is taken
-        from the main axes.
-    cbar_kws : dict, optional
-        Keyword arguments for ``fig.colorbar()``.
-    ax : matplotlib axes, optional
-        Axes to plot on, otherwise uses current axes.
-    kwargs : key, value pairings
-        Other keyword arguments are passed to ``plt.plot()`` or
-        ``plt.contour{f}`` depending on whether a univariate or bivariate
-        plot is being drawn.
-
-    Returns
-    -------
-    ax : matplotlib Axes
-        Axes with plot.
-
-    See Also
-    --------
-    distplot: Flexibly plot a univariate distribution of observations.
-    jointplot: Plot a joint dataset with bivariate and marginal distributions.
-
-    Examples
-    --------
-
-    Plot a basic univariate density:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np; np.random.seed(10)
-        >>> import seaborn as sns; sns.set(color_codes=True)
-        >>> mean, cov = [0, 2], [(1, .5), (.5, 1)]
-        >>> x, y = np.random.multivariate_normal(mean, cov, size=50).T
-        >>> ax = sns.kdeplot(x=x)
-
-    Shade under the density curve and use a different color:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, shade=True, color="r")
-
-    Plot a bivariate density:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, y=y)
-
-    Use filled contours:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, y=y, shade=True)
-
-    Use more contour levels and a different color palette:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, y=y, n_levels=30, cmap="Purples_d")
-
-    Use a narrower bandwith:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, bw=.15)
-
-    Plot the density on the vertical axis:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=y, vertical=True)
-
-    Limit the density curve within the range of the data:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, cut=0)
-
-    Add a colorbar for the contours:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.kdeplot(x=x, y=y, cbar=True)
-
-    Plot two shaded bivariate densities:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> setosa = iris.loc[iris.species == "setosa"]
-        >>> virginica = iris.loc[iris.species == "virginica"]
-        >>> ax = sns.kdeplot(x=setosa.sepal_width, y=setosa.sepal_length,
-        ...                  cmap="Reds", shade=True, shade_lowest=False)
-        >>> ax = sns.kdeplot(x=virginica.sepal_width, y=virginica.sepal_length,
-        ...                  cmap="Blues", shade=True, shade_lowest=False)
-
-    """
-    # Handle deprecation of `data` as name for x variable
-    # TODO this can be removed once refactored to do centralized preprocessing
-    # of input variables, because a vector input to `data` will be treated like
-    # an input to `x`. Warning is probably not necessary.
-    x_passed_as_data = (
-        x is None
-        and data is not None
-        and np.ndim(data) == 1
-    )
-    if x_passed_as_data:
-        x = data
-
-    # Handle deprecation of `data2` as name for y variable
-    if data2 is not None:
-        msg = "The `data2` param is now named `y`; please update your code."
-        warnings.warn(msg)
-        y = data2
-
-    # TODO replace this preprocessing with central refactoring
-    if isinstance(x, list):
-        x = np.asarray(x)
-    if isinstance(y, list):
-        y = np.asarray(y)
-
-    bivariate = x is not None and y is not None
-    if bivariate and cumulative:
-        raise TypeError("Cumulative distribution plots are not"
-                        "supported for bivariate distributions.")
-
-    if ax is None:
-        ax = plt.gca()
-
-    if bivariate:
-        ax = _bivariate_kdeplot(x, y, shade, shade_lowest,
-                                kernel, bw, gridsize, cut, clip, legend,
-                                cbar, cbar_ax, cbar_kws, ax, **kwargs)
-    else:
-        ax = _univariate_kdeplot(x, shade, vertical, kernel, bw,
-                                 gridsize, cut, clip, legend, ax,
-                                 cumulative=cumulative, **kwargs)
-
-    return ax
-
-
-@_deprecate_positional_args
-def rugplot(
-    *,
-    x=None,
-    height=.05, axis="x", ax=None,
-    a=None,
-    **kwargs
-):
-    """Plot datapoints in an array as sticks on an axis.
-
-    Parameters
-    ----------
-    x : vector
-        1D array of observations.
-    height : scalar, optional
-        Height of ticks as proportion of the axis.
-    axis : {'x' | 'y'}, optional
-        Axis to draw rugplot on.
-    ax : matplotlib axes, optional
-        Axes to draw plot into; otherwise grabs current axes.
-    kwargs : key, value pairings
-        Other keyword arguments are passed to ``LineCollection``.
-
-    Returns
-    -------
-    ax : matplotlib axes
-        The Axes object with the plot on it.
-
-    """
-    # Handle deprecation of ``a```
-    if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg, FutureWarning)
-    else:
-        a = x  # TODO refactor
-
-    # Default to drawing on the currently active axes
-    if ax is None:
-        ax = plt.gca()
-    a = np.asarray(a)
-    vertical = kwargs.pop("vertical", axis == "y")
-
-    alias_map = dict(linewidth="lw", linestyle="ls", color="c")
-    for attr, alias in alias_map.items():
-        if alias in kwargs:
-            kwargs[attr] = kwargs.pop(alias)
-    kwargs.setdefault("linewidth", 1)
-
-    if vertical:
-        trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
-        xy_pairs = np.column_stack([np.tile([0, height], len(a)),
-                                    np.repeat(a, 2)])
-    else:
-        trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
-        xy_pairs = np.column_stack([np.repeat(a, 2),
-                                    np.tile([0, height], len(a))])
-    line_segs = xy_pairs.reshape([len(a), 2, 2])
-    ax.add_collection(LineCollection(line_segs, transform=trans, **kwargs))
-
-    ax.autoscale_view(scalex=not vertical, scaley=vertical)
 
     return ax

@@ -1182,7 +1182,6 @@ class TestPairGrid(object):
         n = len(self.df.a.unique())
 
         for ax in g.diag_axes:
-            assert len(ax.lines) == n
             assert len(ax.collections) == n
 
     def test_pairplot_reg(self):
@@ -1225,7 +1224,7 @@ class TestPairGrid(object):
         g = ag.pairplot(self.df, diag_kind="kde")
 
         for ax in g.diag_axes:
-            nt.assert_equal(len(ax.lines), 1)
+            nt.assert_equal(len(ax.collections), 1)
 
         for i, j in zip(*np.triu_indices_from(g.axes, 1)):
             ax = g.axes[i, j]
@@ -1478,8 +1477,8 @@ class TestJointPlot(object):
         nt.assert_equal(len(g.ax_marg_x.collections), 1)
         nt.assert_equal(len(g.ax_marg_y.collections), 1)
 
-        nt.assert_equal(len(g.ax_marg_x.lines), 1)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+        nt.assert_equal(len(g.ax_marg_x.collections), 1)
+        nt.assert_equal(len(g.ax_marg_y.collections), 1)
 
     def test_color(self):
 
