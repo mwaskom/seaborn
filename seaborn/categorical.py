@@ -2600,7 +2600,7 @@ def boxenplot(
     hue=None, data=None,
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, k_depth='proportion', linewidth=None,
+    width=.8, dodge=True, k_depth='tukey', linewidth=None,
     scale='exponential', outlier_prop=0.007, showfliers=True, ax=None,
     **kwargs
 ):
@@ -2645,14 +2645,14 @@ boxenplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    k_depth : "proportion", "tukey", "trustworthy" or scalar, optional
+    k_depth : {{"tukey", "proportion", "trustworthy"}} or scalar, optional
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
-        statistical properties. If `"proportion"`, draw no more than
-        `outlier_prop` extreme observations.
+        statistical properties. If "proportion", draw no more than
+        `outlier_prop` extreme observations. 
     {linewidth}
-    scale : "linear", "exponential" or "area", optional
+    scale : {{"exponential", "linear", "area"}}, optional
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"

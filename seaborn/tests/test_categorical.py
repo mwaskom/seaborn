@@ -2613,7 +2613,7 @@ class TestBoxenPlotter(CategoricalFixture):
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
                        saturation=.75, width=.8, dodge=True,
-                       k_depth='proportion', linewidth=None,
+                       k_depth='tukey', linewidth=None,
                        scale='exponential', outlier_prop=0.007,
                        showfliers=True)
 
@@ -2655,11 +2655,11 @@ class TestBoxenPlotter(CategoricalFixture):
         k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
         assert np.sum(list(k_f)) == len(k_vals)
 
-    def test_box_ends_correct(self):
+    def test_box_ends_correct_tukey(self):
 
         n = 100
         linear_data = np.arange(n)
-        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_k = max(int(np.log2(n)) - 3, 1)
         expected_edges = [self.edge_calc(i, linear_data)
                           for i in range(expected_k + 1, 1, -1)]
 
@@ -2669,11 +2669,27 @@ class TestBoxenPlotter(CategoricalFixture):
         npt.assert_array_equal(expected_edges, calc_edges)
         assert expected_k == calc_k
 
+    def test_box_ends_correct_proportion(self):
+
+        n = 100
+        linear_data = np.arange(n)
+        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_edges = [self.edge_calc(i, linear_data)
+                          for i in range(expected_k + 1, 1, -1)]
+
+        kws = self.default_kws.copy()
+        kws["k_depth"] = "proportion"
+        p = cat._LVPlotter(**kws)
+        calc_edges, calc_k = p._lv_box_ends(linear_data)
+
+        npt.assert_array_equal(expected_edges, calc_edges)
+        assert expected_k == calc_k
+
     def test_outliers(self):
 
         n = 100
         outlier_data = np.append(np.arange(n - 1), 2 * n)
-        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_k = max(int(np.log2(n)) - 3, 1)
         expected_edges = [self.edge_calc(i, outlier_data)
                           for i in range(expected_k + 1, 1, -1)]
 
@@ -2690,7 +2706,8 @@ class TestBoxenPlotter(CategoricalFixture):
 
     def test_showfliers(self):
 
-        ax = cat.boxenplot(x="g", y="y", data=self.df, showfliers=True)
+        ax = cat.boxenplot(x="g", y="y", data=self.df, k_depth="proportion",
+                           showfliers=True)
         ax_collections = list(filter(self.ispath, ax.collections))
         for c in ax_collections:
             assert len(c.get_offsets()) == 2
