@@ -1,5 +1,5 @@
 from textwrap import dedent
-import numbers
+from numbers import Number
 import colorsys
 import numpy as np
 from scipy import stats
@@ -1803,10 +1803,11 @@ class _LVPlotter(_CategoricalPlotter):
         self.dodge = dodge
         self.saturation = saturation
 
-        if k_depth not in ('proportion', 'tukey', 'trustworthy') and (
-            not isinstance(k_depth, numbers.Number)
-        ):
-            raise ValueError(f'k_depth "{k_depth}" not recognized')
+        k_depth_methods = ['proportion', 'tukey', 'trustworthy']
+        if not (k_depth in k_depth_methods or isinstance(k_depth, Number)):
+            msg = (f'k_depth must be one of {k_depth_methods} or a number, '
+                   f'but {k_depth} was passed.')
+            raise ValueError(msg)
         self.k_depth = k_depth
 
         # TODO seems this member is only used to frame the legend artists
@@ -1814,8 +1815,10 @@ class _LVPlotter(_CategoricalPlotter):
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
 
-        if scale not in ('linear', 'exponential', 'area'):
-            raise ValueError(f'Scale "{scale}" not recognized')
+        scales = ['linear', 'exponential', 'area']
+        if scale not in scales:
+            msg = f'scale must be one of {scales}, but {scale} was passed.'
+            raise ValueError(msg)
         self.scale = scale
 
         if ((outlier_prop > 1) or (outlier_prop < 0)):
@@ -1853,9 +1856,9 @@ class _LVPlotter(_CategoricalPlotter):
         if k < 1:
             k = 1
 
-        # Calculate the upper box ends
+        # Calculate the upper end for each of the k boxes
         upper = [100 * (1 - 0.5 ** (i + 1)) for i in range(k, 0, -1)]
-        # Calculate the lower box ends
+        # Calculate the lower end for each of the k boxes
         lower = [100 * (0.5 ** (i + 1)) for i in range(k, 0, -1)]
         # Stitch the box ends together
         percentile_ends = [(i, j) for i, j in zip(lower, upper)]
@@ -1864,7 +1867,8 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lv_outliers(self, vals, k):
         """Find the outliers based on the letter value depth."""
-        perc_ends = (100 * (0.5 ** (k + 1)), 100 * (1 - 0.5 ** (k + 1)))
+        box_edge = 0.5 ** (k + 1)
+        perc_ends = (100 * box_edge, 100 * (1 - box_edge))
         edges = np.percentile(vals, perc_ends)
         lower_out = vals[np.where(vals < edges[0])[0]]
         upper_out = vals[np.where(vals > edges[1])[0]]
@@ -1939,7 +1943,7 @@ class _LVPlotter(_CategoricalPlotter):
                 box_func = vert_perc_box
                 xs_median = [x - widths / 2, x + widths / 2]
                 ys_median = [y, y]
-                xs_outliers = np.repeat(x, len(outliers))
+                xs_outliers = np.full(len(outliers), x)
                 ys_outliers = outliers
 
             else:
@@ -1947,7 +1951,7 @@ class _LVPlotter(_CategoricalPlotter):
                 xs_median = [y, y]
                 ys_median = [x - widths / 2, x + widths / 2]
                 xs_outliers = outliers
-                ys_outliers = np.repeat(x, len(outliers))
+                ys_outliers = np.full(len(outliers), x)
 
             boxes = [box_func(x, b[0], i, k, b[1])
                      for i, b in enumerate(zip(box_ends, w_area))]
@@ -2650,7 +2654,7 @@ boxenplot.__doc__ = dedent("""\
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
         statistical properties. If "proportion", draw no more than
-        `outlier_prop` extreme observations. 
+        `outlier_prop` extreme observations.
     {linewidth}
     scale : {{"exponential", "linear", "area"}}, optional
         Method to use for the width of the letter value boxes. All give similar
