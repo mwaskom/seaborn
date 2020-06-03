@@ -10,6 +10,14 @@ v0.11.0 (Unreleased)
 
 - Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_. GH2075
 
+- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. `k_depth="tukey"` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. `k_depth=6`) or just plot boxes that will cover most of the data points (with `k_depth="full"`). Added a new parameter `box_alpha` to control the number of boxes when `k_depth="trustworthy"`. GH2086, GH2118, GH803
+
+- The visual appearance of :func:`boxenplot` now more resembles that of :func:`boxplot`.
+
+- Fixed a bug where elements of :func:`boxenplot` were sometimes not entirely visible. GH2085
+
+- Following its deprecation, `lvplot` has finally been removed from the codebase.
+
 - Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend. GH2073
 
 - Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behaviot is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to repoduce the previous behavior. GH2078
