@@ -2615,7 +2615,7 @@ class TestBoxenPlotter(CategoricalFixture):
                        saturation=.75, width=.8, dodge=True,
                        k_depth='tukey', linewidth=None,
                        scale='exponential', outlier_prop=0.007,
-                       showfliers=True)
+                       box_alpha=0.05, showfliers=True)
 
     def ispatch(self, c):
 
@@ -2685,6 +2685,20 @@ class TestBoxenPlotter(CategoricalFixture):
         npt.assert_array_equal(expected_edges, calc_edges)
         assert expected_k == calc_k
 
+    @pytest.mark.parametrize(
+        "n,exp_k",
+        [(491, 6), (492, 7), (983, 7), (984, 8), (1966, 8), (1967, 9)],
+    )
+    def test_box_ends_correct_trustworthy(self, n, exp_k):
+
+        linear_data = np.arange(n)
+        kws = self.default_kws.copy()
+        kws["k_depth"] = "trustworthy"
+        p = cat._LVPlotter(**kws)
+        _, calc_k = p._lv_box_ends(linear_data)
+
+        assert exp_k == calc_k
+
     def test_outliers(self):
 
         n = 100
@@ -2736,6 +2750,12 @@ class TestBoxenPlotter(CategoricalFixture):
         kws["k_depth"] = "proportion"
         for p in (-13, 37):
             kws["outlier_prop"] = p
+            with pytest.raises(ValueError):
+                cat._LVPlotter(**kws)
+
+        kws["k_depth"] = "trustworthy"
+        for alpha in (-13, 37):
+            kws["box_alpha"] = alpha
             with pytest.raises(ValueError):
                 cat._LVPlotter(**kws)
 

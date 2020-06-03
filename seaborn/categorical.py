@@ -1797,7 +1797,7 @@ class _LVPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
                  width, dodge, k_depth, linewidth, scale, outlier_prop,
-                 showfliers=True):
+                 box_alpha, showfliers=True):
 
         self.width = width
         self.dodge = dodge
@@ -1826,6 +1826,11 @@ class _LVPlotter(_CategoricalPlotter):
             raise ValueError(msg)
         self.outlier_prop = outlier_prop
 
+        if not 0 < box_alpha < 1:
+            msg = f'box_alpha {box_alpha} not in range (0, 1]'
+            raise ValueError(msg)
+        self.box_alpha = box_alpha
+
         self.showfliers = showfliers
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
@@ -1849,7 +1854,14 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            k = int(np.log2(n / (2 * stats.norm.ppf((1 - p)) ** 2))) + 1
+            k = (
+                int(
+                    np.log2(
+                        n / (2 * stats.norm.ppf((1 - self.box_alpha / 2)) ** 2)
+                    )
+                )
+                + 1
+            )
         else:
             k = int(self.k_depth)  # allow having k as input
         # If the number happens to be less than 1, set k to 1
@@ -2605,14 +2617,14 @@ def boxenplot(
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
     width=.8, dodge=True, k_depth='tukey', linewidth=None,
-    scale='exponential', outlier_prop=0.007, showfliers=True, ax=None,
-    **kwargs
+    scale='exponential', outlier_prop=0.007, box_alpha=0.05, showfliers=True,
+    ax=None, **kwargs
 ):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
                          width, dodge, k_depth, linewidth, scale,
-                         outlier_prop, showfliers)
+                         outlier_prop, box_alpha, showfliers)
 
     if ax is None:
         ax = plt.gca()
@@ -2666,6 +2678,9 @@ boxenplot.__doc__ = dedent("""\
         Proportion of data believed to be outliers. Must be in the range
         (0, 1]. Used to determine the number of boxes to plot when
         `k_depth="proportion"`.
+    box_alpha : float, optional
+        Confidence level for a box to be plotted. Used to determine the
+        number of boxes to plot when `k_depth="trustworthy"`.
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
