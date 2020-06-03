@@ -2744,16 +2744,15 @@ class TestBoxenPlotter(CategoricalFixture):
 
         x = np.random.standard_t(10, 2 ** power)
 
-        valid_depths = ["proportion", "tukey", "trustworthy"]
+        valid_depths = ["proportion", "tukey", "trustworthy", "full"]
         kws = self.default_kws.copy()
 
         for depth in valid_depths + [4]:
             kws["k_depth"] = depth
-            cat._LVPlotter(**kws)._lv_box_ends(x)
+            box_ends, k = cat._LVPlotter(**kws)._lv_box_ends(x)
 
-        # Test zero outlier_prop
-        kws.update(dict(k_depth="proportion", outlier_prop=0))
-        cat._LVPlotter(**kws)._lv_box_ends(x)
+            if depth == "full":
+                assert k == int(np.log2(len(x))) + 1
 
     def test_valid_scales(self):
 

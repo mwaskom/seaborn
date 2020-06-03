@@ -1803,7 +1803,7 @@ class _LVPlotter(_CategoricalPlotter):
         self.dodge = dodge
         self.saturation = saturation
 
-        k_depth_methods = ['proportion', 'tukey', 'trustworthy']
+        k_depth_methods = ['proportion', 'tukey', 'trustworthy', 'full']
         if not (k_depth in k_depth_methods or isinstance(k_depth, Number)):
             msg = (f'k_depth must be one of {k_depth_methods} or a number, '
                    f'but {k_depth} was passed.')
@@ -1840,8 +1840,8 @@ class _LVPlotter(_CategoricalPlotter):
         p = self.outlier_prop
 
         # Select the depth, i.e. number of boxes to draw, based on the method
-        if p == 0:
-            # Zero outliers; extend boxes to 100% of the data
+        if self.k_depth == 'full':
+            # extend boxes to 100% of the data
             k = int(np.log2(n)) + 1
         elif self.k_depth == 'tukey':
             # This results with 5-8 points in each tail
@@ -2649,12 +2649,13 @@ boxenplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    k_depth : {{"tukey", "proportion", "trustworthy"}} or scalar, optional
+    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar,\
+    optional
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
         statistical properties. If "proportion", draw no more than
-        `outlier_prop` extreme observations.
+        `outlier_prop` extreme observations. If "full", draw `log(n)+1` boxes.
     {linewidth}
     scale : {{"exponential", "linear", "area"}}, optional
         Method to use for the width of the letter value boxes. All give similar
