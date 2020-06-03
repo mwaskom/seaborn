@@ -2615,7 +2615,7 @@ class TestBoxenPlotter(CategoricalFixture):
                        saturation=.75, width=.8, dodge=True,
                        k_depth='tukey', linewidth=None,
                        scale='exponential', outlier_prop=0.007,
-                       box_alpha=0.05, showfliers=True)
+                       trust_alpha=0.05, showfliers=True)
 
     def ispatch(self, c):
 
@@ -2755,7 +2755,7 @@ class TestBoxenPlotter(CategoricalFixture):
 
         kws["k_depth"] = "trustworthy"
         for alpha in (-13, 37):
-            kws["box_alpha"] = alpha
+            kws["trust_alpha"] = alpha
             with pytest.raises(ValueError):
                 cat._LVPlotter(**kws)
 
