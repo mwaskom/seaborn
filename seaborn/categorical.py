@@ -1821,8 +1821,8 @@ class _LVPlotter(_CategoricalPlotter):
             raise ValueError(msg)
         self.scale = scale
 
-        if ((outlier_prop > 1) or (outlier_prop < 0)):
-            msg = f'outlier_prop {outlier_prop} not in range [0, 1]'
+        if ((outlier_prop > 1) or (outlier_prop <= 0)):
+            msg = f'outlier_prop {outlier_prop} not in range (0, 1]'
             raise ValueError(msg)
         self.outlier_prop = outlier_prop
 
@@ -2663,9 +2663,9 @@ boxenplot.__doc__ = dedent("""\
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
     outlier_prop : float, optional
-        Proportion of data believed to be outliers. Used to determine the
-        number of boxes to plot when `k_depth="proportion"`. If
-        `outlier_prop=0`, the plot will contain `log(n)+1` boxes.
+        Proportion of data believed to be outliers. Must be in the range
+        (0, 1]. Used to determine the number of boxes to plot when
+        `k_depth="proportion"`.
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
