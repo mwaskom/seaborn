@@ -52,16 +52,18 @@ clean:
 	-rm -rf introduction_files/*
 	-rm introduction.rst
 
+.PHONY: tutorials
 tutorials:
 	make -C tutorial
 
+.PHONY: docstrings
 docstrings:
 	make -C docstrings
 
-introduction: introduction.ipynb
+introduction.rst: introduction.ipynb
 	tools/nb_to_doc.py ./introduction.ipynb
 
-notebooks: tutorials docstrings introduction
+notebooks: tutorials docstrings introduction.rst
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
