@@ -1,4 +1,5 @@
 from textwrap import dedent
+from numbers import Number
 import colorsys
 import numpy as np
 from scipy import stats
@@ -22,7 +23,7 @@ from ._decorators import _deprecate_positional_args
 __all__ = [
     "catplot", "factorplot",
     "stripplot", "swarmplot",
-    "boxplot", "violinplot", "boxenplot", "lvplot",
+    "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
 ]
 
@@ -1795,72 +1796,75 @@ class _LVPlotter(_CategoricalPlotter):
     def __init__(self, x, y, hue, data, order, hue_order,
                  orient, color, palette, saturation,
                  width, dodge, k_depth, linewidth, scale, outlier_prop,
-                 showfliers=True):
+                 trust_alpha, showfliers=True):
 
-        # TODO assigning variables for None is unneccesary
-        if width is None:
-            width = .8
         self.width = width
-
         self.dodge = dodge
-
-        if saturation is None:
-            saturation = .75
         self.saturation = saturation
 
-        if k_depth is None:
-            k_depth = 'proportion'
+        k_depth_methods = ['proportion', 'tukey', 'trustworthy', 'full']
+        if not (k_depth in k_depth_methods or isinstance(k_depth, Number)):
+            msg = (f'k_depth must be one of {k_depth_methods} or a number, '
+                   f'but {k_depth} was passed.')
+            raise ValueError(msg)
         self.k_depth = k_depth
 
+        # TODO seems this member is only used to frame the legend artists
         if linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
 
-        if scale is None:
-            scale = 'exponential'
+        scales = ['linear', 'exponential', 'area']
+        if scale not in scales:
+            msg = f'scale must be one of {scales}, but {scale} was passed.'
+            raise ValueError(msg)
         self.scale = scale
 
+        if ((outlier_prop > 1) or (outlier_prop <= 0)):
+            msg = f'outlier_prop {outlier_prop} not in range (0, 1]'
+            raise ValueError(msg)
         self.outlier_prop = outlier_prop
+
+        if not 0 < trust_alpha < 1:
+            msg = f'trust_alpha {trust_alpha} not in range (0, 1)'
+            raise ValueError(msg)
+        self.trust_alpha = trust_alpha
 
         self.showfliers = showfliers
 
         self.establish_variables(x, y, hue, data, orient, order, hue_order)
         self.establish_colors(color, palette, saturation)
 
-    def _lv_box_ends(self, vals, k_depth='proportion', outlier_prop=None):
+    def _lv_box_ends(self, vals):
         """Get the number of data points and calculate `depth` of
         letter-value plot."""
         vals = np.asarray(vals)
         vals = vals[np.isfinite(vals)]
         n = len(vals)
-        # If p is not set, calculate it so that 8 points are outliers
-        if not outlier_prop:
-            # Conventional boxplots assume this proportion of the data are
-            # outliers.
-            p = 0.007
-        else:
-            if ((outlier_prop > 1.) or (outlier_prop < 0.)):
-                raise ValueError('outlier_prop not in range [0, 1]!')
-            p = outlier_prop
+        p = self.outlier_prop
+
         # Select the depth, i.e. number of boxes to draw, based on the method
-        k_dict = {
-            'proportion': (np.log2(n)) - int(np.log2(n * p)) + 1,
-            'tukey': (np.log2(n)) - 3,
-            'trustworthy': 1 + (np.log2(n)
-                                - np.log2(2 * stats.norm.ppf((1 - p)) ** 2))
-        }
-        k = k_dict[k_depth]
-        try:
-            k = int(k)
-        except ValueError:
+        if self.k_depth == 'full':
+            # extend boxes to 100% of the data
+            k = int(np.log2(n)) + 1
+        elif self.k_depth == 'tukey':
+            # This results with 5-8 points in each tail
+            k = int(np.log2(n)) - 3
+        elif self.k_depth == 'proportion':
+            k = int(np.log2(n)) - int(np.log2(n * p)) + 1
+        elif self.k_depth == 'trustworthy':
+            point_conf = 2 * stats.norm.ppf((1 - self.trust_alpha / 2)) ** 2
+            k = int(np.log2(n / point_conf)) + 1
+        else:
+            k = int(self.k_depth)  # allow having k as input
+        # If the number happens to be less than 1, set k to 1
+        if k < 1:
             k = 1
-        # If the number happens to be less than 0, set k to 0
-        if k < 1.:
-            k = 1
-        # Calculate the upper box ends
-        upper = [100 * (1 - 0.5 ** (i + 2)) for i in range(k, -1, -1)]
-        # Calculate the lower box ends
-        lower = [100 * (0.5 ** (i + 2)) for i in range(k, -1, -1)]
+
+        # Calculate the upper end for each of the k boxes
+        upper = [100 * (1 - 0.5 ** (i + 1)) for i in range(k, 0, -1)]
+        # Calculate the lower end for each of the k boxes
+        lower = [100 * (0.5 ** (i + 1)) for i in range(k, 0, -1)]
         # Stitch the box ends together
         percentile_ends = [(i, j) for i, j in zip(lower, upper)]
         box_ends = [np.percentile(vals, q) for q in percentile_ends]
@@ -1868,7 +1872,8 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lv_outliers(self, vals, k):
         """Find the outliers based on the letter value depth."""
-        perc_ends = (100 * (0.5 ** (k + 2)), 100 * (1 - 0.5 ** (k + 2)))
+        box_edge = 0.5 ** (k + 1)
+        perc_ends = (100 * box_edge, 100 * (1 - box_edge))
         edges = np.percentile(vals, perc_ends)
         lower_out = vals[np.where(vals < edges[0])[0]]
         upper_out = vals[np.where(vals > edges[1])[0]]
@@ -1883,10 +1888,9 @@ class _LVPlotter(_CategoricalPlotter):
 
     def _lvplot(self, box_data, positions,
                 color=[255. / 256., 185. / 256., 0.],
-                vert=True, widths=1, k_depth='proportion',
-                ax=None, outlier_prop=None, scale='exponential',
-                showfliers=True, **kws):
+                widths=1, ax=None, **kws):
 
+        vert = self.orient == "v"
         x = positions[0]
         box_data = np.asarray(box_data)
 
@@ -1903,12 +1907,11 @@ class _LVPlotter(_CategoricalPlotter):
         else:
             # Get the number of data points and calculate "depth" of
             # letter-value plot
-            box_ends, k = self._lv_box_ends(box_data, k_depth=k_depth,
-                                            outlier_prop=outlier_prop)
+            box_ends, k = self._lv_box_ends(box_data)
 
             # Anonymous functions for calculating the width and height
             # of the letter value boxes
-            width = self._width_functions(scale)
+            width = self._width_functions(self.scale)
 
             # Function to find height of boxes
             def height(b):
@@ -1942,41 +1945,47 @@ class _LVPlotter(_CategoricalPlotter):
             hex_color = mpl.colors.rgb2hex(color)
 
             if vert:
-                boxes = [vert_perc_box(x, b[0], i, k, b[1])
-                         for i, b in enumerate(zip(box_ends, w_area))]
+                box_func = vert_perc_box
+                xs_median = [x - widths / 2, x + widths / 2]
+                ys_median = [y, y]
+                xs_outliers = np.full(len(outliers), x)
+                ys_outliers = outliers
 
-                # Plot the medians
-                ax.plot([x - widths / 2, x + widths / 2], [y, y],
-                        c='.15', alpha=.45, **kws)
-
-                ax.scatter(np.repeat(x, len(outliers)), outliers,
-                           marker='d', c=hex_color, **kws)
             else:
-                boxes = [horz_perc_box(x, b[0], i, k, b[1])
-                         for i, b in enumerate(zip(box_ends, w_area))]
+                box_func = horz_perc_box
+                xs_median = [y, y]
+                ys_median = [x - widths / 2, x + widths / 2]
+                xs_outliers = outliers
+                ys_outliers = np.full(len(outliers), x)
 
-                # Plot the medians
-                ax.plot([y, y], [x - widths / 2, x + widths / 2],
-                        c='.15', alpha=.45, **kws)
+            boxes = [box_func(x, b[0], i, k, b[1])
+                     for i, b in enumerate(zip(box_ends, w_area))]
 
-                ax.scatter(outliers, np.repeat(x, len(outliers)),
-                           marker='d', c=hex_color, **kws)
+            # Plot the medians
+            ax.plot(xs_median, ys_median, c='.15', alpha=.45,
+                    solid_capstyle="butt", **kws)
+
+            # Plot outliers (if any)
+            if len(outliers) > 0:
+                ax.scatter(xs_outliers, ys_outliers, marker='d',
+                           c=self.gray, **kws)
 
             # Construct a color map from the input color
-            rgb = [[1, 1, 1], hex_color]
+            rgb = [hex_color, (1, 1, 1)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            collection = PatchCollection(boxes, cmap=cmap)
+            # Make sure that the last boxes contain hue and are not pure white
+            rgb = [hex_color, cmap(.85)]
+            cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
+            collection = PatchCollection(boxes, cmap=cmap, edgecolor=self.gray)
 
-            # Set the color gradation
-            collection.set_array(np.array(np.linspace(0, 1, len(boxes))))
+            # Set the color gradation, first box will have color=hex_color
+            collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
 
             # Plot the boxes
             ax.add_collection(collection)
 
     def draw_letter_value_plot(self, ax, kws):
         """Use matplotlib to draw a letter value plot on an Axes."""
-        vert = self.orient == "v"
-
         for i, group_data in enumerate(self.plot_data):
 
             if self.plot_hues is None:
@@ -1998,13 +2007,8 @@ class _LVPlotter(_CategoricalPlotter):
                 self._lvplot(box_data,
                              positions=[i],
                              color=color,
-                             vert=vert,
                              widths=self.width,
-                             k_depth=self.k_depth,
                              ax=ax,
-                             scale=self.scale,
-                             outlier_prop=self.outlier_prop,
-                             showfliers=self.showfliers,
                              **kws)
 
             else:
@@ -2032,13 +2036,12 @@ class _LVPlotter(_CategoricalPlotter):
                     self._lvplot(box_data,
                                  positions=[center],
                                  color=color,
-                                 vert=vert,
                                  widths=self.nested_width,
-                                 k_depth=self.k_depth,
                                  ax=ax,
-                                 scale=self.scale,
-                                 outlier_prop=self.outlier_prop,
                                  **kws)
+
+        # Autoscale the values axis to make sure all patches are visible
+        ax.autoscale_view(scalex=self.orient == "h", scaley=self.orient == "v")
 
     def plot(self, ax, boxplot_kws):
         """Make the plot."""
@@ -2599,18 +2602,6 @@ violinplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-def lvplot(*args, **kwargs):
-    """Deprecated; please use `boxenplot`."""
-
-    msg = (
-        "The `lvplot` function has been renamed to `boxenplot`. The original "
-        "name will be removed in a future release. Please update your code. "
-    )
-    warnings.warn(msg)
-
-    return boxenplot(*args, **kwargs)
-
-
 @_deprecate_positional_args
 def boxenplot(
     *,
@@ -2618,15 +2609,15 @@ def boxenplot(
     hue=None, data=None,
     order=None, hue_order=None,
     orient=None, color=None, palette=None, saturation=.75,
-    width=.8, dodge=True, k_depth='proportion', linewidth=None,
-    scale='exponential', outlier_prop=None, showfliers=True, ax=None,
-    **kwargs
+    width=.8, dodge=True, k_depth='tukey', linewidth=None,
+    scale='exponential', outlier_prop=0.007, trust_alpha=0.05, showfliers=True,
+    ax=None, **kwargs
 ):
 
     plotter = _LVPlotter(x, y, hue, data, order, hue_order,
                          orient, color, palette, saturation,
                          width, dodge, k_depth, linewidth, scale,
-                         outlier_prop, showfliers)
+                         outlier_prop, trust_alpha, showfliers)
 
     if ax is None:
         ax = plt.gca()
@@ -2663,21 +2654,27 @@ boxenplot.__doc__ = dedent("""\
     {saturation}
     {width}
     {dodge}
-    k_depth : "proportion" | "tukey" | "trustworthy", optional
+    k_depth : {{"tukey", "proportion", "trustworthy", "full"}} or scalar,\
+    optional
         The number of boxes, and by extension number of percentiles, to draw.
         All methods are detailed in Wickham's paper. Each makes different
         assumptions about the number of outliers and leverages different
-        statistical properties.
+        statistical properties. If "proportion", draw no more than
+        `outlier_prop` extreme observations. If "full", draw `log(n)+1` boxes.
     {linewidth}
-    scale : "linear" | "exponential" | "area"
+    scale : {{"exponential", "linear", "area"}}, optional
         Method to use for the width of the letter value boxes. All give similar
         results visually. "linear" reduces the width by a constant linear
         factor, "exponential" uses the proportion of data not covered, "area"
         is proportional to the percentage of data covered.
     outlier_prop : float, optional
-        Proportion of data believed to be outliers. Used in conjunction with
-        k_depth to determine the number of percentiles to draw. Defaults to
-        0.007 as a proportion of outliers. Should be in range [0, 1].
+        Proportion of data believed to be outliers. Must be in the range
+        (0, 1]. Used to determine the number of boxes to plot when
+        `k_depth="proportion"`.
+    trust_alpha : float, optional
+        Confidence level for a box to be plotted. Used to determine the
+        number of boxes to plot when `k_depth="trustworthy"`. Must be in the
+        range (0, 1).
     showfliers : bool, optional
         If False, suppress the plotting of outliers.
     {ax_in}
@@ -2753,9 +2750,10 @@ boxenplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips)
+        >>> ax = sns.boxenplot(x="day", y="total_bill", data=tips,
+        ...                    showfliers=False)
         >>> ax = sns.stripplot(x="day", y="total_bill", data=tips,
-        ...                    size=4, color="gray")
+        ...                    size=4, color=".26")
 
     Use :func:`catplot` to combine :func:`boxenplot` and a :class:`FacetGrid`.
     This allows grouping within additional categorical variables. Using

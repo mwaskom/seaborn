@@ -2613,9 +2613,9 @@ class TestBoxenPlotter(CategoricalFixture):
                        order=None, hue_order=None,
                        orient=None, color=None, palette=None,
                        saturation=.75, width=.8, dodge=True,
-                       k_depth='proportion', linewidth=None,
-                       scale='exponential', outlier_prop=None,
-                       showfliers=True)
+                       k_depth='tukey', linewidth=None,
+                       scale='exponential', outlier_prop=0.007,
+                       trust_alpha=0.05, showfliers=True)
 
     def ispatch(self, c):
 
@@ -2655,53 +2655,137 @@ class TestBoxenPlotter(CategoricalFixture):
         k_f = map(lambda k: (k > 0.) & np.isfinite(k), k_vals)
         assert np.sum(list(k_f)) == len(k_vals)
 
-    def test_box_ends_correct(self):
+    def test_box_ends_correct_tukey(self):
+
+        n = 100
+        linear_data = np.arange(n)
+        expected_k = max(int(np.log2(n)) - 3, 1)
+        expected_edges = [self.edge_calc(i, linear_data)
+                          for i in range(expected_k + 1, 1, -1)]
+
+        p = cat._LVPlotter(**self.default_kws)
+        calc_edges, calc_k = p._lv_box_ends(linear_data)
+
+        npt.assert_array_equal(expected_edges, calc_edges)
+        assert expected_k == calc_k
+
+    def test_box_ends_correct_proportion(self):
 
         n = 100
         linear_data = np.arange(n)
         expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
         expected_edges = [self.edge_calc(i, linear_data)
-                          for i in range(expected_k + 2, 1, -1)]
+                          for i in range(expected_k + 1, 1, -1)]
 
-        p = cat._LVPlotter(**self.default_kws)
+        kws = self.default_kws.copy()
+        kws["k_depth"] = "proportion"
+        p = cat._LVPlotter(**kws)
         calc_edges, calc_k = p._lv_box_ends(linear_data)
 
-        assert np.array_equal(expected_edges, calc_edges)
+        npt.assert_array_equal(expected_edges, calc_edges)
         assert expected_k == calc_k
+
+    @pytest.mark.parametrize(
+        "n,exp_k",
+        [(491, 6), (492, 7), (983, 7), (984, 8), (1966, 8), (1967, 9)],
+    )
+    def test_box_ends_correct_trustworthy(self, n, exp_k):
+
+        linear_data = np.arange(n)
+        kws = self.default_kws.copy()
+        kws["k_depth"] = "trustworthy"
+        p = cat._LVPlotter(**kws)
+        _, calc_k = p._lv_box_ends(linear_data)
+
+        assert exp_k == calc_k
 
     def test_outliers(self):
 
         n = 100
         outlier_data = np.append(np.arange(n - 1), 2 * n)
-        expected_k = int(np.log2(n)) - int(np.log2(n * 0.007)) + 1
+        expected_k = max(int(np.log2(n)) - 3, 1)
         expected_edges = [self.edge_calc(i, outlier_data)
-                          for i in range(expected_k + 2, 1, -1)]
+                          for i in range(expected_k + 1, 1, -1)]
 
         p = cat._LVPlotter(**self.default_kws)
         calc_edges, calc_k = p._lv_box_ends(outlier_data)
 
-        npt.assert_equal(list(expected_edges), calc_edges)
-
-        npt.assert_equal(expected_k, calc_k)
+        npt.assert_array_equal(calc_edges, expected_edges)
+        assert calc_k == expected_k
 
         out_calc = p._lv_outliers(outlier_data, calc_k)
         out_exp = p._lv_outliers(outlier_data, expected_k)
 
-        npt.assert_equal(out_exp, out_calc)
+        npt.assert_equal(out_calc, out_exp)
 
     def test_showfliers(self):
 
-        ax = cat.boxenplot(x="g", y="y", data=self.df)
-        for c in filter(self.ispath, ax.collections):
+        ax = cat.boxenplot(x="g", y="y", data=self.df, k_depth="proportion",
+                           showfliers=True)
+        ax_collections = list(filter(self.ispath, ax.collections))
+        for c in ax_collections:
             assert len(c.get_offsets()) == 2
+
+        # Test that all data points are in the plot
+        assert ax.get_ylim()[0] < self.df["y"].min()
+        assert ax.get_ylim()[1] > self.df["y"].max()
 
         plt.close("all")
 
         ax = cat.boxenplot(x="g", y="y", data=self.df, showfliers=False)
-        for c in filter(self.ispath, ax.collections):
-            assert len(c.get_offsets()) == 0
+        assert len(list(filter(self.ispath, ax.collections))) == 0
 
         plt.close("all")
+
+    def test_invalid_depths(self):
+
+        kws = self.default_kws.copy()
+
+        # Make sure illegal depth raises
+        kws["k_depth"] = "nosuchdepth"
+        with pytest.raises(ValueError):
+            cat._LVPlotter(**kws)
+
+        # Make sure illegal outlier_prop raises
+        kws["k_depth"] = "proportion"
+        for p in (-13, 37):
+            kws["outlier_prop"] = p
+            with pytest.raises(ValueError):
+                cat._LVPlotter(**kws)
+
+        kws["k_depth"] = "trustworthy"
+        for alpha in (-13, 37):
+            kws["trust_alpha"] = alpha
+            with pytest.raises(ValueError):
+                cat._LVPlotter(**kws)
+
+    @pytest.mark.parametrize("power", [1, 3, 7, 11, 13, 17])
+    def test_valid_depths(self, power):
+
+        x = np.random.standard_t(10, 2 ** power)
+
+        valid_depths = ["proportion", "tukey", "trustworthy", "full"]
+        kws = self.default_kws.copy()
+
+        for depth in valid_depths + [4]:
+            kws["k_depth"] = depth
+            box_ends, k = cat._LVPlotter(**kws)._lv_box_ends(x)
+
+            if depth == "full":
+                assert k == int(np.log2(len(x))) + 1
+
+    def test_valid_scales(self):
+
+        valid_scales = ["linear", "exponential", "area"]
+        kws = self.default_kws.copy()
+
+        for scale in valid_scales + ["unknown_scale"]:
+            kws["scale"] = scale
+            if scale not in valid_scales:
+                with pytest.raises(ValueError):
+                    cat._LVPlotter(**kws)
+            else:
+                cat._LVPlotter(**kws)
 
     def test_hue_offsets(self):
 
@@ -2812,6 +2896,14 @@ class TestBoxenPlotter(CategoricalFixture):
         cat.boxenplot(x="g", y="y", hue="h", data=self.df)
         plt.close("all")
 
+        for scale in ("linear", "area", "exponential"):
+            cat.boxenplot(x="g", y="y", hue="h", scale=scale, data=self.df)
+            plt.close("all")
+
+        for depth in ("proportion", "tukey", "trustworthy"):
+            cat.boxenplot(x="g", y="y", hue="h", k_depth=depth, data=self.df)
+            plt.close("all")
+
         order = list("nabc")
         cat.boxenplot(x="g", y="y", hue="h", order=order, data=self.df)
         plt.close("all")
@@ -2879,15 +2971,5 @@ class TestBoxenPlotter(CategoricalFixture):
             ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
             obs = ax.get_legend().get_title().get_fontproperties().get_size()
             assert obs == exp
-
-        plt.close("all")
-
-    def test_lvplot(self):
-
-        with pytest.warns(UserWarning):
-            ax = cat.lvplot(x="g", y="y", data=self.df)
-
-        patches = filter(self.ispatch, ax.collections)
-        nt.assert_equal(len(list(patches)), 3)
 
         plt.close("all")
