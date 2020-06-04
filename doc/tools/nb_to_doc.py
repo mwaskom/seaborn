@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     body, resources = exp.from_notebook_node(nb)
 
-    # Clean the output on the notebook and save a .ipynb hack to disk
+    # Clean the output on the notebook and save a .ipynb back to disk
     print(f"Writing clean {fpath} ... ", end=" ", flush=True)
     nb = strip_output(nb)
     with open(fpath, "wt") as f:
