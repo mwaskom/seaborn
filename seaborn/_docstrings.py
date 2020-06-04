@@ -49,7 +49,11 @@ class DocstringComponents:
 
 
 # TODO is "vector" the best term here? We mean to imply 1D data with a variety
-# of types, but vectors are actually 2D (row or columns...)
+# of types?
+
+# TODO now that we can parse numpydoc style strings, do we need to define dicts
+# of docstring components, or just write out a docstring?
+
 
 _core_params = dict(
     data="""
