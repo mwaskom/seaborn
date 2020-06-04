@@ -38,7 +38,7 @@ _param_docs = DocstringComponents.from_nested_components(
 
 class _DistributionPlotter(VectorPlotter):
 
-    semantics = "x", "y", "hue"
+    semantics = "x", "y", "hue", "weights"
 
     wide_structure = {"x": "values", "hue": "columns"}
     flat_structure = {"x": "values"}
@@ -79,56 +79,14 @@ class _DistributionPlotter(VectorPlotter):
             kws["color"] = color
         return kws
 
-
-class _HistPlotter(_DistributionPlotter):
-
-    pass
-
-
-class _KDEPlotter(_DistributionPlotter):
-
-    # TODO we maybe need a different category for variables that do not
-    # map to semantics of the plot, like weights
-    semantics = _DistributionPlotter.semantics + ("weights",)
-
-    def plot_univariate(
+    def _compute_univariate_density(
         self,
-        multiple,
+        data_variable,
         common_norm,
         common_grid,
-        fill,
-        legend,
         estimate_kws,
-        plot_kws,
-        ax,
+        log_scale,
     ):
-
-        # Preprocess the matplotlib keyword dictionaries
-        if fill:
-            artist = mpl.collections.PolyCollection
-        else:
-            artist = mpl.lines.Line2D
-        plot_kws = _normalize_kwargs(plot_kws, artist)
-
-        # Input checking
-        multiple_options = ["layer", "stack", "fill"]
-        if multiple not in multiple_options:
-            msg = (
-                f"multiple must be one of {multiple_options}, "
-                f"but {multiple} was passed."
-            )
-            raise ValueError(msg)
-
-        # Control the interaction with autoscaling by defining sticky_edges
-        # i.e. we don't want autoscale margins below the density curve
-        sticky_density = (0, 1) if multiple == "fill" else (0, np.inf)
-
-        # Identify the axis with the data values
-        data_variable = {"x", "y"}.intersection(self.variables).pop()
-
-        # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{data_variable}axis")
-        log_scale = data_axis.get_scale() == "log"
 
         # Initialize the estimator object
         estimator = KDE(**estimate_kws)
@@ -137,10 +95,6 @@ class _KDEPlotter(_DistributionPlotter):
 
             # Access and clean the data
             all_observations = remove_na(self.plot_data[data_variable])
-
-            # Always share the evaluation grid when stacking
-            if multiple in ("stack", "fill"):
-                common_grid = True
 
             # Define a single grid of support for the PDFs
             if common_grid:
@@ -152,8 +106,6 @@ class _KDEPlotter(_DistributionPlotter):
 
             common_norm = False
 
-        # We will do two loops through the semantic subsets
-        # The first is to estimate the density of observations in each subset
         densities = {}
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
@@ -191,6 +143,14 @@ class _KDEPlotter(_DistributionPlotter):
             key = tuple(sub_vars.items())
             densities[key] = pd.Series(density, index=support)
 
+        return densities
+
+    def _resolve_multiple(
+        self,
+        densities,
+        multiple,
+    ):
+
         # Modify the density data structure to handle multiple densities
         if multiple in ("stack", "fill"):
 
@@ -213,8 +173,64 @@ class _KDEPlotter(_DistributionPlotter):
             # All densities will start at 0
             baselines = {k: np.zeros_like(v) for k, v in densities.items()}
 
-        # Filled plots should not have any margins
+        return densities, baselines
+
+    def plot_univariate_density(
+        self,
+        multiple,
+        common_norm,
+        common_grid,
+        fill,
+        legend,
+        estimate_kws,
+        plot_kws,
+        ax,
+    ):
+
+        # Preprocess the matplotlib keyword dictionaries
+        if fill:
+            artist = mpl.collections.PolyCollection
+        else:
+            artist = mpl.lines.Line2D
+        plot_kws = _normalize_kwargs(plot_kws, artist)
+
+        # Input checking
+        multiple_options = ["layer", "stack", "fill"]
+        if multiple not in multiple_options:
+            msg = (
+                f"multiple must be one of {multiple_options}, "
+                f"but {multiple} was passed."
+            )
+            raise ValueError(msg)
+
+        # Identify the axis with the data values
+        data_variable = {"x", "y"}.intersection(self.variables).pop()
+
+        # Check for log scaling on the data axis
+        data_axis = getattr(ax, f"{data_variable}axis")
+        log_scale = data_axis.get_scale() == "log"
+
+        # Always share the evaluation grid when stacking
+        if "hue" in self.variables and multiple in ("stack", "fill"):
+            common_grid = True
+
+        # Do the computation
+        densities = self._compute_univariate_density(
+            data_variable,
+            common_norm,
+            common_grid,
+            estimate_kws,
+            log_scale
+        )
+
+        densities, baselines = self._resolve_multiple(densities, multiple)
+
+        # Control the interaction with autoscaling by defining sticky_edges
+        # i.e. we don't want autoscale margins below the density curve
+        sticky_density = (0, 1) if multiple == "fill" else (0, np.inf)
+
         if multiple == "fill":
+            # Filled plots should not have any margins
             sticky_support = densities.index.min(), densities.index.max()
         else:
             sticky_support = []
@@ -233,7 +249,7 @@ class _KDEPlotter(_DistributionPlotter):
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
-        # Now iterate through again and draw the densities
+        # Now iterate through the subsets and draw the densities
         # We go backwards so stacked densities read from top-to-bottom
         for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
 
@@ -256,7 +272,7 @@ class _KDEPlotter(_DistributionPlotter):
                 plot_kws, fill, multiple, color, alpha
             )
 
-            # Plot a curve with observation values on the x axis
+            # Either plot a curve with observation values on the x axis
             if "x" in self.variables:
 
                 if fill:
@@ -269,7 +285,7 @@ class _KDEPlotter(_DistributionPlotter):
                 artist.sticky_edges.x[:] = sticky_support
                 artist.sticky_edges.y[:] = sticky_density
 
-            # Plot a curve with observation values on the y axis
+            # Or plot a curve with observation values on the y axis
             else:
                 if fill:
                     artist = ax.fill_betweenx(
@@ -300,7 +316,7 @@ class _KDEPlotter(_DistributionPlotter):
                 ax, artist, fill, multiple, alpha, plot_kws, {},
             )
 
-    def plot_bivariate(
+    def plot_bivariate_density(
         self,
         common_norm,
         fill,
@@ -492,6 +508,77 @@ class _KDEPlotter(_DistributionPlotter):
         levels = np.take(sorted_values, idx, mode="clip")
         return levels
 
+    def plot_rug(self, height, expand_margins, legend, ax, kws):
+
+        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
+
+        # TODO we need to abstract this logic
+        scout, = ax.plot([], [], **kws)
+        kws["color"] = kws.pop("color", scout.get_color())
+        scout.remove()
+
+        kws.setdefault("linewidth", 1)
+
+        if expand_margins:
+            xmarg, ymarg = ax.margins()
+            if "x" in self.variables:
+                ymarg += height * 2
+            if "y" in self.variables:
+                xmarg += height * 2
+            ax.margins(x=xmarg, y=ymarg)
+
+        if "hue" in self.variables:
+            kws.pop("c", None)
+            kws.pop("color", None)
+
+        if "x" in self.variables:
+            self._plot_single_rug("x", height, ax, kws)
+        if "y" in self.variables:
+            self._plot_single_rug("y", height, ax, kws)
+
+        # --- Finalize the plot
+        self._add_axis_labels(ax)
+        if "hue" in self.variables and legend:
+            # TODO ideally i'd like the legend artist to look like a rug
+            legend_artist = partial(mpl.lines.Line2D, [], [])
+            self._add_legend(
+                ax, legend_artist, False, None, 1, {}, {},
+            )
+
+    def _plot_single_rug(self, var, height, ax, kws):
+        """Draw a rugplot along one axis of the plot."""
+        vector = self.plot_data[var]
+        n = len(vector)
+
+        # We'll always add a single collection with varying colors
+        if "hue" in self.variables:
+            colors = self._hue_map(self.plot_data["hue"])
+        else:
+            colors = None
+
+        # Build the array of values for the LineCollection
+        if var == "x":
+
+            trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
+            xy_pairs = np.column_stack([
+                np.repeat(vector, 2), np.tile([0, height], n)
+            ])
+
+        if var == "y":
+
+            trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
+            xy_pairs = np.column_stack([
+                np.tile([0, height], n), np.repeat(vector, 2)
+            ])
+
+        # Draw the lines on the plot
+        line_segs = xy_pairs.reshape([n, 2, 2])
+        ax.add_collection(LineCollection(
+            line_segs, transform=trans, colors=colors, **kws
+        ))
+
+        ax.autoscale_view(scalex=var == "x", scaley=var == "y")
+
 
 @_deprecate_positional_args
 def kdeplot(
@@ -601,9 +688,9 @@ def kdeplot(
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
-    p = _KDEPlotter(
+    p = _DistributionPlotter(
         data=data,
-        variables=_KDEPlotter.get_semantics(locals()),
+        variables=_DistributionPlotter.get_semantics(locals()),
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -658,7 +745,7 @@ def kdeplot(
         if color is not None:
             plot_kws["color"] = color
 
-        p.plot_univariate(
+        p.plot_univariate_density(
             multiple=multiple,
             common_norm=common_norm,
             common_grid=common_grid,
@@ -698,7 +785,7 @@ def kdeplot(
                     else:
                         set_scale("log", **{f"base{axis}": scale})
 
-        p.plot_bivariate(
+        p.plot_bivariate_density(
             common_norm=common_norm,
             fill=fill,
             levels=levels,
@@ -876,88 +963,6 @@ Examples
 )
 
 
-class _RugPlotter(_DistributionPlotter):
-
-    def __init__(
-        self,
-        data=None,
-        variables={},
-    ):
-
-        super().__init__(data=data, variables=variables)
-
-    def plot(self, height, expand_margins, legend, ax, kws):
-
-        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
-
-        # TODO we need to abstract this logic
-        scout, = ax.plot([], [], **kws)
-        kws["color"] = kws.pop("color", scout.get_color())
-        scout.remove()
-
-        kws.setdefault("linewidth", 1)
-
-        if expand_margins:
-            xmarg, ymarg = ax.margins()
-            if "x" in self.variables:
-                ymarg += height * 2
-            if "y" in self.variables:
-                xmarg += height * 2
-            ax.margins(x=xmarg, y=ymarg)
-
-        if "hue" in self.variables:
-            kws.pop("c", None)
-            kws.pop("color", None)
-
-        if "x" in self.variables:
-            self._plot_single_rug("x", height, ax, kws)
-        if "y" in self.variables:
-            self._plot_single_rug("y", height, ax, kws)
-
-        # --- Finalize the plot
-        self._add_axis_labels(ax)
-        if "hue" in self.variables and legend:
-            # TODO ideally i'd like the legend artist to look like a rug
-            legend_artist = partial(mpl.lines.Line2D, [], [])
-            self._add_legend(
-                ax, legend_artist, False, None, 1, {}, {},
-            )
-
-    def _plot_single_rug(self, var, height, ax, kws):
-        """Draw a rugplot along one axis of the plot."""
-        vector = self.plot_data[var]
-        n = len(vector)
-
-        # We'll always add a single collection with varying colors
-        if "hue" in self.variables:
-            colors = self._hue_map(self.plot_data["hue"])
-        else:
-            colors = None
-
-        # Build the array of values for the LineCollection
-        if var == "x":
-
-            trans = tx.blended_transform_factory(ax.transData, ax.transAxes)
-            xy_pairs = np.column_stack([
-                np.repeat(vector, 2), np.tile([0, height], n)
-            ])
-
-        if var == "y":
-
-            trans = tx.blended_transform_factory(ax.transAxes, ax.transData)
-            xy_pairs = np.column_stack([
-                np.tile([0, height], n), np.repeat(vector, 2)
-            ])
-
-        # Draw the lines on the plot
-        line_segs = xy_pairs.reshape([n, 2, 2])
-        ax.add_collection(LineCollection(
-            line_segs, transform=trans, colors=colors, **kws
-        ))
-
-        ax.autoscale_view(scalex=var == "x", scaley=var == "y")
-
-
 @_deprecate_positional_args
 def rugplot(
     x=None,  # Allow positional x, because behavior won't change
@@ -1005,15 +1010,17 @@ def rugplot(
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
-    variables = _RugPlotter.get_semantics(locals())
-
-    p = _RugPlotter(data=data, variables=variables)
+    weights = None
+    p = _DistributionPlotter(
+        data=data,
+        variables=_DistributionPlotter.get_semantics(locals()),
+    )
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     if ax is None:
         ax = plt.gca()
 
-    p.plot(height, expand_margins, legend, ax, kwargs)
+    p.plot_rug(height, expand_margins, legend, ax, kwargs)
 
     return ax
 

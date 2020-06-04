@@ -23,7 +23,7 @@ from .._statistics import (
     KDE
 )
 from ..distributions import (
-    _KDEPlotter,
+    _DistributionPlotter,
     rugplot,
     kdeplot,
 )
@@ -855,7 +855,7 @@ class TestKDEPlotBivariate:
         assert ax1.get_xscale() == "log"
         assert ax1.get_yscale() == "linear"
 
-        p = _KDEPlotter()
+        p = _DistributionPlotter()
         kde = KDE()
         density, (xx, yy) = kde(np.log10(x), y)
         levels = p._find_contour_levels(density, levels)
@@ -956,7 +956,7 @@ class TestKDEPlotBivariate:
         x = rng.uniform(0, 1, 100000)
         isoprop = np.linspace(.1, 1, 6)
 
-        levels = _KDEPlotter()._find_contour_levels(x, isoprop)
+        levels = _DistributionPlotter()._find_contour_levels(x, isoprop)
         for h, p in zip(levels, isoprop):
             assert (x[x <= h].sum() / x.sum()) == pytest.approx(p, abs=1e-4)
 
