@@ -1199,6 +1199,9 @@ expand_margins : bool
     overlap with other elements.
 legend : bool
     If False, do not add a legend for semantic variables.
+kwargs
+    Other keyword arguments are passed to
+    :meth:`matplotlib.collections.LineCollection`
 
 Returns
 -------
@@ -1207,58 +1210,7 @@ Returns
 Examples
 --------
 
-Add a rug along one of the axes:
-
-.. plot::
-    :context: close-figs
-
-    >>> import seaborn as sns; sns.set()
-    >>> tips = sns.load_dataset("tips")
-    >>> ax = sns.kdeplot(data=tips, x="total_bill")
-    >>> ax = sns.rugplot(data=tips, x="total_bill")
-
-Add a rug along both axes:
-
-.. plot::
-    :context: close-figs
-
-    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
-    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip")
-
-Represent a third variable with hue mapping:
-
-.. plot::
-    :context: close-figs
-
-    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip", hue="time")
-    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", hue="time")
-
-Draw a taller rug:
-
-.. plot::
-    :context: close-figs
-
-    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
-    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip", height=.1)
-
-Put the rug outside the axes:
-
-.. plot::
-    :context: close-figs
-
-    >>> ax = sns.scatterplot(data=tips, x="total_bill", y="tip")
-    >>> ax = sns.rugplot(data=tips, x="total_bill", y="tip",
-    ...     height=-.02, clip_on=False,
-    ... )
-
-Show the density of a larger dataset using thinner lines and alpha blending:
-
-.. plot::
-    :context: close-figs
-
-    >>> diamonds = sns.load_dataset("diamonds")
-    >>> ax = sns.scatterplot(data=diamonds, x="carat", y="price", s=5)
-    >>> ax = sns.rugplot(data=diamonds, x="carat", y="price", lw=1, alpha=.005)
+.. include:: ../docstrings/rugplot.rst
 
 """.format(
     params=_param_docs,
