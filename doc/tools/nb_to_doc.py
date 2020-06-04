@@ -180,7 +180,9 @@ if __name__ == "__main__":
         nb = nbformat.read(f, as_version=4)
 
     # Run the notebook
-    kernel = nb["metadata"]["kernelspec"]["name"]
+    kernel = os.environ.get("NB_KERNEL", None)
+    if kernel is None:
+        kernel = nb["metadata"]["kernelspec"]["name"]
     ep = ExecutePreprocessor(
         timeout=600,
         kernel_name=kernel,
