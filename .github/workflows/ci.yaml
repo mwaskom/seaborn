@@ -28,10 +28,9 @@ jobs:
           pip install .
 
       - name: Install doc tools
-        run: pip install -r doc/requirements.txt
-
-      - name: Setup pandoc
-        run: sudo apt-get install pandoc
+        run: |
+          pip install -r doc/requirements.txt
+          sudo apt-get install pandoc
 
       - name: Build docs
         run: make -C doc notebooks html
