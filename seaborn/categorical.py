@@ -13,7 +13,6 @@ from distutils.version import LooseVersion
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
-from .rcmod import axes_style
 from .utils import remove_na
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
@@ -1827,7 +1826,7 @@ class _LVPlotter(_CategoricalPlotter):
         self.outlier_prop = outlier_prop
 
         if not 0 < trust_alpha < 1:
-            msg = f'trust_alpha {trust_alpha} not in range (0, 1]'
+            msg = f'trust_alpha {trust_alpha} not in range (0, 1)'
             raise ValueError(msg)
         self.trust_alpha = trust_alpha
 
@@ -1854,15 +1853,8 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            k = (
-                int(
-                    np.log2(
-                        n
-                        / (2 * stats.norm.ppf((1 - self.trust_alpha / 2)) ** 2)
-                    )
-                )
-                + 1
-            )
+            point_conf = 2 * stats.norm.ppf((1 - self.trust_alpha / 2)) ** 2
+            k = int(np.log2(n / point_conf)) + 1
         else:
             k = int(self.k_depth)  # allow having k as input
         # If the number happens to be less than 1, set k to 1
@@ -1970,8 +1962,8 @@ class _LVPlotter(_CategoricalPlotter):
                      for i, b in enumerate(zip(box_ends, w_area))]
 
             # Plot the medians
-            with axes_style(rc={"lines.solid_capstyle": "butt"}):
-                ax.plot(xs_median, ys_median, c='.15', alpha=.45, **kws)
+            ax.plot(xs_median, ys_median, c='.15', alpha=.45,
+                    solid_capstyle="butt", **kws)
 
             # Plot outliers (if any)
             if len(outliers) > 0:
