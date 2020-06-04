@@ -59,7 +59,7 @@ docstrings:
 	make -C docstrings
 
 introduction: introduction.ipynb
-	tools/nb_to_doc.py introduction
+	tools/nb_to_doc.py ./introduction.ipynb
 
 notebooks: tutorials docstrings introduction
 

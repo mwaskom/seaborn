@@ -19,6 +19,7 @@ if __name__ == "__main__":
     fstem = fname[:-6]
 
     # Read the notebook
+    print(f"Executing {fpath} ...", end=" ", flush=True)
     with open(fpath) as f:
         nb = nbformat.read(f, as_version=4)
 
@@ -38,6 +39,8 @@ if __name__ == "__main__":
             if field["output_type"] == "execute_result":
                 fields.remove(field)
 
+    # TODO write a clean notebook file back out?
+
     # Convert to .rst formats
     exp = RSTExporter()
 
@@ -46,7 +49,7 @@ if __name__ == "__main__":
     c.TagRemovePreprocessor.remove_input_tags = {"hide-input"}
     c.TagRemovePreprocessor.remove_all_outputs_tags = {"hide-output"}
     c.ExtractOutputPreprocessor.output_filename_template = \
-        fstem + "/{cell_index}_{index}{extension}"
+        f"{fstem}_files/{fstem}_" + "{cell_index}_{index}{extension}"
 
     exp.register_preprocessor(TagRemovePreprocessor(config=c), True)
     exp.register_preprocessor(ExtractOutputPreprocessor(config=c), True)
@@ -55,11 +58,12 @@ if __name__ == "__main__":
 
     # Write the .rst file
     rst_path = os.path.join(basedir, f"{fstem}.rst")
+    print(f"Writing {rst_path}")
     with open(rst_path, "w") as f:
         f.write(body)
 
     # Write the individual image outputs
-    imdir = os.path.join(basedir, f"{fstem}")
+    imdir = os.path.join(basedir, f"{fstem}_files")
     if not os.path.exists(imdir):
         os.mkdir(imdir)
 

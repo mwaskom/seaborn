@@ -4,4 +4,4 @@ docstrings: ${rst_files}
 
 %.rst: %.ipynb
 	../tools/nb_to_doc.py $*.ipynb
-	cp -r $* ../generated/
+	cp -r $*_files ../generated/
