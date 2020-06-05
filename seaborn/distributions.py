@@ -185,7 +185,21 @@ class _DistributionPlotter(VectorPlotter):
             scout.remove()
 
         histograms, baselines = self._resolve_multiple(histograms, multiple)
-        densities, _ = self._resolve_multiple(densities, multiple)
+        if kde:
+            densities, _ = self._resolve_multiple(densities, multiple)
+
+        sticky_stat = (0, 1) if multiple == "fill" else (0, np.inf)
+        if multiple == "fill":
+            # Filled plots should not have any margins
+            bin_vals = histograms.index.to_frame()
+            edges = bin_vals["edges"]
+            widths = bin_vals["widths"]
+            sticky_data = (
+                edges.min(),
+                edges.max() + widths.loc[edges.idxmax()]
+            )
+        else:
+            sticky_data = []
 
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
@@ -219,6 +233,8 @@ class _DistributionPlotter(VectorPlotter):
                 )
 
             else:
+
+                # TODO could put this in a function
                 n = len(hist) * 2 + 2
                 edges = np.asarray(hist["edges"])
                 heights = np.asarray(hist["heights"])
@@ -241,19 +257,23 @@ class _DistributionPlotter(VectorPlotter):
                 y[-1] = 0
 
                 if data_variable == "x":
-                    ax.fill_between(
+                    artist = ax.fill_between(
                         x,
                         b,
                         y,
                         **artist_kws,
                     )
+                    artist.sticky_edges.x[:] = sticky_data
+                    artist.sticky_edges.y[:] = sticky_stat
                 else:
-                    ax.fill_betweenx(
+                    artist = ax.fill_betweenx(
                         x,
                         b,
                         y,
                         **artist_kws,
                     )
+                    artist.sticky_edges.x[:] = sticky_stat
+                    artist.sticky_edges.y[:] = sticky_data
 
             if kde:
                 density = densities[key]
