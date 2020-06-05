@@ -186,8 +186,11 @@ class Histogram:
 
     def _define_bin_edges(self, x, weights):
 
-        if self.binwidth is not None and self.binrange is not None:
-            start, stop = self.binrange
+        if self.binwidth is not None:
+            if self.binrange is None:
+                start, step = x.min(), x.max()
+            else:
+                start, stop = self.binrange
             step = self.binwidth
             bin_edges = np.arange(start, stop + step, step)
         else:
@@ -196,7 +199,7 @@ class Histogram:
             )
         return bin_edges
 
-    def define_bin_edges(self, x, x2=None, weights=None, cache=False):
+    def define_bin_edges(self, x, x2=None, weights=None, cache=True):
         if x2 is None:
             bin_edges = self._define_bin_edges(x, weights)
 
@@ -209,7 +212,7 @@ class Histogram:
 
         bin_edges = self.bin_edges
         if bin_edges is None:
-            bin_edges = self.define_bin_edges(x, weights=weights)
+            bin_edges = self.define_bin_edges(x, weights=weights, cache=False)
 
         density = self.stat.startswith("dens")
         hist, _ = np.histogram(

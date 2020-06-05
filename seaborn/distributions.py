@@ -17,6 +17,7 @@ from ._core import (
 )
 from ._statistics import (
     KDE,
+    Histogram,
 )
 from .utils import _kde_support, _normalize_kwargs, remove_na
 from .palettes import light_palette
@@ -83,17 +84,147 @@ class _DistributionPlotter(VectorPlotter):
         self,
         multiple,
         segment,  # TODO needs a good name, have auto depending on bins?
-        norm,  # TODO not a great name, maybe norm_mode
         fill,
         common_norm,
         common_bins,
         legend,
+        kde,
+        kde_kws,
         estimate_kws,
         plot_kws,
         ax,
     ):
 
-        pass
+        # Identify the axis with the data values
+        # TODO copied, make this a core level method?
+        data_variable = {"x", "y"}.intersection(self.variables).pop()
+
+        histograms = {}
+
+        estimator = Histogram(**estimate_kws)
+
+        log_scale = False  # TODO
+
+        if "hue" in self.variables:
+
+            cols = [data_variable, "hue"]
+            if "weights" in self.variables:
+                cols.append("weights")
+
+            all_data = self.plot_data[cols].dropna()
+
+            if common_bins:
+                estimator.define_bin_edges(
+                    all_data[data_variable],
+                    weights=all_data.get("weights", None),
+                )
+
+        else:
+            common_norm = False
+
+        for sub_vars, sub_data in self._semantic_subsets("hue"):
+
+            observations = remove_na(sub_data[data_variable])
+
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
+
+            heights, edges = estimator(observations, weights=weights)
+
+            index = pd.MultiIndex.from_arrays([
+                pd.Index(edges[:-1], name="edges"),
+                pd.Index(np.diff(edges), name="widths"),
+            ])
+            hist = pd.Series(heights, index=index, name="heights")
+
+            # TODO being inconsistent about exact or partial match on stat/norm
+            normalized_stats = ["density", "probability"]
+            if common_norm and estimate_kws["stat"] in normalized_stats:
+                hist *= len(sub_data) / len(self.plot_data)
+
+            key = tuple(sub_vars.items())
+            histograms[key] = hist
+
+        # Handle default visual attributes
+        if "hue" not in self.variables:
+            if fill:
+                scout = ax.fill_between([], [], **plot_kws)
+                default_color = tuple(scout.get_facecolor().squeeze())
+                plot_kws.pop("color", None)
+            else:
+                scout, = ax.plot([], [], **plot_kws)
+                default_color = scout.get_color()
+            scout.remove()
+
+        histograms, baselines = self._resolve_multiple(histograms, multiple)
+
+        if kde:
+            kde_kws.setdefault("cut", 0)
+            densities = self._compute_univariate_density(
+                data_variable,
+                common_norm,
+                common_bins,
+                kde_kws,
+                log_scale,
+            )
+
+            for key, val in densities.items():
+                hist = histograms[key].reset_index(name="heights")
+                heights = hist["heights"] - np.asarray(baselines[key])
+                hist_norm = (heights * hist["widths"]).sum()
+                densities[key] *= hist_norm
+
+            densities, _ = self._resolve_multiple(densities, multiple)
+
+        default_alpha = .25 if multiple == "layer" else .75
+        alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
+
+        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+
+            key = tuple(sub_vars.items())
+            hist = histograms[key].reset_index(name="heights")
+            bottom = np.asarray(baselines[key])
+
+            # Modify the matplotlib attributes from semantic mapping
+            # TODO copied from density function ... how to abstract?
+            if "hue" in self.variables:
+                color = self._hue_map(sub_vars["hue"])
+            else:
+                color = default_color
+
+            artist_kws = self._artist_kws(
+                plot_kws, fill, multiple, color, alpha
+            )
+
+            plot_func = ax.bar if data_variable == "x" else ax.barh
+            plot_func(
+                hist["edges"],
+                hist["heights"] - bottom,  # TODO
+                hist["widths"],
+                bottom,
+                align="edge",
+                **artist_kws,
+            )
+
+            if kde:
+                density = densities[key]
+                support = density.index
+
+                if "x" in self.variables:
+                    plot_args = support, density
+                    sticky_x, sticky_y = None, (0, np.inf)
+                else:
+                    plot_args = density, support
+                    sticky_x, sticky_y = (0, np.inf), None
+                line, = ax.plot(
+                    *plot_args, color=to_rgba(color, 1),
+                )
+                if sticky_x is not None:
+                    line.sticky_edges.x[:] = sticky_x
+                if sticky_y is not None:
+                    line.sticky_edges.y[:] = sticky_y
 
     def _compute_univariate_density(
         self,
@@ -110,9 +241,11 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" in self.variables:
 
             # Access and clean the data
+            # TODO what about rows where hue is null?
             all_observations = remove_na(self.plot_data[data_variable])
 
             # Define a single grid of support for the PDFs
+            # TODO should this use weights as well?
             if common_grid:
                 if log_scale:
                     all_observations = np.log10(all_observations)
@@ -163,33 +296,35 @@ class _DistributionPlotter(VectorPlotter):
 
     def _resolve_multiple(
         self,
-        densities,
+        curves,
         multiple,
     ):
 
         # Modify the density data structure to handle multiple densities
         if multiple in ("stack", "fill"):
 
-            # The densities share a support grid, so we can make a dataframe
-            densities = pd.DataFrame(densities).iloc[:, ::-1]
-            norm_constant = densities.sum(axis="columns")
+            # Setting stack or fill means that the curves share a
+            # support grid / set of bin edges, so we can make a dataframe
+            # Reverse the column order to plot from top to bottom
+            curves = pd.DataFrame(curves).iloc[:, ::-1]
+            norm_constant = curves.sum(axis="columns")
 
             # Take the cumulative sum to stack
-            densities = densities.cumsum(axis="columns")
+            curves = curves.cumsum(axis="columns")
 
             # Normalize by row sum to fill
             if multiple == "fill":
-                densities = densities.div(norm_constant, axis="index")
+                curves = curves.div(norm_constant, axis="index")
 
             # Define where each segment starts
-            baselines = densities.shift(1, axis=1).fillna(0)
+            baselines = curves.shift(1, axis=1).fillna(0)
 
         else:
 
             # All densities will start at 0
-            baselines = {k: np.zeros_like(v) for k, v in densities.items()}
+            baselines = {k: np.zeros_like(v) for k, v in curves.items()}
 
-        return densities, baselines
+        return curves, baselines
 
     def plot_univariate_density(
         self,
