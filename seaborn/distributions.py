@@ -99,11 +99,23 @@ class _DistributionPlotter(VectorPlotter):
         # TODO copied, make this a core level method?
         data_variable = {"x", "y"}.intersection(self.variables).pop()
 
+        # Check for log scaling on the data axis
+        data_axis = getattr(ax, f"{data_variable}axis")
+        log_scale = data_axis.get_scale() == "log"
+
         histograms = {}
 
-        estimator = Histogram(**estimate_kws)
+        if kde:
+            kde_kws.setdefault("cut", 0)
+            densities = self._compute_univariate_density(
+                data_variable,
+                common_norm,
+                common_bins,
+                kde_kws,
+                log_scale,
+            )
 
-        log_scale = False  # TODO
+        estimator = Histogram(**estimate_kws)
 
         if "hue" in self.variables:
 
@@ -114,6 +126,9 @@ class _DistributionPlotter(VectorPlotter):
             all_data = self.plot_data[cols].dropna()
 
             if common_bins:
+                all_observations = all_data[data_variable]
+                if log_scale:
+                    all_observations = np.log10(all_observations)
                 estimator.define_bin_edges(
                     all_data[data_variable],
                     weights=all_data.get("weights", None),
@@ -124,7 +139,11 @@ class _DistributionPlotter(VectorPlotter):
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
 
+            key = tuple(sub_vars.items())
             observations = remove_na(sub_data[data_variable])
+
+            if log_scale:
+                observations = np.log10(observations)
 
             if "weights" in self.variables:
                 weights = sub_data["weights"]
@@ -132,6 +151,14 @@ class _DistributionPlotter(VectorPlotter):
                 weights = None
 
             heights, edges = estimator(observations, weights=weights)
+
+            if kde:
+                density = densities[key]
+                hist_norm = (heights * np.diff(edges)).sum()
+                densities[key] *= hist_norm
+
+            if log_scale:
+                edges = np.power(10, edges)
 
             index = pd.MultiIndex.from_arrays([
                 pd.Index(edges[:-1], name="edges"),
@@ -144,7 +171,6 @@ class _DistributionPlotter(VectorPlotter):
             if common_norm and estimate_kws["stat"] in normalized_stats:
                 hist *= len(sub_data) / len(self.plot_data)
 
-            key = tuple(sub_vars.items())
             histograms[key] = hist
 
         # Handle default visual attributes
@@ -159,24 +185,7 @@ class _DistributionPlotter(VectorPlotter):
             scout.remove()
 
         histograms, baselines = self._resolve_multiple(histograms, multiple)
-
-        if kde:
-            kde_kws.setdefault("cut", 0)
-            densities = self._compute_univariate_density(
-                data_variable,
-                common_norm,
-                common_bins,
-                kde_kws,
-                log_scale,
-            )
-
-            for key, val in densities.items():
-                hist = histograms[key].reset_index(name="heights")
-                heights = hist["heights"] - np.asarray(baselines[key])
-                hist_norm = (heights * hist["widths"]).sum()
-                densities[key] *= hist_norm
-
-            densities, _ = self._resolve_multiple(densities, multiple)
+        densities, _ = self._resolve_multiple(densities, multiple)
 
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
@@ -198,15 +207,53 @@ class _DistributionPlotter(VectorPlotter):
                 plot_kws, fill, multiple, color, alpha
             )
 
-            plot_func = ax.bar if data_variable == "x" else ax.barh
-            plot_func(
-                hist["edges"],
-                hist["heights"] - bottom,  # TODO
-                hist["widths"],
-                bottom,
-                align="edge",
-                **artist_kws,
-            )
+            if segment:
+                plot_func = ax.bar if data_variable == "x" else ax.barh
+                plot_func(
+                    hist["edges"],
+                    hist["heights"] - bottom,  # TODO
+                    hist["widths"],
+                    bottom,
+                    align="edge",
+                    **artist_kws,
+                )
+
+            else:
+                n = len(hist) * 2 + 2
+                edges = np.asarray(hist["edges"])
+                heights = np.asarray(hist["heights"])
+                widths = np.asarray(hist["widths"])
+
+                x = np.zeros(n)
+                y = np.zeros(n)
+                b = np.zeros(n)
+
+                x[0] = edges[0]
+                x[1:-1:2] = edges
+                x[2::2] = edges + widths
+
+                b[0] = bottom[0]
+                b[1:-1] = np.repeat(bottom, 2)
+                b[-1] = bottom[-1]
+
+                y[1:-1] = np.repeat(heights, 2)
+                x[-1] = edges[-1] + widths[-1]
+                y[-1] = 0
+
+                if data_variable == "x":
+                    ax.fill_between(
+                        x,
+                        b,
+                        y,
+                        **artist_kws,
+                    )
+                else:
+                    ax.fill_betweenx(
+                        x,
+                        b,
+                        y,
+                        **artist_kws,
+                    )
 
             if kde:
                 density = densities[key]
@@ -374,6 +421,7 @@ class _DistributionPlotter(VectorPlotter):
             log_scale
         )
 
+        # TODO raises when no hue and multiple != layer
         densities, baselines = self._resolve_multiple(densities, multiple)
 
         # Control the interaction with autoscaling by defining sticky_edges
