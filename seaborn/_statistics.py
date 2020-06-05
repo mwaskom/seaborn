@@ -158,3 +158,76 @@ class KDE:
             return self._eval_univariate(x1, weights)
         else:
             return self._eval_bivariate(x1, x2, weights)
+
+
+class Histogram:
+
+    def __init__(
+        self,
+        bins="auto",
+        binwidth=None,
+        binrange=None,
+        stat="count",
+        cumulative=False,
+    ):
+
+        # TODO have a mode that uses integer range (e.g. for pmf)
+        # we can get this with binwidth=1, but we would want to adjust the
+        # bar alignment, suggesting that logic can be external if we don't
+        # want it to be something `bins` accepts
+
+        self.bins = bins
+        self.binwidth = binwidth
+        self.binrange = binrange
+        self.stat = stat
+        self.cumulative = cumulative
+
+        self.bin_edges = None
+
+    def _define_bin_edges(self, x, weights):
+
+        if self.binwidth is not None and self.binrange is not None:
+            start, stop = self.binrange
+            step = self.binwidth
+            bin_edges = np.arange(start, stop + step, step)
+        else:
+            bin_edges = np.histogram_bin_edges(
+                x, self.bins, self.binrange, weights,
+            )
+        return bin_edges
+
+    def define_bin_edges(self, x, x2=None, weights=None, cache=False):
+        if x2 is None:
+            bin_edges = self._define_bin_edges(x, weights)
+
+        if cache:
+            self.bin_edges = bin_edges
+
+        return bin_edges
+
+    def _eval_univariate(self, x, weights):
+
+        bin_edges = self.bin_edges
+        if bin_edges is None:
+            bin_edges = self.define_bin_edges(x, weights=weights)
+
+        density = self.stat.startswith("dens")
+        hist, _ = np.histogram(
+            x, bin_edges, weights=weights, density=density,
+        )
+
+        if self.stat.startswith("prob"):
+            hist = hist.astype(float) / hist.sum()
+
+        if self.cumulative:
+            if self.stat.startswith("dens"):
+                hist = (hist * np.diff(bin_edges)).cumsum()
+            else:
+                hist = hist.cumsum()
+
+        return hist, bin_edges
+
+    def __call__(self, x, x2=None, weights=None):
+
+        if x2 is None:
+            return self._eval_univariate(x, weights)

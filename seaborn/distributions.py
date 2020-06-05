@@ -79,6 +79,22 @@ class _DistributionPlotter(VectorPlotter):
             kws["color"] = color
         return kws
 
+    def plot_univariate_histogram(
+        self,
+        multiple,
+        segment,  # TODO needs a good name, have auto depending on bins?
+        norm,  # TODO not a great name, maybe norm_mode
+        fill,
+        common_norm,
+        common_bins,
+        legend,
+        estimate_kws,
+        plot_kws,
+        ax,
+    ):
+
+        pass
+
     def _compute_univariate_density(
         self,
         data_variable,
