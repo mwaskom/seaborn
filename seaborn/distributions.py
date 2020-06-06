@@ -28,7 +28,7 @@ from ._docstrings import (
 )
 
 
-__all__ = ["distplot", "kdeplot", "rugplot"]
+__all__ = ["distplot", "histplot", "kdeplot", "rugplot"]
 
 
 _param_docs = DocstringComponents.from_nested_components(
@@ -852,6 +852,70 @@ class _DistributionPlotter(VectorPlotter):
         ))
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
+
+
+# TODO  which style of function signature to use?
+def histplot(
+    data=None, *,
+    # Vector variables
+    x=None, y=None, hue=None, weights=None,
+    # Hue mapping parameters
+    palette=None, hue_order=None, hue_norm=None,
+    # Histogram computation parameters
+    stat="count", bins="auto", binwidth=None, binrange=None,
+    cumulative=False, common_bins=True, common_norm=True,
+    # Histogram appearance parameters
+    multiple="layer", segment=True, fill=True,
+    # Histogram smoothing with a kernel density estimate
+    kde=False, kde_kws=None,
+    # Axes-level target
+    legend=True, ax=None,
+    # Other appearance keywords
+    **kwargs,
+):
+
+    p = _DistributionPlotter(
+        data=data,
+        variables=_DistributionPlotter.get_semantics(locals())
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    if ax is None:
+        ax = plt.gca()
+
+    # TODO log_scale check
+
+    # TODO other argument checking
+
+    if kde_kws is None:
+        kde_kws = {}
+    else:
+        kde_kws = kde_kws.copy()
+
+    estimate_kws = dict(
+        stat=stat,
+        bins=bins,
+        binwidth=binwidth,
+        binrange=binrange,
+        cumulative=cumulative,
+    )
+
+    p.plot_univariate_histogram(
+        multiple=multiple,
+        segment=segment,
+        fill=fill,
+        common_norm=common_norm,
+        common_bins=common_bins,
+        kde=kde,
+        kde_kws=kde_kws,
+        legend=legend,
+        estimate_kws=estimate_kws,
+        plot_kws=kwargs,
+        ax=ax,
+    )
+
+    return ax
 
 
 @_deprecate_positional_args
