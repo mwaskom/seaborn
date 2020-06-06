@@ -164,10 +164,10 @@ class Histogram:
 
     def __init__(
         self,
+        stat="count",
         bins="auto",
         binwidth=None,
         binrange=None,
-        stat="count",
         cumulative=False,
     ):
 
@@ -188,7 +188,7 @@ class Histogram:
 
         if self.binwidth is not None:
             if self.binrange is None:
-                start, step = x.min(), x.max()
+                start, stop = x.min(), x.max()
             else:
                 start, stop = self.binrange
             step = self.binwidth

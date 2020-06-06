@@ -75,10 +75,11 @@ class _DistributionPlotter(VectorPlotter):
         kws = kws.copy()
         if fill:
             kws.setdefault("facecolor", to_rgba(color, alpha))
-            if multiple == "layer":
-                kws.setdefault("edgecolor", to_rgba(color, 1))
-            else:
+            if multiple in ["stack", "fill"] or segment:
+                # TODO mpl default won't look great, maybe default to white?
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
+            else:
+                kws.setdefault("edgecolor", to_rgba(color, 1))
         elif segment:
             kws["facecolor"] = "none"
             kws["edgecolor"] = to_rgba(color, 1)
@@ -93,9 +94,9 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         common_norm,
         common_bins,
-        legend,
         kde,
         kde_kws,
+        legend,
         estimate_kws,
         plot_kws,
         ax,
@@ -110,6 +111,10 @@ class _DistributionPlotter(VectorPlotter):
         log_scale = data_axis.get_scale() == "log"
 
         histograms = {}
+
+        # TODO correct to just completely override this?
+        if estimate_kws["stat"] == "count":
+            common_norm = False
 
         if kde:
             kde_kws.setdefault("cut", 0)
@@ -141,6 +146,7 @@ class _DistributionPlotter(VectorPlotter):
                 )
 
         else:
+            multiple = None
             common_norm = False
 
         for sub_vars, sub_data in self._semantic_subsets("hue"):
@@ -172,9 +178,7 @@ class _DistributionPlotter(VectorPlotter):
             ])
             hist = pd.Series(heights, index=index, name="heights")
 
-            # TODO being inconsistent about exact or partial match on stat/norm
-            normalized_stats = ["density", "probability"]
-            if common_norm and estimate_kws["stat"] in normalized_stats:
+            if common_norm:
                 hist *= len(sub_data) / len(self.plot_data)
 
             histograms[key] = hist
@@ -211,8 +215,16 @@ class _DistributionPlotter(VectorPlotter):
         # depending on the relative binwidth. Either draw very very thin,
         # or have segment default to False, when drawing quite thin bars.
 
-        default_alpha = .25 if multiple == "layer" else .75
+        # TODO sort out the default alpha, depending on multiple (and segment?)
+        if multiple == "layer":
+            default_alpha = .25
+        elif kde:
+            default_alpha = .5
+        else:
+            default_alpha = .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
+
+        hist_artists = []
 
         for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
 
@@ -234,7 +246,7 @@ class _DistributionPlotter(VectorPlotter):
             if segment:
 
                 plot_func = ax.bar if data_variable == "x" else ax.barh
-                plot_func(
+                artists = plot_func(
                     hist["edges"],
                     hist["heights"] - bottom,  # TODO
                     hist["widths"],
@@ -242,6 +254,15 @@ class _DistributionPlotter(VectorPlotter):
                     align="edge",
                     **artist_kws,
                 )
+                for bar in artists:
+                    if data_variable == "x":
+                        bar.sticky_edges.x[:] = sticky_data
+                        bar.sticky_edges.y[:] = sticky_stat
+                    else:
+                        bar.sticky_edges.x[:] = sticky_stat
+                        bar.sticky_edges.y[:] = sticky_data
+
+                hist_artists.extend(artists)
 
             else:
 
@@ -282,6 +303,8 @@ class _DistributionPlotter(VectorPlotter):
                     artist.sticky_edges.x[:] = sticky_stat
                     artist.sticky_edges.y[:] = sticky_data
 
+                hist_artists.append(artist)
+
             if kde:
                 density = densities[key]
                 support = density.index
@@ -299,6 +322,31 @@ class _DistributionPlotter(VectorPlotter):
                     line.sticky_edges.x[:] = sticky_x
                 if sticky_y is not None:
                     line.sticky_edges.y[:] = sticky_y
+
+        if "linewidth" not in plot_kws:
+
+            if isinstance(histograms, dict):
+                hist_data = histograms.values()
+            else:
+                hist_data = [histograms]
+
+            binwidth = min([
+                h.index.get_level_values("widths").min() for h in hist_data
+            ])
+
+            binwidth_points, _ = 72 / ax.figure.dpi * (
+                ax.transData.transform([binwidth, 0])
+                - ax.transData.transform([0, 0])
+            )
+
+            if segment:
+                scale = .01 if fill else .05
+            else:
+                scale = .02 if fill else .1
+            default_linewidth = scale * binwidth_points
+            for bar in hist_artists:
+                linewidth = bar.get_linewidth()
+                bar.set_linewidth(min([linewidth, default_linewidth]))
 
     def _compute_univariate_density(
         self,
