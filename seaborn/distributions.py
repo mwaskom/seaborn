@@ -176,7 +176,7 @@ class _DistributionPlotter(VectorPlotter):
 
             if kde and key in densities:
                 density = densities[key]
-                if estimate_kws["cumulative"]:
+                if estimator.cumulative:
                     hist_norm = heights.max()
                 else:
                     hist_norm = (heights * np.diff(edges)).sum()
@@ -367,6 +367,26 @@ class _DistributionPlotter(VectorPlotter):
             for bar in hist_artists:
                 linewidth = bar.get_linewidth()
                 bar.set_linewidth(min([linewidth, default_linewidth]))
+
+        # --- Finalize the plot ----
+        default_x = default_y = ""
+        if data_variable == "x":
+            default_y = estimator.stat.capitalize()
+        if data_variable == "y":
+            default_x = estimator.stat.capitalize()
+        self._add_axis_labels(ax, default_x, default_y)
+
+        # TODO copied from kdeplotter, suggests we can abstract
+        if "hue" in self.variables and legend:
+
+            if fill or segment:
+                artist = partial(mpl.patches.Patch)
+            else:
+                artist = partial(mpl.lines.Line2D, [], [])
+
+            self._add_legend(
+                ax, artist, fill, segment, multiple, alpha, plot_kws, {},
+            )
 
     def _compute_univariate_density(
         self,
@@ -888,8 +908,8 @@ def histplot(
     multiple="layer", segment=True, fill=True,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None,
-    # Axes-level target
-    legend=True, ax=None,
+    # Axes information
+    log_scale=None, legend=True, ax=None,
     # Other appearance keywords
     **kwargs,
 ):
@@ -904,12 +924,34 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
-    # TODO log_scale check
-
-    # TODO other argument checking
-
     if kde_kws is None:
         kde_kws = {}
+
+    # TODO copying from here to the method call from kdeplot, basically!
+
+    # Check for a specification that lacks x/y data and return early
+    any_data = bool({"x", "y"} & set(p.variables))
+    if not any_data:
+        return ax
+
+    data_variable = (set(p.variables) & {"x", "y"}).pop()
+
+    # Catch some inputs we cannot do anything with
+    data_var_type = p.var_types[data_variable]
+    if data_var_type != "numeric":
+        msg = (
+            f"histplot requires a numeric '{data_variable}' variable, "
+            f"but a {data_var_type} was passed."
+        )
+        raise TypeError(msg)
+
+    # Possibly log scale the data axis
+    if log_scale is not None:
+        set_scale = getattr(ax, f"set_{data_variable}scale")
+        if log_scale is True:
+            set_scale("log")
+        else:
+            set_scale("log", **{f"base{data_variable}": log_scale})
 
     estimate_kws = dict(
         stat=stat,
