@@ -53,7 +53,8 @@ class _DistributionPlotter(VectorPlotter):
         super().__init__(data=data, variables=variables)
 
     def _add_legend(
-        self, ax, artist, fill, multiple, alpha, artist_kws, legend_kws
+        self,
+        ax, artist, fill, segment, multiple, alpha, artist_kws, legend_kws,
     ):
 
         handles = []
@@ -61,13 +62,15 @@ class _DistributionPlotter(VectorPlotter):
         for level in self._hue_map.levels:
             color = self._hue_map(level)
             handles.append(artist(
-                **self._artist_kws(artist_kws, fill, multiple, color, alpha)
+                **self._artist_kws(
+                    artist_kws, fill, segment, multiple, color, alpha
+                )
             ))
             labels.append(level)
 
         ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
 
-    def _artist_kws(self, kws, fill, multiple, color, alpha):
+    def _artist_kws(self, kws, fill, segment, multiple, color, alpha):
         """Handle differences between artists in filled/unfilled plots."""
         kws = kws.copy()
         if fill:
@@ -76,6 +79,9 @@ class _DistributionPlotter(VectorPlotter):
                 kws.setdefault("edgecolor", to_rgba(color, 1))
             else:
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
+        elif segment:
+            kws["facecolor"] = "none"
+            kws["edgecolor"] = to_rgba(color, 1)
         else:
             kws["color"] = color
         return kws
@@ -201,6 +207,10 @@ class _DistributionPlotter(VectorPlotter):
         else:
             sticky_data = []
 
+        # TODO some kind of default for the linewidth when segmenting
+        # depending on the relative binwidth. Either draw very very thin,
+        # or have segment default to False, when drawing quite thin bars.
+
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
@@ -218,10 +228,11 @@ class _DistributionPlotter(VectorPlotter):
                 color = default_color
 
             artist_kws = self._artist_kws(
-                plot_kws, fill, multiple, color, alpha
+                plot_kws, fill, segment, multiple, color, alpha
             )
 
             if segment:
+
                 plot_func = ax.bar if data_variable == "x" else ax.barh
                 plot_func(
                     hist["edges"],
@@ -257,21 +268,17 @@ class _DistributionPlotter(VectorPlotter):
                 y[-1] = 0
 
                 if data_variable == "x":
-                    artist = ax.fill_between(
-                        x,
-                        b,
-                        y,
-                        **artist_kws,
-                    )
+                    if fill:
+                        artist = ax.fill_between(x, b, y, **artist_kws)
+                    else:
+                        artist, = ax.plot(x, y, **artist_kws)
                     artist.sticky_edges.x[:] = sticky_data
                     artist.sticky_edges.y[:] = sticky_stat
                 else:
-                    artist = ax.fill_betweenx(
-                        x,
-                        b,
-                        y,
-                        **artist_kws,
-                    )
+                    if fill:
+                        artist = ax.fill_betweenx(x, b, y, **artist_kws)
+                    else:
+                        artist, = ax.plot(y, x, **artist_kws)
                     artist.sticky_edges.x[:] = sticky_stat
                     artist.sticky_edges.y[:] = sticky_data
 
@@ -488,7 +495,7 @@ class _DistributionPlotter(VectorPlotter):
                 color = default_color
 
             artist_kws = self._artist_kws(
-                plot_kws, fill, multiple, color, alpha
+                plot_kws, fill, False, multiple, color, alpha
             )
 
             # Either plot a curve with observation values on the x axis
@@ -532,7 +539,7 @@ class _DistributionPlotter(VectorPlotter):
                 artist = partial(mpl.lines.Line2D, [], [])
 
             self._add_legend(
-                ax, artist, fill, multiple, alpha, plot_kws, {},
+                ax, artist, fill, False, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate_density(
@@ -714,7 +721,7 @@ class _DistributionPlotter(VectorPlotter):
                 artist = partial(mpl.lines.Line2D, [], [])
 
             self._add_legend(
-                ax, artist, fill, "layer", 1, artist_kws, {},
+                ax, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
     def _find_contour_levels(self, density, isoprop):
@@ -761,7 +768,7 @@ class _DistributionPlotter(VectorPlotter):
             # TODO ideally i'd like the legend artist to look like a rug
             legend_artist = partial(mpl.lines.Line2D, [], [])
             self._add_legend(
-                ax, legend_artist, False, None, 1, {}, {},
+                ax, legend_artist, False, False, None, 1, {}, {},
             )
 
     def _plot_single_rug(self, var, height, ax, kws):
