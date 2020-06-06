@@ -168,29 +168,29 @@ class Histogram:
         bins="auto",
         binwidth=None,
         binrange=None,
+        discrete=False,
         cumulative=False,
     ):
 
-        # TODO have a mode that uses integer range (e.g. for pmf)
-        # we can get this with binwidth=1, but we would want to adjust the
-        # bar alignment, suggesting that logic can be external if we don't
-        # want it to be something `bins` accepts
-
+        self.stat = stat
         self.bins = bins
         self.binwidth = binwidth
         self.binrange = binrange
-        self.stat = stat
+        self.discrete = discrete
         self.cumulative = cumulative
 
         self.bin_edges = None
 
     def _define_bin_edges(self, x, weights):
 
-        if self.binwidth is not None:
-            if self.binrange is None:
-                start, stop = x.min(), x.max()
-            else:
-                start, stop = self.binrange
+        if self.binrange is None:
+            start, stop = x.min(), x.max()
+        else:
+            start, stop = self.binrange
+
+        if self.discrete:
+            bin_edges = np.arange(start, stop + 2)
+        elif self.binwidth is not None:
             step = self.binwidth
             bin_edges = np.arange(start, stop + step, step)
         else:

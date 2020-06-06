@@ -94,6 +94,7 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         common_norm,
         common_bins,
+        discrete,
         kde,
         kde_kws,
         legend,
@@ -101,6 +102,11 @@ class _DistributionPlotter(VectorPlotter):
         plot_kws,
         ax,
     ):
+
+        # TODO have a mode that uses integer range (e.g. for pmf)
+        # we can get this with binwidth=1, but we would want to adjust the
+        # bar alignment too, such that the bars are centered on the
+        # corresponding integer values
 
         # Identify the axis with the data values
         # TODO copied, make this a core level method?
@@ -118,6 +124,7 @@ class _DistributionPlotter(VectorPlotter):
 
         if kde:
             kde_kws.setdefault("cut", 0)
+            kde_kws["cumulative"] = estimate_kws["cumulative"]
             densities = self._compute_univariate_density(
                 data_variable,
                 common_norm,
@@ -125,6 +132,9 @@ class _DistributionPlotter(VectorPlotter):
                 kde_kws,
                 log_scale,
             )
+
+        if discrete:
+            estimate_kws["discrete"] = True
 
         estimator = Histogram(**estimate_kws)
 
@@ -164,9 +174,12 @@ class _DistributionPlotter(VectorPlotter):
 
             heights, edges = estimator(observations, weights=weights)
 
-            if kde:
+            if kde and key in densities:
                 density = densities[key]
-                hist_norm = (heights * np.diff(edges)).sum()
+                if estimate_kws["cumulative"]:
+                    hist_norm = heights.max()
+                else:
+                    hist_norm = (heights * np.diff(edges)).sum()
                 densities[key] *= hist_norm
 
             if log_scale:
@@ -246,12 +259,13 @@ class _DistributionPlotter(VectorPlotter):
             if segment:
 
                 plot_func = ax.bar if data_variable == "x" else ax.barh
+                align = "center" if discrete else "edge"
                 artists = plot_func(
                     hist["edges"],
                     hist["heights"] - bottom,  # TODO
                     hist["widths"],
                     bottom,
-                    align="edge",
+                    align=align,
                     **artist_kws,
                 )
                 for bar in artists:
@@ -288,6 +302,9 @@ class _DistributionPlotter(VectorPlotter):
                 x[-1] = edges[-1] + widths[-1]
                 y[-1] = 0
 
+                if discrete:
+                    x -= .5
+
                 if data_variable == "x":
                     if fill:
                         artist = ax.fill_between(x, b, y, **artist_kws)
@@ -306,7 +323,10 @@ class _DistributionPlotter(VectorPlotter):
                 hist_artists.append(artist)
 
             if kde:
-                density = densities[key]
+                try:
+                    density = densities[key]
+                except KeyError:
+                    continue
                 support = density.index
 
                 if "x" in self.variables:
@@ -863,7 +883,7 @@ def histplot(
     palette=None, hue_order=None, hue_norm=None,
     # Histogram computation parameters
     stat="count", bins="auto", binwidth=None, binrange=None,
-    cumulative=False, common_bins=True, common_norm=True,
+    cumulative=False, common_bins=True, common_norm=True, discrete=False,
     # Histogram appearance parameters
     multiple="layer", segment=True, fill=True,
     # Histogram smoothing with a kernel density estimate
@@ -890,8 +910,6 @@ def histplot(
 
     if kde_kws is None:
         kde_kws = {}
-    else:
-        kde_kws = kde_kws.copy()
 
     estimate_kws = dict(
         stat=stat,
@@ -907,10 +925,11 @@ def histplot(
         fill=fill,
         common_norm=common_norm,
         common_bins=common_bins,
+        discrete=discrete,
         kde=kde,
-        kde_kws=kde_kws,
+        kde_kws=kde_kws.copy(),
         legend=legend,
-        estimate_kws=estimate_kws,
+        estimate_kws=estimate_kws.copy(),
         plot_kws=kwargs,
         ax=ax,
     )
