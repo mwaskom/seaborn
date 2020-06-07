@@ -6,6 +6,7 @@ from numpy.testing import assert_array_equal
 
 from .._statistics import (
     KDE,
+    Histogram,
 )
 
 
@@ -124,3 +125,227 @@ class TestKDE:
 
         assert density[0, 0] == pytest.approx(0, abs=1e-2)
         assert density[-1, -1] == pytest.approx(1, abs=1e-2)
+
+
+class TestHistogram:
+
+    @pytest.fixture
+    def x(self, rng):
+        return rng.normal(0, 1, 100)
+
+    @pytest.fixture
+    def y(self, rng):
+        return rng.normal(0, 5, 100)
+
+    def test_string_bins(self, x):
+
+        h = Histogram(bins="sqrt")
+        edges = h.define_bin_edges(x)
+        assert_array_equal(edges, np.histogram_bin_edges(x, "sqrt"))
+
+    def test_int_bins(self, x):
+
+        n = 24
+        h = Histogram(bins=n)
+        edges = h.define_bin_edges(x)
+        assert len(edges) == n + 1
+
+    def test_array_bins(self, x):
+
+        bins = [-3, -2, 1, 2, 3]
+        h = Histogram(bins=bins)
+        edges = h.define_bin_edges(x)
+        assert_array_equal(edges, bins)
+
+    def test_bivariate_string_bins(self, x, y):
+
+        s1, s2 = "sqrt", "fd"
+
+        h = Histogram(bins=s1)
+        e1, e2 = h.define_bin_edges(x, y)
+        assert_array_equal(e1, np.histogram_bin_edges(x, s1))
+        assert_array_equal(e2, np.histogram_bin_edges(y, s1))
+
+        h = Histogram(bins=(s1, s2))
+        e1, e2 = h.define_bin_edges(x, y)
+        assert_array_equal(e1, np.histogram_bin_edges(x, s1))
+        assert_array_equal(e2, np.histogram_bin_edges(y, s2))
+
+    def test_bivariate_int_bins(self, x, y):
+
+        b1, b2 = 5, 10
+
+        h = Histogram(bins=b1)
+        e1, e2 = h.define_bin_edges(x, y)
+        assert len(e1) == b1 + 1
+        assert len(e2) == b1 + 1
+
+        h = Histogram(bins=(b1, b2))
+        e1, e2 = h.define_bin_edges(x, y)
+        assert len(e1) == b1 + 1
+        assert len(e2) == b2 + 1
+
+    def test_bivariate_array_bins(self, x, y):
+
+        b1 = [-3, -2, 1, 2, 3]
+        b2 = [-5, -2, 3, 6]
+
+        h = Histogram(bins=b1)
+        e1, e2 = h.define_bin_edges(x, y)
+        assert_array_equal(e1, b1)
+        assert_array_equal(e2, b1)
+
+        h = Histogram(bins=(b1, b2))
+        e1, e2 = h.define_bin_edges(x, y)
+        assert_array_equal(e1, b1)
+        assert_array_equal(e2, b2)
+
+    def test_binwidth(self, x):
+
+        binwidth = .5
+        h = Histogram(binwidth=binwidth)
+        edges = h.define_bin_edges(x)
+        assert np.all(np.diff(edges) == binwidth)
+
+    def test_bivariate_binwidth(self, x, y):
+
+        w1, w2 = .5, 1
+
+        h = Histogram(binwidth=w1)
+        e1, e2 = h.define_bin_edges(x, y)
+        assert np.all(np.diff(e1) == w1)
+        assert np.all(np.diff(e2) == w1)
+
+        h = Histogram(binwidth=(w1, w2))
+        e1, e2 = h.define_bin_edges(x, y)
+        assert np.all(np.diff(e1) == w1)
+        assert np.all(np.diff(e2) == w2)
+
+    def test_binrange(self, x):
+
+        binrange = (-4, 4)
+        h = Histogram(binrange=binrange)
+        edges = h.define_bin_edges(x)
+        assert edges.min() == binrange[0]
+        assert edges.max() == binrange[1]
+
+    def test_bivariate_binrange(self, x, y):
+
+        r1, r2 = (-4, 4), (-10, 10)
+
+        h = Histogram(binrange=r1)
+        e1, e2 = h.define_bin_edges(x, y)
+        assert e1.min() == r1[0]
+        assert e1.max() == r1[1]
+        assert e2.min() == r1[0]
+        assert e2.max() == r1[1]
+
+        h = Histogram(binrange=(r1, r2))
+        e1, e2 = h.define_bin_edges(x, y)
+        assert e1.min() == r1[0]
+        assert e1.max() == r1[1]
+        assert e2.min() == r2[0]
+        assert e2.max() == r2[1]
+
+    def test_discrete_bins(self, rng):
+
+        x = rng.binomial(20, .5, 100)
+        h = Histogram(discrete=True)
+        edges = h.define_bin_edges(x)
+        expected_edges = np.arange(x.min(), x.max() + 2)
+        assert_array_equal(edges, expected_edges)
+
+    def test_histogram(self, x):
+
+        h = Histogram()
+        heights, edges = h(x)
+        heights_mpl, edges_mpl = np.histogram(x, bins="auto")
+
+        assert_array_equal(heights, heights_mpl)
+        assert_array_equal(edges, edges_mpl)
+
+    def test_count_stat(self, x):
+
+        h = Histogram(stat="count")
+        heights, _ = h(x)
+        assert heights.sum() == len(x)
+
+    def test_density_stat(self, x):
+
+        h = Histogram(stat="density")
+        heights, edges = h(x)
+        assert (heights * np.diff(edges)).sum() == 1
+
+    def test_probability_stat(self, x):
+
+        h = Histogram(stat="probability")
+        heights, _ = h(x)
+        assert heights.sum() == 1
+
+    def test_cumulative_count(self, x):
+
+        h = Histogram(stat="count", cumulative=True)
+        heights, _ = h(x)
+        assert heights[-1] == len(x)
+
+    def test_cumulative_density(self, x):
+
+        h = Histogram(stat="density", cumulative=True)
+        heights, _ = h(x)
+        assert heights[-1] == 1
+
+    def test_cumulative_probability(self, x):
+
+        h = Histogram(stat="probability", cumulative=True)
+        heights, _ = h(x)
+        assert heights[-1] == 1
+
+    def test_bivariate_histogram(self, x, y):
+
+        h = Histogram()
+        heights, edges = h(x, y)
+        bins_mpl = (
+            np.histogram_bin_edges(x, "auto"),
+            np.histogram_bin_edges(y, "auto"),
+        )
+        heights_mpl, *edges_mpl = np.histogram2d(x, y, bins_mpl)
+        assert_array_equal(heights, heights_mpl)
+        assert_array_equal(edges[0], edges_mpl[0])
+        assert_array_equal(edges[1], edges_mpl[1])
+
+    def test_bivariate_count_stat(self, x, y):
+
+        h = Histogram(stat="count")
+        heights, _ = h(x, y)
+        assert heights.sum() == len(x)
+
+    def test_bivariate_density_stat(self, x, y):
+
+        h = Histogram(stat="density")
+        heights, (edges_x, edges_y) = h(x, y)
+        areas = np.outer(np.diff(edges_x), np.diff(edges_y))
+        assert (heights * areas).sum() == pytest.approx(1)
+
+    def test_bivariate_probability_stat(self, x, y):
+
+        h = Histogram(stat="probability")
+        heights, _ = h(x, y)
+        assert heights.sum() == 1
+
+    def test_bivariate_cumulative_count(self, x, y):
+
+        h = Histogram(stat="count", cumulative=True)
+        heights, _ = h(x, y)
+        assert heights[-1, -1] == len(x)
+
+    def test_bivariate_cumulative_density(self, x, y):
+
+        h = Histogram(stat="density", cumulative=True)
+        heights, _ = h(x, y)
+        assert heights[-1, -1] == pytest.approx(1)
+
+    def test_bivariate_cumulative_probability(self, x, y):
+
+        h = Histogram(stat="probability", cumulative=True)
+        heights, _ = h(x, y)
+        assert heights[-1, -1] == pytest.approx(1)

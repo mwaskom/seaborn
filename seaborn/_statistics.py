@@ -224,7 +224,7 @@ class Histogram:
         """Given data, return the edges of the histogram bins."""
         if x2 is None:
             bin_edges = self._define_bin_edges(
-                x1, weights, self.bins, self.binwidth. self.binrange
+                x1, weights, self.bins, self.binwidth, self.binrange
             )
         else:
 
