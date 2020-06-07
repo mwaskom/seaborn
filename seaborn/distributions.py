@@ -151,7 +151,7 @@ class _DistributionPlotter(VectorPlotter):
                 if log_scale:
                     all_observations = np.log10(all_observations)
                 estimator.define_bin_edges(
-                    all_data[data_variable],
+                    all_observations,
                     weights=all_data.get("weights", None),
                 )
 
@@ -344,6 +344,10 @@ class _DistributionPlotter(VectorPlotter):
                     line.sticky_edges.y[:] = sticky_y
 
         if "linewidth" not in plot_kws:
+
+            # Needed in some cases to get valid transforms
+            # Innocuous in other cases?
+            ax.autoscale_view()
 
             if isinstance(histograms, dict):
                 hist_data = histograms.values()
@@ -937,6 +941,9 @@ def histplot(
     data_variable = (set(p.variables) & {"x", "y"}).pop()
 
     # Catch some inputs we cannot do anything with
+    # TODO we are most of the way to knowing how to support datetimes,
+    # but see https://github.com/matplotlib/matplotlib/issues/17586
+    # I think accepting categoricals and setting discrete should work too
     data_var_type = p.var_types[data_variable]
     if data_var_type != "numeric":
         msg = (
