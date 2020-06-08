@@ -1270,6 +1270,12 @@ class TestHistPlot:
         assert_array_equal(x.get_xdata(), y.get_ydata())
         assert_array_equal(x.get_ydata(), y.get_xdata())
 
+    def test_kde_line_kws(self, flat_series):
+
+        lw = 5
+        ax = histplot(flat_series, kde=True, line_kws=dict(lw=lw))
+        assert ax.lines[0].get_linewidth() == lw
+
     def test_kde_singular_data(self):
 
         with pytest.warns(UserWarning):
@@ -1411,3 +1417,30 @@ class TestHistPlot:
         histplot(flat_series, **kws, bins=10, ax=ax1)
         histplot(flat_series, **kws, bins=10, ax=ax2)
         assert get_lw(ax1) > get_lw(ax2)
+
+    def test_bar_kwargs(self, flat_series):
+
+        lw = 2
+        ec = (1, .2, .9, .5)
+        ax = histplot(flat_series, binwidth=1, ec=ec, lw=lw)
+        for bar in ax.patches:
+            assert bar.get_edgecolor() == ec
+            assert bar.get_linewidth() == lw
+
+    def test_fill_kwargs(self, flat_series):
+
+        lw = 2
+        ec = (1, .2, .9, .5)
+        ax = histplot(flat_series, segment=False, ec=ec, lw=lw)
+        poly = ax.collections[0]
+        assert tuple(poly.get_edgecolor().squeeze()) == ec
+        assert poly.get_linewidth() == lw
+
+    def test_line_kwargs(self, flat_series):
+
+        lw = 2
+        ls = "--"
+        ax = histplot(flat_series, segment=False, fill=False, lw=lw, ls=ls)
+        line = ax.lines[0]
+        assert line.get_linewidth() == lw
+        assert line.get_linestyle() == ls

@@ -81,7 +81,6 @@ class _DistributionPlotter(VectorPlotter):
         if fill:
             kws.setdefault("facecolor", to_rgba(color, alpha))
             if multiple in ["stack", "fill"] or segment:
-                # TODO mpl default won't look great, maybe default to white?
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
             else:
                 kws.setdefault("edgecolor", to_rgba(color, 1))
@@ -103,6 +102,7 @@ class _DistributionPlotter(VectorPlotter):
         kde,
         kde_kws,
         legend,
+        line_kws,
         estimate_kws,
         plot_kws,
         ax,
@@ -255,13 +255,18 @@ class _DistributionPlotter(VectorPlotter):
 
         # Note: default linewidth is determined after plotting
 
-        # Defeat color without a hue semantic should follow the color cycle
+        # Default color without a hue semantic should follow the color cycle
+        # Note, this is fairly complicated and awkward, I'd like a better way
         if "hue" not in self.variables:
             if fill:
+                artist = mpl.patches.Rectangle
+                plot_kws = _normalize_kwargs(plot_kws, artist)
                 scout = ax.fill_between([], [], **plot_kws)
                 default_color = tuple(scout.get_facecolor().squeeze())
                 plot_kws.pop("color", None)
             else:
+                artist = mpl.lines.Line2D
+                plot_kws = _normalize_kwargs(plot_kws, artist)
                 scout, = ax.plot([], [], **plot_kws)
                 default_color = scout.get_color()
             scout.remove()
@@ -356,14 +361,15 @@ class _DistributionPlotter(VectorPlotter):
                 support = density.index
 
                 if "x" in self.variables:
-                    plot_args = support, density
+                    line_args = support, density
                     sticky_x, sticky_y = None, (0, np.inf)
                 else:
-                    plot_args = density, support
+                    line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
+                line_kws.setdefault("color", to_rgba(color, 1))
                 line, = ax.plot(
-                    *plot_args, color=to_rgba(color, 1),
+                    *line_args, **line_kws,
                 )
 
                 if sticky_x is not None:
@@ -949,7 +955,7 @@ def histplot(
     # Histogram appearance parameters
     multiple="layer", segment=True, fill=True,
     # Histogram smoothing with a kernel density estimate
-    kde=False, kde_kws=None,
+    kde=False, kde_kws=None, line_kws=None,
     # Hue mapping parameters
     palette=None, hue_order=None, hue_norm=None,
     # Axes information
@@ -970,6 +976,9 @@ def histplot(
 
     if kde_kws is None:
         kde_kws = {}
+
+    if line_kws is None:
+        line_kws = {}
 
     # TODO copying from here to the method call from kdeplot, basically!
 
@@ -1019,6 +1028,7 @@ def histplot(
         kde_kws=kde_kws.copy(),
         legend=legend,
         estimate_kws=estimate_kws.copy(),
+        line_kws=line_kws.copy(),
         plot_kws=kwargs,
         ax=ax,
     )
