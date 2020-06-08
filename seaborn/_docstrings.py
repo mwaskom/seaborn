@@ -42,7 +42,7 @@ class DocstringComponents:
         for p in params:
             name = p.name
             type = p.type
-            desc = "    \n".join(p.desc)
+            desc = "\n    ".join(p.desc)
             comp_dict[name] = f"{name} : {type}\n    {desc}"
 
         return cls(comp_dict)
@@ -111,6 +111,12 @@ ax : :class:`matplotlib.axes.Axes`
 _seealso_blurbs = dict(
 
     # Distribution plots
+    histplot="""
+histplot : Plot a histogram of binned counts with optional normalization or smoothing.
+    """,
+    kdeplot="""
+kdeplot : Plot univariate or bivariate distributions using kernel density estimation.
+    """,
     rugplot="""
 rugplot : Plot a tick at each observation value along the x and/or y axes.
     """,
