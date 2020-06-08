@@ -24,6 +24,7 @@ from .._statistics import (
 )
 from ..distributions import (
     _DistributionPlotter,
+    histplot,
     rugplot,
     kdeplot,
 )
@@ -302,11 +303,11 @@ class TestKDEPlotUnivariate:
     def test_singular_data(self):
 
         with pytest.warns(UserWarning):
-            ax = dist.kdeplot(x=np.ones(10))
+            ax = kdeplot(x=np.ones(10))
         assert not ax.lines
 
         with pytest.warns(UserWarning):
-            ax = dist.kdeplot(x=[5])
+            ax = kdeplot(x=[5])
         assert not ax.lines
 
     def test_variable_assignment(self, long_df):
@@ -964,3 +965,155 @@ class TestKDEPlotBivariate:
 
         with pytest.raises(TypeError, match="kdeplot requires a numeric 'x'"):
             kdeplot(data=long_df, x="a", y="y")
+
+
+class TestHistPlot:
+
+    @pytest.mark.parametrize(
+        "variable", ["x", "y"],
+    )
+    def test_long_vectors(self, long_df, variable):
+
+        vector = long_df[variable]
+        vectors = [
+            variable, vector, np.asarray(vector), vector.tolist(),
+        ]
+
+        f, axs = plt.subplots(3)
+        for vector, ax in zip(vectors, axs):
+            histplot(data=long_df, ax=ax, **{variable: vector})
+
+        bars = [ax.patches for ax in axs]
+        for a_bars, b_bars in itertools.product(bars, bars):
+            for a, b in zip(a_bars, b_bars):
+                assert_array_equal(a.get_height(), b.get_height())
+                assert_array_equal(a.get_xy(), b.get_xy())
+
+    def test_wide_vs_long_data(self, wide_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=wide_df, ax=ax1, common_bins=False)
+
+        for col in wide_df.columns[::-1]:
+            histplot(data=wide_df, x=col, ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_height()
+            assert a.get_xy() == b.get_xy()
+
+    def test_flat_vector(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=long_df["x"], ax=ax1)
+        histplot(data=long_df, x="x", ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_height()
+            assert a.get_xy() == b.get_xy()
+
+    def test_empty_data(self):
+
+        ax = histplot(x=[])
+        assert not ax.patches
+
+    def test_variable_assignment(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=long_df, x="x", ax=ax1)
+        histplot(data=long_df, y="x", ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_width()
+
+    @pytest.mark.parametrize("multiple", ["layer", "stack", "fill"])
+    def test_hue_colors(self, long_df, multiple):
+
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            multiple=multiple, bins=1,
+            fill=True, legend=False,
+        )
+
+        palette = color_palette()
+
+        a = .25 if multiple == "layer" else .75
+
+        for bar, color in zip(ax.patches[::-1], palette):
+            assert bar.get_facecolor() == to_rgba(color, a)
+
+    def test_hue_stacking(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+
+        histplot(
+            data=long_df, x="x", hue="a", multiple="layer", bins=n, ax=ax1,
+        )
+        histplot(
+            data=long_df, x="x", hue="a", multiple="stack", bins=n, ax=ax2,
+        )
+
+        layer_heights = np.reshape(
+            [b.get_height() for b in ax1.patches], (-1, n)
+        )
+        stack_heights = np.reshape(
+            [b.get_height() for b in ax2.patches], (-1, n)
+        )
+
+        assert_array_equal(layer_heights, stack_heights)
+
+        stack_xys = np.reshape(
+            [b.get_xy() for b in ax2.patches], (-1, n, 2)
+        )
+
+        assert_array_equal(
+            stack_xys[..., 1] + stack_heights,
+            stack_heights.cumsum(axis=0),
+        )
+
+    def test_hue_fill(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+
+        histplot(
+            data=long_df, x="x", hue="a", multiple="layer", bins=n, ax=ax1,
+        )
+        histplot(
+            data=long_df, x="x", hue="a", multiple="fill", bins=n, ax=ax2,
+        )
+
+        layer_heights = np.reshape(
+            [b.get_height() for b in ax1.patches], (-1, n)
+        )
+        stack_heights = np.reshape(
+            [b.get_height() for b in ax2.patches], (-1, n)
+        )
+
+        assert_array_almost_equal(
+            layer_heights / layer_heights.sum(axis=0), stack_heights
+        )
+
+        stack_xys = np.reshape(
+            [b.get_xy() for b in ax2.patches], (-1, n, 2)
+        )
+
+        assert_array_almost_equal(
+            (stack_xys[..., 1] + stack_heights) / stack_heights.sum(axis=0),
+            stack_heights.cumsum(axis=0),
+        )
+
+    def test_kde_singular_data(self):
+
+        with pytest.warns(UserWarning):
+            ax = histplot(x=np.ones(10), kde=True)
+        assert not ax.lines
+
+        with pytest.warns(UserWarning):
+            ax = histplot(x=[5], kde=True)
+        assert not ax.lines

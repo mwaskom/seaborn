@@ -223,6 +223,7 @@ class Histogram:
     def define_bin_edges(self, x1, x2=None, weights=None, cache=True):
         """Given data, return the edges of the histogram bins."""
         if x2 is None:
+
             bin_edges = self._define_bin_edges(
                 x1, weights, self.bins, self.binwidth, self.binrange
             )

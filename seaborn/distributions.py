@@ -363,10 +363,11 @@ class _DistributionPlotter(VectorPlotter):
                 - ax.transData.transform([0, 0])
             )
 
+            # TODO these need more tweaking
             if segment:
-                scale = .01 if fill else .05
+                scale = .04 if fill else .06
             else:
-                scale = .02 if fill else .1
+                scale = .03 if fill else .1
             default_linewidth = scale * binwidth_points
             for bar in hist_artists:
                 linewidth = bar.get_linewidth()
