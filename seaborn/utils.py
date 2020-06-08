@@ -58,6 +58,33 @@ def ci_to_errsize(cis, heights):
     return errsize
 
 
+def _bar_coords_to_line_points(heights, edges, widths, bottoms):
+    """Return arguments to draw lines around outer edges of a bar plot."""
+    heights = np.asarray(heights)
+    edges = np.asarray(edges)
+    widths = np.asarray(widths)
+    bottoms = np.asarray(bottoms)
+
+    n = len(heights) * 2 + 2
+    x = np.zeros(n)
+    y = np.zeros(n)
+    b = np.zeros(n)
+
+    x[0] = edges[0]
+    x[1:-1:2] = edges
+    x[2::2] = edges + widths
+
+    b[0] = bottoms[0]
+    b[1:-1] = np.repeat(bottoms, 2)
+    b[-1] = bottoms[-1]
+
+    y[1:-1] = np.repeat(heights, 2)
+    x[-1] = edges[-1] + widths[-1]
+    y[-1] = 0
+
+    return x, y, b
+
+
 def pmf_hist(a, bins=10):
     """Return arguments to plt.bar for pmf-like histogram of an array.
 
