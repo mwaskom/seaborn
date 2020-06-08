@@ -1368,6 +1368,13 @@ class TestHistPlot:
             ax = histplot(long_df, x="x", weights="f")
         assert len(ax.patches) == 10
 
+    def test_shrink(self, long_df):
+
+        bw = 2
+        shrink = .5
+        ax = histplot(long_df, x="x", binwidth=bw, shrink=shrink)
+        assert ax.patches[0].get_width() == bw * shrink
+
     def test_log_scale_explicit(self, rng):
 
         x = rng.lognormal(0, 2, 1000)

@@ -99,6 +99,7 @@ class _DistributionPlotter(VectorPlotter):
         common_norm,
         common_bins,
         discrete,
+        shrink,
         kde,
         kde_kws,
         legend,
@@ -308,7 +309,7 @@ class _DistributionPlotter(VectorPlotter):
                 artists = plot_func(
                     hist["edges"],
                     hist["heights"] - bottom,  # TODO
-                    hist["widths"],
+                    hist["widths"] * shrink,
                     bottom,
                     align=align,
                     **artist_kws,
@@ -328,7 +329,10 @@ class _DistributionPlotter(VectorPlotter):
                 # Use either fill_between or plot to draw hull of histogram
 
                 x, y, b = _bar_coords_to_line_points(
-                    hist["heights"], hist["edges"], hist["widths"], bottom,
+                    hist["heights"],
+                    hist["edges"],
+                    hist["widths"] * shrink,
+                    bottom,
                 )
                 if discrete:
                     x -= .5
@@ -953,7 +957,7 @@ def histplot(
     stat="count", bins="auto", binwidth=None, binrange=None,
     cumulative=False, common_bins=True, common_norm=True, discrete=False,
     # Histogram appearance parameters
-    multiple="layer", segment=True, fill=True,
+    multiple="layer", segment=True, fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
     # Hue mapping parameters
@@ -1021,6 +1025,7 @@ def histplot(
         multiple=multiple,
         segment=segment,
         fill=fill,
+        shrink=shrink,
         common_norm=common_norm,
         common_bins=common_bins,
         discrete=discrete,
