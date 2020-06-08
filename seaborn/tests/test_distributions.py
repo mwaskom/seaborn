@@ -1397,22 +1397,13 @@ class TestHistPlot:
         assert np.allclose(steps, 10)
 
     @pytest.mark.parametrize(
-        "segment,fill",
-        [(True, True),
-         (True, False),
-         (False, True),
-         (False, False)],
+        "fill", [True, False],
     )
-    def test_auto_linewidth(self, flat_series, segment, fill):
+    def test_auto_linewidth(self, flat_series, fill):
 
-        if segment:
-            get_lw = lambda ax: ax.patches[0].get_linewidth()  # noqa: E731
-        elif fill:
-            get_lw = lambda ax: ax.collections[0].get_linewidth()  # noqa: E731
-        else:
-            get_lw = lambda ax: ax.lines[0].get_linewidth()  # noqa: E731
+        get_lw = lambda ax: ax.patches[0].get_linewidth()  # noqa: E731
 
-        kws = dict(segment=segment, fill=fill)
+        kws = dict(segment=True, fill=fill)
 
         f, (ax1, ax2) = plt.subplots(2)
         histplot(flat_series, **kws, bins=10, ax=ax1)
@@ -1421,8 +1412,8 @@ class TestHistPlot:
 
         f, ax1 = plt.subplots(figsize=(10, 5))
         f, ax2 = plt.subplots(figsize=(2, 5))
-        histplot(flat_series, **kws, bins=10, ax=ax1)
-        histplot(flat_series, **kws, bins=10, ax=ax2)
+        histplot(flat_series, **kws, bins=30, ax=ax1)
+        histplot(flat_series, **kws, bins=30, ax=ax2)
         assert get_lw(ax1) > get_lw(ax2)
 
     def test_bar_kwargs(self, flat_series):

@@ -381,7 +381,7 @@ class _DistributionPlotter(VectorPlotter):
                 if sticky_y is not None:
                     line.sticky_edges.y[:] = sticky_y
 
-        if "linewidth" not in plot_kws:
+        if segment and "linewidth" not in plot_kws:
 
             # Now we handle linewidth, which depends on the scaling of the plot
 
@@ -405,19 +405,19 @@ class _DistributionPlotter(VectorPlotter):
                 - ax.transData.transform([0, 0])
             )
 
-            # TODO these are provisoinal values and need more tweaking
             # The relative size of the lines depends on the appearance
+            # This is a provisional value and may need more tweaking
             default_linewidth = .1 * binwidth_points
 
             # Set the attributes
             for bar in hist_artists:
 
                 # Don't go thicker than the rcParams default
-                linewidth = min([bar.get_linewidth(), default_linewidth])
+                linewidth = min(bar.get_linewidth(), default_linewidth)
 
-                # Don't let lines fully dissapear if there is no fill
+                # If not filling, don't let lines dissapear
                 if not fill:
-                    linewidth = max([linewidth, .5])
+                    linewidth = max(linewidth, .5)
 
                 bar.set_linewidth(linewidth)
 
