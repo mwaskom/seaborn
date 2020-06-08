@@ -179,13 +179,15 @@ class Histogram:
         stat : {{"count", "density", "probability"}}
             Aggregate statistic to compute in each bin.
         bins : str, number, vector, or a pair of such values
+            Generic bin parameter that can be the name of a reference rule,
+            the number of bins, or the breaks of the bins.
             Passed to :func:`numpy.histogram_bin_edges`.
         binwidth : number or pair of numbers
             Width of each bin, overrides ``bins`` but can be used with
             ``binrange``.
         binrange : pair of numbers or a pair of pairs
             Lowest and highest value for bin edges; can be used either
-            with ``bins`` or ``binwidth``.
+            with ``bins`` or ``binwidth``. Defaults to data extremes.
         discrete : bool
             If True, set ``binwidth`` and ``binrange`` such that bin
             edges cover integer values in the dataset.

@@ -36,9 +36,30 @@ from ._docstrings import (
 __all__ = ["distplot", "histplot", "kdeplot", "rugplot"]
 
 
+_dist_params = dict(
+
+    multiple="""
+multiple : {{"layer", "stack", "fill"}}
+    Method for drawing multiple elements when semantic mapping creates subsets.
+    Only relevant with univariate data.
+    """,
+    log_scale="""
+log_scale : bool or number, or pair of bools or numbers
+    Set a log scale on the data axis (or axes, with bivariate data) with the
+    given base (default 10), and evaluate the KDE in log space.
+    """,
+    legend="""
+legend : bool
+    If False, suppress the legend for semantic variables.
+    """,
+
+)
+
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
+    dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
+    hist=DocstringComponents.from_function_params(Histogram.__init__),
 )
 
 
@@ -146,10 +167,6 @@ class _DistributionPlotter(VectorPlotter):
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
             common_norm = False
-
-        # This variable is relevant to both computation and plotting code
-        if discrete:
-            estimate_kws["discrete"] = True
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
@@ -305,7 +322,7 @@ class _DistributionPlotter(VectorPlotter):
                 # Use matplotlib bar plotting
 
                 plot_func = ax.bar if data_variable == "x" else ax.barh
-                align = "center" if discrete else "edge"
+                align = "center" if estimator.discrete else "edge"
                 artists = plot_func(
                     hist["edges"],
                     hist["heights"] - bottom,  # TODO
@@ -955,7 +972,7 @@ def histplot(
     x=None, y=None, hue=None, weights=None,
     # Histogram computation parameters
     stat="count", bins="auto", binwidth=None, binrange=None,
-    cumulative=False, common_bins=True, common_norm=True, discrete=False,
+    discrete=False, cumulative=False, common_bins=True, common_norm=True,
     # Histogram appearance parameters
     multiple="layer", segment=True, fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
@@ -1018,6 +1035,7 @@ def histplot(
         bins=bins,
         binwidth=binwidth,
         binrange=binrange,
+        discrete=discrete,
         cumulative=cumulative,
     )
 
@@ -1039,6 +1057,104 @@ def histplot(
     )
 
     return ax
+
+
+histplot.__doc__ = """\
+Plot a histogram of binned counts with optional normalization or smoothing.
+
+A histogram is a classic visualization tool that represents the distribution
+of one or more variables by counting observations within disrete bins.
+
+This function can normalize the statistic computed within each bin to show
+a probability density or mass function, and it can add a smooth curve obtained
+using a kernel density estimate, similar to :func:`kdeplot`.
+
+More information is provided in the :ref:`user guide <userguide_hist>`.
+
+Parameters
+----------
+{params.core.data}
+{params.core.xy}
+{params.core.hue}
+weights : vector or key in ``data``
+    If provided, weight the contribution of the corresponding data points
+    towards the count in each bin by these factors.
+{params.hist.stat}
+{params.hist.bins}
+{params.hist.binwidth}
+{params.hist.binrange}
+discrete : bool
+    If True, default to ``binwidth=1`` and draw the bars so that they are
+    centered on their corresponding data points. This avoids "gaps" that may
+    otherwise appear when using discrete (integer) data.
+cumulative : bool
+    If True, plot the cumulative counts as bins increase.
+common_bins : bool
+    If True, use the same bins when semantic variables produce multiple
+    plots. If using a reference rule to determine the bins, it will be computed
+    with the full dataset.
+common_norm : bool
+    If True and using a normalized statistic, the normalization will apply over
+    the full dataset. Otherwise, normalize each histogram independently.
+{params.dist.multiple}
+segment : bool
+    If True, each bin is represented by a distinct bar.
+fill : bool
+    If True, fill in the space under the histogram.
+shrink : number
+    Scale the width of each bar relative to the binwidth by this factor.
+kde : bool
+    If True, compute a kernel density estimate to smooth the distribution
+    and show on the plot as (one or more) line(s).
+kde_kws : dict
+    Parameters that control the KDE computation, as in :func:`kdeplot`.
+line_kws : dict
+    Parameters that control the KDE visualization, passed to
+    :meth:`matplotlib.axes.Axes.plot`.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+{params.dist.log_scale}
+{params.dist.legend}
+{params.core.ax}
+
+Returns
+-------
+{returns.ax}
+
+See Also
+--------
+{seealso.kdeplot}
+{seealso.rugplot}
+{seealso.jointplot}
+distplot
+
+Notes
+-----
+
+The choice of bins for computing and plotting a histogram can exert
+substantial influence on the insights that one is able to draw from the
+visualization. If the bins are too large, they may erase important features.
+On the other hand, bins that are too small may be dominated by random
+variability, obscuring the shape of the true underlying distribution. The
+default bin size is determined using a reference rule that depends on the
+sample size and variance. This works well in many cases, (i.e., with
+"well-behaved" data) but it fails in others. It is always a good to try
+different bin sizes to be sure that you are not missing something important.
+This function allows you to specify bins in several different ways, such as
+by setting the total number of bins to use, the width of each bin, or the
+specific locations where the bins should break.
+
+Examples
+--------
+
+.. include:: ../docstrings/histplot.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
@@ -1308,8 +1424,7 @@ gridsize : int
     Number of points on each dimension of the evaluation grid.
 {params.kde.cut}
 {params.kde.clip}
-legend : bool
-    If False, suppress the legend for semantic variables.
+{params.dist.legend}
 {params.kde.cumulative}
 shade_lowest : bool
     If False, the area below the lowest contour will be transparent
@@ -1331,9 +1446,7 @@ weights : vector or key in ``data``
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
-multiple : {{"layer", "stack", "fill"}}
-    Method for drawing multiple elements when semantic mapping creates subsets.
-    Only relevant with univariate data.
+{params.dist.multiple}
 common_norm : bool
     If True, scale each conditional density by the number of observations
     such that the total area under all densities sums to 1. Otherwise,
@@ -1351,9 +1464,7 @@ thresh : number in [0, 1]
     ``levels`` is a vector. Only relevant with bivariate data.
 {params.kde.bw_method}
 {params.kde.bw_adjust}
-log_scale : bool or number, or pair of bools or numbers
-    Set a log scale on the data axis (or axes, with bivariate data) with the
-    given base (default 10), and evaluate the KDE in log space.
+{params.dist.log_scale}
 {params.core.color}
 fill : bool or None
     If True, fill in the area under univariate density curves or between
@@ -1374,6 +1485,7 @@ Returns
 
 See Also
 --------
+{seealso.histplot}
 {seealso.rugplot}
 {seealso.violinplot}
 {seealso.jointplot}
