@@ -349,3 +349,8 @@ class TestHistogram:
         h = Histogram(stat="probability", cumulative=True)
         heights, _ = h(x, y)
         assert heights[-1, -1] == pytest.approx(1)
+
+    def test_bad_stat(self):
+
+        with pytest.raises(ValueError):
+            Histogram(stat="invalid")

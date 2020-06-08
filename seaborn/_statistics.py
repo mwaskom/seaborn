@@ -193,6 +193,12 @@ class Histogram:
             If True, return the cumulative statistic.
 
         """
+
+        valid_stats = ["count", "density", "probability"]
+        if stat not in valid_stats:
+            msg = f"`stat` must be in {valid_stats}, but {stat} was passed."
+            raise ValueError(msg)
+
         self.stat = stat
         self.bins = bins
         self.binwidth = binwidth

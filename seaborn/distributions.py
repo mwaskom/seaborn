@@ -103,14 +103,18 @@ class _DistributionPlotter(VectorPlotter):
         ax,
     ):
 
-        # TODO have a mode that uses integer range (e.g. for pmf)
-        # we can get this with binwidth=1, but we would want to adjust the
-        # bar alignment too, such that the bars are centered on the
-        # corresponding integer values
-
         # Identify the axis with the data values
         # TODO copied, make this a core level method?
         data_variable = {"x", "y"}.intersection(self.variables).pop()
+
+        # Input checking
+        multiple_options = ["layer", "stack", "fill"]
+        if multiple not in multiple_options:
+            msg = (
+                f"`multiple` must be one of {multiple_options}, "
+                f"but {multiple} was passed."
+            )
+            raise ValueError(msg)
 
         # Check for log scaling on the data axis
         data_axis = getattr(ax, f"{data_variable}axis")
@@ -931,6 +935,20 @@ def histplot(
 
     if kde_kws is None:
         kde_kws = {}
+
+    auto_bins_with_weights = (
+        "weights" in p.variables
+        and bins == "auto"
+        and binwidth is None
+        and not discrete
+    )
+    if auto_bins_with_weights:
+        msg = (
+            "`bins` cannot be 'auto' when using weights. "
+            "Setting `bins=10`, but you will likely want to adjust."
+        )
+        warnings.warn(msg, UserWarning)
+        bins = 10
 
     # TODO copying from here to the method call from kdeplot, basically!
 
