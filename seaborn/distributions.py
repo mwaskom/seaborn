@@ -115,7 +115,7 @@ class _DistributionPlotter(VectorPlotter):
         # --  Input checking
 
         multiple_options = ["layer", "stack", "fill"]
-        if multiple not in multiple_options:
+        if multiple is not None and multiple not in multiple_options:
             msg = (
                 f"`multiple` must be one of {multiple_options}, "
                 f"but {multiple} was passed."
@@ -395,18 +395,21 @@ class _DistributionPlotter(VectorPlotter):
                 - ax.transData.transform([0, 0])
             )
 
+            # TODO these are provisoinal values and need more tweaking
             # The relative size of the lines depends on the appearance
-            # TODO these need more tweaking
-            if segment:
-                scale = .04 if fill else .06
-            else:
-                scale = .03 if fill else .1
-            default_linewidth = scale * binwidth_points
+            default_linewidth = .1 * binwidth_points
 
             # Set the attributes
             for bar in hist_artists:
-                linewidth = bar.get_linewidth()
-                bar.set_linewidth(min([linewidth, default_linewidth]))
+
+                # Don't go thicker than the rcParams default
+                linewidth = min([bar.get_linewidth(), default_linewidth])
+
+                # Don't let lines fully dissapear if there is no fill
+                if not fill:
+                    linewidth = max([linewidth, .5])
+
+                bar.set_linewidth(linewidth)
 
         # --- Finalize the plot ----
 
@@ -551,7 +554,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Input checking
         multiple_options = ["layer", "stack", "fill"]
-        if multiple not in multiple_options:
+        if multiple is not None and multiple not in multiple_options:
             msg = (
                 f"multiple must be one of {multiple_options}, "
                 f"but {multiple} was passed."
@@ -936,13 +939,10 @@ class _DistributionPlotter(VectorPlotter):
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
 
 
-# TODO  which style of function signature to use?
 def histplot(
     data=None, *,
     # Vector variables
     x=None, y=None, hue=None, weights=None,
-    # Hue mapping parameters
-    palette=None, hue_order=None, hue_norm=None,
     # Histogram computation parameters
     stat="count", bins="auto", binwidth=None, binrange=None,
     cumulative=False, common_bins=True, common_norm=True, discrete=False,
@@ -950,6 +950,8 @@ def histplot(
     multiple="layer", segment=True, fill=True,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None,
+    # Hue mapping parameters
+    palette=None, hue_order=None, hue_norm=None,
     # Axes information
     log_scale=None, legend=True, ax=None,
     # Other appearance keywords
