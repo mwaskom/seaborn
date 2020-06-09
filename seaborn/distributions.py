@@ -291,7 +291,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Defeat alpha should depend on other parameters
         if multiple == "layer":
-            default_alpha = .25
+            default_alpha = .5 if segment else .25
         elif kde:
             default_alpha = .5
         else:
@@ -417,10 +417,14 @@ class _DistributionPlotter(VectorPlotter):
             ])
 
             # Convert binwidtj from data coordinates to pixels
-            binwidth_points, _ = 72 / ax.figure.dpi * (
-                ax.transData.transform([binwidth, 0])
+            pts_x, pts_y = 72 / ax.figure.dpi * (
+                ax.transData.transform([binwidth, binwidth])
                 - ax.transData.transform([0, 0])
             )
+            if data_variable == "x":
+                binwidth_points = pts_x
+            else:
+                binwidth_points = pts_y
 
             # The relative size of the lines depends on the appearance
             # This is a provisional value and may need more tweaking
