@@ -78,9 +78,9 @@ class _RegressionPlotter(_LinearPlotter):
     def __init__(self, x, y, data=None, x_estimator=None, x_bins=None,
                  x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
                  units=None, seed=None, order=1, logistic=False, lowess=False,
-                 robust=False, logx=False, x_partial=None, y_partial=None,
-                 truncate=False, dropna=True, x_jitter=None, y_jitter=None,
-                 color=None, label=None):
+                 robust=False, pca=False, logx=False, x_partial=None,
+                 y_partial=None, truncate=False, dropna=True, x_jitter=None,
+                 y_jitter=None, color=None, label=None):
 
         # Set member attributes
         self.x_estimator = x_estimator
@@ -94,6 +94,7 @@ class _RegressionPlotter(_LinearPlotter):
         self.logistic = logistic
         self.lowess = lowess
         self.robust = robust
+        self.pca = pca
         self.logx = logx
         self.truncate = truncate
         self.x_jitter = x_jitter
@@ -102,7 +103,7 @@ class _RegressionPlotter(_LinearPlotter):
         self.label = label
 
         # Validate the regression options:
-        if sum((order > 1, logistic, robust, lowess, logx)) > 1:
+        if sum((order > 1, logistic, robust, pca, lowess, logx)) > 1:
             raise ValueError("Mutually exclusive regression options.")
 
         # Extract the data vals from the arguments or passed dataframe
@@ -215,6 +216,8 @@ class _RegressionPlotter(_LinearPlotter):
         elif self.robust:
             from statsmodels.robust.robust_linear_model import RLM
             yhat, yhat_boots = self.fit_statsmodels(grid, RLM)
+        elif self.pca:
+            yhat, yhat_boots = self.fit_pca(grid)
         elif self.logx:
             yhat, yhat_boots = self.fit_logx(grid)
         else:
@@ -304,6 +307,41 @@ class _RegressionPlotter(_LinearPlotter):
             _x = np.c_[_x[:, 0], np.log(_x[:, 1])]
             return np.linalg.pinv(_x).dot(_y)
 
+        yhat = grid.dot(reg_func(X, y))
+        if self.ci is None:
+            return yhat, None
+
+        beta_boots = algo.bootstrap(X, y,
+                                    func=reg_func,
+                                    n_boot=self.n_boot,
+                                    units=self.units,
+                                    seed=self.seed).T
+        yhat_boots = grid.dot(beta_boots).T
+        return yhat, yhat_boots
+    
+    def fit_pca(self, grid):
+        """Use the first principal component as "regression" line."""
+        def reg_func(_x, _y):
+            dat = np.stack((_x[:,1],_y), axis=1)
+            meandat = dat.mean(0)
+            dat_demean = dat - meandat
+            cov = np.dot(dat_demean.T, dat_demean) / (dat.shape[0]-1)
+            v, w = np.linalg.eig(cov)
+            wmax = w[:,v.argmax()] # take eigenvector with max eigval
+            
+            dat_proj = np.dot(wmax, dat_demean.T)
+            # get two points on PC1 line
+            a, b = meandat + dat_proj.min() * wmax
+            c, d = meandat + dat_proj.max() * wmax
+            
+            # convert from line endpoint to slope/intercept representation
+            # for nice integration with bootstrapping on gridded x
+            slope = (d-b)/(c-a)
+            intercept = d-slope*c
+            return np.asarray((intercept, slope))
+        
+        X, y = np.c_[np.ones(len(self.x)), self.x], self.y
+        grid = np.c_[np.ones(len(grid)), grid]
         yhat = grid.dot(reg_func(X, y))
         if self.ci is None:
             return yhat, None
@@ -523,6 +561,13 @@ _regression_docs = dict(
         computationally intensive than standard linear regression, so you may
         wish to decrease the number of bootstrap resamples (``n_boot``) or set
         ``ci`` to None.\
+    """),
+    pca=dedent("""\
+    pca : bool, optional
+        If ``True``, use the first principal component described by x and y as
+        the 'regression' line. This can be more appropriate than a typical
+        regression if neither of the two variables is unambiguously designated
+        as the predictor and the other as the predicted.\
     """),
     logx=dedent("""\
     logx : bool, optional
@@ -813,7 +858,7 @@ def regplot(
     data=None,
     x_estimator=None, x_bins=None, x_ci="ci",
     scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
-    seed=None, order=1, logistic=False, lowess=False, robust=False,
+    seed=None, order=1, logistic=False, lowess=False, robust=False, pca=False,
     logx=False, x_partial=None, y_partial=None,
     truncate=True, dropna=True, x_jitter=None, y_jitter=None,
     label=None, color=None, marker="o",
@@ -822,7 +867,7 @@ def regplot(
 
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
-                                 order, logistic, lowess, robust, logx,
+                                 order, logistic, lowess, robust, pca, logx,
                                  x_partial, y_partial, truncate, dropna,
                                  x_jitter, y_jitter, color, label)
 
@@ -861,6 +906,7 @@ regplot.__doc__ = dedent("""\
     {logistic}
     {lowess}
     {robust}
+    {pca}
     {logx}
     {xy_partial}
     {truncate}
