@@ -388,7 +388,7 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
-                line_kws.setdefault("color", to_rgba(color, 1))
+                line_kws["color"] = to_rgba(color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
                 )
@@ -1063,9 +1063,10 @@ histplot.__doc__ = """\
 Plot a histogram of binned counts with optional normalization or smoothing.
 
 A histogram is a classic visualization tool that represents the distribution
-of one or more variables by counting observations within disrete bins.
+of one or more variables by counting the number of observations that fall within
+disrete bins.
 
-This function can normalize the statistic computed within each bin to show
+This function can normalize the statistic computed within each bin to estimate
 a probability density or mass function, and it can add a smooth curve obtained
 using a kernel density estimate, similar to :func:`kdeplot`.
 

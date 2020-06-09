@@ -1260,6 +1260,14 @@ class TestHistPlot:
         assert support.min() == flat_series.min()
         assert support.max() == flat_series.max()
 
+    def test_kde_hue(self, long_df):
+
+        n = 10
+        ax = histplot(data=long_df, x="x", hue="a", kde=True, bins=n)
+
+        for bar, line in zip(ax.patches[::n], ax.lines):
+            assert to_rgba(bar.get_facecolor(), 1) == line.get_color()
+
     def test_kde_yaxis(self, flat_series):
 
         f, ax = plt.subplots()
