@@ -18,7 +18,7 @@ except ImportError:
 from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
-from ..distributions import kdeplot, _freedman_diaconis_bins
+from ..distributions import kdeplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
 
