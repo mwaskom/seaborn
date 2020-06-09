@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from ._core import variable_type, categorical_order
 from . import utils
 from .palettes import color_palette, blend_palette
-from .distributions import distplot, kdeplot, _freedman_diaconis_bins
+from .distributions import histplot, kdeplot, _freedman_diaconis_bins
 from ._decorators import _deprecate_positional_args
 
 
@@ -1672,7 +1672,7 @@ class JointGrid(object):
             :context: close-figs
 
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot(sns.regplot, sns.distplot)
+            >>> g = g.plot(sns.regplot, sns.histplot)
 
         Draw the join and marginal plots separately, which allows finer-level
         control other parameters:
@@ -1683,7 +1683,7 @@ class JointGrid(object):
             >>> import matplotlib.pyplot as plt
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
             >>> g = g.plot_joint(sns.scatterplot, color=".5")
-            >>> g = g.plot_marginals(sns.distplot, kde=False, color=".5")
+            >>> g = g.plot_marginals(sns.histplot, kde=True, color=".5")
 
         Draw the two marginal plots separately:
 
@@ -1693,11 +1693,10 @@ class JointGrid(object):
             >>> import numpy as np
             >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
             >>> g = g.plot_joint(sns.scatterplot, color="m")
-            >>> _ = g.ax_marg_x.hist(tips["total_bill"], color="b", alpha=.6,
-            ...                      bins=np.arange(0, 60, 5))
-            >>> _ = g.ax_marg_y.hist(tips["tip"], color="r", alpha=.6,
-            ...                      orientation="horizontal",
-            ...                      bins=np.arange(0, 12, 1))
+            >>> _ = sns.histplot(x=tips["total_bill"], color="b", binwidth=5,
+            ...                  ax=g.ax_marg_x)
+            >>> _ = sns.histplot(y=tips["tip"], color="r", binwidth=1,
+            ...                  ax=g.ax_marg_y)
 
         Remove the space between the joint and marginal axes:
 
@@ -1803,6 +1802,9 @@ class JointGrid(object):
         utils.despine(f)
         utils.despine(ax=ax_marg_x, left=True)
         utils.despine(ax=ax_marg_y, bottom=True)
+        for axes in [ax_marg_x, ax_marg_y]:
+            for axis in [axes.xaxis, axes.yaxis]:
+                axis.label.set_visible(False)
         f.tight_layout()
         f.subplots_adjust(hspace=space, wspace=space)
 
@@ -1873,19 +1875,17 @@ class JointGrid(object):
             Returns `self`.
 
         """
-        kwargs["vertical"] = False
         plt.sca(self.ax_marg_x)
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, **kwargs)
         else:
-            func(self.x, **kwargs)
+            func(self.x, vertical=False, **kwargs)
 
-        kwargs["vertical"] = True
         plt.sca(self.ax_marg_y)
         if str(func.__module__).startswith("seaborn"):
-            func(x=self.y, **kwargs)
+            func(y=self.y, **kwargs)
         else:
-            func(self.y, **kwargs)
+            func(self.y, vertical=True, **kwargs)
 
         self.ax_marg_x.yaxis.get_label().set_visible(False)
         self.ax_marg_y.xaxis.get_label().set_visible(False)
@@ -2347,7 +2347,7 @@ def jointplot(
         :context: close-figs
 
         >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15, rug=True),
+        ...                   marginal_kws=dict(bins=15),
         ...                   annot_kws=dict(stat="r"),
         ...                   s=40, edgecolor="w", linewidth=1)
 
@@ -2388,7 +2388,7 @@ def jointplot(
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(distplot, **marginal_kws)
+        grid.plot_marginals(histplot, **marginal_kws)
 
     elif kind.startswith("hex"):
 
@@ -2402,7 +2402,7 @@ def jointplot(
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(distplot, **marginal_kws)
+        grid.plot_marginals(histplot, **marginal_kws)
 
     elif kind.startswith("kde"):
 
@@ -2419,7 +2419,8 @@ def jointplot(
         from .regression import regplot
 
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(distplot, **marginal_kws)
+        marginal_kws.setdefault("kde", True)
+        grid.plot_marginals(histplot, **marginal_kws)
 
         joint_kws.setdefault("color", color)
         grid.plot_joint(regplot, **joint_kws)
@@ -2434,8 +2435,8 @@ def jointplot(
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
         marginal_kws.setdefault("kde", False)
-        distplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
-        distplot(x=y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
+        histplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
+        histplot(x=y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
                  **marginal_kws)
         stat_func = None
     else:
