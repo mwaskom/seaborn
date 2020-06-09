@@ -318,28 +318,28 @@ class _RegressionPlotter(_LinearPlotter):
                                     seed=self.seed).T
         yhat_boots = grid.dot(beta_boots).T
         return yhat, yhat_boots
-    
+
     def fit_pca(self, grid):
         """Use the first principal component as "regression" line."""
         def reg_func(_x, _y):
-            dat = np.stack((_x[:,1],_y), axis=1)
+            dat = np.stack((_x[:, 1], _y), axis=1)
             meandat = dat.mean(0)
             dat_demean = dat - meandat
-            cov = np.dot(dat_demean.T, dat_demean) / (dat.shape[0]-1)
+            cov = np.dot(dat_demean.T, dat_demean) / (dat.shape[0] - 1)
             v, w = np.linalg.eig(cov)
-            wmax = w[:,v.argmax()] # take eigenvector with max eigval
-            
+            wmax = w[:, v.argmax()]  # take eigenvector with max eigval
+
             dat_proj = np.dot(wmax, dat_demean.T)
             # get two points on PC1 line
             a, b = meandat + dat_proj.min() * wmax
             c, d = meandat + dat_proj.max() * wmax
-            
+
             # convert from line endpoint to slope/intercept representation
             # for nice integration with bootstrapping on gridded x
-            slope = (d-b)/(c-a)
-            intercept = d-slope*c
+            slope = (d - b) / (c - a)
+            intercept = d - slope * c
             return np.asarray((intercept, slope))
-        
+
         X, y = np.c_[np.ones(len(self.x)), self.x], self.y
         grid = np.c_[np.ones(len(grid)), grid]
         yhat = grid.dot(reg_func(X, y))
