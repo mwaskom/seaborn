@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pytest
 import nose.tools as nt
 import numpy.testing as npt
+from numpy.testing import assert_array_equal
 try:
     import pandas.testing as tm
 except ImportError:
@@ -1419,66 +1420,62 @@ class TestJointPlot(object):
     def test_scatter(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data)
-        nt.assert_equal(len(g.ax_joint.collections), 1)
+        assert len(g.ax_joint.collections) == 1
 
         x, y = g.ax_joint.collections[0].get_offsets().T
-        npt.assert_array_equal(self.x, x)
-        npt.assert_array_equal(self.y, y)
+        assert_array_equal(self.x, x)
+        assert_array_equal(self.y, y)
 
-        x_bins = _freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+        assert_array_equal(
+            [b.get_x() for b in g.ax_marg_x.patches],
+            np.histogram_bin_edges(self.x, "auto")[:-1],
+        )
 
-        y_bins = _freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+        assert_array_equal(
+            [b.get_y() for b in g.ax_marg_y.patches],
+            np.histogram_bin_edges(self.y, "auto")[:-1],
+        )
 
     def test_reg(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="reg")
-        nt.assert_equal(len(g.ax_joint.collections), 2)
+        assert len(g.ax_joint.collections) == 2
 
         x, y = g.ax_joint.collections[0].get_offsets().T
-        npt.assert_array_equal(self.x, x)
-        npt.assert_array_equal(self.y, y)
+        assert_array_equal(self.x, x)
+        assert_array_equal(self.y, y)
 
-        x_bins = _freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
+        assert g.ax_marg_x.patches
+        assert g.ax_marg_y.patches
 
-        y_bins = _freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
-
-        nt.assert_equal(len(g.ax_joint.lines), 1)
-        nt.assert_equal(len(g.ax_marg_x.lines), 1)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+        assert g.ax_marg_x.lines
+        assert g.ax_marg_y.lines
 
     def test_resid(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="resid")
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-        nt.assert_equal(len(g.ax_joint.lines), 1)
-        nt.assert_equal(len(g.ax_marg_x.lines), 0)
-        nt.assert_equal(len(g.ax_marg_y.lines), 1)
+        assert g.ax_joint.collections
+        assert g.ax_joint.lines
+        assert not g.ax_marg_x.lines
+        assert g.ax_marg_y.lines
 
     def test_hex(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="hex")
-        nt.assert_equal(len(g.ax_joint.collections), 1)
-
-        x_bins = _freedman_diaconis_bins(self.x)
-        nt.assert_equal(len(g.ax_marg_x.patches), x_bins)
-
-        y_bins = _freedman_diaconis_bins(self.y)
-        nt.assert_equal(len(g.ax_marg_y.patches), y_bins)
+        assert g.ax_joint.collections
+        assert g.ax_marg_x.patches
+        assert g.ax_marg_y.patches
 
     def test_kde(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="kde")
 
-        nt.assert_true(len(g.ax_joint.collections) > 0)
-        nt.assert_equal(len(g.ax_marg_x.collections), 1)
-        nt.assert_equal(len(g.ax_marg_y.collections), 1)
+        assert len(g.ax_joint.collections) > 0
+        assert len(g.ax_marg_x.collections) == 1
+        assert len(g.ax_marg_y.collections) == 1
 
-        nt.assert_equal(len(g.ax_marg_x.collections), 1)
-        nt.assert_equal(len(g.ax_marg_y.collections), 1)
+        assert len(g.ax_marg_x.collections) == 1
+        assert len(g.ax_marg_y.collections) == 1
 
     def test_color(self):
 
@@ -1486,33 +1483,33 @@ class TestJointPlot(object):
 
         purple = mpl.colors.colorConverter.to_rgb("purple")
         scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
-        nt.assert_equal(tuple(scatter_color), purple)
+        assert tuple(scatter_color) == purple
 
         hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
-        nt.assert_equal(hist_color, purple)
+        assert hist_color == purple
 
     def test_annotation(self):
 
         with pytest.warns(UserWarning):
             g = ag.jointplot(x="x", y="y", data=self.data,
                              stat_func=stats.pearsonr)
-        nt.assert_equal(len(g.ax_joint.legend_.get_texts()), 1)
+        assert len(g.ax_joint.legend_.get_texts()) == 1
 
         g = ag.jointplot(x="x", y="y", data=self.data, stat_func=None)
-        nt.assert_is(g.ax_joint.legend_, None)
+        assert g.ax_joint.legend_ is None
 
     def test_hex_customise(self):
 
         # test that default gridsize can be overridden
         g = ag.jointplot(x="x", y="y", data=self.data, kind="hex",
                          joint_kws=dict(gridsize=5))
-        nt.assert_equal(len(g.ax_joint.collections), 1)
+        assert len(g.ax_joint.collections) == 1
         a = g.ax_joint.collections[0].get_array()
-        nt.assert_equal(28, a.shape[0])  # 28 hexagons expected for gridsize 5
+        assert a.shape[0] == 28  # 28 hexagons expected for gridsize 5
 
     def test_bad_kind(self):
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             ag.jointplot(x="x", y="y", data=self.data, kind="not_a_kind")
 
     def test_leaky_dict(self):

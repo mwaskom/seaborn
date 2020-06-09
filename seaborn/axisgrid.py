@@ -2434,10 +2434,8 @@ def jointplot(
 
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
-        marginal_kws.setdefault("kde", False)
-        histplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
-        histplot(x=y, vertical=True, fit=stats.norm, ax=grid.ax_marg_y,
-                 **marginal_kws)
+        histplot(x=x, ax=grid.ax_marg_x, kde=False, **marginal_kws)
+        histplot(y=y, ax=grid.ax_marg_y, kde=True, **marginal_kws)
         stat_func = None
     else:
         msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
