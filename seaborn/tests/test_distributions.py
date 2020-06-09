@@ -1039,7 +1039,7 @@ class TestHistPlot:
 
         palette = color_palette()
 
-        a = .25 if multiple == "layer" else .75
+        a = .5 if multiple == "layer" else .75
 
         for bar, color in zip(ax.patches[::-1], palette):
             assert bar.get_facecolor() == to_rgba(color, a)
