@@ -801,6 +801,146 @@ class TestVectorPlotter:
         assert ax.get_xlabel() == "existing"
         assert ax.get_ylabel() == "also existing"
 
+    @pytest.mark.parametrize(
+        "variables",
+        [
+            dict(x="x", y="y"),
+            dict(x="x"),
+            dict(y="y"),
+            dict(x="t", y="y"),
+            dict(x="x", y="a"),
+        ]
+    )
+    def test_attach_basics(self, long_df, variables):
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables=variables)
+        p._attach(ax)
+        assert p.ax is ax
+
+    def test_attach_disallowed(self, long_df):
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+
+        with pytest.raises(TypeError):
+            p._attach(ax, allowed_types="numeric")
+
+        with pytest.raises(TypeError):
+            p._attach(ax, allowed_types=["datetime", "numeric"])
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+
+        with pytest.raises(TypeError):
+            p._attach(ax, allowed_types="categorical")
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
+
+        with pytest.raises(TypeError):
+            p._attach(ax, allowed_types=["numeric", "categorical"])
+
+    def test_attach_log_scale(self, long_df):
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "log"
+        assert ax.yaxis.get_scale() == "linear"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p._attach(ax, log_scale=2)
+        assert ax.xaxis.get_scale() == "log"
+        assert ax.yaxis.get_scale() == "linear"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"y": "y"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "linear"
+        assert ax.yaxis.get_scale() == "log"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p._attach(ax, log_scale=True)
+        assert ax.xaxis.get_scale() == "log"
+        assert ax.yaxis.get_scale() == "log"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p._attach(ax, log_scale=(True, False))
+        assert ax.xaxis.get_scale() == "log"
+        assert ax.yaxis.get_scale() == "linear"
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p._attach(ax, log_scale=(False, 2))
+        assert ax.xaxis.get_scale() == "linear"
+        assert ax.yaxis.get_scale() == "log"
+
+    def test_attach_converters(self, long_df):
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
+        p._attach(ax)
+        assert ax.xaxis.converter is None
+        assert isinstance(ax.yaxis.converter, mpl.dates.DateConverter)
+
+        _, ax = plt.subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "a", "y": "y"})
+        p._attach(ax)
+        assert isinstance(ax.xaxis.converter, mpl.category.StrCategoryConverter)
+        assert ax.yaxis.converter is None
+
+    def test_comp_data(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "t"})
+
+        with pytest.raises(AttributeError):
+            p.comp_data
+
+        _, ax = plt.subplots()
+        p._attach(ax)
+
+        assert_array_equal(p.comp_data["x"], p.plot_data["x"])
+        assert_array_equal(
+            p.comp_data["y"], ax.yaxis.convert_units(p.plot_data["y"])
+        )
+
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+
+        _, ax = plt.subplots()
+        p._attach(ax)
+
+        assert_array_equal(
+            p.comp_data["x"], ax.xaxis.convert_units(p.plot_data["x"])
+        )
+
+    def test_comp_data_log(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        _, ax = plt.subplots()
+        p._attach(ax, log_scale=(True, False))
+
+        assert_array_equal(
+            p.comp_data["x"], np.log10(p.plot_data["x"])
+        )
+        assert_array_equal(p.comp_data["y"], p.plot_data["y"])
+
+    def test_comp_data_category_order(self):
+
+        s = (pd.Series(["a", "b", "c", "a"], dtype="category")
+             .cat.set_categories(["b", "c", "a"], ordered=True))
+
+        p = VectorPlotter(variables={"x": s})
+        _, ax = plt.subplots()
+        p._attach(ax)
+        assert_array_equal(
+            p.comp_data["x"],
+            [2, 0, 1, 2],
+        )
+
 
 class TestCoreFunc:
 

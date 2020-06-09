@@ -918,7 +918,7 @@ class VectorPlotter:
 
     @property
     def comp_data(self):
-        """Dataframe with numeric x and y, after matplotlib units conversion."""
+        """Dataframe with numeric x and y, after unit conversion and log scaling."""
         if not hasattr(self, "ax"):
             raise AttributeError("No Axes attached to plotter")
 
@@ -994,7 +994,6 @@ class VectorPlotter:
                         set_scale("log", **{f"base{axis}": scale})
 
         self.ax = ax
-        self._log_scale = log_scale
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
         """Add axis labels from internal variable names if not already existing."""
