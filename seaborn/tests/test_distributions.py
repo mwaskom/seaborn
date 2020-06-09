@@ -735,17 +735,7 @@ class TestKDEPlotUnivariate:
 
     def test_input_checking(self, long_df):
 
-        err = (
-            "kdeplot requires a numeric 'x' variable, "
-            "but a datetime was passed"
-        )
-        with pytest.raises(TypeError, match=err):
-            kdeplot(data=long_df, x="t")
-
-        err = (
-            "kdeplot requires a numeric 'x' variable, "
-            "but a categorical was passed"
-        )
+        err = "The x variable is categorical,"
         with pytest.raises(TypeError, match=err):
             kdeplot(data=long_df, x="a")
 
@@ -846,10 +836,10 @@ class TestKDEPlotBivariate:
 
         levels = .2, .5, 1
 
-        f, (ax1, ax2) = plt.subplots(ncols=2)
-        kdeplot(x=x, y=y, log_scale=True, levels=levels, ax=ax1)
-        assert ax1.get_xscale() == "log"
-        assert ax1.get_yscale() == "log"
+        f, ax = plt.subplots()
+        kdeplot(x=x, y=y, log_scale=True, levels=levels, ax=ax)
+        assert ax.get_xscale() == "log"
+        assert ax.get_yscale() == "log"
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
         kdeplot(x=x, y=y, log_scale=(10, False), levels=levels, ax=ax1)
@@ -963,7 +953,7 @@ class TestKDEPlotBivariate:
 
     def test_input_checking(self, long_df):
 
-        with pytest.raises(TypeError, match="kdeplot requires a numeric 'x'"):
+        with pytest.raises(TypeError, match="The x variable is categorical,"):
             kdeplot(data=long_df, x="a", y="y")
 
 

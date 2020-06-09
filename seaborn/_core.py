@@ -849,7 +849,9 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def _semantic_subsets(self, grouping_semantics, reverse=False):
+    def _semantic_subsets(
+        self, grouping_semantics, reverse=False, from_comp_data=False,
+    ):
         """Generator for getting subsets of data defined by semantic variables.
 
         Parameters
@@ -858,6 +860,8 @@ class VectorPlotter:
             Semantic variables that define the subsets of data.
         reverse : bool, optional
             If True, reverse the order of iteration.
+        from_comp_data : bool, optional
+            If True, use self.comp_data rather than self.plot_data
 
         Yields
         ------
@@ -875,9 +879,14 @@ class VectorPlotter:
             var for var in grouping_semantics if var in self.variables
         ]
 
+        if from_comp_data:
+            data = self.comp_data
+        else:
+            data = self.plot_data
+
         if grouping_semantics:
 
-            grouped_data = self.plot_data.groupby(
+            grouped_data = data.groupby(
                 grouping_semantics, sort=False, as_index=False
             )
 
@@ -905,10 +914,90 @@ class VectorPlotter:
 
         else:
 
-            yield {}, self.plot_data
+            yield {}, data
+
+    @property
+    def comp_data(self):
+        """Dataframe with numeric x and y, after matplotlib units conversion."""
+        if not hasattr(self, "ax"):
+            raise AttributeError("No Axes attached to plotter")
+
+        if not hasattr(self, "_comp_data"):
+
+            comp_data = self.plot_data.copy(deep=False)
+            for var in "xy":
+                axis = getattr(self.ax, f"{var}axis")
+                comp_var = axis.convert_units(self.plot_data[var])
+                if axis.get_scale() == "log":
+                    comp_var = np.log10(comp_var)
+                comp_data[var] = comp_var
+            self._comp_data = comp_data
+
+        return self._comp_data
+
+    def _attach(self, ax, allowed_types=None, log_scale=None):
+        """Associate the plotter with a matplotlib Axes and initialize its units.
+
+        Parameters
+        ----------
+        ax : :class:`matplotlib.axes.Axes`
+            Axes object that we will eventually plot onto.
+        allowed_types : str or list of str
+            If provided, raise when either the x or y variable does not have
+            one of the declared seaborn types.
+        log_scale : bool, number, or pair of bools or numbers
+            If not False, set the axes to use log scaling, with the given
+            base or defaulting to 10. If a tuple, interpreted as separate
+            arguments for the x and y axes.
+
+        """
+        if allowed_types is None:
+            # TODO should we define this default somewhere?
+            allowed_types = ["numeric", "datetime", "categorical"]
+        elif isinstance(allowed_types, str):
+            allowed_types = [allowed_types]
+
+        for var in set("xy").intersection(self.variables):
+
+            # Check types of x/y variables
+            var_type = self.var_types[var]
+            if var_type not in allowed_types:
+                err = (
+                    f"The {var} variable is {var_type}, but one of "
+                    f"{allowed_types} is required"
+                )
+                raise TypeError(err)
+
+            # Register with the matplotlib unit conversion machinery
+            # TODO do we want to warn or raise if mixing units?
+            axis = getattr(ax, f"{var}axis")
+            seed_data = self.plot_data[var]
+            if var_type == "categorical":
+                seed_data = categorical_order(seed_data)
+            axis.update_units(seed_data)
+
+        # Possibly log-scale one or both axes
+        if log_scale is not None:
+            # Allow single value or x, y tuple
+            try:
+                scalex, scaley = log_scale
+            except TypeError:
+                scalex = log_scale if "x" in self.variables else False
+                scaley = log_scale if "y" in self.variables else False
+
+            for axis, scale in zip("xy", (scalex, scaley)):
+                if scale:
+                    set_scale = getattr(ax, f"set_{axis}scale")
+                    if scale is True:
+                        set_scale("log")
+                    else:
+                        set_scale("log", **{f"base{axis}": scale})
+
+        self.ax = ax
+        self._log_scale = log_scale
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
-
+        """Add axis labels from internal variable names if not already existing."""
         if not ax.get_xlabel():
             ax.set_xlabel(self.variables.get("x", default_x))
         if not ax.get_ylabel():

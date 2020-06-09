@@ -78,11 +78,34 @@ class _DistributionPlotter(VectorPlotter):
 
         super().__init__(data=data, variables=variables)
 
+    @property
+    def univariate(self):
+        """Return True if only x or y are used."""
+        # TODO this could go down to core, but putting it here now.
+        # We'd want to be conceptually clear that univariate only applies
+        # to x/y and not to other semantics, which can exist.
+        # We haven't settled on a good conceptual name for x/y.
+        return bool({"x", "y"} - set(self.variables))
+
+    @property
+    def data_variable(self):
+        """Return the variable with data for univariate plots."""
+        # TODO This could also be in core, but it should have a better name.
+        if not self.univariate:
+            raise AttributeError("This is not a univariate plot")
+        return {"x", "y"}.intersection(self.variables).pop()
+
+    @property
+    def has_xy_data(self):
+        """Return True at least one of x or y is defined."""
+        # TODO see above points about where this should go
+        return bool({"x", "y"} & set(self.variables))
+
     def _add_legend(
         self,
         ax, artist, fill, segment, multiple, alpha, artist_kws, legend_kws,
     ):
-
+        """Add artists that reflect semantic mappings and put then in a legend."""
         handles = []
         labels = []
         for level in self._hue_map.levels:
@@ -130,10 +153,6 @@ class _DistributionPlotter(VectorPlotter):
         ax,
     ):
 
-        # Identify the axis with the data values
-        # TODO copied, make this a core level method?
-        data_variable = {"x", "y"}.intersection(self.variables).pop()
-
         # --  Input checking
 
         multiple_options = ["layer", "stack", "fill"]
@@ -159,7 +178,7 @@ class _DistributionPlotter(VectorPlotter):
             estimate_kws["bins"] = 10
 
         # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{data_variable}axis")
+        data_axis = getattr(ax, f"{self.data_variable}axis")
         log_scale = data_axis.get_scale() == "log"
 
         histograms = {}
@@ -174,16 +193,14 @@ class _DistributionPlotter(VectorPlotter):
         # Do pre-compute housekeeping related to multiple groups
         if "hue" in self.variables:
 
-            cols = [data_variable, "hue"]
+            cols = [self.data_variable, "hue"]
             if "weights" in self.variables:
                 cols.append("weights")
 
-            all_data = self.plot_data[cols].dropna()
+            all_data = self.comp_data[cols].dropna()
 
             if common_bins:
-                all_observations = all_data[data_variable]
-                if log_scale:
-                    all_observations = np.log10(all_observations)
+                all_observations = all_data[self.data_variable]
                 estimator.define_bin_edges(
                     all_observations,
                     weights=all_data.get("weights", None),
@@ -198,7 +215,7 @@ class _DistributionPlotter(VectorPlotter):
             kde_kws.setdefault("cut", 0)
             kde_kws["cumulative"] = estimate_kws["cumulative"]
             densities = self._compute_univariate_density(
-                data_variable,
+                self.data_variable,
                 common_norm,
                 common_bins,
                 kde_kws,
@@ -206,14 +223,11 @@ class _DistributionPlotter(VectorPlotter):
             )
 
         # First pass through the data to compute the histograms
-        for sub_vars, sub_data in self._semantic_subsets("hue"):
+        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            observations = remove_na(sub_data[data_variable])
-
-            if log_scale:
-                observations = np.log10(observations)
+            observations = remove_na(sub_data[self.data_variable])
 
             if "weights" in self.variables:
                 weights = sub_data["weights"]
@@ -321,7 +335,7 @@ class _DistributionPlotter(VectorPlotter):
 
                 # Use matplotlib bar plotting
 
-                plot_func = ax.bar if data_variable == "x" else ax.barh
+                plot_func = ax.bar if self.data_variable == "x" else ax.barh
                 align = "center" if estimator.discrete else "edge"
                 artists = plot_func(
                     hist["edges"],
@@ -332,7 +346,7 @@ class _DistributionPlotter(VectorPlotter):
                     **artist_kws,
                 )
                 for bar in artists:
-                    if data_variable == "x":
+                    if self.data_variable == "x":
                         bar.sticky_edges.x[:] = sticky_data
                         bar.sticky_edges.y[:] = sticky_stat
                     else:
@@ -354,7 +368,7 @@ class _DistributionPlotter(VectorPlotter):
                 if discrete:
                     x -= .5
 
-                if data_variable == "x":
+                if self.data_variable == "x":
                     if fill:
                         artist = ax.fill_between(x, b, y, **artist_kws)
                     else:
@@ -421,7 +435,7 @@ class _DistributionPlotter(VectorPlotter):
                 ax.transData.transform([binwidth, binwidth])
                 - ax.transData.transform([0, 0])
             )
-            if data_variable == "x":
+            if self.data_variable == "x":
                 binwidth_points = pts_x
             else:
                 binwidth_points = pts_y
@@ -446,9 +460,9 @@ class _DistributionPlotter(VectorPlotter):
 
         # Axis labels
         default_x = default_y = ""
-        if data_variable == "x":
+        if self.data_variable == "x":
             default_y = estimator.stat.capitalize()
-        if data_variable == "y":
+        if self.data_variable == "y":
             default_x = estimator.stat.capitalize()
         self._add_axis_labels(ax, default_x, default_y)
 
@@ -480,13 +494,11 @@ class _DistributionPlotter(VectorPlotter):
 
             # Access and clean the data
             # TODO what about rows where hue is null?
-            all_observations = remove_na(self.plot_data[data_variable])
+            all_observations = remove_na(self.comp_data[data_variable])
 
             # Define a single grid of support for the PDFs
             # TODO should this use weights as well?
             if common_grid:
-                if log_scale:
-                    all_observations = np.log10(all_observations)
                 estimator.define_support(all_observations)
 
         else:
@@ -495,7 +507,7 @@ class _DistributionPlotter(VectorPlotter):
 
         densities = {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue"):
+        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
             observations = remove_na(sub_data[data_variable])
@@ -511,10 +523,6 @@ class _DistributionPlotter(VectorPlotter):
                 weights = sub_data["weights"]
             else:
                 weights = None
-
-            # If data axis is log scaled, fit the KDE in logspace
-            if log_scale:
-                observations = np.log10(observations)
 
             # Estimate the density of observations at this level
             density, support = estimator(observations, weights=weights)
@@ -592,11 +600,8 @@ class _DistributionPlotter(VectorPlotter):
             )
             raise ValueError(msg)
 
-        # Identify the axis with the data values
-        data_variable = {"x", "y"}.intersection(self.variables).pop()
-
         # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{data_variable}axis")
+        data_axis = getattr(ax, f"{self.data_variable}axis")
         log_scale = data_axis.get_scale() == "log"
 
         # Always share the evaluation grid when stacking
@@ -605,7 +610,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Do the computation
         densities = self._compute_univariate_density(
-            data_variable,
+            self.data_variable,
             common_norm,
             common_grid,
             estimate_kws,
@@ -689,9 +694,9 @@ class _DistributionPlotter(VectorPlotter):
 
         # --- Finalize the plot ----
         default_x = default_y = ""
-        if data_variable == "x":
+        if self.data_variable == "x":
             default_y = "Density"
-        if data_variable == "y":
+        if self.data_variable == "y":
             default_x = "Density"
         self._add_axis_labels(ax, default_x, default_y)
 
@@ -713,7 +718,6 @@ class _DistributionPlotter(VectorPlotter):
         levels,
         thresh,
         legend,
-        log_scale,
         color,
         cbar,
         cbar_ax,
@@ -730,10 +734,15 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" not in self.variables:
             common_norm = False
 
+        # Check for log scaling on iether axis
+        scalex = ax.xaxis.get_scale() == "log"
+        scaley = ax.yaxis.get_scale() == "log"
+        log_scale = scalex, scaley
+
         # Loop through the subsets and estimate the KDEs
         densities, supports = {}, {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue"):
+        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
             observations = remove_na(sub_data[["x", "y"]])
@@ -749,13 +758,6 @@ class _DistributionPlotter(VectorPlotter):
                 weights = sub_data["weights"]
             else:
                 weights = None
-
-            # If data axis is log scaled, fit the KDE in logspace
-            if log_scale is not None:
-                if log_scale[0]:
-                    observations["x"] = np.log10(observations["x"])
-                if log_scale[1]:
-                    observations["y"] = np.log10(observations["y"])
 
             # Check that KDE will not error out
             variance = observations[["x", "y"]].var()
@@ -1005,34 +1007,12 @@ def histplot(
     if line_kws is None:
         line_kws = {}
 
-    # TODO copying from here to the method call from kdeplot, basically!
-
     # Check for a specification that lacks x/y data and return early
-    any_data = bool({"x", "y"} & set(p.variables))
-    if not any_data:
+    if not p.has_xy_data:
         return ax
 
-    data_variable = (set(p.variables) & {"x", "y"}).pop()
-
-    # Catch some inputs we cannot do anything with
-    # TODO we are most of the way to knowing how to support datetimes,
-    # but see https://github.com/matplotlib/matplotlib/issues/17586
-    # I think accepting categoricals and setting discrete should work too
-    data_var_type = p.var_types[data_variable]
-    if data_var_type != "numeric":
-        msg = (
-            f"histplot requires a numeric '{data_variable}' variable, "
-            f"but a {data_var_type} was passed."
-        )
-        raise TypeError(msg)
-
-    # Possibly log scale the data axis
-    if log_scale is not None:
-        set_scale = getattr(ax, f"set_{data_variable}scale")
-        if log_scale is True:
-            set_scale("log")
-        else:
-            set_scale("log", **{f"base{data_variable}": log_scale})
+    # Attach the axes to the plotter, setting up unit conversions
+    p._attach(ax, log_scale=log_scale)
 
     estimate_kws = dict(
         stat=stat,
@@ -1043,22 +1023,24 @@ def histplot(
         cumulative=cumulative,
     )
 
-    p.plot_univariate_histogram(
-        multiple=multiple,
-        segment=segment,
-        fill=fill,
-        shrink=shrink,
-        common_norm=common_norm,
-        common_bins=common_bins,
-        discrete=discrete,
-        kde=kde,
-        kde_kws=kde_kws.copy(),
-        legend=legend,
-        estimate_kws=estimate_kws.copy(),
-        line_kws=line_kws.copy(),
-        plot_kws=kwargs,
-        ax=ax,
-    )
+    if p.univariate:
+
+        p.plot_univariate_histogram(
+            multiple=multiple,
+            segment=segment,
+            fill=fill,
+            shrink=shrink,
+            common_norm=common_norm,
+            common_bins=common_bins,
+            discrete=discrete,
+            kde=kde,
+            kde_kws=kde_kws.copy(),
+            legend=legend,
+            estimate_kws=estimate_kws.copy(),
+            line_kws=line_kws.copy(),
+            plot_kws=kwargs,
+            ax=ax,
+        )
 
     return ax
 
@@ -1280,6 +1262,10 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
+    # Check for a specification that lacks x/y data and return early
+    if not p.has_xy_data:
+        return ax
+
     # Pack the kwargs for statistics.KDE
     estimate_kws = dict(
         bw_method=bw_method,
@@ -1290,34 +1276,9 @@ def kdeplot(
         cumulative=cumulative,
     )
 
-    # Check for a specification that lacks x/y data and return early
-    any_data = bool({"x", "y"} & set(p.variables))
-    if not any_data:
-        return ax
+    p._attach(ax, allowed_types=["numeric", "datetime"], log_scale=log_scale)
 
-    # Determine the kind of plot to use
-    univariate = bool({"x", "y"} - set(p.variables))
-
-    if univariate:
-
-        data_variable = (set(p.variables) & {"x", "y"}).pop()
-
-        # Catch some inputs we cannot do anything with
-        data_var_type = p.var_types[data_variable]
-        if data_var_type != "numeric":
-            msg = (
-                f"kdeplot requires a numeric '{data_variable}' variable, "
-                f"but a {data_var_type} was passed."
-            )
-            raise TypeError(msg)
-
-        # Possibly log scale the data axis
-        if log_scale is not None:
-            set_scale = getattr(ax, f"set_{data_variable}scale")
-            if log_scale is True:
-                set_scale("log")
-            else:
-                set_scale("log", **{f"base{data_variable}": log_scale})
+    if p.univariate:
 
         # Set defaults that depend on other parameters
         if fill is None:
@@ -1340,40 +1301,12 @@ def kdeplot(
 
     else:
 
-        # Check input types
-        for var in "xy":
-            var_type = p.var_types[var]
-            if var_type != "numeric":
-                msg = (
-                    f"kdeplot requires a numeric '{var}' variable, "
-                    f"but a {var_type} was passed."
-                )
-                raise TypeError(msg)
-
-        # Possibly log-scale one or both axes
-        if log_scale is not None:
-            # Allow single value or x, y tuple
-            try:
-                scalex, scaley = log_scale
-            except TypeError:
-                scalex = scaley = log_scale
-                log_scale = scalex, scaley  # Tupelize for downstream
-
-            for axis, scale in zip("xy", (scalex, scaley)):
-                if scale:
-                    set_scale = getattr(ax, f"set_{axis}scale")
-                    if scale is True:
-                        set_scale("log")
-                    else:
-                        set_scale("log", **{f"base{axis}": scale})
-
         p.plot_bivariate_density(
             common_norm=common_norm,
             fill=fill,
             levels=levels,
             thresh=thresh,
             legend=legend,
-            log_scale=log_scale,
             color=color,
             cbar=cbar,
             cbar_ax=cbar_ax,
@@ -1597,6 +1530,8 @@ def rugplot(
 
     if ax is None:
         ax = plt.gca()
+
+    p._attach(ax)
 
     p.plot_rug(height, expand_margins, legend, ax, kwargs)
 
