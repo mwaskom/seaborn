@@ -84,8 +84,8 @@ hue_order : vector of strings
     hue_norm="""
 hue_norm : tuple or :class:`matplotlib.colors.Normalize`
     Either a pair of values that set the normalization range in data units
-    for numeric ``hue`` mapping. Can also be an object that will map from data
-    units into a [0, 1] interval. Usage implies numeric mapping.
+    or an object that will map from data units into a [0, 1] interval. Usage
+    implies numeric mapping.
     """,
     color="""
 color : :mod:`matplotlib color <matplotlib.colors>`
