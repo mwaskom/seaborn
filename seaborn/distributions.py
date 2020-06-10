@@ -227,7 +227,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            observations = remove_na(sub_data[self.data_variable])
+            observations = sub_data[self.data_variable].dropna()
 
             if "weights" in self.variables:
                 weights = sub_data["weights"]
@@ -494,7 +494,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Access and clean the data
             # TODO what about rows where hue is null?
-            all_observations = remove_na(self.comp_data[data_variable])
+            all_observations = self.comp_data[data_variable].dropna()
 
             # Define a single grid of support for the PDFs
             # TODO should this use weights as well?
@@ -510,7 +510,7 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            observations = remove_na(sub_data[data_variable])
+            observations = sub_data[data_variable].dropna()
 
             observation_variance = observations.var()
             if not observation_variance or np.isnan(observation_variance):
@@ -745,7 +745,7 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            observations = remove_na(sub_data[["x", "y"]])
+            observations = sub_data[["x", "y"]].dropna()
 
             observation_variance = observations.var().any()
             if not observation_variance or np.isnan(observation_variance):
