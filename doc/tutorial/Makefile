@@ -4,3 +4,7 @@ tutorial: ${rst_files}
 
 %.rst: %.ipynb
 	../tools/nb_to_doc.py $*.ipynb
+
+clean:
+	rm *.rst
+	rm *_files/

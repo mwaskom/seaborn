@@ -8,3 +8,7 @@ docstrings: ${rst_files}
 	@if [ -f ../generated/seaborn.$*.rst ]; then \
 	    touch ../generated/seaborn.$*.rst; \
 	 fi
+
+clean:
+	rm *.rst
+	rm -r *_files/
