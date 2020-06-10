@@ -447,12 +447,17 @@ class _DistributionPlotter(VectorPlotter):
             # Set the attributes
             for bar in hist_artists:
 
-                # Don't go thicker than the rcParams default
-                linewidth = min(bar.get_linewidth(), default_linewidth)
+                # Don't let the bars get too thick
+                max_linewidth = bar.get_linewidth()
+                if not fill:
+                    max_linewidth *= 1.5
+
+                linewidth = min(default_linewidth, max_linewidth)
 
                 # If not filling, don't let lines dissapear
                 if not fill:
-                    linewidth = max(linewidth, .5)
+                    min_linewidth = .5
+                    linewidth = max(linewidth, min_linewidth)
 
                 bar.set_linewidth(linewidth)
 
