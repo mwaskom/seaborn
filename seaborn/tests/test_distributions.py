@@ -1119,7 +1119,8 @@ class TestHistPlot:
     def test_density_stat_common_norm(self, long_df):
 
         ax = histplot(
-            data=long_df, x="x", hue="a", stat="density", common_norm=True
+            data=long_df, x="x", hue="a",
+            stat="density", common_norm=True, segment=True,
         )
         bar_heights = [b.get_height() for b in ax.patches]
         bar_widths = [b.get_width() for b in ax.patches]
@@ -1130,7 +1131,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="density", bins=n, common_norm=False,
+            stat="density", bins=n, common_norm=False, segment=True,
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1150,7 +1151,8 @@ class TestHistPlot:
     def test_probability_stat_common_norm(self, long_df):
 
         ax = histplot(
-            data=long_df, x="x", hue="a", stat="probability", common_norm=True
+            data=long_df, x="x", hue="a",
+            stat="probability", common_norm=True, segment=True,
         )
         bar_heights = [b.get_height() for b in ax.patches]
         assert sum(bar_heights) == pytest.approx(1)
@@ -1160,7 +1162,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="probability", bins=n, common_norm=False,
+            stat="probability", bins=n, common_norm=False, segment=True,
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1172,7 +1174,9 @@ class TestHistPlot:
     def test_common_bins(self, long_df):
 
         n = 10
-        ax = histplot(long_df, x="x", hue="a", common_bins=True, bins=n)
+        ax = histplot(
+            long_df, x="x", hue="a", common_bins=True, bins=n, segment=True,
+        )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
         assert_array_equal(
@@ -1182,7 +1186,7 @@ class TestHistPlot:
 
     def test_unique_bins(self, wide_df):
 
-        ax = histplot(wide_df, common_bins=False, bins=10)
+        ax = histplot(wide_df, common_bins=False, bins=10, segment=True)
 
         bar_groups = np.split(np.array(ax.patches), len(wide_df.columns))
 
@@ -1227,7 +1231,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             long_df, x="x", hue="c",
-            kde=True, stat=stat,
+            kde=True, stat=stat, segment=True,
             kde_kws={"cut": 10}, bins=n,
         )
 
@@ -1283,6 +1287,13 @@ class TestHistPlot:
         with pytest.warns(UserWarning):
             ax = histplot(x=[5], kde=True)
         assert not ax.lines
+
+    def test_segment_default(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        histplot(long_df, x="x", hue="a", ax=ax1)
+        histplot(long_df, x="x", hue="a", ax=ax2, segment=False)
+        assert len(ax1.patches) == len(ax2.patches)
 
     def test_segment_no_fill(self, flat_series):
 

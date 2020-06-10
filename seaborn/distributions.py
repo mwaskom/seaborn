@@ -181,7 +181,10 @@ class _DistributionPlotter(VectorPlotter):
         data_axis = getattr(ax, f"{self.data_variable}axis")
         log_scale = data_axis.get_scale() == "log"
 
-        histograms = {}
+        # Handle conditional defaults
+        # TODO I am not sure if this makes more sense here or in histplot
+        if segment is None:
+            segment = "hue" not in self.variables
 
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
@@ -189,6 +192,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
+        histograms = {}
 
         # Do pre-compute housekeeping related to multiple groups
         if "hue" in self.variables:
@@ -447,7 +451,7 @@ class _DistributionPlotter(VectorPlotter):
             # Set the attributes
             for bar in hist_artists:
 
-                # Don't let the bars get too thick
+                # Don't let the lines get too thick
                 max_linewidth = bar.get_linewidth()
                 if not fill:
                     max_linewidth *= 1.5
@@ -985,7 +989,7 @@ def histplot(
     stat="count", bins="auto", binwidth=None, binrange=None,
     discrete=False, cumulative=False, common_bins=True, common_norm=True,
     # Histogram appearance parameters
-    multiple="layer", segment=True, fill=True, shrink=1,
+    multiple="layer", segment=None, fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
     # Hue mapping parameters
@@ -1089,8 +1093,9 @@ common_norm : bool
     If True and using a normalized statistic, the normalization will apply over
     the full dataset. Otherwise, normalize each histogram independently.
 {params.dist.multiple}
-segment : bool
-    If True, each bin is represented by a distinct bar.
+segment : bool or None
+    If True, each bin is represented by a distinct bar. The default depends
+    on whether a ``hue`` variable is assigned.
 fill : bool
     If True, fill in the space under the histogram.
 shrink : number
@@ -1477,7 +1482,6 @@ Examples
     returns=_core_docs["returns"],
     seealso=_core_docs["seealso"],
 )
-
 
 @_deprecate_positional_args
 def rugplot(
