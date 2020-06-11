@@ -501,9 +501,9 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, alpha)
         )
 
-    def test_multiple_input_check(self, long_df):
+    def test_multiple_argument_check(self, long_df):
 
-        with pytest.raises(ValueError, match="multiple must be"):
+        with pytest.raises(ValueError, match="`multiple` must be"):
             kdeplot(data=long_df, x="x", hue="a", multiple="bad_input")
 
     def test_cut(self, rng):
@@ -1018,14 +1018,14 @@ class TestHistPlot:
         for a, b in zip(ax1.patches, ax2.patches):
             assert a.get_height() == b.get_width()
 
-    @pytest.mark.parametrize("segment", [True, False])
+    @pytest.mark.parametrize("element", ["bars", "step", "poly"])
     @pytest.mark.parametrize("multiple", ["layer", "dodge", "stack", "fill"])
-    def test_hue_colors(self, long_df, multiple, segment):
+    def test_hue_fill_colors(self, long_df, multiple, element):
 
         ax = histplot(
             data=long_df, x="x", hue="a",
             multiple=multiple, bins=1,
-            fill=True, segment=segment, legend=False,
+            fill=True, element=element, legend=False,
         )
 
         palette = color_palette()
@@ -1041,7 +1041,7 @@ class TestHistPlot:
 
         n = 10
 
-        kws = dict(data=long_df, x="x", hue="a", bins=n, segment=True)
+        kws = dict(data=long_df, x="x", hue="a", bins=n, element="bars")
 
         histplot(**kws, multiple="layer", ax=ax1)
         histplot(**kws, multiple="stack", ax=ax2)
@@ -1062,7 +1062,7 @@ class TestHistPlot:
 
         n = 10
 
-        kws = dict(data=long_df, x="x", hue="a", bins=n, segment=True)
+        kws = dict(data=long_df, x="x", hue="a", bins=n, element="bars")
 
         histplot(**kws, multiple="layer", ax=ax1)
         histplot(**kws, multiple="fill", ax=ax2)
@@ -1085,7 +1085,7 @@ class TestHistPlot:
 
         bw = 2
 
-        kws = dict(data=long_df, x="x", hue="c", binwidth=bw, segment=True)
+        kws = dict(data=long_df, x="x", hue="c", binwidth=bw, element="bars")
 
         histplot(**kws, multiple="layer", ax=ax1)
         histplot(**kws, multiple="dodge", ax=ax2)
@@ -1099,10 +1099,15 @@ class TestHistPlot:
         assert_array_almost_equal(layer_xs[1], dodge_xs[1])
         assert_array_almost_equal(layer_xs[0], dodge_xs[0] - bw / 2)
 
-    def test_bad_multiple(self, flat_series):
+    def test_multiple_input_check(self, flat_series):
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="`multiple` must be"):
             histplot(flat_series, multiple="invalid")
+
+    def test_element_input_check(self, flat_series):
+
+        with pytest.raises(ValueError, match="`element` must be"):
+            histplot(flat_series, element="invalid")
 
     def test_count_stat(self, flat_series):
 
@@ -1121,7 +1126,7 @@ class TestHistPlot:
 
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="density", common_norm=True, segment=True,
+            stat="density", common_norm=True, element="bars",
         )
         bar_heights = [b.get_height() for b in ax.patches]
         bar_widths = [b.get_width() for b in ax.patches]
@@ -1132,7 +1137,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="density", bins=n, common_norm=False, segment=True,
+            stat="density", bins=n, common_norm=False, element="bars",
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1153,7 +1158,7 @@ class TestHistPlot:
 
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="probability", common_norm=True, segment=True,
+            stat="probability", common_norm=True, element="bars",
         )
         bar_heights = [b.get_height() for b in ax.patches]
         assert sum(bar_heights) == pytest.approx(1)
@@ -1163,7 +1168,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="probability", bins=n, common_norm=False, segment=True,
+            stat="probability", bins=n, common_norm=False, element="bars",
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1176,7 +1181,7 @@ class TestHistPlot:
 
         n = 10
         ax = histplot(
-            long_df, x="x", hue="a", common_bins=True, bins=n, segment=True,
+            long_df, x="x", hue="a", common_bins=True, bins=n, element="bars",
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1187,7 +1192,7 @@ class TestHistPlot:
 
     def test_unique_bins(self, wide_df):
 
-        ax = histplot(wide_df, common_bins=False, bins=10, segment=True)
+        ax = histplot(wide_df, common_bins=False, bins=10, element="bars")
 
         bar_groups = np.split(np.array(ax.patches), len(wide_df.columns))
 
@@ -1233,7 +1238,7 @@ class TestHistPlot:
         n = 10
         ax = histplot(
             long_df, x="x", hue="c", multiple=multiple,
-            kde=True, stat=stat, segment=True,
+            kde=True, stat=stat, element="bars",
             kde_kws={"cut": 10}, bins=n,
         )
 
@@ -1293,76 +1298,111 @@ class TestHistPlot:
             ax = histplot(x=[5], kde=True)
         assert not ax.lines
 
-    def test_segment_default(self, long_df):
+    def test_element_default(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(2)
         histplot(long_df, x="x", hue="a", ax=ax1)
-        histplot(long_df, x="x", hue="a", ax=ax2, segment=False)
+        histplot(long_df, x="x", hue="a", ax=ax2, element="bars")
         assert len(ax1.patches) == len(ax2.patches)
 
-    def test_segment_no_fill(self, flat_series):
+    def test_bars_no_fill(self, flat_series):
 
-        ax = histplot(flat_series, fill=False)
+        ax = histplot(flat_series, element="bars", fill=False)
         for bar in ax.patches:
             assert bar.get_facecolor() == (0, 0, 0, 0)
 
-    def test_no_segment_fill(self, flat_series):
+    def test_step_fill(self, flat_series):
 
         f, (ax1, ax2) = plt.subplots(2)
 
-        histplot(flat_series, segment=True, fill=True, ax=ax1)
-        histplot(flat_series, segment=False, fill=True, ax=ax2)
+        n = 10
+        histplot(flat_series, element="bars", fill=True, bins=n, ax=ax1)
+        histplot(flat_series, element="step", fill=True, bins=n, ax=ax2)
 
         bar_heights = [b.get_height() for b in ax1.patches]
+        bar_widths = [b.get_width() for b in ax1.patches]
         bar_edges = [b.get_x() for b in ax1.patches]
 
         fill = ax2.collections[0]
-        x, y = fill.get_paths()[0].vertices[::-1].T  # Drawn backwards?
+        x, y = fill.get_paths()[0].vertices[::-1].T
 
-        expected_x = np.roll(np.repeat(bar_edges, 2), -1)
-        expected_x[-1] = bar_edges[-1] + ax1.patches[-1].get_width()
-        assert_array_equal(x[y != 0], expected_x)
+        assert_array_equal(x[1:2 * n:2], bar_edges)
+        assert_array_equal(y[1:2 * n:2], bar_heights)
 
-        expected_y = np.repeat(bar_heights, 2)
-        assert_array_equal(y[y != 0], expected_y)
+        assert x[n * 2] == bar_edges[-1] + bar_widths[-1]
+        assert y[n * 2] == bar_heights[-1]
 
-    def test_no_segment_no_fill(self, flat_series):
+    def test_poly_fill(self, flat_series):
 
         f, (ax1, ax2) = plt.subplots(2)
 
-        histplot(flat_series, segment=True, fill=False, ax=ax1)
-        histplot(flat_series, segment=False, fill=False, ax=ax2)
+        n = 10
+        histplot(flat_series, element="bars", fill=True, bins=n, ax=ax1)
+        histplot(flat_series, element="poly", fill=True, bins=n, ax=ax2)
+
+        bar_heights = np.array([b.get_height() for b in ax1.patches])
+        bar_widths = np.array([b.get_width() for b in ax1.patches])
+        bar_edges = np.array([b.get_x() for b in ax1.patches])
+
+        fill = ax2.collections[0]
+        x, y = fill.get_paths()[0].vertices[::-1].T
+
+        assert_array_equal(x[1:n + 1], bar_edges + bar_widths / 2)
+        assert_array_equal(y[1:n + 1], bar_heights)
+
+    def test_poly_no_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+        histplot(flat_series, element="bars", fill=False, bins=n, ax=ax1)
+        histplot(flat_series, element="poly", fill=False, bins=n, ax=ax2)
+
+        bar_heights = np.array([b.get_height() for b in ax1.patches])
+        bar_widths = np.array([b.get_width() for b in ax1.patches])
+        bar_edges = np.array([b.get_x() for b in ax1.patches])
+
+        x, y = ax2.lines[0].get_xydata().T
+
+        assert_array_equal(x, bar_edges + bar_widths / 2)
+        assert_array_equal(y, bar_heights)
+
+    def test_step_no_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(flat_series, element="bars", fill=False, ax=ax1)
+        histplot(flat_series, element="step", fill=False, ax=ax2)
 
         bar_heights = [b.get_height() for b in ax1.patches]
+        bar_widths = [b.get_width() for b in ax1.patches]
         bar_edges = [b.get_x() for b in ax1.patches]
 
         x, y = ax2.lines[0].get_xydata().T
 
-        expected_x = np.roll(np.repeat(bar_edges, 2), -1)
-        expected_x[-1] = bar_edges[-1] + ax1.patches[-1].get_width()
-        assert_array_equal(x[y != 0], expected_x)
+        assert_array_equal(x[:-1], bar_edges)
+        assert_array_equal(y[:-1], bar_heights)
+        assert x[-1] == bar_edges[-1] + bar_widths[-1]
+        assert y[-1] == y[-2]
 
-        expected_y = np.repeat(bar_heights, 2)
-        assert_array_equal(y[y != 0], expected_y)
-
-    def test_no_segment_fill_xy(self, flat_series):
+    def test_step_fill_xy(self, flat_series):
 
         f, ax = plt.subplots()
 
-        histplot(x=flat_series, segment=False, fill=True)
-        histplot(y=flat_series, segment=False, fill=True)
+        histplot(x=flat_series, element="step", fill=True)
+        histplot(y=flat_series, element="step", fill=True)
 
         xverts = ax.collections[0].get_paths()[0].vertices
         yverts = ax.collections[1].get_paths()[0].vertices
 
         assert_array_equal(xverts, yverts[:, ::-1])
 
-    def test_no_segment_no_fill_xy(self, flat_series):
+    def test_step_no_fill_xy(self, flat_series):
 
         f, ax = plt.subplots()
 
-        histplot(x=flat_series, segment=False, fill=False)
-        histplot(y=flat_series, segment=False, fill=False)
+        histplot(x=flat_series, element="step", fill=False)
+        histplot(y=flat_series, element="step", fill=False)
 
         xline, yline = ax.lines
 
@@ -1417,7 +1457,7 @@ class TestHistPlot:
 
         get_lw = lambda ax: ax.patches[0].get_linewidth()  # noqa: E731
 
-        kws = dict(segment=True, fill=fill)
+        kws = dict(element="bars", fill=fill)
 
         f, (ax1, ax2) = plt.subplots(2)
         histplot(flat_series, **kws, bins=10, ax=ax1)
@@ -1439,20 +1479,20 @@ class TestHistPlot:
             assert bar.get_edgecolor() == ec
             assert bar.get_linewidth() == lw
 
-    def test_fill_kwargs(self, flat_series):
+    def test_step_fill_kwargs(self, flat_series):
 
         lw = 2
         ec = (1, .2, .9, .5)
-        ax = histplot(flat_series, segment=False, ec=ec, lw=lw)
+        ax = histplot(flat_series, element="step", ec=ec, lw=lw)
         poly = ax.collections[0]
         assert tuple(poly.get_edgecolor().squeeze()) == ec
         assert poly.get_linewidth() == lw
 
-    def test_line_kwargs(self, flat_series):
+    def test_step_line_kwargs(self, flat_series):
 
         lw = 2
         ls = "--"
-        ax = histplot(flat_series, segment=False, fill=False, lw=lw, ls=ls)
+        ax = histplot(flat_series, element="step", fill=False, lw=lw, ls=ls)
         line = ax.lines[0]
         assert line.get_linewidth() == lw
         assert line.get_linestyle() == ls

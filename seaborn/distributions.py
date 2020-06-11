@@ -23,7 +23,7 @@ from .utils import (
     remove_na,
     _kde_support,
     _normalize_kwargs,
-    _bar_coords_to_line_points,
+    _check_argument,
 )
 from .palettes import light_palette
 from ._decorators import _deprecate_positional_args
@@ -103,7 +103,7 @@ class _DistributionPlotter(VectorPlotter):
 
     def _add_legend(
         self,
-        ax, artist, fill, segment, multiple, alpha, artist_kws, legend_kws,
+        ax, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
     ):
         """Add artists that reflect semantic mappings and put then in a legend."""
         handles = []
@@ -112,23 +112,23 @@ class _DistributionPlotter(VectorPlotter):
             color = self._hue_map(level)
             handles.append(artist(
                 **self._artist_kws(
-                    artist_kws, fill, segment, multiple, color, alpha
+                    artist_kws, fill, element, multiple, color, alpha
                 )
             ))
             labels.append(level)
 
         ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
 
-    def _artist_kws(self, kws, fill, segment, multiple, color, alpha):
+    def _artist_kws(self, kws, fill, element, multiple, color, alpha):
         """Handle differences between artists in filled/unfilled plots."""
         kws = kws.copy()
         if fill:
             kws.setdefault("facecolor", to_rgba(color, alpha))
-            if multiple in ["stack", "fill"] or segment:
+            if multiple in ["stack", "fill"] or element == "bars":
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
             else:
                 kws.setdefault("edgecolor", to_rgba(color, 1))
-        elif segment:
+        elif element == "bars":
             kws["facecolor"] = "none"
             kws["edgecolor"] = to_rgba(color, 1)
         else:
@@ -138,7 +138,7 @@ class _DistributionPlotter(VectorPlotter):
     def plot_univariate_histogram(
         self,
         multiple,
-        segment,
+        element,
         fill,
         common_norm,
         common_bins,
@@ -154,14 +154,8 @@ class _DistributionPlotter(VectorPlotter):
     ):
 
         # --  Input checking
-
-        multiple_options = ["layer", "stack", "fill", "dodge"]
-        if multiple is not None and multiple not in multiple_options:
-            msg = (
-                f"`multiple` must be one of {multiple_options}, "
-                f"but {multiple} was passed."
-            )
-            raise ValueError(msg)
+        _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
+        _check_argument("element", ["bars", "step", "poly"], element)
 
         auto_bins_with_weights = (
             "weights" in self.variables
@@ -180,11 +174,6 @@ class _DistributionPlotter(VectorPlotter):
         # Check for log scaling on the data axis
         data_axis = getattr(ax, f"{self.data_variable}axis")
         log_scale = data_axis.get_scale() == "log"
-
-        # Handle conditional defaults
-        # TODO I am not sure if this makes more sense here or in histplot
-        if segment is None:
-            segment = "hue" not in self.variables or multiple == "dodge"
 
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
@@ -311,7 +300,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Defeat alpha should depend on other parameters
         if multiple == "layer":
-            default_alpha = .5 if segment else .25
+            default_alpha = .5 if element == "bars" else .25
         elif kde:
             default_alpha = .5
         else:
@@ -334,19 +323,19 @@ class _DistributionPlotter(VectorPlotter):
                 color = default_color
 
             artist_kws = self._artist_kws(
-                plot_kws, fill, segment, multiple, color, alpha
+                plot_kws, fill, element, multiple, color, alpha
             )
 
-            if segment:
+            if element == "bars":
 
                 # Use matplotlib bar plotting
 
                 plot_func = ax.bar if self.data_variable == "x" else ax.barh
                 move = .5 * shrink if estimator.discrete else 0
                 artists = plot_func(
-                    hist["edges"] - move,  # TODO
-                    hist["heights"] - bottom,  # TODO
-                    hist["widths"],  # TODO * shrink,
+                    hist["edges"] - move,
+                    hist["heights"] - bottom,
+                    hist["widths"],
                     bottom,
                     align="edge",
                     **artist_kws,
@@ -364,28 +353,40 @@ class _DistributionPlotter(VectorPlotter):
             else:
 
                 # Use either fill_between or plot to draw hull of histogram
+                if element == "step":
 
-                x, y, b = _bar_coords_to_line_points(
-                    hist["heights"],
-                    hist["edges"],
-                    hist["widths"],  # TODO * shrink,
-                    bottom,
-                )
+                    final = hist.iloc[-1]
+                    x = np.append(hist["edges"], final["edges"] + final["widths"])
+                    y = np.append(hist["heights"], final["heights"])
+                    b = np.append(bottom, bottom[-1])
+
+                    step = "post"
+                    drawstyle = "steps-post"
+
+                elif element == "poly":
+
+                    x = hist["edges"] + hist["widths"] / 2
+                    y = hist["heights"]
+                    b = bottom
+
+                    step = None
+                    drawstyle = None
+
                 if discrete:
                     x -= .5
 
                 if self.data_variable == "x":
                     if fill:
-                        artist = ax.fill_between(x, b, y, **artist_kws)
+                        artist = ax.fill_between(x, b, y, step=step, **artist_kws)
                     else:
-                        artist, = ax.plot(x, y, **artist_kws)
+                        artist, = ax.plot(x, y, drawstyle=drawstyle, **artist_kws)
                     artist.sticky_edges.x[:] = sticky_data
                     artist.sticky_edges.y[:] = sticky_stat
                 else:
                     if fill:
-                        artist = ax.fill_betweenx(x, b, y, **artist_kws)
+                        artist = ax.fill_betweenx(x, b, y, step=step, **artist_kws)
                     else:
-                        artist, = ax.plot(y, x, **artist_kws)
+                        artist, = ax.plot(y, x, drawstyle=drawstyle, **artist_kws)
                     artist.sticky_edges.x[:] = sticky_stat
                     artist.sticky_edges.y[:] = sticky_data
 
@@ -418,7 +419,7 @@ class _DistributionPlotter(VectorPlotter):
                 if sticky_y is not None:
                     line.sticky_edges.y[:] = sticky_y
 
-        if segment and "linewidth" not in plot_kws:
+        if element == "bars" and "linewidth" not in plot_kws:
 
             # Now we handle linewidth, which depends on the scaling of the plot
 
@@ -476,13 +477,14 @@ class _DistributionPlotter(VectorPlotter):
         # Legend for semantic variables
         if "hue" in self.variables and legend:
 
-            if fill or segment:
+            # TODO  Revisit if we don't use lines at all
+            if fill or element == "bars":
                 artist = partial(mpl.patches.Patch)
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
             self._add_legend(
-                ax, artist, fill, segment, multiple, alpha, plot_kws, {},
+                ax, artist, fill, element, multiple, alpha, plot_kws, {},
             )
 
     def _compute_univariate_density(
@@ -501,12 +503,13 @@ class _DistributionPlotter(VectorPlotter):
 
             # Access and clean the data
             # TODO what about rows where hue is null?
-            all_observations = self.comp_data[data_variable].dropna()
+            cols = [data_variable, "hue"]
+            all_observations = self.comp_data[cols].dropna()
 
             # Define a single grid of support for the PDFs
             # TODO should this use weights as well?
             if common_grid:
-                estimator.define_support(all_observations)
+                estimator.define_support(all_observations[data_variable])
 
         else:
 
@@ -611,13 +614,7 @@ class _DistributionPlotter(VectorPlotter):
         plot_kws = _normalize_kwargs(plot_kws, artist)
 
         # Input checking
-        multiple_options = ["layer", "stack", "fill"]
-        if multiple is not None and multiple not in multiple_options:
-            msg = (
-                f"multiple must be one of {multiple_options}, "
-                f"but {multiple} was passed."
-            )
-            raise ValueError(msg)
+        _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
         # Check for log scaling on the data axis
         data_axis = getattr(ax, f"{self.data_variable}axis")
@@ -999,7 +996,7 @@ def histplot(
     stat="count", bins="auto", binwidth=None, binrange=None,
     discrete=False, cumulative=False, common_bins=True, common_norm=True,
     # Histogram appearance parameters
-    multiple="layer", segment=None, fill=True, shrink=1,
+    multiple="layer", element="bars", fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
     # Hue mapping parameters
@@ -1046,7 +1043,7 @@ def histplot(
 
         p.plot_univariate_histogram(
             multiple=multiple,
-            segment=segment,
+            element=element,
             fill=fill,
             shrink=shrink,
             common_norm=common_norm,
@@ -1103,7 +1100,7 @@ common_norm : bool
     If True and using a normalized statistic, the normalization will apply over
     the full dataset. Otherwise, normalize each histogram independently.
 {params.dist.multiple}
-segment : bool or None
+segment : bool or None  TODO FIX
     If True, each bin is represented by a distinct bar. The default depends
     on whether a ``hue`` variable is assigned.
 fill : bool

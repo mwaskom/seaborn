@@ -4,6 +4,8 @@ import numpy as np
 import scipy as sp
 from scipy import stats
 
+from .utils import _check_argument
+
 
 class KDE:
     """Univariate and bivariate kernel density estimator."""
@@ -195,11 +197,7 @@ class Histogram:
             If True, return the cumulative statistic.
 
         """
-
-        valid_stats = ["count", "density", "probability"]
-        if stat not in valid_stats:
-            msg = f"`stat` must be in {valid_stats}, but {stat} was passed."
-            raise ValueError(msg)
+        _check_argument("stat", ["count", "density", "probability"], stat)
 
         self.stat = stat
         self.bins = bins

@@ -695,3 +695,11 @@ def _normalize_kwargs(kws, artist):
     except AttributeError:
         kws = normalize_kwargs(kws, _alias_map)
     return kws
+
+
+def _check_argument(param, options, value):
+    """Raise if value for param is not in options."""
+    if value not in options:
+        raise ValueError(
+            f"`{param}` must be one of {options}, but {value} was passed.`"
+        )
