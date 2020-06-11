@@ -1069,7 +1069,7 @@ of one or more variables by counting the number of observations that fall within
 disrete bins.
 
 This function can normalize the statistic computed within each bin to estimate
-a probability density or mass function, and it can add a smooth curve obtained
+frequency, density or probability mass, and it can add a smooth curve obtained
 using a kernel density estimate, similar to :func:`kdeplot`.
 
 More information is provided in the :ref:`user guide <userguide_hist>`.
@@ -1102,7 +1102,7 @@ common_norm : bool
 multiple : {{"layer", "dodge", "stack", "fill"}}
     Approach to resolving multiple elements when semantic mapping creates subsets.
 element : {{"bars", "step", "poly"}}
-    Approach to drawing the histogram data.
+    Visual representation of the histogram statistic.
 fill : bool
     If True, fill in the space under the histogram.
 shrink : number

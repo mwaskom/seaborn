@@ -300,17 +300,17 @@ class TestHistogram:
         heights, _ = h(x)
         assert heights[-1] == 1
 
-    def test_cumulative_density(self, x):
-
-        h = Histogram(stat="frequency", cumulative=True)
-        heights, _ = h(x)
-        assert heights[-1] == len(x)
-
     def test_cumulative_probability(self, x):
 
         h = Histogram(stat="probability", cumulative=True)
         heights, _ = h(x)
         assert heights[-1] == 1
+
+    def test_cumulative_frequency(self, x):
+
+        h = Histogram(stat="frequency", cumulative=True)
+        heights, _ = h(x)
+        assert heights[-1] == len(x)
 
     def test_bivariate_histogram(self, x, y):
 
