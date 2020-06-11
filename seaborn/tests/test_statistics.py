@@ -282,6 +282,12 @@ class TestHistogram:
         heights, _ = h(x)
         assert heights.sum() == 1
 
+    def test_frequency_stat(self, x):
+
+        h = Histogram(stat="frequency")
+        heights, edges = h(x)
+        assert (heights * np.diff(edges)).sum() == len(x)
+
     def test_cumulative_count(self, x):
 
         h = Histogram(stat="count", cumulative=True)
@@ -293,6 +299,12 @@ class TestHistogram:
         h = Histogram(stat="density", cumulative=True)
         heights, _ = h(x)
         assert heights[-1] == 1
+
+    def test_cumulative_density(self, x):
+
+        h = Histogram(stat="frequency", cumulative=True)
+        heights, _ = h(x)
+        assert heights[-1] == len(x)
 
     def test_cumulative_probability(self, x):
 
@@ -332,6 +344,13 @@ class TestHistogram:
         heights, _ = h(x, y)
         assert heights.sum() == 1
 
+    def test_bivariate_frequency_stat(self, x, y):
+
+        h = Histogram(stat="frequency")
+        heights, (x_edges, y_edges) = h(x, y)
+        area = np.outer(np.diff(x_edges), np.diff(y_edges))
+        assert (heights * area).sum() == len(x)
+
     def test_bivariate_cumulative_count(self, x, y):
 
         h = Histogram(stat="count", cumulative=True)
@@ -343,6 +362,12 @@ class TestHistogram:
         h = Histogram(stat="density", cumulative=True)
         heights, _ = h(x, y)
         assert heights[-1, -1] == pytest.approx(1)
+
+    def test_bivariate_cumulative_frequency(self, x, y):
+
+        h = Histogram(stat="frequency", cumulative=True)
+        heights, _ = h(x, y)
+        assert heights[-1, -1] == len(x)
 
     def test_bivariate_cumulative_probability(self, x, y):
 

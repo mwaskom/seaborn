@@ -178,8 +178,13 @@ class Histogram:
 
         Parameters
         ----------
-        stat : {{"count", "density", "probability"}}
+        stat : {"count", "frequency", "density", "probability"}
             Aggregate statistic to compute in each bin.
+
+            - ``count`` shows the number of observations
+            - ``frequency`` shows the number of observations divided by the bin width
+            - ``density`` normalizes counts so that the area of the histogram is 1
+            - ``probability`` normalizes counts so that the sum of the bar heights is 1
         bins : str, number, vector, or a pair of such values
             Generic bin parameter that can be the name of a reference rule,
             the number of bins, or the breaks of the bins.
@@ -197,7 +202,7 @@ class Histogram:
             If True, return the cumulative statistic.
 
         """
-        _check_argument("stat", ["count", "density", "probability"], stat)
+        _check_argument("stat", ["count", "density", "probability", "frequency"], stat)
 
         self.stat = stat
         self.bins = bins
@@ -286,15 +291,18 @@ class Histogram:
             x1, x2, bin_edges, weights=weights, density=density
         )
 
+        area = np.outer(
+            np.diff(bin_edges[0]),
+            np.diff(bin_edges[1]),
+        )
+
         if self.stat == "probability":
             hist = hist.astype(float) / hist.sum()
+        elif self.stat == "frequency":
+            hist = hist.astype(float) / area
 
         if self.cumulative:
-            if density:
-                area = np.outer(
-                    np.diff(bin_edges[0]),
-                    np.diff(bin_edges[1]),
-                )
+            if self.stat in ["density", "frequency"]:
                 hist = (hist * area).cumsum(axis=0).cumsum(axis=1)
             else:
                 hist = hist.cumsum(axis=0).cumsum(axis=1)
@@ -314,9 +322,11 @@ class Histogram:
 
         if self.stat == "probability":
             hist = hist.astype(float) / hist.sum()
+        elif self.stat == "frequency":
+            hist = hist.astype(float) / np.diff(bin_edges)
 
         if self.cumulative:
-            if density:
+            if self.stat in ["density", "frequency"]:
                 hist = (hist * np.diff(bin_edges)).cumsum()
             else:
                 hist = hist.cumsum()
