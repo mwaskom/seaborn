@@ -35,6 +35,9 @@ from ._docstrings import (
 
 __all__ = ["distplot", "histplot", "kdeplot", "rugplot"]
 
+# ==================================================================================== #
+# Module documentation
+# ==================================================================================== #
 
 _dist_params = dict(
 
@@ -61,6 +64,11 @@ _param_docs = DocstringComponents.from_nested_components(
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
 )
+
+
+# ==================================================================================== #
+# Internal API
+# ==================================================================================== #
 
 
 class _DistributionPlotter(VectorPlotter):
@@ -134,6 +142,131 @@ class _DistributionPlotter(VectorPlotter):
         else:
             kws["color"] = color
         return kws
+
+    def _find_contour_levels(self, density, isoprop):
+        """Return contour levels to draw density at given iso-propotions."""
+        isoprop = np.asarray(isoprop)
+        values = np.ravel(density)
+        sorted_values = np.sort(values)[::-1]
+        normalized_values = np.cumsum(sorted_values) / values.sum()
+        idx = np.searchsorted(normalized_values, 1 - isoprop)
+        levels = np.take(sorted_values, idx, mode="clip")
+        return levels
+
+    def _resolve_multiple(
+        self,
+        curves,
+        multiple,
+    ):
+
+        # Modify the density data structure to handle multiple densities
+        if multiple in ("stack", "fill"):
+
+            # Setting stack or fill means that the curves share a
+            # support grid / set of bin edges, so we can make a dataframe
+            # Reverse the column order to plot from top to bottom
+            curves = pd.DataFrame(curves).iloc[:, ::-1]
+            norm_constant = curves.sum(axis="columns")
+
+            # Take the cumulative sum to stack
+            curves = curves.cumsum(axis="columns")
+
+            # Normalize by row sum to fill
+            if multiple == "fill":
+                curves = curves.div(norm_constant, axis="index")
+
+            # Define where each segment starts
+            baselines = curves.shift(1, axis=1).fillna(0)
+
+        else:
+
+            # All densities will start at 0
+            baselines = {k: np.zeros_like(v) for k, v in curves.items()}
+
+        if multiple == "dodge":
+
+            n = len(curves)
+            for i, key in enumerate(curves):
+
+                hist = curves[key].reset_index(name="heights")
+
+                hist["widths"] /= n
+                hist["edges"] += i * hist["widths"]
+
+                curves[key] = hist.set_index(["edges", "widths"])["heights"]
+
+        return curves, baselines
+
+    # -------------------------------------------------------------------------------- #
+    # Computation
+    # -------------------------------------------------------------------------------- #
+
+    def _compute_univariate_density(
+        self,
+        data_variable,
+        common_norm,
+        common_grid,
+        estimate_kws,
+        log_scale,
+    ):
+
+        # Initialize the estimator object
+        estimator = KDE(**estimate_kws)
+
+        if "hue" in self.variables:
+
+            # Access and clean the data
+            # TODO what about rows where hue is null?
+            cols = [data_variable, "hue"]
+            all_observations = self.comp_data[cols].dropna()
+
+            # Define a single grid of support for the PDFs
+            # TODO should this use weights as well?
+            if common_grid:
+                estimator.define_support(all_observations[data_variable])
+
+        else:
+
+            common_norm = False
+
+        densities = {}
+
+        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+
+            # Extract the data points from this sub set and remove nulls
+            observations = sub_data[data_variable].dropna()
+
+            observation_variance = observations.var()
+            if not observation_variance or np.isnan(observation_variance):
+                msg = "Dataset has 0 variance; skipping density estimate."
+                warnings.warn(msg, UserWarning)
+                continue
+
+            # Extract the weights for this subset of observations
+            if "weights" in self.variables:
+                weights = sub_data["weights"]
+            else:
+                weights = None
+
+            # Estimate the density of observations at this level
+            density, support = estimator(observations, weights=weights)
+
+            if log_scale:
+                support = np.power(10, support)
+
+            # Apply a scaling factor so that the integral over all subsets is 1
+            if common_norm:
+                density *= len(sub_data) / len(self.plot_data)
+
+            # Store the density for this level
+            key = tuple(sub_vars.items())
+            densities[key] = pd.Series(density, index=support)
+
+        return densities
+
+    # -------------------------------------------------------------------------------- #
+    # Plotting
+    # -------------------------------------------------------------------------------- #
 
     def plot_univariate_histogram(
         self,
@@ -487,113 +620,6 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, fill, element, multiple, alpha, plot_kws, {},
             )
 
-    def _compute_univariate_density(
-        self,
-        data_variable,
-        common_norm,
-        common_grid,
-        estimate_kws,
-        log_scale,
-    ):
-
-        # Initialize the estimator object
-        estimator = KDE(**estimate_kws)
-
-        if "hue" in self.variables:
-
-            # Access and clean the data
-            # TODO what about rows where hue is null?
-            cols = [data_variable, "hue"]
-            all_observations = self.comp_data[cols].dropna()
-
-            # Define a single grid of support for the PDFs
-            # TODO should this use weights as well?
-            if common_grid:
-                estimator.define_support(all_observations[data_variable])
-
-        else:
-
-            common_norm = False
-
-        densities = {}
-
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
-
-            # Extract the data points from this sub set and remove nulls
-            observations = sub_data[data_variable].dropna()
-
-            observation_variance = observations.var()
-            if not observation_variance or np.isnan(observation_variance):
-                msg = "Dataset has 0 variance; skipping density estimate."
-                warnings.warn(msg, UserWarning)
-                continue
-
-            # Extract the weights for this subset of observations
-            if "weights" in self.variables:
-                weights = sub_data["weights"]
-            else:
-                weights = None
-
-            # Estimate the density of observations at this level
-            density, support = estimator(observations, weights=weights)
-
-            if log_scale:
-                support = np.power(10, support)
-
-            # Apply a scaling factor so that the integral over all subsets is 1
-            if common_norm:
-                density *= len(sub_data) / len(self.plot_data)
-
-            # Store the density for this level
-            key = tuple(sub_vars.items())
-            densities[key] = pd.Series(density, index=support)
-
-        return densities
-
-    def _resolve_multiple(
-        self,
-        curves,
-        multiple,
-    ):
-
-        # Modify the density data structure to handle multiple densities
-        if multiple in ("stack", "fill"):
-
-            # Setting stack or fill means that the curves share a
-            # support grid / set of bin edges, so we can make a dataframe
-            # Reverse the column order to plot from top to bottom
-            curves = pd.DataFrame(curves).iloc[:, ::-1]
-            norm_constant = curves.sum(axis="columns")
-
-            # Take the cumulative sum to stack
-            curves = curves.cumsum(axis="columns")
-
-            # Normalize by row sum to fill
-            if multiple == "fill":
-                curves = curves.div(norm_constant, axis="index")
-
-            # Define where each segment starts
-            baselines = curves.shift(1, axis=1).fillna(0)
-
-        else:
-
-            # All densities will start at 0
-            baselines = {k: np.zeros_like(v) for k, v in curves.items()}
-
-        if multiple == "dodge":
-
-            n = len(curves)
-            for i, key in enumerate(curves):
-
-                hist = curves[key].reset_index(name="heights")
-
-                hist["widths"] /= n
-                hist["edges"] += i * hist["widths"]
-
-                curves[key] = hist.set_index(["edges", "widths"])["heights"]
-
-        return curves, baselines
-
     def plot_univariate_density(
         self,
         multiple,
@@ -906,16 +932,6 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
-    def _find_contour_levels(self, density, isoprop):
-        """Return contour levels to draw density at given iso-propotions."""
-        isoprop = np.asarray(isoprop)
-        values = np.ravel(density)
-        sorted_values = np.sort(values)[::-1]
-        normalized_values = np.cumsum(sorted_values) / values.sum()
-        idx = np.searchsorted(normalized_values, 1 - isoprop)
-        levels = np.take(sorted_values, idx, mode="clip")
-        return levels
-
     def plot_rug(self, height, expand_margins, legend, ax, kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
@@ -987,6 +1003,10 @@ class _DistributionPlotter(VectorPlotter):
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
 
+
+# ==================================================================================== #
+# External API
+# ==================================================================================== #
 
 def histplot(
     data=None, *,
