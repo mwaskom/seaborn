@@ -1018,13 +1018,14 @@ class TestHistPlot:
         for a, b in zip(ax1.patches, ax2.patches):
             assert a.get_height() == b.get_width()
 
-    @pytest.mark.parametrize("multiple", ["layer", "stack", "fill"])
-    def test_hue_colors(self, long_df, multiple):
+    @pytest.mark.parametrize("segment", [True, False])
+    @pytest.mark.parametrize("multiple", ["layer", "dodge", "stack", "fill"])
+    def test_hue_colors(self, long_df, multiple, segment):
 
         ax = histplot(
             data=long_df, x="x", hue="a",
             multiple=multiple, bins=1,
-            fill=True, legend=False,
+            fill=True, segment=segment, legend=False,
         )
 
         palette = color_palette()
@@ -1034,32 +1035,22 @@ class TestHistPlot:
         for bar, color in zip(ax.patches[::-1], palette):
             assert bar.get_facecolor() == to_rgba(color, a)
 
-    def test_hue_stacking(self, long_df):
+    def test_hue_stack(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(2)
 
         n = 10
 
-        histplot(
-            data=long_df, x="x", hue="a", multiple="layer", bins=n, ax=ax1,
-        )
-        histplot(
-            data=long_df, x="x", hue="a", multiple="stack", bins=n, ax=ax2,
-        )
+        kws = dict(data=long_df, x="x", hue="a", bins=n, segment=True)
 
-        layer_heights = np.reshape(
-            [b.get_height() for b in ax1.patches], (-1, n)
-        )
-        stack_heights = np.reshape(
-            [b.get_height() for b in ax2.patches], (-1, n)
-        )
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="stack", ax=ax2)
 
+        layer_heights = np.reshape([b.get_height() for b in ax1.patches], (-1, n))
+        stack_heights = np.reshape([b.get_height() for b in ax2.patches], (-1, n))
         assert_array_equal(layer_heights, stack_heights)
 
-        stack_xys = np.reshape(
-            [b.get_xy() for b in ax2.patches], (-1, n, 2)
-        )
-
+        stack_xys = np.reshape([b.get_xy() for b in ax2.patches], (-1, n, 2))
         assert_array_equal(
             stack_xys[..., 1] + stack_heights,
             stack_heights.cumsum(axis=0),
@@ -1071,32 +1062,42 @@ class TestHistPlot:
 
         n = 10
 
-        histplot(
-            data=long_df, x="x", hue="a", multiple="layer", bins=n, ax=ax1,
-        )
-        histplot(
-            data=long_df, x="x", hue="a", multiple="fill", bins=n, ax=ax2,
-        )
+        kws = dict(data=long_df, x="x", hue="a", bins=n, segment=True)
 
-        layer_heights = np.reshape(
-            [b.get_height() for b in ax1.patches], (-1, n)
-        )
-        stack_heights = np.reshape(
-            [b.get_height() for b in ax2.patches], (-1, n)
-        )
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="fill", ax=ax2)
 
+        layer_heights = np.reshape([b.get_height() for b in ax1.patches], (-1, n))
+        stack_heights = np.reshape([b.get_height() for b in ax2.patches], (-1, n))
         assert_array_almost_equal(
             layer_heights / layer_heights.sum(axis=0), stack_heights
         )
 
-        stack_xys = np.reshape(
-            [b.get_xy() for b in ax2.patches], (-1, n, 2)
-        )
-
+        stack_xys = np.reshape([b.get_xy() for b in ax2.patches], (-1, n, 2))
         assert_array_almost_equal(
             (stack_xys[..., 1] + stack_heights) / stack_heights.sum(axis=0),
             stack_heights.cumsum(axis=0),
         )
+
+    def test_hue_dodge(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        bw = 2
+
+        kws = dict(data=long_df, x="x", hue="c", binwidth=bw, segment=True)
+
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="dodge", ax=ax2)
+
+        layer_heights = [b.get_height() for b in ax1.patches]
+        dodge_heights = [b.get_height() for b in ax2.patches]
+        assert_array_equal(layer_heights, dodge_heights)
+
+        layer_xs = np.reshape([b.get_x() for b in ax1.patches], (2, -1))
+        dodge_xs = np.reshape([b.get_x() for b in ax2.patches], (2, -1))
+        assert_array_almost_equal(layer_xs[1], dodge_xs[1])
+        assert_array_almost_equal(layer_xs[0], dodge_xs[0] - bw / 2)
 
     def test_bad_multiple(self, flat_series):
 
@@ -1225,12 +1226,13 @@ class TestHistPlot:
 
         assert kde_area == pytest.approx(hist_area)
 
+    @pytest.mark.parametrize("multiple", ["layer", "dodge"])
     @pytest.mark.parametrize("stat", ["count", "density", "probability"])
-    def test_kde_with_hue(self, long_df, stat):
+    def test_kde_with_hue(self, long_df, stat, multiple):
 
         n = 10
         ax = histplot(
-            long_df, x="x", hue="c",
+            long_df, x="x", hue="c", multiple=multiple,
             kde=True, stat=stat, segment=True,
             kde_kws={"cut": 10}, bins=n,
         )
@@ -1245,7 +1247,10 @@ class TestHistPlot:
             x, y = ax.lines[i].get_xydata().T
             kde_area = integrate.trapz(y, x)
 
-            assert kde_area == pytest.approx(hist_area)
+            if multiple == "layer":
+                assert kde_area == pytest.approx(hist_area)
+            elif multiple == "dodge":
+                assert kde_area == pytest.approx(hist_area * 2)
 
     def test_kde_default_cut(self, flat_series):
 

@@ -138,7 +138,7 @@ class _DistributionPlotter(VectorPlotter):
     def plot_univariate_histogram(
         self,
         multiple,
-        segment,  # TODO needs a good name, have auto depending on bins?
+        segment,
         fill,
         common_norm,
         common_bins,
@@ -155,7 +155,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # --  Input checking
 
-        multiple_options = ["layer", "stack", "fill"]
+        multiple_options = ["layer", "stack", "fill", "dodge"]
         if multiple is not None and multiple not in multiple_options:
             msg = (
                 f"`multiple` must be one of {multiple_options}, "
@@ -184,7 +184,7 @@ class _DistributionPlotter(VectorPlotter):
         # Handle conditional defaults
         # TODO I am not sure if this makes more sense here or in histplot
         if segment is None:
-            segment = "hue" not in self.variables
+            segment = "hue" not in self.variables or multiple == "dodge"
 
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
@@ -257,7 +257,7 @@ class _DistributionPlotter(VectorPlotter):
             # Pack the histogram data and metadata together
             index = pd.MultiIndex.from_arrays([
                 pd.Index(edges[:-1], name="edges"),
-                pd.Index(np.diff(edges), name="widths"),
+                pd.Index(np.diff(edges) * shrink, name="widths"),
             ])
             hist = pd.Series(heights, index=index, name="heights")
 
@@ -271,7 +271,9 @@ class _DistributionPlotter(VectorPlotter):
         # Modify the histogram and density data to resolve multiple groups
         histograms, baselines = self._resolve_multiple(histograms, multiple)
         if kde:
-            densities, _ = self._resolve_multiple(densities, multiple)
+            densities, _ = self._resolve_multiple(
+                densities, None if multiple == "dodge" else multiple
+            )
 
         # Set autoscaling-related meta
         sticky_stat = (0, 1) if multiple == "fill" else (0, np.inf)
@@ -322,7 +324,7 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
 
             key = tuple(sub_vars.items())
-            hist = histograms[key].reset_index(name="heights")
+            hist = histograms[key].rename("heights").reset_index()
             bottom = np.asarray(baselines[key])
 
             # Define the matplotlib attributes that depend on semantic mapping
@@ -340,13 +342,13 @@ class _DistributionPlotter(VectorPlotter):
                 # Use matplotlib bar plotting
 
                 plot_func = ax.bar if self.data_variable == "x" else ax.barh
-                align = "center" if estimator.discrete else "edge"
+                move = .5 * shrink if estimator.discrete else 0
                 artists = plot_func(
-                    hist["edges"],
+                    hist["edges"] - move,  # TODO
                     hist["heights"] - bottom,  # TODO
-                    hist["widths"] * shrink,
+                    hist["widths"],  # TODO * shrink,
                     bottom,
-                    align=align,
+                    align="edge",
                     **artist_kws,
                 )
                 for bar in artists:
@@ -366,7 +368,7 @@ class _DistributionPlotter(VectorPlotter):
                 x, y, b = _bar_coords_to_line_points(
                     hist["heights"],
                     hist["edges"],
-                    hist["widths"] * shrink,
+                    hist["widths"],  # TODO * shrink,
                     bottom,
                 )
                 if discrete:
@@ -424,14 +426,10 @@ class _DistributionPlotter(VectorPlotter):
             # Innocuous in other cases?
             ax.autoscale_view()
 
-            if isinstance(histograms, dict):
-                hist_data = histograms.values()
-            else:
-                hist_data = [histograms]
-
             # We will base everything on the minimum bin width
+            hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
             binwidth = min([
-                h.index.get_level_values("widths").min() for h in hist_data
+                h["widths"].min() for h in hist_metadata
             ])
 
             # Convert binwidtj from data coordinates to pixels
@@ -578,6 +576,18 @@ class _DistributionPlotter(VectorPlotter):
 
             # All densities will start at 0
             baselines = {k: np.zeros_like(v) for k, v in curves.items()}
+
+        if multiple == "dodge":
+
+            n = len(curves)
+            for i, key in enumerate(curves):
+
+                hist = curves[key].reset_index(name="heights")
+
+                hist["widths"] /= n
+                hist["edges"] += i * hist["widths"]
+
+                curves[key] = hist.set_index(["edges", "widths"])["heights"]
 
         return curves, baselines
 
@@ -1482,6 +1492,7 @@ Examples
     returns=_core_docs["returns"],
     seealso=_core_docs["seealso"],
 )
+
 
 @_deprecate_positional_args
 def rugplot(
