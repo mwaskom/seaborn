@@ -1099,10 +1099,10 @@ common_bins : bool
 common_norm : bool
     If True and using a normalized statistic, the normalization will apply over
     the full dataset. Otherwise, normalize each histogram independently.
-{params.dist.multiple}
-segment : bool or None  TODO FIX
-    If True, each bin is represented by a distinct bar. The default depends
-    on whether a ``hue`` variable is assigned.
+multiple : {{"layer", "dodge", "stack", "fill"}}
+    Approach to resolving multiple elements when semantic mapping creates subsets.
+element : {{"bars", "step", "poly"}}
+    Approach to drawing the histogram data.
 fill : bool
     If True, fill in the space under the histogram.
 shrink : number
@@ -1121,6 +1121,13 @@ line_kws : dict
 {params.dist.log_scale}
 {params.dist.legend}
 {params.core.ax}
+kwargs
+    Other keyword arguments are passed to one of the following matplotlib
+    functions:
+
+    - :meth:`matplotlib.axes.Axes.bar` (univariate, element="bars")
+    - :meth:`matplotlib.axes.Axes.fill_between` (univariate, fill=True)
+    - :meth:`matplotlib.axes.Axes.plot` (univariate, fill=False)
 
 Returns
 -------
