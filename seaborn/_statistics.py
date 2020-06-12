@@ -185,6 +185,7 @@ class Histogram:
             - ``frequency`` shows the number of observations divided by the bin width
             - ``density`` normalizes counts so that the area of the histogram is 1
             - ``probability`` normalizes counts so that the sum of the bar heights is 1
+
         bins : str, number, vector, or a pair of such values
             Generic bin parameter that can be the name of a reference rule,
             the number of bins, or the breaks of the bins.
@@ -195,7 +196,7 @@ class Histogram:
         binrange : pair of numbers or a pair of pairs
             Lowest and highest value for bin edges; can be used either
             with ``bins`` or ``binwidth``. Defaults to data extremes.
-        discrete : bool
+        discrete : bool or pair of bools
             If True, set ``binwidth`` and ``binrange`` such that bin
             edges cover integer values in the dataset.
         cumulative : bool
@@ -213,15 +214,15 @@ class Histogram:
 
         self.bin_edges = None
 
-    def _define_bin_edges(self, x, weights, bins, binwidth, binrange):
+    def _define_bin_edges(self, x, weights, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
         if binrange is None:
             start, stop = x.min(), x.max()
         else:
             start, stop = binrange
 
-        if self.discrete:
-            bin_edges = np.arange(start, stop + 2)
+        if discrete:
+            bin_edges = np.arange(start - .5, stop + 1.5)
         elif binwidth is not None:
             step = binwidth
             bin_edges = np.arange(start, stop + step, step)
@@ -236,8 +237,9 @@ class Histogram:
         if x2 is None:
 
             bin_edges = self._define_bin_edges(
-                x1, weights, self.bins, self.binwidth, self.binrange
+                x1, weights, self.bins, self.binwidth, self.binrange, self.discrete,
             )
+
         else:
 
             bin_edges = []
@@ -266,10 +268,14 @@ class Histogram:
                 elif not isinstance(binrange[0], Number):
                     binrange = binrange[i]
 
+                discrete = self.discrete
+                if not isinstance(discrete, bool):
+                    discrete = discrete[i]
+
                 # Define the bins for this variable
 
                 bin_edges.append(self._define_bin_edges(
-                    x, weights, bins, binwidth, binrange,
+                    x, weights, bins, binwidth, binrange, discrete,
                 ))
 
             bin_edges = tuple(bin_edges)

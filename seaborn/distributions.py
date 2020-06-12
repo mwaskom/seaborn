@@ -275,7 +275,6 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         common_norm,
         common_bins,
-        discrete,
         shrink,
         kde,
         kde_kws,
@@ -290,11 +289,14 @@ class _DistributionPlotter(VectorPlotter):
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
         _check_argument("element", ["bars", "step", "poly"], element)
 
+        if estimate_kws["discrete"] and element != "bars":
+            raise ValueError("`element` must be 'bars' when `discrete` is True")
+
         auto_bins_with_weights = (
             "weights" in self.variables
             and estimate_kws["bins"] == "auto"
             and estimate_kws["binwidth"] is None
-            and not discrete
+            and not estimate_kws["discrete"]
         )
         if auto_bins_with_weights:
             msg = (
@@ -464,9 +466,9 @@ class _DistributionPlotter(VectorPlotter):
                 # Use matplotlib bar plotting
 
                 plot_func = ax.bar if self.data_variable == "x" else ax.barh
-                move = .5 * shrink if estimator.discrete else 0
+                move = .5 * (1 - shrink)
                 artists = plot_func(
-                    hist["edges"] - move,
+                    hist["edges"] + move,
                     hist["heights"] - bottom,
                     hist["widths"],
                     bottom,
@@ -504,9 +506,6 @@ class _DistributionPlotter(VectorPlotter):
 
                     step = None
                     drawstyle = None
-
-                if discrete:
-                    x -= .5
 
                 if self.data_variable == "x":
                     if fill:
@@ -1068,7 +1067,6 @@ def histplot(
             shrink=shrink,
             common_norm=common_norm,
             common_bins=common_bins,
-            discrete=discrete,
             kde=kde,
             kde_kws=kde_kws.copy(),
             legend=legend,

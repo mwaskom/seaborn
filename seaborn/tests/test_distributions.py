@@ -1215,6 +1215,11 @@ class TestHistPlot:
             assert bar.get_width() == 1
             assert bar.get_x() == (data_min + i - .5)
 
+    def test_discrete_requires_bars(self, long_df):
+
+        with pytest.raises(ValueError, match="`element` must be 'bars'"):
+            histplot(long_df, x="s", discrete=True, element="poly")
+
     @pytest.mark.parametrize("stat", ["count", "density", "probability"])
     def test_kde(self, flat_series, stat):
 
