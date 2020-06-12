@@ -26,6 +26,7 @@ from .utils import (
     _check_argument,
 )
 from .palettes import light_palette
+from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
     DocstringComponents,
@@ -152,6 +153,20 @@ class _DistributionPlotter(VectorPlotter):
         idx = np.searchsorted(normalized_values, 1 - isoprop)
         levels = np.take(sorted_values, idx, mode="clip")
         return levels
+
+    def _cmap_from_color(self, color):
+        """Return a sequential colormap given a color seed."""
+        # Like so much else here, this is broadly useful, but keeping it
+        # in this class to signify that I haven't thought overly hard about it...
+        r, g, b, _ = to_rgba(color)
+        h, s, _ = husl.rgb_to_husl(r, g, b)
+        xx = np.linspace(-1, 1, 256)
+        ramp = np.zeros((256, 3))
+        ramp[:, 0] = h
+        ramp[:, 1] = s * np.cos(xx)
+        ramp[:, 2] = np.linspace(30, 80, 256)
+        colors = np.clip([husl.husl_to_rgb(*hsl) for hsl in ramp], 0, 1)
+        return mpl.colors.ListedColormap(colors)
 
     def _resolve_multiple(
         self,
@@ -292,6 +307,7 @@ class _DistributionPlotter(VectorPlotter):
         if estimate_kws["discrete"] and element != "bars":
             raise ValueError("`element` must be 'bars' when `discrete` is True")
 
+        # TODO move this to external function?
         auto_bins_with_weights = (
             "weights" in self.variables
             and estimate_kws["bins"] == "auto"
@@ -358,6 +374,7 @@ class _DistributionPlotter(VectorPlotter):
             observations = sub_data[self.data_variable].dropna()
 
             if "weights" in self.variables:
+                # TODO if nans, will not match observations!
                 weights = sub_data["weights"]
             else:
                 weights = None
@@ -387,6 +404,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply scaling to normalize across groups
             if common_norm:
+                # TODO denominator will have NAs?
                 hist *= len(sub_data) / len(self.plot_data)
 
             # Store the finalized histogram data for future plotting
@@ -617,6 +635,86 @@ class _DistributionPlotter(VectorPlotter):
 
             self._add_legend(
                 ax, artist, fill, element, multiple, alpha, plot_kws, {},
+            )
+
+    def plot_bivariate_histogram(
+        self,
+        common_bins,
+        common_norm,
+        thresh,
+        estimate_kws,
+        plot_kws,
+        ax,
+    ):
+
+        # Check for log scaling on the data axis
+        log_scale = ax.xaxis.get_scale() == "log", ax.yaxis.get_scale() == "log"
+
+        # Now initialize the Histogram estimator
+        estimator = Histogram(**estimate_kws)
+
+        # TODO why do we need this? Shouldn't plot_data drop unused variables?
+        cols = list(self.variables)
+        all_data = self.comp_data[cols].dropna()
+
+        if estimate_kws["stat"] == "count":
+            common_norm = False
+
+        # Do pre-compute housekeeping related to multiple groups
+        if "hue" in self.variables:
+
+            if common_bins:
+                weights = all_data.get("weights", None)
+                estimator.define_bin_edges(
+                    all_data["x"],
+                    all_data["y"],
+                    weights,
+                )
+                full_h, _ = estimator(all_data["x"], all_data["y"], weights)
+                plot_kws.setdefault("vmax", full_h.max())
+
+        else:
+            common_norm = False
+
+        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+
+            sub_data = sub_data[cols].dropna()  # TODO why do we need?
+
+            # Do the histogram computation
+            heights, (x_edges, y_edges) = estimator(
+                sub_data["x"],
+                sub_data["y"],
+                weights=sub_data.get("weights", None),
+            )
+
+            # Apply scaling to normalize across groups
+            if common_norm:
+                heights *= len(sub_data) / len(all_data)
+
+            if log_scale[0]:
+                x_edges = np.power(10, x_edges)
+            if log_scale[1]:
+                y_edges = np.power(10, y_edges)
+
+            if thresh is not None:
+                heights = np.ma.masked_less_equal(heights, thresh)
+
+            artist_kws = plot_kws.copy()
+            if "hue" in self.variables:
+                color = self._hue_map(sub_vars["hue"])
+                cmap = self._cmap_from_color(color)
+                artist_kws["cmap"] = cmap
+            else:
+                color = artist_kws.pop("color", "C0")
+                if "cmap" not in artist_kws:
+                    cmap = self._cmap_from_color(color)
+                    artist_kws["cmap"] = cmap
+
+            ax.pcolormesh(
+                x_edges,
+                y_edges,
+                heights.T,
+                **artist_kws,
             )
 
     def plot_univariate_density(
@@ -853,6 +951,7 @@ class _DistributionPlotter(VectorPlotter):
         scout.remove()
 
         # Apply a common color-mapping to single color specificiations
+        # TODO change to use _cmap_from_color
         color_map = partial(light_palette, reverse=True, as_cmap=True)
 
         # Define the coloring of the contours
