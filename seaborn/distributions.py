@@ -1117,6 +1117,8 @@ def histplot(
     multiple="layer", element="bars", fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
+    # Bivariate histogram parameters
+    thresh=0,
     # Hue mapping parameters
     palette=None, hue_order=None, hue_norm=None,
     # Axes information
@@ -1148,6 +1150,8 @@ def histplot(
     # Attach the axes to the plotter, setting up unit conversions
     p._attach(ax, log_scale=log_scale)
 
+    # TODO set discrete default with categorical x/y?
+
     estimate_kws = dict(
         stat=stat,
         bins=bins,
@@ -1171,6 +1175,17 @@ def histplot(
             legend=legend,
             estimate_kws=estimate_kws.copy(),
             line_kws=line_kws.copy(),
+            plot_kws=kwargs,
+            ax=ax,
+        )
+
+    else:
+
+        p.plot_bivariate_histogram(
+            common_bins=common_bins,
+            common_norm=common_norm,
+            thresh=thresh,
+            estimate_kws=estimate_kws,
             plot_kws=kwargs,
             ax=ax,
         )
