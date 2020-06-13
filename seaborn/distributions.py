@@ -56,7 +56,19 @@ log_scale : bool or number, or pair of bools or numbers
 legend : bool
     If False, suppress the legend for semantic variables.
     """,
-
+    cbar="""
+cbar : bool
+    If True, add a colorbar to annotate the color mapping in a bivariate plot.
+    Note: Does not currently support plots with a ``hue`` variable well.
+    """,
+    cbar_ax="""
+cbar_ax : :class:`matplotlib.axes.Axes`
+    Pre-existing axes for the colorbar.
+    """,
+    cbar_kws="""
+cbar_kws : dict
+    Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
+    """,
 )
 
 _param_docs = DocstringComponents.from_nested_components(
@@ -696,6 +708,9 @@ class _DistributionPlotter(VectorPlotter):
 
             sub_data = sub_data[cols].dropna()
 
+            if sub_data.shape[0] <= 1:
+                continue
+
             # Do the histogram computation
             heights, (x_edges, y_edges) = estimator(
                 sub_data["x"],
@@ -935,12 +950,6 @@ class _DistributionPlotter(VectorPlotter):
 
             # Extract the data points from this sub set and remove nulls
             observations = sub_data[["x", "y"]].dropna()
-
-            observation_variance = observations.var().any()
-            if not observation_variance or np.isnan(observation_variance):
-                msg = "Dataset has 0 variance; skipping density estimate."
-                warnings.warn(msg, UserWarning)
-                continue
 
             # Extract the weights for this subset of observations
             if "weights" in self.variables:
@@ -1295,20 +1304,39 @@ common_norm : bool
     the full dataset. Otherwise, normalize each histogram independently.
 multiple : {{"layer", "dodge", "stack", "fill"}}
     Approach to resolving multiple elements when semantic mapping creates subsets.
+    Only relevant with univariate data.
 element : {{"bars", "step", "poly"}}
     Visual representation of the histogram statistic.
+    Only relevant with univariate data.
 fill : bool
     If True, fill in the space under the histogram.
+    Only relevant with univariate data.
 shrink : number
     Scale the width of each bar relative to the binwidth by this factor.
+    Only relevant with univariate data.
 kde : bool
     If True, compute a kernel density estimate to smooth the distribution
     and show on the plot as (one or more) line(s).
+    Only relevant with univariate data.
 kde_kws : dict
     Parameters that control the KDE computation, as in :func:`kdeplot`.
 line_kws : dict
     Parameters that control the KDE visualization, passed to
     :meth:`matplotlib.axes.Axes.plot`.
+thresh : number or None
+    Cells with a statistic less than or equal to this value will be transparent.
+    Only relevant with bivariate data.
+pthresh : number or None
+    Like ``thresh``, but a value in [0, 1] such that cells with aggregate counts
+    (or other statistics, when used) up to this proportion of the total will be
+    transparent.
+pmax : number or None
+    A value in [0, 1] that sets that saturation point for the colormap at a value
+    such that cells below is constistute this proportion of the total count (or
+    other statistic, when used).
+{params.dist.cbar}
+{params.dist.cbar_ax}
+{params.dist.cbar_kws}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
@@ -1588,13 +1616,9 @@ shade_lowest : bool
     .. deprecated:: 0.11.0
        see ``thresh``.
 
-cbar : bool
-    If True, add a colorbar to annotate the contour levels. Only relevant
-    with bivariate data.
-cbar_ax : :class:`matplotlib.axes.Axes`
-    Pre-existing axes for the colorbar.
-cbar_kws : dict
-    Additional parameters passed to :meth:`matplotlib.figure.Figure.colorbar`.
+{params.dist.cbar}
+{params.dist.cbar_ax}
+{params.dist.cbar_kws}
 {params.core.ax}
 weights : vector or key in ``data``
     If provided, perform weighted kernel density estimation.
