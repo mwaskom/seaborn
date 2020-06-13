@@ -252,7 +252,7 @@ class TestHistogram:
         x = rng.binomial(20, .5, 100)
         h = Histogram(discrete=True)
         edges = h.define_bin_edges(x)
-        expected_edges = np.arange(x.min(), x.max() + 2)
+        expected_edges = np.arange(x.min(), x.max() + 2) - .5
         assert_array_equal(edges, expected_edges)
 
     def test_histogram(self, x):
