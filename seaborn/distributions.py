@@ -144,10 +144,10 @@ class _DistributionPlotter(VectorPlotter):
             kws["color"] = color
         return kws
 
-    def _find_contour_levels(self, density, isoprop):
-        """Return contour levels to draw density at given iso-propotions."""
-        isoprop = np.asarray(isoprop)
-        values = np.ravel(density)
+    def _quantile_to_level(self, data, quantile):
+        """Return data levels corresponding to quantile cuts of mass."""
+        isoprop = np.asarray(quantile)
+        values = np.ravel(data)
         sorted_values = np.sort(values)[::-1]
         normalized_values = np.cumsum(sorted_values) / values.sum()
         idx = np.searchsorted(normalized_values, 1 - isoprop)
@@ -164,7 +164,7 @@ class _DistributionPlotter(VectorPlotter):
         ramp = np.zeros((256, 3))
         ramp[:, 0] = h
         ramp[:, 1] = s * np.cos(xx)
-        ramp[:, 2] = np.linspace(30, 80, 256)
+        ramp[:, 2] = np.linspace(35, 80, 256)
         colors = np.clip([husl.husl_to_rgb(*hsl) for hsl in ramp], 0, 1)
         return mpl.colors.ListedColormap(colors)
 
@@ -642,6 +642,10 @@ class _DistributionPlotter(VectorPlotter):
         common_bins,
         common_norm,
         thresh,
+        pthresh,
+        pmax,
+        legend,
+        cbar, cbar_ax, cbar_kws,
         estimate_kws,
         plot_kws,
         ax,
@@ -656,29 +660,41 @@ class _DistributionPlotter(VectorPlotter):
         # TODO why do we need this? Shouldn't plot_data drop unused variables?
         cols = list(self.variables)
         all_data = self.comp_data[cols].dropna()
-
-        if estimate_kws["stat"] == "count":
-            common_norm = False
+        weights = all_data.get("weights", None)
 
         # Do pre-compute housekeeping related to multiple groups
         if "hue" in self.variables:
-
             if common_bins:
-                weights = all_data.get("weights", None)
                 estimator.define_bin_edges(
                     all_data["x"],
                     all_data["y"],
                     weights,
                 )
-                full_h, _ = estimator(all_data["x"], all_data["y"], weights)
-                plot_kws.setdefault("vmax", full_h.max())
-
         else:
             common_norm = False
 
+        # -- Determine colormap threshold and norm based on the full data
+
+        full_heights, _ = estimator(all_data["x"], all_data["y"], weights)
+
+        common_color_norm = "hue" not in self.variables or common_norm
+
+        if pthresh is not None and common_color_norm:
+            thresh = self._quantile_to_level(full_heights, pthresh)
+
+        plot_kws.setdefault("vmin", 0)
+        if common_color_norm:
+            if pmax is not None:
+                vmax = self._quantile_to_level(full_heights, pmax)
+            else:
+                vmax = plot_kws.pop("vmax", full_heights.max())
+        else:
+            vmax = None
+
+        # --- Loop over data (subsets) and draw the histograms
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
-            sub_data = sub_data[cols].dropna()  # TODO why do we need?
+            sub_data = sub_data[cols].dropna()
 
             # Do the histogram computation
             heights, (x_edges, y_edges) = estimator(
@@ -687,18 +703,16 @@ class _DistributionPlotter(VectorPlotter):
                 weights=sub_data.get("weights", None),
             )
 
-            # Apply scaling to normalize across groups
-            if common_norm:
-                heights *= len(sub_data) / len(all_data)
-
             if log_scale[0]:
                 x_edges = np.power(10, x_edges)
             if log_scale[1]:
                 y_edges = np.power(10, y_edges)
 
-            if thresh is not None:
-                heights = np.ma.masked_less_equal(heights, thresh)
+            # Apply scaling to normalize across groups
+            if estimator.stat != "count" and common_norm:
+                heights *= len(sub_data) / len(all_data)
 
+            # Define the specific kwargs for this artist
             artist_kws = plot_kws.copy()
             if "hue" in self.variables:
                 color = self._hue_map(sub_vars["hue"])
@@ -710,11 +724,47 @@ class _DistributionPlotter(VectorPlotter):
                     cmap = self._cmap_from_color(color)
                     artist_kws["cmap"] = cmap
 
-            ax.pcolormesh(
+            # Set the upper norm on the colormap
+            if not common_color_norm and pmax is not None:
+                vmax = self._quantile_to_level(heights, pmax)
+            if vmax is not None:
+                artist_kws["vmax"] = vmax
+
+            # Make cells at or below the threshold transparent
+            if not common_color_norm and pthresh:
+                thresh = self._quantile_to_level(heights, pthresh)
+            if thresh is not None:
+                heights = np.ma.masked_less_equal(heights, thresh)
+
+            # Draw the plot
+            mesh = ax.pcolormesh(
                 x_edges,
                 y_edges,
                 heights.T,
                 **artist_kws,
+            )
+
+            # Add an optional colorbar
+            # Note, we want to improve this. When hue is used, it will stack
+            # multiple colorbars with redundant ticks in an ugly way.
+            # But it's going to take some work to have multiple colorbars that
+            # share ticks nicely.
+            if cbar:
+                ax.figure.colorbar(mesh, cbar_ax, ax, **cbar_kws)
+
+        # --- Finalize the plot
+        self._add_axis_labels(ax)
+
+        if "hue" in self.variables and legend:
+
+            # TODO if possible, I would like to move the contour
+            # intensity information into the legend too and label the
+            # iso proportions rather than the raw density values
+
+            artist_kws = {}
+            artist = partial(mpl.patches.Patch)
+            self._add_legend(
+                ax, artist, True, False, "layer", 1, artist_kws, {},
             )
 
     def plot_univariate_density(
@@ -935,13 +985,13 @@ class _DistributionPlotter(VectorPlotter):
 
         # Transfrom from iso-proportions to iso-densities
         if common_norm:
-            common_levels = self._find_contour_levels(
+            common_levels = self._quantile_to_level(
                 list(densities.values()), levels,
             )
             draw_levels = {k: common_levels for k in densities}
         else:
             draw_levels = {
-                k: self._find_contour_levels(d, levels)
+                k: self._quantile_to_level(d, levels)
                 for k, d in densities.items()
             }
 
@@ -1005,9 +1055,11 @@ class _DistributionPlotter(VectorPlotter):
 
         # Add a color bar representing the contour heights
         # Note: this shows iso densities, not iso proportions
+        # TODO should this be nested in the loop above?
+        # Multiple colorbars aren't actually very helpful,
+        # but maybe they are way people would expect?
+        # Either way, be consistent with histplot
         if cbar:
-            # TODO what to do about hue here?
-            # TODO maybe use the legend instead?
             cbar_kws = {} if cbar_kws is None else cbar_kws
             ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
@@ -1118,7 +1170,7 @@ def histplot(
     # Histogram smoothing with a kernel density estimate
     kde=False, kde_kws=None, line_kws=None,
     # Bivariate histogram parameters
-    thresh=0,
+    thresh=0, pthresh=None, pmax=None, cbar=False, cbar_ax=None, cbar_kws=None,
     # Hue mapping parameters
     palette=None, hue_order=None, hue_norm=None,
     # Axes information
@@ -1137,11 +1189,15 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
+    # TODO move these defaults inside the plot functions
     if kde_kws is None:
         kde_kws = {}
 
     if line_kws is None:
         line_kws = {}
+
+    if cbar_kws is None:
+        cbar_kws = {}
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
@@ -1185,6 +1241,12 @@ def histplot(
             common_bins=common_bins,
             common_norm=common_norm,
             thresh=thresh,
+            pthresh=pthresh,
+            pmax=pmax,
+            legend=legend,
+            cbar=cbar,
+            cbar_ax=cbar_ax,
+            cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
             plot_kws=kwargs,
             ax=ax,
