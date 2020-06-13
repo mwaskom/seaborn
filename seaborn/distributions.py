@@ -25,7 +25,6 @@ from .utils import (
     _normalize_kwargs,
     _check_argument,
 )
-from .palettes import light_palette
 from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -703,6 +702,11 @@ class _DistributionPlotter(VectorPlotter):
         else:
             vmax = None
 
+        # pcolormesh is going to turn the grid off, but we want to keep it
+        # TODO I'm not sure if there's a better way to get the grid state
+        x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
+        y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
+
         # --- Loop over data (subsets) and draw the histograms
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
@@ -768,6 +772,11 @@ class _DistributionPlotter(VectorPlotter):
                 ax.figure.colorbar(mesh, cbar_ax, ax, **cbar_kws)
 
         # --- Finalize the plot
+        if x_grid:
+            ax.grid(True, axis="x")
+        if y_grid:
+            ax.grid(True, axis="y")
+
         self._add_axis_labels(ax)
 
         if "hue" in self.variables and legend:
@@ -1011,7 +1020,6 @@ class _DistributionPlotter(VectorPlotter):
 
         # Apply a common color-mapping to single color specificiations
         # TODO change to use _cmap_from_color
-        color_map = partial(light_palette, reverse=True, as_cmap=True)
 
         # Define the coloring of the contours
         if "hue" in self.variables:
@@ -1023,7 +1031,7 @@ class _DistributionPlotter(VectorPlotter):
         else:
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
-                cmap = color_map(default_color)
+                cmap = self._cmap_from_color(default_color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
                 contour_kws["colors"] = [default_color]
@@ -1041,7 +1049,7 @@ class _DistributionPlotter(VectorPlotter):
             if "hue" in sub_vars:
                 color = self._hue_map(sub_vars["hue"])
                 if fill:
-                    contour_kws["cmap"] = color_map(color)
+                    contour_kws["cmap"] = self._cmap_from_color(color)
                 else:
                     contour_kws["colors"] = [color]
 
@@ -1062,15 +1070,12 @@ class _DistributionPlotter(VectorPlotter):
             if "hue" not in self.variables:
                 cset.collections[0].set_label(label)
 
-        # Add a color bar representing the contour heights
-        # Note: this shows iso densities, not iso proportions
-        # TODO should this be nested in the loop above?
-        # Multiple colorbars aren't actually very helpful,
-        # but maybe they are way people would expect?
-        # Either way, be consistent with histplot
-        if cbar:
-            cbar_kws = {} if cbar_kws is None else cbar_kws
-            ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
+            # Add a color bar representing the contour heights
+            # Note: this shows iso densities, not iso proportions
+            # See more notes in histplot about how this could be improved
+            if cbar:
+                cbar_kws = {} if cbar_kws is None else cbar_kws
+                ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
         # --- Finalize the plot
         self._add_axis_labels(ax)
