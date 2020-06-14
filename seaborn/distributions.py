@@ -304,6 +304,7 @@ class _DistributionPlotter(VectorPlotter):
         shrink,
         kde,
         kde_kws,
+        color,
         legend,
         line_kws,
         estimate_kws,
@@ -655,6 +656,7 @@ class _DistributionPlotter(VectorPlotter):
         thresh,
         pthresh,
         pmax,
+        color,
         legend,
         cbar, cbar_ax, cbar_kws,
         estimate_kws,
@@ -707,6 +709,10 @@ class _DistributionPlotter(VectorPlotter):
         x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
         y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
 
+        # Get a default color
+        if color is None:
+            color = "C0"
+
         # --- Loop over data (subsets) and draw the histograms
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
@@ -738,7 +744,6 @@ class _DistributionPlotter(VectorPlotter):
                 cmap = self._cmap_from_color(color)
                 artist_kws["cmap"] = cmap
             else:
-                color = artist_kws.pop("color", "C0")
                 if "cmap" not in artist_kws:
                     cmap = self._cmap_from_color(color)
                     artist_kws["cmap"] = cmap
@@ -930,8 +935,8 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         levels,
         thresh,
-        legend,
         color,
+        legend,
         cbar,
         cbar_ax,
         cbar_kws,
@@ -1186,7 +1191,7 @@ def histplot(
     # Bivariate histogram parameters
     thresh=0, pthresh=None, pmax=None, cbar=False, cbar_ax=None, cbar_kws=None,
     # Hue mapping parameters
-    palette=None, hue_order=None, hue_norm=None,
+    palette=None, hue_order=None, hue_norm=None, color=None,
     # Axes information
     log_scale=None, legend=True, ax=None,
     # Other appearance keywords
@@ -1242,6 +1247,7 @@ def histplot(
             common_bins=common_bins,
             kde=kde,
             kde_kws=kde_kws.copy(),
+            color=color,
             legend=legend,
             estimate_kws=estimate_kws.copy(),
             line_kws=line_kws.copy(),
@@ -1257,6 +1263,7 @@ def histplot(
             thresh=thresh,
             pthresh=pthresh,
             pmax=pmax,
+            color=color,
             legend=legend,
             cbar=cbar,
             cbar_ax=cbar_ax,
@@ -1270,7 +1277,7 @@ def histplot(
 
 
 histplot.__doc__ = """\
-Plot a histogram of binned counts with optional normalization or smoothing.
+Plot univeriate or bivariate histograms to show distributions of datasets.
 
 A histogram is a classic visualization tool that represents the distribution
 of one or more variables by counting the number of observations that fall within
@@ -1345,6 +1352,7 @@ pmax : number or None
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
+{params.core.color}
 {params.dist.log_scale}
 {params.dist.legend}
 {params.core.ax}
