@@ -1225,6 +1225,12 @@ class TestHistPlotUnivariate:
             assert bar.get_width() == 1
             assert bar.get_x() == (data_min + i - .5)
 
+    def test_discrete_categorical_default(self, long_df):
+
+        ax = histplot(long_df, x="a")
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_width() == 1
+
     def test_discrete_requires_bars(self, long_df):
 
         with pytest.raises(ValueError, match="`element` must be 'bars'"):

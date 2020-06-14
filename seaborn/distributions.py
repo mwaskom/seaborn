@@ -1200,7 +1200,7 @@ def histplot(
     x=None, y=None, hue=None, weights=None,
     # Histogram computation parameters
     stat="count", bins="auto", binwidth=None, binrange=None,
-    discrete=False, cumulative=False, common_bins=True, common_norm=True,
+    discrete=None, cumulative=False, common_bins=True, common_norm=True,
     # Histogram appearance parameters
     multiple="layer", element="bars", fill=True, shrink=1,
     # Histogram smoothing with a kernel density estimate
@@ -1242,7 +1242,17 @@ def histplot(
     # Attach the axes to the plotter, setting up unit conversions
     p._attach(ax, log_scale=log_scale)
 
-    # TODO set discrete default with categorical x/y?
+    # Default to discrete bins for categorical variables
+    # Note that having this logic here may constrain plans for distplot
+    # It can move inside the plot_ functions, it will just need to modify
+    # the estimate_kws dictionary (I am not sure how we feel about that)
+    if discrete is None:
+        if p.univariate:
+            discrete = p.var_types[p.data_variable] == "categorical"
+        else:
+            discrete_x = p.var_types["x"] == "categorical"
+            discrete_y = p.var_types["y"] == "categorical"
+            discrete = discrete_x, discrete_y
 
     estimate_kws = dict(
         stat=stat,
@@ -1382,7 +1392,7 @@ kwargs
 
     - :meth:`matplotlib.axes.Axes.bar` (univariate, element="bars")
     - :meth:`matplotlib.axes.Axes.fill_between` (univariate, other element, fill=True)
-    - :meth:`matplotlib.axes.Axes.plot` (univariate, fill=False)
+    - :meth:`matplotlib.axes.Axes.plot` (univariate, other element, fill=False)
     - :meth:`matplotlib.axes.Axes.pcolormesh` (bivariate)
 
 Returns
