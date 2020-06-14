@@ -138,7 +138,7 @@ def long_df(rng):
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n, [.3, .7]),
-        t=np.repeat(np.datetime64('2005-02-25'), n),
+        t=rng.choice(np.arange("2005-02-25", "2005-02-28", dtype="datetime64[D]"), n),
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))
