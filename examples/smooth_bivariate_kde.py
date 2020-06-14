@@ -1,5 +1,6 @@
 """
 Smooth bivariate kernel density
+===============================
 
 _thumb: .5, .45
 """

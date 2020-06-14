@@ -44,13 +44,11 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
-	-rm -rf tutorial/*_files/
-	-rm -rf tutorial/*.rst
-	-rm -rf docstrings/*_files/
-	-rm -rf docstrings/*.rst
 	-rm -rf generated/*
 	-rm -rf introduction_files/*
 	-rm introduction.rst
+	-make -C docstrings clean
+	-make -C tutorial clean
 
 .PHONY: tutorials
 tutorials:

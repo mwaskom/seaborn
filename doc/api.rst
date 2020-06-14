@@ -44,6 +44,7 @@ Distribution plots
     :toctree: generated/
 
     distplot
+    histplot
     kdeplot
     rugplot
 

@@ -20,10 +20,12 @@ from .._core import (
     categorical_order,
 )
 from .._statistics import (
-    KDE
+    KDE,
+    Histogram,
 )
 from ..distributions import (
-    _KDEPlotter,
+    _DistributionPlotter,
+    histplot,
     rugplot,
     kdeplot,
 )
@@ -302,11 +304,11 @@ class TestKDEPlotUnivariate:
     def test_singular_data(self):
 
         with pytest.warns(UserWarning):
-            ax = dist.kdeplot(x=np.ones(10))
+            ax = kdeplot(x=np.ones(10))
         assert not ax.lines
 
         with pytest.warns(UserWarning):
-            ax = dist.kdeplot(x=[5])
+            ax = kdeplot(x=[5])
         assert not ax.lines
 
     def test_variable_assignment(self, long_df):
@@ -500,9 +502,9 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, alpha)
         )
 
-    def test_multiple_input_check(self, long_df):
+    def test_multiple_argument_check(self, long_df):
 
-        with pytest.raises(ValueError, match="multiple must be"):
+        with pytest.raises(ValueError, match="`multiple` must be"):
             kdeplot(data=long_df, x="x", hue="a", multiple="bad_input")
 
     def test_cut(self, rng):
@@ -734,17 +736,7 @@ class TestKDEPlotUnivariate:
 
     def test_input_checking(self, long_df):
 
-        err = (
-            "kdeplot requires a numeric 'x' variable, "
-            "but a datetime was passed"
-        )
-        with pytest.raises(TypeError, match=err):
-            kdeplot(data=long_df, x="t")
-
-        err = (
-            "kdeplot requires a numeric 'x' variable, "
-            "but a categorical was passed"
-        )
+        err = "The x variable is categorical,"
         with pytest.raises(TypeError, match=err):
             kdeplot(data=long_df, x="a")
 
@@ -845,20 +837,20 @@ class TestKDEPlotBivariate:
 
         levels = .2, .5, 1
 
-        f, (ax1, ax2) = plt.subplots(ncols=2)
-        kdeplot(x=x, y=y, log_scale=True, levels=levels, ax=ax1)
-        assert ax1.get_xscale() == "log"
-        assert ax1.get_yscale() == "log"
+        f, ax = plt.subplots()
+        kdeplot(x=x, y=y, log_scale=True, levels=levels, ax=ax)
+        assert ax.get_xscale() == "log"
+        assert ax.get_yscale() == "log"
 
         f, (ax1, ax2) = plt.subplots(ncols=2)
         kdeplot(x=x, y=y, log_scale=(10, False), levels=levels, ax=ax1)
         assert ax1.get_xscale() == "log"
         assert ax1.get_yscale() == "linear"
 
-        p = _KDEPlotter()
+        p = _DistributionPlotter()
         kde = KDE()
         density, (xx, yy) = kde(np.log10(x), y)
-        levels = p._find_contour_levels(density, levels)
+        levels = p._quantile_to_level(density, levels)
         ax2.contour(10 ** xx, yy, density, levels=levels)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
@@ -951,16 +943,831 @@ class TestKDEPlotBivariate:
         with pytest.raises(ValueError):
             kdeplot(**plot_kws, levels=[0, 1, 2])
 
-    def test_contour_levels(self, rng):
+    def test_quantile_to_level(self, rng):
 
         x = rng.uniform(0, 1, 100000)
         isoprop = np.linspace(.1, 1, 6)
 
-        levels = _KDEPlotter()._find_contour_levels(x, isoprop)
+        levels = _DistributionPlotter()._quantile_to_level(x, isoprop)
         for h, p in zip(levels, isoprop):
             assert (x[x <= h].sum() / x.sum()) == pytest.approx(p, abs=1e-4)
 
     def test_input_checking(self, long_df):
 
-        with pytest.raises(TypeError, match="kdeplot requires a numeric 'x'"):
+        with pytest.raises(TypeError, match="The x variable is categorical,"):
             kdeplot(data=long_df, x="a", y="y")
+
+
+class TestHistPlotUnivariate:
+
+    @pytest.mark.parametrize(
+        "variable", ["x", "y"],
+    )
+    def test_long_vectors(self, long_df, variable):
+
+        vector = long_df[variable]
+        vectors = [
+            variable, vector, np.asarray(vector), vector.tolist(),
+        ]
+
+        f, axs = plt.subplots(3)
+        for vector, ax in zip(vectors, axs):
+            histplot(data=long_df, ax=ax, **{variable: vector})
+
+        bars = [ax.patches for ax in axs]
+        for a_bars, b_bars in itertools.product(bars, bars):
+            for a, b in zip(a_bars, b_bars):
+                assert_array_equal(a.get_height(), b.get_height())
+                assert_array_equal(a.get_xy(), b.get_xy())
+
+    def test_wide_vs_long_data(self, wide_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=wide_df, ax=ax1, common_bins=False)
+
+        for col in wide_df.columns[::-1]:
+            histplot(data=wide_df, x=col, ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_height()
+            assert a.get_xy() == b.get_xy()
+
+    def test_flat_vector(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=long_df["x"], ax=ax1)
+        histplot(data=long_df, x="x", ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_height()
+            assert a.get_xy() == b.get_xy()
+
+    def test_empty_data(self):
+
+        ax = histplot(x=[])
+        assert not ax.patches
+
+    def test_variable_assignment(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(data=long_df, x="x", ax=ax1)
+        histplot(data=long_df, y="x", ax=ax2)
+
+        for a, b in zip(ax1.patches, ax2.patches):
+            assert a.get_height() == b.get_width()
+
+    @pytest.mark.parametrize("element", ["bars", "step", "poly"])
+    @pytest.mark.parametrize("multiple", ["layer", "dodge", "stack", "fill"])
+    def test_hue_fill_colors(self, long_df, multiple, element):
+
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            multiple=multiple, bins=1,
+            fill=True, element=element, legend=False,
+        )
+
+        palette = color_palette()
+
+        if multiple == "layer":
+            if element == "bars":
+                a = .5
+            else:
+                a = .25
+        else:
+            a = .75
+
+        for bar, color in zip(ax.patches[::-1], palette):
+            assert bar.get_facecolor() == to_rgba(color, a)
+
+        for poly, color in zip(ax.collections[::-1], palette):
+            assert tuple(poly.get_facecolor().squeeze()) == to_rgba(color, a)
+
+    def test_hue_stack(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+
+        kws = dict(data=long_df, x="x", hue="a", bins=n, element="bars")
+
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="stack", ax=ax2)
+
+        layer_heights = np.reshape([b.get_height() for b in ax1.patches], (-1, n))
+        stack_heights = np.reshape([b.get_height() for b in ax2.patches], (-1, n))
+        assert_array_equal(layer_heights, stack_heights)
+
+        stack_xys = np.reshape([b.get_xy() for b in ax2.patches], (-1, n, 2))
+        assert_array_equal(
+            stack_xys[..., 1] + stack_heights,
+            stack_heights.cumsum(axis=0),
+        )
+
+    def test_hue_fill(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+
+        kws = dict(data=long_df, x="x", hue="a", bins=n, element="bars")
+
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="fill", ax=ax2)
+
+        layer_heights = np.reshape([b.get_height() for b in ax1.patches], (-1, n))
+        stack_heights = np.reshape([b.get_height() for b in ax2.patches], (-1, n))
+        assert_array_almost_equal(
+            layer_heights / layer_heights.sum(axis=0), stack_heights
+        )
+
+        stack_xys = np.reshape([b.get_xy() for b in ax2.patches], (-1, n, 2))
+        assert_array_almost_equal(
+            (stack_xys[..., 1] + stack_heights) / stack_heights.sum(axis=0),
+            stack_heights.cumsum(axis=0),
+        )
+
+    def test_hue_dodge(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        bw = 2
+
+        kws = dict(data=long_df, x="x", hue="c", binwidth=bw, element="bars")
+
+        histplot(**kws, multiple="layer", ax=ax1)
+        histplot(**kws, multiple="dodge", ax=ax2)
+
+        layer_heights = [b.get_height() for b in ax1.patches]
+        dodge_heights = [b.get_height() for b in ax2.patches]
+        assert_array_equal(layer_heights, dodge_heights)
+
+        layer_xs = np.reshape([b.get_x() for b in ax1.patches], (2, -1))
+        dodge_xs = np.reshape([b.get_x() for b in ax2.patches], (2, -1))
+        assert_array_almost_equal(layer_xs[1], dodge_xs[1])
+        assert_array_almost_equal(layer_xs[0], dodge_xs[0] - bw / 2)
+
+    def test_multiple_input_check(self, flat_series):
+
+        with pytest.raises(ValueError, match="`multiple` must be"):
+            histplot(flat_series, multiple="invalid")
+
+    def test_element_input_check(self, flat_series):
+
+        with pytest.raises(ValueError, match="`element` must be"):
+            histplot(flat_series, element="invalid")
+
+    def test_count_stat(self, flat_series):
+
+        ax = histplot(flat_series, stat="count")
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert sum(bar_heights) == len(flat_series)
+
+    def test_density_stat(self, flat_series):
+
+        ax = histplot(flat_series, stat="density")
+        bar_heights = [b.get_height() for b in ax.patches]
+        bar_widths = [b.get_width() for b in ax.patches]
+        assert np.multiply(bar_heights, bar_widths).sum() == pytest.approx(1)
+
+    def test_density_stat_common_norm(self, long_df):
+
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            stat="density", common_norm=True, element="bars",
+        )
+        bar_heights = [b.get_height() for b in ax.patches]
+        bar_widths = [b.get_width() for b in ax.patches]
+        assert np.multiply(bar_heights, bar_widths).sum() == pytest.approx(1)
+
+    def test_density_stat_unique_norm(self, long_df):
+
+        n = 10
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            stat="density", bins=n, common_norm=False, element="bars",
+        )
+
+        bar_groups = ax.patches[:n], ax.patches[-n:]
+
+        for bars in bar_groups:
+            bar_heights = [b.get_height() for b in bars]
+            bar_widths = [b.get_width() for b in bars]
+            bar_areas = np.multiply(bar_heights, bar_widths)
+            assert bar_areas.sum() == pytest.approx(1)
+
+    def test_probability_stat(self, flat_series):
+
+        ax = histplot(flat_series, stat="probability")
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert sum(bar_heights) == pytest.approx(1)
+
+    def test_probability_stat_common_norm(self, long_df):
+
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            stat="probability", common_norm=True, element="bars",
+        )
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert sum(bar_heights) == pytest.approx(1)
+
+    def test_probability_stat_unique_norm(self, long_df):
+
+        n = 10
+        ax = histplot(
+            data=long_df, x="x", hue="a",
+            stat="probability", bins=n, common_norm=False, element="bars",
+        )
+
+        bar_groups = ax.patches[:n], ax.patches[-n:]
+
+        for bars in bar_groups:
+            bar_heights = [b.get_height() for b in bars]
+            assert sum(bar_heights) == pytest.approx(1)
+
+    def test_common_bins(self, long_df):
+
+        n = 10
+        ax = histplot(
+            long_df, x="x", hue="a", common_bins=True, bins=n, element="bars",
+        )
+
+        bar_groups = ax.patches[:n], ax.patches[-n:]
+        assert_array_equal(
+            [b.get_xy() for b in bar_groups[0]],
+            [b.get_xy() for b in bar_groups[1]]
+        )
+
+    def test_unique_bins(self, wide_df):
+
+        ax = histplot(wide_df, common_bins=False, bins=10, element="bars")
+
+        bar_groups = np.split(np.array(ax.patches), len(wide_df.columns))
+
+        for i, col in enumerate(wide_df.columns[::-1]):
+            bars = bar_groups[i]
+            start = bars[0].get_x()
+            stop = bars[-1].get_x() + bars[-1].get_width()
+            assert start == wide_df[col].min()
+            assert stop == wide_df[col].max()
+
+    def test_weights_with_missing(self, missing_df):
+
+        ax = histplot(missing_df, x="x", weights="s")
+
+        bar_heights = [bar.get_height() for bar in ax.patches]
+        total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
+        assert sum(bar_heights) == pytest.approx(total_weight)
+
+    def test_discrete(self, long_df):
+
+        ax = histplot(long_df, x="s", discrete=True)
+
+        data_min = long_df["s"].min()
+        data_max = long_df["s"].max()
+        assert len(ax.patches) == (data_max - data_min + 1)
+
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_width() == 1
+            assert bar.get_x() == (data_min + i - .5)
+
+    def test_discrete_categorical_default(self, long_df):
+
+        ax = histplot(long_df, x="a")
+        for i, bar in enumerate(ax.patches):
+            assert bar.get_width() == 1
+
+    def test_discrete_requires_bars(self, long_df):
+
+        with pytest.raises(ValueError, match="`element` must be 'bars'"):
+            histplot(long_df, x="s", discrete=True, element="poly")
+
+    @pytest.mark.parametrize("stat", ["count", "density", "probability"])
+    def test_kde(self, flat_series, stat):
+
+        ax = histplot(
+            flat_series, kde=True, stat=stat, kde_kws={"cut": 10}
+        )
+
+        bar_widths = [b.get_width() for b in ax.patches]
+        bar_heights = [b.get_height() for b in ax.patches]
+        hist_area = np.multiply(bar_widths, bar_heights).sum()
+
+        density, = ax.lines
+        kde_area = integrate.trapz(density.get_ydata(), density.get_xdata())
+
+        assert kde_area == pytest.approx(hist_area)
+
+    @pytest.mark.parametrize("multiple", ["layer", "dodge"])
+    @pytest.mark.parametrize("stat", ["count", "density", "probability"])
+    def test_kde_with_hue(self, long_df, stat, multiple):
+
+        n = 10
+        ax = histplot(
+            long_df, x="x", hue="c", multiple=multiple,
+            kde=True, stat=stat, element="bars",
+            kde_kws={"cut": 10}, bins=n,
+        )
+
+        bar_groups = ax.patches[:n], ax.patches[-n:]
+
+        for i, bars in enumerate(bar_groups):
+            bar_widths = [b.get_width() for b in bars]
+            bar_heights = [b.get_height() for b in bars]
+            hist_area = np.multiply(bar_widths, bar_heights).sum()
+
+            x, y = ax.lines[i].get_xydata().T
+            kde_area = integrate.trapz(y, x)
+
+            if multiple == "layer":
+                assert kde_area == pytest.approx(hist_area)
+            elif multiple == "dodge":
+                assert kde_area == pytest.approx(hist_area * 2)
+
+    def test_kde_default_cut(self, flat_series):
+
+        ax = histplot(flat_series, kde=True)
+        support = ax.lines[0].get_xdata()
+        assert support.min() == flat_series.min()
+        assert support.max() == flat_series.max()
+
+    def test_kde_hue(self, long_df):
+
+        n = 10
+        ax = histplot(data=long_df, x="x", hue="a", kde=True, bins=n)
+
+        for bar, line in zip(ax.patches[::n], ax.lines):
+            assert to_rgba(bar.get_facecolor(), 1) == line.get_color()
+
+    def test_kde_yaxis(self, flat_series):
+
+        f, ax = plt.subplots()
+        histplot(x=flat_series, kde=True)
+        histplot(y=flat_series, kde=True)
+
+        x, y = ax.lines
+        assert_array_equal(x.get_xdata(), y.get_ydata())
+        assert_array_equal(x.get_ydata(), y.get_xdata())
+
+    def test_kde_line_kws(self, flat_series):
+
+        lw = 5
+        ax = histplot(flat_series, kde=True, line_kws=dict(lw=lw))
+        assert ax.lines[0].get_linewidth() == lw
+
+    def test_kde_singular_data(self):
+
+        with pytest.warns(UserWarning):
+            ax = histplot(x=np.ones(10), kde=True)
+        assert not ax.lines
+
+        with pytest.warns(UserWarning):
+            ax = histplot(x=[5], kde=True)
+        assert not ax.lines
+
+    def test_element_default(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        histplot(long_df, x="x", ax=ax1)
+        histplot(long_df, x="x", ax=ax2, element="bars")
+        assert len(ax1.patches) == len(ax2.patches)
+
+        f, (ax1, ax2) = plt.subplots(2)
+        histplot(long_df, x="x", hue="a", ax=ax1)
+        histplot(long_df, x="x", hue="a", ax=ax2, element="bars")
+        assert len(ax1.patches) == len(ax2.patches)
+
+    def test_bars_no_fill(self, flat_series):
+
+        ax = histplot(flat_series, element="bars", fill=False)
+        for bar in ax.patches:
+            assert bar.get_facecolor() == (0, 0, 0, 0)
+
+    def test_step_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+        histplot(flat_series, element="bars", fill=True, bins=n, ax=ax1)
+        histplot(flat_series, element="step", fill=True, bins=n, ax=ax2)
+
+        bar_heights = [b.get_height() for b in ax1.patches]
+        bar_widths = [b.get_width() for b in ax1.patches]
+        bar_edges = [b.get_x() for b in ax1.patches]
+
+        fill = ax2.collections[0]
+        x, y = fill.get_paths()[0].vertices[::-1].T
+
+        assert_array_equal(x[1:2 * n:2], bar_edges)
+        assert_array_equal(y[1:2 * n:2], bar_heights)
+
+        assert x[n * 2] == bar_edges[-1] + bar_widths[-1]
+        assert y[n * 2] == bar_heights[-1]
+
+    def test_poly_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+        histplot(flat_series, element="bars", fill=True, bins=n, ax=ax1)
+        histplot(flat_series, element="poly", fill=True, bins=n, ax=ax2)
+
+        bar_heights = np.array([b.get_height() for b in ax1.patches])
+        bar_widths = np.array([b.get_width() for b in ax1.patches])
+        bar_edges = np.array([b.get_x() for b in ax1.patches])
+
+        fill = ax2.collections[0]
+        x, y = fill.get_paths()[0].vertices[::-1].T
+
+        assert_array_equal(x[1:n + 1], bar_edges + bar_widths / 2)
+        assert_array_equal(y[1:n + 1], bar_heights)
+
+    def test_poly_no_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        n = 10
+        histplot(flat_series, element="bars", fill=False, bins=n, ax=ax1)
+        histplot(flat_series, element="poly", fill=False, bins=n, ax=ax2)
+
+        bar_heights = np.array([b.get_height() for b in ax1.patches])
+        bar_widths = np.array([b.get_width() for b in ax1.patches])
+        bar_edges = np.array([b.get_x() for b in ax1.patches])
+
+        x, y = ax2.lines[0].get_xydata().T
+
+        assert_array_equal(x, bar_edges + bar_widths / 2)
+        assert_array_equal(y, bar_heights)
+
+    def test_step_no_fill(self, flat_series):
+
+        f, (ax1, ax2) = plt.subplots(2)
+
+        histplot(flat_series, element="bars", fill=False, ax=ax1)
+        histplot(flat_series, element="step", fill=False, ax=ax2)
+
+        bar_heights = [b.get_height() for b in ax1.patches]
+        bar_widths = [b.get_width() for b in ax1.patches]
+        bar_edges = [b.get_x() for b in ax1.patches]
+
+        x, y = ax2.lines[0].get_xydata().T
+
+        assert_array_equal(x[:-1], bar_edges)
+        assert_array_equal(y[:-1], bar_heights)
+        assert x[-1] == bar_edges[-1] + bar_widths[-1]
+        assert y[-1] == y[-2]
+
+    def test_step_fill_xy(self, flat_series):
+
+        f, ax = plt.subplots()
+
+        histplot(x=flat_series, element="step", fill=True)
+        histplot(y=flat_series, element="step", fill=True)
+
+        xverts = ax.collections[0].get_paths()[0].vertices
+        yverts = ax.collections[1].get_paths()[0].vertices
+
+        assert_array_equal(xverts, yverts[:, ::-1])
+
+    def test_step_no_fill_xy(self, flat_series):
+
+        f, ax = plt.subplots()
+
+        histplot(x=flat_series, element="step", fill=False)
+        histplot(y=flat_series, element="step", fill=False)
+
+        xline, yline = ax.lines
+
+        assert_array_equal(xline.get_xdata(), yline.get_ydata())
+        assert_array_equal(xline.get_ydata(), yline.get_xdata())
+
+    def test_weighted_histogram(self):
+
+        ax = histplot(x=[0, 1, 2], weights=[1, 2, 3], discrete=True)
+
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert bar_heights == [1, 2, 3]
+
+    def test_weights_with_auto_bins(self, long_df):
+
+        with pytest.warns(UserWarning):
+            ax = histplot(long_df, x="x", weights="f")
+        assert len(ax.patches) == 10
+
+    def test_shrink(self, long_df):
+
+        bw = 2
+        shrink = .5
+        ax = histplot(long_df, x="x", binwidth=bw, shrink=shrink)
+        assert ax.patches[0].get_width() == bw * shrink
+
+    def test_log_scale_explicit(self, rng):
+
+        x = rng.lognormal(0, 2, 1000)
+        ax = histplot(x, log_scale=True, binwidth=1)
+
+        bar_widths = [b.get_width() for b in ax.patches]
+        steps = np.divide(bar_widths[1:], bar_widths[:-1])
+        assert np.allclose(steps, 10)
+
+    def test_log_scale_implicit(self, rng):
+
+        x = rng.lognormal(0, 2, 1000)
+
+        f, ax = plt.subplots()
+        ax.set_xscale("log")
+        histplot(x, binwidth=1, ax=ax)
+
+        bar_widths = [b.get_width() for b in ax.patches]
+        steps = np.divide(bar_widths[1:], bar_widths[:-1])
+        assert np.allclose(steps, 10)
+
+    @pytest.mark.parametrize(
+        "fill", [True, False],
+    )
+    def test_auto_linewidth(self, flat_series, fill):
+
+        get_lw = lambda ax: ax.patches[0].get_linewidth()  # noqa: E731
+
+        kws = dict(element="bars", fill=fill)
+
+        f, (ax1, ax2) = plt.subplots(2)
+        histplot(flat_series, **kws, bins=10, ax=ax1)
+        histplot(flat_series, **kws, bins=100, ax=ax2)
+        assert get_lw(ax1) > get_lw(ax2)
+
+        f, ax1 = plt.subplots(figsize=(10, 5))
+        f, ax2 = plt.subplots(figsize=(2, 5))
+        histplot(flat_series, **kws, bins=30, ax=ax1)
+        histplot(flat_series, **kws, bins=30, ax=ax2)
+        assert get_lw(ax1) > get_lw(ax2)
+
+    def test_bar_kwargs(self, flat_series):
+
+        lw = 2
+        ec = (1, .2, .9, .5)
+        ax = histplot(flat_series, binwidth=1, ec=ec, lw=lw)
+        for bar in ax.patches:
+            assert bar.get_edgecolor() == ec
+            assert bar.get_linewidth() == lw
+
+    def test_step_fill_kwargs(self, flat_series):
+
+        lw = 2
+        ec = (1, .2, .9, .5)
+        ax = histplot(flat_series, element="step", ec=ec, lw=lw)
+        poly = ax.collections[0]
+        assert tuple(poly.get_edgecolor().squeeze()) == ec
+        assert poly.get_linewidth() == lw
+
+    def test_step_line_kwargs(self, flat_series):
+
+        lw = 2
+        ls = "--"
+        ax = histplot(flat_series, element="step", fill=False, lw=lw, ls=ls)
+        line = ax.lines[0]
+        assert line.get_linewidth() == lw
+        assert line.get_linestyle() == ls
+
+
+class TestHistPlotBivariate:
+
+    def test_mesh(self, long_df):
+
+        hist = Histogram()
+        counts, (x_edges, y_edges) = hist(long_df["x"], long_df["y"])
+
+        ax = histplot(long_df, x="x", y="y")
+        mesh = ax.collections[0]
+        mesh_data = mesh.get_array()
+
+        assert_array_equal(mesh_data.data, counts.T.flat)
+        assert_array_equal(mesh_data.mask, counts.T.flat == 0)
+
+        edges = itertools.product(y_edges[:-1], x_edges[:-1])
+        for i, (y, x) in enumerate(edges):
+            path = mesh.get_paths()[i]
+            assert path.vertices[0, 0] == x
+            assert path.vertices[0, 1] == y
+
+    def test_mesh_with_hue(self, long_df):
+
+        ax = histplot(long_df, x="x", y="y", hue="c")
+
+        hist = Histogram()
+        hist.define_bin_edges(long_df["x"], long_df["y"])
+
+        for i, sub_df in long_df.groupby("c"):
+
+            mesh = ax.collections[i]
+            mesh_data = mesh.get_array()
+
+            counts, (x_edges, y_edges) = hist(sub_df["x"], sub_df["y"])
+
+            assert_array_equal(mesh_data.data, counts.T.flat)
+            assert_array_equal(mesh_data.mask, counts.T.flat == 0)
+
+            edges = itertools.product(y_edges[:-1], x_edges[:-1])
+            for i, (y, x) in enumerate(edges):
+                path = mesh.get_paths()[i]
+                assert path.vertices[0, 0] == x
+                assert path.vertices[0, 1] == y
+
+    def test_mesh_with_hue_unique_bins(self, long_df):
+
+        ax = histplot(long_df, x="x", y="y", hue="c", common_bins=False)
+
+        for i, sub_df in long_df.groupby("c"):
+
+            hist = Histogram()
+
+            mesh = ax.collections[i]
+            mesh_data = mesh.get_array()
+
+            counts, (x_edges, y_edges) = hist(sub_df["x"], sub_df["y"])
+
+            assert_array_equal(mesh_data.data, counts.T.flat)
+            assert_array_equal(mesh_data.mask, counts.T.flat == 0)
+
+            edges = itertools.product(y_edges[:-1], x_edges[:-1])
+            for i, (y, x) in enumerate(edges):
+                path = mesh.get_paths()[i]
+                assert path.vertices[0, 0] == x
+                assert path.vertices[0, 1] == y
+
+    def test_mesh_log_scale(self, rng):
+
+        x, y = rng.lognormal(0, 1, (2, 1000))
+        hist = Histogram()
+        counts, (x_edges, y_edges) = hist(np.log10(x), np.log10(y))
+
+        ax = histplot(x=x, y=y, log_scale=True)
+        mesh = ax.collections[0]
+        mesh_data = mesh.get_array()
+
+        assert_array_equal(mesh_data.data, counts.T.flat)
+
+        edges = itertools.product(y_edges[:-1], x_edges[:-1])
+        for i, (y_i, x_i) in enumerate(edges):
+            path = mesh.get_paths()[i]
+            assert path.vertices[0, 0] == 10 ** x_i
+            assert path.vertices[0, 1] == 10 ** y_i
+
+    def test_mesh_thresh(self, long_df):
+
+        hist = Histogram()
+        counts, (x_edges, y_edges) = hist(long_df["x"], long_df["y"])
+
+        thresh = 5
+        ax = histplot(long_df, x="x", y="y", thresh=thresh)
+        mesh = ax.collections[0]
+        mesh_data = mesh.get_array()
+
+        assert_array_equal(mesh_data.data, counts.T.flat)
+        assert_array_equal(mesh_data.mask, (counts <= thresh).T.flat)
+
+    def test_mesh_common_norm(self, long_df):
+
+        stat = "density"
+        ax = histplot(
+            long_df, x="x", y="y", hue="c", common_norm=True, stat=stat,
+        )
+
+        hist = Histogram(stat="density")
+        hist.define_bin_edges(long_df["x"], long_df["y"])
+
+        for i, sub_df in long_df.groupby("c"):
+
+            mesh = ax.collections[i]
+            mesh_data = mesh.get_array()
+
+            density, (x_edges, y_edges) = hist(sub_df["x"], sub_df["y"])
+
+            scale = len(sub_df) / len(long_df)
+            assert_array_equal(mesh_data.data, (density * scale).T.flat)
+
+    def test_mesh_unique_norm(self, long_df):
+
+        stat = "density"
+        ax = histplot(
+            long_df, x="x", y="y", hue="c", common_norm=False, stat=stat,
+        )
+
+        hist = Histogram()
+        hist.define_bin_edges(long_df["x"], long_df["y"])
+
+        for i, sub_df in long_df.groupby("c"):
+
+            sub_hist = Histogram(bins=hist.bin_edges, stat=stat)
+
+            mesh = ax.collections[i]
+            mesh_data = mesh.get_array()
+
+            density, (x_edges, y_edges) = sub_hist(sub_df["x"], sub_df["y"])
+            assert_array_equal(mesh_data.data, density.T.flat)
+
+    def test_mesh_colors(self, long_df):
+
+        color = "r"
+        f, ax = plt.subplots()
+        histplot(
+            long_df, x="x", y="y", color=color,
+        )
+        mesh = ax.collections[0]
+        assert_array_equal(
+            mesh.get_cmap().colors,
+            _DistributionPlotter()._cmap_from_color(color).colors,
+        )
+
+        f, ax = plt.subplots()
+        histplot(
+            long_df, x="x", y="y", hue="c",
+        )
+        colors = color_palette()
+        for i, mesh in enumerate(ax.collections):
+            assert_array_equal(
+                mesh.get_cmap().colors,
+                _DistributionPlotter()._cmap_from_color(colors[i]).colors,
+            )
+
+    def test_color_limits(self, long_df):
+
+        f, (ax1, ax2, ax3) = plt.subplots(3)
+        kws = dict(data=long_df, x="x", y="y")
+        hist = Histogram()
+        counts, _ = hist(long_df["x"], long_df["y"])
+
+        histplot(**kws, ax=ax1)
+        assert ax1.collections[0].get_clim() == (0, counts.max())
+
+        vmax = 10
+        histplot(**kws, vmax=vmax, ax=ax2)
+        counts, _ = hist(long_df["x"], long_df["y"])
+        assert ax2.collections[0].get_clim() == (0, vmax)
+
+        pmax = .8
+        pthresh = .1
+        f = _DistributionPlotter()._quantile_to_level
+
+        histplot(**kws, pmax=pmax, pthresh=pthresh, ax=ax3)
+        counts, _ = hist(long_df["x"], long_df["y"])
+        mesh = ax3.collections[0]
+        assert mesh.get_clim() == (0, f(counts, pmax))
+        assert_array_equal(
+            mesh.get_array().mask,
+            (counts <= f(counts, pthresh)).T.flat,
+        )
+
+    def test_hue_color_limits(self, long_df):
+
+        _, (ax1, ax2, ax3, ax4) = plt.subplots(4)
+        kws = dict(data=long_df, x="x", y="y", hue="c", bins=4)
+
+        hist = Histogram(bins=kws["bins"])
+        hist.define_bin_edges(long_df["x"], long_df["y"])
+        full_counts, _ = hist(long_df["x"], long_df["y"])
+
+        sub_counts = []
+        for _, sub_df in long_df.groupby(kws["hue"]):
+            c, _ = hist(sub_df["x"], sub_df["y"])
+            sub_counts.append(c)
+
+        pmax = .8
+        pthresh = .05
+        f = _DistributionPlotter()._quantile_to_level
+
+        histplot(**kws, common_norm=True, ax=ax1)
+        for i, mesh in enumerate(ax1.collections):
+            assert mesh.get_clim() == (0, full_counts.max())
+
+        histplot(**kws, common_norm=False, ax=ax2)
+        for i, mesh in enumerate(ax2.collections):
+            assert mesh.get_clim() == (0, sub_counts[i].max())
+
+        histplot(**kws, common_norm=True, pmax=pmax, pthresh=pthresh, ax=ax3)
+        for i, mesh in enumerate(ax3.collections):
+            assert mesh.get_clim() == (0, f(full_counts, pmax))
+            assert_array_equal(
+                mesh.get_array().mask,
+                (sub_counts[i] <= f(full_counts, pthresh)).T.flat,
+            )
+
+        histplot(**kws, common_norm=False, pmax=pmax, pthresh=pthresh, ax=ax4)
+        for i, mesh in enumerate(ax4.collections):
+            assert mesh.get_clim() == (0, f(sub_counts[i], pmax))
+            assert_array_equal(
+                mesh.get_array().mask,
+                (sub_counts[i] <= f(sub_counts[i], pthresh)).T.flat,
+            )
+
+    def test_colorbar(self, long_df):
+
+        f, ax = plt.subplots()
+        histplot(long_df, x="x", y="y", cbar=True, ax=ax)
+        assert len(ax.figure.axes) == 2
+
+        f, (ax, cax) = plt.subplots(2)
+        histplot(long_df, x="x", y="y", cbar=True, cbar_ax=cax, ax=ax)
+        assert len(ax.figure.axes) == 2
