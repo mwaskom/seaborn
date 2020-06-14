@@ -1244,6 +1244,13 @@ class TestHistPlotUnivariate:
         with pytest.raises(ValueError, match="`element` must be 'bars'"):
             histplot(long_df, x="s", discrete=True, element="poly")
 
+    def test_datetime_scale(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots()
+        histplot(x=long_df["t"], ax=ax1)
+        histplot(x=long_df["t"], fill=False, ax=ax2)
+        assert ax1.get_xlim() == ax2.get_xlim()
+
     @pytest.mark.parametrize("stat", ["count", "density", "probability"])
     def test_kde(self, flat_series, stat):
 
