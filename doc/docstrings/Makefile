@@ -10,5 +10,6 @@ docstrings: ${rst_files}
 	 fi
 
 clean:
-	rm *.rst
-	rm -r *_files/
+	rm -rf *.rst
+	rm -rf *_files/
+	rm -rf .ipynb_checkpoints/
