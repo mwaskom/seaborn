@@ -451,17 +451,26 @@ class _DistributionPlotter(VectorPlotter):
         # Note, this is fairly complicated and awkward, I'd like a better way
         if "hue" not in self.variables:
             if fill:
-                artist = mpl.patches.Rectangle
-                plot_kws = _normalize_kwargs(plot_kws, artist)
-                scout = ax.fill_between([], [], **plot_kws)
-                default_color = tuple(scout.get_facecolor().squeeze())
-                plot_kws.pop("color", None)
+                if self.var_types[self.data_variable] == "datetime":
+                    # Avoid drawing empty fill_between on date axis
+                    # https://github.com/matplotlib/matplotlib/issues/17586
+                    default_color = plot_kws.pop(
+                        "color", plot_kws.pop("facecolor", "C0")
+                    )
+                    scout = None
+                else:
+                    artist = mpl.patches.Rectangle
+                    plot_kws = _normalize_kwargs(plot_kws, artist)
+                    scout = ax.fill_between([], [], **plot_kws)
+                    default_color = tuple(scout.get_facecolor().squeeze())
+                    plot_kws.pop("color", None)
             else:
                 artist = mpl.lines.Line2D
                 plot_kws = _normalize_kwargs(plot_kws, artist)
                 scout, = ax.plot([], [], **plot_kws)
                 default_color = scout.get_color()
-            scout.remove()
+            if scout is not None:
+                scout.remove()
 
         # Defeat alpha should depend on other parameters
         if multiple == "layer":
@@ -851,13 +860,22 @@ class _DistributionPlotter(VectorPlotter):
         # Handle default visual attributes
         if "hue" not in self.variables:
             if fill:
-                scout = ax.fill_between([], [], **plot_kws)
-                default_color = tuple(scout.get_facecolor().squeeze())
+                if self.var_types[self.data_variable] == "datetime":
+                    # Avoid drawing empty fill_between on date axis
+                    # https://github.com/matplotlib/matplotlib/issues/17586
+                    default_color = plot_kws.pop(
+                        "color", plot_kws.pop("facecolor", "C0")
+                    )
+                    scout = None
+                else:
+                    scout = ax.fill_between([], [], **plot_kws)
+                    default_color = tuple(scout.get_facecolor().squeeze())
                 plot_kws.pop("color", None)
             else:
                 scout, = ax.plot([], [], **plot_kws)
                 default_color = scout.get_color()
-            scout.remove()
+            if scout is not None:
+                scout.remove()
 
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
@@ -1237,6 +1255,8 @@ def histplot(
     )
 
     if p.univariate:
+
+        kwargs["color"] = color
 
         p.plot_univariate_histogram(
             multiple=multiple,
