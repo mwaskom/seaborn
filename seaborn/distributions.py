@@ -240,15 +240,15 @@ class _DistributionPlotter(VectorPlotter):
         # Initialize the estimator object
         estimator = KDE(**estimate_kws)
 
+        cols = list(self.variables)
+        all_data = self.plot_data[cols].dropna()
+
         if "hue" in self.variables:
 
             # Access and clean the data
-            # TODO what about rows where hue is null?
-            cols = [data_variable, "hue"]
             all_observations = self.comp_data[cols].dropna()
 
             # Define a single grid of support for the PDFs
-            # TODO should this use weights as well?
             if common_grid:
                 estimator.define_support(all_observations[data_variable])
 
@@ -261,7 +261,8 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            observations = sub_data[data_variable].dropna()
+            sub_data = sub_data[cols].dropna()
+            observations = sub_data[data_variable]
 
             observation_variance = observations.var()
             if not observation_variance or np.isnan(observation_variance):
@@ -283,7 +284,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
-                density *= len(sub_data) / len(self.plot_data)
+                density *= len(sub_data) / len(all_data)
 
             # Store the density for this level
             key = tuple(sub_vars.items())
@@ -346,12 +347,14 @@ class _DistributionPlotter(VectorPlotter):
         estimator = Histogram(**estimate_kws)
         histograms = {}
 
+        # Define relevant columns
+        # Note that this works around an issue in core that we can fix, and
+        # then we won't need this messiness.
+        # https://github.com/mwaskom/seaborn/issues/2135
+        cols = list(self.variables)
+
         # Do pre-compute housekeeping related to multiple groups
         if "hue" in self.variables:
-
-            cols = [self.data_variable, "hue"]
-            if "weights" in self.variables:
-                cols.append("weights")
 
             all_data = self.comp_data[cols].dropna()
 
@@ -383,7 +386,8 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            observations = sub_data[self.data_variable].dropna()
+            sub_data = sub_data[cols].dropna()
+            observations = sub_data[self.data_variable]
 
             if "weights" in self.variables:
                 # TODO if nans, will not match observations!
@@ -416,8 +420,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply scaling to normalize across groups
             if common_norm:
-                # TODO denominator will have NAs?
-                hist *= len(sub_data) / len(self.plot_data)
+                hist *= len(sub_data) / len(all_data)
 
             # Store the finalized histogram data for future plotting
             histograms[key] = hist
@@ -678,7 +681,8 @@ class _DistributionPlotter(VectorPlotter):
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
 
-        # TODO why do we need this? Maybe plot_data should drop unused variables?
+        # None that we need to define cols because of some limitations in
+        # the core code, that are on track for resolution. (GH2135)
         cols = list(self.variables)
         all_data = self.comp_data[cols].dropna()
         weights = all_data.get("weights", None)
@@ -726,7 +730,7 @@ class _DistributionPlotter(VectorPlotter):
 
             sub_data = sub_data[cols].dropna()
 
-            if sub_data.shape[0] <= 1:
+            if sub_data.empty:
                 continue
 
             # Do the histogram computation
@@ -969,6 +973,10 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" not in self.variables:
             common_norm = False
 
+        # See other notes about GH2135
+        cols = list(self.variables)
+        all_data = self.plot_data[cols].dropna()
+
         # Check for log scaling on iether axis
         scalex = ax.xaxis.get_scale() == "log"
         scaley = ax.yaxis.get_scale() == "log"
@@ -980,7 +988,8 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            observations = sub_data[["x", "y"]].dropna()
+            sub_data = sub_data[cols].dropna()
+            observations = sub_data[["x", "y"]]
 
             # Extract the weights for this subset of observations
             if "weights" in self.variables:
@@ -1010,7 +1019,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
-                density *= len(sub_data) / len(self.plot_data)
+                density *= len(sub_data) / len(all_data)
 
             key = tuple(sub_vars.items())
             densities[key] = density

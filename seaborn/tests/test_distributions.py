@@ -1213,6 +1213,14 @@ class TestHistPlotUnivariate:
             assert start == wide_df[col].min()
             assert stop == wide_df[col].max()
 
+    def test_weights_with_missing(self, missing_df):
+
+        ax = histplot(missing_df, x="x", weights="s")
+
+        bar_heights = [bar.get_height() for bar in ax.patches]
+        total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
+        assert sum(bar_heights) == pytest.approx(total_weight)
+
     def test_discrete(self, long_df):
 
         ax = histplot(long_df, x="s", discrete=True)
