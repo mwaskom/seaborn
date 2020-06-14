@@ -390,7 +390,6 @@ class _DistributionPlotter(VectorPlotter):
             observations = sub_data[self.data_variable]
 
             if "weights" in self.variables:
-                # TODO if nans, will not match observations!
                 weights = sub_data["weights"]
             else:
                 weights = None
@@ -847,7 +846,7 @@ class _DistributionPlotter(VectorPlotter):
             log_scale
         )
 
-        # TODO raises when no hue and multiple != layer
+        # Note: raises when no hue and multiple != layer. A problem?
         densities, baselines = self._resolve_multiple(densities, multiple)
 
         # Control the interaction with autoscaling by defining sticky_edges
@@ -1049,9 +1048,6 @@ class _DistributionPlotter(VectorPlotter):
         default_color = scout.get_color()
         scout.remove()
 
-        # Apply a common color-mapping to single color specificiations
-        # TODO change to use _cmap_from_color
-
         # Define the coloring of the contours
         if "hue" in self.variables:
             for param in ["cmap", "colors"]:
@@ -1069,6 +1065,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Choose the function to plot with
         # TODO could add a pcolormesh based option as well
+        # Which would look something like element="raster"
         if fill:
             contour_func = ax.contourf
         else:
