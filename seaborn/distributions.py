@@ -126,6 +126,7 @@ class _DistributionPlotter(VectorPlotter):
         ax, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
     ):
         """Add artists that reflect semantic mappings and put then in a legend."""
+        # TODO note that this doesn't handle numeric mappngs the way relational plots do
         handles = []
         labels = []
         for level in self._hue_map.levels:
@@ -319,7 +320,6 @@ class _DistributionPlotter(VectorPlotter):
         if estimate_kws["discrete"] and element != "bars":
             raise ValueError("`element` must be 'bars' when `discrete` is True")
 
-        # TODO move this to external function?
         auto_bins_with_weights = (
             "weights" in self.variables
             and estimate_kws["bins"] == "auto"
@@ -648,7 +648,6 @@ class _DistributionPlotter(VectorPlotter):
         # Legend for semantic variables
         if "hue" in self.variables and legend:
 
-            # TODO  Revisit if we don't use lines at all
             if fill or element == "bars":
                 artist = partial(mpl.patches.Patch)
             else:
@@ -679,7 +678,7 @@ class _DistributionPlotter(VectorPlotter):
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
 
-        # TODO why do we need this? Shouldn't plot_data drop unused variables?
+        # TODO why do we need this? Maybe plot_data should drop unused variables?
         cols = list(self.variables)
         all_data = self.comp_data[cols].dropna()
         weights = all_data.get("weights", None)
@@ -714,7 +713,7 @@ class _DistributionPlotter(VectorPlotter):
             vmax = None
 
         # pcolormesh is going to turn the grid off, but we want to keep it
-        # TODO I'm not sure if there's a better way to get the grid state
+        # I'm not sure if there's a better way to get the grid state
         x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
         y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
 
@@ -1256,7 +1255,8 @@ def histplot(
 
     if p.univariate:
 
-        kwargs["color"] = color
+        if "hue" not in p.variables:
+            kwargs["color"] = color
 
         p.plot_univariate_histogram(
             multiple=multiple,
@@ -1381,8 +1381,9 @@ kwargs
     functions:
 
     - :meth:`matplotlib.axes.Axes.bar` (univariate, element="bars")
-    - :meth:`matplotlib.axes.Axes.fill_between` (univariate, fill=True)
+    - :meth:`matplotlib.axes.Axes.fill_between` (univariate, other element, fill=True)
     - :meth:`matplotlib.axes.Axes.plot` (univariate, fill=False)
+    - :meth:`matplotlib.axes.Axes.pcolormesh` (bivariate)
 
 Returns
 -------
@@ -1767,8 +1768,15 @@ def rugplot(
     **kwargs
 ):
 
+    # A note: I think it would make sense to add multiple= to rugplot and allow
+    # rugs for different hue variables to be shifted orthogonal to the data axis
+    # But is this stacking, or dodging?
+
     # A note: if we want to add a style semantic to rugplot,
     # we could make an option that draws the rug using scatterplot
+
+    # A note, it would also be nice to offer some kind of histogram/density
+    # rugplot, since alpha blending doesn't work great in the large n regime
 
     # Handle deprecation of `a``
     if a is not None:
