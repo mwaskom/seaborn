@@ -1031,10 +1031,19 @@ class TestHistPlotUnivariate:
 
         palette = color_palette()
 
-        a = .5 if multiple == "layer" else .75
+        if multiple == "layer":
+            if element == "bars":
+                a = .5
+            else:
+                a = .25
+        else:
+            a = .75
 
         for bar, color in zip(ax.patches[::-1], palette):
             assert bar.get_facecolor() == to_rgba(color, a)
+
+        for poly, color in zip(ax.collections[::-1], palette):
+            assert tuple(poly.get_facecolor().squeeze()) == to_rgba(color, a)
 
     def test_hue_stack(self, long_df):
 
@@ -1307,8 +1316,13 @@ class TestHistPlotUnivariate:
     def test_element_default(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(2)
+        histplot(long_df, x="x", ax=ax1)
+        histplot(long_df, x="x", ax=ax2, element="bars")
+        assert len(ax1.patches) == len(ax2.patches)
+
+        f, (ax1, ax2) = plt.subplots(2)
         histplot(long_df, x="x", hue="a", ax=ax1)
-        histplot(long_df, x="x", hue="a", ax=ax2, element="bars")
+        histplot(long_df, x="x", hue="a", ax=ax2, element="step")
         assert len(ax1.patches) == len(ax2.patches)
 
     def test_bars_no_fill(self, flat_series):
