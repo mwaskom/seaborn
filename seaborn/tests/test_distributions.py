@@ -1322,7 +1322,7 @@ class TestHistPlotUnivariate:
 
         f, (ax1, ax2) = plt.subplots(2)
         histplot(long_df, x="x", hue="a", ax=ax1)
-        histplot(long_df, x="x", hue="a", ax=ax2, element="step")
+        histplot(long_df, x="x", hue="a", ax=ax2, element="bars")
         assert len(ax1.patches) == len(ax2.patches)
 
     def test_bars_no_fill(self, flat_series):
