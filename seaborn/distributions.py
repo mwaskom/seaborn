@@ -18,6 +18,7 @@ from ._core import (
 from ._statistics import (
     KDE,
     Histogram,
+    ECDF,
 )
 from .utils import (
     remove_na,
@@ -33,7 +34,7 @@ from ._docstrings import (
 )
 
 
-__all__ = ["distplot", "histplot", "kdeplot", "rugplot"]
+__all__ = ["distplot", "histplot", "kdeplot", "ecdfplot", "rugplot"]
 
 # ==================================================================================== #
 # Module documentation
@@ -1128,6 +1129,59 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
+    def plot_univariate_ecdf(self, estimate_kws, legend, plot_kws, ax):
+
+        # TODO see notes elsewhere about GH2135
+        cols = list(self.variables)
+
+        # TODO maybe have an option for joint start/end?
+        estimator = ECDF(**estimate_kws)
+
+        # Loop through the subsets, transform and plot the data
+        for sub_vars, sub_data in self._semantic_subsets(
+            "hue", reverse=True, from_comp_data=True,
+        ):
+
+            # "Compute" the ECDF
+            sub_data = sub_data[cols].dropna()
+            observations = sub_data[self.data_variable]
+            weights = sub_data.get("weights", None)
+            stat, vals = estimator(observations, weights)
+
+            # Assign attributes based on semantic mapping
+            artist_kws = plot_kws.copy()
+            if "hue" in self.variables:
+                artist_kws["color"] = self._hue_map(sub_vars["hue"])
+
+            # Work out the orientation of the plot
+            if self.data_variable == "x":
+                plot_args = vals, stat
+                stat_variable = "y"
+            else:
+                plot_args = stat, vals
+                stat_variable = "x"
+
+            # Draw the line for this subset
+            artist, = ax.plot(*plot_args, drawstyle="steps-post", **artist_kws)
+            sticky_edges = getattr(artist.sticky_edges, stat_variable)
+            sticky_edges[:] = 0, 1
+
+        # --- Finalize the plot ----
+        stat = estimator.stat.capitalize()
+        default_x = default_y = ""
+        if self.data_variable == "x":
+            default_y = stat
+        if self.data_variable == "y":
+            default_x = stat
+        self._add_axis_labels(ax, default_x, default_y)
+
+        if "hue" in self.variables and legend:
+            artist = partial(mpl.lines.Line2D, [], [])
+            alpha = plot_kws.get("alpha", 1)
+            self._add_legend(
+                ax, artist, False, False, None, alpha, plot_kws, {},
+            )
+
     def plot_rug(self, height, expand_margins, legend, ax, kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
@@ -1768,6 +1822,57 @@ Examples
     returns=_core_docs["returns"],
     seealso=_core_docs["seealso"],
 )
+
+
+def ecdfplot(
+    data=None, *,
+    # Vector variables
+    x=None, y=None, hue=None, weights=None,
+    # Computation parameters
+    stat="proportion",
+    # Hue mapping parameters
+    palette=None, hue_order=None, hue_norm=None, color=None,
+    # Axes information
+    log_scale=None, legend=True, ax=None,
+    # Other appearance keywords
+    **kwargs,
+):
+
+    p = _DistributionPlotter(
+        data=data,
+        variables=_DistributionPlotter.get_semantics(locals())
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    # We could support other semantics (size, style) here fairly easily
+    # But it would make distplot a bit more complicated.
+    # It's always possible to add features like that later, so I am going to defer.
+    # It will be even easier to wait until after there is a more general/abstract
+    # way to go from semantic specs to artist attributes.
+
+    if ax is None:
+        ax = plt.gca()
+
+    # We could add this one day, but it's of dubious value
+    if not p.univariate:
+        raise NotImplementedError("Bivariate ECDF plots are not implemented")
+
+    # Attach the axes to the plotter, setting up unit conversions
+    p._attach(ax, log_scale=log_scale)
+
+    estimate_kws = dict(
+        stat=stat,
+    )
+
+    p.plot_univariate_ecdf(
+        estimate_kws=estimate_kws,
+        legend=legend,
+        plot_kws=kwargs,
+        ax=ax,
+    )
+
+    return ax
 
 
 @_deprecate_positional_args

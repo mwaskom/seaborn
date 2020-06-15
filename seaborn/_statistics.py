@@ -345,3 +345,39 @@ class Histogram:
             return self._eval_univariate(x1, weights)
         else:
             return self._eval_bivariate(x1, x2, weights)
+
+
+class ECDF:
+
+    def __init__(self, stat="proportion"):
+
+        _check_argument("stat", ["count", "proportion"], stat)
+        self.stat = stat
+
+    # Do we need bivariate ECDF?
+
+    def _eval_univariate(self, x, weights):
+
+        sorter = np.argsort(x)
+        x = x[sorter]
+        weights = weights[sorter]
+
+        y = weights.cumsum()
+
+        if self.stat == "proportion":
+            y = y / y.max()
+
+        x = np.r_[-np.inf, x]
+        y = np.r_[0, y]
+
+        return y, x
+
+    def __call__(self, x1, weights=None):
+
+        x1 = np.asarray(x1)
+        if weights is None:
+            weights = np.ones_like(x1)
+        else:
+            weights = np.asarray(weights)
+
+        return self._eval_univariate(x1, weights)
