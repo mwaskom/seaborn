@@ -1,8 +1,22 @@
 import numpy as np
 import pandas as pd
+import datetime
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def remove_pandas_unit_conversion():
+    # Prior to pandas 1.0, it registered its own datetime converters,
+    # but they are less powerful than what matplotlib added in 2.2,
+    # and we rely on that functionality in seaborn.
+    # https://github.com/matplotlib/matplotlib/pull/9779
+    # https://github.com/pandas-dev/pandas/issues/27036
+    mpl.units.registry[np.datetime64] = mpl.dates.DateConverter()
+    mpl.units.registry[datetime.date] = mpl.dates.DateConverter()
+    mpl.units.registry[datetime.datetime] = mpl.dates.DateConverter()
 
 
 @pytest.fixture(autouse=True)
@@ -138,7 +152,7 @@ def long_df(rng):
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n, [.3, .7]),
-        t=rng.choice(np.arange("2005-02-25", "2005-02-28", dtype="datetime64[D]"), n),
+        t=rng.choice(np.arange("2004-07-30", "2007-07-30", dtype="datetime64[Y]"), n),
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))

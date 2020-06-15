@@ -1326,6 +1326,9 @@ class TestLinePlotter(Helpers):
         lineplot(x="x", y=long_df.y.values, data=long_df)
         ax.clear()
 
+        lineplot(x="x", y="t", data=long_df)
+        ax.clear()
+
         lineplot(x="x", y="y", hue="a", data=long_df)
         ax.clear()
 
@@ -1691,6 +1694,13 @@ class TestScatterPlotter(Helpers):
         lw = 2
         scatterplot(data=long_df, x="x", y="y", linewidth=lw)
         assert ax.collections[0].get_linewidths().item() == lw
+
+    def test_datetime_scale(self, long_df):
+
+        ax = scatterplot(data=long_df, x="t", y="y")
+        # Check that we avoid weird matplotlib default auto scaling
+        # https://github.com/matplotlib/matplotlib/issues/17586
+        ax.get_xlim()[0] > ax.xaxis.convert_units(np.datetime64("2002-01-01"))
 
     def test_scatterplot_vs_relplot(self, long_df, long_semantics):
 
