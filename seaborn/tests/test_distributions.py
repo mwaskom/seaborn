@@ -502,6 +502,17 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, alpha)
         )
 
+    @pytest.mark.skipif(
+        LooseVersion(np.__version__) < "1.17",
+        reason="Histogram over datetime64 requires numpy >= 1.17",
+    )
+    def test_datetime_scale(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        kdeplot(x=long_df["t"], fill=True, ax=ax1)
+        kdeplot(x=long_df["t"], fill=False, ax=ax2)
+        assert ax1.get_xlim() == ax2.get_xlim()
+
     def test_multiple_argument_check(self, long_df):
 
         with pytest.raises(ValueError, match="`multiple` must be"):
@@ -1243,6 +1254,17 @@ class TestHistPlotUnivariate:
 
         with pytest.raises(ValueError, match="`element` must be 'bars'"):
             histplot(long_df, x="s", discrete=True, element="poly")
+
+    @pytest.mark.skipif(
+        LooseVersion(np.__version__) < "1.17",
+        reason="Histogram over datetime64 requires numpy >= 1.17",
+    )
+    def test_datetime_scale(self, long_df):
+
+        f, (ax1, ax2) = plt.subplots(2)
+        histplot(x=long_df["t"], fill=True, ax=ax1)
+        histplot(x=long_df["t"], fill=False, ax=ax2)
+        assert ax1.get_xlim() == ax2.get_xlim()
 
     @pytest.mark.parametrize("stat", ["count", "density", "probability"])
     def test_kde(self, flat_series, stat):

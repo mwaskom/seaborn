@@ -179,7 +179,7 @@ class TestHueMapping:
         # Test Timestamp data
         p = VectorPlotter(data=long_df, variables=dict(x="x", y="y", hue="t"))
         m = HueMapping(p)
-        assert m.levels == [pd.Timestamp('2005-02-25')]
+        assert m.levels == [pd.Timestamp(t) for t in long_df["t"].unique()]
         assert m.map_type == "datetime"
 
         # Test excplicit categories

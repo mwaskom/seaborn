@@ -456,10 +456,12 @@ class _DistributionPlotter(VectorPlotter):
                 if self.var_types[self.data_variable] == "datetime":
                     # Avoid drawing empty fill_between on date axis
                     # https://github.com/matplotlib/matplotlib/issues/17586
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", "C0")
-                    )
                     scout = None
+                    default_color = plot_kws.pop(
+                        "color", plot_kws.pop("facecolor", None)
+                    )
+                    if default_color is None:
+                        default_color = "C0"
                 else:
                     artist = mpl.patches.Rectangle
                     plot_kws = _normalize_kwargs(plot_kws, artist)
@@ -865,10 +867,12 @@ class _DistributionPlotter(VectorPlotter):
                 if self.var_types[self.data_variable] == "datetime":
                     # Avoid drawing empty fill_between on date axis
                     # https://github.com/matplotlib/matplotlib/issues/17586
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", "C0")
-                    )
                     scout = None
+                    default_color = plot_kws.pop(
+                        "color", plot_kws.pop("facecolor", None)
+                    )
+                    if default_color is None:
+                        default_color = "C0"
                 else:
                     scout = ax.fill_between([], [], **plot_kws)
                     default_color = tuple(scout.get_facecolor().squeeze())
