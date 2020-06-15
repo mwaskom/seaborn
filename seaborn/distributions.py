@@ -1137,6 +1137,9 @@ class _DistributionPlotter(VectorPlotter):
         # TODO maybe have an option for joint start/end?
         estimator = ECDF(**estimate_kws)
 
+        # Allow other drawstyles (I'm not sure why you'd want them)
+        plot_kws.setdefault("drawstyle", "steps-post")
+
         # Loop through the subsets, transform and plot the data
         for sub_vars, sub_data in self._semantic_subsets(
             "hue", reverse=True, from_comp_data=True,
@@ -1162,7 +1165,7 @@ class _DistributionPlotter(VectorPlotter):
                 stat_variable = "x"
 
             # Draw the line for this subset
-            artist, = ax.plot(*plot_args, drawstyle="steps-post", **artist_kws)
+            artist, = ax.plot(*plot_args, **artist_kws)
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
             sticky_edges[:] = 0, 1
 
