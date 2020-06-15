@@ -219,9 +219,9 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
-        Figure to despine all axes of, default uses current figure.
+        Figure to despine all axes of, defaults to the current figure.
     ax : matplotlib axes, optional
-        Specific axes object to despine.
+        Specific axes object to despine. Ignored if fig is provided.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
     offset : int or dict, optional
