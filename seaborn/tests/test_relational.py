@@ -1697,10 +1697,10 @@ class TestScatterPlotter(Helpers):
 
     def test_datetime_scale(self, long_df):
 
-        f, (ax1, ax2) = plt.subplots(2)
-        scatterplot(data=long_df, x="t", y="y", ax=ax1)
-        ax2.scatter(long_df["t"], long_df["y"])
-        assert ax1.get_xlim() == pytest.approx(ax2.get_xlim())
+        ax = scatterplot(data=long_df, x="t", y="y")
+        # Check that we avoid weird matplotlib default auto scaling
+        # https://github.com/matplotlib/matplotlib/issues/17586
+        ax.get_xlim()[0] > ax.xaxis.convert_units(np.datetime64("2002-01-01"))
 
     def test_scatterplot_vs_relplot(self, long_df, long_semantics):
 
