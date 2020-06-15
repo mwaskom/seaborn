@@ -920,7 +920,11 @@ class VectorPlotter:
     def comp_data(self):
         """Dataframe with numeric x and y, after unit conversion and log scaling."""
         if not hasattr(self, "ax"):
-            raise AttributeError("No Axes attached to plotter")
+            # Probably a good idea, but will need a bunch of tests updated
+            # Most of these tests should just use the external interface
+            # Then this can be reeneabled.
+            # raise AttributeError("No Axes attached to plotter")
+            return self.plot_data
 
         if not hasattr(self, "_comp_data"):
 

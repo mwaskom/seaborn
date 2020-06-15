@@ -288,7 +288,9 @@ class _LinePlotter(_RelationalPlotter):
 
         # Loop over the semantic subsets and add to the plot
         grouping_semantics = "hue", "size", "style"
-        for sub_vars, sub_data in self._semantic_subsets(grouping_semantics):
+        for sub_vars, sub_data in self._semantic_subsets(
+            grouping_semantics, from_comp_data=True
+        ):
 
             if self.sort:
                 sub_data = sub_data.sort_values(["units", "x", "y"])
@@ -641,6 +643,8 @@ def lineplot(
     if ax is None:
         ax = plt.gca()
 
+    p._attach(ax)
+
     p.plot(ax, kwargs)
     return ax
 
@@ -919,6 +923,8 @@ def scatterplot(
 
     if ax is None:
         ax = plt.gca()
+
+    p._attach(ax)
 
     p.plot(ax, kwargs)
 
