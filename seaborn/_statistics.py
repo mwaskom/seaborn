@@ -357,8 +357,8 @@ class ECDF:
     # Do we need bivariate ECDF?
 
     def _eval_univariate(self, x, weights):
-
-        sorter = np.argsort(x)
+        """Inner function for ECDF of one variable."""
+        sorter = x.argsort()
         x = x[sorter]
         weights = weights[sorter]
 
@@ -373,7 +373,7 @@ class ECDF:
         return y, x
 
     def __call__(self, x1, weights=None):
-
+        """Return proportion or count of observations below each sorted datapoint."""
         x1 = np.asarray(x1)
         if weights is None:
             weights = np.ones_like(x1)

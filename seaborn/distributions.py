@@ -1164,10 +1164,15 @@ class _DistributionPlotter(VectorPlotter):
                 plot_args = stat, vals
                 stat_variable = "x"
 
+            if estimator.stat == "count":
+                top_edge = len(observations)
+            else:
+                top_edge = 1
+
             # Draw the line for this subset
             artist, = ax.plot(*plot_args, **artist_kws)
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
-            sticky_edges[:] = 0, 1
+            sticky_edges[:] = 0, top_edge
 
         # --- Finalize the plot ----
         stat = estimator.stat.capitalize()
