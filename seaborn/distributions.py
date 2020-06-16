@@ -1840,7 +1840,7 @@ def ecdfplot(
     # Vector variables
     x=None, y=None, hue=None, weights=None,
     # Computation parameters
-    stat="proportion",
+    stat="proportion", complementary=False,
     # Hue mapping parameters
     palette=None, hue_order=None, hue_norm=None,
     # Axes information
@@ -1874,6 +1874,7 @@ def ecdfplot(
 
     estimate_kws = dict(
         stat=stat,
+        complementary=complementary,
     )
 
     p.plot_univariate_ecdf(
@@ -1906,6 +1907,7 @@ Parameters
 {params.core.xy}
 {params.core.hue}
 {params.ecdf.stat}
+{params.ecdf.complementary}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}

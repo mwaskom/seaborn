@@ -1852,6 +1852,18 @@ class TestECDFPlotUnivariate:
     @pytest.mark.parametrize(
         "data_var,stat_var", [["x", "y"], ["y", "x"]],
     )
+    def test_proportion_limits_complementary(self, flat_series, data_var, stat_var):
+
+        ax = ecdfplot(**{data_var: flat_series}, complementary=True)
+        data = getattr(ax.lines[0], f"get_{stat_var}data")()
+        assert data[0] == 1
+        assert data[-1] == 0
+        sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
+        assert sticky_edges[:] == [0, 1]
+
+    @pytest.mark.parametrize(
+        "data_var,stat_var", [["x", "y"], ["y", "x"]],
+    )
     def test_proportion_count(self, flat_series, data_var, stat_var):
 
         n = len(flat_series)

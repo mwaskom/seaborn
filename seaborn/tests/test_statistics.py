@@ -433,12 +433,17 @@ class TestECDF(DistributionFixtures):
     @pytest.mark.skipif(smdist is None, reason="Requires statsmodels")
     def test_against_statsmodels(self, x):
 
+        sm_ecdf = smdist.empirical_distribution.ECDF(x)
+
         ecdf = ECDF()
         stat, vals = ecdf(x)
-
-        sm_ecdf = smdist.empirical_distribution.ECDF(x)
         assert_array_equal(vals, sm_ecdf.x)
         assert_array_almost_equal(stat, sm_ecdf.y)
+
+        ecdf = ECDF(complementary=True)
+        stat, vals = ecdf(x)
+        assert_array_equal(vals, sm_ecdf.x)
+        assert_array_almost_equal(stat, sm_ecdf.y[::-1])
 
     def test_invalid_stat(self, x):
 

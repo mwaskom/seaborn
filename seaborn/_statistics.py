@@ -375,18 +375,20 @@ class Histogram:
 
 class ECDF:
     """Univariate empirical cumulative distribution estimator."""
-    def __init__(self, stat="proportion"):
+    def __init__(self, stat="proportion", complementary=False):
         """Initialize the class with its paramters
 
         Parameters
         ----------
         stat : {{"proportion", "count"}}
             Distribution statistic to compute.
+        complementary : bool
+            If True, use the complementary CDF (1 - CDF)
 
         """
-        # TODO add remove_duplicates
         _check_argument("stat", ["count", "proportion"], stat)
         self.stat = stat
+        self.complementary = complementary
 
     # Do we need bivariate ECDF?
 
@@ -395,7 +397,6 @@ class ECDF:
         sorter = x.argsort()
         x = x[sorter]
         weights = weights[sorter]
-
         y = weights.cumsum()
 
         if self.stat == "proportion":
@@ -403,6 +404,9 @@ class ECDF:
 
         x = np.r_[-np.inf, x]
         y = np.r_[0, y]
+
+        if self.complementary:
+            y = y.max() - y
 
         return y, x
 
