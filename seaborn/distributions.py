@@ -1146,8 +1146,11 @@ class _DistributionPlotter(VectorPlotter):
             "hue", reverse=True, from_comp_data=True,
         ):
 
-            # "Compute" the ECDF
+            # Compute the ECDF
             sub_data = sub_data[cols].dropna()
+            if sub_data.empty:
+                continue
+
             observations = sub_data[self.data_variable]
             weights = sub_data.get("weights", None)
             stat, vals = estimator(observations, weights)
@@ -1927,6 +1930,11 @@ See Also
 {seealso.kdeplot}
 {seealso.rugplot}
 distplot
+
+Examples
+--------
+
+.. include:: ../docstrings/ecdfplot.rst
 
 """.format(
     params=_param_docs,
