@@ -1827,11 +1827,13 @@ class TestECDFPlotUnivariate:
 
     def test_line_kwargs(self, long_df):
 
+        color = "r"
         ls = "--"
         lw = 3
-        ax = ecdfplot(long_df, x="x", hue="a", ls=ls, lw=lw)
+        ax = ecdfplot(long_df, x="x", color=color, ls=ls, lw=lw)
 
         for line in ax.lines:
+            assert line.get_color() == to_rgb(color)
             assert line.get_linestyle() == ls
             assert line.get_linewidth() == lw
 

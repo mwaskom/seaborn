@@ -45,6 +45,7 @@ Distribution plots
 
     distplot
     histplot
+    ecdfplot
     kdeplot
     rugplot
 

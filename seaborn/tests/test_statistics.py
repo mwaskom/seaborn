@@ -418,7 +418,8 @@ class TestECDF(DistributionFixtures):
         ecdf = ECDF()
         stat, vals = ecdf(x, weights=weights)
         assert_array_equal(vals[1:], np.sort(x))
-        assert_array_almost_equal(stat[1:], weights[x.argsort()].cumsum() / weights.sum())
+        expected_stats = weights[x.argsort()].cumsum() / weights.sum()
+        assert_array_almost_equal(stat[1:], expected_stats)
         assert stat[0] == 0
 
     def test_univariate_count_weights(self, x, weights):

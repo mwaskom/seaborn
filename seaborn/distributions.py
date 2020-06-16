@@ -1475,6 +1475,7 @@ See Also
 --------
 {seealso.kdeplot}
 {seealso.rugplot}
+{seealso.ecdfplot}
 {seealso.jointplot}
 distplot
 
@@ -1781,9 +1782,10 @@ Returns
 
 See Also
 --------
-{seealso.histplot}
-{seealso.rugplot}
 {seealso.violinplot}
+{seealso.histplot}
+{seealso.ecdfplot}
+{seealso.rugplot}
 {seealso.jointplot}
 distplot
 
@@ -1839,7 +1841,7 @@ def ecdfplot(
     # Computation parameters
     stat="proportion",
     # Hue mapping parameters
-    palette=None, hue_order=None, hue_norm=None, color=None,
+    palette=None, hue_order=None, hue_norm=None,
     # Axes information
     log_scale=None, legend=True, ax=None,
     # Other appearance keywords
@@ -1881,6 +1883,57 @@ def ecdfplot(
     )
 
     return ax
+
+
+ecdfplot.__doc__ = """\
+Plot empirical cumulative distribution functions.
+
+An ECDF represents the proportion or count of observations falling below each
+unique value in a dataset. Compared to a histogram or density plot, it has the
+advantage that each observation is visualized directly, meaning that there are
+no binning or smoothing parameters that need to be adjusted. It also aids direct
+comparisons between multiple distributions. A downside is that the relationship
+between the appearance of the plot and the basic properties of the distribution
+(such as its central tendency, variance, and the presence of any bimodality)
+may not be as intuitive.
+
+More information is provided in the :ref:`user guide <userguide_ecdf>`.
+
+Parameters
+----------
+{params.core.data}
+{params.core.xy}
+{params.core.hue}
+weights : vector or key in ``data``
+    If provided, weight the contribution of the corresponding data points
+    towards the distribution by these factors.
+stat : {{"proportion", "count"}}
+    Distribution statistic to compute.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+{params.dist.log_scale}
+{params.dist.legend}
+{params.core.ax}
+kwargs
+    Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.plot`.
+
+Returns
+-------
+{returns.ax}
+
+See Also
+--------
+{seealso.histplot}
+{seealso.kdeplot}
+{seealso.rugplot}
+distplot
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
