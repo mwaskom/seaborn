@@ -1837,6 +1837,13 @@ class TestECDFPlotUnivariate:
             assert line.get_linestyle() == ls
             assert line.get_linewidth() == lw
 
+    @pytest.mark.parametrize("data_var", ["x", "y"])
+    def test_drawstyle(self, flat_series, data_var):
+
+        ax = ecdfplot(**{data_var: flat_series})
+        drawstyles = dict(x="steps-post", y="steps-pre")
+        assert ax.lines[0].get_drawstyle() == drawstyles[data_var]
+
     @pytest.mark.parametrize(
         "data_var,stat_var", [["x", "y"], ["y", "x"]],
     )

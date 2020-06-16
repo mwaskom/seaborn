@@ -540,8 +540,12 @@ class _DistributionPlotter(VectorPlotter):
                     y = np.append(hist["heights"], final["heights"])
                     b = np.append(bottom, bottom[-1])
 
-                    step = "post"
-                    drawstyle = "steps-post"
+                    if self.data_variable == "x":
+                        step = "post"
+                        drawstyle = "steps-post"
+                    else:
+                        step = "post"  # fillbetweenx handles mapping internally
+                        drawstyle = "steps-pre"
 
                 elif element == "poly":
 
@@ -1138,8 +1142,9 @@ class _DistributionPlotter(VectorPlotter):
         # TODO maybe have an option for joint start/end?
         estimator = ECDF(**estimate_kws)
 
-        # Allow other drawstyles (I'm not sure why you'd want them)
-        plot_kws.setdefault("drawstyle", "steps-post")
+        # Set the draw style to step the right way for the data varible
+        drawstyles = dict(x="steps-post", y="steps-pre")
+        plot_kws["drawstyle"] = drawstyles[self.data_variable]
 
         # Loop through the subsets, transform and plot the data
         for sub_vars, sub_data in self._semantic_subsets(
