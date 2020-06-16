@@ -392,7 +392,7 @@ class ECDF:
 
     def _eval_bivariate(self, x1, x2, weights):
         """Inner function for ECDF of two variables."""
-        raise NotImplementedError
+        raise NotImplementedError("Bivariate ECDF is not implemented")
 
     def _eval_univariate(self, x, weights):
         """Inner function for ECDF of one variable."""
