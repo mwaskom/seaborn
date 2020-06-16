@@ -449,3 +449,9 @@ class TestECDF(DistributionFixtures):
 
         with pytest.raises(ValueError, match="`stat` must be one of"):
             ECDF(stat="density")
+
+    def test_bivariate_error(self, x, y):
+
+        with pytest.raises(NotImplementedError, match="Bivariate ECDF"):
+            ecdf = ECDF()
+            ecdf(x, y)

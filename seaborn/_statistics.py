@@ -390,7 +390,9 @@ class ECDF:
         self.stat = stat
         self.complementary = complementary
 
-    # Do we need bivariate ECDF?
+    def _eval_bivariate(self, x1, x2, weights):
+        """Inner function for ECDF of two variables."""
+        raise NotImplementedError
 
     def _eval_univariate(self, x, weights):
         """Inner function for ECDF of one variable."""
@@ -410,7 +412,7 @@ class ECDF:
 
         return y, x
 
-    def __call__(self, x1, weights=None):
+    def __call__(self, x1, x2=None, weights=None):
         """Return proportion or count of observations below each sorted datapoint."""
         x1 = np.asarray(x1)
         if weights is None:
@@ -418,4 +420,7 @@ class ECDF:
         else:
             weights = np.asarray(weights)
 
-        return self._eval_univariate(x1, weights)
+        if x2 is None:
+            return self._eval_univariate(x1, weights)
+        else:
+            return self._eval_bivariate(x1, x2, weights)

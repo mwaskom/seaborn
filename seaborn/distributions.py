@@ -1139,7 +1139,6 @@ class _DistributionPlotter(VectorPlotter):
         # TODO see notes elsewhere about GH2135
         cols = list(self.variables)
 
-        # TODO maybe have an option for joint start/end?
         estimator = ECDF(**estimate_kws)
 
         # Set the draw style to step the right way for the data varible
