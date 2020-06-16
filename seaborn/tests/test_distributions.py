@@ -1833,7 +1833,7 @@ class TestECDFPlotUnivariate:
         ax = ecdfplot(long_df, x="x", color=color, ls=ls, lw=lw)
 
         for line in ax.lines:
-            assert line.get_color() == to_rgb(color)
+            assert to_rgb(line.get_color()) == to_rgb(color)
             assert line.get_linestyle() == ls
             assert line.get_linewidth() == lw
 

@@ -1,3 +1,29 @@
+"""Statistical transformations for visualization.
+
+This module is currently private, but is being written to eventually form part
+of the public API.
+
+The classes should behave roughly in the style of scikit-learn.
+
+- All data-independent parameters should be passed to the class constructor.
+- Each class should impelment a default transformation that is exposed through
+  __call__. These are currently written for vector arguements, but I think
+  consuming a whole `plot_data` DataFrame and return it with transformed
+  variables would make more sense.
+- Some class have data-dependent preprocessing that should be cached and used
+  multiple times (think defining histogram bins off all data and then counting
+  observations within each bin multiple times per data subsets). These currently
+  have unique names, but it would be good to have a common name. Not quite
+  `fit`, but something similar.
+- Alternatively, the transform interface could take some information about grouping
+  variables and do a groupby internally.
+- Some classes should define alternate transforms that might make the most sense
+  with a different function. For example, KDE usually evaluates the distribution
+  on a regular grid, but it would be useful for it to transform at the actual
+  datapoints. Then again, this could be controlled by a parameter at  the time of
+  class instantiation.
+
+"""
 from distutils.version import LooseVersion
 from numbers import Number
 import numpy as np
@@ -348,9 +374,17 @@ class Histogram:
 
 
 class ECDF:
-
+    """Univariate empirical cumulative distribution estimator."""
     def __init__(self, stat="proportion"):
+        """Initialize the class with its paramters
 
+        Parameters
+        ----------
+        stat : {{"proportion", "count"}}
+            Distribution statistic to compute.
+
+        """
+        # TODO add remove_duplicates
         _check_argument("stat", ["count", "proportion"], stat)
         self.stat = stat
 

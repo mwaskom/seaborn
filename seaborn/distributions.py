@@ -76,6 +76,7 @@ _param_docs = DocstringComponents.from_nested_components(
     dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
+    ecdf=DocstringComponents.from_function_params(ECDF.__init__),
 )
 
 
@@ -1904,11 +1905,7 @@ Parameters
 {params.core.data}
 {params.core.xy}
 {params.core.hue}
-weights : vector or key in ``data``
-    If provided, weight the contribution of the corresponding data points
-    towards the distribution by these factors.
-stat : {{"proportion", "count"}}
-    Distribution statistic to compute.
+{params.ecdf.stat}
 {params.core.palette}
 {params.core.hue_order}
 {params.core.hue_norm}
