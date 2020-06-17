@@ -1,13 +1,34 @@
 import numpy as np
 from scipy import integrate
 
+try:
+    import statsmodels.distributions as smdist
+except ImportError:
+    smdist = None
+
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from .._statistics import (
     KDE,
     Histogram,
+    ECDF,
 )
+
+
+class DistributionFixtures:
+
+    @pytest.fixture
+    def x(self, rng):
+        return rng.normal(0, 1, 100)
+
+    @pytest.fixture
+    def y(self, rng):
+        return rng.normal(0, 5, 100)
+
+    @pytest.fixture
+    def weights(self, rng):
+        return rng.uniform(0, 5, 100)
 
 
 class TestKDE:
@@ -127,15 +148,7 @@ class TestKDE:
         assert density[-1, -1] == pytest.approx(1, abs=1e-2)
 
 
-class TestHistogram:
-
-    @pytest.fixture
-    def x(self, rng):
-        return rng.normal(0, 1, 100)
-
-    @pytest.fixture
-    def y(self, rng):
-        return rng.normal(0, 5, 100)
+class TestHistogram(DistributionFixtures):
 
     def test_string_bins(self, x):
 
@@ -379,3 +392,66 @@ class TestHistogram:
 
         with pytest.raises(ValueError):
             Histogram(stat="invalid")
+
+
+class TestECDF(DistributionFixtures):
+
+    def test_univariate_proportion(self, x):
+
+        ecdf = ECDF()
+        stat, vals = ecdf(x)
+        assert_array_equal(vals[1:], np.sort(x))
+        assert_array_almost_equal(stat[1:], np.linspace(0, 1, len(x) + 1)[1:])
+        assert stat[0] == 0
+
+    def test_univariate_count(self, x):
+
+        ecdf = ECDF(stat="count")
+        stat, vals = ecdf(x)
+
+        assert_array_equal(vals[1:], np.sort(x))
+        assert_array_almost_equal(stat[1:], np.arange(len(x)) + 1)
+        assert stat[0] == 0
+
+    def test_univariate_proportion_weights(self, x, weights):
+
+        ecdf = ECDF()
+        stat, vals = ecdf(x, weights=weights)
+        assert_array_equal(vals[1:], np.sort(x))
+        expected_stats = weights[x.argsort()].cumsum() / weights.sum()
+        assert_array_almost_equal(stat[1:], expected_stats)
+        assert stat[0] == 0
+
+    def test_univariate_count_weights(self, x, weights):
+
+        ecdf = ECDF(stat="count")
+        stat, vals = ecdf(x, weights=weights)
+        assert_array_equal(vals[1:], np.sort(x))
+        assert_array_almost_equal(stat[1:], weights[x.argsort()].cumsum())
+        assert stat[0] == 0
+
+    @pytest.mark.skipif(smdist is None, reason="Requires statsmodels")
+    def test_against_statsmodels(self, x):
+
+        sm_ecdf = smdist.empirical_distribution.ECDF(x)
+
+        ecdf = ECDF()
+        stat, vals = ecdf(x)
+        assert_array_equal(vals, sm_ecdf.x)
+        assert_array_almost_equal(stat, sm_ecdf.y)
+
+        ecdf = ECDF(complementary=True)
+        stat, vals = ecdf(x)
+        assert_array_equal(vals, sm_ecdf.x)
+        assert_array_almost_equal(stat, sm_ecdf.y[::-1])
+
+    def test_invalid_stat(self, x):
+
+        with pytest.raises(ValueError, match="`stat` must be one of"):
+            ECDF(stat="density")
+
+    def test_bivariate_error(self, x, y):
+
+        with pytest.raises(NotImplementedError, match="Bivariate ECDF"):
+            ecdf = ECDF()
+            ecdf(x, y)

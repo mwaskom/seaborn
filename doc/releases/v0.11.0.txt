@@ -9,13 +9,17 @@ v0.11.0 (Unreleased)
 Modernization of distribution functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-First, a new function, :func:`histplot` has been added. :func:`histplot` draws univariate or bivariate histograms with a number of features, including:
+First, two new functions, :func:`histplot` and :func:`ecdfplot` has been added.
+
+:func:`histplot` draws univariate or bivariate histograms with a number of features, including:
 
 - mapping multiple distributions with a ``hue`` semantic
 - normalization to show density, probability, or frequency statistics
 - flexible parameterization of bin size, including proper bins for discrete variables
 - adding a KDE fit to show a smoothed distribution over all bin statistics
 - experimental support for histograms over categorical and datetime variables. GH2125
+
+:func:`ecdfplot` draws univariate empirical cumulative distribution functions, using a similar interface.
 
 Second, the existing functions :func:`kdeplot` and :func:`rugplot` have been completely overhauled. Two of the oldest functions in the library, these lacked aspects of the otherwise-common seaborn API, such as the ability to assign variables by name from a ``data`` object; they had no capacity for semantic mapping; and they had numerous other inconsistencies and smaller issues.
 

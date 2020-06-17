@@ -26,8 +26,9 @@ from .._statistics import (
 from ..distributions import (
     _DistributionPlotter,
     histplot,
-    rugplot,
+    ecdfplot,
     kdeplot,
+    rugplot,
 )
 
 
@@ -1793,3 +1794,94 @@ class TestHistPlotBivariate:
         f, (ax, cax) = plt.subplots(2)
         histplot(long_df, x="x", y="y", cbar=True, cbar_ax=cax, ax=ax)
         assert len(ax.figure.axes) == 2
+
+
+class TestECDFPlotUnivariate:
+
+    @pytest.mark.parametrize("variable", ["x", "y"])
+    def test_long_vectors(self, long_df, variable):
+
+        vector = long_df[variable]
+        vectors = [
+            variable, vector, np.asarray(vector), vector.tolist(),
+        ]
+
+        f, ax = plt.subplots()
+        for vector in vectors:
+            ecdfplot(data=long_df, ax=ax, **{variable: vector})
+
+        xdata = [l.get_xdata() for l in ax.lines]
+        for a, b in itertools.product(xdata, xdata):
+            assert_array_equal(a, b)
+
+        ydata = [l.get_ydata() for l in ax.lines]
+        for a, b in itertools.product(ydata, ydata):
+            assert_array_equal(a, b)
+
+    def test_hue(self, long_df):
+
+        ax = ecdfplot(long_df, x="x", hue="a")
+
+        for line, color in zip(ax.lines[::-1], color_palette()):
+            assert line.get_color() == color
+
+    def test_line_kwargs(self, long_df):
+
+        color = "r"
+        ls = "--"
+        lw = 3
+        ax = ecdfplot(long_df, x="x", color=color, ls=ls, lw=lw)
+
+        for line in ax.lines:
+            assert to_rgb(line.get_color()) == to_rgb(color)
+            assert line.get_linestyle() == ls
+            assert line.get_linewidth() == lw
+
+    @pytest.mark.parametrize("data_var", ["x", "y"])
+    def test_drawstyle(self, flat_series, data_var):
+
+        ax = ecdfplot(**{data_var: flat_series})
+        drawstyles = dict(x="steps-post", y="steps-pre")
+        assert ax.lines[0].get_drawstyle() == drawstyles[data_var]
+
+    @pytest.mark.parametrize(
+        "data_var,stat_var", [["x", "y"], ["y", "x"]],
+    )
+    def test_proportion_limits(self, flat_series, data_var, stat_var):
+
+        ax = ecdfplot(**{data_var: flat_series})
+        data = getattr(ax.lines[0], f"get_{stat_var}data")()
+        assert data[0] == 0
+        assert data[-1] == 1
+        sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
+        assert sticky_edges[:] == [0, 1]
+
+    @pytest.mark.parametrize(
+        "data_var,stat_var", [["x", "y"], ["y", "x"]],
+    )
+    def test_proportion_limits_complementary(self, flat_series, data_var, stat_var):
+
+        ax = ecdfplot(**{data_var: flat_series}, complementary=True)
+        data = getattr(ax.lines[0], f"get_{stat_var}data")()
+        assert data[0] == 1
+        assert data[-1] == 0
+        sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
+        assert sticky_edges[:] == [0, 1]
+
+    @pytest.mark.parametrize(
+        "data_var,stat_var", [["x", "y"], ["y", "x"]],
+    )
+    def test_proportion_count(self, flat_series, data_var, stat_var):
+
+        n = len(flat_series)
+        ax = ecdfplot(**{data_var: flat_series}, stat="count")
+        data = getattr(ax.lines[0], f"get_{stat_var}data")()
+        assert data[0] == 0
+        assert data[-1] == n
+        sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
+        assert sticky_edges[:] == [0, n]
+
+    def test_bivariate_error(self, long_df):
+
+        with pytest.raises(NotImplementedError, match="Bivariate ECDF plots"):
+            ecdfplot(data=long_df, x="x", y="y")

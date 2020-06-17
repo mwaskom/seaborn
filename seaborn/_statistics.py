@@ -1,3 +1,29 @@
+"""Statistical transformations for visualization.
+
+This module is currently private, but is being written to eventually form part
+of the public API.
+
+The classes should behave roughly in the style of scikit-learn.
+
+- All data-independent parameters should be passed to the class constructor.
+- Each class should impelment a default transformation that is exposed through
+  __call__. These are currently written for vector arguements, but I think
+  consuming a whole `plot_data` DataFrame and return it with transformed
+  variables would make more sense.
+- Some class have data-dependent preprocessing that should be cached and used
+  multiple times (think defining histogram bins off all data and then counting
+  observations within each bin multiple times per data subsets). These currently
+  have unique names, but it would be good to have a common name. Not quite
+  `fit`, but something similar.
+- Alternatively, the transform interface could take some information about grouping
+  variables and do a groupby internally.
+- Some classes should define alternate transforms that might make the most sense
+  with a different function. For example, KDE usually evaluates the distribution
+  on a regular grid, but it would be useful for it to transform at the actual
+  datapoints. Then again, this could be controlled by a parameter at  the time of
+  class instantiation.
+
+"""
 from distutils.version import LooseVersion
 from numbers import Number
 import numpy as np
@@ -341,6 +367,59 @@ class Histogram:
 
     def __call__(self, x1, x2=None, weights=None):
         """Count the occurrances in each bin, maybe normalize."""
+        if x2 is None:
+            return self._eval_univariate(x1, weights)
+        else:
+            return self._eval_bivariate(x1, x2, weights)
+
+
+class ECDF:
+    """Univariate empirical cumulative distribution estimator."""
+    def __init__(self, stat="proportion", complementary=False):
+        """Initialize the class with its paramters
+
+        Parameters
+        ----------
+        stat : {{"proportion", "count"}}
+            Distribution statistic to compute.
+        complementary : bool
+            If True, use the complementary CDF (1 - CDF)
+
+        """
+        _check_argument("stat", ["count", "proportion"], stat)
+        self.stat = stat
+        self.complementary = complementary
+
+    def _eval_bivariate(self, x1, x2, weights):
+        """Inner function for ECDF of two variables."""
+        raise NotImplementedError("Bivariate ECDF is not implemented")
+
+    def _eval_univariate(self, x, weights):
+        """Inner function for ECDF of one variable."""
+        sorter = x.argsort()
+        x = x[sorter]
+        weights = weights[sorter]
+        y = weights.cumsum()
+
+        if self.stat == "proportion":
+            y = y / y.max()
+
+        x = np.r_[-np.inf, x]
+        y = np.r_[0, y]
+
+        if self.complementary:
+            y = y.max() - y
+
+        return y, x
+
+    def __call__(self, x1, x2=None, weights=None):
+        """Return proportion or count of observations below each sorted datapoint."""
+        x1 = np.asarray(x1)
+        if weights is None:
+            weights = np.ones_like(x1)
+        else:
+            weights = np.asarray(weights)
+
         if x2 is None:
             return self._eval_univariate(x1, weights)
         else:

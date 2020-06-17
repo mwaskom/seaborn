@@ -117,6 +117,9 @@ histplot : Plot a histogram of binned counts with optional normalization or smoo
     kdeplot="""
 kdeplot : Plot univariate or bivariate distributions using kernel density estimation.
     """,
+    ecdfplot="""
+ecdfplot : Plot empirical cumulative distribution functions.
+    """,
     rugplot="""
 rugplot : Plot a tick at each observation value along the x and/or y axes.
     """,

@@ -18,6 +18,7 @@ from ._core import (
 from ._statistics import (
     KDE,
     Histogram,
+    ECDF,
 )
 from .utils import (
     remove_na,
@@ -33,7 +34,7 @@ from ._docstrings import (
 )
 
 
-__all__ = ["distplot", "histplot", "kdeplot", "rugplot"]
+__all__ = ["distplot", "histplot", "kdeplot", "ecdfplot", "rugplot"]
 
 # ==================================================================================== #
 # Module documentation
@@ -75,6 +76,7 @@ _param_docs = DocstringComponents.from_nested_components(
     dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
+    ecdf=DocstringComponents.from_function_params(ECDF.__init__),
 )
 
 
@@ -538,8 +540,12 @@ class _DistributionPlotter(VectorPlotter):
                     y = np.append(hist["heights"], final["heights"])
                     b = np.append(bottom, bottom[-1])
 
-                    step = "post"
-                    drawstyle = "steps-post"
+                    if self.data_variable == "x":
+                        step = "post"
+                        drawstyle = "steps-post"
+                    else:
+                        step = "post"  # fillbetweenx handles mapping internally
+                        drawstyle = "steps-pre"
 
                 elif element == "poly":
 
@@ -1128,6 +1134,70 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
+    def plot_univariate_ecdf(self, estimate_kws, legend, plot_kws, ax):
+
+        # TODO see notes elsewhere about GH2135
+        cols = list(self.variables)
+
+        estimator = ECDF(**estimate_kws)
+
+        # Set the draw style to step the right way for the data varible
+        drawstyles = dict(x="steps-post", y="steps-pre")
+        plot_kws["drawstyle"] = drawstyles[self.data_variable]
+
+        # Loop through the subsets, transform and plot the data
+        for sub_vars, sub_data in self._semantic_subsets(
+            "hue", reverse=True, from_comp_data=True,
+        ):
+
+            # Compute the ECDF
+            sub_data = sub_data[cols].dropna()
+            if sub_data.empty:
+                continue
+
+            observations = sub_data[self.data_variable]
+            weights = sub_data.get("weights", None)
+            stat, vals = estimator(observations, weights)
+
+            # Assign attributes based on semantic mapping
+            artist_kws = plot_kws.copy()
+            if "hue" in self.variables:
+                artist_kws["color"] = self._hue_map(sub_vars["hue"])
+
+            # Work out the orientation of the plot
+            if self.data_variable == "x":
+                plot_args = vals, stat
+                stat_variable = "y"
+            else:
+                plot_args = stat, vals
+                stat_variable = "x"
+
+            if estimator.stat == "count":
+                top_edge = len(observations)
+            else:
+                top_edge = 1
+
+            # Draw the line for this subset
+            artist, = ax.plot(*plot_args, **artist_kws)
+            sticky_edges = getattr(artist.sticky_edges, stat_variable)
+            sticky_edges[:] = 0, top_edge
+
+        # --- Finalize the plot ----
+        stat = estimator.stat.capitalize()
+        default_x = default_y = ""
+        if self.data_variable == "x":
+            default_y = stat
+        if self.data_variable == "y":
+            default_x = stat
+        self._add_axis_labels(ax, default_x, default_y)
+
+        if "hue" in self.variables and legend:
+            artist = partial(mpl.lines.Line2D, [], [])
+            alpha = plot_kws.get("alpha", 1)
+            self._add_legend(
+                ax, artist, False, False, None, alpha, plot_kws, {},
+            )
+
     def plot_rug(self, height, expand_margins, legend, ax, kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
@@ -1413,6 +1483,7 @@ See Also
 --------
 {seealso.kdeplot}
 {seealso.rugplot}
+{seealso.ecdfplot}
 {seealso.jointplot}
 distplot
 
@@ -1719,9 +1790,10 @@ Returns
 
 See Also
 --------
-{seealso.histplot}
-{seealso.rugplot}
 {seealso.violinplot}
+{seealso.histplot}
+{seealso.ecdfplot}
+{seealso.rugplot}
 {seealso.jointplot}
 distplot
 
@@ -1762,6 +1834,111 @@ Examples
 --------
 
 .. include:: ../docstrings/kdeplot.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
+
+
+def ecdfplot(
+    data=None, *,
+    # Vector variables
+    x=None, y=None, hue=None, weights=None,
+    # Computation parameters
+    stat="proportion", complementary=False,
+    # Hue mapping parameters
+    palette=None, hue_order=None, hue_norm=None,
+    # Axes information
+    log_scale=None, legend=True, ax=None,
+    # Other appearance keywords
+    **kwargs,
+):
+
+    p = _DistributionPlotter(
+        data=data,
+        variables=_DistributionPlotter.get_semantics(locals())
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    # We could support other semantics (size, style) here fairly easily
+    # But it would make distplot a bit more complicated.
+    # It's always possible to add features like that later, so I am going to defer.
+    # It will be even easier to wait until after there is a more general/abstract
+    # way to go from semantic specs to artist attributes.
+
+    if ax is None:
+        ax = plt.gca()
+
+    # We could add this one day, but it's of dubious value
+    if not p.univariate:
+        raise NotImplementedError("Bivariate ECDF plots are not implemented")
+
+    # Attach the axes to the plotter, setting up unit conversions
+    p._attach(ax, log_scale=log_scale)
+
+    estimate_kws = dict(
+        stat=stat,
+        complementary=complementary,
+    )
+
+    p.plot_univariate_ecdf(
+        estimate_kws=estimate_kws,
+        legend=legend,
+        plot_kws=kwargs,
+        ax=ax,
+    )
+
+    return ax
+
+
+ecdfplot.__doc__ = """\
+Plot empirical cumulative distribution functions.
+
+An ECDF represents the proportion or count of observations falling below each
+unique value in a dataset. Compared to a histogram or density plot, it has the
+advantage that each observation is visualized directly, meaning that there are
+no binning or smoothing parameters that need to be adjusted. It also aids direct
+comparisons between multiple distributions. A downside is that the relationship
+between the appearance of the plot and the basic properties of the distribution
+(such as its central tendency, variance, and the presence of any bimodality)
+may not be as intuitive.
+
+More information is provided in the :ref:`user guide <userguide_ecdf>`.
+
+Parameters
+----------
+{params.core.data}
+{params.core.xy}
+{params.core.hue}
+{params.ecdf.stat}
+{params.ecdf.complementary}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+{params.dist.log_scale}
+{params.dist.legend}
+{params.core.ax}
+kwargs
+    Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.plot`.
+
+Returns
+-------
+{returns.ax}
+
+See Also
+--------
+{seealso.histplot}
+{seealso.kdeplot}
+{seealso.rugplot}
+distplot
+
+Examples
+--------
+
+.. include:: ../docstrings/ecdfplot.rst
 
 """.format(
     params=_param_docs,
