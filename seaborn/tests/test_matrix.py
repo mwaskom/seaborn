@@ -422,7 +422,10 @@ class TestHeatmap(object):
     def test_square_aspect(self):
 
         ax = mat.heatmap(self.df_norm, square=True)
-        nt.assert_equal(ax.get_aspect(), "equal")
+        obs_aspect = ax.get_aspect()
+        # mpl>3.3 returns 1 for setting "equal" aspect
+        # so test for the two possible equal outcomes
+        assert obs_aspect == "equal" or obs_aspect == 1
 
     def test_mask_validation(self):
 
