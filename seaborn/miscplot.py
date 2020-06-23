@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
+import matplotlib.ticker as ticker
 
 __all__ = ["palplot", "dogplot"]
 
@@ -24,8 +24,10 @@ def palplot(pal, size=1):
               interpolation="nearest", aspect="auto")
     ax.set_xticks(np.arange(n) - .5)
     ax.set_yticks([-.5, .5])
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
+    # Ensure nice border between colors
+    ax.set_xticklabels(["" for _ in range(n)])
+    # The proper way to set no ticks
+    ax.yaxis.set_major_locator(ticker.NullLocator())
 
 
 def dogplot(*_, **__):

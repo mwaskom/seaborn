@@ -357,12 +357,16 @@ class _CategoricalPlotter(object):
         if ylabel is not None:
             ax.set_ylabel(ylabel)
 
+        group_names = self.group_names
+        if not group_names:
+            group_names = ["" for _ in range(len(self.plot_data))]
+
         if self.orient == "v":
             ax.set_xticks(np.arange(len(self.plot_data)))
-            ax.set_xticklabels(self.group_names)
+            ax.set_xticklabels(group_names)
         else:
             ax.set_yticks(np.arange(len(self.plot_data)))
-            ax.set_yticklabels(self.group_names)
+            ax.set_yticklabels(group_names)
 
         if self.orient == "v":
             ax.xaxis.grid(False)
