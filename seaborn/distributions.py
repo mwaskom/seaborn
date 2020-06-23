@@ -313,7 +313,6 @@ class _DistributionPlotter(VectorPlotter):
         line_kws,
         estimate_kws,
         plot_kws,
-        ax,
     ):
 
         # --  Input checking
@@ -336,10 +335,6 @@ class _DistributionPlotter(VectorPlotter):
             )
             warnings.warn(msg, UserWarning)
             estimate_kws["bins"] = 10
-
-        # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{self.data_variable}axis")
-        log_scale = data_axis.get_scale() == "log"
 
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
@@ -380,7 +375,7 @@ class _DistributionPlotter(VectorPlotter):
                 common_norm,
                 common_bins,
                 kde_kws,
-                log_scale,
+                log_scale=False,  # TODO TODO FIXME
             )
 
         # First pass through the data to compute the histograms
@@ -409,7 +404,10 @@ class _DistributionPlotter(VectorPlotter):
                 densities[key] *= hist_norm
 
             # Convert edges back to original units for plotting
-            if log_scale:
+            # TODO this is annoying, fix
+            ax = self._get_axes(sub_vars)
+            data_axis = getattr(ax, f"{self.data_variable}axis")
+            if data_axis.get_scale() == "log":
                 edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
@@ -453,30 +451,34 @@ class _DistributionPlotter(VectorPlotter):
 
         # Default color without a hue semantic should follow the color cycle
         # Note, this is fairly complicated and awkward, I'd like a better way
+        # TODO and now with the ax business, this is just super annoying FIX!!
         if "hue" not in self.variables:
-            if fill:
-                if self.var_types[self.data_variable] == "datetime":
-                    # Avoid drawing empty fill_between on date axis
-                    # https://github.com/matplotlib/matplotlib/issues/17586
-                    scout = None
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", None)
-                    )
-                    if default_color is None:
-                        default_color = "C0"
-                else:
-                    artist = mpl.patches.Rectangle
-                    plot_kws = _normalize_kwargs(plot_kws, artist)
-                    scout = ax.fill_between([], [], **plot_kws)
-                    default_color = tuple(scout.get_facecolor().squeeze())
-                    plot_kws.pop("color", None)
+            if self.ax is None:
+                default_color = plot_kws.pop("color", plot_kws.pop("facecolor", "C0"))
             else:
-                artist = mpl.lines.Line2D
-                plot_kws = _normalize_kwargs(plot_kws, artist)
-                scout, = ax.plot([], [], **plot_kws)
-                default_color = scout.get_color()
-            if scout is not None:
-                scout.remove()
+                if fill:
+                    if self.var_types[self.data_variable] == "datetime":
+                        # Avoid drawing empty fill_between on date axis
+                        # https://github.com/matplotlib/matplotlib/issues/17586
+                        scout = None
+                        default_color = plot_kws.pop(
+                            "color", plot_kws.pop("facecolor", None)
+                        )
+                        if default_color is None:
+                            default_color = "C0"
+                    else:
+                        artist = mpl.patches.Rectangle
+                        plot_kws = _normalize_kwargs(plot_kws, artist)
+                        scout = self.ax.fill_between([], [], **plot_kws)
+                        default_color = tuple(scout.get_facecolor().squeeze())
+                        plot_kws.pop("color", None)
+                else:
+                    artist = mpl.lines.Line2D
+                    plot_kws = _normalize_kwargs(plot_kws, artist)
+                    scout, = self.ax.plot([], [], **plot_kws)
+                    default_color = scout.get_color()
+                if scout is not None:
+                    scout.remove()
 
         # Defeat alpha should depend on other parameters
         if multiple == "layer":
@@ -495,6 +497,8 @@ class _DistributionPlotter(VectorPlotter):
             key = tuple(sub_vars.items())
             hist = histograms[key].rename("heights").reset_index()
             bottom = np.asarray(baselines[key])
+
+            ax = self._get_axes(sub_vars)
 
             # Define the matplotlib attributes that depend on semantic mapping
             if "hue" in self.variables:
@@ -1362,7 +1366,6 @@ def histplot(
             estimate_kws=estimate_kws.copy(),
             line_kws=line_kws.copy(),
             plot_kws=kwargs,
-            ax=ax,
         )
 
     else:
@@ -2081,6 +2084,19 @@ def _freedman_diaconis_bins(a):
         return int(np.sqrt(a.size))
     else:
         return int(np.ceil((a.max() - a.min()) / h))
+
+
+@_deprecate_positional_args
+def distplot_new(
+    *,
+    x=None,
+    bins=None, hist=True, kde=True, rug=False, fit=None,
+    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+    color=None, vertical=False, norm_hist=False, axlabel=None,
+    label=None, ax=None, a=None,
+):
+
+    pass
 
 
 @_deprecate_positional_args
