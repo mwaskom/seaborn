@@ -32,7 +32,12 @@ before_install:
 install:
   - conda create -n testenv pip python=$PYTHON
   - source activate testenv
-  - cat ci/deps_${DEPS}.txt ci/utils.txt > deps.txt
+  # Conda's matplotlib package pulls qt but this is not required for
+  # non-interactive tests; use the compact matplotlib-base instead
+  - if [ $MPLBACKEND == "qtagg" ];
+    then cat ci/deps_${DEPS}.txt ci/utils.txt > deps.txt;
+    else cat ci/deps_${DEPS}.txt ci/utils.txt | sed 's/matplotlib$/matplotlib-base/' > deps.txt;
+    fi
   - conda install --file deps.txt
   - pip install .
 
