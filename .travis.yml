@@ -34,7 +34,7 @@ install:
   - source activate testenv
   # Conda's matplotlib package pulls qt but this is not required for
   # non-interactive tests; use the compact matplotlib-base instead
-  - if [ $MPLBACKEND == "qtagg" ];
+  - if [ $MPLBACKEND == "qt5agg" ];
     then cat ci/deps_${DEPS}.txt ci/utils.txt > deps.txt;
     else cat ci/deps_${DEPS}.txt ci/utils.txt | sed 's/matplotlib$/matplotlib-base/' > deps.txt;
     fi
@@ -43,11 +43,6 @@ install:
 
 
 before_script:
-  - if [ $MPLBACKEND == "qtagg" ]; then
-    export DISPLAY=:99.0;
-    sh -e /etc/init.d/xvfb start;
-    sleep 3;
-    fi
   - python ci/cache_test_datasets.py
 
 
