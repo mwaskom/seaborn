@@ -298,7 +298,7 @@ class _LinePlotter(_RelationalPlotter):
                 sub_data = sub_data.sort_values(sort_cols)
 
             # Due to the original design, code below was written assuming that
-            # sub_data always has x, y, and units columns, but handles empty
+            # sub_data always has x, y, and units columns, which may be empty.
             # Adding this here to avoid otherwise disruptive changes, but it
             # could get removed if the rest of the logic is sorted out
             null = pd.Series(index=sub_data.index, dtype=float)
