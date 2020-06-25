@@ -293,11 +293,19 @@ class _LinePlotter(_RelationalPlotter):
         ):
 
             if self.sort:
-                sub_data = sub_data.sort_values(["units", "x", "y"])
+                sort_vars = ["units", "x", "y"]
+                sort_cols = [var for var in sort_vars if var in self.variables]
+                sub_data = sub_data.sort_values(sort_cols)
 
-            x = sub_data["x"]
-            y = sub_data["y"]
-            u = sub_data["units"]
+            # Due to the original design, code below was written assuming that
+            # sub_data always has x, y, and units columns, but handles empty
+            # Adding this here to avoid otherwise disruptive changes, but it
+            # could get removed if the rest of the logic is sorted out
+            null = pd.Series(index=sub_data.index, dtype=float)
+
+            x = sub_data.get("x", null)
+            y = sub_data.get("y", null)
+            u = sub_data.get("units", null)
 
             if self.estimator is not None:
                 if "units" in self.variables:
@@ -643,6 +651,9 @@ def lineplot(
     if ax is None:
         ax = plt.gca()
 
+    if not p.has_xy_data:
+        return ax
+
     p._attach(ax)
 
     p.plot(ax, kwargs)
@@ -923,6 +934,9 @@ def scatterplot(
 
     if ax is None:
         ax = plt.gca()
+
+    if not p.has_xy_data:
+        return ax
 
     p._attach(ax)
 
