@@ -102,8 +102,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] == wide_df.index.name
         assert p.variables["y"] is None
         assert p.variables["hue"] == wide_df.columns.name
@@ -138,8 +136,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] == numeric_df.index.name
         assert p.variables["y"] is None
         assert p.variables["hue"] == numeric_df.columns.name
@@ -171,8 +167,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
         assert p.variables["hue"] is None
@@ -194,10 +188,6 @@ class TestRelationalPlotter(Helpers):
         expected_y = flat_array
         assert_array_equal(y, expected_y)
 
-        assert p.plot_data["hue"].isnull().all()
-        assert p.plot_data["style"].isnull().all()
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
 
@@ -216,10 +206,6 @@ class TestRelationalPlotter(Helpers):
         y = p.plot_data["y"]
         expected_y = flat_list
         assert_array_equal(y, expected_y)
-
-        assert p.plot_data["hue"].isnull().all()
-        assert p.plot_data["style"].isnull().all()
-        assert p.plot_data["size"].isnull().all()
 
         assert p.variables["x"] is None
         assert p.variables["y"] is None
@@ -278,8 +264,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
         assert p.variables["hue"] is None
@@ -312,8 +296,6 @@ class TestRelationalPlotter(Helpers):
         style = p.plot_data["style"]
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
-
-        assert p.plot_data["size"].isnull().all()
 
         assert p.variables["x"] is None
         assert p.variables["y"] is None
@@ -348,8 +330,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
         assert p.variables["hue"] is None
@@ -382,8 +362,6 @@ class TestRelationalPlotter(Helpers):
         style = p.plot_data["style"]
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
-
-        assert p.plot_data["size"].isnull().all()
 
         assert p.variables["x"] is None
         assert p.variables["y"] is None
@@ -418,8 +396,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
         assert p.variables["hue"] is None
@@ -453,8 +429,6 @@ class TestRelationalPlotter(Helpers):
         expected_style = expected_hue
         assert_array_equal(style, expected_style)
 
-        assert p.plot_data["size"].isnull().all()
-
         assert p.variables["x"] is None
         assert p.variables["y"] is None
         assert p.variables["hue"] is None
@@ -469,9 +443,6 @@ class TestRelationalPlotter(Helpers):
         for key, val in long_semantics.items():
             assert_array_equal(p.plot_data[key], long_df[val])
 
-        for col in set(p.semantics) - set(long_semantics):
-            assert p.plot_data[col].isnull().all()
-
     def test_long_df_with_index(self, long_df, long_semantics):
 
         p = _RelationalPlotter(
@@ -483,9 +454,6 @@ class TestRelationalPlotter(Helpers):
 
         for key, val in long_semantics.items():
             assert_array_equal(p.plot_data[key], long_df[val])
-
-        for col in set(p.semantics) - set(long_semantics):
-            assert p.plot_data[col].isnull().all()
 
     def test_long_df_with_multiindex(self, long_df, long_semantics):
 
@@ -499,9 +467,6 @@ class TestRelationalPlotter(Helpers):
         for key, val in long_semantics.items():
             assert_array_equal(p.plot_data[key], long_df[val])
 
-        for col in set(p.semantics) - set(long_semantics):
-            assert p.plot_data[col].isnull().all()
-
     def test_long_dict(self, long_dict, long_semantics):
 
         p = _RelationalPlotter(
@@ -513,9 +478,6 @@ class TestRelationalPlotter(Helpers):
 
         for key, val in long_semantics.items():
             assert_array_equal(p.plot_data[key], pd.Series(long_dict[val]))
-
-        for col in set(p.semantics) - set(long_semantics):
-            assert p.plot_data[col].isnull().all()
 
     @pytest.mark.parametrize(
         "vector_type",
@@ -546,9 +508,6 @@ class TestRelationalPlotter(Helpers):
 
         for key, val in long_semantics.items():
             assert_array_equal(p.plot_data[key], long_df[val])
-
-        for col in set(p.semantics) - set(long_semantics):
-            assert p.plot_data[col].isnull().all()
 
     def test_long_undefined_variables(self, long_df):
 

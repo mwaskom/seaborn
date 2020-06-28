@@ -90,7 +90,7 @@ class HueMapping(SemanticMapping):
         """
         super().__init__(plotter)
 
-        data = plotter.plot_data["hue"]
+        data = plotter.plot_data.get("hue", pd.Series(dtype=float))
 
         if data.notna().any():
 
@@ -273,7 +273,7 @@ class SizeMapping(SemanticMapping):
         """
         super().__init__(plotter)
 
-        data = plotter.plot_data["size"]
+        data = plotter.plot_data.get("size", pd.Series(dtype=float))
 
         if data.notna().any():
 
@@ -495,7 +495,7 @@ class StyleMapping(SemanticMapping):
         """
         super().__init__(plotter)
 
-        data = plotter.plot_data["style"]
+        data = plotter.plot_data.get("style", pd.Series(dtype=float))
 
         if data.notna().any():
 
@@ -602,19 +602,29 @@ class VectorPlotter:
         self.assign_variables(data, variables)
 
         for var, cls in self._semantic_mappings.items():
-            if var in self.semantics:
 
-                # Create the mapping function
-                map_func = partial(cls.map, plotter=self)
-                setattr(self, f"map_{var}", map_func)
+            # Create the mapping function
+            map_func = partial(cls.map, plotter=self)
+            setattr(self, f"map_{var}", map_func)
 
-                # Call the mapping function to initialize with default values
-                getattr(self, f"map_{var}")()
+            # Call the mapping function to initialize with default values
+            getattr(self, f"map_{var}")()
 
     @classmethod
-    def get_semantics(cls, kwargs):
+    def get_semantics(cls, kwargs, semantics=None):
         """Subset a dictionary` arguments with known semantic variables."""
-        return {k: kwargs[k] for k in cls.semantics}
+        if semantics is None:
+            semantics = cls.semantics
+        variables = {}
+        for key, val in kwargs.items():
+            if key in semantics and val is not None:
+                variables[key] = val
+        return variables
+
+    @property
+    def has_xy_data(self):
+        """Return True at least one of x or y is defined."""
+        return bool({"x", "y"} & set(self.variables))
 
     def assign_variables(self, data=None, variables={}):
         """Define plot variables, optionally using lookup from `data`."""
@@ -685,7 +695,7 @@ class VectorPlotter:
         if empty:
 
             # Make an object with the structure of plot_data, but empty
-            plot_data = pd.DataFrame(columns=self.semantics)
+            plot_data = pd.DataFrame()
             variables = {}
 
         elif flat:
@@ -708,7 +718,7 @@ class VectorPlotter:
                     plot_data[var] = getattr(flat_data, attr)
                     variables[var] = names[self.flat_structure[var]]
 
-            plot_data = pd.DataFrame(plot_data).reindex(columns=self.semantics)
+            plot_data = pd.DataFrame(plot_data)
 
         else:
 
@@ -752,7 +762,6 @@ class VectorPlotter:
             # Assign names corresponding to plot semantics
             for var, attr in self.wide_structure.items():
                 plot_data[var] = plot_data[attr]
-            plot_data = plot_data.reindex(columns=self.semantics)
 
             # Define the variable names
             variables = {}
@@ -838,7 +847,7 @@ class VectorPlotter:
 
         # Construct a tidy plot DataFrame. This will convert a number of
         # types automatically, aligning on index in case of pandas objects
-        plot_data = pd.DataFrame(plot_data, columns=self.semantics)
+        plot_data = pd.DataFrame(plot_data)
 
         # Reduce the variables dictionary to fields with valid data
         variables = {
@@ -930,6 +939,8 @@ class VectorPlotter:
 
             comp_data = self.plot_data.copy(deep=False)
             for var in "xy":
+                if var not in self.variables:
+                    continue
                 axis = getattr(self.ax, f"{var}axis")
                 comp_var = axis.convert_units(self.plot_data[var])
                 if axis.get_scale() == "log":
