@@ -26,6 +26,7 @@ from .utils import (
     _normalize_kwargs,
     _check_argument,
 )
+from .axisgrid import FacetGrid
 from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -245,6 +246,7 @@ class _DistributionPlotter(VectorPlotter):
         cols = list(self.variables)
         all_data = self.plot_data[cols].dropna()
 
+        # TODO XXX adapt for facet variables
         if "hue" in self.variables:
 
             # Access and clean the data
@@ -351,7 +353,8 @@ class _DistributionPlotter(VectorPlotter):
         cols = list(self.variables)
 
         # Do pre-compute housekeeping related to multiple groups
-        if "hue" in self.variables:
+        # TODO best way to account for facet/semantic?
+        if set(self.variables) - {"x", "y"}:
 
             all_data = self.comp_data[cols].dropna()
 
@@ -1268,10 +1271,15 @@ class _DistributionPlotter(VectorPlotter):
         # Draw the lines on the plot
         line_segs = xy_pairs.reshape([n, 2, 2])
         ax.add_collection(LineCollection(
-            line_segs, transform=trans, colors=colors, **kws
+            line_segs, transform=trans, s=colors, **kws
         ))
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
+
+
+class _DistributionFacetPlotter(_DistributionPlotter):
+
+    semantics = _DistributionPlotter.semantics + ("col", "row")
 
 
 # ==================================================================================== #
@@ -2069,8 +2077,121 @@ Examples
 )
 
 
-# =========================================================================== #
+@_deprecate_positional_args
+def distplot_new(
+    *,
+    x=None,
+    bins=None, hist=True, kde=True, rug=False, fit=None,
+    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+    color=None, vertical=False, norm_hist=False, axlabel=None,
+    label=None, ax=None,
+    data=None, y=None, hue=None, col=None, row=None,
+    palette=None, hue_order=None, hue_norm=None,
+    kind="hist", log_scale=None,
+    a=None,  # TODO XXX add kwargs?
+):
 
+    p = _DistributionFacetPlotter(
+        data=data,
+        variables=_DistributionFacetPlotter.get_semantics(locals())
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    # TODO XXX what to do about fit=?
+    # - remove with no deprecation
+    # - handle in new distplot
+    # - handle in histplot
+    # - add a first-class function, fitplot or rvplot, etc.
+
+    # TODO handle for backwards compat, but otherwise use FacetGrid
+    # if ax is None:
+    #     ax = plt.gca()
+
+    # TODO need facet_kws and function-level params (height/aspect ...)
+    # TODO also need to standardize what goes where for figure-level funcs
+    g = FacetGrid(data, col=col, row=row)
+    p._attach(g)
+
+    # Check for a specification that lacks x/y data and return early
+    if not p.has_xy_data:
+        return ax
+
+    if kind == "hist":
+
+        if hist_kws is None:
+            hist_kws = {}
+        hist_kws = hist_kws.copy()  # Allow modification of contents
+
+        # XXX mostly just copying from histplot. Not great!
+
+        # Default to discrete bins for categorical variables
+        # Note that having this logic here may constrain plans for distplot
+        # It can move inside the plot_ functions, it will just need to modify
+        # the estimate_kws dictionary (I am not sure how we feel about that)
+        # XXX TODO skipping for now
+        """
+        if discrete is None:
+            if p.univariate:
+                discrete = p.var_types[p.data_variable] == "categorical"
+            else:
+                discrete_x = p.var_types["x"] == "categorical"
+                discrete_y = p.var_types["y"] == "categorical"
+                discrete = discrete_x, discrete_y
+        """
+
+        # TODO XXX pretty messy, needs rethinking
+        estimate_defaults = dict(
+            stat="count", bins="auto",
+            binwidth=None, binrange=None,
+            discrete=None, cumulative=False,
+        )
+        estimate_kws = {}
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = hist_kws.pop(key, default_val)
+
+        # TODO XXX backcompat needs to handle kde_kws in orig distplot
+        # going to kdeplot, now is distributed across kde_kws / line_kws
+
+        if p.univariate:
+
+            # TODO skipping for now
+            # if "hue" not in p.variables:
+            #    kwargs["color"] = color
+
+            # TODO XXX handle defaults
+            # This needs a better solution! Module level defaults dict?
+            # (If yes, probably share between histplot and method)
+            defaults = dict(
+                common_bins=True, common_norm=True,
+                multiple="layer", element="bars", fill=True, shrink=1,
+                kde=False, kde_kws=None, line_kws=None,
+                color=None, legend=True, plot_kws={},  # XXX plot_kws?
+            )
+            for key, val in defaults.items():
+                hist_kws.setdefault(key, val)
+
+            hist_kws["estimate_kws"] = estimate_kws
+
+            # TODO this should be handled inside method
+            for comp in ["kde", "line"]:
+                if hist_kws.get(f"{comp}_kws", None) is None:
+                    hist_kws[f"{comp}_kws"] = {}
+
+            p.plot_univariate_histogram(**hist_kws)
+
+        else:
+
+            # TODO XXX handle cbar_kws
+
+            p.plot_bivariate_histogram(**hist_kws)
+
+        # TODO call FacetGrid annotation methods
+
+        return g  # TODO XXX or ax with backcompat
+
+
+# =========================================================================== #
 
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
@@ -2084,19 +2205,6 @@ def _freedman_diaconis_bins(a):
         return int(np.sqrt(a.size))
     else:
         return int(np.ceil((a.max() - a.min()) / h))
-
-
-@_deprecate_positional_args
-def distplot_new(
-    *,
-    x=None,
-    bins=None, hist=True, kde=True, rug=False, fit=None,
-    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-    color=None, vertical=False, norm_hist=False, axlabel=None,
-    label=None, ax=None, a=None,
-):
-
-    pass
 
 
 @_deprecate_positional_args

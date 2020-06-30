@@ -981,6 +981,8 @@ class VectorPlotter:
             return self.facets.axes_dict[row]
         elif col is not None:
             return self.facets.axes_dict[col]
+        elif self.ax is None:
+            return self.facets.ax
         else:
             return self.ax
 
