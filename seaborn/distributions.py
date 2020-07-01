@@ -686,11 +686,7 @@ class _DistributionPlotter(VectorPlotter):
         cbar, cbar_ax, cbar_kws,
         estimate_kws,
         plot_kws,
-        ax,
     ):
-
-        # Check for log scaling on the data axis
-        log_scale = ax.xaxis.get_scale() == "log", ax.yaxis.get_scale() == "log"
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
@@ -730,11 +726,6 @@ class _DistributionPlotter(VectorPlotter):
         else:
             vmax = None
 
-        # pcolormesh is going to turn the grid off, but we want to keep it
-        # I'm not sure if there's a better way to get the grid state
-        x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
-        y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
-
         # Get a default color
         if color is None:
             color = "C0"
@@ -747,6 +738,10 @@ class _DistributionPlotter(VectorPlotter):
             if sub_data.empty:
                 continue
 
+            # Get a reference to the axes we're going to use
+            # (Out of place but we currently need it for log handling)
+            ax = self._get_axes(sub_vars)
+
             # Do the histogram computation
             heights, (x_edges, y_edges) = estimator(
                 sub_data["x"],
@@ -754,9 +749,11 @@ class _DistributionPlotter(VectorPlotter):
                 weights=sub_data.get("weights", None),
             )
 
-            if log_scale[0]:
+            # Check for log scaling on the data axis
+            # TODO use centralized information here
+            if ax.xaxis.get_scale() == "log":
                 x_edges = np.power(10, x_edges)
-            if log_scale[1]:
+            if ax.yaxis.get_scale() == "log":
                 y_edges = np.power(10, y_edges)
 
             # Apply scaling to normalize across groups
@@ -786,7 +783,11 @@ class _DistributionPlotter(VectorPlotter):
             if thresh is not None:
                 heights = np.ma.masked_less_equal(heights, thresh)
 
-            # Draw the plot
+            # pcolormesh is going to turn the grid off, but we want to keep it
+            # I'm not sure if there's a better way to get the grid state
+            x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
+            y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
+
             mesh = ax.pcolormesh(
                 x_edges,
                 y_edges,
@@ -802,11 +803,13 @@ class _DistributionPlotter(VectorPlotter):
             if cbar:
                 ax.figure.colorbar(mesh, cbar_ax, ax, **cbar_kws)
 
+            # Reset the grid state
+            if x_grid:
+                ax.grid(True, axis="x")
+            if y_grid:
+                ax.grid(True, axis="y")
+
         # --- Finalize the plot
-        if x_grid:
-            ax.grid(True, axis="x")
-        if y_grid:
-            ax.grid(True, axis="y")
 
         self._add_axis_labels(ax)
 
@@ -2125,21 +2128,6 @@ def distplot_new(
 
         # XXX mostly just copying from histplot. Not great!
 
-        # Default to discrete bins for categorical variables
-        # Note that having this logic here may constrain plans for distplot
-        # It can move inside the plot_ functions, it will just need to modify
-        # the estimate_kws dictionary (I am not sure how we feel about that)
-        # XXX TODO skipping for now
-        """
-        if discrete is None:
-            if p.univariate:
-                discrete = p.var_types[p.data_variable] == "categorical"
-            else:
-                discrete_x = p.var_types["x"] == "categorical"
-                discrete_y = p.var_types["y"] == "categorical"
-                discrete = discrete_x, discrete_y
-        """
-
         # TODO XXX pretty messy, needs rethinking
         estimate_defaults = dict(
             stat="count", bins="auto",
@@ -2149,6 +2137,17 @@ def distplot_new(
         estimate_kws = {}
         for key, default_val in estimate_defaults.items():
             estimate_kws[key] = hist_kws.pop(key, default_val)
+        hist_kws["estimate_kws"] = estimate_kws
+
+        # XXX TODO do we want to do this this way?
+        if estimate_kws["discrete"] is None:
+            if p.univariate:
+                discrete = p.var_types[p.data_variable] == "categorical"
+            else:
+                discrete_x = p.var_types["x"] == "categorical"
+                discrete_y = p.var_types["y"] == "categorical"
+                discrete = discrete_x, discrete_y
+            estimate_kws["discrete"] = discrete
 
         # TODO XXX backcompat needs to handle kde_kws in orig distplot
         # going to kdeplot, now is distributed across kde_kws / line_kws
@@ -2171,8 +2170,6 @@ def distplot_new(
             for key, val in defaults.items():
                 hist_kws.setdefault(key, val)
 
-            hist_kws["estimate_kws"] = estimate_kws
-
             # TODO this should be handled inside method
             for comp in ["kde", "line"]:
                 if hist_kws.get(f"{comp}_kws", None) is None:
@@ -2182,11 +2179,29 @@ def distplot_new(
 
         else:
 
-            # TODO XXX handle cbar_kws
+            # TODO XXX as above
+            defaults = dict(
+                common_bins=True, common_norm=True,
+                thresh=0, pthresh=None, pmax=None,
+                cbar=False, cbar_ax=None,
+                color=None, legend=True, plot_kws={},  # XXX plot_kws?
+            )
+            for key, val in defaults.items():
+                hist_kws.setdefault(key, val)
+
+            hist_kws["estimate_kws"] = estimate_kws
+
+            if hist_kws.get("cbar_kws", None) is None:
+                hist_kws["cbar_kws"] = {}
 
             p.plot_bivariate_histogram(**hist_kws)
 
         # TODO call FacetGrid annotation methods
+        # TODO note that handling the legend is going to work differently
+        g.set_axis_labels(
+            x_var=p.variables.get("x", None),
+            y_var=p.variables.get("y", None),
+        )
 
         return g  # TODO XXX or ax with backcompat
 
