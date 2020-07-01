@@ -39,7 +39,11 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
     'numpydoc',
+    'sphinx_issues',
 ]
+
+# Sphinx-issues configuration
+issues_github_path = 'mwaskom/seaborn'
 
 # Generate the API documentation when building
 autosummary_generate = True
