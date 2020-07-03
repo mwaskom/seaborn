@@ -1481,6 +1481,11 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         sd = np.std(stat_data)
                         confint.append((estimate - sd, estimate + sd))
 
+                    elif type(ci) == tuple and ci[0] == "parametric":
+
+                        confint.append(stats.t.interval(ci[1]/100, len(stat_data)-1,
+                            loc=estimator(stat_data), scale=stats.sem(stat_data)))
+
                     else:
 
                         boots = bootstrap(stat_data, func=estimator,
@@ -1531,6 +1536,11 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             estimate = estimator(stat_data)
                             sd = np.std(stat_data)
                             confint[i].append((estimate - sd, estimate + sd))
+
+                        elif type(ci) == tuple and ci[0] == "parametric":
+
+                            confint[i].append(stats.t.interval(ci[1]/100, len(stat_data)-1,
+                                loc=estimator(stat_data), scale=stats.sem(stat_data)))
 
                         else:
 
