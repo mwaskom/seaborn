@@ -1483,8 +1483,9 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                     elif type(ci) == tuple and ci[0] == "parametric":
 
-                        confint.append(stats.t.interval(ci[1]/100, len(stat_data)-1,
-                            loc=estimator(stat_data), scale=stats.sem(stat_data)))
+                        confint.append(stats.t.interval(ci[1] / 100, len(stat_data) - 1,
+                                                        loc=estimator(stat_data),
+                                                        scale=stats.sem(stat_data)))
 
                     else:
 
@@ -1539,8 +1540,10 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
 
                         elif type(ci) == tuple and ci[0] == "parametric":
 
-                            confint[i].append(stats.t.interval(ci[1]/100, len(stat_data)-1,
-                                loc=estimator(stat_data), scale=stats.sem(stat_data)))
+                            confint[i].append(stats.t.interval(ci[1] / 100,
+                                              len(stat_data) - 1,
+                                              loc=estimator(stat_data),
+                                              scale=stats.sem(stat_data)))
 
                         else:
 
@@ -2123,9 +2126,10 @@ _categorical_docs = dict(
         Size of confidence intervals to draw around estimated values.  If
         "sd", skip bootstrapping and draw the standard deviation of the
         observations. If ``None``, no bootstrapping will be performed, and
-        error bars will not be drawn. If 2-element tuple with first element "parametric",
-        then skip bootstrapping and draw a parametric sample confidence interval based on
-        Student's T distribution. Size of the interval is determined by ``ci[1]`` in that case.
+        error bars will not be drawn. If 2-element tuple with first element
+        "parametric", then skip bootstrapping and draw a parametric sample
+        confidence interval based on Student's T distribution. Size of the interval
+        is determined by ``ci[1]`` in that case.
     n_boot : int, optional
         Number of bootstrap iterations to use when computing confidence
         intervals.
