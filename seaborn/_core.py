@@ -967,6 +967,7 @@ class VectorPlotter:
                 if axis.get_scale() == "log":
                     comp_var = np.log10(comp_var)
                 comp_data[var] = comp_var
+
             self._comp_data = comp_data
 
         return self._comp_data
@@ -1007,7 +1008,7 @@ class VectorPlotter:
         if isinstance(ax, FacetGrid):
             self.ax = None
             self.facets = ax
-            ax_list = ax.axes.flat
+            ax_list = ax.axes.flatten()
             if ax.col_names is not None:
                 self.var_levels["col"] = ax.col_names
             if ax.row_names is not None:
@@ -1024,7 +1025,6 @@ class VectorPlotter:
             allowed_types = [allowed_types]
 
         for var in set("xy").intersection(self.variables):
-
             # Check types of x/y variables
             var_type = self.var_types[var]
             if var_type not in allowed_types:

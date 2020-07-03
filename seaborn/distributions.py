@@ -25,8 +25,8 @@ from .utils import (
     _kde_support,
     _normalize_kwargs,
     _check_argument,
+    _assign_default_kwargs,
 )
-from .axisgrid import FacetGrid
 from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -314,7 +314,7 @@ class _DistributionPlotter(VectorPlotter):
         legend,
         line_kws,
         estimate_kws,
-        plot_kws,
+        **plot_kws,
     ):
 
         # --  Input checking
@@ -685,7 +685,7 @@ class _DistributionPlotter(VectorPlotter):
         legend,
         cbar, cbar_ax, cbar_kws,
         estimate_kws,
-        plot_kws,
+        **plot_kws,
     ):
 
         # Now initialize the Histogram estimator
@@ -1376,7 +1376,7 @@ def histplot(
             legend=legend,
             estimate_kws=estimate_kws.copy(),
             line_kws=line_kws.copy(),
-            plot_kws=kwargs,
+            **kwargs,
         )
 
     else:
@@ -1393,8 +1393,7 @@ def histplot(
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
-            plot_kws=kwargs,
-            ax=ax,
+            **kwargs,
         )
 
     return ax
@@ -2091,8 +2090,13 @@ def distplot_new(
     data=None, y=None, hue=None, col=None, row=None,
     palette=None, hue_order=None, hue_norm=None,
     kind="hist", log_scale=None,
-    a=None,  # TODO XXX add kwargs?
+    a=None,
+    **kwargs,
 ):
+
+    # Avoid circular import
+    # TODO XXX better to go the other way?
+    from .axisgrid import FacetGrid
 
     p = _DistributionFacetPlotter(
         data=data,
@@ -2122,9 +2126,11 @@ def distplot_new(
 
     if kind == "hist":
 
-        if hist_kws is None:
-            hist_kws = {}
-        hist_kws = hist_kws.copy()  # Allow modification of contents
+        if hist_kws is not None:
+            # TODO handle API change of hist_kws -> kwargs when kind=hist
+            pass
+
+        hist_kws = kwargs.copy()
 
         # XXX mostly just copying from histplot. Not great!
 
@@ -2159,16 +2165,7 @@ def distplot_new(
             #    kwargs["color"] = color
 
             # TODO XXX handle defaults
-            # This needs a better solution! Module level defaults dict?
-            # (If yes, probably share between histplot and method)
-            defaults = dict(
-                common_bins=True, common_norm=True,
-                multiple="layer", element="bars", fill=True, shrink=1,
-                kde=False, kde_kws=None, line_kws=None,
-                color=None, legend=True, plot_kws={},  # XXX plot_kws?
-            )
-            for key, val in defaults.items():
-                hist_kws.setdefault(key, val)
+            _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
 
             # TODO this should be handled inside method
             for comp in ["kde", "line"]:
@@ -2180,15 +2177,7 @@ def distplot_new(
         else:
 
             # TODO XXX as above
-            defaults = dict(
-                common_bins=True, common_norm=True,
-                thresh=0, pthresh=None, pmax=None,
-                cbar=False, cbar_ax=None,
-                color=None, legend=True, plot_kws={},  # XXX plot_kws?
-            )
-            for key, val in defaults.items():
-                hist_kws.setdefault(key, val)
-
+            _assign_default_kwargs(hist_kws, p.plot_bivariate_histogram, histplot)
             hist_kws["estimate_kws"] = estimate_kws
 
             if hist_kws.get("cbar_kws", None) is None:
@@ -2202,6 +2191,8 @@ def distplot_new(
             x_var=p.variables.get("x", None),
             y_var=p.variables.get("y", None),
         )
+        g.set_titles()
+        g.tight_layout()
 
         return g  # TODO XXX or ax with backcompat
 

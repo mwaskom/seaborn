@@ -1,8 +1,9 @@
 """Utility functions, mostly for internal use."""
 import os
 import re
-import colorsys
+import inspect
 import warnings
+import colorsys
 from urllib.request import urlopen, urlretrieve
 
 import numpy as np
@@ -652,3 +653,15 @@ def _check_argument(param, options, value):
         raise ValueError(
             f"`{param}` must be one of {options}, but {value} was passed.`"
         )
+
+
+def _assign_default_kwargs(kws, call_func, source_func):
+    """Assign default kwargs for call_func using values from source_func."""
+    needed = inspect.signature(call_func).parameters
+    defaults = inspect.signature(source_func).parameters
+
+    for param in needed:
+        if param in defaults and param not in kws:
+            kws[param] = defaults[param].default
+
+    return kws
