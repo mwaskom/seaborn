@@ -868,13 +868,15 @@ class VectorPlotter:
         return plot_data, variables
 
     def _semantic_subsets(
-        self, grouping_semantics, reverse=False, from_comp_data=False,
+        self, grouping_semantics=None, reverse=False, from_comp_data=False,
     ):
         """Generator for getting subsets of data defined by semantic variables.
 
+        Also injects "col" and "row" into grouping semantics.
+
         Parameters
         ----------
-        grouping_semantics : list of strings
+        grouping_semantics : string or list of strings
             Semantic variables that define the subsets of data.
         reverse : bool, optional
             If True, reverse the order of iteration.
@@ -889,9 +891,10 @@ class VectorPlotter:
             Subset of ``plot_data`` for this combination of semantic values.
 
         """
-        if isinstance(grouping_semantics, str):
+        if grouping_semantics is None:
+            grouping_semantics = []
+        elif isinstance(grouping_semantics, str):
             grouping_semantics = [grouping_semantics]
-        # TODO allow None and default to non x/y variables?
 
         # Always insert faceting variables
         facet_vars = {"col", "row"}

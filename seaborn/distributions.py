@@ -369,6 +369,11 @@ class _DistributionPlotter(VectorPlotter):
             multiple = None
             common_norm = False
 
+        # Turn multiple off if hue exists but is redundent with faceting
+        facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
+        if "hue" in self.variables and self.variables["hue"] in facet_vars:
+            multiple = None
+
         # Estimate the smoothed kernel densities, for use later
         if kde:
             kde_kws.setdefault("cut", 0)
@@ -483,7 +488,7 @@ class _DistributionPlotter(VectorPlotter):
                 if scout is not None:
                     scout.remove()
 
-        # Defeat alpha should depend on other parameters
+        # Default alpha should depend on other parameters
         if multiple == "layer":
             default_alpha = .5 if element == "bars" else .25
         elif kde:
@@ -1208,51 +1213,59 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, False, False, None, alpha, plot_kws, {},
             )
 
-    def plot_rug(self, height, expand_margins, legend, ax, kws):
+    def plot_rug(self, height, expand_margins, legend, **kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
         # TODO we need to abstract this logic
-        scout, = ax.plot([], [], **kws)
-        kws["color"] = kws.pop("color", scout.get_color())
-        scout.remove()
+        # TODO XXX conflict with facet
+        if self.ax is None:
+            kws["color"] = kws.pop("color", "C0")
+        else:
+            scout, = self.ax.plot([], [], **kws)
+            kws["color"] = kws.pop("color", scout.get_color())
+            scout.remove()
 
-        kws.setdefault("linewidth", 1)
+        for sub_vars, sub_data, in self._semantic_subsets():
 
-        if expand_margins:
-            xmarg, ymarg = ax.margins()
+            ax = self._get_axes(sub_vars)
+
+            kws.setdefault("linewidth", 1)
+
+            if expand_margins:
+                xmarg, ymarg = ax.margins()
+                if "x" in self.variables:
+                    ymarg += height * 2
+                if "y" in self.variables:
+                    xmarg += height * 2
+                ax.margins(x=xmarg, y=ymarg)
+
+            if "hue" in self.variables:
+                kws.pop("c", None)
+                kws.pop("color", None)
+
             if "x" in self.variables:
-                ymarg += height * 2
+                self._plot_single_rug(sub_data, "x", height, ax, kws)
             if "y" in self.variables:
-                xmarg += height * 2
-            ax.margins(x=xmarg, y=ymarg)
+                self._plot_single_rug(sub_data, "y", height, ax, kws)
 
-        if "hue" in self.variables:
-            kws.pop("c", None)
-            kws.pop("color", None)
+            # --- Finalize the plot
+            self._add_axis_labels(ax)
+            if "hue" in self.variables and legend:
+                # TODO ideally i'd like the legend artist to look like a rug
+                legend_artist = partial(mpl.lines.Line2D, [], [])
+                self._add_legend(
+                    ax, legend_artist, False, False, None, 1, {}, {},
+                )
 
-        if "x" in self.variables:
-            self._plot_single_rug("x", height, ax, kws)
-        if "y" in self.variables:
-            self._plot_single_rug("y", height, ax, kws)
-
-        # --- Finalize the plot
-        self._add_axis_labels(ax)
-        if "hue" in self.variables and legend:
-            # TODO ideally i'd like the legend artist to look like a rug
-            legend_artist = partial(mpl.lines.Line2D, [], [])
-            self._add_legend(
-                ax, legend_artist, False, False, None, 1, {}, {},
-            )
-
-    def _plot_single_rug(self, var, height, ax, kws):
+    def _plot_single_rug(self, sub_data, var, height, ax, kws):
         """Draw a rugplot along one axis of the plot."""
-        vector = self.plot_data[var]
+        vector = sub_data[var]
         n = len(vector)
 
         # We'll always add a single collection with varying colors
         if "hue" in self.variables:
-            colors = self._hue_map(self.plot_data["hue"])
+            colors = self._hue_map(sub_data["hue"])
         else:
             colors = None
 
@@ -1274,7 +1287,7 @@ class _DistributionPlotter(VectorPlotter):
         # Draw the lines on the plot
         line_segs = xy_pairs.reshape([n, 2, 2])
         ax.add_collection(LineCollection(
-            line_segs, transform=trans, s=colors, **kws
+            line_segs, transform=trans, colors=colors, **kws
         ))
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
@@ -2023,10 +2036,9 @@ def rugplot(
 
     if ax is None:
         ax = plt.gca()
-
     p._attach(ax)
 
-    p.plot_rug(height, expand_margins, legend, ax, kwargs)
+    p.plot_rug(height, expand_margins, legend, **kwargs)
 
     return ax
 
@@ -2079,8 +2091,9 @@ Examples
 )
 
 
-@_deprecate_positional_args
-def distplot_new(
+# TODO XXX commenting out because it interferes with autoreload
+# @_deprecate_positional_args
+def distplot(
     *,
     x=None,
     bins=None, hist=True, kde=True, rug=False, fit=None,
@@ -2095,7 +2108,6 @@ def distplot_new(
 ):
 
     # Avoid circular import
-    # TODO XXX better to go the other way?
     from .axisgrid import FacetGrid
 
     p = _DistributionFacetPlotter(
@@ -2129,23 +2141,32 @@ def distplot_new(
         if hist_kws is not None:
             # TODO handle API change of hist_kws -> kwargs when kind=hist
             pass
+        else:
+            hist_kws = kwargs.copy()
 
-        hist_kws = kwargs.copy()
+        # Extract the parameters that will go directly to Histogram
 
-        # XXX mostly just copying from histplot. Not great!
+        # TODO XXX do we need to do anyhting to deprecate bins as a parameter
+        # that appears in the function?
+        if bins is not None:
+            hist_kws["bins"] = bins
 
-        # TODO XXX pretty messy, needs rethinking
-        estimate_defaults = dict(
-            stat="count", bins="auto",
-            binwidth=None, binrange=None,
-            discrete=None, cumulative=False,
-        )
+        # TODO XXX we need to deprecate kde when kind != "hist"
+        # TODO XXX what should the default be for kde?
+        hist_kws["kde"] = kde
+        hist_kws["kde_kws"] = kde_kws
+        # TODO XXX backcompat needs to handle kde_kws in orig distplot
+        # going to kdeplot, now is distributed across kde_kws / line_kws
+
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
+
         estimate_kws = {}
         for key, default_val in estimate_defaults.items():
             estimate_kws[key] = hist_kws.pop(key, default_val)
-        hist_kws["estimate_kws"] = estimate_kws
 
         # XXX TODO do we want to do this this way?
+        # See notes in histplot
         if estimate_kws["discrete"] is None:
             if p.univariate:
                 discrete = p.var_types[p.data_variable] == "categorical"
@@ -2155,8 +2176,7 @@ def distplot_new(
                 discrete = discrete_x, discrete_y
             estimate_kws["discrete"] = discrete
 
-        # TODO XXX backcompat needs to handle kde_kws in orig distplot
-        # going to kdeplot, now is distributed across kde_kws / line_kws
+        hist_kws["estimate_kws"] = estimate_kws
 
         if p.univariate:
 
@@ -2178,12 +2198,17 @@ def distplot_new(
 
             # TODO XXX as above
             _assign_default_kwargs(hist_kws, p.plot_bivariate_histogram, histplot)
-            hist_kws["estimate_kws"] = estimate_kws
 
             if hist_kws.get("cbar_kws", None) is None:
                 hist_kws["cbar_kws"] = {}
 
             p.plot_bivariate_histogram(**hist_kws)
+
+        if rug:
+            if rug_kws is None:
+                rug_kws = {}
+            _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
+            p.plot_rug(**rug_kws)
 
         # TODO call FacetGrid annotation methods
         # TODO note that handling the legend is going to work differently
@@ -2214,7 +2239,7 @@ def _freedman_diaconis_bins(a):
 
 
 @_deprecate_positional_args
-def distplot(
+def distplot_old(
     *,
     x=None,
     bins=None, hist=True, kde=True, rug=False, fit=None,
