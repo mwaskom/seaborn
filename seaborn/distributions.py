@@ -1156,7 +1156,7 @@ class _DistributionPlotter(VectorPlotter):
                 ax, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
-    def plot_univariate_ecdf(self, estimate_kws, legend, plot_kws, ax):
+    def plot_univariate_ecdf(self, estimate_kws, legend, **plot_kws):
 
         # TODO see notes elsewhere about GH2135
         cols = list(self.variables)
@@ -1200,6 +1200,7 @@ class _DistributionPlotter(VectorPlotter):
                 top_edge = 1
 
             # Draw the line for this subset
+            ax = self._get_axes(sub_vars)
             artist, = ax.plot(*plot_args, **artist_kws)
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
             sticky_edges[:] = 0, top_edge
@@ -1918,8 +1919,7 @@ def ecdfplot(
     p.plot_univariate_ecdf(
         estimate_kws=estimate_kws,
         legend=legend,
-        plot_kws=kwargs,
-        ax=ax,
+        **kwargs,
     )
 
     return ax
@@ -2221,7 +2221,7 @@ def distplot(
         # (e.g. shade -> fill)
 
         # Extract the parameters that will go directly to KDE
-
+        # TODO could generalize this instead of repeating for each kind=?
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, KDE.__init__, kdeplot)
 
@@ -2240,6 +2240,29 @@ def distplot(
 
             _assign_default_kwargs(kde_kws, p.plot_bivariate_density, kdeplot)
             p.plot_bivariate_density(**kde_kws)
+
+    elif kind == "ecdf":
+
+        # TODO This kind is new, so less needs to be handled
+        ecdf_kws = kwargs.copy()
+
+        # Extract the parameters that will go directly to the estimator
+        estimate_kws = {}
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, ECDF.__init__, ecdfplot)
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = ecdf_kws.pop(key, default_val)
+
+        ecdf_kws["estimate_kws"] = estimate_kws
+
+        if p.univariate:
+
+            _assign_default_kwargs(ecdf_kws, p.plot_univariate_ecdf, ecdfplot)
+            p.plot_univariate_ecdf(**ecdf_kws)
+
+        else:
+
+            raise NotImplementedError("Bivariate ECDF plots are not implemented")
 
     if rug:
         if rug_kws is None:
