@@ -13,8 +13,6 @@
 
 import sys, os
 import sphinx_bootstrap_theme
-import matplotlib as mpl
-mpl.use("Agg")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -39,7 +37,11 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
     'numpydoc',
+    'sphinx_issues',
 ]
+
+# Sphinx-issues configuration
+issues_github_path = 'mwaskom/seaborn'
 
 # Generate the API documentation when building
 autosummary_generate = True
