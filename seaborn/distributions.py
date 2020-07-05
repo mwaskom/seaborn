@@ -838,8 +838,7 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         legend,
         estimate_kws,
-        plot_kws,
-        ax,
+        **plot_kws,
     ):
 
         # Preprocess the matplotlib keyword dictionaries
@@ -853,8 +852,9 @@ class _DistributionPlotter(VectorPlotter):
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
         # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{self.data_variable}axis")
-        log_scale = data_axis.get_scale() == "log"
+        # TODO XXX
+        # data_axis = getattr(ax, f"{self.data_variable}axis")
+        # log_scale = data_axis.get_scale() == "log"
 
         # Always share the evaluation grid when stacking
         if "hue" in self.variables and multiple in ("stack", "fill"):
@@ -866,7 +866,8 @@ class _DistributionPlotter(VectorPlotter):
             common_norm,
             common_grid,
             estimate_kws,
-            log_scale
+            # TOXO XXX log_scale
+            log_scale=False,
         )
 
         # Note: raises when no hue and multiple != layer. A problem?
@@ -884,25 +885,28 @@ class _DistributionPlotter(VectorPlotter):
 
         # Handle default visual attributes
         if "hue" not in self.variables:
-            if fill:
-                if self.var_types[self.data_variable] == "datetime":
-                    # Avoid drawing empty fill_between on date axis
-                    # https://github.com/matplotlib/matplotlib/issues/17586
-                    scout = None
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", None)
-                    )
-                    if default_color is None:
-                        default_color = "C0"
-                else:
-                    scout = ax.fill_between([], [], **plot_kws)
-                    default_color = tuple(scout.get_facecolor().squeeze())
-                plot_kws.pop("color", None)
+            if self.ax is None:
+                default_color = plot_kws.pop("color", plot_kws.pop("facecolor", "C0"))
             else:
-                scout, = ax.plot([], [], **plot_kws)
-                default_color = scout.get_color()
-            if scout is not None:
-                scout.remove()
+                if fill:
+                    if self.var_types[self.data_variable] == "datetime":
+                        # Avoid drawing empty fill_between on date axis
+                        # https://github.com/matplotlib/matplotlib/issues/17586
+                        scout = None
+                        default_color = plot_kws.pop(
+                            "color", plot_kws.pop("facecolor", None)
+                        )
+                        if default_color is None:
+                            default_color = "C0"
+                    else:
+                        scout = self.ax.fill_between([], [], **plot_kws)
+                        default_color = tuple(scout.get_facecolor().squeeze())
+                    plot_kws.pop("color", None)
+                else:
+                    scout, = self.ax.plot([], [], **plot_kws)
+                    default_color = scout.get_color()
+                if scout is not None:
+                    scout.remove()
 
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
@@ -919,6 +923,8 @@ class _DistributionPlotter(VectorPlotter):
                 continue
             support = density.index
             fill_from = baselines[key]
+
+            ax = self._get_axes(sub_vars)
 
             # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
@@ -986,8 +992,7 @@ class _DistributionPlotter(VectorPlotter):
         cbar_ax,
         cbar_kws,
         estimate_kws,
-        contour_kws,
-        ax,
+        **contour_kws,
     ):
 
         contour_kws = contour_kws.copy()
@@ -1000,11 +1005,6 @@ class _DistributionPlotter(VectorPlotter):
         # See other notes about GH2135
         cols = list(self.variables)
         all_data = self.plot_data[cols].dropna()
-
-        # Check for log scaling on iether axis
-        scalex = ax.xaxis.get_scale() == "log"
-        scaley = ax.yaxis.get_scale() == "log"
-        log_scale = scalex, scaley
 
         # Loop through the subsets and estimate the KDEs
         densities, supports = {}, {}
@@ -1033,13 +1033,14 @@ class _DistributionPlotter(VectorPlotter):
             density, support = estimator(*observations, weights=weights)
 
             # Transform the support grid back to the original scale
-            if log_scale is not None:
-                xx, yy = support
-                if log_scale[0]:
-                    xx = np.power(10, xx)
-                if log_scale[1]:
-                    yy = np.power(10, yy)
-                support = xx, yy
+            ax = self._get_axes(sub_vars)
+            # TODO implement property on Plotter
+            xx, yy = support
+            if ax.get_xscale() == "log":
+                xx = np.power(10, xx)
+            if ax.get_yscale() == "log":
+                yy = np.power(10, yy)
+            support = xx, yy
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
@@ -1069,9 +1070,13 @@ class _DistributionPlotter(VectorPlotter):
             }
 
         # Get a default single color from the attribute cycle
-        scout, = ax.plot([], color=color)
-        default_color = scout.get_color()
-        scout.remove()
+        if self.ax is None:
+            # TODO XXX
+            default_color = "C0" if color is None else color
+        else:
+            scout, = self.ax.plot([], color=color)
+            default_color = scout.get_color()
+            scout.remove()
 
         # Define the coloring of the contours
         if "hue" in self.variables:
@@ -1088,14 +1093,6 @@ class _DistributionPlotter(VectorPlotter):
             if not fill and not coloring_given:
                 contour_kws["colors"] = [default_color]
 
-        # Choose the function to plot with
-        # TODO could add a pcolormesh based option as well
-        # Which would look something like element="raster"
-        if fill:
-            contour_func = ax.contourf
-        else:
-            contour_func = ax.contour
-
         # Loop through the subsets again and plot the data
         for sub_vars, _ in self._semantic_subsets("hue"):
 
@@ -1105,6 +1102,16 @@ class _DistributionPlotter(VectorPlotter):
                     contour_kws["cmap"] = self._cmap_from_color(color)
                 else:
                     contour_kws["colors"] = [color]
+
+            ax = self._get_axes(sub_vars)
+
+            # Choose the function to plot with
+            # TODO could add a pcolormesh based option as well
+            # Which would look something like element="raster"
+            if fill:
+                contour_func = ax.contourf
+            else:
+                contour_func = ax.contour
 
             key = tuple(sub_vars.items())
             if key not in densities:
@@ -1692,8 +1699,7 @@ def kdeplot(
             fill=fill,
             legend=legend,
             estimate_kws=estimate_kws,
-            plot_kws=plot_kws,
-            ax=ax
+            **plot_kws,
         )
 
     else:
@@ -1709,8 +1715,7 @@ def kdeplot(
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
-            contour_kws=kwargs,
-            ax=ax,
+            **kwargs,
         )
 
     return ax
@@ -2151,13 +2156,6 @@ def distplot(
         if bins is not None:
             hist_kws["bins"] = bins
 
-        # TODO XXX we need to deprecate kde when kind != "hist"
-        # TODO XXX what should the default be for kde?
-        hist_kws["kde"] = kde
-        hist_kws["kde_kws"] = kde_kws
-        # TODO XXX backcompat needs to handle kde_kws in orig distplot
-        # going to kdeplot, now is distributed across kde_kws / line_kws
-
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
 
@@ -2166,7 +2164,7 @@ def distplot(
             estimate_kws[key] = hist_kws.pop(key, default_val)
 
         # XXX TODO do we want to do this this way?
-        # See notes in histplot
+        # Copied directly from histplot, see notes there
         if estimate_kws["discrete"] is None:
             if p.univariate:
                 discrete = p.var_types[p.data_variable] == "categorical"
@@ -2183,6 +2181,13 @@ def distplot(
             # TODO skipping for now
             # if "hue" not in p.variables:
             #    kwargs["color"] = color
+
+            # TODO XXX we need to deprecate kde when kind != "hist"
+            # TODO XXX what should the default be for kde?
+            hist_kws["kde"] = kde
+            hist_kws["kde_kws"] = kde_kws
+            # TODO XXX backcompat needs to handle kde_kws in orig distplot
+            # going to kdeplot, now is distributed across kde_kws / line_kws
 
             # TODO XXX handle defaults
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
@@ -2204,22 +2209,55 @@ def distplot(
 
             p.plot_bivariate_histogram(**hist_kws)
 
-        if rug:
-            if rug_kws is None:
-                rug_kws = {}
-            _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
-            p.plot_rug(**rug_kws)
+    elif kind == "kde":
 
-        # TODO call FacetGrid annotation methods
-        # TODO note that handling the legend is going to work differently
-        g.set_axis_labels(
-            x_var=p.variables.get("x", None),
-            y_var=p.variables.get("y", None),
-        )
-        g.set_titles()
-        g.tight_layout()
+        if kde_kws is not None:
+            # TODO XXX handle API hcange of kde_kws -> kwargs when kind=kde
+            pass
+        else:
+            kde_kws = kwargs.copy()
 
-        return g  # TODO XXX or ax with backcompat
+        # TODO XXX need to handle various kde deprecations here too
+        # (e.g. shade -> fill)
+
+        # Extract the parameters that will go directly to KDE
+
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, KDE.__init__, kdeplot)
+
+        estimate_kws = {}
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = kde_kws.pop(key, default_val)
+
+        kde_kws["estimate_kws"] = estimate_kws
+
+        if p.univariate:
+
+            _assign_default_kwargs(kde_kws, p.plot_univariate_density, kdeplot)
+            p.plot_univariate_density(**kde_kws)
+
+        else:
+
+            _assign_default_kwargs(kde_kws, p.plot_bivariate_density, kdeplot)
+            p.plot_bivariate_density(**kde_kws)
+
+    if rug:
+        if rug_kws is None:
+            rug_kws = {}
+        _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
+        rug_kws["legend"] = False
+        p.plot_rug(**rug_kws)
+
+    # TODO call FacetGrid annotation methods
+    # TODO note that handling the legend is going to work differently
+    g.set_axis_labels(
+        x_var=p.variables.get("x", None),
+        y_var=p.variables.get("y", None),
+    )
+    g.set_titles()
+    g.tight_layout()
+
+    return g  # TODO XXX or ax with backcompat
 
 
 # =========================================================================== #
