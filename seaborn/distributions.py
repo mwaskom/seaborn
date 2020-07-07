@@ -2122,24 +2122,58 @@ def distplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
-    # TODO XXX what to do about fit=?
-    # - remove with no deprecation
-    # - handle in new distplot
-    # - handle in histplot
-    # - add a first-class function, fitplot or rvplot, etc.
+    # distplot was previously an axes-level function and has been transitioned
+    # to a figure-level function. That means that we need we need a couple of
+    # deprecation cycles to handle backwards compatability. Our approach is
+    # going to be to allow an axes-level specification as long as it makes
+    # sense (i.e. there are no faceting variables). We will warn about the
+    # change, but otherwise draw the plot directly onto the axes. The easiest
+    # case is when the `ax` kwarg is used. The trickier case is when the caller
+    # was using the state-machine interface. In the latter case, we are going
+    # to check for open figures and use the active axes.
+    facet_vars = {"col", "row"} & set(p.variables)
+    if ax is not None:
+        if facet_vars:
+            err = f"Facet variables ({facet_vars}) cannot be used with specified `ax`."
+            raise ValueError(err)
+        msg = (
+            "distplot is now a figure-level function, and support for specifying "
+            "`ax` will be removed in a future version. Plotting onto your Axes, "
+            " for now, but consider changing your code to use {kind}plot if you need "
+            "axes-level control."
+        ).format(kind=kind)
+        warnings.warn(msg, FutureWarning)
+        p._attach(ax)
+        g = None
 
-    # TODO handle for backwards compat, but otherwise use FacetGrid
-    # if ax is None:
-    #     ax = plt.gca()
+    elif plt.get_fignums() and not facet_vars:
+        # TODO what about when facet variables are present and there is an open
+        # figure? With other figure-level plots we would just create a new figure.
+        ax = plt.gca()
+        msg = (
+            "distplot is now a figure-level function, and in the future it will "
+            "always create its own figure. Because there is an open figure, the "
+            "plot will be drawn onto the current axes, but this behavior will change."
+            "in the future. Consider changing your code to use {kind}plot if you need "
+            "axes-level control."
+        ).format(kind=kind)
+        warnings.warn(msg, FutureWarning)
+        p._attach(ax)
+        g = None
 
-    # TODO need facet_kws and function-level params (height/aspect ...)
-    # TODO also need to standardize what goes where for figure-level funcs
-    g = FacetGrid(data, col=col, row=row)
-    p._attach(g)
+    else:
+
+        # TODO need facet_kws and function-level params (height/aspect ...)
+        # TODO also need to standardize what goes where for figure-level funcs
+        g = FacetGrid(data, col=col, row=row)
+        p._attach(g)
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
-        return ax
+        if g is None:
+            return ax
+        else:
+            return g
 
     if kind == "hist":
 
@@ -2155,6 +2189,14 @@ def distplot(
         # that appears in the function?
         if bins is not None:
             hist_kws["bins"] = bins
+
+        # TODO XXX what to do about fit=?
+        # - remove with no deprecation
+        # - handle in new distplot
+        # - handle in histplot
+        # - add a first-class function, fitplot or rvplot, etc.
+
+        # TODO XXX need to deprecate norm_hist (point towards stat?)
 
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
@@ -2271,6 +2313,10 @@ def distplot(
         rug_kws["legend"] = False
         p.plot_rug(**rug_kws)
 
+    # Don't do any further modification if we are in axes-level mode
+    if g is None:
+        return ax
+
     # TODO call FacetGrid annotation methods
     # TODO note that handling the legend is going to work differently
     g.set_axis_labels(
@@ -2280,7 +2326,7 @@ def distplot(
     g.set_titles()
     g.tight_layout()
 
-    return g  # TODO XXX or ax with backcompat
+    return g
 
 
 # =========================================================================== #
