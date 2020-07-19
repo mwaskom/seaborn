@@ -70,7 +70,7 @@ class _RelationalPlotter(VectorPlotter):
                 locator = mpl.ticker.MaxNLocator(nbins=3)
             limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["hue"].dtype
+                locator, limits, self.plot_data["hue"].infer_objects().dtype
             )
         elif self._hue_map.levels is None:
             hue_levels = hue_formatted_levels = []
@@ -99,7 +99,7 @@ class _RelationalPlotter(VectorPlotter):
             # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
-                locator, limits, self.plot_data["size"].dtype
+                locator, limits, self.plot_data["size"].infer_objects().dtype
             )
         elif self._size_map.levels is None:
             size_levels = size_formatted_levels = []
