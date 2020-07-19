@@ -196,6 +196,15 @@ def missing_df(rng, long_df):
 
 
 @pytest.fixture
+def object_df(rng, long_df):
+
+    df = long_df.copy()
+    # objectify numeric columns
+    for col in ["c", "s", "f"]:
+        df[col] = df[col].astype(object)
+    return df
+
+@pytest.fixture
 def null_series():
 
     return pd.Series(index=np.arange(20), dtype='float64')

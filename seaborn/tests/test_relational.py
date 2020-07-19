@@ -1241,7 +1241,7 @@ class TestLinePlotter(Helpers):
         wide_df, wide_array,
         wide_list_of_series, wide_list_of_arrays, wide_list_of_lists,
         flat_array, flat_series, flat_list,
-        long_df, missing_df
+        long_df, missing_df, object_df
     ):
 
         f, ax = plt.subplots()
@@ -1313,6 +1313,15 @@ class TestLinePlotter(Helpers):
         ax.clear()
 
         lineplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="f", data=object_df)
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="c", size="f", data=object_df)
+        ax.clear()
+
+        lineplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
 
 
@@ -1678,7 +1687,7 @@ class TestScatterPlotter(Helpers):
         wide_df, wide_array,
         flat_series, flat_array, flat_list,
         wide_list_of_series, wide_list_of_arrays, wide_list_of_lists,
-        long_df, missing_df
+        long_df, missing_df, object_df
     ):
 
         f, ax = plt.subplots()
@@ -1747,4 +1756,13 @@ class TestScatterPlotter(Helpers):
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", size="s", data=missing_df)
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="f", data=object_df)
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="c", size="f", data=object_df)
+        ax.clear()
+
+        scatterplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
