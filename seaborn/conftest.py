@@ -204,6 +204,7 @@ def object_df(rng, long_df):
         df[col] = df[col].astype(object)
     return df
 
+
 @pytest.fixture
 def null_series():
 
