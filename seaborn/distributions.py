@@ -376,6 +376,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Estimate the smoothed kernel densities, for use later
         if kde:
+            # TODO alternatively, clip at min/max bins?
             kde_kws.setdefault("cut", 0)
             kde_kws["cumulative"] = estimate_kws["cumulative"]
             densities = self._compute_univariate_density(
@@ -1381,8 +1382,9 @@ def histplot(
 
     if p.univariate:
 
-        if "hue" not in p.variables:
-            kwargs["color"] = color
+        # TODO XXX causing problems
+        # if "hue" not in p.variables:
+        #     kwargs["color"] = color
 
         p.plot_univariate_histogram(
             multiple=multiple,
@@ -2122,6 +2124,8 @@ def distplot(
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
+    _check_argument("kind", ["hist", "kde", "ecdf"], kind)
+
     # distplot was previously an axes-level function and has been transitioned
     # to a figure-level function. That means that we need we need a couple of
     # deprecation cycles to handle backwards compatability. Our approach is
@@ -2138,9 +2142,8 @@ def distplot(
             raise ValueError(err)
         msg = (
             "distplot is now a figure-level function, and support for specifying "
-            "`ax` will be removed in a future version. Plotting onto your Axes, "
-            " for now, but consider changing your code to use {kind}plot if you need "
-            "axes-level control."
+            "`ax` will be removed in a future version. Plotting onto your Axes "
+            "for now, but consider using {kind}plot if you need axes-level control."
         ).format(kind=kind)
         warnings.warn(msg, FutureWarning)
         p._attach(ax)
@@ -2153,9 +2156,8 @@ def distplot(
         msg = (
             "distplot is now a figure-level function, and in the future it will "
             "always create its own figure. Because there is an open figure, the "
-            "plot will be drawn onto the current axes, but this behavior will change."
-            "in the future. Consider changing your code to use {kind}plot if you need "
-            "axes-level control."
+            "plot will be drawn onto the current axes, but will change in a future "
+            "version. Consider using {kind}plot if you need axes-level control."
         ).format(kind=kind)
         warnings.warn(msg, FutureWarning)
         p._attach(ax)
