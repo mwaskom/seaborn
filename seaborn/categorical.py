@@ -3871,7 +3871,7 @@ catplot.__doc__ = dedent("""\
     to ``x``, ``y``, ``hue``, etc.
 
     As in the case with the underlying plot functions, if variables have a
-    ``categorical`` data type, the the levels of the categorical variables, and
+    ``categorical`` data type, the levels of the categorical variables, and
     their order will be inferred from the objects. Otherwise you may have to
     use alter the dataframe sorting or use the function parameters (``orient``,
     ``order``, ``hue_order``, etc.) to set up the plot correctly.
