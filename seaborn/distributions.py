@@ -384,7 +384,7 @@ class _DistributionPlotter(VectorPlotter):
                 common_norm,
                 common_bins,
                 kde_kws,
-                log_scale=False,  # TODO TODO FIXME
+                log_scale=self._log_scaled(self.data_variable),
             )
 
         # First pass through the data to compute the histograms
@@ -413,10 +413,7 @@ class _DistributionPlotter(VectorPlotter):
                 densities[key] *= hist_norm
 
             # Convert edges back to original units for plotting
-            # TODO this is annoying, fix
-            ax = self._get_axes(sub_vars)
-            data_axis = getattr(ax, f"{self.data_variable}axis")
-            if data_axis.get_scale() == "log":
+            if self._log_scaled(self.data_variable):
                 edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
@@ -746,7 +743,6 @@ class _DistributionPlotter(VectorPlotter):
 
             # Get a reference to the axes we're going to use
             # (Out of place but we currently need it for log handling)
-            ax = self._get_axes(sub_vars)
 
             # Do the histogram computation
             heights, (x_edges, y_edges) = estimator(
@@ -757,9 +753,9 @@ class _DistributionPlotter(VectorPlotter):
 
             # Check for log scaling on the data axis
             # TODO use centralized information here
-            if ax.xaxis.get_scale() == "log":
+            if self._log_scaled("x"):
                 x_edges = np.power(10, x_edges)
-            if ax.yaxis.get_scale() == "log":
+            if self._log_scaled("y"):
                 y_edges = np.power(10, y_edges)
 
             # Apply scaling to normalize across groups
@@ -788,6 +784,9 @@ class _DistributionPlotter(VectorPlotter):
                 thresh = self._quantile_to_level(heights, pthresh)
             if thresh is not None:
                 heights = np.ma.masked_less_equal(heights, thresh)
+
+            # Get the axes for this plot
+            ax = self._get_axes(sub_vars)
 
             # pcolormesh is going to turn the grid off, but we want to keep it
             # I'm not sure if there's a better way to get the grid state
@@ -852,14 +851,12 @@ class _DistributionPlotter(VectorPlotter):
         # Input checking
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
-        # Check for log scaling on the data axis
-        # TODO XXX
-        # data_axis = getattr(ax, f"{self.data_variable}axis")
-        # log_scale = data_axis.get_scale() == "log"
-
         # Always share the evaluation grid when stacking
         if "hue" in self.variables and multiple in ("stack", "fill"):
             common_grid = True
+
+        # Check if the data axis is log scaled
+        log_scale = self._log_scaled(self.data_variable)
 
         # Do the computation
         densities = self._compute_univariate_density(
@@ -867,8 +864,7 @@ class _DistributionPlotter(VectorPlotter):
             common_norm,
             common_grid,
             estimate_kws,
-            # TOXO XXX log_scale
-            log_scale=False,
+            log_scale=log_scale,
         )
 
         # Note: raises when no hue and multiple != layer. A problem?
@@ -1034,12 +1030,10 @@ class _DistributionPlotter(VectorPlotter):
             density, support = estimator(*observations, weights=weights)
 
             # Transform the support grid back to the original scale
-            ax = self._get_axes(sub_vars)
-            # TODO implement property on Plotter
             xx, yy = support
-            if ax.get_xscale() == "log":
+            if self._log_scaled("x"):
                 xx = np.power(10, xx)
-            if ax.get_yscale() == "log":
+            if self._log_scaled("y"):
                 yy = np.power(10, yy)
             support = xx, yy
 
@@ -1058,7 +1052,7 @@ class _DistributionPlotter(VectorPlotter):
             if min(levels) < 0 or max(levels) > 1:
                 raise ValueError("levels must be in [0, 1]")
 
-        # Transfrom from iso-proportions to iso-densities
+        # Transform from iso-proportions to iso-densities
         if common_norm:
             common_levels = self._quantile_to_level(
                 list(densities.values()), levels,
@@ -2129,12 +2123,12 @@ def distplot(
     # distplot was previously an axes-level function and has been transitioned
     # to a figure-level function. That means that we need we need a couple of
     # deprecation cycles to handle backwards compatability. Our approach is
-    # going to be to allow an axes-level specification as long as it makes
-    # sense (i.e. there are no faceting variables). We will warn about the
-    # change, but otherwise draw the plot directly onto the axes. The easiest
-    # case is when the `ax` kwarg is used. The trickier case is when the caller
-    # was using the state-machine interface. In the latter case, we are going
-    # to check for open figures and use the active axes.
+    # going to be to start by allowing an axes-level specification as long as
+    # it makes sense (i.e. there are no faceting variables). We will warn about
+    # the change, but otherwise draw the plot directly onto the axes. The
+    # easiest case is when the `ax` kwarg is used. The trickier case is when
+    # the caller was using the state-machine interface. In the latter case, we
+    # are going to check for open figures and use the active axes.
     facet_vars = {"col", "row"} & set(p.variables)
     if ax is not None:
         if facet_vars:
@@ -2320,6 +2314,7 @@ def distplot(
         return ax
 
     # TODO call FacetGrid annotation methods
+    # TODO should the VectorPlotter dispatch axis labels to Axes or FacetGrid?
     # TODO note that handling the legend is going to work differently
     g.set_axis_labels(
         x_var=p.variables.get("x", None),

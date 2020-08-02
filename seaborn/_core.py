@@ -868,7 +868,7 @@ class VectorPlotter:
         return plot_data, variables
 
     def iter_data(
-        self, grouping_semantics=None, reverse=False, from_comp_data=False,
+        self, grouping_vars=None, reverse=False, from_comp_data=False,
     ):
         """Generator for getting subsets of data defined by semantic variables.
 
@@ -876,7 +876,7 @@ class VectorPlotter:
 
         Parameters
         ----------
-        grouping_semantics : string or list of strings
+        grouping_vars : string or list of strings
             Semantic variables that define the subsets of data.
         reverse : bool, optional
             If True, reverse the order of iteration.
@@ -891,22 +891,22 @@ class VectorPlotter:
             Subset of ``plot_data`` for this combination of semantic values.
 
         """
-        if grouping_semantics is None:
-            grouping_semantics = []
-        elif isinstance(grouping_semantics, str):
-            grouping_semantics = [grouping_semantics]
-        elif isinstance(grouping_semantics, tuple):
-            grouping_semantics = list(grouping_semantics)
+        if grouping_vars is None:
+            grouping_vars = []
+        elif isinstance(grouping_vars, str):
+            grouping_vars = [grouping_vars]
+        elif isinstance(grouping_vars, tuple):
+            grouping_vars = list(grouping_vars)
 
         # Always insert faceting variables
         facet_vars = {"col", "row"}
-        grouping_semantics.extend(
-            facet_vars & set(self.variables) - set(grouping_semantics)
+        grouping_vars.extend(
+            facet_vars & set(self.variables) - set(grouping_vars)
         )
 
         # Reduce to the semantics used in this plot
-        grouping_semantics = [
-            var for var in grouping_semantics if var in self.variables
+        grouping_vars = [
+            var for var in grouping_vars if var in self.variables
         ]
 
         if from_comp_data:
@@ -914,14 +914,14 @@ class VectorPlotter:
         else:
             data = self.plot_data
 
-        if grouping_semantics:
+        if grouping_vars:
 
             grouped_data = data.groupby(
-                grouping_semantics, sort=False, as_index=False
+                grouping_vars, sort=False, as_index=False
             )
 
             grouping_keys = []
-            for var in grouping_semantics:
+            for var in grouping_vars:
                 grouping_keys.append(self.var_levels.get(var, []))
 
             iter_keys = itertools.product(*grouping_keys)
@@ -938,7 +938,7 @@ class VectorPlotter:
                 except KeyError:
                     continue
 
-                yield dict(zip(grouping_semantics, key)), data_subset
+                yield dict(zip(grouping_vars, key)), data_subset
 
         else:
 
@@ -1065,6 +1065,22 @@ class VectorPlotter:
                             set_scale("log")
                         else:
                             set_scale("log", **{f"base{axis}": scale})
+
+    def _log_scaled(self, axis):
+        """Return True if specified axis is log scaled on all attached axes."""
+        if self.ax is None:
+            axes_list = self.facets.axes.flatten()
+        else:
+            axes_list = [self.ax]
+
+        log_scaled = []
+        for ax in axes_list:
+            log_scaled.append(getattr(self.ax, f"{axis}axis").get_scale() == "log")
+
+        if any(log_scaled) and not all(log_scaled):
+            raise RuntimeError("Axis scaling is not consistent")
+
+        return any(log_scaled)
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
         """Add axis labels from internal variable names if not already existing."""
