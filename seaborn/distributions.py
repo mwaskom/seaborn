@@ -262,7 +262,7 @@ class _DistributionPlotter(VectorPlotter):
 
         densities = {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
             sub_data = sub_data[cols].dropna()
@@ -388,7 +388,7 @@ class _DistributionPlotter(VectorPlotter):
             )
 
         # First pass through the data to compute the histograms
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
@@ -501,7 +501,7 @@ class _DistributionPlotter(VectorPlotter):
         hist_artists = []
 
         # Go back through the dataset and draw the plots
-        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+        for sub_vars, _ in self.iter_data("hue", reverse=True):
 
             key = tuple(sub_vars.items())
             hist = histograms[key].rename("heights").reset_index()
@@ -737,7 +737,7 @@ class _DistributionPlotter(VectorPlotter):
             color = "C0"
 
         # --- Loop over data (subsets) and draw the histograms
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             sub_data = sub_data[cols].dropna()
 
@@ -914,7 +914,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # Now iterate through the subsets and draw the densities
         # We go backwards so stacked densities read from top-to-bottom
-        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+        for sub_vars, _ in self.iter_data("hue", reverse=True):
 
             # Extract the support grid and density curve for this level
             key = tuple(sub_vars.items())
@@ -1010,7 +1010,7 @@ class _DistributionPlotter(VectorPlotter):
         # Loop through the subsets and estimate the KDEs
         densities, supports = {}, {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
             sub_data = sub_data[cols].dropna()
@@ -1095,7 +1095,7 @@ class _DistributionPlotter(VectorPlotter):
                 contour_kws["colors"] = [default_color]
 
         # Loop through the subsets again and plot the data
-        for sub_vars, _ in self._semantic_subsets("hue"):
+        for sub_vars, _ in self.iter_data("hue"):
 
             if "hue" in sub_vars:
                 color = self._hue_map(sub_vars["hue"])
@@ -1169,7 +1169,7 @@ class _DistributionPlotter(VectorPlotter):
         plot_kws["drawstyle"] = drawstyles[self.data_variable]
 
         # Loop through the subsets, transform and plot the data
-        for sub_vars, sub_data in self._semantic_subsets(
+        for sub_vars, sub_data in self.iter_data(
             "hue", reverse=True, from_comp_data=True,
         ):
 
@@ -1235,7 +1235,7 @@ class _DistributionPlotter(VectorPlotter):
             kws["color"] = kws.pop("color", scout.get_color())
             scout.remove()
 
-        for sub_vars, sub_data, in self._semantic_subsets():
+        for sub_vars, sub_data, in self.iter_data():
 
             ax = self._get_axes(sub_vars)
 

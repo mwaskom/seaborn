@@ -867,7 +867,7 @@ class VectorPlotter:
 
         return plot_data, variables
 
-    def _semantic_subsets(
+    def iter_data(
         self, grouping_semantics=None, reverse=False, from_comp_data=False,
     ):
         """Generator for getting subsets of data defined by semantic variables.
@@ -895,6 +895,8 @@ class VectorPlotter:
             grouping_semantics = []
         elif isinstance(grouping_semantics, str):
             grouping_semantics = [grouping_semantics]
+        elif isinstance(grouping_semantics, tuple):
+            grouping_semantics = list(grouping_semantics)
 
         # Always insert faceting variables
         facet_vars = {"col", "row"}
