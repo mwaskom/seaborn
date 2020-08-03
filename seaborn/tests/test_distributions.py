@@ -25,6 +25,7 @@ from .._statistics import (
 )
 from ..distributions import (
     _DistributionPlotter,
+    distplot,
     histplot,
     ecdfplot,
     kdeplot,
@@ -39,47 +40,44 @@ class TestDistPlot(object):
 
     def test_hist_bins(self):
 
-        try:
-            fd_edges = np.histogram_bin_edges(self.x, "fd")
-        except AttributeError:
-            pytest.skip("Requires numpy >= 1.15")
-        ax = dist.distplot(x=self.x)
+        fd_edges = np.histogram_bin_edges(self.x, "fd")
+        ax = distplot(x=self.x).ax
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        ax = dist.distplot(x=self.x, bins=n)
+        ax = distplot(x=self.x, bins=n).ax
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
     def test_elements(self):
 
         n = 10
-        ax = dist.distplot(x=self.x, bins=n,
-                           hist=True, kde=False, rug=False, fit=None)
+        ax = distplot(x=self.x, bins=n,
+                      hist=True, kde=False, rug=False, fit=None).ax
         assert len(ax.patches) == 10
         assert len(ax.lines) == 0
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=True, rug=False, fit=None)
+        ax = distplot(x=self.x,
+                      hist=False, kde=True, rug=False, fit=None).ax
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=False, rug=True, fit=None)
+        ax = distplot(x=self.x,
+                      hist=False, kde=False, rug=True, fit=None).ax
         assert len(ax.patches) == 0
         assert len(ax.lines) == 0
         assert len(ax.collections) == 1
 
         plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=False, rug=False, fit=stats.norm)
+        ax = distplot(x=self.x,
+                      hist=False, kde=False, rug=False, fit=stats.norm).ax
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
@@ -89,8 +87,8 @@ class TestDistPlot(object):
         f, (ax1, ax2) = plt.subplots(2)
         x_null = np.append(self.x, [np.nan])
 
-        dist.distplot(x=self.x, ax=ax1)
-        dist.distplot(x=x_null, ax=ax2)
+        distplot(x=self.x, ax=ax1)
+        distplot(x=x_null, ax=ax2)
 
         line1 = ax1.lines[0]
         line2 = ax2.lines[0]
@@ -104,7 +102,7 @@ class TestDistPlot(object):
 
         n = 10
         with pytest.warns(UserWarning):
-            ax = dist.distplot(a=self.x, bins=n)
+            ax = distplot(a=self.x, bins=n).ax
         assert len(ax.patches) == n
 
 

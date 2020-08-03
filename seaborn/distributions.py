@@ -752,7 +752,6 @@ class _DistributionPlotter(VectorPlotter):
             )
 
             # Check for log scaling on the data axis
-            # TODO use centralized information here
             if self._log_scaled("x"):
                 x_edges = np.power(10, x_edges)
             if self._log_scaled("y"):
@@ -2111,6 +2110,12 @@ def distplot(
     # Avoid circular import
     from .axisgrid import FacetGrid
 
+    # Handle deprecation of `a` as the only data parameter (needs to happen early)
+    if a is not None:
+        msg = "The `a` parameter is now called `x`. Please update your code."
+        warnings.warn(msg)
+        x = a
+
     p = _DistributionFacetPlotter(
         data=data,
         variables=_DistributionFacetPlotter.get_semantics(locals())
@@ -2119,6 +2124,9 @@ def distplot(
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     _check_argument("kind", ["hist", "kde", "ecdf"], kind)
+
+    # ----------------------------------------------------------------------------
+    # Handle modernization of distplot API and conversation to figure-level function
 
     # distplot was previously an axes-level function and has been transitioned
     # to a figure-level function. That means that we need we need a couple of
@@ -2129,6 +2137,7 @@ def distplot(
     # easiest case is when the `ax` kwarg is used. The trickier case is when
     # the caller was using the state-machine interface. In the latter case, we
     # are going to check for open figures and use the active axes.
+
     facet_vars = {"col", "row"} & set(p.variables)
     if ax is not None:
         if facet_vars:
@@ -2159,10 +2168,38 @@ def distplot(
 
     else:
 
+        # If we get here, we can initialize up the FacetGrid
+        # Going forward, this will always happen
+
         # TODO need facet_kws and function-level params (height/aspect ...)
         # TODO also need to standardize what goes where for figure-level funcs
-        g = FacetGrid(data, col=col, row=row)
+        # TODO using plot_data might not always give us correct labels
+        g = FacetGrid(p.plot_data, col=col, row=row)
         p._attach(g)
+
+    # Now we need to handle other aspects of the modernization of the distplot API
+    # Generally speaking, for v0.11.0 we will try to minimize disruptions to the
+    # function signature. In v0.12, we parameters will become keyword-only, at which
+    # point we can reorganize the parameter list and remove deprecated parameters,
+    # pulling them out of kwargs and warning/handling. In v0.13 or v0.14 (depending
+    # on release tempo), the old API can be fully expunged.
+
+    # Ease conversion from previous approach to kind flexibility
+    if kde and not hist:
+        msg = (
+            "Setting `hist=False, kde=True` is deprecated; "
+            "use `kind='kde'` instead. This will raise in the future."
+        )
+        warnings.warn(msg, FutureWarning)
+        kind = "kde"
+
+    if rug and not (hist or kde):
+        msg = (
+            "Using `distplot` to draw only a rug plot is deprecated "
+            "and will raise in the future."
+        )
+        warnings.warn(msg, FutureWarning)
+        kind = None
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
@@ -2302,6 +2339,7 @@ def distplot(
 
             raise NotImplementedError("Bivariate ECDF plots are not implemented")
 
+    # All plot kinds can include a rug
     if rug:
         if rug_kws is None:
             rug_kws = {}
@@ -2310,6 +2348,9 @@ def distplot(
         p.plot_rug(**rug_kws)
 
     # Don't do any further modification if we are in axes-level mode
+    # This will be removed when axes-level distplot is deprecated
+    if g is None:
+        return ax
     if g is None:
         return ax
 

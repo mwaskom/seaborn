@@ -1075,7 +1075,8 @@ class VectorPlotter:
 
         log_scaled = []
         for ax in axes_list:
-            log_scaled.append(getattr(self.ax, f"{axis}axis").get_scale() == "log")
+            data_axis = getattr(ax, f"{axis}axis")
+            log_scaled.append(data_axis.get_scale() == "log")
 
         if any(log_scaled) and not all(log_scaled):
             raise RuntimeError("Axis scaling is not consistent")
