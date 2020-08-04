@@ -610,6 +610,8 @@ class VectorPlotter:
             # Call the mapping function to initialize with default values
             getattr(self, f"map_{var}")()
 
+        self._var_levels = {}
+
     @classmethod
     def get_semantics(cls, kwargs, semantics=None):
         """Subset a dictionary` arguments with known semantic variables."""
@@ -628,15 +630,24 @@ class VectorPlotter:
 
     @property
     def var_levels(self):
-        var_levels = {}
+        """Property interface to ordered list of variables levels.
+
+        Each time it's accessed, it updates the var_levels dictionary with the
+        list of levels in the current semantic mappers. But it also allows the
+        dictionary to persist, so it can be used to set levels by a key. This is
+        used to track the list of col/row levels using an attached FacetGrid
+        object, but it's kind of messy and ideally fixed by improving the
+        faceting logic so it interfaces better with the modern approach to
+        tracking plot variables.
+
+        """
         for var in self.variables:
-            # TODO what about x/y?
             try:
                 map_obj = getattr(self, f"_{var}_map")
-                var_levels[var] = map_obj.levels
+                self._var_levels[var] = map_obj.levels
             except AttributeError:
                 pass
-        return var_levels
+        return self._var_levels
 
     def assign_variables(self, data=None, variables={}):
         """Define plot variables, optionally using lookup from `data`."""
@@ -941,7 +952,9 @@ class VectorPlotter:
                 except KeyError:
                     continue
 
-                yield dict(zip(grouping_vars, key)), data_subset
+                sub_vars = dict(zip(grouping_vars, key))
+
+                yield sub_vars, data_subset
 
         else:
 
