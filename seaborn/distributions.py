@@ -953,6 +953,13 @@ class _DistributionPlotter(VectorPlotter):
                 artist.sticky_edges.y[:] = sticky_support
 
         # --- Finalize the plot ----
+
+        # TODO XXX FIXME need to sort out how to generalize this
+        if self.ax is None:
+            ax = self.facets.axes.flat[0]
+        else:
+            ax = self.ax
+
         default_x = default_y = ""
         if self.data_variable == "x":
             default_y = "Density"
