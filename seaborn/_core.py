@@ -610,15 +610,6 @@ class VectorPlotter:
             # Call the mapping function to initialize with default values
             getattr(self, f"map_{var}")()
 
-        self.var_levels = {}
-        for var in self.variables:
-            # TODO what about x/y?
-            try:
-                map_obj = getattr(self, f"_{var}_map")
-                self.var_levels[var] = map_obj.levels
-            except AttributeError:
-                pass
-
     @classmethod
     def get_semantics(cls, kwargs, semantics=None):
         """Subset a dictionary` arguments with known semantic variables."""
@@ -634,6 +625,18 @@ class VectorPlotter:
     def has_xy_data(self):
         """Return True at least one of x or y is defined."""
         return bool({"x", "y"} & set(self.variables))
+
+    @property
+    def var_levels(self):
+        var_levels = {}
+        for var in self.variables:
+            # TODO what about x/y?
+            try:
+                map_obj = getattr(self, f"_{var}_map")
+                var_levels[var] = map_obj.levels
+            except AttributeError:
+                pass
+        return var_levels
 
     def assign_variables(self, data=None, variables={}):
         """Define plot variables, optionally using lookup from `data`."""
@@ -961,7 +964,8 @@ class VectorPlotter:
                 if var not in self.variables:
                     continue
 
-                # TODO here's a problem
+                # TODO XXX FIXME here's a problem
+                # We need to store the axis transforms elsewhere
                 if self.ax is None:
                     ax = self.facets.axes.flat[0]
                 else:

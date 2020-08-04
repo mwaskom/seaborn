@@ -245,18 +245,11 @@ class _DistributionPlotter(VectorPlotter):
 
         all_data = self.plot_data.dropna()
 
-        # TODO XXX adapt for facet variables
-        if "hue" in self.variables:
-
-            # Access and clean the data
-            all_observations = self.comp_data.dropna()
-
-            # Define a single grid of support for the PDFs
+        if set(self.variables) - {"x", "y"}:
             if common_grid:
+                all_observations = self.comp_data.dropna()
                 estimator.define_support(all_observations[data_variable])
-
         else:
-
             common_norm = False
 
         densities = {}
@@ -841,7 +834,8 @@ class _DistributionPlotter(VectorPlotter):
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
         # Always share the evaluation grid when stacking
-        if "hue" in self.variables and multiple in ("stack", "fill"):
+        subsets = bool(set(self.variables) - {"x", "y"})
+        if subsets and multiple in ("stack", "fill"):
             common_grid = True
 
         # Check if the data axis is log scaled
@@ -853,7 +847,7 @@ class _DistributionPlotter(VectorPlotter):
             common_norm,
             common_grid,
             estimate_kws,
-            log_scale=log_scale,
+            log_scale,
         )
 
         # Note: raises when no hue and multiple != layer. A problem?

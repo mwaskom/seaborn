@@ -943,6 +943,17 @@ class TestVectorPlotter:
             [2, 0, 1, 2],
         )
 
+    def test_var_order(self, long_df):
+
+        order = ["c", "b", "a"]
+        for var in ["hue", "size", "style"]:
+            p = VectorPlotter(data=long_df, variables={"x": "x", var: "a"})
+
+            mapper = getattr(p, f"map_{var}")
+            mapper(order=order)
+
+            assert p.var_levels[var] == order
+
 
 class TestCoreFunc:
 
