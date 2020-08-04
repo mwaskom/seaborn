@@ -600,48 +600,59 @@ class _DistributionPlotter(VectorPlotter):
 
             # Now we handle linewidth, which depends on the scaling of the plot
 
-            # Needed in some cases to get valid transforms.
-            # Innocuous in other cases?
-            ax.autoscale_view()
+            # Loop through subsets based only on facet variables
+            for sub_vars, _ in self.iter_data():
 
-            # We will base everything on the minimum bin width
-            hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
-            binwidth = min([
-                h["widths"].min() for h in hist_metadata
-            ])
+                ax = self._get_axes(sub_vars)
 
-            # Convert binwidtj from data coordinates to pixels
-            pts_x, pts_y = 72 / ax.figure.dpi * (
-                ax.transData.transform([binwidth, binwidth])
-                - ax.transData.transform([0, 0])
-            )
-            if self.data_variable == "x":
-                binwidth_points = pts_x
-            else:
-                binwidth_points = pts_y
+                # Needed in some cases to get valid transforms.
+                # Innocuous in other cases?
+                ax.autoscale_view()
 
-            # The relative size of the lines depends on the appearance
-            # This is a provisional value and may need more tweaking
-            default_linewidth = .1 * binwidth_points
+                # We will base everything on the minimum bin width
+                hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
+                binwidth = min([
+                    h["widths"].min() for h in hist_metadata
+                ])
 
-            # Set the attributes
-            for bar in hist_artists:
+                # Convert binwidtj from data coordinates to pixels
+                pts_x, pts_y = 72 / ax.figure.dpi * (
+                    ax.transData.transform([binwidth, binwidth])
+                    - ax.transData.transform([0, 0])
+                )
+                if self.data_variable == "x":
+                    binwidth_points = pts_x
+                else:
+                    binwidth_points = pts_y
 
-                # Don't let the lines get too thick
-                max_linewidth = bar.get_linewidth()
-                if not fill:
-                    max_linewidth *= 1.5
+                # The relative size of the lines depends on the appearance
+                # This is a provisional value and may need more tweaking
+                default_linewidth = .1 * binwidth_points
 
-                linewidth = min(default_linewidth, max_linewidth)
+                # Set the attributes
+                for bar in hist_artists:
 
-                # If not filling, don't let lines dissapear
-                if not fill:
-                    min_linewidth = .5
-                    linewidth = max(linewidth, min_linewidth)
+                    # Don't let the lines get too thick
+                    max_linewidth = bar.get_linewidth()
+                    if not fill:
+                        max_linewidth *= 1.5
 
-                bar.set_linewidth(linewidth)
+                    linewidth = min(default_linewidth, max_linewidth)
+
+                    # If not filling, don't let lines dissapear
+                    if not fill:
+                        min_linewidth = .5
+                        linewidth = max(linewidth, min_linewidth)
+
+                    bar.set_linewidth(linewidth)
 
         # --- Finalize the plot ----
+
+        # TODO XXX FIXME need to sort out how to generalize this
+        if self.ax is None:
+            ax = self.facets.axes.flat[0]
+        else:
+            ax = self.ax
 
         # Axis labels
         default_x = default_y = ""
