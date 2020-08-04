@@ -2088,8 +2088,8 @@ def distplot(
     x=None,
     bins=None, hist=True, kde=True, rug=False, fit=None,
     hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-    color=None, vertical=False, norm_hist=False, axlabel=None,
-    label=None, ax=None,
+    color=None, vertical=None, norm_hist=None, axlabel=None,
+    ax=None,
     data=None, y=None, hue=None, col=None, row=None,
     palette=None, hue_order=None, hue_norm=None,
     kind="hist", log_scale=None,
@@ -2105,6 +2105,15 @@ def distplot(
         msg = "The `a` parameter is now called `x`. Please update your code."
         warnings.warn(msg)
         x = a
+
+    if vertical is not None:
+        msg = (
+            "Using `vertical=True` to control the orientation of the plot  "
+            "is deprecated. Instead, assign the data directly to `y`. "
+        )
+        warnings.warn(msg, FutureWarning)
+        if vertical:
+            x, y = None, x
 
     p = _DistributionFacetPlotter(
         data=data,
@@ -2149,7 +2158,7 @@ def distplot(
         msg = (
             "distplot is now a figure-level function, and in the future it will "
             "always create its own figure. Because there is an open figure, the "
-            "plot will be drawn onto the current axes, but will change in a future "
+            "plot will be drawn onto the current axes; this will change in a future "
             "version. Consider using {kind}plot if you need axes-level control."
         ).format(kind=kind)
         warnings.warn(msg, FutureWarning)
@@ -2180,7 +2189,7 @@ def distplot(
     # pulling them out of kwargs and warning/handling. In v0.13 or v0.14 (depending
     # on release tempo), the old API can be fully expunged.
 
-    # Ease conversion from previous approach to kind flexibility
+    # Ease conversion from previous approach to flexibility over plot kind
     if kde and not hist:
         msg = (
             "Setting `hist=False, kde=True` is deprecated; "
@@ -2196,6 +2205,23 @@ def distplot(
         )
         warnings.warn(msg, FutureWarning)
         kind = None
+
+    # Handle deprecations of other now-unused parameters
+    if norm_hist is not None:
+        msg = (
+            "The `norm_hist` parameter is deprecated. "
+            "Use the `statistic` parameter (when `kind='hist'`) instead."
+        )
+        warnings.warn(msg, UserWarning)
+        # TODO XXX should we do anything?
+
+    if axlabel is not None:
+        msg = (
+            "The `axlabel` parameter is deprecated. "
+            "Use the `set_axis_labels` method on the `FacetGrid` object instead."
+        )
+        warnings.warn(msg, UserWarning)
+        # TODO XXX should we do anything?
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
@@ -2214,8 +2240,6 @@ def distplot(
 
         # Extract the parameters that will go directly to Histogram
 
-        # TODO XXX do we need to do anyhting to deprecate bins as a parameter
-        # that appears in the function?
         if bins is not None:
             hist_kws["bins"] = bins
 
