@@ -2179,6 +2179,7 @@ def distplot(
 
         # TODO will this sometimes give us bum labels? need to test with arrays
         data = p.plot_data.rename(columns=p.variables)
+        data = data.loc[:, ~data.columns.duplicated()]
 
         # TODO this won't work when col/row are simple arrays, not sure what's best
         col_name = p.variables.get("col", None)
