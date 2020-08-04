@@ -243,14 +243,13 @@ class _DistributionPlotter(VectorPlotter):
         # Initialize the estimator object
         estimator = KDE(**estimate_kws)
 
-        cols = list(self.variables)
-        all_data = self.plot_data[cols].dropna()
+        all_data = self.plot_data.dropna()
 
         # TODO XXX adapt for facet variables
         if "hue" in self.variables:
 
             # Access and clean the data
-            all_observations = self.comp_data[cols].dropna()
+            all_observations = self.comp_data.dropna()
 
             # Define a single grid of support for the PDFs
             if common_grid:
@@ -265,7 +264,7 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[data_variable]
 
             observation_variance = observations.var()
@@ -346,17 +345,11 @@ class _DistributionPlotter(VectorPlotter):
         estimator = Histogram(**estimate_kws)
         histograms = {}
 
-        # Define relevant columns
-        # Note that this works around an issue in core that we can fix, and
-        # then we won't need this messiness.
-        # https://github.com/mwaskom/seaborn/issues/2135
-        cols = list(self.variables)
-
         # Do pre-compute housekeeping related to multiple groups
         # TODO best way to account for facet/semantic?
         if set(self.variables) - {"x", "y"}:
 
-            all_data = self.comp_data[cols].dropna()
+            all_data = self.comp_data.dropna()
 
             if common_bins:
                 all_observations = all_data[self.data_variable]
@@ -392,7 +385,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[self.data_variable]
 
             if "weights" in self.variables:
@@ -694,10 +687,7 @@ class _DistributionPlotter(VectorPlotter):
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
 
-        # None that we need to define cols because of some limitations in
-        # the core code, that are on track for resolution. (GH2135)
-        cols = list(self.variables)
-        all_data = self.comp_data[cols].dropna()
+        all_data = self.comp_data.dropna()
         weights = all_data.get("weights", None)
 
         # Do pre-compute housekeeping related to multiple groups
@@ -736,7 +726,7 @@ class _DistributionPlotter(VectorPlotter):
         # --- Loop over data (subsets) and draw the histograms
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
 
             if sub_data.empty:
                 continue
@@ -998,9 +988,7 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" not in self.variables:
             common_norm = False
 
-        # See other notes about GH2135
-        cols = list(self.variables)
-        all_data = self.plot_data[cols].dropna()
+        all_data = self.plot_data.dropna()
 
         # Loop through the subsets and estimate the KDEs
         densities, supports = {}, {}
@@ -1008,7 +996,7 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[["x", "y"]]
 
             # Extract the weights for this subset of observations
@@ -1152,9 +1140,6 @@ class _DistributionPlotter(VectorPlotter):
 
     def plot_univariate_ecdf(self, estimate_kws, legend, **plot_kws):
 
-        # TODO see notes elsewhere about GH2135
-        cols = list(self.variables)
-
         estimator = ECDF(**estimate_kws)
 
         # Set the draw style to step the right way for the data varible
@@ -1167,7 +1152,7 @@ class _DistributionPlotter(VectorPlotter):
         ):
 
             # Compute the ECDF
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             if sub_data.empty:
                 continue
 
