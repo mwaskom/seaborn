@@ -2161,10 +2161,16 @@ def distplot(
         # If we get here, we can initialize up the FacetGrid
         # Going forward, this will always happen
 
+        # TODO will this sometimes give us bum labels? need to test with arrays
+        data = p.plot_data.rename(columns=p.variables)
+
+        # TODO this won't work when col/row are simple arrays, not sure what's best
+        col_name = p.variables.get("col", None)
+        row_name = p.variables.get("row", None)
+
         # TODO need facet_kws and function-level params (height/aspect ...)
         # TODO also need to standardize what goes where for figure-level funcs
-        # TODO using plot_data might not always give us correct labels
-        g = FacetGrid(p.plot_data, col=col, row=row)
+        g = FacetGrid(data, col=col_name, row=row_name)
         p._attach(g)
 
     # Now we need to handle other aspects of the modernization of the distplot API
