@@ -586,6 +586,7 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
+                # TODO XXX breaks old code that allows line color to vary
                 line_kws["color"] = to_rgba(color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
@@ -2234,7 +2235,7 @@ def distplot(
     if norm_hist is not None:
         msg = (
             "The `norm_hist` parameter is deprecated. "
-            "Use the `statistic` parameter (when `kind='hist'`) instead."
+            "Use the `stat` parameter (when `kind='hist'`) instead."
         )
         warnings.warn(msg, UserWarning)
         # TODO XXX should we do anything?
@@ -2273,8 +2274,6 @@ def distplot(
         # - handle in histplot
         # - add a first-class function, fitplot or rvplot, etc.
 
-        # TODO XXX need to deprecate norm_hist (point towards stat?)
-
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
 
@@ -2298,12 +2297,39 @@ def distplot(
         if p.univariate:
 
             if "hue" not in p.variables:
-                hist_kws["color"] = color
+                hist_kws.setdefault("color", color)
 
-            # TODO XXX we need to deprecate kde when kind != "hist"
-            # TODO XXX what should the default be for kde?
+            # Handle splitting of kde estimation/plotting kws
+            # TODO This is tricky because we are deprecating kde_kws from the
+            # distplot signature but will continue to accept it as part of kwargs
+            # when kind=hist, but it will do sometihng different...
+            kde_est_kws = {}
+            kde_est_params = ["bw", "gridsize", "cut", "clip"]
+            kde_kws = {} if kde_kws is None else kde_kws
+            for param in kde_est_params:
+                if param in kde_kws:
+                    # TODO deprecation warning?
+                    # TODO also need to handle that some params work differently now
+                    # (e.g. bw -> bw_adjust)
+                    fit_kws[param] = kde_est_kws.pop(param)
+
+            # TODO should we handle depreceations of parameters for plt.hist,
+            # e.g. histtype?
+            if "histtype" in hist_kws:
+                histtype = hist_kws.pop("histtype")
+                if histtype == "step":
+                    fill, element = False, "step"
+                elif histtype == "stepfilled":
+                    fill, element = True, "step"
+                else:
+                    fill, element = True, "bar"
+                hist_kws.update(dict(fill=fill, element=element))
+
             hist_kws["kde"] = kde
-            hist_kws["kde_kws"] = kde_kws
+            hist_kws["kde_kws"] = kde_est_kws
+            if "line_kws" not in hist_kws:
+                hist_kws["line_kws"] = {}
+            hist_kws["line_kws"].update(kde_kws)
             # TODO XXX backcompat needs to handle kde_kws in orig distplot
             # going to kdeplot, now is distributed across kde_kws / line_kws
 
@@ -2330,7 +2356,7 @@ def distplot(
     elif kind == "kde":
 
         if kde_kws is not None:
-            # TODO XXX handle API hcange of kde_kws -> kwargs when kind=kde
+            # TODO XXX handle API change of kde_kws -> kwargs when kind=kde
             pass
         else:
             kde_kws = kwargs.copy()
