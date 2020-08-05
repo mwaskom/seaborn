@@ -2123,12 +2123,17 @@ def displot(
 
     _check_argument("kind", ["hist", "kde", "ecdf"], kind)
 
-    # TODO will this sometimes give us bum labels? need to test with arrays
+    # --- Initialize the FacetGrid object
+
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"@{var}"
+
+    # Adapt the plot_data dataframe for use with FacetGrid
     data = p.plot_data.rename(columns=p.variables)
     data = data.loc[:, ~data.columns.duplicated()]
 
-    # TODO this won't work when col/row are simple arrays;
-    # not sure what's best for handling that; some sort of _col_ shennanigans?
     col_name = p.variables.get("col", None)
     row_name = p.variables.get("row", None)
 
@@ -2142,14 +2147,26 @@ def displot(
     )
 
     # Now attach the axes object to the plotter object
-    # TODO need to handle allowed variable types based on plot kind
-    p._attach(g, log_scale=log_scale)
+    if kind == "kde":
+        allowed_types = ["numeric", "datetime"]
+    else:
+        allowed_types = None
+    p._attach(g, allowed_types=allowed_types, log_scale=log_scale)
 
-    # TODO XXX warn and pop on ax
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = (
+            "displot is a figure-level function and does not accept "
+            "the ax= paramter. You may wish to try {}".format(kind + "plot")
+        )
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
         return g
+
+    # --- Draw the plots
 
     if kind == "hist":
 
@@ -2251,7 +2268,7 @@ def displot(
 
     # All plot kinds can include a rug
     if rug:
-        # TODO with expand_margins=True, each facet expands margins...:w
+        # TODO with expand_margins=True, each facet expands margins... annoying!
         if rug_kws is None:
             rug_kws = {}
         _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
@@ -2260,8 +2277,7 @@ def displot(
         p.plot_rug(**rug_kws)
 
     # Call FacetGrid annotation methods
-    # TODO should the VectorPlotter dispatch axis labels to Axes or FacetGrid?
-    # TODO note that handling the legend is going to work differently
+    # Note that the legend is currently set inside the plotting method
     g.set_axis_labels(
         x_var=p.variables.get("x", None),
         y_var=p.variables.get("y", None),
