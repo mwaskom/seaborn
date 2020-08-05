@@ -41,42 +41,42 @@ class TestDistPlot(object):
     def test_hist_bins(self):
 
         fd_edges = np.histogram_bin_edges(self.x, "fd")
-        ax = distplot(x=self.x)
+        ax = distplot(self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        ax = distplot(x=self.x, bins=n)
+        ax = distplot(self.x, bins=n)
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
     def test_elements(self):
 
         n = 10
-        ax = distplot(x=self.x, bins=n,
+        ax = distplot(self.x, bins=n,
                       hist=True, kde=False, rug=False, fit=None)
         assert len(ax.patches) == 10
         assert len(ax.lines) == 0
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
-        ax = distplot(x=self.x,
+        ax = distplot(self.x,
                       hist=False, kde=True, rug=False, fit=None)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
-        ax = distplot(x=self.x,
+        ax = distplot(self.x,
                       hist=False, kde=False, rug=True, fit=None)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 0
         assert len(ax.collections) == 1
 
         plt.close(ax.figure)
-        ax = distplot(x=self.x,
+        ax = distplot(self.x,
                       hist=False, kde=False, rug=False, fit=stats.norm)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
@@ -87,8 +87,8 @@ class TestDistPlot(object):
         f, (ax1, ax2) = plt.subplots(2)
         x_null = np.append(self.x, [np.nan])
 
-        distplot(x=self.x, ax=ax1)
-        distplot(x=x_null, ax=ax2)
+        distplot(self.x, ax=ax1)
+        distplot(x_null, ax=ax2)
 
         line1 = ax1.lines[0]
         line2 = ax2.lines[0]
@@ -97,13 +97,6 @@ class TestDistPlot(object):
         for bar1, bar2 in zip(ax1.patches, ax2.patches):
             assert bar1.get_xy() == bar2.get_xy()
             assert bar1.get_height() == bar2.get_height()
-
-    def test_a_parameter_deprecation(self):
-
-        n = 10
-        with pytest.warns(UserWarning):
-            ax = distplot(a=self.x, bins=n)
-        assert len(ax.patches) == n
 
 
 class TestRugPlot:
