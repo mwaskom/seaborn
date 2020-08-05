@@ -446,7 +446,7 @@ class _DistributionPlotter(VectorPlotter):
         # TODO and now with the ax business, this is just super annoying FIX!!
         if "hue" not in self.variables:
             if self.ax is None:
-                default_color = plot_kws.pop("color", plot_kws.pop("facecolor", "C0"))
+                default_color = "C0" if color is None else color
             else:
                 if fill:
                     if self.var_types[self.data_variable] == "datetime":
@@ -877,7 +877,7 @@ class _DistributionPlotter(VectorPlotter):
         # Handle default visual attributes
         if "hue" not in self.variables:
             if self.ax is None:
-                default_color = plot_kws.pop("color", plot_kws.pop("facecolor", "C0"))
+                default_color = plot_kws.pop("color", "C0")
             else:
                 if fill:
                     if self.var_types[self.data_variable] == "datetime":
@@ -1231,6 +1231,7 @@ class _DistributionPlotter(VectorPlotter):
 
             kws.setdefault("linewidth", 1)
 
+            # TODO FIXME This expands all margins for each facet, not what we want...
             if expand_margins:
                 xmarg, ymarg = ax.margins()
                 if "x" in self.variables:
@@ -2093,13 +2094,24 @@ Examples
 def distplot(
     *,
     x=None,
+
+    # Deprecated approach to flexible visualization kind
     bins=None, hist=True, kde=True, rug=False, fit=None,
     hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-    color=None, vertical=None, norm_hist=None, axlabel=None,
+
+    color=None,
+
+    # Other deprecated parameters
+    vertical=None, norm_hist=None, axlabel=None,
+
     ax=None,
+
+    # New parameters
     data=None, y=None, hue=None, col=None, row=None,
     palette=None, hue_order=None, hue_norm=None,
     kind="hist", log_scale=None,
+
+    # Renamed parameter, x keeps original position for now
     a=None,
     **kwargs,
 ):
@@ -2155,7 +2167,7 @@ def distplot(
             "for now, but consider using {kind}plot if you need axes-level control."
         ).format(kind=kind)
         warnings.warn(msg, FutureWarning)
-        p._attach(ax)
+        ax_obj = ax
         g = None
 
     elif plt.get_fignums() and not facet_vars:
@@ -2169,7 +2181,7 @@ def distplot(
             "version. Consider using {kind}plot if you need axes-level control."
         ).format(kind=kind)
         warnings.warn(msg, FutureWarning)
-        p._attach(ax)
+        ax_obj = ax
         g = None
 
     else:
@@ -2188,7 +2200,11 @@ def distplot(
         # TODO need facet_kws and function-level params (height/aspect ...)
         # TODO also need to standardize what goes where for figure-level funcs
         g = FacetGrid(data, col=col_name, row=row_name)
-        p._attach(g)
+        ax_obj = g
+
+    # Now attach the axes object to the plotter object
+    # TODO need to handle allowed types based on plot kind
+    p._attach(ax_obj, log_scale=log_scale)
 
     # Now we need to handle other aspects of the modernization of the distplot API
     # Generally speaking, for v0.11.0 we will try to minimize disruptions to the
@@ -2281,9 +2297,8 @@ def distplot(
 
         if p.univariate:
 
-            # TODO skipping for now
-            # if "hue" not in p.variables:
-            #    kwargs["color"] = color
+            if "hue" not in p.variables:
+                hist_kws["color"] = color
 
             # TODO XXX we need to deprecate kde when kind != "hist"
             # TODO XXX what should the default be for kde?
@@ -2333,6 +2348,7 @@ def distplot(
             estimate_kws[key] = kde_kws.pop(key, default_val)
 
         kde_kws["estimate_kws"] = estimate_kws
+        kde_kws["color"] = color
 
         if p.univariate:
 
@@ -2357,6 +2373,7 @@ def distplot(
             estimate_kws[key] = ecdf_kws.pop(key, default_val)
 
         ecdf_kws["estimate_kws"] = estimate_kws
+        ecdf_kws["color"] = color
 
         if p.univariate:
 
@@ -2369,10 +2386,12 @@ def distplot(
 
     # All plot kinds can include a rug
     if rug:
+        # TODO with expand_margins=True, each facet expands margins...:w
         if rug_kws is None:
             rug_kws = {}
         _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
         rug_kws["legend"] = False
+        rug_kws["color"] = color
         p.plot_rug(**rug_kws)
 
     # Don't do any further modification if we are in axes-level mode
