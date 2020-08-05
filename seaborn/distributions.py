@@ -2089,16 +2089,16 @@ Examples
 def displot(
     data=None, *,
     # Vector variables
-    x=None, y=None, hue=None, col=None, row=None,
-
-    kind="hist",  # TODO add facet parameters here?
-
+    x=None, y=None, hue=None, row=None, col=None,
+    # Other axes parameters
+    kind="hist", rug=False, rug_kws=None, log_scale=None,
     # Hue-mapping parameters
     palette=None, hue_order=None, hue_norm=None, color=None,
+    # Faceting parameters
+    col_wrap=None, row_order=None, col_order=None,
+    height=5, aspect=1, facet_kws=None,
 
-    # Other axes parameters
-    log_scale=None, rug=False, rug_kws=None,
-
+    legend=True,
     **kwargs,
 ):
 
@@ -2118,13 +2118,19 @@ def displot(
     data = p.plot_data.rename(columns=p.variables)
     data = data.loc[:, ~data.columns.duplicated()]
 
-    # TODO this won't work when col/row are simple arrays, not sure what's best
+    # TODO this won't work when col/row are simple arrays;
+    # not sure what's best for handling that; some sort of _col_ shennanigans?
     col_name = p.variables.get("col", None)
     row_name = p.variables.get("row", None)
 
-    # TODO need facet_kws and function-level params (height/aspect ...)
-    # TODO also need to standardize what goes where for figure-level funcs
-    g = FacetGrid(data, col=col_name, row=row_name)
+    if facet_kws is None:
+        facet_kws = {}
+
+    g = FacetGrid(
+        data=data, row=row_name, col=col_name,
+        height=height, aspect=aspect,
+        **facet_kws,
+    )
 
     # Now attach the axes object to the plotter object
     # TODO need to handle allowed variable types based on plot kind
