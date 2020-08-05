@@ -146,10 +146,17 @@ class HueMapping(SemanticMapping):
         except KeyError:
             # Use the colormap to interpolate between existing datapoints
             # (e.g. in the context of making a continuous legend)
-            normed = self.norm(key)
-            if np.ma.is_masked(normed):
-                normed = np.nan
-            value = self.cmap(normed)
+            try:
+                normed = self.norm(key)
+            except TypeError as err:
+                if np.isnan(key):
+                    value = (0, 0, 0, 0)
+                else:
+                    raise err
+            else:
+                if np.ma.is_masked(normed):
+                    normed = np.nan
+                value = self.cmap(normed)
         return value
 
     def infer_map_type(self, palette, norm, input_format, var_type):
