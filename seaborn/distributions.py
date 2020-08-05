@@ -2271,6 +2271,9 @@ def displot(
 
 
 # =========================================================================== #
+# DEPRECATED FUNCTIONS LIVE BELOW HERE
+# =========================================================================== #
+
 
 def _freedman_diaconis_bins(a):
     """Calculate number of hist bins using Freedman-Diaconis rule."""
@@ -2286,15 +2289,11 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-def distplot(
-    x=None,
-    bins=None, hist=True, kde=True, rug=False, fit=None,
-    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-    color=None, vertical=False, norm_hist=False, axlabel=None,
-    label=None, ax=None, a=None,
-):
+def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
+             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+             color=None, vertical=False, norm_hist=False, axlabel=None,
+             label=None, ax=None):
     """Flexibly plot a univariate distribution of observations.
-
     This function combines the matplotlib ``hist`` function (with automatic
     calculation of a good default bin size) with the seaborn :func:`kdeplot`
     and :func:`rugplot` functions. It can also fit ``scipy.stats``
@@ -2302,8 +2301,7 @@ def distplot(
 
     Parameters
     ----------
-
-    x : Series, 1d-array, or list.
+    a : Series, 1d-array, or list.
         Observed data. If this is a Series object with a ``name`` attribute,
         the name will be used to label the data axis.
     bins : argument for matplotlib hist(), or None, optional
@@ -2360,71 +2358,56 @@ def distplot(
 
     .. plot::
         :context: close-figs
-
         >>> import seaborn as sns, numpy as np
         >>> sns.set(); np.random.seed(0)
         >>> x = np.random.randn(100)
-        >>> ax = sns.distplot(x=x)
+        >>> ax = sns.distplot(x)
 
     Use Pandas objects to get an informative axis label:
 
     .. plot::
         :context: close-figs
-
         >>> import pandas as pd
         >>> x = pd.Series(x, name="x variable")
-        >>> ax = sns.distplot(x=x)
+        >>> ax = sns.distplot(x)
 
     Plot the distribution with a kernel density estimate and rug plot:
 
     .. plot::
         :context: close-figs
-
-        >>> ax = sns.distplot(x=x, rug=True, hist=False)
+        >>> ax = sns.distplot(x, rug=True, hist=False)
 
     Plot the distribution with a histogram and maximum likelihood gaussian
     distribution fit:
 
     .. plot::
         :context: close-figs
-
         >>> from scipy.stats import norm
-        >>> ax = sns.distplot(x=x, fit=norm, kde=False)
+        >>> ax = sns.distplot(x, fit=norm, kde=False)
 
     Plot the distribution on the vertical axis:
 
     .. plot::
         :context: close-figs
-
-        >>> ax = sns.distplot(x=x, vertical=True)
+        >>> ax = sns.distplot(x, vertical=True)
 
     Change the color of all the plot elements:
 
     .. plot::
         :context: close-figs
-
         >>> sns.set_color_codes()
-        >>> ax = sns.distplot(x=x, color="y")
+        >>> ax = sns.distplot(x, color="y")
 
     Pass specific parameters to the underlying plot functions:
 
     .. plot::
         :context: close-figs
-
-        >>> ax = sns.distplot(x=x, rug=True, rug_kws={"color": "g"},
+        >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
         ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
         ...                   hist_kws={"histtype": "step", "linewidth": 3,
         ...                             "alpha": 1, "color": "g"})
 
     """
-    # Handle deprecation of ``a```
-    if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg)
-    else:
-        a = x
-
-    # Default to drawing on the currently-active axes
     if ax is None:
         ax = plt.gca()
 
@@ -2487,14 +2470,14 @@ def distplot(
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(x=a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
         if kde_color != color:
             kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
         axis = "y" if vertical else "x"
-        rugplot(x=a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
 
