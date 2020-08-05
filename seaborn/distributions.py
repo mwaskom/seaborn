@@ -2293,7 +2293,17 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, norm_hist=False, axlabel=None,
              label=None, ax=None):
-    """Flexibly plot a univariate distribution of observations.
+    """DEPRECATED: Flexibly plot a univariate distribution of observations.
+
+    .. warning::
+       This function is deprecated and will be removed in a future version.
+       Please adapt your code to use one of two new functions:
+
+       - :func:`displot`, a figure-level function with a similar flexibility
+         over the kind of plot to draw
+       - :func:`histplot`, an axes-level function for plotting histograms,
+         including with kernel density smoothing
+
     This function combines the matplotlib ``hist`` function (with automatic
     calculation of a good default bin size) with the seaborn :func:`kdeplot`
     and :func:`rugplot` functions. It can also fit ``scipy.stats``
@@ -2358,6 +2368,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> import seaborn as sns, numpy as np
         >>> sns.set(); np.random.seed(0)
         >>> x = np.random.randn(100)
@@ -2367,6 +2378,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> import pandas as pd
         >>> x = pd.Series(x, name="x variable")
         >>> ax = sns.distplot(x)
@@ -2375,6 +2387,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> ax = sns.distplot(x, rug=True, hist=False)
 
     Plot the distribution with a histogram and maximum likelihood gaussian
@@ -2382,6 +2395,7 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> from scipy.stats import norm
         >>> ax = sns.distplot(x, fit=norm, kde=False)
 
@@ -2389,11 +2403,13 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> ax = sns.distplot(x, vertical=True)
 
     Change the color of all the plot elements:
 
     .. plot::
+
         :context: close-figs
         >>> sns.set_color_codes()
         >>> ax = sns.distplot(x, color="y")
@@ -2402,12 +2418,21 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     .. plot::
         :context: close-figs
+
         >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
         ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
         ...                   hist_kws={"histtype": "step", "linewidth": 3,
         ...                             "alpha": 1, "color": "g"})
 
     """
+
+    msg = (
+        "`distplot` is a deprecated function and will be removed in a future version. "
+        "Please adapt your code to use either `displot` (a figure-level function with "
+        "similar flexibility) or `histplot` (an axes-level function for histograms)."
+    )
+    warnings.warn(msg, FutureWarning)
+
     if ax is None:
         ax = plt.gca()
 
