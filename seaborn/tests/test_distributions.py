@@ -41,44 +41,43 @@ class TestDistPlot(object):
     def test_hist_bins(self):
 
         fd_edges = np.histogram_bin_edges(self.x, "fd")
-        ax = distplot(x=self.x).ax
+        ax = distplot(x=self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        ax = distplot(x=self.x, bins=n).ax
+        ax = distplot(x=self.x, bins=n)
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
-    @pytest.mark.xfail()
     def test_elements(self):
 
         n = 10
         ax = distplot(x=self.x, bins=n,
-                      hist=True, kde=False, rug=False, fit=None).ax
+                      hist=True, kde=False, rug=False, fit=None)
         assert len(ax.patches) == 10
         assert len(ax.lines) == 0
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
         ax = distplot(x=self.x,
-                      hist=False, kde=True, rug=False, fit=None).ax
+                      hist=False, kde=True, rug=False, fit=None)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
 
         plt.close(ax.figure)
         ax = distplot(x=self.x,
-                      hist=False, kde=False, rug=True, fit=None).ax
+                      hist=False, kde=False, rug=True, fit=None)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 0
         assert len(ax.collections) == 1
 
         plt.close(ax.figure)
         ax = distplot(x=self.x,
-                      hist=False, kde=False, rug=False, fit=stats.norm).ax
+                      hist=False, kde=False, rug=False, fit=stats.norm)
         assert len(ax.patches) == 0
         assert len(ax.lines) == 1
         assert len(ax.collections) == 0
@@ -103,7 +102,7 @@ class TestDistPlot(object):
 
         n = 10
         with pytest.warns(UserWarning):
-            ax = distplot(a=self.x, bins=n).ax
+            ax = distplot(a=self.x, bins=n)
         assert len(ax.patches) == n
 
 

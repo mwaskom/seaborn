@@ -35,7 +35,7 @@ from ._docstrings import (
 )
 
 
-__all__ = ["distplot", "histplot", "kdeplot", "ecdfplot", "rugplot"]
+__all__ = ["displot", "histplot", "kdeplot", "ecdfplot", "rugplot", "distplot"]
 
 # ==================================================================================== #
 # Module documentation
@@ -461,13 +461,13 @@ class _DistributionPlotter(VectorPlotter):
                     else:
                         artist = mpl.patches.Rectangle
                         plot_kws = _normalize_kwargs(plot_kws, artist)
-                        scout = self.ax.fill_between([], [], **plot_kws)
+                        scout = self.ax.fill_between([], [], color=color, **plot_kws)
                         default_color = tuple(scout.get_facecolor().squeeze())
                         plot_kws.pop("color", None)
                 else:
                     artist = mpl.lines.Line2D
                     plot_kws = _normalize_kwargs(plot_kws, artist)
-                    scout, = self.ax.plot([], [], **plot_kws)
+                    scout, = self.ax.plot([], [], color=color, **plot_kws)
                     default_color = scout.get_color()
                 if scout is not None:
                     scout.remove()
@@ -1374,10 +1374,6 @@ def histplot(
 
     if p.univariate:
 
-        # TODO XXX causing problems
-        # if "hue" not in p.variables:
-        #     kwargs["color"] = color
-
         p.plot_univariate_histogram(
             multiple=multiple,
             element=element,
@@ -2090,50 +2086,24 @@ Examples
 )
 
 
-# TODO XXX commenting out because it interferes with autoreload
-# @_deprecate_positional_args
-def distplot(
-    *,
-    x=None,
+def displot(
+    data=None, *,
+    # Vector variables
+    x=None, y=None, hue=None, col=None, row=None,
 
-    # Deprecated approach to flexible visualization kind
-    bins=None, hist=True, kde=True, rug=False, fit=None,
-    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+    kind="hist",  # TODO add facet parameters here?
 
-    color=None,
+    # Hue-mapping parameters
+    palette=None, hue_order=None, hue_norm=None, color=None,
 
-    # Other deprecated parameters
-    vertical=None, norm_hist=None, axlabel=None,
+    # Other axes parameters
+    log_scale=None, rug=False, rug_kws=None,
 
-    ax=None,
-
-    # New parameters
-    data=None, y=None, hue=None, col=None, row=None,
-    palette=None, hue_order=None, hue_norm=None,
-    kind="hist", log_scale=None,
-
-    # Renamed parameter, x keeps original position for now
-    a=None,
     **kwargs,
 ):
 
     # Avoid circular import
     from .axisgrid import FacetGrid
-
-    # Handle deprecation of `a` as the only data parameter (needs to happen early)
-    if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg)
-        x = a
-
-    if vertical is not None:
-        msg = (
-            "Using `vertical=True` to control the orientation of the plot  "
-            "is deprecated. Instead, assign the data directly to `y`. "
-        )
-        warnings.warn(msg, FutureWarning)
-        if vertical:
-            x, y = None, x
 
     p = _DistributionFacetPlotter(
         data=data,
@@ -2144,136 +2114,33 @@ def distplot(
 
     _check_argument("kind", ["hist", "kde", "ecdf"], kind)
 
-    # ----------------------------------------------------------------------------
-    # Handle modernization of distplot API and conversation to figure-level function
+    # TODO will this sometimes give us bum labels? need to test with arrays
+    data = p.plot_data.rename(columns=p.variables)
+    data = data.loc[:, ~data.columns.duplicated()]
 
-    # distplot was previously an axes-level function and has been transitioned
-    # to a figure-level function. That means that we need we need a couple of
-    # deprecation cycles to handle backwards compatability. Our approach is
-    # going to be to start by allowing an axes-level specification as long as
-    # it makes sense (i.e. there are no faceting variables). We will warn about
-    # the change, but otherwise draw the plot directly onto the axes. The
-    # easiest case is when the `ax` kwarg is used. The trickier case is when
-    # the caller was using the state-machine interface. In the latter case, we
-    # are going to check for open figures and use the active axes.
+    # TODO this won't work when col/row are simple arrays, not sure what's best
+    col_name = p.variables.get("col", None)
+    row_name = p.variables.get("row", None)
 
-    facet_vars = {"col", "row"} & set(p.variables)
-    if ax is not None:
-        if facet_vars:
-            err = f"Facet variables ({facet_vars}) cannot be used with specified `ax`."
-            raise ValueError(err)
-        msg = (
-            "distplot is now a figure-level function, and support for specifying "
-            "`ax` will be removed in a future version. Plotting onto your Axes "
-            "for now, but consider using {kind}plot if you need axes-level control."
-        ).format(kind=kind)
-        warnings.warn(msg, FutureWarning)
-        ax_obj = ax
-        g = None
-
-    elif plt.get_fignums() and not facet_vars:
-        # TODO what about when facet variables are present and there is an open
-        # figure? With other figure-level plots we would just create a new figure.
-        ax = plt.gca()
-        msg = (
-            "distplot is now a figure-level function, and in the future it will "
-            "always create its own figure. Because there is an open figure, the "
-            "plot will be drawn onto the current axes; this will change in a future "
-            "version. Consider using {kind}plot if you need axes-level control."
-        ).format(kind=kind)
-        warnings.warn(msg, FutureWarning)
-        ax_obj = ax
-        g = None
-
-    else:
-
-        # If we get here, we can initialize up the FacetGrid
-        # Going forward, this will always happen
-
-        # TODO will this sometimes give us bum labels? need to test with arrays
-        data = p.plot_data.rename(columns=p.variables)
-        data = data.loc[:, ~data.columns.duplicated()]
-
-        # TODO this won't work when col/row are simple arrays, not sure what's best
-        col_name = p.variables.get("col", None)
-        row_name = p.variables.get("row", None)
-
-        # TODO need facet_kws and function-level params (height/aspect ...)
-        # TODO also need to standardize what goes where for figure-level funcs
-        g = FacetGrid(data, col=col_name, row=row_name)
-        ax_obj = g
+    # TODO need facet_kws and function-level params (height/aspect ...)
+    # TODO also need to standardize what goes where for figure-level funcs
+    g = FacetGrid(data, col=col_name, row=row_name)
 
     # Now attach the axes object to the plotter object
-    # TODO need to handle allowed types based on plot kind
-    p._attach(ax_obj, log_scale=log_scale)
+    # TODO need to handle allowed variable types based on plot kind
+    p._attach(g, log_scale=log_scale)
 
-    # Now we need to handle other aspects of the modernization of the distplot API
-    # Generally speaking, for v0.11.0 we will try to minimize disruptions to the
-    # function signature. In v0.12, we parameters will become keyword-only, at which
-    # point we can reorganize the parameter list and remove deprecated parameters,
-    # pulling them out of kwargs and warning/handling. In v0.13 or v0.14 (depending
-    # on release tempo), the old API can be fully expunged.
-
-    # Ease conversion from previous approach to flexibility over plot kind
-    if kde and not hist:
-        msg = (
-            "Setting `hist=False, kde=True` is deprecated; "
-            "use `kind='kde'` instead. This will raise in the future."
-        )
-        warnings.warn(msg, FutureWarning)
-        kind = "kde"
-
-    if rug and not (hist or kde):
-        msg = (
-            "Using `distplot` to draw only a rug plot is deprecated "
-            "and will raise in the future."
-        )
-        warnings.warn(msg, FutureWarning)
-        kind = None
-
-    # Handle deprecations of other now-unused parameters
-    if norm_hist is not None:
-        msg = (
-            "The `norm_hist` parameter is deprecated. "
-            "Use the `stat` parameter (when `kind='hist'`) instead."
-        )
-        warnings.warn(msg, UserWarning)
-        # TODO XXX should we do anything?
-
-    if axlabel is not None:
-        msg = (
-            "The `axlabel` parameter is deprecated. "
-            "Use the `set_axis_labels` method on the `FacetGrid` object instead."
-        )
-        warnings.warn(msg, UserWarning)
-        # TODO XXX should we do anything?
+    # TODO XXX warn and pop on ax
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
-        if g is None:
-            return ax
-        else:
-            return g
+        return g
 
     if kind == "hist":
 
-        if hist_kws is not None:
-            # TODO handle API change of hist_kws -> kwargs when kind=hist
-            pass
-        else:
-            hist_kws = kwargs.copy()
+        hist_kws = kwargs.copy()
 
         # Extract the parameters that will go directly to Histogram
-
-        if bins is not None:
-            hist_kws["bins"] = bins
-
-        # TODO XXX what to do about fit=?
-        # - remove with no deprecation
-        # - handle in new distplot
-        # - handle in histplot
-        # - add a first-class function, fitplot or rvplot, etc.
-
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
 
@@ -2299,55 +2166,21 @@ def distplot(
             if "hue" not in p.variables:
                 hist_kws.setdefault("color", color)
 
-            # Handle splitting of kde estimation/plotting kws
-            # TODO This is tricky because we are deprecating kde_kws from the
-            # distplot signature but will continue to accept it as part of kwargs
-            # when kind=hist, but it will do sometihng different...
-            kde_est_kws = {}
-            kde_est_params = ["bw", "gridsize", "cut", "clip"]
-            kde_kws = {} if kde_kws is None else kde_kws
-            for param in kde_est_params:
-                if param in kde_kws:
-                    # TODO deprecation warning?
-                    # TODO also need to handle that some params work differently now
-                    # (e.g. bw -> bw_adjust)
-                    fit_kws[param] = kde_est_kws.pop(param)
-
-            # TODO should we handle depreceations of parameters for plt.hist,
-            # e.g. histtype?
-            if "histtype" in hist_kws:
-                histtype = hist_kws.pop("histtype")
-                if histtype == "step":
-                    fill, element = False, "step"
-                elif histtype == "stepfilled":
-                    fill, element = True, "step"
-                else:
-                    fill, element = True, "bar"
-                hist_kws.update(dict(fill=fill, element=element))
-
-            hist_kws["kde"] = kde
-            hist_kws["kde_kws"] = kde_est_kws
-            if "line_kws" not in hist_kws:
-                hist_kws["line_kws"] = {}
-            hist_kws["line_kws"].update(kde_kws)
-            # TODO XXX backcompat needs to handle kde_kws in orig distplot
-            # going to kdeplot, now is distributed across kde_kws / line_kws
-
-            # TODO XXX handle defaults
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
 
-            # TODO this should be handled inside method
-            for comp in ["kde", "line"]:
-                if hist_kws.get(f"{comp}_kws", None) is None:
-                    hist_kws[f"{comp}_kws"] = {}
+            # TODO move this logic into the method
+            if hist_kws.get("kde_kws", None) is None:
+                hist_kws["kde_kws"] = {}
+            if hist_kws.get("line_kws", None) is None:
+                hist_kws["line_kws"] = {}
 
             p.plot_univariate_histogram(**hist_kws)
 
         else:
 
-            # TODO XXX as above
             _assign_default_kwargs(hist_kws, p.plot_bivariate_histogram, histplot)
 
+            # TODO move this logic into the method
             if hist_kws.get("cbar_kws", None) is None:
                 hist_kws["cbar_kws"] = {}
 
@@ -2355,17 +2188,9 @@ def distplot(
 
     elif kind == "kde":
 
-        if kde_kws is not None:
-            # TODO XXX handle API change of kde_kws -> kwargs when kind=kde
-            pass
-        else:
-            kde_kws = kwargs.copy()
-
-        # TODO XXX need to handle various kde deprecations here too
-        # (e.g. shade -> fill)
+        kde_kws = kwargs.copy()
 
         # Extract the parameters that will go directly to KDE
-        # TODO could generalize this instead of repeating for each kind=?
         estimate_defaults = {}
         _assign_default_kwargs(estimate_defaults, KDE.__init__, kdeplot)
 
@@ -2388,7 +2213,6 @@ def distplot(
 
     elif kind == "ecdf":
 
-        # TODO This kind is new, so less needs to be handled
         ecdf_kws = kwargs.copy()
 
         # Extract the parameters that will go directly to the estimator
@@ -2420,14 +2244,7 @@ def distplot(
         rug_kws["color"] = color
         p.plot_rug(**rug_kws)
 
-    # Don't do any further modification if we are in axes-level mode
-    # This will be removed when axes-level distplot is deprecated
-    if g is None:
-        return ax
-    if g is None:
-        return ax
-
-    # TODO call FacetGrid annotation methods
+    # Call FacetGrid annotation methods
     # TODO should the VectorPlotter dispatch axis labels to Axes or FacetGrid?
     # TODO note that handling the legend is going to work differently
     g.set_axis_labels(
@@ -2456,9 +2273,7 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-@_deprecate_positional_args
-def distplot_old(
-    *,
+def distplot(
     x=None,
     bins=None, hist=True, kde=True, rug=False, fit=None,
     hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
