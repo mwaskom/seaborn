@@ -905,6 +905,8 @@ class VectorPlotter:
             Subset of ``plot_data`` for this combination of semantic values.
 
         """
+        # TODO should this default to using all (non x/y?) semantics?
+        # or define groupping vars somewhere?
         if grouping_vars is None:
             grouping_vars = []
         elif isinstance(grouping_vars, str):

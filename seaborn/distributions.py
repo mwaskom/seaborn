@@ -2289,10 +2289,10 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
+def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
              hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
              color=None, vertical=False, norm_hist=False, axlabel=None,
-             label=None, ax=None):
+             label=None, ax=None, x=None):
     """DEPRECATED: Flexibly plot a univariate distribution of observations.
 
     .. warning::
@@ -2442,6 +2442,10 @@ def distplot(a, bins=None, hist=True, kde=True, rug=False, fit=None,
         axlabel = a.name
         if axlabel is not None:
             label_ax = True
+
+    # Support new-style API
+    if x is not None:
+        a = x
 
     # Make a a 1-d float array
     a = np.asarray(a, np.float)
