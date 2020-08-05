@@ -126,7 +126,7 @@ class _DistributionPlotter(VectorPlotter):
 
     def _add_legend(
         self,
-        ax, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
+        ax_obj, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
     ):
         """Add artists that reflect semantic mappings and put then in a legend."""
         # TODO note that this doesn't handle numeric mappngs the way relational plots do
@@ -141,7 +141,16 @@ class _DistributionPlotter(VectorPlotter):
             ))
             labels.append(level)
 
-        ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+        if isinstance(ax_obj, mpl.axes.Axes):
+            ax_obj.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+        else:  # i.e. a FacetGrid. TODO make this better
+            legend_data = dict(zip(labels, handles))
+            ax_obj.add_legend(
+                legend_data,
+                title=self.variables["hue"],
+                label_order=self.var_levels["hue"],
+                **legend_kws
+            )
 
     def _artist_kws(self, kws, fill, element, multiple, color, alpha):
         """Handle differences between artists in filled/unfilled plots."""
@@ -649,13 +658,8 @@ class _DistributionPlotter(VectorPlotter):
 
         # --- Finalize the plot ----
 
-        # TODO XXX FIXME need to sort out how to generalize this
-        if self.ax is None:
-            ax = self.facets.axes.flat[0]
-        else:
-            ax = self.ax
-
         # Axis labels
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         default_x = default_y = ""
         if self.data_variable == "x":
             default_y = estimator.stat.capitalize()
@@ -671,8 +675,9 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, element, multiple, alpha, plot_kws, {},
+                ax_obj, artist, fill, element, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate_histogram(
@@ -810,6 +815,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # --- Finalize the plot
 
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         self._add_axis_labels(ax)
 
         if "hue" in self.variables and legend:
@@ -820,8 +826,9 @@ class _DistributionPlotter(VectorPlotter):
 
             artist_kws = {}
             artist = partial(mpl.patches.Patch)
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, True, False, "layer", 1, artist_kws, {},
+                ax_obj, artist, True, False, "layer", 1, artist_kws, {},
             )
 
     def plot_univariate_density(
@@ -955,12 +962,7 @@ class _DistributionPlotter(VectorPlotter):
 
         # --- Finalize the plot ----
 
-        # TODO XXX FIXME need to sort out how to generalize this
-        if self.ax is None:
-            ax = self.facets.axes.flat[0]
-        else:
-            ax = self.ax
-
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         default_x = default_y = ""
         if self.data_variable == "x":
             default_y = "Density"
@@ -975,8 +977,9 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, False, multiple, alpha, plot_kws, {},
+                ax_obj, artist, fill, False, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate_density(
@@ -1133,6 +1136,7 @@ class _DistributionPlotter(VectorPlotter):
                 ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
         # --- Finalize the plot
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         self._add_axis_labels(ax)
 
         if "hue" in self.variables and legend:
@@ -1147,8 +1151,9 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, False, "layer", 1, artist_kws, {},
+                ax_obj, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
     def plot_univariate_ecdf(self, estimate_kws, legend, **plot_kws):
@@ -1198,6 +1203,7 @@ class _DistributionPlotter(VectorPlotter):
             sticky_edges[:] = 0, top_edge
 
         # --- Finalize the plot ----
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         stat = estimator.stat.capitalize()
         default_x = default_y = ""
         if self.data_variable == "x":
@@ -1209,8 +1215,9 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" in self.variables and legend:
             artist = partial(mpl.lines.Line2D, [], [])
             alpha = plot_kws.get("alpha", 1)
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, False, False, None, alpha, plot_kws, {},
+                ax_obj, artist, False, False, None, alpha, plot_kws, {},
             )
 
     def plot_rug(self, height, expand_margins, legend, **kws):
