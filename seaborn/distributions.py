@@ -907,6 +907,8 @@ class _DistributionPlotter(VectorPlotter):
                 if scout is not None:
                     scout.remove()
 
+        plot_kws.pop("color", None)
+
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
@@ -2135,7 +2137,7 @@ def displot(
 
     g = FacetGrid(
         data=data, row=row_name, col=col_name,
-        height=height, aspect=aspect,
+        col_wrap=col_wrap, height=height, aspect=aspect,
         **facet_kws,
     )
 
