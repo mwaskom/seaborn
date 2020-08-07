@@ -43,11 +43,12 @@ Distribution plots
 .. autosummary::
     :toctree: generated/
 
-    distplot
+    displot
     histplot
     ecdfplot
     kdeplot
     rugplot
+    distplot
 
 .. _regression_api:
 

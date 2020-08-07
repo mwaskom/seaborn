@@ -1544,6 +1544,9 @@ specific locations where the bins should break.
 Examples
 --------
 
+See the API documentation for the axes-level functions for more details
+about the breadth of options available for each plot kind.
+
 .. include:: ../docstrings/histplot.rst
 
 """.format(
@@ -2110,7 +2113,6 @@ def displot(
     # Faceting parameters
     col_wrap=None, row_order=None, col_order=None,
     height=5, aspect=1, facet_kws=None,
-
     **kwargs,
 ):
 
@@ -2273,7 +2275,8 @@ def displot(
             rug_kws = {}
         _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
         rug_kws["legend"] = False
-        rug_kws["color"] = color
+        if color is not None:
+            rug_kws["color"] = color
         p.plot_rug(**rug_kws)
 
     # Call FacetGrid annotation methods
@@ -2298,8 +2301,8 @@ defined by semantic mapping and faceting across multiple subplots. The
 ``kind`` parameter selects the approach to use:
 
 - :func:`histplot` (with ``kind="hist"``; the default)
-- :func:`kdeplot` (with ``kind="kde")
-- :func:`ecdfplot (with ``kind="ecdf"; univariate-only)
+- :func:`kdeplot` (with ``kind="kde"``)
+- :func:`ecdfplot` (with ``kind="ecdf"``; univariate-only)
 
 Additionally, a :func:`rugplot` can be added to any kind of plot to show
 individual observations.
