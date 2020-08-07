@@ -20,6 +20,10 @@ from ._statistics import (
     Histogram,
     ECDF,
 )
+from .axisgrid import (
+    FacetGrid,
+    _facet_docs,
+)
 from .utils import (
     remove_na,
     _kde_support,
@@ -74,7 +78,7 @@ cbar_kws : dict
 
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
-    facets=_core_docs["facets"],
+    facets=DocstringComponents(_facet_docs),
     dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
@@ -2110,9 +2114,6 @@ def displot(
     **kwargs,
 ):
 
-    # Avoid circular import
-    from .axisgrid import FacetGrid
-
     p = _DistributionFacetPlotter(
         data=data,
         variables=_DistributionFacetPlotter.get_semantics(locals())
@@ -2360,7 +2361,11 @@ Examples
 
 .. include:: ../docstrings/displot.rst
 
-"""
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 # =========================================================================== #

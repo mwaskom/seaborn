@@ -107,7 +107,7 @@ _core_returns = dict(
     """,
     facetgrid="""
 :class:`FacetGrid`
-    An object that manages one or more subplots that correspond to conditional data
+    An object managing one or more subplots that correspond to conditional data
     subsets with convenient methods for batch-setting of axes attributes.
     """,
 )
