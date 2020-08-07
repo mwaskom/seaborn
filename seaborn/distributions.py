@@ -74,6 +74,7 @@ cbar_kws : dict
 
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
+    facets=_core_docs["facets"],
     dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
@@ -1514,11 +1515,11 @@ Returns
 
 See Also
 --------
+{seealso.displot}
 {seealso.kdeplot}
 {seealso.rugplot}
 {seealso.ecdfplot}
 {seealso.jointplot}
-distplot
 
 Notes
 -----
@@ -1821,12 +1822,11 @@ Returns
 
 See Also
 --------
-{seealso.violinplot}
+{seealso.displot}
 {seealso.histplot}
 {seealso.ecdfplot}
-{seealso.rugplot}
 {seealso.jointplot}
-distplot
+{seealso.violinplot}
 
 Notes
 -----
@@ -1960,10 +1960,10 @@ Returns
 
 See Also
 --------
+{seealso.displot}
 {seealso.histplot}
 {seealso.kdeplot}
 {seealso.rugplot}
-distplot
 
 Examples
 --------
@@ -2099,15 +2099,14 @@ def displot(
     data=None, *,
     # Vector variables
     x=None, y=None, hue=None, row=None, col=None,
-    # Other axes parameters
-    kind="hist", rug=False, rug_kws=None, log_scale=None,
+    # Other plot parameters
+    kind="hist", rug=False, rug_kws=None, log_scale=None, legend=True,
     # Hue-mapping parameters
     palette=None, hue_order=None, hue_norm=None, color=None,
     # Faceting parameters
     col_wrap=None, row_order=None, col_order=None,
     height=5, aspect=1, facet_kws=None,
 
-    legend=True,
     **kwargs,
 ):
 
@@ -2278,6 +2277,7 @@ def displot(
 
     # Call FacetGrid annotation methods
     # Note that the legend is currently set inside the plotting method
+    # TODO this doesn't propogate the statistic label when col_wrap is used
     g.set_axis_labels(
         x_var=p.variables.get("x", None),
         y_var=p.variables.get("y", None),
@@ -2286,6 +2286,81 @@ def displot(
     g.tight_layout()
 
     return g
+
+
+displot.__doc__ = """\
+Figure-level interface for drawing distribution plots onto a FacetGrid.
+
+This function provides access to several approaches for visualizing the
+univariate or bivariate distribution of data, including subsets of data
+defined by semantic mapping and faceting across multiple subplots. The
+``kind`` parameter selects the approach to use:
+
+- :func:`histplot` (with ``kind="hist"``; the default)
+- :func:`kdeplot` (with ``kind="kde")
+- :func:`ecdfplot (with ``kind="ecdf"; univariate-only)
+
+Additionally, a :func:`rugplot` can be added to any kind of plot to show
+individual observations.
+
+Extra keyword arguments are passed to the underlying function, so you should
+refer to the documentation for each to understand the complete set of options
+for making plots with this interface.
+
+More information about the relative strengths and weaknesses of each approach
+is provided in the :ref:`user guide <userguide_distributions>`. The distinction
+between figure-level and axes-level functions is also explained further in the
+:ref:`user guide <userguide_function_types>`.
+
+Parameters
+----------
+{params.core.data}
+{params.core.xy}
+{params.core.hue}
+{params.facets.rowcol}
+kind : {{"hist", "kde", "ecdf"}}
+    Approach for visualizing the data. Selects the underlying plotting function
+    and determines the additional set of valid parameters.
+rug : bool
+    If True, show each observation with marginal ticks (as in :func:`rugplot`).
+rug_kws : dict
+    Parameters to control the appearance of the rug plot.
+{params.dist.log_scale}
+{params.dist.legend}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+{params.core.color}
+{params.facets.col_wrap}
+{params.facets.rowcol_order}
+{params.facets.height}
+{params.facets.aspect}
+{params.facets.facet_kws}
+kwargs
+    Other keyword arguments are documented with the relevant axes-level function:
+
+    - :func:`histplot` (with ``kind="hist"``)
+    - :func:`kdeplot` (with ``kind="kde"``)
+    - :func:`ecdfplot` (with ``kind="ecdf"``)
+
+Returns
+-------
+{returns.facetgrid}
+
+See Also
+--------
+{seealso.histplot}
+{seealso.kdeplot}
+{seealso.rugplot}
+{seealso.ecdfplot}
+{seealso.jointplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/displot.rst
+
+"""
 
 
 # =========================================================================== #

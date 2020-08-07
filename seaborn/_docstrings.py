@@ -102,8 +102,13 @@ ax : :class:`matplotlib.axes.Axes`
 
 _core_returns = dict(
     ax="""
-ax : :class:`matplotlib.axes.Axes`
+:class:`matplotlib.axes.Axes`
     The matplotlib axes containing the plot.
+    """,
+    facetgrid="""
+:class:`FacetGrid`
+    An object that manages one or more subplots that correspond to conditional data
+    subsets with convenient methods for batch-setting of axes attributes.
     """,
 )
 
@@ -111,6 +116,9 @@ ax : :class:`matplotlib.axes.Axes`
 _seealso_blurbs = dict(
 
     # Distribution plots
+    displot="""
+displot : Figure-level interface to distribution plot functions.
+    """,
     histplot="""
 histplot : Plot a histogram of binned counts with optional normalization or smoothing.
     """,
