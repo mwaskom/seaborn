@@ -2,6 +2,7 @@ import itertools
 from distutils.version import LooseVersion
 
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
@@ -25,6 +26,7 @@ from .._statistics import (
 )
 from ..distributions import (
     _DistributionPlotter,
+    displot,
     distplot,
     histplot,
     ecdfplot,
@@ -1876,3 +1878,83 @@ class TestECDFPlotUnivariate:
 
         with pytest.raises(NotImplementedError, match="Bivariate ECDF plots"):
             ecdfplot(data=long_df, x="x", y="y")
+
+
+class TestDisplot:
+
+    # TODO probably good to move these utility attributes/methods somewhere else
+    bar_properties = [
+        "alpha",
+        "edgecolor",
+        "facecolor",
+        "fill",
+        "hatch",
+        "height",
+        "linestyle",
+        "linewidth",
+        "xy",
+        "zorder",
+    ]
+
+    line_properties = [
+        "alpha",
+        "color",
+        "linestyle",
+        "linewidth",
+        "xydata",
+        "zorder",
+    ]
+
+    poly_properties = [
+        "alpha",
+        "edgecolor",
+        "facecolor",
+        "fill",
+        "hatch",
+        "linestyle",
+        "linewidth",
+        "paths",
+        "zorder",
+    ]
+
+    def assert_artists_equal(self, list1, list2, properties):
+
+        for a1, a2 in zip(list1, list2):
+            prop1 = a1.properties()
+            prop2 = a2.properties()
+            for key in properties:
+                v1 = prop1[key]
+                v2 = prop2[key]
+                if isinstance(v1, np.ndarray):
+                    assert_array_equal(v1, v2)
+                else:
+                    assert v1 == v2
+
+    def assert_histograms_equal(self, ax1, ax2):
+
+        self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_properties)
+        self.assert_artists_equal(ax1.lines, ax2.lines, self.line_properties)
+
+        poly1 = ax1.findobj(mpl.collections.PolyCollection)
+        poly2 = ax1.findobj(mpl.collections.PolyCollection)
+        self.assert_artists_equal(poly1, poly2, self.poly_properties)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(x="x"),
+            dict(x="a"),
+            dict(x="x", binwidth=4),
+            dict(x="x", color="green", linewidth=2, binwidth=4),
+            dict(x="x", hue="a"),
+            dict(x="x", hue="a", fill=False),
+            dict(x="x", hue="a", element="step"),
+            dict(x="x", hue="a", palette="muted"),
+            dict(x="x", hue="a", kde=True),
+            dict(x="x", hue="a", stat="density", common_norm=False),
+        ],
+    )
+    def test_versus_single_histplot(self, long_df, kwargs):
+
+        ax = histplot(long_df, **kwargs)
+        g = displot(long_df, **kwargs)
+        self.assert_histograms_equal(ax, g.ax)

@@ -366,12 +366,13 @@ class _DistributionPlotter(VectorPlotter):
                 )
 
         else:
-            multiple = None
             common_norm = False
 
-        # Turn multiple off if hue exists but is redundent with faceting
+        # Turn multiple off if no hue or if hue exists but is redundent with faceting
         facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
         if "hue" in self.variables and self.variables["hue"] in facet_vars:
+            multiple = None
+        elif "hue" not in self.variables:
             multiple = None
 
         # Estimate the smoothed kernel densities, for use later
