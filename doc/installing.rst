@@ -56,7 +56,7 @@ include a reproducible example on synthetic data or one of the example datasets
 (accessed through :func:`load_dataset`). It is difficult to debug any issues
 without knowing the versions of seaborn and matplotlib you are using, as well
 as what `matplotlib backend
-<https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you are have active, so please include those in your bug report.
+<https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend>`__ you are have active, so please include those in your bug report.
 
 .. raw:: html
 
