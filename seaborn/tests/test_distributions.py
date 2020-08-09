@@ -1873,6 +1873,12 @@ class TestECDFPlotUnivariate:
         sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
         assert sticky_edges[:] == [0, n]
 
+    def test_weights(self):
+
+        ax = ecdfplot(x=[1, 2, 3], weights=[1, 1, 2])
+        y = ax.lines[0].get_ydata()
+        assert_array_equal(y, [0, .25, .5, 1])
+
     def test_bivariate_error(self, long_df):
 
         with pytest.raises(NotImplementedError, match="Bivariate ECDF plots"):
@@ -1963,8 +1969,8 @@ class TestDisplot:
             dict(x="x", binwidth=4),
             dict(x="x", weights="f"),
             dict(x="x", color="green", linewidth=2, binwidth=4),
-            dict(x="x", hue="a"),
             dict(x="x", hue="a", fill=False),
+            dict(x="y", hue="a", fill=False),
             dict(x="x", hue="a", multiple="stack"),
             dict(x="x", hue="a", element="step"),
             dict(x="x", hue="a", palette="muted"),
@@ -1993,13 +1999,16 @@ class TestDisplot:
             dict(x="x", bw_adjust=.5),
             dict(x="x", weights="f"),
             dict(x="x", color="green", linewidth=2),
-            dict(x="x", hue="a"),
             dict(x="x", hue="a", multiple="stack"),
             dict(x="x", hue="a", fill=True),
+            dict(x="y", hue="a", fill=False),
             dict(x="x", hue="a", palette="muted"),
         ],
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
+
+        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
+            pytest.skip("Weights require scipy >= 1.2")
 
         ax = kdeplot(data=long_df, **kwargs)
         g = displot(long_df, kind="kde", **kwargs)
@@ -2010,4 +2019,30 @@ class TestDisplot:
 
         long_df["_"] = "_"
         g2 = displot(long_df, kind="kde", col="_", **kwargs)
+        self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(x="x"),
+            dict(x="t"),
+            dict(x="z", log_scale=True),
+            dict(x="x", weights="f"),
+            dict(y="x"),
+            dict(x="x", color="green", linewidth=2),
+            dict(x="x", hue="a", complementary=True),
+            dict(x="x", hue="a", stat="count"),
+            dict(x="x", hue="a", palette="muted"),
+        ],
+    )
+    def test_versus_single_ecdfplot(self, long_df, kwargs):
+
+        ax = ecdfplot(data=long_df, **kwargs)
+        g = displot(long_df, kind="ecdf", **kwargs)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        long_df["_"] = "_"
+        g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
         self.assert_plots_equal(ax, g2.ax)

@@ -1185,7 +1185,7 @@ class _DistributionPlotter(VectorPlotter):
 
             observations = sub_data[self.data_variable]
             weights = sub_data.get("weights", None)
-            stat, vals = estimator(observations, weights)
+            stat, vals = estimator(observations, weights=weights)
 
             # Assign attributes based on semantic mapping
             artist_kws = plot_kws.copy()
