@@ -389,7 +389,7 @@ def heatmap(
         If True, write the data value in each cell. If an array-like with the
         same shape as ``data``, then use this to annotate the heatmap instead
         of the data. Note that DataFrames will match on position, not index.
-    fmt : string, optional
+    fmt : str, optional
         String formatting code to use when adding annotations.
     annot_kws : dict of key, value mappings, optional
         Keyword arguments for :meth:`matplotlib.axes.Axes.text` when ``annot``
@@ -398,14 +398,14 @@ def heatmap(
         Width of the lines that will divide each cell.
     linecolor : color, optional
         Color of the lines that will divide each cell.
-    cbar : boolean, optional
+    cbar : bool, optional
         Whether to draw a colorbar.
     cbar_kws : dict of key, value mappings, optional
         Keyword arguments for :meth:`matplotlib.figure.Figure.colorbar`.
     cbar_ax : matplotlib Axes, optional
         Axes in which to draw the colorbar, otherwise take space from the
         main Axes.
-    square : boolean, optional
+    square : bool, optional
         If True, set the Axes aspect to "equal" so each cell will be
         square-shaped.
     xticklabels, yticklabels : "auto", bool, list-like, or int, optional
@@ -413,7 +413,7 @@ def heatmap(
         the column names. If list-like, plot these alternate labels as the
         xticklabels. If an integer, use the column names but plot only every
         n label. If "auto", try to densely plot non-overlapping labels.
-    mask : boolean array or DataFrame, optional
+    mask : bool array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked.
     ax : matplotlib Axes, optional
@@ -428,7 +428,7 @@ def heatmap(
     ax : matplotlib Axes
         Axes object with the heatmap.
 
-    See also
+    See Also
     --------
     clustermap : Plot a matrix using hierachical clustering to arrange the
                  rows and columns.
@@ -535,8 +535,6 @@ def heatmap(
         >>> with sns.axes_style("white"):
         ...     f, ax = plt.subplots(figsize=(7, 5))
         ...     ax = sns.heatmap(corr, mask=mask, vmax=.3, square=True)
-
-
     """
     # Initialize the plotter object
     plotter = _HeatMapper(data, vmin, vmax, cmap, center, robust, annot, fmt,
@@ -1247,7 +1245,7 @@ def clustermap(
 
     Parameters
     ----------
-    data: 2D array-like
+    data : 2D array-like
         Rectangular data for clustering. Cannot contain NAs.
     pivot_kws : dict, optional
         If `data` is a tidy dataframe, can provide keyword arguments for
@@ -1272,7 +1270,7 @@ def clustermap(
         Either 0 (rows) or 1 (columns). Whether or not to standardize that
         dimension, meaning for each row or column, subtract the minimum and
         divide each by its maximum.
-    figsize: (width, height), optional
+    figsize : (width, height), optional
         Overall size of the figure.
     cbar_kws : dict, optional
         Keyword arguments to pass to ``cbar_kws`` in :func:`heatmap`, e.g. to
@@ -1290,11 +1288,11 @@ def clustermap(
         from the DataFrames column names or from the name of the Series.
         DataFrame/Series colors are also matched to the data by their
         index, ensuring colors are drawn in the correct order.
-    mask : boolean array or DataFrame, optional
+    mask : bool array or DataFrame, optional
         If passed, data will not be shown in cells where ``mask`` is True.
         Cells with missing values are automatically masked. Only used for
         visualizing, not for calculating.
-    {dendrogram,colors}_ratio: float, or pair of floats, optional
+    {dendrogram,colors}_ratio : float, or pair of floats, optional
         Proportion of the figure size devoted to the two marginal elements. If
         a pair is given, they correspond to (row, col) ratios.
     cbar_pos : (left, bottom, width, height), optional
@@ -1304,7 +1302,7 @@ def clustermap(
         Parameters for the :class:`matplotlib.collections.LineCollection`
         that is used to plot the lines of the dendrogram tree.
     kwargs : other keyword arguments
-        All other keyword arguments are passed to :func:`heatmap`
+        All other keyword arguments are passed to :func:`heatmap`.
 
     Returns
     -------
@@ -1389,8 +1387,6 @@ def clustermap(
         :context: close-figs
 
         >>> g = sns.clustermap(iris, z_score=0, cmap="vlag")
-
-
     """
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
