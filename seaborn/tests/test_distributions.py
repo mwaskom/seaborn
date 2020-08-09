@@ -42,54 +42,59 @@ class TestDistPlot(object):
     def test_hist_bins(self):
 
         fd_edges = np.histogram_bin_edges(self.x, "fd")
-        ax = distplot(self.x)
+        with pytest.warns(FutureWarning):
+            ax = distplot(self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        ax = distplot(self.x, bins=n)
+        with pytest.warns(FutureWarning):
+            ax = distplot(self.x, bins=n)
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
     def test_elements(self):
 
-        n = 10
-        ax = distplot(self.x, bins=n,
-                      hist=True, kde=False, rug=False, fit=None)
-        assert len(ax.patches) == 10
-        assert len(ax.lines) == 0
-        assert len(ax.collections) == 0
+        with pytest.warns(FutureWarning):
 
-        plt.close(ax.figure)
-        ax = distplot(self.x,
-                      hist=False, kde=True, rug=False, fit=None)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 1
-        assert len(ax.collections) == 0
+            n = 10
+            ax = distplot(self.x, bins=n,
+                          hist=True, kde=False, rug=False, fit=None)
+            assert len(ax.patches) == 10
+            assert len(ax.lines) == 0
+            assert len(ax.collections) == 0
 
-        plt.close(ax.figure)
-        ax = distplot(self.x,
-                      hist=False, kde=False, rug=True, fit=None)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 0
-        assert len(ax.collections) == 1
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=True, rug=False, fit=None)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 1
+            assert len(ax.collections) == 0
 
-        plt.close(ax.figure)
-        ax = distplot(self.x,
-                      hist=False, kde=False, rug=False, fit=stats.norm)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 1
-        assert len(ax.collections) == 0
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=False, rug=True, fit=None)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 0
+            assert len(ax.collections) == 1
+
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=False, rug=False, fit=stats.norm)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 1
+            assert len(ax.collections) == 0
 
     def test_distplot_with_nans(self):
 
         f, (ax1, ax2) = plt.subplots(2)
         x_null = np.append(self.x, [np.nan])
 
-        distplot(self.x, ax=ax1)
-        distplot(x_null, ax=ax2)
+        with pytest.warns(FutureWarning):
+            distplot(self.x, ax=ax1)
+            distplot(x_null, ax=ax2)
 
         line1 = ax1.lines[0]
         line2 = ax2.lines[0]
@@ -1219,7 +1224,7 @@ class TestHistPlotUnivariate:
 
     def test_weights_with_missing(self, missing_df):
 
-        ax = histplot(missing_df, x="x", weights="s")
+        ax = histplot(missing_df, x="x", weights="s", bins=5)
 
         bar_heights = [bar.get_height() for bar in ax.patches]
         total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
@@ -1885,10 +1890,10 @@ class TestECDFPlotUnivariate:
             ecdfplot(data=long_df, x="x", y="y")
 
 
-class TestDisplot:
+class TestDisPlot:
 
     # TODO probably good to move these utility attributes/methods somewhere else
-    bar_properties = [
+    bar_props = [
         "alpha",
         "edgecolor",
         "facecolor",
@@ -1901,16 +1906,16 @@ class TestDisplot:
         "zorder",
     ]
 
-    line_properties = [
+    line_props = [
         "alpha",
         "color",
-        "linestyle",
         "linewidth",
+        "linestyle",
         "xydata",
         "zorder",
     ]
 
-    poly_properties = [
+    collection_props = [
         "alpha",
         "edgecolor",
         "facecolor",
@@ -1930,19 +1935,23 @@ class TestDisplot:
             for key in properties:
                 v1 = prop1[key]
                 v2 = prop2[key]
-                if isinstance(v1, np.ndarray):
+                if key == "paths":
+                    for p1, p2 in zip(v1, v2):
+                        assert_array_equal(p1.vertices, p2.vertices)
+                        assert_array_equal(p1.codes, p2.codes)
+                elif isinstance(v1, np.ndarray):
                     assert_array_equal(v1, v2)
                 else:
                     assert v1 == v2
 
     def assert_plots_equal(self, ax1, ax2):
 
-        self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_properties)
-        self.assert_artists_equal(ax1.lines, ax2.lines, self.line_properties)
+        self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_props)
+        self.assert_artists_equal(ax1.lines, ax2.lines, self.line_props)
 
         poly1 = ax1.findobj(mpl.collections.PolyCollection)
-        poly2 = ax1.findobj(mpl.collections.PolyCollection)
-        self.assert_artists_equal(poly1, poly2, self.poly_properties)
+        poly2 = ax2.findobj(mpl.collections.PolyCollection)
+        self.assert_artists_equal(poly1, poly2, self.collection_props)
 
         assert ax1.get_xlabel() == ax2.get_xlabel()
         assert ax1.get_ylabel() == ax2.get_ylabel()
@@ -1954,20 +1963,21 @@ class TestDisplot:
             assert t1.get_text() == t2.get_text()
 
         self.assert_artists_equal(
-            leg1.get_patches(), leg2.get_patches(), self.bar_properties,
+            leg1.get_patches(), leg2.get_patches(), self.bar_props,
         )
         self.assert_artists_equal(
-            leg1.get_lines(), leg2.get_lines(), self.line_properties,
+            leg1.get_lines(), leg2.get_lines(), self.line_props,
         )
 
     @pytest.mark.parametrize(
         "kwargs", [
+            dict(),
             dict(x="x"),
             dict(x="t"),
             dict(x="a"),
             dict(x="z", log_scale=True),
             dict(x="x", binwidth=4),
-            dict(x="x", weights="f"),
+            dict(x="x", weights="f", bins=5),
             dict(x="x", color="green", linewidth=2, binwidth=4),
             dict(x="x", hue="a", fill=False),
             dict(x="y", hue="a", fill=False),
@@ -1993,6 +2003,7 @@ class TestDisplot:
 
     @pytest.mark.parametrize(
         "kwargs", [
+            dict(),
             dict(x="x"),
             dict(x="t"),
             dict(x="z", log_scale=True),
@@ -2023,6 +2034,7 @@ class TestDisplot:
 
     @pytest.mark.parametrize(
         "kwargs", [
+            dict(),
             dict(x="x"),
             dict(x="t"),
             dict(x="z", log_scale=True),
@@ -2046,3 +2058,24 @@ class TestDisplot:
         long_df["_"] = "_"
         g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
         self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(x="x"),
+            dict(x="x", y="y"),
+            dict(x="x", hue="a"),
+        ]
+    )
+    def test_with_rug(self, long_df, kwargs):
+
+        ax = rugplot(data=long_df, **kwargs)
+        g = displot(long_df, rug=True, **kwargs)
+
+        rug1 = ax.findobj(mpl.collections.LineCollection)
+        rug2 = g.ax.findobj(mpl.collections.LineCollection)
+        self.assert_artists_equal(rug1, rug2, self.collection_props)
+
+        long_df["_"] = "_"
+        g2 = displot(long_df, col="_", **kwargs)
+        rug3 = g2.ax.findobj(mpl.collections.LineCollection)
+        self.assert_artists_equal(rug1, rug3, self.collection_props)
