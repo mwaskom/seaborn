@@ -392,7 +392,8 @@ def heatmap(
     fmt : string, optional
         String formatting code to use when adding annotations.
     annot_kws : dict of key, value mappings, optional
-        Keyword arguments for ``ax.text`` when ``annot`` is True.
+        Keyword arguments for :meth:`matplotlib.axes.Axes.text` when ``annot``
+        is True.
     linewidths : float, optional
         Width of the lines that will divide each cell.
     linecolor : color, optional
@@ -400,7 +401,7 @@ def heatmap(
     cbar : boolean, optional
         Whether to draw a colorbar.
     cbar_kws : dict of key, value mappings, optional
-        Keyword arguments for `fig.colorbar`.
+        Keyword arguments for :meth:`matplotlib.figure.Figure.colorbar`.
     cbar_ax : matplotlib Axes, optional
         Axes in which to draw the colorbar, otherwise take space from the
         main Axes.
@@ -420,7 +421,7 @@ def heatmap(
         Axes.
     kwargs : other keyword arguments
         All other keyword arguments are passed to
-        :func:`matplotlib.axes.Axes.pcolormesh`.
+        :meth:`matplotlib.axes.Axes.pcolormesh`.
 
     Returns
     -------
@@ -1252,13 +1253,12 @@ def clustermap(
         If `data` is a tidy dataframe, can provide keyword arguments for
         pivot to create a rectangular dataframe.
     method : str, optional
-        Linkage method to use for calculating clusters.
-        See scipy.cluster.hierarchy.linkage documentation for more information:
-        https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
+        Linkage method to use for calculating clusters. See
+        :func:`scipy.cluster.hierarchy.linkage` documentation for more
+        information.
     metric : str, optional
         Distance metric to use for the data. See
-        scipy.spatial.distance.pdist documentation for more options
-        https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.pdist.html
+        :func:`scipy.spatial.distance.pdist` documentation for more options.
         To use different metrics (or methods) for rows and columns, you may
         construct each linkage matrix yourself and provide them as
         {row,col}_linkage.
@@ -1275,7 +1275,7 @@ def clustermap(
     figsize: (width, height), optional
         Overall size of the figure.
     cbar_kws : dict, optional
-        Keyword arguments to pass to ``cbar_kws`` in ``heatmap``, e.g. to
+        Keyword arguments to pass to ``cbar_kws`` in :func:`heatmap`, e.g. to
         add a label to the colorbar.
     {row,col}_cluster : bool, optional
         If True, cluster the {rows, columns}.
@@ -1308,8 +1308,8 @@ def clustermap(
 
     Returns
     -------
-    clustergrid : ClusterGrid
-        A ClusterGrid instance.
+    clustergrid : :class:`ClusterGrid`
+        A :class:`ClusterGrid` instance.
 
     Notes
     -----
