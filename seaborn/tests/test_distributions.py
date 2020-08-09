@@ -2,7 +2,6 @@ import itertools
 from distutils.version import LooseVersion
 
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
@@ -1930,7 +1929,7 @@ class TestDisplot:
                 else:
                     assert v1 == v2
 
-    def assert_histograms_equal(self, ax1, ax2):
+    def assert_plots_equal(self, ax1, ax2):
 
         self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_properties)
         self.assert_artists_equal(ax1.lines, ax2.lines, self.line_properties)
@@ -1939,14 +1938,34 @@ class TestDisplot:
         poly2 = ax1.findobj(mpl.collections.PolyCollection)
         self.assert_artists_equal(poly1, poly2, self.poly_properties)
 
+        assert ax1.get_xlabel() == ax2.get_xlabel()
+        assert ax1.get_ylabel() == ax2.get_ylabel()
+
+    def assert_legends_equal(self, leg1, leg2):
+
+        assert leg1.get_title().get_text() == leg2.get_title().get_text()
+        for t1, t2 in zip(leg1.get_texts(), leg2.get_texts()):
+            assert t1.get_text() == t2.get_text()
+
+        self.assert_artists_equal(
+            leg1.get_patches(), leg2.get_patches(), self.bar_properties,
+        )
+        self.assert_artists_equal(
+            leg1.get_lines(), leg2.get_lines(), self.line_properties,
+        )
+
     @pytest.mark.parametrize(
         "kwargs", [
             dict(x="x"),
+            dict(x="t"),
             dict(x="a"),
+            dict(x="z", log_scale=True),
             dict(x="x", binwidth=4),
+            dict(x="x", weights="f"),
             dict(x="x", color="green", linewidth=2, binwidth=4),
             dict(x="x", hue="a"),
             dict(x="x", hue="a", fill=False),
+            dict(x="x", hue="a", multiple="stack"),
             dict(x="x", hue="a", element="step"),
             dict(x="x", hue="a", palette="muted"),
             dict(x="x", hue="a", kde=True),
@@ -1957,4 +1976,38 @@ class TestDisplot:
 
         ax = histplot(long_df, **kwargs)
         g = displot(long_df, **kwargs)
-        self.assert_histograms_equal(ax, g.ax)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        long_df["_"] = "_"
+        g2 = displot(long_df, col="_", **kwargs)
+        self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(x="x"),
+            dict(x="t"),
+            dict(x="z", log_scale=True),
+            dict(x="x", bw_adjust=.5),
+            dict(x="x", weights="f"),
+            dict(x="x", color="green", linewidth=2),
+            dict(x="x", hue="a"),
+            dict(x="x", hue="a", multiple="stack"),
+            dict(x="x", hue="a", fill=True),
+            dict(x="x", hue="a", palette="muted"),
+        ],
+    )
+    def test_versus_single_kdeplot(self, long_df, kwargs):
+
+        ax = kdeplot(data=long_df, **kwargs)
+        g = displot(long_df, kind="kde", **kwargs)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        long_df["_"] = "_"
+        g2 = displot(long_df, kind="kde", col="_", **kwargs)
+        self.assert_plots_equal(ax, g2.ax)

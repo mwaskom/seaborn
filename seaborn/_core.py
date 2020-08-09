@@ -622,6 +622,7 @@ class VectorPlotter:
     @classmethod
     def get_semantics(cls, kwargs, semantics=None):
         """Subset a dictionary` arguments with known semantic variables."""
+        # TODO this should be get_variables since we have included x and y
         if semantics is None:
             semantics = cls.semantics
         variables = {}

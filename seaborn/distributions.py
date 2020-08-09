@@ -370,9 +370,9 @@ class _DistributionPlotter(VectorPlotter):
 
         # Turn multiple off if no hue or if hue exists but is redundent with faceting
         facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
-        if "hue" in self.variables and self.variables["hue"] in facet_vars:
+        if "hue" not in self.variables:
             multiple = None
-        elif "hue" not in self.variables:
+        elif self.variables["hue"] in facet_vars:
             multiple = None
 
         # Estimate the smoothed kernel densities, for use later
@@ -380,12 +380,13 @@ class _DistributionPlotter(VectorPlotter):
             # TODO alternatively, clip at min/max bins?
             kde_kws.setdefault("cut", 0)
             kde_kws["cumulative"] = estimate_kws["cumulative"]
+            log_scale = self._log_scaled(self.data_variable)
             densities = self._compute_univariate_density(
                 self.data_variable,
                 common_norm,
                 common_bins,
                 kde_kws,
-                log_scale=self._log_scaled(self.data_variable),
+                log_scale,
             )
 
         # First pass through the data to compute the histograms
@@ -2106,7 +2107,7 @@ Examples
 def displot(
     data=None, *,
     # Vector variables
-    x=None, y=None, hue=None, row=None, col=None,
+    x=None, y=None, hue=None, row=None, col=None, weights=None,
     # Other plot parameters
     kind="hist", rug=False, rug_kws=None, log_scale=None, legend=True,
     # Hue-mapping parameters
