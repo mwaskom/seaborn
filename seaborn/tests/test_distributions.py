@@ -1986,6 +1986,7 @@ class TestDisPlot:
             dict(x="x", hue="a", palette="muted"),
             dict(x="x", hue="a", kde=True),
             dict(x="x", hue="a", stat="density", common_norm=False),
+            dict(x="x", y="y"),
         ],
     )
     def test_versus_single_histplot(self, long_df, kwargs):
@@ -2014,6 +2015,7 @@ class TestDisPlot:
             dict(x="x", hue="a", fill=True),
             dict(x="y", hue="a", fill=False),
             dict(x="x", hue="a", palette="muted"),
+            dict(x="x", y="y"),
         ],
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
@@ -2079,3 +2081,22 @@ class TestDisPlot:
         g2 = displot(long_df, col="_", **kwargs)
         rug3 = g2.ax.findobj(mpl.collections.LineCollection)
         self.assert_artists_equal(rug1, rug3, self.collection_props)
+
+    @pytest.mark.parametrize(
+        "facet_var", ["col", "row"],
+    )
+    def test_facets(self, long_df, facet_var):
+
+        kwargs = {facet_var: "a"}
+        ax = kdeplot(data=long_df, x="x", hue="a")
+        g = displot(long_df, x="x", kind="kde", **kwargs)
+
+        legend_texts = ax.legend_.get_texts()
+
+        for i, line in enumerate(ax.lines[::-1]):
+            facet_ax = g.axes.flat[i]
+            facet_line = facet_ax.lines[0]
+            assert_array_equal(line.get_xydata(), facet_line.get_xydata())
+
+            text = legend_texts[i].get_text()
+            assert text in facet_ax.get_title()
