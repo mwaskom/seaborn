@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from .. import miscplot as misc
 from ..palettes import color_palette
-from ..utils import _network
+from .test_utils import _network
 
 
 class TestPalPlot(object):
