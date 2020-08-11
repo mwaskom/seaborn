@@ -1,9 +1,9 @@
 """Utility functions, mostly for internal use."""
 import os
+import re
 import colorsys
 import warnings
 from urllib.request import urlopen, urlretrieve
-from http.client import HTTPException
 
 import numpy as np
 from scipy import stats
@@ -409,15 +409,18 @@ def iqr(a):
 
 
 def get_dataset_names():
-    """Report available example datasets, useful for reporting issues."""
-    # delayed import to not demand bs4 unless this function is actually used
-    from bs4 import BeautifulSoup
-    http = urlopen('https://github.com/mwaskom/seaborn-data/')
-    gh_list = BeautifulSoup(http)
+    """Report available example datasets, useful for reporting issues.
 
-    return [l.text.replace('.csv', '')
-            for l in gh_list.find_all("a", {"class": "js-navigation-open"})
-            if l.text.endswith('.csv')]
+    Requires an internet connection.
+
+    """
+    url = "https://github.com/mwaskom/seaborn-data"
+    with urlopen(url) as resp:
+        html = resp.read()
+
+    pat = r"/mwaskom/seaborn-data/blob/master/(\w*).csv"
+    datasets = re.findall(pat, html.decode())
+    return datasets
 
 
 def get_data_home(data_home=None):
@@ -621,33 +624,6 @@ def to_utf8(obj):
         return obj.decode(encoding="utf-8")
     except AttributeError:  # obj is not bytes-like
         return str(obj)
-
-
-def _network(t=None, url='https://google.com'):
-    """
-    Decorator that will skip a test if `url` is unreachable.
-
-    Parameters
-    ----------
-    t : function, optional
-    url : str, optional
-
-    """
-    import nose
-
-    if t is None:
-        return lambda x: _network(x, url=url)
-
-    def wrapper(*args, **kwargs):
-        # attempt to connect
-        try:
-            f = urlopen(url)
-        except (IOError, HTTPException):
-            raise nose.SkipTest()
-        else:
-            f.close()
-            return t(*args, **kwargs)
-    return wrapper
 
 
 def _normalize_kwargs(kws, artist):
