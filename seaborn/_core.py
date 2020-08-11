@@ -1019,13 +1019,13 @@ class VectorPlotter:
         else:
             return self.ax
 
-    def _attach(self, ax, allowed_types=None, log_scale=None):
+    def _attach(self, obj, allowed_types=None, log_scale=None):
         """Associate the plotter with a matplotlib Axes and initialize its units.
 
         Parameters
         ----------
-        ax : :class:`matplotlib.axes.Axes`
-            Axes object that we will eventually plot onto.
+        obj : :class:`matplotlib.axes.Axes` or :class:'FacetGrid`
+            Structural object that we will eventually plot onto.
         allowed_types : str or list of str
             If provided, raise when either the x or y variable does not have
             one of the declared seaborn types.
@@ -1037,18 +1037,18 @@ class VectorPlotter:
         """
         from .axisgrid import FacetGrid
         # TODO change ax to a more generic name
-        if isinstance(ax, FacetGrid):
+        if isinstance(obj, FacetGrid):
             self.ax = None
-            self.facets = ax
-            ax_list = ax.axes.flatten()
-            if ax.col_names is not None:
-                self.var_levels["col"] = ax.col_names
-            if ax.row_names is not None:
-                self.var_levels["row"] = ax.row_names
+            self.facets = obj
+            ax_list = obj.axes.flatten()
+            if obj.col_names is not None:
+                self.var_levels["col"] = obj.col_names
+            if obj.row_names is not None:
+                self.var_levels["row"] = obj.row_names
         else:
-            self.ax = ax
+            self.ax = obj
             self.facets = None
-            ax_list = [ax]
+            ax_list = [obj]
 
         if allowed_types is None:
             # TODO should we define this default somewhere?

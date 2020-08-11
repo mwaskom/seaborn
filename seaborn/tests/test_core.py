@@ -7,6 +7,7 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
+from ..axisgrid import FacetGrid
 from .._core import (
     SemanticMapping,
     HueMapping,
@@ -151,6 +152,10 @@ class TestHueMapping:
         expected_colors = color_palette(n_colors=len(hue_levels))
         expected_lookup_table = dict(zip(hue_levels, expected_colors))
         assert m.lookup_table == expected_lookup_table
+
+        # Test missing data
+        m = HueMapping(p)
+        assert m(np.nan) == (0, 0, 0, 0)
 
         # Test default palette with many levels
         x = y = np.arange(26)
@@ -725,6 +730,16 @@ class TestVectorPlotter:
             assert sub_vars["hue"] in long_df[var1].values
             assert sub_vars["size"] in long_df[var2].values
 
+        semantics = ["hue", "col", "row"]
+        p = VectorPlotter(
+            data=long_df,
+            variables=dict(x="x", y="y", hue=var1, col=var2),
+        )
+        for sub_vars, _ in p.iter_data("hue"):
+            assert list(sub_vars) == ["hue", "col"]
+            assert sub_vars["hue"] in long_df[var1].values
+            assert sub_vars["col"] in long_df[var2].values
+
     def test_iter_data_values(self, long_df):
 
         p = VectorPlotter(
@@ -848,36 +863,48 @@ class TestVectorPlotter:
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
+        assert p._log_scaled("x")
+        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x"})
         p._attach(ax, log_scale=2)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
+        assert p._log_scaled("x")
+        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"y": "y"})
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "linear"
         assert ax.yaxis.get_scale() == "log"
+        assert not p._log_scaled("x")
+        assert p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=True)
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "log"
+        assert p._log_scaled("x")
+        assert p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=(True, False))
         assert ax.xaxis.get_scale() == "log"
         assert ax.yaxis.get_scale() == "linear"
+        assert p._log_scaled("x")
+        assert not p._log_scaled("y")
 
         _, ax = plt.subplots()
         p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
         p._attach(ax, log_scale=(False, 2))
         assert ax.xaxis.get_scale() == "linear"
         assert ax.yaxis.get_scale() == "log"
+        assert not p._log_scaled("x")
+        assert p._log_scaled("y")
 
     def test_attach_converters(self, long_df):
 
@@ -892,6 +919,35 @@ class TestVectorPlotter:
         p._attach(ax)
         assert isinstance(ax.xaxis.converter, mpl.category.StrCategoryConverter)
         assert ax.yaxis.converter is None
+
+    def test_attach_facets(self, long_df):
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "col": "a"})
+        p._attach(g)
+        assert p.ax is None
+        assert p.facets == g
+
+    def test_get_axes_single(self, long_df):
+
+        ax = plt.figure().subplots()
+        p = VectorPlotter(data=long_df, variables={"x": "x", "hue": "a"})
+        p._attach(ax)
+        assert p._get_axes({"hue": "a"}) is ax
+
+    def test_get_axes_facets(self, long_df):
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "col": "a"})
+        p._attach(g)
+        assert p._get_axes({"col": "b"}) is g.axes_dict["b"]
+
+        g = FacetGrid(long_df, col="a", row="c")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "col": "a", "row": "c"}
+        )
+        p._attach(g)
+        assert p._get_axes({"row": 1, "col": "b"}) is g.axes_dict[(1, "b")]
 
     def test_comp_data(self, long_df):
 
