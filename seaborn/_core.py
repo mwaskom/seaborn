@@ -5,6 +5,7 @@ from functools import partial
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
 from datetime import datetime
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -1006,7 +1007,10 @@ class VectorPlotter:
                     if scale is True:
                         set_scale("log")
                     else:
-                        set_scale("log", **{f"base{axis}": scale})
+                        if LooseVersion(mpl.__version__) >= "3.3":
+                            set_scale("log", **{"base": scale})
+                        else:
+                            set_scale("log", **{f"base{axis}": scale})
 
         self.ax = ax
 
