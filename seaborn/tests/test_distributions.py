@@ -2100,3 +2100,15 @@ class TestDisPlot:
 
             text = legend_texts[i].get_text()
             assert text in facet_ax.get_title()
+
+    def test_ax_warning(self, long_df):
+
+        ax = plt.figure().subplots()
+        with pytest.warns(UserWarning, match="`displot` is a figure-level"):
+            displot(long_df, x="x", ax=ax)
+
+    def test_array_faceting(self, long_df):
+
+        col = np.asarray(long_df["a"])  # .to_numpy on pandas 0.24
+        g = displot(long_df, x="x", col=col)
+        assert len(g.axes) == len(np.unique(col))

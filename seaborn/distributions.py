@@ -2129,10 +2129,19 @@ def displot(
 
     # --- Initialize the FacetGrid object
 
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = (
+            "`displot` is a figure-level function and does not accept "
+            "the ax= paramter. You may wish to try {}plot.".format(kind)
+        )
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
+
     for var in ["row", "col"]:
         # Handle faceting variables that lack name information
         if var in p.variables and p.variables[var] is None:
-            p.variables[var] = f"@{var}"
+            p.variables[var] = f"_{var}_"
 
     # Adapt the plot_data dataframe for use with FacetGrid
     data = p.plot_data.rename(columns=p.variables)
@@ -2156,15 +2165,6 @@ def displot(
     else:
         allowed_types = None
     p._attach(g, allowed_types=allowed_types, log_scale=log_scale)
-
-    # Check for attempt to plot onto specific axes and warn
-    if "ax" in kwargs:
-        msg = (
-            "displot is a figure-level function and does not accept "
-            "the ax= paramter. You may wish to try {}".format(kind + "plot")
-        )
-        warnings.warn(msg, UserWarning)
-        kwargs.pop("ax")
 
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
@@ -2529,10 +2529,19 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
 
     """
 
+    if kde and not hist:
+        axes_level_suggestion = (
+            "`kdeplot` (an axes-level function for kernel density plots)."
+        )
+    else:
+        axes_level_suggestion = (
+            "`histplot` (an axes-level function for histograms)."
+        )
+
     msg = (
         "`distplot` is a deprecated function and will be removed in a future version. "
         "Please adapt your code to use either `displot` (a figure-level function with "
-        "similar flexibility) or `histplot` (an axes-level function for histograms)."
+        "similar flexibility) or " + axes_level_suggestion
     )
     warnings.warn(msg, FutureWarning)
 
