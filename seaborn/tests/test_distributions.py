@@ -2107,8 +2107,12 @@ class TestDisPlot:
         with pytest.warns(UserWarning, match="`displot` is a figure-level"):
             displot(long_df, x="x", ax=ax)
 
-    def test_array_faceting(self, long_df):
+    @pytest.mark.parametrize("key", ["col", "row"])
+    def test_array_faceting(self, long_df, key):
 
-        col = np.asarray(long_df["a"])  # .to_numpy on pandas 0.24
-        g = displot(long_df, x="x", col=col)
-        assert len(g.axes) == len(np.unique(col))
+        a = np.asarray(long_df["a"])  # .to_numpy on pandas 0.24
+        vals = categorical_order(a)
+        g = displot(long_df, x="x", **{key: a})
+        assert len(g.axes.flat) == len(vals)
+        for ax, val in zip(g.axes.flat, vals):
+            assert val in ax.get_title()
