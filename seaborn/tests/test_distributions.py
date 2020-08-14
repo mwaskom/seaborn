@@ -2101,6 +2101,23 @@ class TestDisPlot:
             text = legend_texts[i].get_text()
             assert text in facet_ax.get_title()
 
+    @pytest.mark.parametrize("multiple", ["dodge", "stack", "fill"])
+    def test_facet_multiple(self, long_df, multiple):
+
+        bins = np.linspace(0, 20, 5)
+        ax = histplot(
+            data=long_df[long_df["c"] == 0],
+            x="x", hue="a", hue_order=["a", "b", "c"],
+            multiple=multiple, bins=bins,
+        )
+
+        g = displot(
+            data=long_df, x="x", hue="a", col="c", hue_order=["a", "b", "c"],
+            multiple=multiple, bins=bins,
+        )
+
+        self.assert_plots_equal(ax, g.axes_dict[0])
+
     def test_ax_warning(self, long_df):
 
         ax = plt.figure().subplots()

@@ -1020,7 +1020,7 @@ class VectorPlotter:
             return self.ax
 
     def _attach(self, obj, allowed_types=None, log_scale=None):
-        """Associate the plotter with a matplotlib Axes and initialize its units.
+        """Associate the plotter with an Axes manager and initialize its units.
 
         Parameters
         ----------

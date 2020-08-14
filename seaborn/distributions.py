@@ -210,17 +210,33 @@ class _DistributionPlotter(VectorPlotter):
             # support grid / set of bin edges, so we can make a dataframe
             # Reverse the column order to plot from top to bottom
             curves = pd.DataFrame(curves).iloc[:, ::-1]
-            norm_constant = curves.sum(axis="columns")
 
-            # Take the cumulative sum to stack
-            curves = curves.cumsum(axis="columns")
+            # Find column groups that are nested within col/row variables
+            column_groups = {}
+            for i, keyd in enumerate(map(dict, curves.columns.tolist())):
+                facet_key = keyd.get("col", None), keyd.get("row", None)
+                column_groups.setdefault(facet_key, [])
+                column_groups[facet_key].append(i)
 
-            # Normalize by row sum to fill
-            if multiple == "fill":
-                curves = curves.div(norm_constant, axis="index")
+            baselines = curves.copy()
+            for cols in column_groups.values():
 
-            # Define where each segment starts
-            baselines = curves.shift(1, axis=1).fillna(0)
+                norm_constant = curves.iloc[:, cols].sum(axis="columns")
+
+                # Take the cumulative sum to stack
+                curves.iloc[:, cols] = curves.iloc[:, cols].cumsum(axis="columns")
+
+                # Normalize by row sum to fill
+                if multiple == "fill":
+                    curves.iloc[:, cols] = (curves
+                                            .iloc[:, cols]
+                                            .div(norm_constant, axis="index"))
+
+                # Define where each segment starts
+                baselines.iloc[:, cols] = (curves
+                                           .iloc[:, cols]
+                                           .shift(1, axis=1)
+                                           .fillna(0))
 
         else:
 
@@ -229,13 +245,15 @@ class _DistributionPlotter(VectorPlotter):
 
         if multiple == "dodge":
 
-            n = len(curves)
-            for i, key in enumerate(curves):
-
+            # Account for the unique semantic (non-faceting) levels
+            # This will require rethiniking if we add other semantics!
+            hue_levels = self.var_levels["hue"]
+            n = len(hue_levels)
+            for key in curves:
+                level = dict(key)["hue"]
                 hist = curves[key].reset_index(name="heights")
-
                 hist["widths"] /= n
-                hist["edges"] += i * hist["widths"]
+                hist["edges"] += hue_levels.index(level) * hist["widths"]
 
                 curves[key] = hist.set_index(["edges", "widths"])["heights"]
 
@@ -848,6 +866,10 @@ class _DistributionPlotter(VectorPlotter):
         estimate_kws,
         **plot_kws,
     ):
+
+        # Handle conditional defaults
+        if fill is None:
+            fill = multiple in ("stack", "fill")
 
         # Preprocess the matplotlib keyword dictionaries
         if fill:
@@ -1693,10 +1715,6 @@ def kdeplot(
     p._attach(ax, allowed_types=["numeric", "datetime"], log_scale=log_scale)
 
     if p.univariate:
-
-        # Set defaults that depend on other parameters
-        if fill is None:
-            fill = multiple in ("stack", "fill")
 
         plot_kws = kwargs.copy()
         if color is not None:
