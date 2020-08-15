@@ -14,7 +14,7 @@ from .. import categorical as cat
 from .. import palettes
 
 
-class CategoricalFixture(object):
+class CategoricalFixture:
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -2605,6 +2605,24 @@ class TestCatPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.collections), 1)
         want_lines = self.g.unique().size + 1
         nt.assert_equal(len(g.ax.lines), want_lines)
+
+    def test_share_xy(self):
+
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=True)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=True)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == 1
+
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == 1
 
 
 class TestBoxenPlotter(CategoricalFixture):
