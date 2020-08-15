@@ -722,23 +722,26 @@ class _DistributionPlotter(VectorPlotter):
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
 
-        all_data = self.comp_data.dropna()
-        weights = all_data.get("weights", None)
-
         # Do pre-compute housekeeping related to multiple groups
-        if "hue" in self.variables:
+        if set(self.variables) - {"x", "y"}:
+            all_data = self.comp_data.dropna()
             if common_bins:
                 estimator.define_bin_edges(
                     all_data["x"],
                     all_data["y"],
-                    weights,
+                    all_data.get("weights", None),
                 )
         else:
             common_norm = False
 
         # -- Determine colormap threshold and norm based on the full data
 
-        full_heights, _ = estimator(all_data["x"], all_data["y"], weights)
+        full_heights = []
+        for _, sub_data in self.iter_data(from_comp_data=True):
+            sub_heights, _ = estimator(
+                sub_data["x"], sub_data["y"], sub_data.get("weights", None)
+            )
+            full_heights.append(sub_heights)
 
         common_color_norm = "hue" not in self.variables or common_norm
 
@@ -750,7 +753,7 @@ class _DistributionPlotter(VectorPlotter):
             if pmax is not None:
                 vmax = self._quantile_to_level(full_heights, pmax)
             else:
-                vmax = plot_kws.pop("vmax", full_heights.max())
+                vmax = plot_kws.pop("vmax", np.max(full_heights))
         else:
             vmax = None
 

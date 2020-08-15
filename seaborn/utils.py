@@ -510,6 +510,9 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
 
     if name == "diamonds":
+        df["color"] = pd.Categorical(
+            df["color"], ["D", "E", "F", "G", "H", "I", "J"],
+        )
         df["clarity"] = pd.Categorical(
             df["clarity"], ["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"],
         )
