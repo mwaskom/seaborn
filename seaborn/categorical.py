@@ -3802,9 +3802,11 @@ def catplot(
 
     # Determine keyword arguments for the plotting function
     plot_kws = dict(
-        order=order, hue_order=hue_order,
-        orient=orient, color=color, palette=palette,
+        hue_order=hue_order, orient=orient, color=color, palette=palette,
     )
+    # Synchronize categories across facets, when required
+    if (sharex and p.orient == "v") or (sharey and p.orient == "h"):
+        plot_kws["order"] = order
     plot_kws.update(kwargs)
 
     if kind in ["bar", "point"]:
@@ -3889,7 +3891,8 @@ catplot.__doc__ = dedent("""\
         Categorical variables that will determine the faceting of the grid.
     {col_wrap}
     {stat_api_params}
-    {order_vars}
+    {order_vars} ``order`` is ignored if the ``share`` parameter for the
+        categorical axis is ``False``.
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
