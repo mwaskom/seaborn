@@ -1075,6 +1075,11 @@ class VectorPlotter:
                     seed_data = categorical_order(seed_data)
                 axis.update_units(seed_data)
 
+        # For categorical y, we want the "first" level at the top of the axis
+        if self.var_types.get("y", None) == "categorical":
+            for ax in ax_list:
+                ax.yaxis.set_inverted(True)
+
         # Possibly log-scale one or both axes
         if log_scale is not None:
             # Allow single value or x, y tuple

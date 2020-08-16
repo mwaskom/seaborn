@@ -1248,6 +1248,11 @@ class TestHistPlotUnivariate:
         for i, bar in enumerate(ax.patches):
             assert bar.get_width() == 1
 
+    def test_categorical_yaxis_inversion(self, long_df):
+
+        ax = histplot(long_df, y="a")
+        assert ax.yaxis.get_inverted()
+
     def test_discrete_requires_bars(self, long_df):
 
         with pytest.raises(ValueError, match="`element` must be 'bars'"):
