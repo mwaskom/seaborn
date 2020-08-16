@@ -738,6 +738,7 @@ class _DistributionPlotter(VectorPlotter):
 
         full_heights = []
         for _, sub_data in self.iter_data(from_comp_data=True):
+            sub_data = sub_data.dropna()
             sub_heights, _ = estimator(
                 sub_data["x"], sub_data["y"], sub_data.get("weights", None)
             )
