@@ -197,6 +197,16 @@ class _DistributionPlotter(VectorPlotter):
         colors = np.clip([husl.husl_to_rgb(*hsl) for hsl in ramp], 0, 1)
         return mpl.colors.ListedColormap(colors)
 
+    def _default_discrete(self):
+        """Find default values for discrete hist esimation based on variable type."""
+        if self.univariate:
+            discrete = self.var_types[self.data_variable] == "categorical"
+        else:
+            discrete_x = self.var_types["x"] == "categorical"
+            discrete_y = self.var_types["y"] == "categorical"
+            discrete = discrete_x, discrete_y
+        return discrete
+
     def _resolve_multiple(
         self,
         curves,
@@ -340,6 +350,12 @@ class _DistributionPlotter(VectorPlotter):
         estimate_kws,
         **plot_kws,
     ):
+
+        # -- Default keyword dicts
+        if kde_kws is None:
+            kde_kws = {}
+        if line_kws is None:
+            line_kws = {}
 
         # --  Input checking
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
@@ -620,7 +636,6 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
-                # TODO XXX breaks old code that allows line color to vary
                 line_kws["color"] = to_rgba(color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
@@ -707,17 +722,17 @@ class _DistributionPlotter(VectorPlotter):
 
     def plot_bivariate_histogram(
         self,
-        common_bins,
-        common_norm,
-        thresh,
-        pthresh,
-        pmax,
-        color,
-        legend,
+        common_bins, common_norm,
+        thresh, pthresh, pmax,
+        color, legend,
         cbar, cbar_ax, cbar_kws,
         estimate_kws,
         **plot_kws,
     ):
+
+        # Default keyword dicts
+        if cbar_kws is None:
+            cbar_kws = {}
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
@@ -1374,16 +1389,6 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
-    # TODO move these defaults inside the plot functions
-    if kde_kws is None:
-        kde_kws = {}
-
-    if line_kws is None:
-        line_kws = {}
-
-    if cbar_kws is None:
-        cbar_kws = {}
-
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
         return ax
@@ -1392,16 +1397,8 @@ def histplot(
     p._attach(ax, log_scale=log_scale)
 
     # Default to discrete bins for categorical variables
-    # Note that having this logic here may constrain plans for distplot
-    # It can move inside the plot_ functions, it will just need to modify
-    # the estimate_kws dictionary (I am not sure how we feel about that)
     if discrete is None:
-        if p.univariate:
-            discrete = p.var_types[p.data_variable] == "categorical"
-        else:
-            discrete_x = p.var_types["x"] == "categorical"
-            discrete_y = p.var_types["y"] == "categorical"
-            discrete = discrete_x, discrete_y
+        discrete = p._default_discrete()
 
     estimate_kws = dict(
         stat=stat,
@@ -2204,16 +2201,9 @@ def displot(
         for key, default_val in estimate_defaults.items():
             estimate_kws[key] = hist_kws.pop(key, default_val)
 
-        # XXX TODO do we want to do this this way?
-        # Copied directly from histplot, see notes there
+        # Handle derivative defaults
         if estimate_kws["discrete"] is None:
-            if p.univariate:
-                discrete = p.var_types[p.data_variable] == "categorical"
-            else:
-                discrete_x = p.var_types["x"] == "categorical"
-                discrete_y = p.var_types["y"] == "categorical"
-                discrete = discrete_x, discrete_y
-            estimate_kws["discrete"] = discrete
+            estimate_kws["discrete"] = p._default_discrete()
 
         hist_kws["estimate_kws"] = estimate_kws
 
@@ -2223,23 +2213,11 @@ def displot(
                 hist_kws.setdefault("color", color)
 
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
-
-            # TODO move this logic into the method
-            if hist_kws.get("kde_kws", None) is None:
-                hist_kws["kde_kws"] = {}
-            if hist_kws.get("line_kws", None) is None:
-                hist_kws["line_kws"] = {}
-
             p.plot_univariate_histogram(**hist_kws)
 
         else:
 
             _assign_default_kwargs(hist_kws, p.plot_bivariate_histogram, histplot)
-
-            # TODO move this logic into the method
-            if hist_kws.get("cbar_kws", None) is None:
-                hist_kws["cbar_kws"] = {}
-
             p.plot_bivariate_histogram(**hist_kws)
 
     elif kind == "kde":
@@ -2303,10 +2281,9 @@ def displot(
 
     # Call FacetGrid annotation methods
     # Note that the legend is currently set inside the plotting method
-    # TODO this doesn't propogate the statistic label when col_wrap is used
     g.set_axis_labels(
-        x_var=p.variables.get("x", None),
-        y_var=p.variables.get("y", None),
+        x_var=p.variables.get("x", g.axes.flat[0].get_xlabel()),
+        y_var=p.variables.get("y", g.axes.flat[0].get_ylabel()),
     )
     g.set_titles()
     g.tight_layout()

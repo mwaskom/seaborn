@@ -1036,7 +1036,6 @@ class VectorPlotter:
 
         """
         from .axisgrid import FacetGrid
-        # TODO change ax to a more generic name
         if isinstance(obj, FacetGrid):
             self.ax = None
             self.facets = obj
@@ -1051,7 +1050,6 @@ class VectorPlotter:
             ax_list = [obj]
 
         if allowed_types is None:
-            # TODO should we define this default somewhere?
             allowed_types = ["numeric", "datetime", "categorical"]
         elif isinstance(allowed_types, str):
             allowed_types = [allowed_types]
@@ -1067,7 +1065,6 @@ class VectorPlotter:
                 raise TypeError(err)
 
             # Register with the matplotlib unit conversion machinery
-            # TODO do we want to warn or raise if mixing units?
             for ax in ax_list:
                 axis = getattr(ax, f"{var}axis")
                 seed_data = self.plot_data[var]
@@ -1078,7 +1075,11 @@ class VectorPlotter:
         # For categorical y, we want the "first" level at the top of the axis
         if self.var_types.get("y", None) == "categorical":
             for ax in ax_list:
-                ax.yaxis.set_inverted(True)
+                try:
+                    ax.yaxis.set_inverted(True)
+                except AttributeError:  # mpl < 3.1
+                    if not ax.yaxis_inverteD():
+                        ax.invert_yaxis()
 
         # Possibly log-scale one or both axes
         if log_scale is not None:
