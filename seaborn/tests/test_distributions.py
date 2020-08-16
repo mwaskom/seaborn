@@ -1251,7 +1251,8 @@ class TestHistPlotUnivariate:
     def test_categorical_yaxis_inversion(self, long_df):
 
         ax = histplot(long_df, y="a")
-        assert ax.yaxis.get_inverted()
+        ymax, ymin = ax.get_ylim()
+        assert ymax > ymin
 
     def test_discrete_requires_bars(self, long_df):
 

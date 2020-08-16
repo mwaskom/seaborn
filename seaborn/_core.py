@@ -1078,7 +1078,7 @@ class VectorPlotter:
                 try:
                     ax.yaxis.set_inverted(True)
                 except AttributeError:  # mpl < 3.1
-                    if not ax.yaxis_inverteD():
+                    if not ax.yaxis_inverted():
                         ax.invert_yaxis()
 
         # Possibly log-scale one or both axes
