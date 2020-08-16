@@ -352,10 +352,9 @@ class _DistributionPlotter(VectorPlotter):
     ):
 
         # -- Default keyword dicts
-        if kde_kws is None:
-            kde_kws = {}
-        if line_kws is None:
-            line_kws = {}
+        kde_kws = {} if kde_kws is None else kde_kws.copy()
+        line_kws = {} if line_kws is None else line_kws.copy()
+        estimate_kws = {} if estimate_kws is None else estimate_kws.copy()
 
         # --  Input checking
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
@@ -731,8 +730,7 @@ class _DistributionPlotter(VectorPlotter):
     ):
 
         # Default keyword dicts
-        if cbar_kws is None:
-            cbar_kws = {}
+        cbar_kws = {} if cbar_kws is None else cbar_kws.copy()
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
@@ -1419,11 +1417,11 @@ def histplot(
             common_norm=common_norm,
             common_bins=common_bins,
             kde=kde,
-            kde_kws=kde_kws.copy(),
+            kde_kws=kde_kws,
             color=color,
             legend=legend,
-            estimate_kws=estimate_kws.copy(),
-            line_kws=line_kws.copy(),
+            estimate_kws=estimate_kws,
+            line_kws=line_kws,
             **kwargs,
         )
 
