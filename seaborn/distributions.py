@@ -758,6 +758,7 @@ class _DistributionPlotter(VectorPlotter):
             vmax = None
 
         # Get a default color
+        # (We won't follow the color cycle here, as multiple plots are unlikely)
         if color is None:
             color = "C0"
 
@@ -768,9 +769,6 @@ class _DistributionPlotter(VectorPlotter):
 
             if sub_data.empty:
                 continue
-
-            # Get a reference to the axes we're going to use
-            # (Out of place but we currently need it for log handling)
 
             # Do the histogram computation
             heights, (x_edges, y_edges) = estimator(
