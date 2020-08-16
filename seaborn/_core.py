@@ -987,8 +987,12 @@ class VectorPlotter:
                 if var not in self.variables:
                     continue
 
-                # TODO XXX FIXME here's a problem
-                # We need to store the axis transforms elsewhere
+                # Get a corresponding axis object so that we can convert the units
+                # to matplotlib's numeric representation, which we can compute on
+                # This is messy and it would probably be better for VectorPlotter
+                # to manage its own converters (using the matplotlib tools).
+                # XXX Currently does not support unshared categorical axes!
+                # (But see comment in _attach about how those don't exist)
                 if self.ax is None:
                     ax = self.facets.axes.flat[0]
                 else:
@@ -1005,7 +1009,7 @@ class VectorPlotter:
         return self._comp_data
 
     def _get_axes(self, sub_vars):
-
+        """Return an Axes object based on existence of row/col variables."""
         row = sub_vars.get("row", None)
         col = sub_vars.get("col", None)
         if row is not None and col is not None:
@@ -1065,6 +1069,11 @@ class VectorPlotter:
                 raise TypeError(err)
 
             # Register with the matplotlib unit conversion machinery
+            # Perhaps cleaner to manage our own transform objects?
+            # XXX Currently this does not allow "unshared" categorical axes
+            # We could add metatdata to a FacetGrid and set units based on that.
+            # See also comment in comp_data, which only uses a single axes to do
+            # its mapping, meaning that it won't handle unshared axes well either.
             for ax in ax_list:
                 axis = getattr(ax, f"{var}axis")
                 seed_data = self.plot_data[var]
@@ -1072,7 +1081,7 @@ class VectorPlotter:
                     seed_data = categorical_order(seed_data)
                 axis.update_units(seed_data)
 
-        # For categorical y, we want the "first" level at the top of the axis
+        # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":
             for ax in ax_list:
                 try:

@@ -1115,7 +1115,6 @@ class _DistributionPlotter(VectorPlotter):
 
         # Get a default single color from the attribute cycle
         if self.ax is None:
-            # TODO XXX
             default_color = "C0" if color is None else color
         else:
             scout, = self.ax.plot([], color=color)
@@ -1270,8 +1269,6 @@ class _DistributionPlotter(VectorPlotter):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
-        # TODO we need to abstract this logic
-        # TODO XXX conflict with facet
         if self.ax is None:
             kws["color"] = kws.pop("color", "C0")
         else:
@@ -1285,7 +1282,6 @@ class _DistributionPlotter(VectorPlotter):
 
             kws.setdefault("linewidth", 1)
 
-            # TODO FIXME This expands all margins for each facet, not what we want...
             if expand_margins:
                 xmarg, ymarg = ax.margins()
                 if "x" in self.variables:
