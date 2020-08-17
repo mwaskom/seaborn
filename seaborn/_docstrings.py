@@ -115,6 +115,14 @@ _core_returns = dict(
 
 _seealso_blurbs = dict(
 
+    # Relational plots
+    scatterplot="""
+scatterplot : Plot data using points.
+    """,
+    lineplot="""
+lineplot : Plot data using lines.
+    """,
+
     # Distribution plots
     displot="""
 displot : Figure-level interface to distribution plot functions.
@@ -133,8 +141,17 @@ rugplot : Plot a tick at each observation value along the x and/or y axes.
     """,
 
     # Categorical plots
+    stripplot="""
+stripplot : Plot a categorical scatter with jitter.
+    """,
+    swarmplot="""
+swarmplot : Plot a categorical scatter with non-overlapping points.
+    """,
     violinplot="""
 violinplot : Draw an enhanced boxplot using kernel density estimation.
+    """,
+    pointplot="""
+pointplot : Plot point estimates and CIs using markers and lines.
     """,
 
     # Multiples

@@ -17,9 +17,169 @@ from .utils import (
 from .algorithms import bootstrap
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args
+from ._docstrings import (
+    DocstringComponents,
+    _core_docs,
+)
 
 
 __all__ = ["relplot", "scatterplot", "lineplot"]
+
+
+_relational_narrative = DocstringComponents(dict(
+
+    # ---  Introductory prose
+    main_api=dedent("""\
+    The relationship between ``x`` and ``y`` can be shown for different subsets
+    of the data using the ``hue``, ``size``, and ``style`` parameters. These
+    parameters control what visual semantics are used to identify the different
+    subsets. It is possible to show up to three dimensions independently by
+    using all three semantic types, but this style of plot can be hard to
+    interpret and is often ineffective. Using redundant semantics (i.e. both
+    ``hue`` and ``style`` for the same variable) can be helpful for making
+    graphics more accessible.
+
+    See the :ref:`tutorial <relational_tutorial>` for more information.\
+    """),
+
+    relational_semantic=dedent("""\
+    The default treatment of the ``hue`` (and to a lesser extent, ``size``)
+    semantic, if present, depends on whether the variable is inferred to
+    represent "numeric" or "categorical" data. In particular, numeric variables
+    are represented with a sequential colormap by default, and the legend
+    entries show regular "ticks" with values that may or may not exist in the
+    data. This behavior can be controlled through various parameters, as
+    described and illustrated below.\
+    """),
+))
+
+_relational_docs = dict(
+
+    # --- Shared function parameters
+    data_vars=dedent("""\
+    x, y : names of variables in ``data`` or vector data
+        Input data variables; must be numeric. Can pass data directly or
+        reference columns in ``data``.\
+    """),
+    data=dedent("""\
+    data : DataFrame, array, or list of arrays
+        Input data structure. If ``x`` and ``y`` are specified as names, this
+        should be a "long-form" DataFrame containing those columns. Otherwise
+        it is treated as "wide-form" data and grouping variables are ignored.
+        See the examples for the various ways this parameter can be specified
+        and the different effects of each.\
+    """),
+    palette=dedent("""\
+    palette : string, list, dict, or matplotlib colormap
+        An object that determines how colors are chosen when ``hue`` is used.
+        It can be the name of a seaborn palette or matplotlib colormap, a list
+        of colors (anything matplotlib understands), a dict mapping levels
+        of the ``hue`` variable to colors, or a matplotlib colormap object.\
+    """),
+    hue_order=dedent("""\
+    hue_order : list
+        Specified order for the appearance of the ``hue`` variable levels,
+        otherwise they are determined from the data. Not relevant when the
+        ``hue`` variable is numeric.\
+    """),
+    hue_norm=dedent("""\
+    hue_norm : tuple or Normalize object
+        Normalization in data units for colormap applied to the ``hue``
+        variable when it is numeric. Not relevant if it is categorical.\
+    """),
+    sizes=dedent("""\
+    sizes : list, dict, or tuple
+        An object that determines how sizes are chosen when ``size`` is used.
+        It can always be a list of size values or a dict mapping levels of the
+        ``size`` variable to sizes. When ``size``  is numeric, it can also be
+        a tuple specifying the minimum and maximum size to use such that other
+        values are normalized within this range.\
+    """),
+    size_order=dedent("""\
+    size_order : list
+        Specified order for appearance of the ``size`` variable levels,
+        otherwise they are determined from the data. Not relevant when the
+        ``size`` variable is numeric.\
+    """),
+    size_norm=dedent("""\
+    size_norm : tuple or Normalize object
+        Normalization in data units for scaling plot objects when the
+        ``size`` variable is numeric.\
+    """),
+    dashes=dedent("""\
+    dashes : boolean, list, or dictionary
+        Object determining how to draw the lines for different levels of the
+        ``style`` variable. Setting to ``True`` will use default dash codes, or
+        you can pass a list of dash codes or a dictionary mapping levels of the
+        ``style`` variable to dash codes. Setting to ``False`` will use solid
+        lines for all subsets. Dashes are specified as in matplotlib: a tuple
+        of ``(segment, gap)`` lengths, or an empty string to draw a solid line.\
+    """),
+    markers=dedent("""\
+    markers : boolean, list, or dictionary
+        Object determining how to draw the markers for different levels of the
+        ``style`` variable. Setting to ``True`` will use default markers, or
+        you can pass a list of markers or a dictionary mapping levels of the
+        ``style`` variable to markers. Setting to ``False`` will draw
+        marker-less lines.  Markers are specified as in matplotlib.\
+    """),
+    style_order=dedent("""\
+    style_order : list
+        Specified order for appearance of the ``style`` variable levels
+        otherwise they are determined from the data. Not relevant when the
+        ``style`` variable is numeric.\
+    """),
+    units=dedent("""\
+    units : vector or key in ``data``
+        Grouping variable identifying sampling units. When used, a separate
+        line will be drawn for each unit with appropriate semantics, but no
+        legend entry will be added. Useful for showing distribution of
+        experimental replicates when exact identities are not needed.\
+    """),
+    estimator=dedent("""\
+    estimator : name of pandas method or callable or None
+        Method for aggregating across multiple observations of the ``y``
+        variable at the same ``x`` level. If ``None``, all observations will
+        be drawn.\
+    """),
+    ci=dedent("""\
+    ci : int or "sd" or None
+        Size of the confidence interval to draw when aggregating with an
+        estimator. "sd" means to draw the standard deviation of the data.
+        Setting to ``None`` will skip bootstrapping.\
+    """),
+    n_boot=dedent("""\
+    n_boot : int
+        Number of bootstraps to use for computing the confidence interval.\
+    """),
+    seed=dedent("""\
+    seed : int, numpy.random.Generator, or numpy.random.RandomState
+        Seed or random number generator for reproducible bootstrapping.\
+    """),
+    legend=dedent("""\
+    legend : "brief", "full", or False
+        How to draw the legend. If "brief", numeric ``hue`` and ``size``
+        variables will be represented with a sample of evenly spaced values.
+        If "full", every group will get an entry in the legend. If ``False``,
+        no legend data is added and no legend is drawn.\
+    """),
+    ax_in=dedent("""\
+    ax : matplotlib Axes
+        Axes object to draw the plot onto, otherwise uses the current Axes.\
+    """),
+    ax_out=dedent("""\
+    ax : matplotlib Axes
+        Returns the Axes object with the plot drawn onto it.\
+    """),
+
+)
+
+
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
+    facets=DocstringComponents(_facet_docs),
+    rel=DocstringComponents(_relational_docs),
+)
 
 
 class _RelationalPlotter(VectorPlotter):
@@ -478,149 +638,6 @@ class _ScatterPlotter(_RelationalPlotter):
                 ax.legend()
 
 
-_relational_docs = dict(
-
-    # ---  Introductory prose
-    main_api_narrative=dedent("""\
-    The relationship between ``x`` and ``y`` can be shown for different subsets
-    of the data using the ``hue``, ``size``, and ``style`` parameters. These
-    parameters control what visual semantics are used to identify the different
-    subsets. It is possible to show up to three dimensions independently by
-    using all three semantic types, but this style of plot can be hard to
-    interpret and is often ineffective. Using redundant semantics (i.e. both
-    ``hue`` and ``style`` for the same variable) can be helpful for making
-    graphics more accessible.
-
-    See the :ref:`tutorial <relational_tutorial>` for more information.\
-    """),
-
-    relational_semantic_narrative=dedent("""\
-    The default treatment of the ``hue`` (and to a lesser extent, ``size``)
-    semantic, if present, depends on whether the variable is inferred to
-    represent "numeric" or "categorical" data. In particular, numeric variables
-    are represented with a sequential colormap by default, and the legend
-    entries show regular "ticks" with values that may or may not exist in the
-    data. This behavior can be controlled through various parameters, as
-    described and illustrated below.\
-    """),
-
-    # --- Shared function parameters
-    data_vars=dedent("""\
-    x, y : names of variables in ``data`` or vector data, optional
-        Input data variables; must be numeric. Can pass data directly or
-        reference columns in ``data``.\
-    """),
-    data=dedent("""\
-    data : DataFrame, array, or list of arrays, optional
-        Input data structure. If ``x`` and ``y`` are specified as names, this
-        should be a "long-form" DataFrame containing those columns. Otherwise
-        it is treated as "wide-form" data and grouping variables are ignored.
-        See the examples for the various ways this parameter can be specified
-        and the different effects of each.\
-    """),
-    palette=dedent("""\
-    palette : string, list, dict, or matplotlib colormap
-        An object that determines how colors are chosen when ``hue`` is used.
-        It can be the name of a seaborn palette or matplotlib colormap, a list
-        of colors (anything matplotlib understands), a dict mapping levels
-        of the ``hue`` variable to colors, or a matplotlib colormap object.\
-    """),
-    hue_order=dedent("""\
-    hue_order : list, optional
-        Specified order for the appearance of the ``hue`` variable levels,
-        otherwise they are determined from the data. Not relevant when the
-        ``hue`` variable is numeric.\
-    """),
-    hue_norm=dedent("""\
-    hue_norm : tuple or Normalize object, optional
-        Normalization in data units for colormap applied to the ``hue``
-        variable when it is numeric. Not relevant if it is categorical.\
-    """),
-    sizes=dedent("""\
-    sizes : list, dict, or tuple, optional
-        An object that determines how sizes are chosen when ``size`` is used.
-        It can always be a list of size values or a dict mapping levels of the
-        ``size`` variable to sizes. When ``size``  is numeric, it can also be
-        a tuple specifying the minimum and maximum size to use such that other
-        values are normalized within this range.\
-    """),
-    size_order=dedent("""\
-    size_order : list, optional
-        Specified order for appearance of the ``size`` variable levels,
-        otherwise they are determined from the data. Not relevant when the
-        ``size`` variable is numeric.\
-    """),
-    size_norm=dedent("""\
-    size_norm : tuple or Normalize object, optional
-        Normalization in data units for scaling plot objects when the
-        ``size`` variable is numeric.\
-    """),
-    markers=dedent("""\
-    markers : boolean, list, or dictionary, optional
-        Object determining how to draw the markers for different levels of the
-        ``style`` variable. Setting to ``True`` will use default markers, or
-        you can pass a list of markers or a dictionary mapping levels of the
-        ``style`` variable to markers. Setting to ``False`` will draw
-        marker-less lines.  Markers are specified as in matplotlib.\
-    """),
-    style_order=dedent("""\
-    style_order : list, optional
-        Specified order for appearance of the ``style`` variable levels
-        otherwise they are determined from the data. Not relevant when the
-        ``style`` variable is numeric.\
-    """),
-    units=dedent("""\
-    units : {long_form_var}
-        Grouping variable identifying sampling units. When used, a separate
-        line will be drawn for each unit with appropriate semantics, but no
-        legend entry will be added. Useful for showing distribution of
-        experimental replicates when exact identities are not needed.
-    """),
-    estimator=dedent("""\
-    estimator : name of pandas method or callable or None, optional
-        Method for aggregating across multiple observations of the ``y``
-        variable at the same ``x`` level. If ``None``, all observations will
-        be drawn.\
-    """),
-    ci=dedent("""\
-    ci : int or "sd" or None, optional
-        Size of the confidence interval to draw when aggregating with an
-        estimator. "sd" means to draw the standard deviation of the data.
-        Setting to ``None`` will skip bootstrapping.\
-    """),
-    n_boot=dedent("""\
-    n_boot : int, optional
-        Number of bootstraps to use for computing the confidence interval.\
-    """),
-    seed=dedent("""\
-    seed : int, numpy.random.Generator, or numpy.random.RandomState, optional
-        Seed or random number generator for reproducible bootstrapping.\
-    """),
-    legend=dedent("""\
-    legend : "brief", "full", or False, optional
-        How to draw the legend. If "brief", numeric ``hue`` and ``size``
-        variables will be represented with a sample of evenly spaced values.
-        If "full", every group will get an entry in the legend. If ``False``,
-        no legend data is added and no legend is drawn.\
-    """),
-    ax_in=dedent("""\
-    ax : matplotlib Axes, optional
-        Axes object to draw the plot onto, otherwise uses the current Axes.\
-    """),
-    ax_out=dedent("""\
-    ax : matplotlib Axes
-        Returns the Axes object with the plot drawn onto it.\
-    """),
-
-    # --- Repeated phrases
-    long_form_var="name of variables in ``data`` or vector data, optional",
-
-
-)
-
-_relational_docs.update(_facet_docs)
-
-
 @_deprecate_positional_args
 def lineplot(
     *,
@@ -661,9 +678,9 @@ def lineplot(
 lineplot.__doc__ = dedent("""\
     Draw a line plot with possibility of several semantic groupings.
 
-    {main_api_narrative}
+    {narrative.main_api}
 
-    {relational_semantic_narrative}
+    {narrative.relational_semantic}
 
     By default, the plot aggregates over multiple ``y`` values at each value of
     ``x`` and shows an estimate of the central tendency and a confidence
@@ -671,66 +688,58 @@ lineplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    {data_vars}
-    hue : {long_form_var}
+    {params.core.xy}
+    hue : vector or key in ``data``
         Grouping variable that will produce lines with different colors.
         Can be either categorical or numeric, although color mapping will
         behave differently in latter case.
-    size : {long_form_var}
+    size : vector or key in ``data``
         Grouping variable that will produce lines with different widths.
         Can be either categorical or numeric, although size mapping will
         behave differently in latter case.
-    style : {long_form_var}
+    style : vector or key in ``data``
         Grouping variable that will produce lines with different dashes
         and/or markers. Can have a numeric dtype but will always be treated
         as categorical.
-    {data}
-    {palette}
-    {hue_order}
-    {hue_norm}
-    {sizes}
-    {size_order}
-    {size_norm}
-    dashes : boolean, list, or dictionary, optional
-        Object determining how to draw the lines for different levels of the
-        ``style`` variable. Setting to ``True`` will use default dash codes, or
-        you can pass a list of dash codes or a dictionary mapping levels of the
-        ``style`` variable to dash codes. Setting to ``False`` will use solid
-        lines for all subsets. Dashes are specified as in matplotlib: a tuple
-        of ``(segment, gap)`` lengths, or an empty string to draw a solid line.
-    {markers}
-    {style_order}
-    {units}
-    {estimator}
-    {ci}
-    {n_boot}
-    {seed}
-    sort : boolean, optional
+    {params.core.data}
+    {params.core.palette}
+    {params.core.hue_order}
+    {params.core.hue_norm}
+    {params.rel.sizes}
+    {params.rel.size_order}
+    {params.rel.size_norm}
+    {params.rel.dashes}
+    {params.rel.markers}
+    {params.rel.style_order}
+    {params.rel.units}
+    {params.rel.estimator}
+    {params.rel.ci}
+    {params.rel.n_boot}
+    {params.rel.seed}
+    sort : boolean
         If True, the data will be sorted by the x and y variables, otherwise
         lines will connect points in the order they appear in the dataset.
-    err_style : "band" or "bars", optional
+    err_style : "band" or "bars"
         Whether to draw the confidence intervals with translucent error bands
         or discrete error bars.
     err_kws : dict of keyword arguments
         Additional paramters to control the aesthetics of the error bars. The
         kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
         or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
-    {legend}
-    {ax_in}
+    {params.rel.legend}
+    {params.core.ax}
     kwargs : key, value mappings
         Other keyword arguments are passed down to
         :meth:`matplotlib.axes.Axes.plot`.
 
     Returns
     -------
-    {ax_out}
+    {returns.ax}
 
     See Also
     --------
-    scatterplot : Show the relationship between two variables without
-                  emphasizing continuity of the ``x`` variable.
-    pointplot : Show the relationship between two variables when one is
-                categorical.
+    {seealso.scatterplot}
+    {seealso.pointplot}
 
     Examples
     --------
@@ -901,7 +910,12 @@ lineplot.__doc__ = dedent("""\
         ...                  col="region", hue="event", style="event",
         ...                  kind="line", data=fmri)
 
-    """).format(**_relational_docs)
+    """).format(
+    narrative=_relational_narrative,
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
@@ -946,63 +960,62 @@ def scatterplot(
 scatterplot.__doc__ = dedent("""\
     Draw a scatter plot with possibility of several semantic groupings.
 
-    {main_api_narrative}
+    {narrative.main_api}
 
-    {relational_semantic_narrative}
+    {narrative.relational_semantic}
 
     Parameters
     ----------
-    {data_vars}
-    hue : {long_form_var}
+    {params.core.xy}
+    hue : vector or key in ``data``
         Grouping variable that will produce points with different colors.
         Can be either categorical or numeric, although color mapping will
         behave differently in latter case.
-    size : {long_form_var}
+    size : vector or key in ``data``
         Grouping variable that will produce points with different sizes.
         Can be either categorical or numeric, although size mapping will
         behave differently in latter case.
-    style : {long_form_var}
+    style : vector or key in ``data``
         Grouping variable that will produce points with different markers.
         Can have a numeric dtype but will always be treated as categorical.
-    {data}
-    {palette}
-    {hue_order}
-    {hue_norm}
-    {sizes}
-    {size_order}
-    {size_norm}
-    {markers}
-    {style_order}
+    {params.core.data}
+    {params.core.palette}
+    {params.core.hue_order}
+    {params.core.hue_norm}
+    {params.rel.sizes}
+    {params.rel.size_order}
+    {params.rel.size_norm}
+    {params.rel.markers}
+    {params.rel.style_order}
     {{x,y}}_bins : lists or arrays or functions
         *Currently non-functional.*
-    {units}
+    {params.rel.units}
         *Currently non-functional.*
-    {estimator}
+    {params.rel.estimator}
         *Currently non-functional.*
-    {ci}
+    {params.rel.ci}
         *Currently non-functional.*
-    {n_boot}
+    {params.rel.n_boot}
         *Currently non-functional.*
     alpha : float
         Proportional opacity of the points.
     {{x,y}}_jitter : booleans or floats
         *Currently non-functional.*
-    {legend}
-    {ax_in}
+    {params.rel.legend}
+    {params.core.ax}
     kwargs : key, value mappings
         Other keyword arguments are passed down to
         :meth:`matplotlib.axes.Axes.scatter`.
 
     Returns
     -------
-    {ax_out}
+    {returns.ax}
 
     See Also
     --------
-    lineplot : Show the relationship between two variables connected with
-               lines to emphasize continuity.
-    swarmplot : Draw a scatter plot with one categorical variable, arranging
-                the points to show the distribution of values.
+    {seealso.lineplot}
+    {seealso.stripplot}
+    {seealso.swarmplot}
 
     Examples
     --------
@@ -1155,7 +1168,12 @@ scatterplot.__doc__ = dedent("""\
         ...                  kind="scatter", data=tips)
 
 
-    """).format(**_relational_docs)
+    """).format(
+    narrative=_relational_narrative,
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
@@ -1317,9 +1335,9 @@ relplot.__doc__ = dedent("""\
     Extra keyword arguments are passed to the underlying function, so you
     should refer to the documentation for each to see kind-specific options.
 
-    {main_api_narrative}
+    {narrative.main_api}
 
-    {relational_semantic_narrative}
+    {narrative.relational_semantic}
 
     After plotting, the :class:`FacetGrid` with the plot is returned and can
     be used directly to tweak supporting plot details or add other layers.
@@ -1330,49 +1348,49 @@ relplot.__doc__ = dedent("""\
 
     Parameters
     ----------
-    x, y : names of variables in ``data``
-        Input data variables; must be numeric.
-    hue : name in ``data``, optional
+    {params.core.xy}
+    hue : vector or key in ``data``
         Grouping variable that will produce elements with different colors.
         Can be either categorical or numeric, although color mapping will
         behave differently in latter case.
-    size : name in ``data``, optional
+    size : vector or key in ``data``
         Grouping variable that will produce elements with different sizes.
         Can be either categorical or numeric, although size mapping will
         behave differently in latter case.
-    style : name in ``data``, optional
+    style : vector or key in ``data``
         Grouping variable that will produce elements with different styles.
         Can have a numeric dtype but will always be treated as categorical.
-    {data}
-    row, col : names of variables in ``data``, optional
-        Categorical variables that will determine the faceting of the grid.
-    {col_wrap}
-    row_order, col_order : lists of strings, optional
+    {params.core.data}
+    {params.facets.rowcol}
+    {params.facets.col_wrap}
+    row_order, col_order : lists of strings
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
-    {palette}
-    {hue_order}
-    {hue_norm}
-    {sizes}
-    {size_order}
-    {size_norm}
-    {legend}
-    kind : string, optional
+    {params.core.palette}
+    {params.core.hue_order}
+    {params.core.hue_norm}
+    {params.rel.sizes}
+    {params.rel.size_order}
+    {params.rel.size_norm}
+    {params.rel.style_order}
+    {params.rel.dashes}
+    {params.rel.markers}
+    {params.rel.legend}
+    kind : string
         Kind of plot to draw, corresponding to a seaborn relational plot.
         Options are {{``scatter`` and ``line``}}.
-    {height}
-    {aspect}
-    facet_kws : dict, optional
+    {params.facets.height}
+    {params.facets.aspect}
+    facet_kws : dict
         Dictionary of other keyword arguments to pass to :class:`FacetGrid`.
+    {params.rel.units}
     kwargs : key, value pairings
         Other keyword arguments are passed through to the underlying plotting
         function.
 
     Returns
     -------
-    g : :class:`FacetGrid`
-        Returns the :class:`FacetGrid` object with the plot on it for further
-        tweaking.
+    {returns.facetgrid}
 
     Examples
     --------
@@ -1439,4 +1457,9 @@ relplot.__doc__ = dedent("""\
         ...                 hue="event", style="event", col="region",
         ...                 height=5, aspect=.7, kind="line", data=fmri)
 
-    """).format(**_relational_docs)
+    """).format(
+    narrative=_relational_narrative,
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
