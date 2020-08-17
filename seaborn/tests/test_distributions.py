@@ -32,6 +32,7 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
+from ..axisgrid import FacetGrid
 
 
 class TestDistPlot(object):
@@ -2152,3 +2153,18 @@ class TestDisPlot:
         assert len(g.axes.flat) == len(vals)
         for ax, val in zip(g.axes.flat, vals):
             assert val in ax.get_title()
+
+    def test_legend(self, long_df):
+
+        g = displot(long_df, x="x", hue="a")
+        assert g._legend is not None
+
+    def test_empty(self):
+
+        g = displot(x=[], y=[])
+        assert isinstance(g, FacetGrid)
+
+    def test_bivariate_ecdf_error(self, long_df):
+
+        with pytest.raises(NotImplementedError):
+            displot(long_df, x="x", y="y", kind="ecdf")
