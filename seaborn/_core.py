@@ -1071,7 +1071,7 @@ class VectorPlotter:
             # Register with the matplotlib unit conversion machinery
             # Perhaps cleaner to manage our own transform objects?
             # XXX Currently this does not allow "unshared" categorical axes
-            # We could add metatdata to a FacetGrid and set units based on that.
+            # We could add metadata to a FacetGrid and set units based on that.
             # See also comment in comp_data, which only uses a single axes to do
             # its mapping, meaning that it won't handle unshared axes well either.
             for ax in ax_list:

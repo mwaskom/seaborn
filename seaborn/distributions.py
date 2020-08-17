@@ -134,7 +134,7 @@ class _DistributionPlotter(VectorPlotter):
         ax_obj, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
     ):
         """Add artists that reflect semantic mappings and put then in a legend."""
-        # TODO note that this doesn't handle numeric mappngs the way relational plots do
+        # TODO note that this doesn't handle numeric mappings like the relational plots
         handles = []
         labels = []
         for level in self._hue_map.levels:
@@ -2180,6 +2180,8 @@ def displot(
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
         return g
+
+    kwargs["legend"] = legend
 
     # --- Draw the plots
 
