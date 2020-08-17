@@ -71,10 +71,13 @@ You may instead want to use the development version from Github:
 Testing
 -------
 
-To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using `pytest`).
+Testing seaborn requires installing additional packages listed in `ci/utils.txt`.
+
+To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)).
 
 The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`. Run `make coverage` to generate a test coverage report and `make lint` to check code style consistency.
 
+To build seaborn's documentation, please refer to [how to build the docs?](doc/README.md).
  
 Development
 -----------
