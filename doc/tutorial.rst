@@ -52,7 +52,7 @@ Official seaborn tutorial
             <div class="row">
               <div class="col-md-4">
                 <a href=./tutorial/distributions.html>
-                  <img src="_images/distributions_30_0.png" class="img-responsive center-block">
+                  <img src="_images/distributions_81_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">

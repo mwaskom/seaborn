@@ -287,10 +287,8 @@ class _LinePlotter(_RelationalPlotter):
         ))
 
         # Loop over the semantic subsets and add to the plot
-        grouping_semantics = "hue", "size", "style"
-        for sub_vars, sub_data in self._semantic_subsets(
-            grouping_semantics, from_comp_data=True
-        ):
+        grouping_vars = "hue", "size", "style"
+        for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
 
             if self.sort:
                 sort_vars = ["units", "x", "y"]

@@ -49,7 +49,7 @@ before_script:
 script:
   - make lint
   - if [ $DOCTESTS == 'true' ];
-    then make coverage;
+    then make test;
     else make unittests;
     fi
 

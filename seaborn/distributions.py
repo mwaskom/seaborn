@@ -20,11 +20,16 @@ from ._statistics import (
     Histogram,
     ECDF,
 )
+from .axisgrid import (
+    FacetGrid,
+    _facet_docs,
+)
 from .utils import (
     remove_na,
     _kde_support,
     _normalize_kwargs,
     _check_argument,
+    _assign_default_kwargs,
 )
 from .external import husl
 from ._decorators import _deprecate_positional_args
@@ -34,7 +39,7 @@ from ._docstrings import (
 )
 
 
-__all__ = ["distplot", "histplot", "kdeplot", "ecdfplot", "rugplot"]
+__all__ = ["displot", "histplot", "kdeplot", "ecdfplot", "rugplot", "distplot"]
 
 # ==================================================================================== #
 # Module documentation
@@ -73,6 +78,7 @@ cbar_kws : dict
 
 _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
+    facets=DocstringComponents(_facet_docs),
     dist=DocstringComponents(_dist_params),
     kde=DocstringComponents.from_function_params(KDE.__init__),
     hist=DocstringComponents.from_function_params(Histogram.__init__),
@@ -125,10 +131,10 @@ class _DistributionPlotter(VectorPlotter):
 
     def _add_legend(
         self,
-        ax, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
+        ax_obj, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
     ):
         """Add artists that reflect semantic mappings and put then in a legend."""
-        # TODO note that this doesn't handle numeric mappngs the way relational plots do
+        # TODO note that this doesn't handle numeric mappings like the relational plots
         handles = []
         labels = []
         for level in self._hue_map.levels:
@@ -140,7 +146,16 @@ class _DistributionPlotter(VectorPlotter):
             ))
             labels.append(level)
 
-        ax.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+        if isinstance(ax_obj, mpl.axes.Axes):
+            ax_obj.legend(handles, labels, title=self.variables["hue"], **legend_kws)
+        else:  # i.e. a FacetGrid. TODO make this better
+            legend_data = dict(zip(labels, handles))
+            ax_obj.add_legend(
+                legend_data,
+                title=self.variables["hue"],
+                label_order=self.var_levels["hue"],
+                **legend_kws
+            )
 
     def _artist_kws(self, kws, fill, element, multiple, color, alpha):
         """Handle differences between artists in filled/unfilled plots."""
@@ -182,6 +197,16 @@ class _DistributionPlotter(VectorPlotter):
         colors = np.clip([husl.husl_to_rgb(*hsl) for hsl in ramp], 0, 1)
         return mpl.colors.ListedColormap(colors)
 
+    def _default_discrete(self):
+        """Find default values for discrete hist esimation based on variable type."""
+        if self.univariate:
+            discrete = self.var_types[self.data_variable] == "categorical"
+        else:
+            discrete_x = self.var_types["x"] == "categorical"
+            discrete_y = self.var_types["y"] == "categorical"
+            discrete = discrete_x, discrete_y
+        return discrete
+
     def _resolve_multiple(
         self,
         curves,
@@ -195,17 +220,33 @@ class _DistributionPlotter(VectorPlotter):
             # support grid / set of bin edges, so we can make a dataframe
             # Reverse the column order to plot from top to bottom
             curves = pd.DataFrame(curves).iloc[:, ::-1]
-            norm_constant = curves.sum(axis="columns")
 
-            # Take the cumulative sum to stack
-            curves = curves.cumsum(axis="columns")
+            # Find column groups that are nested within col/row variables
+            column_groups = {}
+            for i, keyd in enumerate(map(dict, curves.columns.tolist())):
+                facet_key = keyd.get("col", None), keyd.get("row", None)
+                column_groups.setdefault(facet_key, [])
+                column_groups[facet_key].append(i)
 
-            # Normalize by row sum to fill
-            if multiple == "fill":
-                curves = curves.div(norm_constant, axis="index")
+            baselines = curves.copy()
+            for cols in column_groups.values():
 
-            # Define where each segment starts
-            baselines = curves.shift(1, axis=1).fillna(0)
+                norm_constant = curves.iloc[:, cols].sum(axis="columns")
+
+                # Take the cumulative sum to stack
+                curves.iloc[:, cols] = curves.iloc[:, cols].cumsum(axis="columns")
+
+                # Normalize by row sum to fill
+                if multiple == "fill":
+                    curves.iloc[:, cols] = (curves
+                                            .iloc[:, cols]
+                                            .div(norm_constant, axis="index"))
+
+                # Define where each segment starts
+                baselines.iloc[:, cols] = (curves
+                                           .iloc[:, cols]
+                                           .shift(1, axis=1)
+                                           .fillna(0))
 
         else:
 
@@ -214,13 +255,15 @@ class _DistributionPlotter(VectorPlotter):
 
         if multiple == "dodge":
 
-            n = len(curves)
-            for i, key in enumerate(curves):
-
+            # Account for the unique semantic (non-faceting) levels
+            # This will require rethiniking if we add other semantics!
+            hue_levels = self.var_levels["hue"]
+            n = len(hue_levels)
+            for key in curves:
+                level = dict(key)["hue"]
                 hist = curves[key].reset_index(name="heights")
-
                 hist["widths"] /= n
-                hist["edges"] += i * hist["widths"]
+                hist["edges"] += hue_levels.index(level) * hist["widths"]
 
                 curves[key] = hist.set_index(["edges", "widths"])["heights"]
 
@@ -242,28 +285,21 @@ class _DistributionPlotter(VectorPlotter):
         # Initialize the estimator object
         estimator = KDE(**estimate_kws)
 
-        cols = list(self.variables)
-        all_data = self.plot_data[cols].dropna()
+        all_data = self.plot_data.dropna()
 
-        if "hue" in self.variables:
-
-            # Access and clean the data
-            all_observations = self.comp_data[cols].dropna()
-
-            # Define a single grid of support for the PDFs
+        if set(self.variables) - {"x", "y"}:
             if common_grid:
+                all_observations = self.comp_data.dropna()
                 estimator.define_support(all_observations[data_variable])
-
         else:
-
             common_norm = False
 
         densities = {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[data_variable]
 
             observation_variance = observations.var()
@@ -312,9 +348,13 @@ class _DistributionPlotter(VectorPlotter):
         legend,
         line_kws,
         estimate_kws,
-        plot_kws,
-        ax,
+        **plot_kws,
     ):
+
+        # -- Default keyword dicts
+        kde_kws = {} if kde_kws is None else kde_kws.copy()
+        line_kws = {} if line_kws is None else line_kws.copy()
+        estimate_kws = {} if estimate_kws is None else estimate_kws.copy()
 
         # --  Input checking
         _check_argument("multiple", ["layer", "stack", "fill", "dodge"], multiple)
@@ -337,10 +377,6 @@ class _DistributionPlotter(VectorPlotter):
             warnings.warn(msg, UserWarning)
             estimate_kws["bins"] = 10
 
-        # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{self.data_variable}axis")
-        log_scale = data_axis.get_scale() == "log"
-
         # Simplify downstream code if we are not normalizing
         if estimate_kws["stat"] == "count":
             common_norm = False
@@ -349,16 +385,11 @@ class _DistributionPlotter(VectorPlotter):
         estimator = Histogram(**estimate_kws)
         histograms = {}
 
-        # Define relevant columns
-        # Note that this works around an issue in core that we can fix, and
-        # then we won't need this messiness.
-        # https://github.com/mwaskom/seaborn/issues/2135
-        cols = list(self.variables)
-
         # Do pre-compute housekeeping related to multiple groups
-        if "hue" in self.variables:
+        # TODO best way to account for facet/semantic?
+        if set(self.variables) - {"x", "y"}:
 
-            all_data = self.comp_data[cols].dropna()
+            all_data = self.comp_data.dropna()
 
             if common_bins:
                 all_observations = all_data[self.data_variable]
@@ -368,13 +399,21 @@ class _DistributionPlotter(VectorPlotter):
                 )
 
         else:
-            multiple = None
             common_norm = False
+
+        # Turn multiple off if no hue or if hue exists but is redundent with faceting
+        facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
+        if "hue" not in self.variables:
+            multiple = None
+        elif self.variables["hue"] in facet_vars:
+            multiple = None
 
         # Estimate the smoothed kernel densities, for use later
         if kde:
+            # TODO alternatively, clip at min/max bins?
             kde_kws.setdefault("cut", 0)
             kde_kws["cumulative"] = estimate_kws["cumulative"]
+            log_scale = self._log_scaled(self.data_variable)
             densities = self._compute_univariate_density(
                 self.data_variable,
                 common_norm,
@@ -384,11 +423,11 @@ class _DistributionPlotter(VectorPlotter):
             )
 
         # First pass through the data to compute the histograms
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[self.data_variable]
 
             if "weights" in self.variables:
@@ -409,7 +448,7 @@ class _DistributionPlotter(VectorPlotter):
                 densities[key] *= hist_norm
 
             # Convert edges back to original units for plotting
-            if log_scale:
+            if self._log_scaled(self.data_variable):
                 edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
@@ -453,32 +492,36 @@ class _DistributionPlotter(VectorPlotter):
 
         # Default color without a hue semantic should follow the color cycle
         # Note, this is fairly complicated and awkward, I'd like a better way
+        # TODO and now with the ax business, this is just super annoying FIX!!
         if "hue" not in self.variables:
-            if fill:
-                if self.var_types[self.data_variable] == "datetime":
-                    # Avoid drawing empty fill_between on date axis
-                    # https://github.com/matplotlib/matplotlib/issues/17586
-                    scout = None
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", None)
-                    )
-                    if default_color is None:
-                        default_color = "C0"
-                else:
-                    artist = mpl.patches.Rectangle
-                    plot_kws = _normalize_kwargs(plot_kws, artist)
-                    scout = ax.fill_between([], [], **plot_kws)
-                    default_color = tuple(scout.get_facecolor().squeeze())
-                    plot_kws.pop("color", None)
+            if self.ax is None:
+                default_color = "C0" if color is None else color
             else:
-                artist = mpl.lines.Line2D
-                plot_kws = _normalize_kwargs(plot_kws, artist)
-                scout, = ax.plot([], [], **plot_kws)
-                default_color = scout.get_color()
-            if scout is not None:
-                scout.remove()
+                if fill:
+                    if self.var_types[self.data_variable] == "datetime":
+                        # Avoid drawing empty fill_between on date axis
+                        # https://github.com/matplotlib/matplotlib/issues/17586
+                        scout = None
+                        default_color = plot_kws.pop(
+                            "color", plot_kws.pop("facecolor", None)
+                        )
+                        if default_color is None:
+                            default_color = "C0"
+                    else:
+                        artist = mpl.patches.Rectangle
+                        plot_kws = _normalize_kwargs(plot_kws, artist)
+                        scout = self.ax.fill_between([], [], color=color, **plot_kws)
+                        default_color = tuple(scout.get_facecolor().squeeze())
+                        plot_kws.pop("color", None)
+                else:
+                    artist = mpl.lines.Line2D
+                    plot_kws = _normalize_kwargs(plot_kws, artist)
+                    scout, = self.ax.plot([], [], color=color, **plot_kws)
+                    default_color = scout.get_color()
+                if scout is not None:
+                    scout.remove()
 
-        # Defeat alpha should depend on other parameters
+        # Default alpha should depend on other parameters
         if multiple == "layer":
             default_alpha = .5 if element == "bars" else .25
         elif kde:
@@ -490,11 +533,13 @@ class _DistributionPlotter(VectorPlotter):
         hist_artists = []
 
         # Go back through the dataset and draw the plots
-        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+        for sub_vars, _ in self.iter_data("hue", reverse=True):
 
             key = tuple(sub_vars.items())
             hist = histograms[key].rename("heights").reset_index()
             bottom = np.asarray(baselines[key])
+
+            ax = self._get_axes(sub_vars)
 
             # Define the matplotlib attributes that depend on semantic mapping
             if "hue" in self.variables:
@@ -604,50 +649,56 @@ class _DistributionPlotter(VectorPlotter):
 
             # Now we handle linewidth, which depends on the scaling of the plot
 
-            # Needed in some cases to get valid transforms.
-            # Innocuous in other cases?
-            ax.autoscale_view()
+            # Loop through subsets based only on facet variables
+            for sub_vars, _ in self.iter_data():
 
-            # We will base everything on the minimum bin width
-            hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
-            binwidth = min([
-                h["widths"].min() for h in hist_metadata
-            ])
+                ax = self._get_axes(sub_vars)
 
-            # Convert binwidtj from data coordinates to pixels
-            pts_x, pts_y = 72 / ax.figure.dpi * (
-                ax.transData.transform([binwidth, binwidth])
-                - ax.transData.transform([0, 0])
-            )
-            if self.data_variable == "x":
-                binwidth_points = pts_x
-            else:
-                binwidth_points = pts_y
+                # Needed in some cases to get valid transforms.
+                # Innocuous in other cases?
+                ax.autoscale_view()
 
-            # The relative size of the lines depends on the appearance
-            # This is a provisional value and may need more tweaking
-            default_linewidth = .1 * binwidth_points
+                # We will base everything on the minimum bin width
+                hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
+                binwidth = min([
+                    h["widths"].min() for h in hist_metadata
+                ])
 
-            # Set the attributes
-            for bar in hist_artists:
+                # Convert binwidtj from data coordinates to pixels
+                pts_x, pts_y = 72 / ax.figure.dpi * (
+                    ax.transData.transform([binwidth, binwidth])
+                    - ax.transData.transform([0, 0])
+                )
+                if self.data_variable == "x":
+                    binwidth_points = pts_x
+                else:
+                    binwidth_points = pts_y
 
-                # Don't let the lines get too thick
-                max_linewidth = bar.get_linewidth()
-                if not fill:
-                    max_linewidth *= 1.5
+                # The relative size of the lines depends on the appearance
+                # This is a provisional value and may need more tweaking
+                default_linewidth = .1 * binwidth_points
 
-                linewidth = min(default_linewidth, max_linewidth)
+                # Set the attributes
+                for bar in hist_artists:
 
-                # If not filling, don't let lines dissapear
-                if not fill:
-                    min_linewidth = .5
-                    linewidth = max(linewidth, min_linewidth)
+                    # Don't let the lines get too thick
+                    max_linewidth = bar.get_linewidth()
+                    if not fill:
+                        max_linewidth *= 1.5
 
-                bar.set_linewidth(linewidth)
+                    linewidth = min(default_linewidth, max_linewidth)
+
+                    # If not filling, don't let lines dissapear
+                    if not fill:
+                        min_linewidth = .5
+                        linewidth = max(linewidth, min_linewidth)
+
+                    bar.set_linewidth(linewidth)
 
         # --- Finalize the plot ----
 
         # Axis labels
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         default_x = default_y = ""
         if self.data_variable == "x":
             default_y = estimator.stat.capitalize()
@@ -663,51 +714,48 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, element, multiple, alpha, plot_kws, {},
+                ax_obj, artist, fill, element, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate_histogram(
         self,
-        common_bins,
-        common_norm,
-        thresh,
-        pthresh,
-        pmax,
-        color,
-        legend,
+        common_bins, common_norm,
+        thresh, pthresh, pmax,
+        color, legend,
         cbar, cbar_ax, cbar_kws,
         estimate_kws,
-        plot_kws,
-        ax,
+        **plot_kws,
     ):
 
-        # Check for log scaling on the data axis
-        log_scale = ax.xaxis.get_scale() == "log", ax.yaxis.get_scale() == "log"
+        # Default keyword dicts
+        cbar_kws = {} if cbar_kws is None else cbar_kws.copy()
 
         # Now initialize the Histogram estimator
         estimator = Histogram(**estimate_kws)
 
-        # None that we need to define cols because of some limitations in
-        # the core code, that are on track for resolution. (GH2135)
-        cols = list(self.variables)
-        all_data = self.comp_data[cols].dropna()
-        weights = all_data.get("weights", None)
-
         # Do pre-compute housekeeping related to multiple groups
-        if "hue" in self.variables:
+        if set(self.variables) - {"x", "y"}:
+            all_data = self.comp_data.dropna()
             if common_bins:
                 estimator.define_bin_edges(
                     all_data["x"],
                     all_data["y"],
-                    weights,
+                    all_data.get("weights", None),
                 )
         else:
             common_norm = False
 
         # -- Determine colormap threshold and norm based on the full data
 
-        full_heights, _ = estimator(all_data["x"], all_data["y"], weights)
+        full_heights = []
+        for _, sub_data in self.iter_data(from_comp_data=True):
+            sub_data = sub_data.dropna()
+            sub_heights, _ = estimator(
+                sub_data["x"], sub_data["y"], sub_data.get("weights", None)
+            )
+            full_heights.append(sub_heights)
 
         common_color_norm = "hue" not in self.variables or common_norm
 
@@ -719,23 +767,19 @@ class _DistributionPlotter(VectorPlotter):
             if pmax is not None:
                 vmax = self._quantile_to_level(full_heights, pmax)
             else:
-                vmax = plot_kws.pop("vmax", full_heights.max())
+                vmax = plot_kws.pop("vmax", np.max(full_heights))
         else:
             vmax = None
 
-        # pcolormesh is going to turn the grid off, but we want to keep it
-        # I'm not sure if there's a better way to get the grid state
-        x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
-        y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
-
         # Get a default color
+        # (We won't follow the color cycle here, as multiple plots are unlikely)
         if color is None:
             color = "C0"
 
         # --- Loop over data (subsets) and draw the histograms
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
 
             if sub_data.empty:
                 continue
@@ -747,9 +791,10 @@ class _DistributionPlotter(VectorPlotter):
                 weights=sub_data.get("weights", None),
             )
 
-            if log_scale[0]:
+            # Check for log scaling on the data axis
+            if self._log_scaled("x"):
                 x_edges = np.power(10, x_edges)
-            if log_scale[1]:
+            if self._log_scaled("y"):
                 y_edges = np.power(10, y_edges)
 
             # Apply scaling to normalize across groups
@@ -779,13 +824,25 @@ class _DistributionPlotter(VectorPlotter):
             if thresh is not None:
                 heights = np.ma.masked_less_equal(heights, thresh)
 
-            # Draw the plot
+            # Get the axes for this plot
+            ax = self._get_axes(sub_vars)
+
+            # pcolormesh is going to turn the grid off, but we want to keep it
+            # I'm not sure if there's a better way to get the grid state
+            x_grid = any([l.get_visible() for l in ax.xaxis.get_gridlines()])
+            y_grid = any([l.get_visible() for l in ax.yaxis.get_gridlines()])
+
             mesh = ax.pcolormesh(
                 x_edges,
                 y_edges,
                 heights.T,
                 **artist_kws,
             )
+
+            # pcolormesh sets sticky edges, but we only want them if not thresholding
+            if thresh is not None:
+                mesh.sticky_edges.x[:] = []
+                mesh.sticky_edges.y[:] = []
 
             # Add an optional colorbar
             # Note, we want to improve this. When hue is used, it will stack
@@ -795,12 +852,15 @@ class _DistributionPlotter(VectorPlotter):
             if cbar:
                 ax.figure.colorbar(mesh, cbar_ax, ax, **cbar_kws)
 
-        # --- Finalize the plot
-        if x_grid:
-            ax.grid(True, axis="x")
-        if y_grid:
-            ax.grid(True, axis="y")
+            # Reset the grid state
+            if x_grid:
+                ax.grid(True, axis="x")
+            if y_grid:
+                ax.grid(True, axis="y")
 
+        # --- Finalize the plot
+
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         self._add_axis_labels(ax)
 
         if "hue" in self.variables and legend:
@@ -811,8 +871,9 @@ class _DistributionPlotter(VectorPlotter):
 
             artist_kws = {}
             artist = partial(mpl.patches.Patch)
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, True, False, "layer", 1, artist_kws, {},
+                ax_obj, artist, True, False, "layer", 1, artist_kws, {},
             )
 
     def plot_univariate_density(
@@ -823,9 +884,12 @@ class _DistributionPlotter(VectorPlotter):
         fill,
         legend,
         estimate_kws,
-        plot_kws,
-        ax,
+        **plot_kws,
     ):
+
+        # Handle conditional defaults
+        if fill is None:
+            fill = multiple in ("stack", "fill")
 
         # Preprocess the matplotlib keyword dictionaries
         if fill:
@@ -837,13 +901,13 @@ class _DistributionPlotter(VectorPlotter):
         # Input checking
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
-        # Check for log scaling on the data axis
-        data_axis = getattr(ax, f"{self.data_variable}axis")
-        log_scale = data_axis.get_scale() == "log"
-
         # Always share the evaluation grid when stacking
-        if "hue" in self.variables and multiple in ("stack", "fill"):
+        subsets = bool(set(self.variables) - {"x", "y"})
+        if subsets and multiple in ("stack", "fill"):
             common_grid = True
+
+        # Check if the data axis is log scaled
+        log_scale = self._log_scaled(self.data_variable)
 
         # Do the computation
         densities = self._compute_univariate_density(
@@ -851,7 +915,7 @@ class _DistributionPlotter(VectorPlotter):
             common_norm,
             common_grid,
             estimate_kws,
-            log_scale
+            log_scale,
         )
 
         # Note: raises when no hue and multiple != layer. A problem?
@@ -869,32 +933,37 @@ class _DistributionPlotter(VectorPlotter):
 
         # Handle default visual attributes
         if "hue" not in self.variables:
-            if fill:
-                if self.var_types[self.data_variable] == "datetime":
-                    # Avoid drawing empty fill_between on date axis
-                    # https://github.com/matplotlib/matplotlib/issues/17586
-                    scout = None
-                    default_color = plot_kws.pop(
-                        "color", plot_kws.pop("facecolor", None)
-                    )
-                    if default_color is None:
-                        default_color = "C0"
-                else:
-                    scout = ax.fill_between([], [], **plot_kws)
-                    default_color = tuple(scout.get_facecolor().squeeze())
-                plot_kws.pop("color", None)
+            if self.ax is None:
+                default_color = plot_kws.pop("color", "C0")
             else:
-                scout, = ax.plot([], [], **plot_kws)
-                default_color = scout.get_color()
-            if scout is not None:
-                scout.remove()
+                if fill:
+                    if self.var_types[self.data_variable] == "datetime":
+                        # Avoid drawing empty fill_between on date axis
+                        # https://github.com/matplotlib/matplotlib/issues/17586
+                        scout = None
+                        default_color = plot_kws.pop(
+                            "color", plot_kws.pop("facecolor", None)
+                        )
+                        if default_color is None:
+                            default_color = "C0"
+                    else:
+                        scout = self.ax.fill_between([], [], **plot_kws)
+                        default_color = tuple(scout.get_facecolor().squeeze())
+                    plot_kws.pop("color", None)
+                else:
+                    scout, = self.ax.plot([], [], **plot_kws)
+                    default_color = scout.get_color()
+                if scout is not None:
+                    scout.remove()
+
+        plot_kws.pop("color", None)
 
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
         # Now iterate through the subsets and draw the densities
         # We go backwards so stacked densities read from top-to-bottom
-        for sub_vars, _ in self._semantic_subsets("hue", reverse=True):
+        for sub_vars, _ in self.iter_data("hue", reverse=True):
 
             # Extract the support grid and density curve for this level
             key = tuple(sub_vars.items())
@@ -904,6 +973,8 @@ class _DistributionPlotter(VectorPlotter):
                 continue
             support = density.index
             fill_from = baselines[key]
+
+            ax = self._get_axes(sub_vars)
 
             # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
@@ -941,6 +1012,8 @@ class _DistributionPlotter(VectorPlotter):
                 artist.sticky_edges.y[:] = sticky_support
 
         # --- Finalize the plot ----
+
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         default_x = default_y = ""
         if self.data_variable == "x":
             default_y = "Density"
@@ -955,8 +1028,9 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, False, multiple, alpha, plot_kws, {},
+                ax_obj, artist, fill, False, multiple, alpha, plot_kws, {},
             )
 
     def plot_bivariate_density(
@@ -971,8 +1045,7 @@ class _DistributionPlotter(VectorPlotter):
         cbar_ax,
         cbar_kws,
         estimate_kws,
-        contour_kws,
-        ax,
+        **contour_kws,
     ):
 
         contour_kws = contour_kws.copy()
@@ -982,22 +1055,15 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" not in self.variables:
             common_norm = False
 
-        # See other notes about GH2135
-        cols = list(self.variables)
-        all_data = self.plot_data[cols].dropna()
-
-        # Check for log scaling on iether axis
-        scalex = ax.xaxis.get_scale() == "log"
-        scaley = ax.yaxis.get_scale() == "log"
-        log_scale = scalex, scaley
+        all_data = self.plot_data.dropna()
 
         # Loop through the subsets and estimate the KDEs
         densities, supports = {}, {}
 
-        for sub_vars, sub_data in self._semantic_subsets("hue", from_comp_data=True):
+        for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             observations = sub_data[["x", "y"]]
 
             # Extract the weights for this subset of observations
@@ -1018,13 +1084,12 @@ class _DistributionPlotter(VectorPlotter):
             density, support = estimator(*observations, weights=weights)
 
             # Transform the support grid back to the original scale
-            if log_scale is not None:
-                xx, yy = support
-                if log_scale[0]:
-                    xx = np.power(10, xx)
-                if log_scale[1]:
-                    yy = np.power(10, yy)
-                support = xx, yy
+            xx, yy = support
+            if self._log_scaled("x"):
+                xx = np.power(10, xx)
+            if self._log_scaled("y"):
+                yy = np.power(10, yy)
+            support = xx, yy
 
             # Apply a scaling factor so that the integral over all subsets is 1
             if common_norm:
@@ -1041,7 +1106,7 @@ class _DistributionPlotter(VectorPlotter):
             if min(levels) < 0 or max(levels) > 1:
                 raise ValueError("levels must be in [0, 1]")
 
-        # Transfrom from iso-proportions to iso-densities
+        # Transform from iso-proportions to iso-densities
         if common_norm:
             common_levels = self._quantile_to_level(
                 list(densities.values()), levels,
@@ -1054,9 +1119,12 @@ class _DistributionPlotter(VectorPlotter):
             }
 
         # Get a default single color from the attribute cycle
-        scout, = ax.plot([], color=color)
-        default_color = scout.get_color()
-        scout.remove()
+        if self.ax is None:
+            default_color = "C0" if color is None else color
+        else:
+            scout, = self.ax.plot([], color=color)
+            default_color = scout.get_color()
+            scout.remove()
 
         # Define the coloring of the contours
         if "hue" in self.variables:
@@ -1073,16 +1141,8 @@ class _DistributionPlotter(VectorPlotter):
             if not fill and not coloring_given:
                 contour_kws["colors"] = [default_color]
 
-        # Choose the function to plot with
-        # TODO could add a pcolormesh based option as well
-        # Which would look something like element="raster"
-        if fill:
-            contour_func = ax.contourf
-        else:
-            contour_func = ax.contour
-
         # Loop through the subsets again and plot the data
-        for sub_vars, _ in self._semantic_subsets("hue"):
+        for sub_vars, _ in self.iter_data("hue"):
 
             if "hue" in sub_vars:
                 color = self._hue_map(sub_vars["hue"])
@@ -1090,6 +1150,16 @@ class _DistributionPlotter(VectorPlotter):
                     contour_kws["cmap"] = self._cmap_from_color(color)
                 else:
                     contour_kws["colors"] = [color]
+
+            ax = self._get_axes(sub_vars)
+
+            # Choose the function to plot with
+            # TODO could add a pcolormesh based option as well
+            # Which would look something like element="raster"
+            if fill:
+                contour_func = ax.contourf
+            else:
+                contour_func = ax.contour
 
             key = tuple(sub_vars.items())
             if key not in densities:
@@ -1116,6 +1186,7 @@ class _DistributionPlotter(VectorPlotter):
                 ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
 
         # --- Finalize the plot
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         self._add_axis_labels(ax)
 
         if "hue" in self.variables and legend:
@@ -1130,14 +1201,12 @@ class _DistributionPlotter(VectorPlotter):
             else:
                 artist = partial(mpl.lines.Line2D, [], [])
 
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, fill, False, "layer", 1, artist_kws, {},
+                ax_obj, artist, fill, False, "layer", 1, artist_kws, {},
             )
 
-    def plot_univariate_ecdf(self, estimate_kws, legend, plot_kws, ax):
-
-        # TODO see notes elsewhere about GH2135
-        cols = list(self.variables)
+    def plot_univariate_ecdf(self, estimate_kws, legend, **plot_kws):
 
         estimator = ECDF(**estimate_kws)
 
@@ -1146,18 +1215,18 @@ class _DistributionPlotter(VectorPlotter):
         plot_kws["drawstyle"] = drawstyles[self.data_variable]
 
         # Loop through the subsets, transform and plot the data
-        for sub_vars, sub_data in self._semantic_subsets(
+        for sub_vars, sub_data in self.iter_data(
             "hue", reverse=True, from_comp_data=True,
         ):
 
             # Compute the ECDF
-            sub_data = sub_data[cols].dropna()
+            sub_data = sub_data.dropna()
             if sub_data.empty:
                 continue
 
             observations = sub_data[self.data_variable]
             weights = sub_data.get("weights", None)
-            stat, vals = estimator(observations, weights)
+            stat, vals = estimator(observations, weights=weights)
 
             # Assign attributes based on semantic mapping
             artist_kws = plot_kws.copy()
@@ -1178,11 +1247,13 @@ class _DistributionPlotter(VectorPlotter):
                 top_edge = 1
 
             # Draw the line for this subset
+            ax = self._get_axes(sub_vars)
             artist, = ax.plot(*plot_args, **artist_kws)
             sticky_edges = getattr(artist.sticky_edges, stat_variable)
             sticky_edges[:] = 0, top_edge
 
         # --- Finalize the plot ----
+        ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
         stat = estimator.stat.capitalize()
         default_x = default_y = ""
         if self.data_variable == "x":
@@ -1194,55 +1265,62 @@ class _DistributionPlotter(VectorPlotter):
         if "hue" in self.variables and legend:
             artist = partial(mpl.lines.Line2D, [], [])
             alpha = plot_kws.get("alpha", 1)
+            ax_obj = self.ax if self.ax is not None else self.facets
             self._add_legend(
-                ax, artist, False, False, None, alpha, plot_kws, {},
+                ax_obj, artist, False, False, None, alpha, plot_kws, {},
             )
 
-    def plot_rug(self, height, expand_margins, legend, ax, kws):
+    def plot_rug(self, height, expand_margins, legend, **kws):
 
         kws = _normalize_kwargs(kws, mpl.lines.Line2D)
 
-        # TODO we need to abstract this logic
-        scout, = ax.plot([], [], **kws)
-        kws["color"] = kws.pop("color", scout.get_color())
-        scout.remove()
+        if self.ax is None:
+            kws["color"] = kws.pop("color", "C0")
+        else:
+            scout, = self.ax.plot([], [], **kws)
+            kws["color"] = kws.pop("color", scout.get_color())
+            scout.remove()
 
-        kws.setdefault("linewidth", 1)
+        for sub_vars, sub_data, in self.iter_data():
 
-        if expand_margins:
-            xmarg, ymarg = ax.margins()
+            ax = self._get_axes(sub_vars)
+
+            kws.setdefault("linewidth", 1)
+
+            if expand_margins:
+                xmarg, ymarg = ax.margins()
+                if "x" in self.variables:
+                    ymarg += height * 2
+                if "y" in self.variables:
+                    xmarg += height * 2
+                ax.margins(x=xmarg, y=ymarg)
+
+            if "hue" in self.variables:
+                kws.pop("c", None)
+                kws.pop("color", None)
+
             if "x" in self.variables:
-                ymarg += height * 2
+                self._plot_single_rug(sub_data, "x", height, ax, kws)
             if "y" in self.variables:
-                xmarg += height * 2
-            ax.margins(x=xmarg, y=ymarg)
+                self._plot_single_rug(sub_data, "y", height, ax, kws)
 
-        if "hue" in self.variables:
-            kws.pop("c", None)
-            kws.pop("color", None)
+            # --- Finalize the plot
+            self._add_axis_labels(ax)
+            if "hue" in self.variables and legend:
+                # TODO ideally i'd like the legend artist to look like a rug
+                legend_artist = partial(mpl.lines.Line2D, [], [])
+                self._add_legend(
+                    ax, legend_artist, False, False, None, 1, {}, {},
+                )
 
-        if "x" in self.variables:
-            self._plot_single_rug("x", height, ax, kws)
-        if "y" in self.variables:
-            self._plot_single_rug("y", height, ax, kws)
-
-        # --- Finalize the plot
-        self._add_axis_labels(ax)
-        if "hue" in self.variables and legend:
-            # TODO ideally i'd like the legend artist to look like a rug
-            legend_artist = partial(mpl.lines.Line2D, [], [])
-            self._add_legend(
-                ax, legend_artist, False, False, None, 1, {}, {},
-            )
-
-    def _plot_single_rug(self, var, height, ax, kws):
+    def _plot_single_rug(self, sub_data, var, height, ax, kws):
         """Draw a rugplot along one axis of the plot."""
-        vector = self.plot_data[var]
+        vector = sub_data[var]
         n = len(vector)
 
         # We'll always add a single collection with varying colors
         if "hue" in self.variables:
-            colors = self._hue_map(self.plot_data["hue"])
+            colors = self._hue_map(sub_data["hue"])
         else:
             colors = None
 
@@ -1268,6 +1346,11 @@ class _DistributionPlotter(VectorPlotter):
         ))
 
         ax.autoscale_view(scalex=var == "x", scaley=var == "y")
+
+
+class _DistributionFacetPlotter(_DistributionPlotter):
+
+    semantics = _DistributionPlotter.semantics + ("col", "row")
 
 
 # ==================================================================================== #
@@ -1305,16 +1388,6 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
-    # TODO move these defaults inside the plot functions
-    if kde_kws is None:
-        kde_kws = {}
-
-    if line_kws is None:
-        line_kws = {}
-
-    if cbar_kws is None:
-        cbar_kws = {}
-
     # Check for a specification that lacks x/y data and return early
     if not p.has_xy_data:
         return ax
@@ -1323,16 +1396,8 @@ def histplot(
     p._attach(ax, log_scale=log_scale)
 
     # Default to discrete bins for categorical variables
-    # Note that having this logic here may constrain plans for distplot
-    # It can move inside the plot_ functions, it will just need to modify
-    # the estimate_kws dictionary (I am not sure how we feel about that)
     if discrete is None:
-        if p.univariate:
-            discrete = p.var_types[p.data_variable] == "categorical"
-        else:
-            discrete_x = p.var_types["x"] == "categorical"
-            discrete_y = p.var_types["y"] == "categorical"
-            discrete = discrete_x, discrete_y
+        discrete = p._default_discrete()
 
     estimate_kws = dict(
         stat=stat,
@@ -1345,9 +1410,6 @@ def histplot(
 
     if p.univariate:
 
-        if "hue" not in p.variables:
-            kwargs["color"] = color
-
         p.plot_univariate_histogram(
             multiple=multiple,
             element=element,
@@ -1356,13 +1418,12 @@ def histplot(
             common_norm=common_norm,
             common_bins=common_bins,
             kde=kde,
-            kde_kws=kde_kws.copy(),
+            kde_kws=kde_kws,
             color=color,
             legend=legend,
-            estimate_kws=estimate_kws.copy(),
-            line_kws=line_kws.copy(),
-            plot_kws=kwargs,
-            ax=ax,
+            estimate_kws=estimate_kws,
+            line_kws=line_kws,
+            **kwargs,
         )
 
     else:
@@ -1379,8 +1440,7 @@ def histplot(
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
-            plot_kws=kwargs,
-            ax=ax,
+            **kwargs,
         )
 
     return ax
@@ -1397,7 +1457,7 @@ This function can normalize the statistic computed within each bin to estimate
 frequency, density or probability mass, and it can add a smooth curve obtained
 using a kernel density estimate, similar to :func:`kdeplot`.
 
-More information is provided in the :ref:`user guide <userguide_hist>`.
+More information is provided in the :ref:`user guide <tutorial_hist>`.
 
 Parameters
 ----------
@@ -1481,11 +1541,11 @@ Returns
 
 See Also
 --------
+{seealso.displot}
 {seealso.kdeplot}
 {seealso.rugplot}
 {seealso.ecdfplot}
 {seealso.jointplot}
-distplot
 
 Notes
 -----
@@ -1505,6 +1565,9 @@ specific locations where the bins should break.
 
 Examples
 --------
+
+See the API documentation for the axes-level functions for more details
+about the breadth of options available for each plot kind.
 
 .. include:: ../docstrings/histplot.rst
 
@@ -1651,10 +1714,6 @@ def kdeplot(
 
     if p.univariate:
 
-        # Set defaults that depend on other parameters
-        if fill is None:
-            fill = multiple in ("stack", "fill")
-
         plot_kws = kwargs.copy()
         if color is not None:
             plot_kws["color"] = color
@@ -1666,8 +1725,7 @@ def kdeplot(
             fill=fill,
             legend=legend,
             estimate_kws=estimate_kws,
-            plot_kws=plot_kws,
-            ax=ax
+            **plot_kws,
         )
 
     else:
@@ -1683,8 +1741,7 @@ def kdeplot(
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
             estimate_kws=estimate_kws,
-            contour_kws=kwargs,
-            ax=ax,
+            **kwargs,
         )
 
     return ax
@@ -1698,7 +1755,7 @@ distribution of observations in a dataset, analagous to a histogram. KDE
 represents the data using a continuous probability density curve in one or
 more dimensions.
 
-The approach is explained further in the :ref:`user guide <userguide_kde>`.
+The approach is explained further in the :ref:`user guide <tutorial_kde>`.
 
 Relative to a histogram, KDE can produce a plot that is less cluttered and
 more interpretable, especially when drawing multiple distributions. But it
@@ -1790,12 +1847,11 @@ Returns
 
 See Also
 --------
-{seealso.violinplot}
+{seealso.displot}
 {seealso.histplot}
 {seealso.ecdfplot}
-{seealso.rugplot}
 {seealso.jointplot}
-distplot
+{seealso.violinplot}
 
 Notes
 -----
@@ -1887,8 +1943,7 @@ def ecdfplot(
     p.plot_univariate_ecdf(
         estimate_kws=estimate_kws,
         legend=legend,
-        plot_kws=kwargs,
-        ax=ax,
+        **kwargs,
     )
 
     return ax
@@ -1906,7 +1961,7 @@ between the appearance of the plot and the basic properties of the distribution
 (such as its central tendency, variance, and the presence of any bimodality)
 may not be as intuitive.
 
-More information is provided in the :ref:`user guide <userguide_ecdf>`.
+More information is provided in the :ref:`user guide <tutorial_ecdf>`.
 
 Parameters
 ----------
@@ -1930,10 +1985,10 @@ Returns
 
 See Also
 --------
+{seealso.displot}
 {seealso.histplot}
 {seealso.kdeplot}
 {seealso.rugplot}
-distplot
 
 Examples
 --------
@@ -2010,10 +2065,9 @@ def rugplot(
 
     if ax is None:
         ax = plt.gca()
-
     p._attach(ax)
 
-    p.plot_rug(height, expand_margins, legend, ax, kwargs)
+    p.plot_rug(height, expand_margins, legend, **kwargs)
 
     return ax
 
@@ -2066,6 +2120,259 @@ Examples
 )
 
 
+def displot(
+    data=None, *,
+    # Vector variables
+    x=None, y=None, hue=None, row=None, col=None, weights=None,
+    # Other plot parameters
+    kind="hist", rug=False, rug_kws=None, log_scale=None, legend=True,
+    # Hue-mapping parameters
+    palette=None, hue_order=None, hue_norm=None, color=None,
+    # Faceting parameters
+    col_wrap=None, row_order=None, col_order=None,
+    height=5, aspect=1, facet_kws=None,
+    **kwargs,
+):
+
+    p = _DistributionFacetPlotter(
+        data=data,
+        variables=_DistributionFacetPlotter.get_semantics(locals())
+    )
+
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    _check_argument("kind", ["hist", "kde", "ecdf"], kind)
+
+    # --- Initialize the FacetGrid object
+
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = (
+            "`displot` is a figure-level function and does not accept "
+            "the ax= paramter. You may wish to try {}plot.".format(kind)
+        )
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
+
+    for var in ["row", "col"]:
+        # Handle faceting variables that lack name information
+        if var in p.variables and p.variables[var] is None:
+            p.variables[var] = f"_{var}_"
+
+    # Adapt the plot_data dataframe for use with FacetGrid
+    data = p.plot_data.rename(columns=p.variables)
+    data = data.loc[:, ~data.columns.duplicated()]
+
+    col_name = p.variables.get("col", None)
+    row_name = p.variables.get("row", None)
+
+    if facet_kws is None:
+        facet_kws = {}
+
+    g = FacetGrid(
+        data=data, row=row_name, col=col_name,
+        col_wrap=col_wrap, height=height, aspect=aspect,
+        **facet_kws,
+    )
+
+    # Now attach the axes object to the plotter object
+    if kind == "kde":
+        allowed_types = ["numeric", "datetime"]
+    else:
+        allowed_types = None
+    p._attach(g, allowed_types=allowed_types, log_scale=log_scale)
+
+    # Check for a specification that lacks x/y data and return early
+    if not p.has_xy_data:
+        return g
+
+    kwargs["legend"] = legend
+
+    # --- Draw the plots
+
+    if kind == "hist":
+
+        hist_kws = kwargs.copy()
+
+        # Extract the parameters that will go directly to Histogram
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, Histogram.__init__, histplot)
+
+        estimate_kws = {}
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = hist_kws.pop(key, default_val)
+
+        # Handle derivative defaults
+        if estimate_kws["discrete"] is None:
+            estimate_kws["discrete"] = p._default_discrete()
+
+        hist_kws["estimate_kws"] = estimate_kws
+
+        if p.univariate:
+
+            if "hue" not in p.variables:
+                hist_kws.setdefault("color", color)
+
+            _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
+            p.plot_univariate_histogram(**hist_kws)
+
+        else:
+
+            _assign_default_kwargs(hist_kws, p.plot_bivariate_histogram, histplot)
+            p.plot_bivariate_histogram(**hist_kws)
+
+    elif kind == "kde":
+
+        kde_kws = kwargs.copy()
+
+        # Extract the parameters that will go directly to KDE
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, KDE.__init__, kdeplot)
+
+        estimate_kws = {}
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = kde_kws.pop(key, default_val)
+
+        kde_kws["estimate_kws"] = estimate_kws
+        kde_kws["color"] = color
+
+        if p.univariate:
+
+            _assign_default_kwargs(kde_kws, p.plot_univariate_density, kdeplot)
+            p.plot_univariate_density(**kde_kws)
+
+        else:
+
+            _assign_default_kwargs(kde_kws, p.plot_bivariate_density, kdeplot)
+            p.plot_bivariate_density(**kde_kws)
+
+    elif kind == "ecdf":
+
+        ecdf_kws = kwargs.copy()
+
+        # Extract the parameters that will go directly to the estimator
+        estimate_kws = {}
+        estimate_defaults = {}
+        _assign_default_kwargs(estimate_defaults, ECDF.__init__, ecdfplot)
+        for key, default_val in estimate_defaults.items():
+            estimate_kws[key] = ecdf_kws.pop(key, default_val)
+
+        ecdf_kws["estimate_kws"] = estimate_kws
+        ecdf_kws["color"] = color
+
+        if p.univariate:
+
+            _assign_default_kwargs(ecdf_kws, p.plot_univariate_ecdf, ecdfplot)
+            p.plot_univariate_ecdf(**ecdf_kws)
+
+        else:
+
+            raise NotImplementedError("Bivariate ECDF plots are not implemented")
+
+    # All plot kinds can include a rug
+    if rug:
+        # TODO with expand_margins=True, each facet expands margins... annoying!
+        if rug_kws is None:
+            rug_kws = {}
+        _assign_default_kwargs(rug_kws, p.plot_rug, rugplot)
+        rug_kws["legend"] = False
+        if color is not None:
+            rug_kws["color"] = color
+        p.plot_rug(**rug_kws)
+
+    # Call FacetGrid annotation methods
+    # Note that the legend is currently set inside the plotting method
+    g.set_axis_labels(
+        x_var=p.variables.get("x", g.axes.flat[0].get_xlabel()),
+        y_var=p.variables.get("y", g.axes.flat[0].get_ylabel()),
+    )
+    g.set_titles()
+    g.tight_layout()
+
+    return g
+
+
+displot.__doc__ = """\
+Figure-level interface for drawing distribution plots onto a FacetGrid.
+
+This function provides access to several approaches for visualizing the
+univariate or bivariate distribution of data, including subsets of data
+defined by semantic mapping and faceting across multiple subplots. The
+``kind`` parameter selects the approach to use:
+
+- :func:`histplot` (with ``kind="hist"``; the default)
+- :func:`kdeplot` (with ``kind="kde"``)
+- :func:`ecdfplot` (with ``kind="ecdf"``; univariate-only)
+
+Additionally, a :func:`rugplot` can be added to any kind of plot to show
+individual observations.
+
+Extra keyword arguments are passed to the underlying function, so you should
+refer to the documentation for each to understand the complete set of options
+for making plots with this interface.
+
+More information about the relative strengths and weaknesses of each approach
+is provided in the :ref:`user guide <distribution_tutorial>`. The distinction
+between figure-level and axes-level functions is also explained further in the
+:ref:`user guide <userguide_function_types>`.
+
+Parameters
+----------
+{params.core.data}
+{params.core.xy}
+{params.core.hue}
+{params.facets.rowcol}
+kind : {{"hist", "kde", "ecdf"}}
+    Approach for visualizing the data. Selects the underlying plotting function
+    and determines the additional set of valid parameters.
+rug : bool
+    If True, show each observation with marginal ticks (as in :func:`rugplot`).
+rug_kws : dict
+    Parameters to control the appearance of the rug plot.
+{params.dist.log_scale}
+{params.dist.legend}
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+{params.core.color}
+{params.facets.col_wrap}
+{params.facets.rowcol_order}
+{params.facets.height}
+{params.facets.aspect}
+{params.facets.facet_kws}
+kwargs
+    Other keyword arguments are documented with the relevant axes-level function:
+
+    - :func:`histplot` (with ``kind="hist"``)
+    - :func:`kdeplot` (with ``kind="kde"``)
+    - :func:`ecdfplot` (with ``kind="ecdf"``)
+
+Returns
+-------
+{returns.facetgrid}
+
+See Also
+--------
+{seealso.histplot}
+{seealso.kdeplot}
+{seealso.rugplot}
+{seealso.ecdfplot}
+{seealso.jointplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/displot.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
+
+
+# =========================================================================== #
+# DEPRECATED FUNCTIONS LIVE BELOW HERE
 # =========================================================================== #
 
 
@@ -2083,16 +2390,20 @@ def _freedman_diaconis_bins(a):
         return int(np.ceil((a.max() - a.min()) / h))
 
 
-@_deprecate_positional_args
-def distplot(
-    *,
-    x=None,
-    bins=None, hist=True, kde=True, rug=False, fit=None,
-    hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
-    color=None, vertical=False, norm_hist=False, axlabel=None,
-    label=None, ax=None, a=None,
-):
-    """Flexibly plot a univariate distribution of observations.
+def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
+             hist_kws=None, kde_kws=None, rug_kws=None, fit_kws=None,
+             color=None, vertical=False, norm_hist=False, axlabel=None,
+             label=None, ax=None, x=None):
+    """DEPRECATED: Flexibly plot a univariate distribution of observations.
+
+    .. warning::
+       This function is deprecated and will be removed in a future version.
+       Please adapt your code to use one of two new functions:
+
+       - :func:`displot`, a figure-level function with a similar flexibility
+         over the kind of plot to draw
+       - :func:`histplot`, an axes-level function for plotting histograms,
+         including with kernel density smoothing
 
     This function combines the matplotlib ``hist`` function (with automatic
     calculation of a good default bin size) with the seaborn :func:`kdeplot`
@@ -2101,8 +2412,7 @@ def distplot(
 
     Parameters
     ----------
-
-    x : Series, 1d-array, or list.
+    a : Series, 1d-array, or list.
         Observed data. If this is a Series object with a ``name`` attribute,
         the name will be used to label the data axis.
     bins : argument for matplotlib hist(), or None, optional
@@ -2163,7 +2473,7 @@ def distplot(
         >>> import seaborn as sns, numpy as np
         >>> sns.set(); np.random.seed(0)
         >>> x = np.random.randn(100)
-        >>> ax = sns.distplot(x=x)
+        >>> ax = sns.distplot(x)
 
     Use Pandas objects to get an informative axis label:
 
@@ -2172,14 +2482,14 @@ def distplot(
 
         >>> import pandas as pd
         >>> x = pd.Series(x, name="x variable")
-        >>> ax = sns.distplot(x=x)
+        >>> ax = sns.distplot(x)
 
     Plot the distribution with a kernel density estimate and rug plot:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x=x, rug=True, hist=False)
+        >>> ax = sns.distplot(x, rug=True, hist=False)
 
     Plot the distribution with a histogram and maximum likelihood gaussian
     distribution fit:
@@ -2188,42 +2498,51 @@ def distplot(
         :context: close-figs
 
         >>> from scipy.stats import norm
-        >>> ax = sns.distplot(x=x, fit=norm, kde=False)
+        >>> ax = sns.distplot(x, fit=norm, kde=False)
 
     Plot the distribution on the vertical axis:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x=x, vertical=True)
+        >>> ax = sns.distplot(x, vertical=True)
 
     Change the color of all the plot elements:
 
     .. plot::
-        :context: close-figs
 
+        :context: close-figs
         >>> sns.set_color_codes()
-        >>> ax = sns.distplot(x=x, color="y")
+        >>> ax = sns.distplot(x, color="y")
 
     Pass specific parameters to the underlying plot functions:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.distplot(x=x, rug=True, rug_kws={"color": "g"},
+        >>> ax = sns.distplot(x, rug=True, rug_kws={"color": "g"},
         ...                   kde_kws={"color": "k", "lw": 3, "label": "KDE"},
         ...                   hist_kws={"histtype": "step", "linewidth": 3,
         ...                             "alpha": 1, "color": "g"})
 
     """
-    # Handle deprecation of ``a```
-    if a is not None:
-        msg = "The `a` parameter is now called `x`. Please update your code."
-        warnings.warn(msg)
-    else:
-        a = x
 
-    # Default to drawing on the currently-active axes
+    if kde and not hist:
+        axes_level_suggestion = (
+            "`kdeplot` (an axes-level function for kernel density plots)."
+        )
+    else:
+        axes_level_suggestion = (
+            "`histplot` (an axes-level function for histograms)."
+        )
+
+    msg = (
+        "`distplot` is a deprecated function and will be removed in a future version. "
+        "Please adapt your code to use either `displot` (a figure-level function with "
+        "similar flexibility) or " + axes_level_suggestion
+    )
+    warnings.warn(msg, FutureWarning)
+
     if ax is None:
         ax = plt.gca()
 
@@ -2233,6 +2552,10 @@ def distplot(
         axlabel = a.name
         if axlabel is not None:
             label_ax = True
+
+    # Support new-style API
+    if x is not None:
+        a = x
 
     # Make a a 1-d float array
     a = np.asarray(a, np.float)
@@ -2286,14 +2609,14 @@ def distplot(
 
     if kde:
         kde_color = kde_kws.pop("color", color)
-        kdeplot(x=a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
+        kdeplot(a, vertical=vertical, ax=ax, color=kde_color, **kde_kws)
         if kde_color != color:
             kde_kws["color"] = kde_color
 
     if rug:
         rug_color = rug_kws.pop("color", color)
         axis = "y" if vertical else "x"
-        rugplot(x=a, axis=axis, ax=ax, color=rug_color, **rug_kws)
+        rugplot(a, axis=axis, ax=ax, color=rug_color, **rug_kws)
         if rug_color != color:
             rug_kws["color"] = rug_color
 
