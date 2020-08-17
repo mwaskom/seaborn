@@ -839,6 +839,11 @@ class _DistributionPlotter(VectorPlotter):
                 **artist_kws,
             )
 
+            # pcolormesh sets sticky edges, but we only want them if not thresholding
+            if thresh is not None:
+                mesh.sticky_edges.x[:] = []
+                mesh.sticky_edges.y[:] = []
+
             # Add an optional colorbar
             # Note, we want to improve this. When hue is used, it will stack
             # multiple colorbars with redundant ticks in an ugly way.

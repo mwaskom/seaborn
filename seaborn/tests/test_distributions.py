@@ -1654,6 +1654,19 @@ class TestHistPlotBivariate:
         assert_array_equal(mesh_data.data, counts.T.flat)
         assert_array_equal(mesh_data.mask, (counts <= thresh).T.flat)
 
+    def test_mesh_sticky_edges(self, long_df):
+
+        ax = histplot(long_df, x="x", y="y", thresh=None)
+        mesh = ax.collections[0]
+        assert mesh.sticky_edges.x == [long_df["x"].min(), long_df["x"].max()]
+        assert mesh.sticky_edges.y == [long_df["y"].min(), long_df["y"].max()]
+
+        ax.clear()
+        ax = histplot(long_df, x="x", y="y")
+        mesh = ax.collections[0]
+        assert not mesh.sticky_edges.x
+        assert not mesh.sticky_edges.y
+
     def test_mesh_common_norm(self, long_df):
 
         stat = "density"
