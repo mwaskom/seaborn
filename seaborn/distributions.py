@@ -1452,7 +1452,7 @@ This function can normalize the statistic computed within each bin to estimate
 frequency, density or probability mass, and it can add a smooth curve obtained
 using a kernel density estimate, similar to :func:`kdeplot`.
 
-More information is provided in the :ref:`user guide <userguide_hist>`.
+More information is provided in the :ref:`user guide <tutorial_hist>`.
 
 Parameters
 ----------
@@ -1750,7 +1750,7 @@ distribution of observations in a dataset, analagous to a histogram. KDE
 represents the data using a continuous probability density curve in one or
 more dimensions.
 
-The approach is explained further in the :ref:`user guide <userguide_kde>`.
+The approach is explained further in the :ref:`user guide <tutorial_kde>`.
 
 Relative to a histogram, KDE can produce a plot that is less cluttered and
 more interpretable, especially when drawing multiple distributions. But it
@@ -1956,7 +1956,7 @@ between the appearance of the plot and the basic properties of the distribution
 (such as its central tendency, variance, and the presence of any bimodality)
 may not be as intuitive.
 
-More information is provided in the :ref:`user guide <userguide_ecdf>`.
+More information is provided in the :ref:`user guide <tutorial_ecdf>`.
 
 Parameters
 ----------
@@ -2305,7 +2305,7 @@ refer to the documentation for each to understand the complete set of options
 for making plots with this interface.
 
 More information about the relative strengths and weaknesses of each approach
-is provided in the :ref:`user guide <userguide_distributions>`. The distinction
+is provided in the :ref:`user guide <distribution_tutorial>`. The distinction
 between figure-level and axes-level functions is also explained further in the
 :ref:`user guide <userguide_function_types>`.
 
