@@ -496,10 +496,11 @@ class FacetGrid(Grid):
 
         See Also
         --------
-        PairGrid : Subplot grid for plotting pairwise relationships.
-        relplot : Combine a relational plot and a :class:`FacetGrid`.
-        catplot : Combine a categorical plot and a :class:`FacetGrid`.
-        lmplot : Combine a regression plot and a :class:`FacetGrid`.
+        PairGrid : Subplot grid for plotting pairwise relationships
+        relplot : Combine a relational plot and a :class:`FacetGrid`
+        displot : Combine a distribution plot and a :class:`FacetGrid`
+        catplot : Combine a categorical plot and a :class:`FacetGrid`
+        lmplot : Combine a regression plot and a :class:`FacetGrid`
 
         Examples
         --------
