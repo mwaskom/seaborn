@@ -26,6 +26,7 @@ blockquote {
 }
 
 pre {
+    margin-top: 11.5px !important;
     background-color: #f6f6f9 !important;
 }
 
