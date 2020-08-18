@@ -44,19 +44,24 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 	-rm -rf examples/*
 	-rm -rf example_thumbs/*
-	-rm -rf tutorial/*_files/
-	-rm -rf tutorial/*.rst
 	-rm -rf generated/*
 	-rm -rf introduction_files/*
 	-rm introduction.rst
+	-make -C docstrings clean
+	-make -C tutorial clean
 
+.PHONY: tutorials
 tutorials:
 	make -C tutorial
 
-introduction: introduction.ipynb
-	tools/nb_to_doc.py introduction
+.PHONY: docstrings
+docstrings:
+	make -C docstrings
 
-notebooks: tutorials introduction
+introduction.rst: introduction.ipynb
+	tools/nb_to_doc.py ./introduction.ipynb
+
+notebooks: tutorials docstrings introduction.rst
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

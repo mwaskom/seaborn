@@ -34,18 +34,18 @@ Dependencies
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <https://numpy.org/>`__ (>= 1.13.3)
+-  `numpy <https://numpy.org/>`__
 
--  `scipy <https://www.scipy.org/>`__ (>= 1.0.1)
+-  `scipy <https://www.scipy.org/>`__
 
--  `pandas <https://pandas.pydata.org/>`__ (>= 0.22.0)
+-  `pandas <https://pandas.pydata.org/>`__
 
--  `matplotlib <https://matplotlib.org>`__ (>= 2.1.2)
+-  `matplotlib <https://matplotlib.org>`__
 
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  `statsmodels <https://www.statsmodels.org/>`__ (>= 0.8.0)
+-  `statsmodels <https://www.statsmodels.org/>`__
 
 Bugs
 ~~~~
@@ -56,7 +56,7 @@ include a reproducible example on synthetic data or one of the example datasets
 (accessed through :func:`load_dataset`). It is difficult to debug any issues
 without knowing the versions of seaborn and matplotlib you are using, as well
 as what `matplotlib backend
-<https://matplotlib.org/faq/usage_faq.html#what-is-a-backend>`__ you are have active, so please include those in your bug report.
+<https://matplotlib.org/tutorials/introductory/usage.html#what-is-a-backend>`__ you are have active, so please include those in your bug report.
 
 .. raw:: html
 

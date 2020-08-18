@@ -558,7 +558,8 @@ _regression_docs.update(_facet_docs)
 
 @_deprecate_positional_args
 def lmplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     data=None,
     hue=None, col=None, row=None,  # TODO move before data once * is enforced
     palette=None, col_wrap=None, height=5, aspect=1, markers="o",
@@ -621,7 +622,10 @@ def lmplot(
         truncate=truncate, x_jitter=x_jitter, y_jitter=y_jitter,
         scatter_kws=scatter_kws, line_kws=line_kws,
     )
-    facets.map_dataframe(regplot, x, y, **regplot_kws)
+    facets.map_dataframe(regplot, x=x, y=y, **regplot_kws)
+
+    # TODO this will need to change when we relax string requirement
+    facets.set_axis_labels(x, y)
 
     # Add a legend
     if legend and (hue is not None) and (hue not in [col, row]):
@@ -804,7 +808,8 @@ lmplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def regplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     data=None,
     x_estimator=None, x_bins=None, x_ci="ci",
     scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
@@ -1002,7 +1007,8 @@ regplot.__doc__ = dedent("""\
 
 @_deprecate_positional_args
 def residplot(
-    x=None, y=None, *,
+    *,
+    x=None, y=None,
     data=None,
     lowess=False, x_partial=None, y_partial=None,
     order=1, robust=False, dropna=True, label=None, color=None,

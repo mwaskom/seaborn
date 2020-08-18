@@ -23,8 +23,10 @@ pal = sns.cubehelix_palette(10, rot=-.25, light=.7)
 g = sns.FacetGrid(df, row="g", hue="g", aspect=15, height=.5, palette=pal)
 
 # Draw the densities in a few steps
-g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
-g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw=.2)
+g.map(sns.kdeplot, "x",
+      bw_adjust=.5, clip_on=False,
+      fill=True, alpha=1, linewidth=1.5)
+g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
 g.map(plt.axhline, y=0, lw=2, clip_on=False)
 
 

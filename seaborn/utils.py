@@ -1,9 +1,10 @@
 """Utility functions, mostly for internal use."""
 import os
-import colorsys
+import re
+import inspect
 import warnings
+import colorsys
 from urllib.request import urlopen, urlretrieve
-from http.client import HTTPException
 
 import numpy as np
 from scipy import stats
@@ -11,27 +12,11 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.colors as mplcol
 import matplotlib.pyplot as plt
+from matplotlib.cbook import normalize_kwargs
 
 
 __all__ = ["desaturate", "saturate", "set_hls_values",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
-
-
-def remove_na(arr):
-    """Helper method for removing NA values from array-like.
-
-    Parameters
-    ----------
-    arr : array-like
-        The array-like from which to remove NA values.
-
-    Returns
-    -------
-    clean_arr : array-like
-        The original array with NA values removed.
-
-    """
-    return arr[pd.notnull(arr)]
 
 
 def sort_df(df, *args, **kwargs):
@@ -97,7 +82,7 @@ def pmf_hist(a, bins=10):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
     n, x = np.histogram(a, bins)
     h = n / n.sum()
     w = x[1] - x[0]
@@ -184,10 +169,50 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
 
 
 def axlabel(xlabel, ylabel, **kwargs):
-    """Grab current axis and label it."""
+    """Grab current axis and label it.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
     ax = plt.gca()
     ax.set_xlabel(xlabel, **kwargs)
     ax.set_ylabel(ylabel, **kwargs)
+
+
+def remove_na(vector):
+    """Helper method for removing null values from data vectors.
+
+    Parameters
+    ----------
+    vector : vector object
+        Must implement boolean masking with [] subscript syntax.
+
+    Returns
+    -------
+    clean_clean : same type as ``vector``
+        Vector of data with null values removed. May be a copy or a view.
+
+    """
+    return vector[pd.notnull(vector)]
+
+
+def get_color_cycle():
+    """Return the list of colors in the current matplotlib color cycle
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    colors : list
+        List of matplotlib colors in the current cycle, or dark gray if
+        the current color cycle is empty.
+    """
+    cycler = mpl.rcParams['axes.prop_cycle']
+    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def despine(fig=None, ax=None, top=True, right=True, left=False,
@@ -195,9 +220,9 @@ def despine(fig=None, ax=None, top=True, right=True, left=False,
     """Remove the top and right spines from plot(s).
 
     fig : matplotlib figure, optional
-        Figure to despine all axes of, default uses current figure.
+        Figure to despine all axes of, defaults to the current figure.
     ax : matplotlib axes, optional
-        Specific axes object to despine.
+        Specific axes object to despine. Ignored if fig is provided.
     top, right, left, bottom : boolean, optional
         If True, remove that spine.
     offset : int or dict, optional
@@ -296,7 +321,9 @@ def _kde_support(data, bw, gridsize, cut, clip):
     """Establish support for a kernel density estimate."""
     support_min = max(data.min() - bw * cut, clip[0])
     support_max = min(data.max() + bw * cut, clip[1])
-    return np.linspace(support_min, support_max, gridsize)
+    support = np.linspace(support_min, support_max, gridsize)
+
+    return support
 
 
 def percentiles(a, pcts, axis=None):
@@ -321,7 +348,7 @@ def percentiles(a, pcts, axis=None):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
 
     scores = []
     try:
@@ -354,7 +381,7 @@ def sig_stars(p):
 
     """
     msg = "This function is deprecated and will be removed in a future version"
-    warnings.warn(msg)
+    warnings.warn(msg, FutureWarning)
 
     if p < 0.001:
         return "***"
@@ -368,7 +395,14 @@ def sig_stars(p):
 
 
 def iqr(a):
-    """Calculate the IQR for an array of numbers."""
+    """Calculate the IQR for an array of numbers.
+
+    DEPRECATED: will be removed in a future version.
+
+    """
+    msg = "This function is deprecated and will be removed in a future version"
+    warnings.warn(msg, FutureWarning)
+
     a = np.asarray(a)
     q1 = stats.scoreatpercentile(a, 25)
     q3 = stats.scoreatpercentile(a, 75)
@@ -376,15 +410,18 @@ def iqr(a):
 
 
 def get_dataset_names():
-    """Report available example datasets, useful for reporting issues."""
-    # delayed import to not demand bs4 unless this function is actually used
-    from bs4 import BeautifulSoup
-    http = urlopen('https://github.com/mwaskom/seaborn-data/')
-    gh_list = BeautifulSoup(http)
+    """Report available example datasets, useful for reporting issues.
 
-    return [l.text.replace('.csv', '')
-            for l in gh_list.find_all("a", {"class": "js-navigation-open"})
-            if l.text.endswith('.csv')]
+    Requires an internet connection.
+
+    """
+    url = "https://github.com/mwaskom/seaborn-data"
+    with urlopen(url) as resp:
+        html = resp.read()
+
+    pat = r"/mwaskom/seaborn-data/blob/master/(\w*).csv"
+    datasets = re.findall(pat, html.decode())
+    return datasets
 
 
 def get_data_home(data_home=None):
@@ -472,6 +509,17 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
 
+    if name == "diamonds":
+        df["color"] = pd.Categorical(
+            df["color"], ["D", "E", "F", "G", "H", "I", "J"],
+        )
+        df["clarity"] = pd.Categorical(
+            df["clarity"], ["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"],
+        )
+        df["cut"] = pd.Categorical(
+            df["cut"], ["Ideal", "Premium", "Very Good", "Good", "Fair"],
+        )
+
     return df
 
 
@@ -516,45 +564,6 @@ def axes_ticklabels_overlap(ax):
             axis_ticklabels_overlap(ax.get_yticklabels()))
 
 
-def categorical_order(values, order=None):
-    """Return a list of unique data values.
-
-    Determine an ordered list of levels in ``values``.
-
-    Parameters
-    ----------
-    values : list, array, Categorical, or Series
-        Vector of "categorical" values
-    order : list-like, optional
-        Desired order of category levels to override the order determined
-        from the ``values`` object.
-
-    Returns
-    -------
-    order : list
-        Ordered list of category levels not including null values.
-
-    """
-    if order is None:
-        if hasattr(values, "categories"):
-            order = values.categories
-        else:
-            try:
-                order = values.cat.categories
-            except (TypeError, AttributeError):
-                try:
-                    order = values.unique()
-                except AttributeError:
-                    order = pd.unique(values)
-                try:
-                    np.asarray(values).astype(np.float)
-                    order = np.sort(order)
-                except (ValueError, TypeError):
-                    order = order
-        order = filter(pd.notnull, order)
-    return list(order)
-
-
 def locator_to_legend_entries(locator, limits, dtype):
     """Return levels and formatted levels for brief numeric legends."""
     raw_levels = locator.tick_values(*limits).astype(dtype)
@@ -576,23 +585,6 @@ def locator_to_legend_entries(locator, limits, dtype):
     formatted_levels = [formatter(x) for x in raw_levels]
 
     return raw_levels, formatted_levels
-
-
-def get_color_cycle():
-    """Return the list of colors in the current matplotlib color cycle
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    colors : list
-        List of matplotlib colors in the current cycle, or dark gray if
-        the current color cycle is empty.
-    """
-    cycler = mpl.rcParams['axes.prop_cycle']
-    return cycler.by_key()['color'] if 'color' in cycler.keys else [".15"]
 
 
 def relative_luminance(color):
@@ -646,28 +638,48 @@ def to_utf8(obj):
         return str(obj)
 
 
-def _network(t=None, url='https://google.com'):
-    """
-    Decorator that will skip a test if `url` is unreachable.
+def _normalize_kwargs(kws, artist):
+    """Wrapper for mpl.cbook.normalize_kwargs that supports <= 3.2.1."""
+    _alias_map = {
+        'color': ['c'],
+        'linewidth': ['lw'],
+        'linestyle': ['ls'],
+        'facecolor': ['fc'],
+        'edgecolor': ['ec'],
+        'markerfacecolor': ['mfc'],
+        'markeredgecolor': ['mec'],
+        'markeredgewidth': ['mew'],
+        'markersize': ['ms']
+    }
+    try:
+        kws = normalize_kwargs(kws, artist)
+    except AttributeError:
+        kws = normalize_kwargs(kws, _alias_map)
+    return kws
 
-    Parameters
-    ----------
-    t : function, optional
-    url : str, optional
 
-    """
-    import nose
+def _check_argument(param, options, value):
+    """Raise if value for param is not in options."""
+    if value not in options:
+        raise ValueError(
+            f"`{param}` must be one of {options}, but {value} was passed.`"
+        )
 
-    if t is None:
-        return lambda x: _network(x, url=url)
 
-    def wrapper(*args, **kwargs):
-        # attempt to connect
-        try:
-            f = urlopen(url)
-        except (IOError, HTTPException):
-            raise nose.SkipTest()
-        else:
-            f.close()
-            return t(*args, **kwargs)
-    return wrapper
+def _assign_default_kwargs(kws, call_func, source_func):
+    """Assign default kwargs for call_func using values from source_func."""
+    # This exists so that axes-level functions and figure-level functions can
+    # both call a Plotter method while having the default kwargs be defined in
+    # the signature of the axes-level function.
+    # An alternative would be to  have a decorator on the method that sets its
+    # defaults based on those defined in the axes-level function.
+    # Then the figuer-level function would not need to worry about defaults.
+    # I am not sure which is better.
+    needed = inspect.signature(call_func).parameters
+    defaults = inspect.signature(source_func).parameters
+
+    for param in needed:
+        if param in defaults and param not in kws:
+            kws[param] = defaults[param].default
+
+    return kws
