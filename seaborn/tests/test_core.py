@@ -596,7 +596,7 @@ class TestVectorPlotter:
         assert p.variables["x"] == expected_x_name
         assert p.variables["y"] == expected_y_name
 
-    # TODO note that most of the other tests that excercise the core
+    # TODO note that most of the other tests that exercise the core
     # variable assignment code still live in test_relational
 
     def test_wide_semantic_error(self, wide_df):
@@ -604,6 +604,18 @@ class TestVectorPlotter:
         err = "The following variable cannot be assigned with wide-form data: `hue`"
         with pytest.raises(ValueError, match=err):
             VectorPlotter(data=wide_df, variables={"hue": "a"})
+
+    def test_long_unknown_error(self, long_df):
+
+        err = "Could not interpret value `what` for parameter `hue`"
+        with pytest.raises(ValueError, match=err):
+            VectorPlotter(data=long_df, variables={"x": "x", "hue": "what"})
+
+    def test_long_unmatched_size_error(self, long_df, flat_array):
+
+        err = "Length of ndarray vectors must match length of `data`"
+        with pytest.raises(ValueError, match=err):
+            VectorPlotter(data=long_df, variables={"x": "x", "hue": flat_array})
 
     def test_wide_categorical_columns(self, wide_df):
 
