@@ -258,7 +258,7 @@ class FacetGrid(Grid):
         row=None, col=None, hue=None, col_wrap=None,
         sharex=True, sharey=True, height=3, aspect=1, palette=None,
         row_order=None, col_order=None, hue_order=None, hue_kws=None,
-        dropna=True, legend_out=True, despine=True,
+        dropna=False, legend_out=True, despine=True,
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
         gridspec_kws=None, size=None
     ):
@@ -1184,7 +1184,7 @@ class PairGrid(Grid):
         hue=None, hue_order=None, palette=None,
         hue_kws=None, vars=None, x_vars=None, y_vars=None,
         corner=False, diag_sharey=True, height=2.5, aspect=1,
-        layout_pad=0, despine=True, dropna=True, size=None
+        layout_pad=0, despine=True, dropna=False, size=None
     ):
         """Initialize the plot figure and PairGrid object.
 
@@ -1640,7 +1640,7 @@ class JointGrid(object):
         x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
-        dropna=True, xlim=None, ylim=None, size=None
+        dropna=False, xlim=None, ylim=None, size=None
     ):
         """Set up the grid of subplots.
 
@@ -2002,7 +2002,7 @@ def pairplot(
     hue=None, hue_order=None, palette=None,
     vars=None, x_vars=None, y_vars=None,
     kind="scatter", diag_kind="auto", markers=None,
-    height=2.5, aspect=1, corner=False, dropna=True,
+    height=2.5, aspect=1, corner=False, dropna=False,
     plot_kws=None, diag_kws=None, grid_kws=None, size=None,
 ):
     """Plot pairwise relationships in a dataset.
@@ -2243,7 +2243,7 @@ def jointplot(
     data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
-    dropna=True, xlim=None, ylim=None,
+    dropna=False, xlim=None, ylim=None,
     joint_kws=None, marginal_kws=None, annot_kws=None,
     **kwargs
 ):
