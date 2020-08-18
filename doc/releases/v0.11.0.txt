@@ -84,7 +84,13 @@ Other
 
 - Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib (:pr:`2095`).
 
+- Changed the default value for ``dropna`` to ``False`` in :class`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:2204).
+
 - Improved the error messages produced when categorical plots process the orientation parameter.
+
+- Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
+
+- Removed an optional (an undocumented) dependency on BeautifulSoup (:pr:`2190`).
 
 - Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
 
