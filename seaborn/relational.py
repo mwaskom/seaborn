@@ -594,14 +594,14 @@ class _ScatterPlotter(_RelationalPlotter):
         x = data.get("x", empty)
         y = data.get("y", empty)
 
-        # Apply the mapping from semantic varibles to artist attributes
+        # Apply the mapping from semantic variables to artist attributes
         if "hue" in self.variables:
             c = self._hue_map(data["hue"])
 
         if "size" in self.variables:
             s = self._size_map(data["size"])
 
-        # Set defaults for other visual attributres
+        # Set defaults for other visual attributes
         kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
         kws.setdefault("edgecolor", "w")
 
