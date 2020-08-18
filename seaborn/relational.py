@@ -1084,67 +1084,7 @@ Returns
 Examples
 --------
 
-Draw a single facet to use the :class:`FacetGrid` legend placement:
-
-.. plot::
-    :context: close-figs
-
-    >>> import seaborn as sns
-    >>> sns.set(style="ticks")
-    >>> tips = sns.load_dataset("tips")
-    >>> g = sns.relplot(x="total_bill", y="tip", hue="day", data=tips)
-
-Facet on the columns with another variable:
-
-.. plot::
-    :context: close-figs
-
-    >>> g = sns.relplot(x="total_bill", y="tip",
-    ...                 hue="day", col="time", data=tips)
-
-Facet on the columns and rows:
-
-.. plot::
-    :context: close-figs
-
-    >>> g = sns.relplot(x="total_bill", y="tip", hue="day",
-    ...                 col="time", row="sex", data=tips)
-
-"Wrap" many column facets into multiple rows:
-
-.. plot::
-    :context: close-figs
-
-    >>> g = sns.relplot(x="total_bill", y="tip", hue="time",
-    ...                 col="day", col_wrap=2, data=tips)
-
-Use multiple semantic variables on each facet with specified attributes:
-
-.. plot::
-    :context: close-figs
-
-    >>> g = sns.relplot(x="total_bill", y="tip", hue="time", size="size",
-    ...                 palette=["b", "r"], sizes=(10, 100),
-    ...                 col="time", data=tips)
-
-Use a different kind of plot:
-
-.. plot::
-    :context: close-figs
-
-    >>> fmri = sns.load_dataset("fmri")
-    >>> g = sns.relplot(x="timepoint", y="signal",
-    ...                 hue="event", style="event", col="region",
-    ...                 kind="line", data=fmri)
-
-Change the size of each facet:
-
-.. plot::
-    :context: close-figs
-
-    >>> g = sns.relplot(x="timepoint", y="signal",
-    ...                 hue="event", style="event", col="region",
-    ...                 height=5, aspect=.7, kind="line", data=fmri)
+.. include:: ../docstrings/relplot.rst
 
 """.format(
     narrative=_relational_narrative,
