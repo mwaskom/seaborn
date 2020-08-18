@@ -2018,9 +2018,10 @@ class TestDisPlot:
         if ax.legend_ is not None:
             self.assert_legends_equal(ax.legend_, g._legend)
 
-        long_df["_"] = "_"
-        g2 = displot(long_df, col="_", **kwargs)
-        self.assert_plots_equal(ax, g2.ax)
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
@@ -2050,9 +2051,10 @@ class TestDisPlot:
         if ax.legend_ is not None:
             self.assert_legends_equal(ax.legend_, g._legend)
 
-        long_df["_"] = "_"
-        g2 = displot(long_df, kind="kde", col="_", **kwargs)
-        self.assert_plots_equal(ax, g2.ax)
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, kind="kde", col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
@@ -2077,9 +2079,10 @@ class TestDisPlot:
         if ax.legend_ is not None:
             self.assert_legends_equal(ax.legend_, g._legend)
 
-        long_df["_"] = "_"
-        g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
-        self.assert_plots_equal(ax, g2.ax)
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
