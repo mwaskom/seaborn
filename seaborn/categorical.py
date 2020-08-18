@@ -3768,7 +3768,6 @@ def catplot(
         "box": _BoxPlotter,
         "violin": _ViolinPlotter,
         "boxen": _LVPlotter,
-        "lv": _LVPlotter,
         "bar": _BarPlotter,
         "point": _PointPlotter,
         "strip": _StripPlotter,
