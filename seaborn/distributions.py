@@ -95,8 +95,8 @@ class _DistributionPlotter(VectorPlotter):
 
     semantics = "x", "y", "hue", "weights"
 
-    wide_structure = {"x": "values", "hue": "columns"}
-    flat_structure = {"x": "values"}
+    wide_structure = {"x": "@values", "hue": "@columns"}
+    flat_structure = {"x": "@values"}
 
     def __init__(
         self,

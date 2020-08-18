@@ -184,7 +184,7 @@ _param_docs = DocstringComponents.from_nested_components(
 class _RelationalPlotter(VectorPlotter):
 
     wide_structure = {
-        "x": "index", "y": "values", "hue": "columns", "style": "columns",
+        "x": "@index", "y": "@values", "hue": "@columns", "style": "@columns",
     }
 
     # TODO where best to define default parameters?

@@ -599,6 +599,12 @@ class TestVectorPlotter:
     # TODO note that most of the other tests that excercise the core
     # variable assignment code still live in test_relational
 
+    def test_wide_categorical_columns(self, wide_df):
+
+        wide_df.columns = pd.CategoricalIndex(wide_df.columns)
+        p = VectorPlotter(data=wide_df)
+        assert_array_equal(p.plot_data["hue"].unique(), ["a", "b", "c"])
+
     def test_iter_data_quantitites(self, long_df):
 
         p = VectorPlotter(
