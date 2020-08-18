@@ -599,9 +599,9 @@ class VectorPlotter:
     # we need a general name for this and separate handling
     semantics = "x", "y", "hue", "size", "style", "units"
     wide_structure = {
-        "x": "index", "y": "values", "hue": "columns", "style": "columns",
+        "x": "@index", "y": "@values", "hue": "@columns", "style": "@columns",
     }
-    flat_structure = {"x": "index", "y": "values"}
+    flat_structure = {"x": "@index", "y": "@values"}
 
     _default_size_range = 1, 2  # Unused but needed in tests, ugh
 
@@ -737,8 +737,8 @@ class VectorPlotter:
             # (Could be accomplished with a more general to_series() interface)
             flat_data = pd.Series(data).copy()
             names = {
-                "values": flat_data.name,
-                "index": flat_data.index.name
+                "@values": flat_data.name,
+                "@index": flat_data.index.name
             }
 
             plot_data = {}
@@ -747,7 +747,7 @@ class VectorPlotter:
             for var in ["x", "y"]:
                 if var in self.flat_structure:
                     attr = self.flat_structure[var]
-                    plot_data[var] = getattr(flat_data, attr)
+                    plot_data[var] = getattr(flat_data, attr[1:])
                     variables[var] = names[self.flat_structure[var]]
 
             plot_data = pd.DataFrame(plot_data)
@@ -785,11 +785,26 @@ class VectorPlotter:
             wide_data = wide_data.loc[:, numeric_cols]
 
             # Now melt the data to long form
-            melt_kws = {"var_name": "columns", "value_name": "values"}
-            if "index" in self.wide_structure.values():
-                melt_kws["id_vars"] = "index"
-                wide_data["index"] = wide_data.index.to_series()
+            melt_kws = {"var_name": "@columns", "value_name": "@values"}
+            use_index = "@index" in self.wide_structure.values()
+            if use_index:
+                melt_kws["id_vars"] = "@index"
+                try:
+                    orig_categories = wide_data.columns.categories
+                    orig_ordered = wide_data.columns.ordered
+                    wide_data.columns = wide_data.columns.add_categories("@index")
+                except AttributeError:
+                    category_columns = False
+                else:
+                    category_columns = True
+                wide_data["@index"] = wide_data.index.to_series()
+
             plot_data = wide_data.melt(**melt_kws)
+
+            if use_index and category_columns:
+                plot_data["@columns"] = pd.Categorical(plot_data["@columns"],
+                                                       orig_categories,
+                                                       orig_ordered)
 
             # Assign names corresponding to plot semantics
             for var, attr in self.wide_structure.items():
@@ -798,8 +813,11 @@ class VectorPlotter:
             # Define the variable names
             variables = {}
             for var, attr in self.wide_structure.items():
-                obj = getattr(wide_data, attr)
+                obj = getattr(wide_data, attr[1:])
                 variables[var] = getattr(obj, "name", None)
+
+            # Remove redundant columns from plot_data
+            plot_data = plot_data[list(variables)]
 
         return plot_data, variables
 
