@@ -18,7 +18,7 @@ except ImportError:
 from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
-from ..distributions import kdeplot
+from ..distributions import histplot, kdeplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
 
@@ -1257,6 +1257,12 @@ class TestPairGrid(object):
 
         with pytest.raises(ValueError):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
+
+    def test_corner_despine(self):
+
+        g = ag.PairGrid(self.df, corner=True, despine=False)
+        g.map_diag(histplot)
+        assert g.axes[0, 0].spines["top"].get_visible()
 
 
 class TestJointGrid(object):

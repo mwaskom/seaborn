@@ -1413,8 +1413,8 @@ class PairGrid(Grid):
         self._legend_data = {}
 
         # Make the plot look nice
+        self._despine = despine
         if despine:
-            self._despine = True
             utils.despine(fig=fig)
         self.tight_layout(pad=layout_pad)
 
