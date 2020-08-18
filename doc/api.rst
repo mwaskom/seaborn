@@ -17,6 +17,21 @@ Relational plots
     scatterplot
     lineplot
 
+.. _distribution_api:
+
+Distribution plots
+------------------
+
+.. autosummary::
+    :toctree: generated/
+
+    displot
+    histplot
+    kdeplot
+    ecdfplot
+    rugplot
+    distplot
+
 .. _categorical_api:
 
 Categorical plots
@@ -34,21 +49,6 @@ Categorical plots
     pointplot
     barplot
     countplot
-
-.. _distribution_api:
-
-Distribution plots
-------------------
-
-.. autosummary::
-    :toctree: generated/
-
-    displot
-    histplot
-    kdeplot
-    ecdfplot
-    rugplot
-    distplot
 
 .. _regression_api:
 

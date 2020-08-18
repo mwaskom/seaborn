@@ -42,24 +42,6 @@ Official seaborn tutorial
 .. toctree::
    :maxdepth: 2
 
-   tutorial/categorical
-
-.. raw:: html
-
-              </div>
-            </div>
-            <hr>
-            <div class="row">
-              <div class="col-md-4">
-                <a href=./tutorial/distributions.html>
-                  <img src="_images/distributions_81_0.png" class="img-responsive center-block">
-                </a>
-              </div>
-              <div class="col-md-8">
-
-.. toctree::
-   :maxdepth: 2
-
    tutorial/distributions
 
 .. raw:: html
@@ -71,6 +53,24 @@ Official seaborn tutorial
               <div class="col-md-4">
                 <a href=./tutorial/regression.html>
                   <img src="_images/regression_37_0.png" class="img-responsive center-block">
+                </a>
+              </div>
+              <div class="col-md-8">
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorial/categorical
+
+.. raw:: html
+
+              </div>
+            </div>
+            <hr>
+            <div class="row">
+              <div class="col-md-4">
+                <a href=./tutorial/distributions.html>
+                  <img src="_images/distributions_81_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">
