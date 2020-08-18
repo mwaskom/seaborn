@@ -708,10 +708,15 @@ class VectorPlotter:
             the inputs (or None when no name can be determined).
 
         """
-        # TODO raise here if any kwarg values are not None,
-        # # if we decide for "structure-only" wide API
+        # Raise if semantic or other variables are assigned in wide-form mode
+        assigned = [k for k, v in kwargs.items() if v is not None]
+        if any(assigned):
+            s = "s" if len(assigned) > 1 else ""
+            err = f"The following variable{s} cannot be assigned with wide-form data: "
+            err += ", ".join(f"`{v}`" for v in assigned)
+            raise ValueError(err)
 
-        # First, determine if the data object actually has any data in it
+        # Determine if the data object actually has any data in it
         empty = data is None or not len(data)
 
         # Then, determine if we have "flat" data (a single vector)

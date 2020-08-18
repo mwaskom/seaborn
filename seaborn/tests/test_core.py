@@ -599,6 +599,12 @@ class TestVectorPlotter:
     # TODO note that most of the other tests that excercise the core
     # variable assignment code still live in test_relational
 
+    def test_wide_semantic_error(self, wide_df):
+
+        err = "The following variable cannot be assigned with wide-form data: `hue`"
+        with pytest.raises(ValueError, match=err):
+            VectorPlotter(data=wide_df, variables={"hue": "a"})
+
     def test_wide_categorical_columns(self, wide_df):
 
         wide_df.columns = pd.CategoricalIndex(wide_df.columns)
