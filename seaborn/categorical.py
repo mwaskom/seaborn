@@ -3778,7 +3778,13 @@ def catplot(
     p = _CategoricalPlotter()
     p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
-    order = p.group_names
+    if (
+        order is not None
+        or (sharex and p.orient == "v")
+        or (sharey and p.orient == "h")
+    ):
+        # Sync categorical axis between facets to have the same categories
+        order = p.group_names
     hue_order = p.hue_names
 
     # Determine the palette to use
@@ -3802,11 +3808,9 @@ def catplot(
 
     # Determine keyword arguments for the plotting function
     plot_kws = dict(
-        hue_order=hue_order, orient=orient, color=color, palette=palette,
+        order=order, hue_order=hue_order,
+        orient=orient, color=color, palette=palette,
     )
-    # Synchronize categories across facets, when required
-    if (sharex and p.orient == "v") or (sharey and p.orient == "h"):
-        plot_kws["order"] = order
     plot_kws.update(kwargs)
 
     if kind in ["bar", "point"]:
@@ -3891,8 +3895,7 @@ catplot.__doc__ = dedent("""\
         Categorical variables that will determine the faceting of the grid.
     {col_wrap}
     {stat_api_params}
-    {order_vars} ``order`` is ignored if the ``share`` parameter for the
-        categorical axis is ``False``.
+    {order_vars}
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.

@@ -2624,6 +2624,16 @@ class TestCatPlot(CategoricalFixture):
         for ax in g.axes.flat:
             assert len(ax.collections) == 1
 
+        # Make sure order is used if given regardless of sharex value
+        order = self.df.g.unique()
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False, order=order)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False, order=order)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
 
 class TestBoxenPlotter(CategoricalFixture):
 
