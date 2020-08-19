@@ -197,6 +197,6 @@ def missing_df(rng, long_df):
 
 
 @pytest.fixture
-def null_series():
+def null_series(flat_series):
 
-    return pd.Series(index=np.arange(20), dtype='float64')
+    return pd.Series(index=flat_series.index, dtype='float64')
