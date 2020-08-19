@@ -723,7 +723,7 @@ class VectorPlotter:
         if isinstance(data, dict):
             values = data.values()
         else:
-            values = np.atleast_1d(data)
+            values = np.atleast_1d(np.asarray(data, dtype=object))
         flat = not any(
             isinstance(v, Iterable) and not isinstance(v, (str, bytes))
             for v in values
@@ -1012,14 +1012,18 @@ class VectorPlotter:
         if not hasattr(self, "ax"):
             # Probably a good idea, but will need a bunch of tests updated
             # Most of these tests should just use the external interface
-            # Then this can be reeneabled.
+            # Then this can be re-enabled.
             # raise AttributeError("No Axes attached to plotter")
             return self.plot_data
 
         if not hasattr(self, "_comp_data"):
 
-            comp_data = self.plot_data.copy(deep=False)
-            for var in "xy":
+            comp_data = (
+                self.plot_data
+                .copy(deep=False)
+                .drop(["x", "y"], axis=1, errors="ignore")
+            )
+            for var in "yx":
                 if var not in self.variables:
                     continue
 
@@ -1038,7 +1042,7 @@ class VectorPlotter:
                 comp_var = axis.convert_units(self.plot_data[var])
                 if axis.get_scale() == "log":
                     comp_var = np.log10(comp_var)
-                comp_data[var] = comp_var
+                comp_data.insert(0, var, comp_var)
 
             self._comp_data = comp_data
 

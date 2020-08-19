@@ -889,6 +889,9 @@ class TestKDEPlotBivariate:
     )
     def test_weights(self, rng):
 
+        import warnings
+        warnings.simplefilter("error", np.VisibleDeprecationWarning)
+
         n = 100
         x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], n).T
         hue = np.repeat([0, 1], n // 2)
@@ -899,8 +902,10 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, hue=hue, weights=weights, ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            if c1.get_segments():
-                assert not np.array_equal(c1.get_segments(), c2.get_segments())
+            if c1.get_segments() and c2.get_segments():
+                seg1 = np.concatenate(c1.get_segments(), axis=0)
+                seg2 = np.concatenate(c2.get_segments(), axis=0)
+                assert not np.array_equal(seg1, seg2)
 
     def test_hue_ignores_cmap(self, long_df):
 
