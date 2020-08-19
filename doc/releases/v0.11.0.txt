@@ -70,6 +70,8 @@ Other
 
 - Improved the error messages produced when categorical plots process the orientation parameter.
 
+- Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
+
 - Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
 
 - Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.
