@@ -3784,6 +3784,16 @@ def catplot(
     ):
         # Sync categorical axis between facets to have the same categories
         order = p.group_names
+    elif color is None:
+        msg = (
+            "Setting `{}=False` with `color=None` may cause different levels of the "
+            "`{}` variable to share colors. This will change in a future version."
+        )
+        if not sharex and p.orient == "v":
+            warnings.warn(msg.format("sharex", "x"), UserWarning)
+        if not sharey and p.orient == "h":
+            warnings.warn(msg.format("sharey", "y"), UserWarning)
+
     hue_order = p.hue_names
 
     # Determine the palette to use
