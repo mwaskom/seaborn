@@ -1001,7 +1001,7 @@ class TestVectorPlotter:
 
     def test_comp_data_log(self, long_df):
 
-        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p = VectorPlotter(data=long_df, variables={"x": "z", "y": "y"})
         _, ax = plt.subplots()
         p._attach(ax, log_scale=(True, False))
 
