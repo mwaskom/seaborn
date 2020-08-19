@@ -723,7 +723,7 @@ class VectorPlotter:
         if isinstance(data, dict):
             values = data.values()
         else:
-            values = np.atleast_1d(data)
+            values = np.atleast_1d(np.asarray(data, dtype=object))
         flat = not any(
             isinstance(v, Iterable) and not isinstance(v, (str, bytes))
             for v in values
