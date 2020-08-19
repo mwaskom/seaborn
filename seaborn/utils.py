@@ -1,8 +1,9 @@
 """Utility functions, mostly for internal use."""
 import os
 import re
-import colorsys
+import inspect
 import warnings
+import colorsys
 from urllib.request import urlopen, urlretrieve
 
 import numpy as np
@@ -508,6 +509,17 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
 
+    if name == "diamonds":
+        df["color"] = pd.Categorical(
+            df["color"], ["D", "E", "F", "G", "H", "I", "J"],
+        )
+        df["clarity"] = pd.Categorical(
+            df["clarity"], ["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"],
+        )
+        df["cut"] = pd.Categorical(
+            df["cut"], ["Ideal", "Premium", "Very Good", "Good", "Fair"],
+        )
+
     return df
 
 
@@ -652,3 +664,22 @@ def _check_argument(param, options, value):
         raise ValueError(
             f"`{param}` must be one of {options}, but {value} was passed.`"
         )
+
+
+def _assign_default_kwargs(kws, call_func, source_func):
+    """Assign default kwargs for call_func using values from source_func."""
+    # This exists so that axes-level functions and figure-level functions can
+    # both call a Plotter method while having the default kwargs be defined in
+    # the signature of the axes-level function.
+    # An alternative would be to  have a decorator on the method that sets its
+    # defaults based on those defined in the axes-level function.
+    # Then the figuer-level function would not need to worry about defaults.
+    # I am not sure which is better.
+    needed = inspect.signature(call_func).parameters
+    defaults = inspect.signature(source_func).parameters
+
+    for param in needed:
+        if param in defaults and param not in kws:
+            kws[param] = defaults[param].default
+
+    return kws

@@ -26,6 +26,7 @@ from ..utils import (
     get_color_cycle,
     remove_na,
     load_dataset,
+    _assign_default_kwargs
 )
 
 
@@ -472,3 +473,17 @@ def test_remove_na():
     a_series = pd.Series([1, 2, np.nan, 3])
     a_series_rm = remove_na(a_series)
     assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))
+
+
+def test_assign_default_kwargs():
+
+    def f(a, b, c, d):
+        pass
+
+    def g(c=1, d=2):
+        pass
+
+    kws = {"c": 3}
+
+    kws = _assign_default_kwargs(kws, f, g)
+    assert kws == {"c": 3, "d": 2}

@@ -47,6 +47,8 @@ Online documentation is available at [seaborn.pydata.org](https://seaborn.pydata
 
 The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [example gallery](https://seaborn.pydata.org/examples/index.html), [API reference](https://seaborn.pydata.org/api.html), and other useful information.
 
+To build the documentation locally, please refer to [`doc/README.md`](doc/README.md).
+
 
 Dependencies
 ------------
@@ -71,10 +73,14 @@ You may instead want to use the development version from Github:
 Testing
 -------
 
-To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using `pytest`).
+Testing seaborn requires installing additional packages listed in `ci/utils.txt`.
 
-The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`. Run `make coverage` to generate a test coverage report and `make lint` to check code style consistency.
+To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)) and generate a coverate report.
 
+The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`.
+
+
+Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check.
  
 Development
 -----------

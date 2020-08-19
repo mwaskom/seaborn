@@ -45,7 +45,7 @@ class _CategoricalPlotter(object):
 
             # Do a sanity check on the inputs
             if hue is not None:
-                error = "Cannot use `hue` without `x` or `y`"
+                error = "Cannot use `hue` without `x` and `y`"
                 raise ValueError(error)
 
             # No hue grouping with wide inputs

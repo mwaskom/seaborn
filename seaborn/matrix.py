@@ -298,9 +298,14 @@ class _HeatMapper(object):
         # Remove all the Axes spines
         despine(ax=ax, left=True, bottom=True)
 
+        # setting vmin/vmax in addition to norm is deprecated
+        # so avoid setting if norm is set
+        if "norm" not in kws:
+            kws.setdefault("vmin", self.vmin)
+            kws.setdefault("vmax", self.vmax)
+
         # Draw the heatmap
-        mesh = ax.pcolormesh(self.plot_data, vmin=self.vmin, vmax=self.vmax,
-                             cmap=self.cmap, **kws)
+        mesh = ax.pcolormesh(self.plot_data, cmap=self.cmap, **kws)
 
         # Set the axis limits
         ax.set(xlim=(0, self.data.shape[1]), ylim=(0, self.data.shape[0]))

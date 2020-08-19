@@ -190,12 +190,17 @@ if __name__ == "__main__":
     )
     ep.preprocess(nb, {"metadata": {"path": basedir}})
 
-    # Remove the execution result outputs
+    # Remove plain text execution result outputs
     for cell in nb.get("cells", {}):
         fields = cell.get("outputs", [])
         for field in fields:
             if field["output_type"] == "execute_result":
-                fields.remove(field)
+                data_keys = field["data"].keys()
+                for key in list(data_keys):
+                    if key == "text/plain":
+                        field["data"].pop(key)
+                if not field["data"]:
+                    fields.remove(field)
 
     # Convert to .rst formats
     exp = RSTExporter()

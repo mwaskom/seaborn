@@ -2,14 +2,21 @@
 v0.11.0 (Unreleased)
 --------------------
 
-- TODO stub for explaining improvements to variable specificiation. Make this good! (:issue:`2052`).
+- TODO stub for explaining improvements to variable specification. Make this good! (:issue:`2052`).
 
 - TODO stub for enforced keyword-only arguments for most parameters of most functions and classes (:issue:`2052,2081`).
 
 Modernization of distribution functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-First, two new functions, :func:`histplot` and :func:`ecdfplot` has been added (:pr:`2125`).
+The distribution module has been completely overhauled, modernizing the API and introducing several new functions and features within existing functions. Some new features are explained here; the :ref:`tutorial documentation <distribution_tutorial>` has also been rewritten and serves as a good introduction to the functions.
+
+New functions
+^^^^^^^^^^^^^
+
+First, three new functions, :func:`displot`, :func:`histplot` and :func:`ecdfplot` has been added (:pr:`2125`, :pr:`2141`, and :pr:`2157`).
+
+:func:`displot` is a figure-level interface to the various distribution plot functions (analogous to :func:`relplot` or :func:`catplot`). It can draw univariate or bivariate histograms, density curves, ECDFs, and rug plots on a :class:`FacetGrid`.
 
 :func:`histplot` draws univariate or bivariate histograms with a number of features, including:
 
@@ -21,7 +28,12 @@ First, two new functions, :func:`histplot` and :func:`ecdfplot` has been added (
 
 :func:`ecdfplot` draws univariate empirical cumulative distribution functions, using a similar interface.
 
-Second, the existing functions :func:`kdeplot` and :func:`rugplot` have been completely overhauled (see :pr:`2060,2104`). Two of the oldest functions in the library, these lacked aspects of the otherwise-common seaborn API, such as the ability to assign variables by name from a ``data`` object; they had no capacity for semantic mapping; and they had numerous other inconsistencies and smaller issues.
+Changes to existing functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Second, the existing functions :func:`kdeplot` and :func:`rugplot` have been completely overhauled (see :pr:`2060,2104`).
+
+Two of the oldest functions in the library, these lacked aspects of the otherwise-common seaborn API, such as the ability to assign variables by name from a ``data`` object; they had no capacity for semantic mapping; and they had numerous other inconsistencies and smaller issues.
 
 The overhauled functions now share a common API with the rest of seaborn, they can show conditional distributions by mapping a third variable with a ``hue`` semantic, and have been improved in numerous other ways. The github pull request (:pr:`2104`) has a longer explanation of the changes and the motivation behind them.
 
@@ -39,20 +51,24 @@ Other new features include:
 - log-space density estimation (using the new ``log_scale`` parameter, or by scaling the data axis before plotting)
 - "bivariate" rug plots with a single function call (by assigning both ``x`` and ``y``)
 
+Deprecations
+^^^^^^^^^^^^
+
+Finally, the :func:`distplot` function is now formally deprecated. Its features have been subsumed by :func:`displot` and :func:`histplot`. Some effort was made to gradually transition :func:`distplot` by adding the features in :func:`displot` and handling backwards compatibility, but this proved to be too difficult. The similarity in the names will likely cause some confusion during the transition, which is regrettable.
 
 
 Other
 ~~~~~
 
-- Changed how functions that use different representations for numeric and categorical data handle vectors with an `object` data type (:pr:`2084`). Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data. 
+- Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
 
-- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default (:pr:`2075`). Prevously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_.
+- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
 
-- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. `k_depth="tukey"` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. `k_depth=6`) or just plot boxes that will cover most of the data points (with `k_depth="full"`). Added a new parameter `trust_alpha` to control the number of boxes when `k_depth="trustworthy"`. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. For more information see :pr:`2086`.
+- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. ``k_depth="tukey"`` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or just plot boxes that will cover most of the data points (with ``k_depth="full"``). Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. (:pr:`2086`).
 
 - Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend (:pr:`2073`).
 
-- Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points (:pr:`2078`). New behaviot is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to repoduce the previous behavior.
+- Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behavior is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to reproduce the previous behavior. (:pr:`2708`).
 
 - Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot` (:pr:`2079`).
 
@@ -68,9 +84,15 @@ Other
 
 - Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib (:pr:`2095`).
 
+- Changed the default value for ``dropna`` to ``False`` in :class`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:2204).
+
 - Improved the error messages produced when categorical plots process the orientation parameter.
 
 - Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
+
+- Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
+
+- Removed an optional (an undocumented) dependency on BeautifulSoup (:pr:`2190`).
 
 - Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
 

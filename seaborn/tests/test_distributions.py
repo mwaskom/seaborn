@@ -25,11 +25,14 @@ from .._statistics import (
 )
 from ..distributions import (
     _DistributionPlotter,
+    displot,
+    distplot,
     histplot,
     ecdfplot,
     kdeplot,
     rugplot,
 )
+from ..axisgrid import FacetGrid
 
 
 class TestDistPlot(object):
@@ -39,58 +42,60 @@ class TestDistPlot(object):
 
     def test_hist_bins(self):
 
-        try:
-            fd_edges = np.histogram_bin_edges(self.x, "fd")
-        except AttributeError:
-            pytest.skip("Requires numpy >= 1.15")
-        ax = dist.distplot(x=self.x)
+        fd_edges = np.histogram_bin_edges(self.x, "fd")
+        with pytest.warns(FutureWarning):
+            ax = distplot(self.x)
         for edge, bar in zip(fd_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
         plt.close(ax.figure)
         n = 25
         n_edges = np.histogram_bin_edges(self.x, n)
-        ax = dist.distplot(x=self.x, bins=n)
+        with pytest.warns(FutureWarning):
+            ax = distplot(self.x, bins=n)
         for edge, bar in zip(n_edges, ax.patches):
             assert pytest.approx(edge) == bar.get_x()
 
     def test_elements(self):
 
-        n = 10
-        ax = dist.distplot(x=self.x, bins=n,
-                           hist=True, kde=False, rug=False, fit=None)
-        assert len(ax.patches) == 10
-        assert len(ax.lines) == 0
-        assert len(ax.collections) == 0
+        with pytest.warns(FutureWarning):
 
-        plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=True, rug=False, fit=None)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 1
-        assert len(ax.collections) == 0
+            n = 10
+            ax = distplot(self.x, bins=n,
+                          hist=True, kde=False, rug=False, fit=None)
+            assert len(ax.patches) == 10
+            assert len(ax.lines) == 0
+            assert len(ax.collections) == 0
 
-        plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=False, rug=True, fit=None)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 0
-        assert len(ax.collections) == 1
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=True, rug=False, fit=None)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 1
+            assert len(ax.collections) == 0
 
-        plt.close(ax.figure)
-        ax = dist.distplot(x=self.x,
-                           hist=False, kde=False, rug=False, fit=stats.norm)
-        assert len(ax.patches) == 0
-        assert len(ax.lines) == 1
-        assert len(ax.collections) == 0
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=False, rug=True, fit=None)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 0
+            assert len(ax.collections) == 1
+
+            plt.close(ax.figure)
+            ax = distplot(self.x,
+                          hist=False, kde=False, rug=False, fit=stats.norm)
+            assert len(ax.patches) == 0
+            assert len(ax.lines) == 1
+            assert len(ax.collections) == 0
 
     def test_distplot_with_nans(self):
 
         f, (ax1, ax2) = plt.subplots(2)
         x_null = np.append(self.x, [np.nan])
 
-        dist.distplot(x=self.x, ax=ax1)
-        dist.distplot(x=x_null, ax=ax2)
+        with pytest.warns(FutureWarning):
+            distplot(self.x, ax=ax1)
+            distplot(x_null, ax=ax2)
 
         line1 = ax1.lines[0]
         line2 = ax2.lines[0]
@@ -99,13 +104,6 @@ class TestDistPlot(object):
         for bar1, bar2 in zip(ax1.patches, ax2.patches):
             assert bar1.get_xy() == bar2.get_xy()
             assert bar1.get_height() == bar2.get_height()
-
-    def test_a_parameter_deprecation(self):
-
-        n = 10
-        with pytest.warns(UserWarning):
-            ax = dist.distplot(a=self.x, bins=n)
-        assert len(ax.patches) == n
 
 
 class TestRugPlot:
@@ -891,6 +889,9 @@ class TestKDEPlotBivariate:
     )
     def test_weights(self, rng):
 
+        import warnings
+        warnings.simplefilter("error", np.VisibleDeprecationWarning)
+
         n = 100
         x, y = rng.multivariate_normal([1, 3], [(.2, .5), (.5, 2)], n).T
         hue = np.repeat([0, 1], n // 2)
@@ -901,8 +902,10 @@ class TestKDEPlotBivariate:
         kdeplot(x=x, y=y, hue=hue, weights=weights, ax=ax2)
 
         for c1, c2 in zip(ax1.collections, ax2.collections):
-            if c1.get_segments():
-                assert not np.array_equal(c1.get_segments(), c2.get_segments())
+            if c1.get_segments() and c2.get_segments():
+                seg1 = np.concatenate(c1.get_segments(), axis=0)
+                seg2 = np.concatenate(c2.get_segments(), axis=0)
+                assert not np.array_equal(seg1, seg2)
 
     def test_hue_ignores_cmap(self, long_df):
 
@@ -1227,7 +1230,7 @@ class TestHistPlotUnivariate:
 
     def test_weights_with_missing(self, missing_df):
 
-        ax = histplot(missing_df, x="x", weights="s")
+        ax = histplot(missing_df, x="x", weights="s", bins=5)
 
         bar_heights = [bar.get_height() for bar in ax.patches]
         total_weight = missing_df[["x", "s"]].dropna()["s"].sum()
@@ -1250,6 +1253,12 @@ class TestHistPlotUnivariate:
         ax = histplot(long_df, x="a")
         for i, bar in enumerate(ax.patches):
             assert bar.get_width() == 1
+
+    def test_categorical_yaxis_inversion(self, long_df):
+
+        ax = histplot(long_df, y="a")
+        ymax, ymin = ax.get_ylim()
+        assert ymax > ymin
 
     def test_discrete_requires_bars(self, long_df):
 
@@ -1651,6 +1660,19 @@ class TestHistPlotBivariate:
         assert_array_equal(mesh_data.data, counts.T.flat)
         assert_array_equal(mesh_data.mask, (counts <= thresh).T.flat)
 
+    def test_mesh_sticky_edges(self, long_df):
+
+        ax = histplot(long_df, x="x", y="y", thresh=None)
+        mesh = ax.collections[0]
+        assert mesh.sticky_edges.x == [long_df["x"].min(), long_df["x"].max()]
+        assert mesh.sticky_edges.y == [long_df["y"].min(), long_df["y"].max()]
+
+        ax.clear()
+        ax = histplot(long_df, x="x", y="y")
+        mesh = ax.collections[0]
+        assert not mesh.sticky_edges.x
+        assert not mesh.sticky_edges.y
+
     def test_mesh_common_norm(self, long_df):
 
         stat = "density"
@@ -1881,7 +1903,276 @@ class TestECDFPlotUnivariate:
         sticky_edges = getattr(ax.lines[0].sticky_edges, stat_var)
         assert sticky_edges[:] == [0, n]
 
+    def test_weights(self):
+
+        ax = ecdfplot(x=[1, 2, 3], weights=[1, 1, 2])
+        y = ax.lines[0].get_ydata()
+        assert_array_equal(y, [0, .25, .5, 1])
+
     def test_bivariate_error(self, long_df):
 
         with pytest.raises(NotImplementedError, match="Bivariate ECDF plots"):
             ecdfplot(data=long_df, x="x", y="y")
+
+
+class TestDisPlot:
+
+    # TODO probably good to move these utility attributes/methods somewhere else
+    bar_props = [
+        "alpha",
+        "edgecolor",
+        "facecolor",
+        "fill",
+        "hatch",
+        "height",
+        "linestyle",
+        "linewidth",
+        "xy",
+        "zorder",
+    ]
+
+    line_props = [
+        "alpha",
+        "color",
+        "linewidth",
+        "linestyle",
+        "xydata",
+        "zorder",
+    ]
+
+    collection_props = [
+        "alpha",
+        "edgecolor",
+        "facecolor",
+        "fill",
+        "hatch",
+        "linestyle",
+        "linewidth",
+        "paths",
+        "zorder",
+    ]
+
+    def assert_artists_equal(self, list1, list2, properties):
+
+        for a1, a2 in zip(list1, list2):
+            prop1 = a1.properties()
+            prop2 = a2.properties()
+            for key in properties:
+                v1 = prop1[key]
+                v2 = prop2[key]
+                if key == "paths":
+                    for p1, p2 in zip(v1, v2):
+                        assert_array_equal(p1.vertices, p2.vertices)
+                        assert_array_equal(p1.codes, p2.codes)
+                elif isinstance(v1, np.ndarray):
+                    assert_array_equal(v1, v2)
+                else:
+                    assert v1 == v2
+
+    def assert_plots_equal(self, ax1, ax2):
+
+        self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_props)
+        self.assert_artists_equal(ax1.lines, ax2.lines, self.line_props)
+
+        poly1 = ax1.findobj(mpl.collections.PolyCollection)
+        poly2 = ax2.findobj(mpl.collections.PolyCollection)
+        self.assert_artists_equal(poly1, poly2, self.collection_props)
+
+        assert ax1.get_xlabel() == ax2.get_xlabel()
+        assert ax1.get_ylabel() == ax2.get_ylabel()
+
+    def assert_legends_equal(self, leg1, leg2):
+
+        assert leg1.get_title().get_text() == leg2.get_title().get_text()
+        for t1, t2 in zip(leg1.get_texts(), leg2.get_texts()):
+            assert t1.get_text() == t2.get_text()
+
+        self.assert_artists_equal(
+            leg1.get_patches(), leg2.get_patches(), self.bar_props,
+        )
+        self.assert_artists_equal(
+            leg1.get_lines(), leg2.get_lines(), self.line_props,
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(),
+            dict(x="x"),
+            dict(x="t"),
+            dict(x="a"),
+            dict(x="z", log_scale=True),
+            dict(x="x", binwidth=4),
+            dict(x="x", weights="f", bins=5),
+            dict(x="x", color="green", linewidth=2, binwidth=4),
+            dict(x="x", hue="a", fill=False),
+            dict(x="y", hue="a", fill=False),
+            dict(x="x", hue="a", multiple="stack"),
+            dict(x="x", hue="a", element="step"),
+            dict(x="x", hue="a", palette="muted"),
+            dict(x="x", hue="a", kde=True),
+            dict(x="x", hue="a", stat="density", common_norm=False),
+            dict(x="x", y="y"),
+        ],
+    )
+    def test_versus_single_histplot(self, long_df, kwargs):
+
+        ax = histplot(long_df, **kwargs)
+        g = displot(long_df, **kwargs)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(),
+            dict(x="x"),
+            dict(x="t"),
+            dict(x="z", log_scale=True),
+            dict(x="x", bw_adjust=.5),
+            dict(x="x", weights="f"),
+            dict(x="x", color="green", linewidth=2),
+            dict(x="x", hue="a", multiple="stack"),
+            dict(x="x", hue="a", fill=True),
+            dict(x="y", hue="a", fill=False),
+            dict(x="x", hue="a", palette="muted"),
+            dict(x="x", y="y"),
+        ],
+    )
+    def test_versus_single_kdeplot(self, long_df, kwargs):
+
+        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
+            pytest.skip("Weights require scipy >= 1.2")
+
+        ax = kdeplot(data=long_df, **kwargs)
+        g = displot(long_df, kind="kde", **kwargs)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, kind="kde", col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(),
+            dict(x="x"),
+            dict(x="t"),
+            dict(x="z", log_scale=True),
+            dict(x="x", weights="f"),
+            dict(y="x"),
+            dict(x="x", color="green", linewidth=2),
+            dict(x="x", hue="a", complementary=True),
+            dict(x="x", hue="a", stat="count"),
+            dict(x="x", hue="a", palette="muted"),
+        ],
+    )
+    def test_versus_single_ecdfplot(self, long_df, kwargs):
+
+        ax = ecdfplot(data=long_df, **kwargs)
+        g = displot(long_df, kind="ecdf", **kwargs)
+        self.assert_plots_equal(ax, g.ax)
+
+        if ax.legend_ is not None:
+            self.assert_legends_equal(ax.legend_, g._legend)
+
+        if kwargs:
+            long_df["_"] = "_"
+            g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
+            self.assert_plots_equal(ax, g2.ax)
+
+    @pytest.mark.parametrize(
+        "kwargs", [
+            dict(x="x"),
+            dict(x="x", y="y"),
+            dict(x="x", hue="a"),
+        ]
+    )
+    def test_with_rug(self, long_df, kwargs):
+
+        ax = rugplot(data=long_df, **kwargs)
+        g = displot(long_df, rug=True, **kwargs)
+
+        rug1 = ax.findobj(mpl.collections.LineCollection)
+        rug2 = g.ax.findobj(mpl.collections.LineCollection)
+        self.assert_artists_equal(rug1, rug2, self.collection_props)
+
+        long_df["_"] = "_"
+        g2 = displot(long_df, col="_", **kwargs)
+        rug3 = g2.ax.findobj(mpl.collections.LineCollection)
+        self.assert_artists_equal(rug1, rug3, self.collection_props)
+
+    @pytest.mark.parametrize(
+        "facet_var", ["col", "row"],
+    )
+    def test_facets(self, long_df, facet_var):
+
+        kwargs = {facet_var: "a"}
+        ax = kdeplot(data=long_df, x="x", hue="a")
+        g = displot(long_df, x="x", kind="kde", **kwargs)
+
+        legend_texts = ax.legend_.get_texts()
+
+        for i, line in enumerate(ax.lines[::-1]):
+            facet_ax = g.axes.flat[i]
+            facet_line = facet_ax.lines[0]
+            assert_array_equal(line.get_xydata(), facet_line.get_xydata())
+
+            text = legend_texts[i].get_text()
+            assert text in facet_ax.get_title()
+
+    @pytest.mark.parametrize("multiple", ["dodge", "stack", "fill"])
+    def test_facet_multiple(self, long_df, multiple):
+
+        bins = np.linspace(0, 20, 5)
+        ax = histplot(
+            data=long_df[long_df["c"] == 0],
+            x="x", hue="a", hue_order=["a", "b", "c"],
+            multiple=multiple, bins=bins,
+        )
+
+        g = displot(
+            data=long_df, x="x", hue="a", col="c", hue_order=["a", "b", "c"],
+            multiple=multiple, bins=bins,
+        )
+
+        self.assert_plots_equal(ax, g.axes_dict[0])
+
+    def test_ax_warning(self, long_df):
+
+        ax = plt.figure().subplots()
+        with pytest.warns(UserWarning, match="`displot` is a figure-level"):
+            displot(long_df, x="x", ax=ax)
+
+    @pytest.mark.parametrize("key", ["col", "row"])
+    def test_array_faceting(self, long_df, key):
+
+        a = np.asarray(long_df["a"])  # .to_numpy on pandas 0.24
+        vals = categorical_order(a)
+        g = displot(long_df, x="x", **{key: a})
+        assert len(g.axes.flat) == len(vals)
+        for ax, val in zip(g.axes.flat, vals):
+            assert val in ax.get_title()
+
+    def test_legend(self, long_df):
+
+        g = displot(long_df, x="x", hue="a")
+        assert g._legend is not None
+
+    def test_empty(self):
+
+        g = displot(x=[], y=[])
+        assert isinstance(g, FacetGrid)
+
+    def test_bivariate_ecdf_error(self, long_df):
+
+        with pytest.raises(NotImplementedError):
+            displot(long_df, x="x", y="y", kind="ecdf")
