@@ -303,7 +303,7 @@ class _DistributionPlotter(VectorPlotter):
             observations = sub_data[data_variable]
 
             observation_variance = observations.var()
-            if not observation_variance or np.isnan(observation_variance):
+            if np.isclose(observation_variance, 0) or np.isnan(observation_variance):
                 msg = "Dataset has 0 variance; skipping density estimate."
                 warnings.warn(msg, UserWarning)
                 continue
@@ -1074,7 +1074,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Check that KDE will not error out
             variance = observations[["x", "y"]].var()
-            if not variance.all() or variance.isna().any():
+            if np.isclose(variance, 0).any() or variance.isna().any():
                 msg = "Dataset has 0 variance; skipping density estimate."
                 warnings.warn(msg, UserWarning)
                 continue
