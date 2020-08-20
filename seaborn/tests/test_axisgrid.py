@@ -18,9 +18,13 @@ except ImportError:
 from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
+from ..relational import scatterplot
 from ..distributions import histplot, kdeplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
+from .._testing import (
+    assert_plots_equal,
+)
 
 rs = np.random.RandomState(0)
 
@@ -1416,6 +1420,31 @@ class TestJointGrid(object):
 
         nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
         nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
+
+    @pytest.mark.parametrize(
+        "as_vector", [True, False],
+    )
+    def test_hue(self, long_df, as_vector):
+
+        if as_vector:
+            data = None
+            x, y, hue = long_df["x"], long_df["y"], long_df["a"]
+        else:
+            data = long_df
+            x, y, hue = "x", "y", "a"
+
+        g = ag.JointGrid(data=data, x=x, y=y, hue=hue)
+        g.plot_joint(scatterplot)
+        g.plot_marginals(histplot)
+
+        g2 = ag.JointGrid(data=data, x=x, y=y, hue=hue)
+        scatterplot(data=long_df, x=x, y=y, hue=hue, ax=g2.ax_joint)
+        histplot(data=long_df, x=x, hue=hue, ax=g2.ax_marg_x)
+        histplot(data=long_df, y=y, hue=hue, ax=g2.ax_marg_y)
+
+        assert_plots_equal(g.ax_joint, g2.ax_joint)
+        assert_plots_equal(g.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g.ax_marg_y, g2.ax_marg_y, labels=False)
 
 
 class TestJointPlot(object):

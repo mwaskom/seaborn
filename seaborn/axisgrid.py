@@ -1787,6 +1787,8 @@ class JointGrid(object):
         ax_marg_x.yaxis.grid(False)
         ax_marg_y.xaxis.grid(False)
 
+        # TODO rework this logic to use core infrastructure
+
         # Possibly extract the variables from a DataFrame
         if data is not None:
             x = data.get(x, x)
@@ -1813,10 +1815,12 @@ class JointGrid(object):
 
         # Possibly drop NA
         if dropna:
-            not_na = pd.notnull(x_array) & pd.notnull(y_array) & pd.notnull(hue_array)
+            not_na = pd.notnull(x_array) & pd.notnull(y_array)
+            if hue is not None:
+                not_na &= pd.notnull(hue_array)
+                hue_array = hue_array[not_na]
             x_array = x_array[not_na]
             y_array = y_array[not_na]
-            hue_array = hue_array[not_na]
 
         self.x = x_array
         self.y = y_array
