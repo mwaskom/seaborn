@@ -543,7 +543,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
-            >>> g = g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+            >>> g = g.map(sns.scatterplot, "total_bill", "tip")
 
         Assign one of the variables to the color of the plot elements:
 
@@ -551,7 +551,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="time",  hue="smoker")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip")
             ...       .add_legend())
 
         Change the height and aspect ratio of each facet:
@@ -575,10 +575,10 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> kws = dict(s=50, linewidth=.5, edgecolor="w")
+            >>> kws = dict(s=50, linewidth=.5)
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette="Set1",
             ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         Use a dictionary mapping hue levels to colors:
@@ -589,7 +589,7 @@ class FacetGrid(Grid):
             >>> pal = dict(Lunch="seagreen", Dinner="gray")
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
             ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         Additionally use a different marker for the hue levels:
@@ -600,7 +600,7 @@ class FacetGrid(Grid):
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
             ...                   hue_order=["Dinner", "Lunch"],
             ...                   hue_kws=dict(marker=["^", "v"]))
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         "Wrap" a column variable with many levels into the rows:
@@ -652,7 +652,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="g", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="g", **kws)
             ...       .set_axis_labels("Total bill (US Dollars)", "Tip"))
 
         Set other attributes that are shared across the facetes:
@@ -661,7 +662,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="r", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="r", **kws)
             ...       .set(xlim=(0, 60), ylim=(0, 12),
             ...            xticks=[10, 30, 50], yticks=[2, 6, 10]))
 
@@ -681,7 +683,8 @@ class FacetGrid(Grid):
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex",
             ...                   margin_titles=True)
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="m", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="m", **kws)
             ...       .set(xlim=(0, 60), ylim=(0, 12),
             ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
             ...       .fig.subplots_adjust(wspace=.05, hspace=.05))
@@ -1246,7 +1249,7 @@ class PairGrid(Grid):
             >>> import seaborn as sns; sns.set()
             >>> iris = sns.load_dataset("iris")
             >>> g = sns.PairGrid(iris)
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Show a univariate distribution on the diagonal:
 
@@ -1255,7 +1258,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
 
         (It's not actually necessary to catch the return value every time,
         as it is the same object, but it makes it easier to deal with the
@@ -1268,7 +1271,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species")
             >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
             >>> g = g.add_legend()
 
         Use a different style to show multiple histograms:
@@ -1278,7 +1281,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species")
             >>> g = g.map_diag(plt.hist, histtype="step", linewidth=3)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
             >>> g = g.add_legend()
 
         Plot a subset of variables
@@ -1287,7 +1290,7 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris, vars=["sepal_length", "sepal_width"])
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Pass additional keyword arguments to the functions
 
@@ -1296,7 +1299,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_diag(plt.hist, edgecolor="w")
-            >>> g = g.map_offdiag(plt.scatter, edgecolor="w", s=40)
+            >>> g = g.map_offdiag(sns.scatterplot)
 
         Use different variables for the rows and columns:
 
@@ -1306,7 +1309,7 @@ class PairGrid(Grid):
             >>> g = sns.PairGrid(iris,
             ...                  x_vars=["sepal_length", "sepal_width"],
             ...                  y_vars=["petal_length", "petal_width"])
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Use different functions on the upper and lower triangles:
 
@@ -1325,7 +1328,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
             ...                  hue_kws={"marker": ["o", "s", "D"]})
-            >>> g = g.map(sns.scatterplot, linewidths=1, edgecolor="w", s=40)
+            >>> g = g.map(sns.scatterplot)
             >>> g = g.add_legend()
 
         """
@@ -2366,9 +2369,8 @@ def jointplot(
         :context: close-figs
 
         >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15),
-        ...                   annot_kws=dict(stat="r"),
-        ...                   s=40, edgecolor="w", linewidth=1)
+        ...                   marginal_kws=dict(bins=15, rug=True),
+        ...                   marker="+")
 
     """
     # Avoid circular import
@@ -2405,8 +2407,10 @@ def jointplot(
     # Plot the data using the grid
     if kind == "scatter":
 
+        from .relational import scatterplot  # Avoid circular import
+
         joint_kws.setdefault("color", color)
-        grid.plot_joint(plt.scatter, **joint_kws)
+        grid.plot_joint(scatterplot, **joint_kws)
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
