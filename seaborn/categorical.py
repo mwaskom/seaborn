@@ -3784,7 +3784,7 @@ def catplot(
     ):
         # Sync categorical axis between facets to have the same categories
         order = p.group_names
-    elif color is None:
+    elif color is None and hue is None:
         msg = (
             "Setting `{}=False` with `color=None` may cause different levels of the "
             "`{}` variable to share colors. This will change in a future version."
