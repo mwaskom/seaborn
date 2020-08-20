@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from ._core import variable_type, categorical_order
 from . import utils
+from .utils import _check_argument
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 
@@ -2267,7 +2268,7 @@ def jointplot(
         Data or names of variables in ``data``.
     data : DataFrame
         DataFrame when ``x`` and ``y`` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hist" | "hex" }
         Kind of plot to draw.
     stat_func : callable or None
         *Deprecated*
@@ -2372,7 +2373,9 @@ def jointplot(
         ...                   marginal_kws=dict(bins=15), marker="+")
 
     """
-    # Avoid circular import
+    # Avoid circular imports
+    from .relational import scatterplot
+    from .regression import regplot, residplot
     from .distributions import histplot, kdeplot, _freedman_diaconis_bins
 
     # Handle deprecations
@@ -2388,7 +2391,12 @@ def jointplot(
     marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
     annot_kws = {} if annot_kws is None else annot_kws.copy()
 
+    # Validate the plot kind
+    plot_kinds = ["scatter", "hist", "hex", "kde", "reg", "resid"]
+    _check_argument("kind", plot_kinds, kind)
+
     # Make a colormap based off the plot color
+    # (Currently used only for kind="hex")
     if color is None:
         color = color_palette()[0]
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
@@ -2406,10 +2414,19 @@ def jointplot(
     # Plot the data using the grid
     if kind == "scatter":
 
-        from .relational import scatterplot  # Avoid circular import
-
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
+
+        marginal_kws.setdefault("kde", False)
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(histplot, **marginal_kws)
+
+    elif kind.startswith("hist"):
+
+        # TODO process pair parameters for bw, etc. and pass
+        # to both jount and marginal plots
+
+        grid.plot_joint(histplot, **joint_kws)
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
@@ -2431,17 +2448,17 @@ def jointplot(
 
     elif kind.startswith("kde"):
 
-        joint_kws.setdefault("shade", True)
-        joint_kws.setdefault("cmap", cmap)
+        # TODO process pair parameters for bw, etc. and pass
+        # to both jount and marginal plots
+
+        joint_kws.setdefault("fill", True)
         grid.plot_joint(kdeplot, **joint_kws)
 
-        marginal_kws.setdefault("shade", True)
+        marginal_kws.setdefault("fill", joint_kws["fill"])
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(kdeplot, **marginal_kws)
 
     elif kind.startswith("reg"):
-
-        from .regression import regplot
 
         marginal_kws.setdefault("color", color)
         marginal_kws.setdefault("kde", True)
@@ -2452,19 +2469,14 @@ def jointplot(
 
     elif kind.startswith("resid"):
 
-        from .regression import residplot
-
         joint_kws.setdefault("color", color)
         grid.plot_joint(residplot, **joint_kws)
 
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
-        histplot(x=x, ax=grid.ax_marg_x, kde=False, **marginal_kws)
-        histplot(y=y, ax=grid.ax_marg_y, kde=True, **marginal_kws)
+        histplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
+        histplot(y=y, ax=grid.ax_marg_y, **marginal_kws)
         stat_func = None
-    else:
-        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
-        raise ValueError(msg)
 
     if stat_func is not None:
         grid.annotate(stat_func, **annot_kws)

@@ -1465,7 +1465,7 @@ class TestJointPlot(object):
         assert g.ax_joint.collections
         assert g.ax_joint.lines
         assert not g.ax_marg_x.lines
-        assert g.ax_marg_y.lines
+        assert not g.ax_marg_y.lines
 
     def test_hex(self):
 
