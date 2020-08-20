@@ -275,7 +275,7 @@ class Histogram:
                 # or specific to each variable
 
                 bins = self.bins
-                if bins is None or isinstance(bins, (str, Number)):
+                if not bins or isinstance(bins, (str, Number)):
                     pass
                 elif isinstance(bins[i], str):
                     bins = bins[i]

@@ -33,6 +33,10 @@ from ..distributions import (
     rugplot,
 )
 from ..axisgrid import FacetGrid
+from .._testing import (
+    assert_plots_equal,
+    assert_legends_equal,
+)
 
 
 class TestDistPlot(object):
@@ -1929,82 +1933,6 @@ class TestECDFPlotUnivariate:
 class TestDisPlot:
 
     # TODO probably good to move these utility attributes/methods somewhere else
-    bar_props = [
-        "alpha",
-        "edgecolor",
-        "facecolor",
-        "fill",
-        "hatch",
-        "height",
-        "linestyle",
-        "linewidth",
-        "xy",
-        "zorder",
-    ]
-
-    line_props = [
-        "alpha",
-        "color",
-        "linewidth",
-        "linestyle",
-        "xydata",
-        "zorder",
-    ]
-
-    collection_props = [
-        "alpha",
-        "edgecolor",
-        "facecolor",
-        "fill",
-        "hatch",
-        "linestyle",
-        "linewidth",
-        "paths",
-        "zorder",
-    ]
-
-    def assert_artists_equal(self, list1, list2, properties):
-
-        for a1, a2 in zip(list1, list2):
-            prop1 = a1.properties()
-            prop2 = a2.properties()
-            for key in properties:
-                v1 = prop1[key]
-                v2 = prop2[key]
-                if key == "paths":
-                    for p1, p2 in zip(v1, v2):
-                        assert_array_equal(p1.vertices, p2.vertices)
-                        assert_array_equal(p1.codes, p2.codes)
-                elif isinstance(v1, np.ndarray):
-                    assert_array_equal(v1, v2)
-                else:
-                    assert v1 == v2
-
-    def assert_plots_equal(self, ax1, ax2):
-
-        self.assert_artists_equal(ax1.patches, ax2.patches, self.bar_props)
-        self.assert_artists_equal(ax1.lines, ax2.lines, self.line_props)
-
-        poly1 = ax1.findobj(mpl.collections.PolyCollection)
-        poly2 = ax2.findobj(mpl.collections.PolyCollection)
-        self.assert_artists_equal(poly1, poly2, self.collection_props)
-
-        assert ax1.get_xlabel() == ax2.get_xlabel()
-        assert ax1.get_ylabel() == ax2.get_ylabel()
-
-    def assert_legends_equal(self, leg1, leg2):
-
-        assert leg1.get_title().get_text() == leg2.get_title().get_text()
-        for t1, t2 in zip(leg1.get_texts(), leg2.get_texts()):
-            assert t1.get_text() == t2.get_text()
-
-        self.assert_artists_equal(
-            leg1.get_patches(), leg2.get_patches(), self.bar_props,
-        )
-        self.assert_artists_equal(
-            leg1.get_lines(), leg2.get_lines(), self.line_props,
-        )
-
     @pytest.mark.parametrize(
         "kwargs", [
             dict(),
@@ -2029,15 +1957,15 @@ class TestDisPlot:
 
         ax = histplot(long_df, **kwargs)
         g = displot(long_df, **kwargs)
-        self.assert_plots_equal(ax, g.ax)
+        assert_plots_equal(ax, g.ax)
 
         if ax.legend_ is not None:
-            self.assert_legends_equal(ax.legend_, g._legend)
+            assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
             long_df["_"] = "_"
             g2 = displot(long_df, col="_", **kwargs)
-            self.assert_plots_equal(ax, g2.ax)
+            assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
@@ -2062,15 +1990,15 @@ class TestDisPlot:
 
         ax = kdeplot(data=long_df, **kwargs)
         g = displot(long_df, kind="kde", **kwargs)
-        self.assert_plots_equal(ax, g.ax)
+        assert_plots_equal(ax, g.ax)
 
         if ax.legend_ is not None:
-            self.assert_legends_equal(ax.legend_, g._legend)
+            assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
             long_df["_"] = "_"
             g2 = displot(long_df, kind="kde", col="_", **kwargs)
-            self.assert_plots_equal(ax, g2.ax)
+            assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
@@ -2090,15 +2018,15 @@ class TestDisPlot:
 
         ax = ecdfplot(data=long_df, **kwargs)
         g = displot(long_df, kind="ecdf", **kwargs)
-        self.assert_plots_equal(ax, g.ax)
+        assert_plots_equal(ax, g.ax)
 
         if ax.legend_ is not None:
-            self.assert_legends_equal(ax.legend_, g._legend)
+            assert_legends_equal(ax.legend_, g._legend)
 
         if kwargs:
             long_df["_"] = "_"
             g2 = displot(long_df, kind="ecdf", col="_", **kwargs)
-            self.assert_plots_equal(ax, g2.ax)
+            assert_plots_equal(ax, g2.ax)
 
     @pytest.mark.parametrize(
         "kwargs", [
@@ -2111,15 +2039,17 @@ class TestDisPlot:
 
         ax = rugplot(data=long_df, **kwargs)
         g = displot(long_df, rug=True, **kwargs)
+        for bar in g.ax.patches:
+            bar.remove()
 
-        rug1 = ax.findobj(mpl.collections.LineCollection)
-        rug2 = g.ax.findobj(mpl.collections.LineCollection)
-        self.assert_artists_equal(rug1, rug2, self.collection_props)
+        assert_plots_equal(ax, g.ax, labels=False)
 
         long_df["_"] = "_"
-        g2 = displot(long_df, col="_", **kwargs)
-        rug3 = g2.ax.findobj(mpl.collections.LineCollection)
-        self.assert_artists_equal(rug1, rug3, self.collection_props)
+        g2 = displot(long_df, col="_", rug=True, **kwargs)
+        for bar in g2.ax.patches:
+            bar.remove()
+
+        assert_plots_equal(ax, g2.ax, labels=False)
 
     @pytest.mark.parametrize(
         "facet_var", ["col", "row"],
@@ -2155,7 +2085,7 @@ class TestDisPlot:
             multiple=multiple, bins=bins,
         )
 
-        self.assert_plots_equal(ax, g.axes_dict[0])
+        assert_plots_equal(ax, g.axes_dict[0])
 
     def test_ax_warning(self, long_df):
 
