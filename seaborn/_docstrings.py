@@ -102,15 +102,31 @@ ax : :class:`matplotlib.axes.Axes`
 
 _core_returns = dict(
     ax="""
-ax : :class:`matplotlib.axes.Axes`
+:class:`matplotlib.axes.Axes`
     The matplotlib axes containing the plot.
+    """,
+    facetgrid="""
+:class:`FacetGrid`
+    An object managing one or more subplots that correspond to conditional data
+    subsets with convenient methods for batch-setting of axes attributes.
     """,
 )
 
 
 _seealso_blurbs = dict(
 
+    # Relational plots
+    scatterplot="""
+scatterplot : Plot data using points.
+    """,
+    lineplot="""
+lineplot : Plot data using lines.
+    """,
+
     # Distribution plots
+    displot="""
+displot : Figure-level interface to distribution plot functions.
+    """,
     histplot="""
 histplot : Plot a histogram of binned counts with optional normalization or smoothing.
     """,
@@ -125,8 +141,17 @@ rugplot : Plot a tick at each observation value along the x and/or y axes.
     """,
 
     # Categorical plots
+    stripplot="""
+stripplot : Plot a categorical scatter with jitter.
+    """,
+    swarmplot="""
+swarmplot : Plot a categorical scatter with non-overlapping points.
+    """,
     violinplot="""
 violinplot : Draw an enhanced boxplot using kernel density estimation.
+    """,
+    pointplot="""
+pointplot : Plot point estimates and CIs using markers and lines.
     """,
 
     # Multiples

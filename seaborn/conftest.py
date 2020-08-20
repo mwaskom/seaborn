@@ -149,6 +149,7 @@ def long_df(rng):
     df = pd.DataFrame(dict(
         x=rng.uniform(0, 20, n).round().astype("int"),
         y=rng.normal(size=n),
+        z=rng.lognormal(size=n),
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n, [.3, .7]),
@@ -206,6 +207,6 @@ def object_df(rng, long_df):
 
 
 @pytest.fixture
-def null_series():
+def null_series(flat_series):
 
-    return pd.Series(index=np.arange(20), dtype='float64')
+    return pd.Series(index=flat_series.index, dtype='float64')

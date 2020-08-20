@@ -13,7 +13,7 @@ dots = sns.load_dataset("dots")
 # Define a palette to ensure that colors will be
 # shared across the facets
 palette = dict(zip(dots.coherence.unique(),
-                   sns.color_palette("rocket_r", 6)))
+                   sns.color_palette("rocket_r", len(dots.coherence.unique()))))
 
 # Plot the lines on two facets
 sns.relplot(x="time", y="firing_rate",

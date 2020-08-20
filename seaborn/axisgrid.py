@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from ._core import variable_type, categorical_order
 from . import utils
 from .palettes import color_palette, blend_palette
-from .distributions import histplot, kdeplot, _freedman_diaconis_bins
 from ._decorators import _deprecate_positional_args
 
 
@@ -51,13 +50,13 @@ class Grid(object):
 
         Parameters
         ----------
-        legend_data : dict, optional
+        legend_data : dict
             Dictionary mapping label names (or two-element tuples where the
             second element is a label name) to matplotlib artist handles. The
             default reads from ``self._legend_data``.
-        title : string, optional
+        title : string
             Title for the legend. The default reads from ``self._hue_var``.
-        label_order : list of labels, optional
+        label_order : list of labels
             The order that the legend entries should appear in. The default
             reads from ``self.hue_names``.
         kwargs : key, value pairings
@@ -199,8 +198,17 @@ _facet_docs = dict(
         Tidy ("long-form") dataframe where each column is a variable and each
         row is an observation.\
     """),
+    rowcol=dedent("""\
+    row, col : vectors or keys in ``data``
+        Variables that define subsets to plot on different facets.\
+    """),
+    rowcol_order=dedent("""\
+    {row,col}_order : vector of strings
+        Specify the order in which levels of the ``row`` and/or ``col`` variables
+        appear in the grid of subplots.\
+    """),
     col_wrap=dedent("""\
-    col_wrap : int, optional
+    col_wrap : int
         "Wrap" the column variable at this width, so that the column facets
         span multiple rows. Incompatible with a ``row`` facet.\
     """),
@@ -210,30 +218,34 @@ _facet_docs = dict(
         across rows.\
     """),
     height=dedent("""\
-    height : scalar, optional
+    height : scalar
         Height (in inches) of each facet. See also: ``aspect``.\
     """),
     aspect=dedent("""\
-    aspect : scalar, optional
+    aspect : scalar
         Aspect ratio of each facet, so that ``aspect * height`` gives the width
         of each facet in inches.\
     """),
     palette=dedent("""\
-    palette : palette name, list, or dict, optional
+    palette : palette name, list, or dict
         Colors to use for the different levels of the ``hue`` variable. Should
         be something that can be interpreted by :func:`color_palette`, or a
         dictionary mapping hue levels to matplotlib colors.\
     """),
     legend_out=dedent("""\
-    legend_out : bool, optional
+    legend_out : bool
         If ``True``, the figure size will be extended, and the legend will be
         drawn outside the plot on the center right.\
     """),
     margin_titles=dedent("""\
-    margin_titles : bool, optional
+    margin_titles : bool
         If ``True``, the titles for the row variable are drawn to the right of
         the last column. This option is experimental and may not work in all
         cases.\
+    """),
+    facet_kws=dedent("""\
+    facet_kws : dict
+        Additional parameters passed to :class:`FacetGrid`.
     """),
 )
 
@@ -246,7 +258,7 @@ class FacetGrid(Grid):
         row=None, col=None, hue=None, col_wrap=None,
         sharex=True, sharey=True, height=3, aspect=1, palette=None,
         row_order=None, col_order=None, hue_order=None, hue_kws=None,
-        dropna=True, legend_out=True, despine=True,
+        dropna=False, legend_out=True, despine=True,
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
         gridspec_kws=None, size=None
     ):
@@ -459,7 +471,7 @@ class FacetGrid(Grid):
         {height}
         {aspect}
         {palette}
-        {{row,col,hue}}_order : lists, optional
+        {{row,col,hue}}_order : lists
             Order for the levels of the faceting variables. By default, this
             will be the order that the levels appear in ``data`` or, if the
             variables are pandas categoricals, the category order.
@@ -468,26 +480,27 @@ class FacetGrid(Grid):
             other plot attributes vary across levels of the hue variable (e.g.
             the markers in a scatterplot).
         {legend_out}
-        despine : boolean, optional
+        despine : boolean
             Remove the top and right spines from the plots.
         {margin_titles}
-        {{x, y}}lim: tuples, optional
+        {{x, y}}lim: tuples
             Limits for each of the axes on each facet (only relevant when
             share{{x, y}} is True).
-        subplot_kws : dict, optional
+        subplot_kws : dict
             Dictionary of keyword arguments passed to matplotlib subplot(s)
             methods.
-        gridspec_kws : dict, optional
+        gridspec_kws : dict
             Dictionary of keyword arguments passed to matplotlib's ``gridspec``
             module (via ``plt.subplots``). Ignored if ``col_wrap`` is not
             ``None``.
 
         See Also
         --------
-        PairGrid : Subplot grid for plotting pairwise relationships.
-        relplot : Combine a relational plot and a :class:`FacetGrid`.
-        catplot : Combine a categorical plot and a :class:`FacetGrid`.
-        lmplot : Combine a regression plot and a :class:`FacetGrid`.
+        PairGrid : Subplot grid for plotting pairwise relationships
+        relplot : Combine a relational plot and a :class:`FacetGrid`
+        displot : Combine a distribution plot and a :class:`FacetGrid`
+        catplot : Combine a categorical plot and a :class:`FacetGrid`
+        lmplot : Combine a regression plot and a :class:`FacetGrid`
 
         Examples
         --------
@@ -530,7 +543,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
-            >>> g = g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+            >>> g = g.map(sns.scatterplot, "total_bill", "tip")
 
         Assign one of the variables to the color of the plot elements:
 
@@ -538,7 +551,7 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="time",  hue="smoker")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", edgecolor="w")
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip")
             ...       .add_legend())
 
         Change the height and aspect ratio of each facet:
@@ -562,10 +575,10 @@ class FacetGrid(Grid):
         .. plot::
             :context: close-figs
 
-            >>> kws = dict(s=50, linewidth=.5, edgecolor="w")
+            >>> kws = dict(s=50, linewidth=.5)
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette="Set1",
             ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         Use a dictionary mapping hue levels to colors:
@@ -576,7 +589,7 @@ class FacetGrid(Grid):
             >>> pal = dict(Lunch="seagreen", Dinner="gray")
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
             ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         Additionally use a different marker for the hue levels:
@@ -587,7 +600,7 @@ class FacetGrid(Grid):
             >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
             ...                   hue_order=["Dinner", "Lunch"],
             ...                   hue_kws=dict(marker=["^", "v"]))
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
             ...      .add_legend())
 
         "Wrap" a column variable with many levels into the rows:
@@ -639,7 +652,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="g", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="g", **kws)
             ...       .set_axis_labels("Total bill (US Dollars)", "Tip"))
 
         Set other attributes that are shared across the facetes:
@@ -648,7 +662,8 @@ class FacetGrid(Grid):
             :context: close-figs
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="r", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="r", **kws)
             ...       .set(xlim=(0, 60), ylim=(0, 12),
             ...            xticks=[10, 30, 50], yticks=[2, 6, 10]))
 
@@ -668,7 +683,8 @@ class FacetGrid(Grid):
 
             >>> g = sns.FacetGrid(tips, col="smoker", row="sex",
             ...                   margin_titles=True)
-            >>> g = (g.map(plt.scatter, "total_bill", "tip", color="m", **kws)
+            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
+            ...            color="m", **kws)
             ...       .set(xlim=(0, 60), ylim=(0, 12),
             ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
             ...       .fig.subplots_adjust(wspace=.05, hspace=.05))
@@ -947,6 +963,8 @@ class FacetGrid(Grid):
     def set_xticklabels(self, labels=None, step=None, **kwargs):
         """Set x axis tick labels of the grid."""
         for ax in self.axes.flat:
+            curr_ticks = ax.get_xticks()
+            ax.set_xticks(curr_ticks)
             if labels is None:
                 curr_labels = [l.get_text() for l in ax.get_xticklabels()]
                 if step is not None:
@@ -961,6 +979,8 @@ class FacetGrid(Grid):
     def set_yticklabels(self, labels=None, **kwargs):
         """Set y axis tick labels on the left column of the grid."""
         for ax in self.axes.flat:
+            curr_ticks = ax.get_yticks()
+            ax.set_yticks(curr_ticks)
             if labels is None:
                 curr_labels = [l.get_text() for l in ax.get_yticklabels()]
                 ax.set_yticklabels(curr_labels, **kwargs)
@@ -1171,7 +1191,7 @@ class PairGrid(Grid):
         hue=None, hue_order=None, palette=None,
         hue_kws=None, vars=None, x_vars=None, y_vars=None,
         corner=False, diag_sharey=True, height=2.5, aspect=1,
-        layout_pad=0, despine=True, dropna=True, size=None
+        layout_pad=0, despine=True, dropna=False, size=None
     ):
         """Initialize the plot figure and PairGrid object.
 
@@ -1180,7 +1200,7 @@ class PairGrid(Grid):
         data : DataFrame
             Tidy (long-form) dataframe where each column is a variable and
             each row is an observation.
-        hue : string (variable name), optional
+        hue : string (variable name)
             Variable in ``data`` to map plot aspects to different colors. This
             variable will be excluded from the default x and y variables.
         hue_order : list of strings
@@ -1192,24 +1212,24 @@ class PairGrid(Grid):
             Other keyword arguments to insert into the plotting call to let
             other plot attributes vary across levels of the hue variable (e.g.
             the markers in a scatterplot).
-        vars : list of variable names, optional
+        vars : list of variable names
             Variables within ``data`` to use, otherwise use every column with
             a numeric datatype.
-        {x, y}_vars : lists of variable names, optional
+        {x, y}_vars : lists of variable names
             Variables within ``data`` to use separately for the rows and
             columns of the figure; i.e. to make a non-square plot.
-        corner : bool, optional
+        corner : bool
             If True, don't add axes to the upper (off-diagonal) triangle of the
             grid, making this a "corner" plot.
-        height : scalar, optional
+        height : scalar
             Height (in inches) of each facet.
-        aspect : scalar, optional
+        aspect : scalar
             Aspect * height gives the width (in inches) of each facet.
-        layout_pad : scalar, optional
+        layout_pad : scalar
             Padding between axes; passed to ``fig.tight_layout``.
-        despine : boolean, optional
+        despine : boolean
             Remove the top and right spines from the plots.
-        dropna : boolean, optional
+        dropna : boolean
             Drop missing values from the data before plotting.
 
         See Also
@@ -1229,7 +1249,7 @@ class PairGrid(Grid):
             >>> import seaborn as sns; sns.set()
             >>> iris = sns.load_dataset("iris")
             >>> g = sns.PairGrid(iris)
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Show a univariate distribution on the diagonal:
 
@@ -1238,7 +1258,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
 
         (It's not actually necessary to catch the return value every time,
         as it is the same object, but it makes it easier to deal with the
@@ -1251,7 +1271,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species")
             >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
             >>> g = g.add_legend()
 
         Use a different style to show multiple histograms:
@@ -1261,7 +1281,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species")
             >>> g = g.map_diag(plt.hist, histtype="step", linewidth=3)
-            >>> g = g.map_offdiag(plt.scatter)
+            >>> g = g.map_offdiag(sns.scatterplot)
             >>> g = g.add_legend()
 
         Plot a subset of variables
@@ -1270,7 +1290,7 @@ class PairGrid(Grid):
             :context: close-figs
 
             >>> g = sns.PairGrid(iris, vars=["sepal_length", "sepal_width"])
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Pass additional keyword arguments to the functions
 
@@ -1279,7 +1299,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris)
             >>> g = g.map_diag(plt.hist, edgecolor="w")
-            >>> g = g.map_offdiag(plt.scatter, edgecolor="w", s=40)
+            >>> g = g.map_offdiag(sns.scatterplot)
 
         Use different variables for the rows and columns:
 
@@ -1289,7 +1309,7 @@ class PairGrid(Grid):
             >>> g = sns.PairGrid(iris,
             ...                  x_vars=["sepal_length", "sepal_width"],
             ...                  y_vars=["petal_length", "petal_width"])
-            >>> g = g.map(plt.scatter)
+            >>> g = g.map(sns.scatterplot)
 
         Use different functions on the upper and lower triangles:
 
@@ -1308,7 +1328,7 @@ class PairGrid(Grid):
 
             >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
             ...                  hue_kws={"marker": ["o", "s", "D"]})
-            >>> g = g.map(sns.scatterplot, linewidths=1, edgecolor="w", s=40)
+            >>> g = g.map(sns.scatterplot)
             >>> g = g.add_legend()
 
         """
@@ -1400,8 +1420,8 @@ class PairGrid(Grid):
         self._legend_data = {}
 
         # Make the plot look nice
+        self._despine = despine
         if despine:
-            self._despine = True
             utils.despine(fig=fig)
         self.tight_layout(pad=layout_pad)
 
@@ -1627,7 +1647,7 @@ class JointGrid(object):
         x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
-        dropna=True, xlim=None, ylim=None, size=None
+        dropna=False, xlim=None, ylim=None, size=None
     ):
         """Set up the grid of subplots.
 
@@ -1635,17 +1655,17 @@ class JointGrid(object):
         ----------
         x, y : strings or vectors
             Data or names of variables in ``data``.
-        data : DataFrame, optional
+        data : DataFrame
             DataFrame when ``x`` and ``y`` are variable names.
         height : numeric
             Size of each side of the figure in inches (it will be square).
         ratio : numeric
             Ratio of joint axes size to marginal axes height.
-        space : numeric, optional
+        space : numeric
             Space between the joint and marginal axes
-        dropna : bool, optional
+        dropna : bool
             If True, remove observations that are missing from `x` and `y`.
-        {x, y}lim : two-tuples, optional
+        {x, y}lim : two-tuples
             Axis limits to set before plotting.
 
         See Also
@@ -1901,13 +1921,13 @@ class JointGrid(object):
         func : callable
             Statistical function that maps the x, y vectors either to (val, p)
             or to val.
-        template : string format template, optional
+        template : string format template
             The template must have the format keys "stat" and "val";
             if `func` returns a p value, it should also have the key "p".
-        stat : string, optional
+        stat : string
             Name to use for the statistic in the annotation, by default it
             uses the name of `func`.
-        loc : string or int, optional
+        loc : string or int
             Matplotlib legend location code; used to place the annotation.
         kwargs : key, value mappings
             Other keyword arguments are passed to `ax.legend`, which formats
@@ -1989,7 +2009,7 @@ def pairplot(
     hue=None, hue_order=None, palette=None,
     vars=None, x_vars=None, y_vars=None,
     kind="scatter", diag_kind="auto", markers=None,
-    height=2.5, aspect=1, corner=False, dropna=True,
+    height=2.5, aspect=1, corner=False, dropna=False,
     plot_kws=None, diag_kws=None, grid_kws=None, size=None,
 ):
     """Plot pairwise relationships in a dataset.
@@ -2012,39 +2032,39 @@ def pairplot(
     data : DataFrame
         Tidy (long-form) dataframe where each column is a variable and
         each row is an observation.
-    hue : string (variable name), optional
+    hue : string (variable name)
         Variable in ``data`` to map plot aspects to different colors.
     hue_order : list of strings
         Order for the levels of the hue variable in the palette
     palette : dict or seaborn color palette
         Set of colors for mapping the ``hue`` variable. If a dict, keys
         should be values  in the ``hue`` variable.
-    vars : list of variable names, optional
+    vars : list of variable names
         Variables within ``data`` to use, otherwise use every column with
         a numeric datatype.
-    {x, y}_vars : lists of variable names, optional
+    {x, y}_vars : lists of variable names
         Variables within ``data`` to use separately for the rows and
         columns of the figure; i.e. to make a non-square plot.
-    kind : {'scatter', 'reg'}, optional
+    kind : {'scatter', 'reg'}
         Kind of plot for the non-identity relationships.
-    diag_kind : {'auto', 'hist', 'kde', None}, optional
+    diag_kind : {'auto', 'hist', 'kde', None}
         Kind of plot for the diagonal subplots. The default depends on whether
         ``"hue"`` is used or not.
-    markers : single matplotlib marker code or list, optional
+    markers : single matplotlib marker code or list
         Either the marker to use for all datapoints or a list of markers with
         a length the same as the number of levels in the hue variable so that
         differently colored points will also have different scatterplot
         markers.
-    height : scalar, optional
+    height : scalar
         Height (in inches) of each facet.
-    aspect : scalar, optional
+    aspect : scalar
         Aspect * height gives the width (in inches) of each facet.
-    corner : bool, optional
+    corner : bool
         If True, don't add axes to the upper (off-diagonal) triangle of the
         grid, making this a "corner" plot.
-    dropna : boolean, optional
+    dropna : boolean
         Drop missing values from the data before plotting.
-    {plot, diag, grid}_kws : dicts, optional
+    {plot, diag, grid}_kws : dicts
         Dictionaries of keyword arguments. ``plot_kws`` are passed to the
         bivariate plotting function, ``diag_kws`` are passed to the univariate
         plotting function, and ``grid_kws`` are passed to the :class:`PairGrid`
@@ -2151,6 +2171,9 @@ def pairplot(
         ...                  diag_kws=dict(fill=True))
 
     """
+    # Avoid circular import
+    from .distributions import kdeplot  # TODO histplot
+
     # Handle deprecations
     if size is not None:
         height = size
@@ -2227,7 +2250,7 @@ def jointplot(
     data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
-    dropna=True, xlim=None, ylim=None,
+    dropna=False, xlim=None, ylim=None,
     joint_kws=None, marginal_kws=None, annot_kws=None,
     **kwargs
 ):
@@ -2242,25 +2265,25 @@ def jointplot(
     ----------
     x, y : strings or vectors
         Data or names of variables in ``data``.
-    data : DataFrame, optional
+    data : DataFrame
         DataFrame when ``x`` and ``y`` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }, optional
+    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }
         Kind of plot to draw.
-    stat_func : callable or None, optional
+    stat_func : callable or None
         *Deprecated*
-    color : matplotlib color, optional
+    color : matplotlib color
         Color used for the plot elements.
-    height : numeric, optional
+    height : numeric
         Size of the figure (it will be square).
-    ratio : numeric, optional
+    ratio : numeric
         Ratio of joint axes height to marginal axes height.
-    space : numeric, optional
+    space : numeric
         Space between the joint and marginal axes
-    dropna : bool, optional
+    dropna : bool
         If True, remove observations that are missing from ``x`` and ``y``.
-    {x, y}lim : two-tuples, optional
+    {x, y}lim : two-tuples
         Axis limits to set before plotting.
-    {joint, marginal, annot}_kws : dicts, optional
+    {joint, marginal, annot}_kws : dicts
         Additional keyword arguments for the plot components.
     kwargs : key, value pairings
         Additional keyword arguments are passed to the function used to
@@ -2346,11 +2369,13 @@ def jointplot(
         :context: close-figs
 
         >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15),
-        ...                   annot_kws=dict(stat="r"),
-        ...                   s=40, edgecolor="w", linewidth=1)
+        ...                   marginal_kws=dict(bins=15, rug=True),
+        ...                   marker="+")
 
     """
+    # Avoid circular import
+    from .distributions import histplot, kdeplot, _freedman_diaconis_bins
+
     # Handle deprecations
     if "size" in kwargs:
         height = kwargs.pop("size")
@@ -2382,8 +2407,10 @@ def jointplot(
     # Plot the data using the grid
     if kind == "scatter":
 
+        from .relational import scatterplot  # Avoid circular import
+
         joint_kws.setdefault("color", color)
-        grid.plot_joint(plt.scatter, **joint_kws)
+        grid.plot_joint(scatterplot, **joint_kws)
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)

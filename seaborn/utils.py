@@ -1,9 +1,10 @@
 """Utility functions, mostly for internal use."""
 import os
-import colorsys
+import re
+import inspect
 import warnings
+import colorsys
 from urllib.request import urlopen, urlretrieve
-from http.client import HTTPException
 
 import numpy as np
 from scipy import stats
@@ -409,15 +410,18 @@ def iqr(a):
 
 
 def get_dataset_names():
-    """Report available example datasets, useful for reporting issues."""
-    # delayed import to not demand bs4 unless this function is actually used
-    from bs4 import BeautifulSoup
-    http = urlopen('https://github.com/mwaskom/seaborn-data/')
-    gh_list = BeautifulSoup(http)
+    """Report available example datasets, useful for reporting issues.
 
-    return [l.text.replace('.csv', '')
-            for l in gh_list.find_all("a", {"class": "js-navigation-open"})
-            if l.text.endswith('.csv')]
+    Requires an internet connection.
+
+    """
+    url = "https://github.com/mwaskom/seaborn-data"
+    with urlopen(url) as resp:
+        html = resp.read()
+
+    pat = r"/mwaskom/seaborn-data/blob/master/(\w*).csv"
+    datasets = re.findall(pat, html.decode())
+    return datasets
 
 
 def get_data_home(data_home=None):
@@ -504,6 +508,17 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     if name == "titanic":
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
+    if name == "diamonds":
+        df["color"] = pd.Categorical(
+            df["color"], ["D", "E", "F", "G", "H", "I", "J"],
+        )
+        df["clarity"] = pd.Categorical(
+            df["clarity"], ["IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2", "I1"],
+        )
+        df["cut"] = pd.Categorical(
+            df["cut"], ["Ideal", "Premium", "Very Good", "Good", "Fair"],
+        )
 
     return df
 
@@ -623,33 +638,6 @@ def to_utf8(obj):
         return str(obj)
 
 
-def _network(t=None, url='https://google.com'):
-    """
-    Decorator that will skip a test if `url` is unreachable.
-
-    Parameters
-    ----------
-    t : function, optional
-    url : str, optional
-
-    """
-    import nose
-
-    if t is None:
-        return lambda x: _network(x, url=url)
-
-    def wrapper(*args, **kwargs):
-        # attempt to connect
-        try:
-            f = urlopen(url)
-        except (IOError, HTTPException):
-            raise nose.SkipTest()
-        else:
-            f.close()
-            return t(*args, **kwargs)
-    return wrapper
-
-
 def _normalize_kwargs(kws, artist):
     """Wrapper for mpl.cbook.normalize_kwargs that supports <= 3.2.1."""
     _alias_map = {
@@ -676,3 +664,22 @@ def _check_argument(param, options, value):
         raise ValueError(
             f"`{param}` must be one of {options}, but {value} was passed.`"
         )
+
+
+def _assign_default_kwargs(kws, call_func, source_func):
+    """Assign default kwargs for call_func using values from source_func."""
+    # This exists so that axes-level functions and figure-level functions can
+    # both call a Plotter method while having the default kwargs be defined in
+    # the signature of the axes-level function.
+    # An alternative would be to  have a decorator on the method that sets its
+    # defaults based on those defined in the axes-level function.
+    # Then the figuer-level function would not need to worry about defaults.
+    # I am not sure which is better.
+    needed = inspect.signature(call_func).parameters
+    defaults = inspect.signature(source_func).parameters
+
+    for param in needed:
+        if param in defaults and param not in kws:
+            kws[param] = defaults[param].default
+
+    return kws

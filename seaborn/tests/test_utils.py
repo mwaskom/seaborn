@@ -1,5 +1,7 @@
-"""Tests for plotting utilities."""
+"""Tests for seaborn utility functions."""
 import tempfile
+from urllib.request import urlopen
+from http.client import HTTPException
 
 import numpy as np
 import pandas as pd
@@ -18,22 +20,42 @@ from pandas.testing import (
 
 from distutils.version import LooseVersion
 
-try:
-    from bs4 import BeautifulSoup
-except ImportError:
-    BeautifulSoup = None
-
 from .. import utils, rcmod
 from ..utils import (
     get_dataset_names,
     get_color_cycle,
     remove_na,
     load_dataset,
-    _network,
+    _assign_default_kwargs
 )
 
 
 a_norm = np.random.randn(100)
+
+
+def _network(t=None, url="https://github.com"):
+    """
+    Decorator that will skip a test if `url` is unreachable.
+
+    Parameters
+    ----------
+    t : function, optional
+    url : str, optional
+
+    """
+    if t is None:
+        return lambda x: _network(x, url=url)
+
+    def wrapper(*args, **kwargs):
+        # attempt to connect
+        try:
+            f = urlopen(url)
+        except (IOError, HTTPException):
+            pytest.skip("No internet connection")
+        else:
+            f.close()
+            return t(*args, **kwargs)
+    return wrapper
 
 
 def test_pmf_hist_basics():
@@ -379,17 +401,13 @@ def check_load_cached_dataset(name):
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_get_dataset_names():
-    if not BeautifulSoup:
-        pytest.skip("No BeautifulSoup available for parsing html")
     names = get_dataset_names()
-    assert(len(names) > 0)
-    assert("titanic" in names)
+    assert names
+    assert "tips" in names
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_datasets():
-    if not BeautifulSoup:
-        raise pytest.skip("No BeautifulSoup available for parsing html")
 
     # Heavy test to verify that we can load all available datasets
     for name in get_dataset_names():
@@ -401,8 +419,6 @@ def test_load_datasets():
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_cached_datasets():
-    if not BeautifulSoup:
-        raise pytest.skip("No BeautifulSoup available for parsing html")
 
     # Heavy test to verify that we can load all available datasets
     for name in get_dataset_names():
@@ -457,3 +473,17 @@ def test_remove_na():
     a_series = pd.Series([1, 2, np.nan, 3])
     a_series_rm = remove_na(a_series)
     assert_series_equal(a_series_rm, pd.Series([1., 2, 3], [0, 1, 3]))
+
+
+def test_assign_default_kwargs():
+
+    def f(a, b, c, d):
+        pass
+
+    def g(c=1, d=2):
+        pass
+
+    kws = {"c": 3}
+
+    kws = _assign_default_kwargs(kws, f, g)
+    assert kws == {"c": 3, "d": 2}

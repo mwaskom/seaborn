@@ -54,15 +54,20 @@ class Helpers:
         equal = True
 
         args = [
-            mpl.colors.hex2color(a) if isinstance(a, str) else a for a in args
+            mpl.colors.hex2color(a) if isinstance(a, str) and a.startswith("#") else a
+            for a in args
         ]
 
         if np.ndim(args[0]) < 2:
             args = [[a] for a in args]
 
         for c1, c2 in zip(*args):
-            c1 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
-            c2 = mpl.colors.colorConverter.to_rgb(np.squeeze(c1))
+            if isinstance(c1, np.ndarray):
+                c1 = c1.squeeze()
+            if isinstance(c2, np.ndarray):
+                c2 = c2.squeeze()
+            c1 = mpl.colors.to_rgb(c1)
+            c2 = mpl.colors.to_rgb(c2)
             equal &= c1 == c2
 
         return equal

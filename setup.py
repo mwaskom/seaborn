@@ -52,9 +52,8 @@ CLASSIFIERS = [
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',
-    'Operating System :: POSIX',
-    'Operating System :: Unix',
-    'Operating System :: MacOS'
+    'Operating System :: OS Independent',
+    'Framework :: Matplotlib',
 ]
 
 

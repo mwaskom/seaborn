@@ -18,7 +18,7 @@ except ImportError:
 from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
-from ..distributions import kdeplot
+from ..distributions import histplot, kdeplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
 
@@ -496,12 +496,14 @@ class TestFacetGrid(object):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
         g.map(plt.plot, "x", "y")
-        xlab = [l.get_text() + "h" for l in g.axes[1, 0].get_xticklabels()]
-        ylab = [l.get_text() for l in g.axes[1, 0].get_yticklabels()]
+
+        ax = g.axes[-1, 0]
+        xlab = [l.get_text() + "h" for l in ax.get_xticklabels()]
+        ylab = [l.get_text() + "i" for l in ax.get_yticklabels()]
 
         g.set_xticklabels(xlab)
         g.set_yticklabels(ylab)
-        got_x = [l.get_text() for l in g.axes[1, 1].get_xticklabels()]
+        got_x = [l.get_text() for l in g.axes[-1, 1].get_xticklabels()]
         got_y = [l.get_text() for l in g.axes[0, 0].get_yticklabels()]
         npt.assert_array_equal(got_x, xlab)
         npt.assert_array_equal(got_y, ylab)
@@ -1257,6 +1259,12 @@ class TestPairGrid(object):
 
         with pytest.raises(ValueError):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
+
+    def test_corner_despine(self):
+
+        g = ag.PairGrid(self.df, corner=True, despine=False)
+        g.map_diag(histplot)
+        assert g.axes[0, 0].spines["top"].get_visible()
 
 
 class TestJointGrid(object):
