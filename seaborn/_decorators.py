@@ -37,7 +37,7 @@ def _deprecate_positional_args(f):
                 "Pass the following variable{} as {}keyword arg{}: {}. "
                 "From version 0.12, the only valid positional argument "
                 "will be `data`, and passing other arguments without an "
-                "explcit keyword will result in an error or misinterpretation."
+                "explicit keyword will result in an error or misinterpretation."
                 .format(plural, article, plural,
                         ", ".join(kwonly_args[:extra_args])),
                 FutureWarning
