@@ -3,19 +3,6 @@ import matplotlib as mpl
 from numpy.testing import assert_array_equal
 
 
-BAR_PROPS = [
-    "alpha",
-    "edgecolor",
-    "facecolor",
-    "fill",
-    "hatch",
-    "height",
-    "linestyle",
-    "linewidth",
-    "xy",
-    "zorder",
-]
-
 LINE_PROPS = [
     "alpha",
     "color",
@@ -34,6 +21,19 @@ COLLECTION_PROPS = [
     "linestyle",
     "linewidth",
     "paths",
+    "zorder",
+]
+
+BAR_PROPS = [
+    "alpha",
+    "edgecolor",
+    "facecolor",
+    "fill",
+    "hatch",
+    "height",
+    "linestyle",
+    "linewidth",
+    "xy",
     "zorder",
 ]
 

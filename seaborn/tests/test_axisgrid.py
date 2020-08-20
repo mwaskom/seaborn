@@ -1437,7 +1437,7 @@ class TestJointGrid(object):
         g.plot_joint(scatterplot)
         g.plot_marginals(histplot)
 
-        g2 = ag.JointGrid(data=data, x=x, y=y, hue=hue)
+        g2 = ag.JointGrid()
         scatterplot(data=long_df, x=x, y=y, hue=hue, ax=g2.ax_joint)
         histplot(data=long_df, x=x, hue=hue, ax=g2.ax_marg_x)
         histplot(data=long_df, y=y, hue=hue, ax=g2.ax_marg_y)
@@ -1473,6 +1473,19 @@ class TestJointPlot(object):
             np.histogram_bin_edges(self.y, "auto")[:-1],
         )
 
+    def test_scatter_hue(self, long_df):
+
+        g1 = ag.jointplot(data=long_df, x="x", y="y", hue="a")
+
+        g2 = ag.JointGrid()
+        scatterplot(data=long_df, x="x", y="y", hue="a", ax=g2.ax_joint)
+        histplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x)
+        histplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
+
     def test_reg(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="reg")
@@ -1495,6 +1508,13 @@ class TestJointPlot(object):
         assert g.ax_joint.lines
         assert not g.ax_marg_x.lines
         assert not g.ax_marg_y.lines
+
+    def test_hist(self):
+
+        g = ag.jointplot(x="x", y="y", data=self.data, kind="hist")
+        assert g.ax_joint.collections
+        assert g.ax_marg_x.patches
+        assert g.ax_marg_y.patches
 
     def test_hex(self):
 
