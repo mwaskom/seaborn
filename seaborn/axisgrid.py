@@ -1648,7 +1648,8 @@ class JointGrid(object):
         x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
-        dropna=False, xlim=None, ylim=None, size=None
+        dropna=False, xlim=None, ylim=None, size=None,
+        hue=None,
     ):
         """Set up the grid of subplots.
 
@@ -1668,6 +1669,10 @@ class JointGrid(object):
             If True, remove observations that are missing from `x` and `y`.
         {x, y}lim : two-tuples
             Axis limits to set before plotting.
+        hue : vector or key in ``data``
+            Semantic variable that is mapped to determine the color of plot elements.
+            Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
+            functions must support ``hue`` to use it in :class:`JointGrid`.
 
         See Also
         --------
@@ -1786,8 +1791,9 @@ class JointGrid(object):
         if data is not None:
             x = data.get(x, x)
             y = data.get(y, y)
+            hue = data.get(hue, hue)
 
-        for var in [x, y]:
+        for var in [x, y, hue]:
             if isinstance(var, str):
                 err = "Could not interpret input '{}'".format(var)
                 raise ValueError(err)
@@ -1803,15 +1809,18 @@ class JointGrid(object):
         # Convert the x and y data to arrays for indexing and plotting
         x_array = np.asarray(x)
         y_array = np.asarray(y)
+        hue_array = hue
 
         # Possibly drop NA
         if dropna:
-            not_na = pd.notnull(x_array) & pd.notnull(y_array)
+            not_na = pd.notnull(x_array) & pd.notnull(y_array) & pd.notnull(hue_array)
             x_array = x_array[not_na]
             y_array = y_array[not_na]
+            hue_array = hue_array[not_na]
 
         self.x = x_array
         self.y = y_array
+        self.hue = hue_array
 
         if xlim is not None:
             ax_joint.set_xlim(xlim)
@@ -1869,6 +1878,10 @@ class JointGrid(object):
         """
         plt.sca(self.ax_joint)
 
+        kwargs = kwargs.copy()
+        if self.hue is not None:
+            kwargs["hue"] = self.hue
+
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, y=self.y, **kwargs)
         else:
@@ -1895,6 +1908,10 @@ class JointGrid(object):
             Returns `self`.
 
         """
+        kwargs = kwargs.copy()
+        if self.hue is not None:
+            kwargs["hue"] = self.hue
+
         plt.sca(self.ax_marg_x)
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, **kwargs)
@@ -2253,6 +2270,7 @@ def jointplot(
     color=None, height=6, ratio=5, space=.2,
     dropna=False, xlim=None, ylim=None,
     joint_kws=None, marginal_kws=None, annot_kws=None,
+    hue=None,
     **kwargs
 ):
     """Draw a plot of two variables with bivariate and univariate graphs.
@@ -2286,6 +2304,8 @@ def jointplot(
         Axis limits to set before plotting.
     {joint, marginal, annot}_kws : dicts
         Additional keyword arguments for the plot components.
+    hue : vector or key in ``data``
+        Semantic variable that is mapped to determine the color of plot elements.
     kwargs : key, value pairings
         Additional keyword arguments are passed to the function used to
         draw the plot on the joint Axes, superseding items in the
@@ -2406,10 +2426,13 @@ def jointplot(
 
     # Initialize the JointGrid object
     grid = JointGrid(
-        data=data, x=x, y=y,
+        data=data, x=x, y=y, hue=hue,
         dropna=dropna, height=height, ratio=ratio, space=space,
         xlim=xlim, ylim=ylim
     )
+
+    if hue is not None:
+        marginal_kws.setdefault("legend", False)
 
     # Plot the data using the grid
     if kind == "scatter":
@@ -2474,8 +2497,8 @@ def jointplot(
 
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
-        histplot(x=x, ax=grid.ax_marg_x, **marginal_kws)
-        histplot(y=y, ax=grid.ax_marg_y, **marginal_kws)
+        histplot(x=x, hue=hue, ax=grid.ax_marg_x, **marginal_kws)
+        histplot(y=y, hue=hue, ax=grid.ax_marg_y, **marginal_kws)
         stat_func = None
 
     if stat_func is not None:
