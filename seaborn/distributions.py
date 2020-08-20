@@ -1100,6 +1100,8 @@ class _DistributionPlotter(VectorPlotter):
             supports[key] = support
 
         # Define a grid of iso-proportion levels
+        if thresh is None:
+            thresh = 0
         if isinstance(levels, Number):
             levels = np.linspace(thresh, 1, levels)
         else:

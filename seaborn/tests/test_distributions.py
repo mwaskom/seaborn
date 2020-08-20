@@ -958,6 +958,17 @@ class TestKDEPlotBivariate:
         with pytest.raises(ValueError):
             kdeplot(**plot_kws, levels=[0, 1, 2])
 
+        ax1.clear()
+        ax2.clear()
+
+        kdeplot(**plot_kws, levels=n, thresh=None, ax=ax1)
+        kdeplot(**plot_kws, levels=n, thresh=0, ax=ax2)
+
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            assert_array_equal(c1.get_segments(), c2.get_segments())
+        for c1, c2 in zip(ax1.collections, ax2.collections):
+            assert_array_equal(c1.get_facecolors(), c2.get_facecolors())
+
     def test_quantile_to_level(self, rng):
 
         x = rng.uniform(0, 1, 100000)
