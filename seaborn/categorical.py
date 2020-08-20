@@ -3768,7 +3768,6 @@ def catplot(
         "box": _BoxPlotter,
         "violin": _ViolinPlotter,
         "boxen": _LVPlotter,
-        "lv": _LVPlotter,
         "bar": _BarPlotter,
         "point": _PointPlotter,
         "strip": _StripPlotter,
@@ -3778,7 +3777,23 @@ def catplot(
     p = _CategoricalPlotter()
     p.require_numeric = plotter_class.require_numeric
     p.establish_variables(x_, y_, hue, data, orient, order, hue_order)
-    order = p.group_names
+    if (
+        order is not None
+        or (sharex and p.orient == "v")
+        or (sharey and p.orient == "h")
+    ):
+        # Sync categorical axis between facets to have the same categories
+        order = p.group_names
+    elif color is None and hue is None:
+        msg = (
+            "Setting `{}=False` with `color=None` may cause different levels of the "
+            "`{}` variable to share colors. This will change in a future version."
+        )
+        if not sharex and p.orient == "v":
+            warnings.warn(msg.format("sharex", "x"), UserWarning)
+        if not sharey and p.orient == "h":
+            warnings.warn(msg.format("sharey", "y"), UserWarning)
+
     hue_order = p.hue_names
 
     # Determine the palette to use
@@ -3893,10 +3908,10 @@ catplot.__doc__ = dedent("""\
     row_order, col_order : lists of strings, optional
         Order to organize the rows and/or columns of the grid in, otherwise the
         orders are inferred from the data objects.
-    kind : string, optional
-        The kind of plot to draw (corresponds to the name of a categorical
-        plotting function. Options are: "point", "bar", "strip", "swarm",
-        "box", "violin", or "boxen".
+    kind : str, optional
+        The kind of plot to draw, corresponds to the name of a categorical
+        axes-level plotting function. Options are: "strip", "swarm", "box", "violin",
+        "boxen", "point", "bar", or "count".
     {height}
     {aspect}
     {orient}

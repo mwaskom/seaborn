@@ -2510,8 +2510,8 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
     Change the color of all the plot elements:
 
     .. plot::
-
         :context: close-figs
+
         >>> sns.set_color_codes()
         >>> ax = sns.distplot(x, color="y")
 

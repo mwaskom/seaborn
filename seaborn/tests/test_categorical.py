@@ -14,7 +14,7 @@ from .. import categorical as cat
 from .. import palettes
 
 
-class CategoricalFixture(object):
+class CategoricalFixture:
     """Test boxplot (also base class for things like violinplots)."""
     rs = np.random.RandomState(30)
     n_total = 60
@@ -2606,6 +2606,51 @@ class TestCatPlot(CategoricalFixture):
         nt.assert_equal(len(g.ax.collections), 1)
         want_lines = self.g.unique().size + 1
         nt.assert_equal(len(g.ax.lines), want_lines)
+
+    def test_share_xy(self):
+
+        # Test default behavior works
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=True)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=True)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        # Test unsharing works
+        with pytest.warns(UserWarning):
+            g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False)
+            for ax in g.axes.flat:
+                assert len(ax.collections) == 1
+
+        with pytest.warns(UserWarning):
+            g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False)
+            for ax in g.axes.flat:
+                assert len(ax.collections) == 1
+
+        # Make sure no warning is raised if color is provided on unshared plot
+        with pytest.warns(None) as record:
+            g = cat.catplot(
+                x="g", y="y", col="g", data=self.df, sharex=False, color="b"
+            )
+            assert not len(record)
+
+        with pytest.warns(None) as record:
+            g = cat.catplot(
+                x="y", y="g", col="g", data=self.df, sharey=False, color="r"
+            )
+            assert not len(record)
+
+        # Make sure order is used if given, regardless of sharex value
+        order = self.df.g.unique()
+        g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False, order=order)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
+
+        g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False, order=order)
+        for ax in g.axes.flat:
+            assert len(ax.collections) == len(self.df.g.unique())
 
 
 class TestBoxenPlotter(CategoricalFixture):

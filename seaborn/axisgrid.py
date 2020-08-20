@@ -2369,8 +2369,7 @@ def jointplot(
         :context: close-figs
 
         >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15, rug=True),
-        ...                   marker="+")
+        ...                   marginal_kws=dict(bins=15), marker="+")
 
     """
     # Avoid circular import

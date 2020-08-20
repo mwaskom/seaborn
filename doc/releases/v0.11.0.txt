@@ -88,6 +88,8 @@ Other
 
 - Improved the error messages produced when categorical plots process the orientation parameter.
 
+- Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
+
 - Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
 
 - Removed an optional (an undocumented) dependency on BeautifulSoup (:pr:`2190`).
