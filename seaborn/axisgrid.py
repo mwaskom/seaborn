@@ -1776,6 +1776,8 @@ class JointGrid(object):
         # Turn off tick visibility for the measure axis on the marginal plots
         plt.setp(ax_marg_x.get_xticklabels(), visible=False)
         plt.setp(ax_marg_y.get_yticklabels(), visible=False)
+        plt.setp(ax_marg_x.get_xticklabels(minor=True), visible=False)
+        plt.setp(ax_marg_y.get_yticklabels(minor=True), visible=False)
 
         # Turn off the ticks on the density axis for the marginal plots
         plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
@@ -1784,6 +1786,8 @@ class JointGrid(object):
         plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
         plt.setp(ax_marg_x.get_yticklabels(), visible=False)
         plt.setp(ax_marg_y.get_xticklabels(), visible=False)
+        plt.setp(ax_marg_x.get_yticklabels(minor=True), visible=False)
+        plt.setp(ax_marg_y.get_xticklabels(minor=True), visible=False)
         ax_marg_x.yaxis.grid(False)
         ax_marg_y.xaxis.grid(False)
 
@@ -2450,7 +2454,7 @@ def jointplot(
 
     elif kind.startswith("hist"):
 
-        # TODO process pair parameters for bw, etc. and pass
+        # TODO process pair parameters for bins, etc. and pass
         # to both jount and marginal plots
 
         joint_kws.setdefault("color", color)
@@ -2458,7 +2462,30 @@ def jointplot(
 
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(histplot, **marginal_kws)
+
+        marg_x_kws = marginal_kws.copy()
+        marg_y_kws = marginal_kws.copy()
+
+        pair_keys = "bins", "binwidth", "binrange"
+        for key in pair_keys:
+            if isinstance(joint_kws.get(key), tuple):
+                x_val, y_val = joint_kws[key]
+                marg_x_kws.setdefault(key, x_val)
+                marg_y_kws.setdefault(key, y_val)
+
+        histplot(data=data, x=x, hue=hue, **marg_x_kws, ax=grid.ax_marg_x)
+        histplot(data=data, y=y, hue=hue, **marg_y_kws, ax=grid.ax_marg_y)
+
+    elif kind.startswith("kde"):
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(kdeplot, **joint_kws)
+
+        marginal_kws.setdefault("color", color)
+        if "fill" in joint_kws:
+            marginal_kws.setdefault("fill", joint_kws["fill"])
+
+        grid.plot_marginals(kdeplot, **marginal_kws)
 
     elif kind.startswith("hex"):
 
@@ -2473,17 +2500,6 @@ def jointplot(
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(histplot, **marginal_kws)
-
-    elif kind.startswith("kde"):
-
-        # TODO process pair parameters for bw, etc. and pass
-        # to both jount and marginal plots
-
-        joint_kws.setdefault("color", color)
-        grid.plot_joint(kdeplot, **joint_kws)
-
-        marginal_kws.setdefault("color", color)
-        grid.plot_marginals(kdeplot, **marginal_kws)
 
     elif kind.startswith("reg"):
 

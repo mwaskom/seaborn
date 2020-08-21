@@ -1509,12 +1509,19 @@ class TestJointPlot(object):
         assert not g.ax_marg_x.lines
         assert not g.ax_marg_y.lines
 
-    def test_hist(self):
+    def test_hist(self, long_df):
 
-        g = ag.jointplot(x="x", y="y", data=self.data, kind="hist")
-        assert g.ax_joint.collections
-        assert g.ax_marg_x.patches
-        assert g.ax_marg_y.patches
+        bins = 3, 6
+        g1 = ag.jointplot(data=long_df, x="x", y="y", kind="hist", bins=bins)
+
+        g2 = ag.JointGrid()
+        histplot(data=long_df, x="x", y="y", ax=g2.ax_joint, bins=bins)
+        histplot(data=long_df, x="x", ax=g2.ax_marg_x, bins=bins[0])
+        histplot(data=long_df, y="y", ax=g2.ax_marg_y, bins=bins[1])
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
     def test_hex(self):
 
@@ -1523,16 +1530,18 @@ class TestJointPlot(object):
         assert g.ax_marg_x.patches
         assert g.ax_marg_y.patches
 
-    def test_kde(self):
+    def test_kde(self, long_df):
 
-        g = ag.jointplot(x="x", y="y", data=self.data, kind="kde")
+        g1 = ag.jointplot(data=long_df, x="x", y="y", kind="kde")
 
-        assert len(g.ax_joint.collections) > 0
-        assert len(g.ax_marg_x.collections) == 1
-        assert len(g.ax_marg_y.collections) == 1
+        g2 = ag.JointGrid()
+        histplot(data=long_df, x="x", y="y", ax=g2.ax_joint)
+        histplot(data=long_df, x="x", ax=g2.ax_marg_x)
+        histplot(data=long_df, y="y", ax=g2.ax_marg_y)
 
-        assert len(g.ax_marg_x.collections) == 1
-        assert len(g.ax_marg_y.collections) == 1
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
     def test_kde_hue(self, long_df):
 
