@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ._core import variable_type, categorical_order
+from ._core import VectorPlotter, variable_type, categorical_order
 from . import utils
 from .utils import _check_argument
 from .palettes import color_palette, blend_palette
@@ -1794,44 +1794,22 @@ class JointGrid(object):
         ax_marg_x.yaxis.grid(False)
         ax_marg_y.xaxis.grid(False)
 
-        # TODO rework this logic to use core infrastructure
-
-        # Possibly extract the variables from a DataFrame
-        if data is not None:
-            x = data.get(x, x)
-            y = data.get(y, y)
-            hue = data.get(hue, hue)
-
-        for var in [x, y, hue]:
-            if isinstance(var, str):
-                err = "Could not interpret input '{}'".format(var)
-                raise ValueError(err)
-
-        # Find the names of the variables
-        if hasattr(x, "name"):
-            xlabel = x.name
-            ax_joint.set_xlabel(xlabel)
-        if hasattr(y, "name"):
-            ylabel = y.name
-            ax_joint.set_ylabel(ylabel)
-
-        # Convert the x and y data to arrays for indexing and plotting
-        x_array = np.asarray(x)
-        y_array = np.asarray(y)
-        hue_array = hue
+        # Process the input variables
+        p = VectorPlotter(data=data, variables=dict(x=x, y=y, hue=hue))
+        p.plot_data = p.plot_data.loc[:, p.plot_data.notna().any()]
 
         # Possibly drop NA
         if dropna:
-            not_na = pd.notnull(x_array) & pd.notnull(y_array)
-            if hue is not None:
-                not_na &= pd.notnull(hue_array)
-                hue_array = hue_array[not_na]
-            x_array = x_array[not_na]
-            y_array = y_array[not_na]
+            p.plot_data = p.plot_data.dropna()
 
-        self.x = x_array
-        self.y = y_array
-        self.hue = hue_array
+        self.x = p.plot_data.get("x", None)
+        self.y = p.plot_data.get("y", None)
+        self.hue = p.plot_data.get("hue", None)
+
+        for axis in "xy":
+            name = p.variables.get(axis, None)
+            if name is not None:
+                getattr(ax_joint, f"set_{axis}label")(p.variables[axis])
 
         if xlim is not None:
             ax_joint.set_xlim(xlim)
