@@ -1,4 +1,5 @@
 from itertools import product
+from inspect import signature
 import warnings
 from textwrap import dedent
 from distutils.version import LooseVersion
@@ -1649,7 +1650,7 @@ class JointGrid(object):
         data=None,
         height=6, ratio=5, space=.2,
         dropna=False, xlim=None, ylim=None, size=None,
-        hue=None,
+        hue=None, palette=None, hue_order=None, hue_norm=None,
     ):
         """Set up the grid of subplots.
 
@@ -1669,10 +1670,12 @@ class JointGrid(object):
             If True, remove observations that are missing from `x` and `y`.
         {x, y}lim : two-tuples
             Axis limits to set before plotting.
-        hue : vector or key in ``data``
-            Semantic variable that is mapped to determine the color of plot elements.
+        {params.core.hue}
             Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
             functions must support ``hue`` to use it in :class:`JointGrid`.
+        {params.core.palette}
+        {params.core.hue_order}
+        {params.core.hue_norm}
 
         See Also
         --------
@@ -1835,6 +1838,9 @@ class JointGrid(object):
         if ylim is not None:
             ax_joint.set_ylim(ylim)
 
+        # Store the semantic mapping parameters for axes-level functions
+        self._hue_params = dict(palette=palette, hue_order=hue_order, hue_norm=hue_norm)
+
         # Make the grid look nice
         utils.despine(f)
         utils.despine(ax=ax_marg_x, left=True)
@@ -1845,7 +1851,14 @@ class JointGrid(object):
         f.tight_layout()
         f.subplots_adjust(hspace=space, wspace=space)
 
-    def plot(self, joint_func, marginal_func, annot_func=None):
+    def _inject_kwargs(self, func, kws, params):
+        """Add params to kws if they are accepted by func."""
+        func_params = signature(func).parameters
+        for key, val in params.items():
+            if key in func_params:
+                kws.setdefault(key, val)
+
+    def plot(self, joint_func, marginal_func, annot_func=None, **kwargs):
         """Shortcut to draw the full plot.
 
         Use `plot_joint` and `plot_marginals` directly for more control.
@@ -1854,6 +1867,7 @@ class JointGrid(object):
         ----------
         joint_func, marginal_func: callables
             Functions to draw the bivariate and univariate plots.
+        Additional keyword arguments are passed to both functions.
 
         Returns
         -------
@@ -1861,8 +1875,8 @@ class JointGrid(object):
             Returns `self`.
 
         """
-        self.plot_marginals(marginal_func)
-        self.plot_joint(joint_func)
+        self.plot_marginals(marginal_func, **kwargs)
+        self.plot_joint(joint_func, **kwargs)
         if annot_func is not None:
             self.annotate(annot_func)
         return self
@@ -1885,10 +1899,10 @@ class JointGrid(object):
 
         """
         plt.sca(self.ax_joint)
-
         kwargs = kwargs.copy()
         if self.hue is not None:
             kwargs["hue"] = self.hue
+            self._inject_kwargs(func, kwargs, self._hue_params)
 
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, y=self.y, **kwargs)
@@ -1919,6 +1933,7 @@ class JointGrid(object):
         kwargs = kwargs.copy()
         if self.hue is not None:
             kwargs["hue"] = self.hue
+            self._inject_kwargs(func, kwargs, self._hue_params)
 
         plt.sca(self.ax_marg_x)
         if str(func.__module__).startswith("seaborn"):
@@ -2278,7 +2293,7 @@ def jointplot(
     color=None, height=6, ratio=5, space=.2,
     dropna=False, xlim=None, ylim=None,
     joint_kws=None, marginal_kws=None, annot_kws=None,
-    hue=None,
+    hue=None, palette=None, hue_order=None, hue_norm=None,
     **kwargs
 ):
     """Draw a plot of two variables with bivariate and univariate graphs.
@@ -2294,7 +2309,7 @@ def jointplot(
         Data or names of variables in ``data``.
     data : DataFrame
         DataFrame when ``x`` and ``y`` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hist" | "hex" }
+    kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
         Kind of plot to draw.
     stat_func : callable or None
         *Deprecated*
@@ -2308,12 +2323,15 @@ def jointplot(
         Space between the joint and marginal axes
     dropna : bool
         If True, remove observations that are missing from ``x`` and ``y``.
-    {x, y}lim : two-tuples
+    {{x, y}}lim : two-tuples
         Axis limits to set before plotting.
-    {joint, marginal, annot}_kws : dicts
+    {{joint, marginal, annot}}_kws : dicts
         Additional keyword arguments for the plot components.
-    hue : vector or key in ``data``
+    {params.core.hue}
         Semantic variable that is mapped to determine the color of plot elements.
+    {params.core.palette}
+    {params.core.hue_order}
+    {params.core.hue_norm}
     kwargs : key, value pairings
         Additional keyword arguments are passed to the function used to
         draw the plot on the joint Axes, superseding items in the
@@ -2435,6 +2453,7 @@ def jointplot(
     # Initialize the JointGrid object
     grid = JointGrid(
         data=data, x=x, y=y, hue=hue,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         dropna=dropna, height=height, ratio=ratio, space=space,
         xlim=xlim, ylim=ylim
     )

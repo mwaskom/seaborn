@@ -1567,6 +1567,21 @@ class TestJointPlot(object):
         hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
         assert hist_color == purple
 
+    def test_palette(self, long_df):
+
+        kws = dict(data=long_df, hue="a", palette="Set2")
+
+        g1 = ag.jointplot(x="x", y="y", **kws)
+
+        g2 = ag.JointGrid()
+        kdeplot(x="x", y="y", ax=g2.ax_joint, **kws)
+        kdeplot(x="x", ax=g2.ax_marg_x, **kws)
+        kdeplot(y="y", ax=g2.ax_marg_y, **kws)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
+
     def test_annotation(self):
 
         with pytest.warns(UserWarning):
