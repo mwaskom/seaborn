@@ -2422,7 +2422,7 @@ def jointplot(
     # Make a colormap based off the plot color
     # (Currently used only for kind="hex")
     if color is None:
-        color = color_palette()[0]
+        color = "C0"
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
     colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
               for l in np.linspace(1, 0, 12)]
@@ -2439,7 +2439,7 @@ def jointplot(
         marginal_kws.setdefault("legend", False)
 
     # Plot the data using the grid
-    if kind == "scatter":
+    if kind.startswith("scatter"):
 
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
@@ -2453,6 +2453,7 @@ def jointplot(
         # TODO process pair parameters for bw, etc. and pass
         # to both jount and marginal plots
 
+        joint_kws.setdefault("color", color)
         grid.plot_joint(histplot, **joint_kws)
 
         marginal_kws.setdefault("kde", False)
@@ -2478,10 +2479,9 @@ def jointplot(
         # TODO process pair parameters for bw, etc. and pass
         # to both jount and marginal plots
 
-        joint_kws.setdefault("fill", True)
+        joint_kws.setdefault("color", color)
         grid.plot_joint(kdeplot, **joint_kws)
 
-        marginal_kws.setdefault("fill", joint_kws["fill"])
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(kdeplot, **marginal_kws)
 

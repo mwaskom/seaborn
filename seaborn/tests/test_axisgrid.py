@@ -1534,6 +1534,19 @@ class TestJointPlot(object):
         assert len(g.ax_marg_x.collections) == 1
         assert len(g.ax_marg_y.collections) == 1
 
+    def test_kde_hue(self, long_df):
+
+        g1 = ag.jointplot(data=long_df, x="x", y="y", hue="a", kind="kde")
+
+        g2 = ag.JointGrid()
+        kdeplot(data=long_df, x="x", y="y", hue="a", ax=g2.ax_joint)
+        kdeplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x)
+        kdeplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
+
     def test_color(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, color="purple")
