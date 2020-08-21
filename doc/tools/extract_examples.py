@@ -28,11 +28,13 @@ def add_cell(nb, lines, cell_type):
 
 if __name__ == "__main__":
 
-    _, func_name = sys.argv
+    _, name = sys.argv
 
     # Parse the docstring and get the examples section
-    func_obj = getattr(seaborn, func_name)
-    lines = NumpyDocString(pydoc.getdoc(func_obj))["Examples"]
+    obj = getattr(seaborn, name)
+    if obj.__class__ != "function":
+        obj = obj.__init__
+    lines = NumpyDocString(pydoc.getdoc(obj))["Examples"]
 
     # Remove code indentation, the prompt, and mpl return variable
     pat = re.compile(r"\s{4}[>\.]{3} (ax = ){0,1}(g = ){0,1}")
@@ -68,4 +70,4 @@ if __name__ == "__main__":
     # Package the final cell
     add_cell(nb, cell, cell_type)
 
-    nbformat.write(nb, f"docstrings/{func_name}.ipynb")
+    nbformat.write(nb, f"docstrings/{name}.ipynb")

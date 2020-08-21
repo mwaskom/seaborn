@@ -1687,75 +1687,7 @@ class JointGrid(object):
         Examples
         --------
 
-        Initialize the figure but don't draw any plots onto it:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
-            >>> tips = sns.load_dataset("tips")
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-
-        Add plots using default parameters:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot(sns.regplot, sns.histplot)
-
-        Draw the join and marginal plots separately, which allows finer-level
-        control other parameters:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import matplotlib.pyplot as plt
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(sns.scatterplot, color=".5")
-            >>> g = g.plot_marginals(sns.histplot, kde=True, color=".5")
-
-        Draw the two marginal plots separately:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import numpy as np
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(sns.scatterplot, color="m")
-            >>> _ = sns.histplot(x=tips["total_bill"], color="b", binwidth=5,
-            ...                  ax=g.ax_marg_x)
-            >>> _ = sns.histplot(y=tips["tip"], color="r", binwidth=1,
-            ...                  ax=g.ax_marg_y)
-
-        Remove the space between the joint and marginal axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
-            >>> g = g.plot_joint(sns.kdeplot, color="b")
-            >>> g = g.plot_marginals(sns.kdeplot, fill=True)
-
-        Draw a smaller plot with relatively larger marginal axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
-            ...                   height=5, ratio=2)
-            >>> g = g.plot_joint(sns.kdeplot, color="r")
-            >>> g = g.plot_marginals(sns.kdeplot, color="r", fill=True)
-
-        Set limits on the axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
-            ...                   xlim=(0, 50), ylim=(0, 8))
-            >>> g = g.plot_joint(sns.kdeplot, color="m")
-            >>> g = g.plot_marginals(sns.kdeplot, color="m", fill=True)
+        .. include:: ../docstrings/JointGrid.rst
 
         """
         # Handle deprecations
@@ -1830,8 +1762,9 @@ class JointGrid(object):
 
         # Make the grid look nice
         utils.despine(f)
-        utils.despine(ax=ax_marg_x, left=True)
-        utils.despine(ax=ax_marg_y, bottom=True)
+        if not marginal_ticks:
+            utils.despine(ax=ax_marg_x, left=True)
+            utils.despine(ax=ax_marg_y, bottom=True)
         for axes in [ax_marg_x, ax_marg_y]:
             for axis in [axes.xaxis, axes.yaxis]:
                 axis.label.set_visible(False)
@@ -1869,7 +1802,7 @@ class JointGrid(object):
         return self
 
     def plot_joint(self, func, **kwargs):
-        """Draw a bivariate plot of `x` and `y`.
+        """Draw a bivariate plot with ``x`` and ``y``.
 
         Parameters
         ----------
@@ -1899,7 +1832,7 @@ class JointGrid(object):
         return self
 
     def plot_marginals(self, func, **kwargs):
-        """Draw univariate plots for `x` and `y` separately.
+        """Draw univariate plots for ``x`` and ``y`` separately.
 
         Parameters
         ----------
@@ -1921,6 +1854,9 @@ class JointGrid(object):
         if self.hue is not None:
             kwargs["hue"] = self.hue
             self._inject_kwargs(func, kwargs, self._hue_params)
+
+        if "legend" in signature(func).parameters:
+            kwargs.setdefault("legend", False)
 
         plt.sca(self.ax_marg_x)
         if str(func.__module__).startswith("seaborn"):
@@ -2339,73 +2275,7 @@ def jointplot(
     Examples
     --------
 
-    Draw a scatterplot with marginal histograms:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np, pandas as pd; np.random.seed(0)
-        >>> import seaborn as sns; sns.set(style="white", color_codes=True)
-        >>> tips = sns.load_dataset("tips")
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips)
-
-    Add regression and kernel density fits:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="reg")
-
-    Replace the scatterplot with a joint histogram using hexagonal bins:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="hex")
-
-    Replace the scatterplots and histograms with density estimates and align
-    the marginal Axes tightly with the joint Axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> g = sns.jointplot(x="sepal_width", y="petal_length", data=iris,
-        ...                   kind="kde", space=0, color="g")
-
-    Draw a scatterplot, then add a joint density estimate:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = (sns.jointplot(x="sepal_length", y="sepal_width",
-        ...                    data=iris, color="k")
-        ...         .plot_joint(sns.kdeplot, zorder=0, levels=6))
-
-    Pass vectors in directly without using Pandas, then name the axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> x, y = np.random.randn(2, 300)
-        >>> g = (sns.jointplot(x=x, y=y, kind="hex")
-        ...         .set_axis_labels("x", "y"))
-
-    Draw a smaller figure with more space devoted to the marginal plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips,
-        ...                   height=5, ratio=3, color="g")
-
-    Pass keyword arguments down to the underlying plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15), marker="+")
+    .. include:: ../docstrings/jointplot.rst
 
     """
     # Avoid circular imports
@@ -2454,6 +2324,10 @@ def jointplot(
     colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
               for l in np.linspace(1, 0, 12)]
     cmap = blend_palette(colors, as_cmap=True)
+
+    # Matplotlib's hexbin plot is not na-robust
+    if kind == "hex":
+        dropna = True
 
     # Initialize the JointGrid object
     grid = JointGrid(
