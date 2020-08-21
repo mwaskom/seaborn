@@ -1796,20 +1796,26 @@ class JointGrid(object):
 
         # Process the input variables
         p = VectorPlotter(data=data, variables=dict(x=x, y=y, hue=hue))
-        p.plot_data = p.plot_data.loc[:, p.plot_data.notna().any()]
+        plot_data = p.plot_data.loc[:, p.plot_data.notna().any()]
 
         # Possibly drop NA
         if dropna:
-            p.plot_data = p.plot_data.dropna()
+            plot_data = plot_data.dropna()
 
-        self.x = p.plot_data.get("x", None)
-        self.y = p.plot_data.get("y", None)
-        self.hue = p.plot_data.get("hue", None)
+        def get_var(var):
+            vector = plot_data.get(var, None)
+            if vector is not None:
+                vector = vector.rename(p.variables.get(var, None))
+            return vector
+
+        self.x = get_var("x")
+        self.y = get_var("y")
+        self.hue = get_var("hue")
 
         for axis in "xy":
             name = p.variables.get(axis, None)
             if name is not None:
-                getattr(ax_joint, f"set_{axis}label")(p.variables[axis])
+                getattr(ax_joint, f"set_{axis}label")(name)
 
         if xlim is not None:
             ax_joint.set_xlim(xlim)
