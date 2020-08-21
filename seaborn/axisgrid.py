@@ -2458,7 +2458,7 @@ def jointplot(
         xlim=xlim, ylim=ylim
     )
 
-    if hue is not None:
+    if grid.hue is not None:
         marginal_kws.setdefault("legend", False)
 
     # Plot the data using the grid
@@ -2467,7 +2467,7 @@ def jointplot(
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
 
-        if hue is None:
+        if grid.hue is None:
             marg_func = histplot
         else:
             marg_func = kdeplot
