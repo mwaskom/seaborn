@@ -1345,12 +1345,12 @@ class TestJointGrid(object):
     def test_marginal_ticks(self):
 
         g = ag.JointGrid(marginal_ticks=False)
-        assert not len(g.ax_marg_x.get_yticklabels())
-        assert not len(g.ax_marg_y.get_xticklabels())
+        assert not sum(t.get_visible() for t in g.ax_marg_x.get_yticklabels())
+        assert not sum(t.get_visible() for t in g.ax_marg_y.get_xticklabels())
 
         g = ag.JointGrid(marginal_ticks=True)
-        assert len(g.ax_marg_x.get_yticklabels())
-        assert len(g.ax_marg_y.get_xticklabels())
+        assert sum(t.get_visible() for t in g.ax_marg_x.get_yticklabels())
+        assert sum(t.get_visible() for t in g.ax_marg_y.get_xticklabels())
 
     def test_bivariate_plot(self):
 
