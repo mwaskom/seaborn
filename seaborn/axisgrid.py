@@ -2467,10 +2467,14 @@ def jointplot(
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
 
-        # TODO use kdeplto with hue?
-        marginal_kws.setdefault("kde", False)
+        if hue is None:
+            marg_func = histplot
+        else:
+            marg_func = kdeplot
+            marginal_kws.setdefault("fill", True)
+
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(histplot, **marginal_kws)
+        grid.plot_marginals(marg_func, **marginal_kws)
 
     elif kind.startswith("hist"):
 
