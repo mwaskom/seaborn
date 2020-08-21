@@ -1344,9 +1344,13 @@ class TestJointGrid(object):
 
     def test_marginal_ticks(self):
 
-        g = ag.JointGrid(x="x", y="y", data=self.data)
-        nt.assert_true(~len(g.ax_marg_x.get_xticks()))
-        nt.assert_true(~len(g.ax_marg_y.get_yticks()))
+        g = ag.JointGrid(marginal_ticks=False)
+        assert not len(g.ax_marg_x.get_yticklabels())
+        assert not len(g.ax_marg_y.get_xticklabels())
+
+        g = ag.JointGrid(marginal_ticks=True)
+        assert len(g.ax_marg_x.get_yticklabels())
+        assert len(g.ax_marg_y.get_xticklabels())
 
     def test_bivariate_plot(self):
 

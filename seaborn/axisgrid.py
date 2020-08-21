@@ -1649,7 +1649,7 @@ class JointGrid(object):
         x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
-        dropna=False, xlim=None, ylim=None, size=None,
+        dropna=False, xlim=None, ylim=None, size=None, marginal_ticks=False,
         hue=None, palette=None, hue_order=None, hue_norm=None,
     ):
         """Set up the grid of subplots.
@@ -1670,6 +1670,8 @@ class JointGrid(object):
             If True, remove observations that are missing from `x` and `y`.
         {x, y}lim : two-tuples
             Axis limits to set before plotting.
+        marginal_ticks : bool
+            If False, suppress ticks on the count/density axis of the marginal plots.
         {params.core.hue}
             Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
             functions must support ``hue`` to use it in :class:`JointGrid`.
@@ -1783,16 +1785,17 @@ class JointGrid(object):
         plt.setp(ax_marg_y.get_yticklabels(minor=True), visible=False)
 
         # Turn off the ticks on the density axis for the marginal plots
-        plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
-        plt.setp(ax_marg_x.yaxis.get_minorticklines(), visible=False)
-        plt.setp(ax_marg_y.xaxis.get_majorticklines(), visible=False)
-        plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
-        plt.setp(ax_marg_x.get_yticklabels(), visible=False)
-        plt.setp(ax_marg_y.get_xticklabels(), visible=False)
-        plt.setp(ax_marg_x.get_yticklabels(minor=True), visible=False)
-        plt.setp(ax_marg_y.get_xticklabels(minor=True), visible=False)
-        ax_marg_x.yaxis.grid(False)
-        ax_marg_y.xaxis.grid(False)
+        if not marginal_ticks:
+            plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
+            plt.setp(ax_marg_x.yaxis.get_minorticklines(), visible=False)
+            plt.setp(ax_marg_y.xaxis.get_majorticklines(), visible=False)
+            plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
+            plt.setp(ax_marg_x.get_yticklabels(), visible=False)
+            plt.setp(ax_marg_y.get_xticklabels(), visible=False)
+            plt.setp(ax_marg_x.get_yticklabels(minor=True), visible=False)
+            plt.setp(ax_marg_y.get_xticklabels(minor=True), visible=False)
+            ax_marg_x.yaxis.grid(False)
+            ax_marg_y.xaxis.grid(False)
 
         # Process the input variables
         p = VectorPlotter(data=data, variables=dict(x=x, y=y, hue=hue))
@@ -2275,7 +2278,7 @@ def jointplot(
     data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
-    dropna=False, xlim=None, ylim=None,
+    dropna=False, xlim=None, ylim=None, marginal_ticks=False,
     joint_kws=None, marginal_kws=None, annot_kws=None,
     hue=None, palette=None, hue_order=None, hue_norm=None,
     **kwargs
@@ -2309,6 +2312,8 @@ def jointplot(
         If True, remove observations that are missing from ``x`` and ``y``.
     {{x, y}}lim : two-tuples
         Axis limits to set before plotting.
+    marginal_ticks : bool
+        If False, suppress ticks on the count/density axis of the marginal plots.
     {{joint, marginal, annot}}_kws : dicts
         Additional keyword arguments for the plot components.
     {params.core.hue}
@@ -2455,7 +2460,7 @@ def jointplot(
         data=data, x=x, y=y, hue=hue,
         palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         dropna=dropna, height=height, ratio=ratio, space=space,
-        xlim=xlim, ylim=ylim
+        xlim=xlim, ylim=ylim, marginal_ticks=marginal_ticks,
     )
 
     if grid.hue is not None:
