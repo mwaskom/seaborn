@@ -1615,3 +1615,9 @@ class TestJointPlot(object):
                 ag.jointplot(x="x", y="y", data=self.data, kind=kind,
                              **{kwarg: empty_dict})
                 assert empty_dict == {}
+
+    def test_distplot_kwarg_warning(self, long_df):
+
+        with pytest.warns(UserWarning):
+            g = ag.jointplot(data=long_df, x="x", y="y", marginal_kws=dict(rug=True))
+            assert g.ax_marg_x.patches

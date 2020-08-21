@@ -2415,6 +2415,22 @@ def jointplot(
     marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
     annot_kws = {} if annot_kws is None else annot_kws.copy()
 
+    # Handle deprecations of distplot-specific kwargs
+    distplot_keys = [
+        "rug", "fit", "hist_kws", "norm_hist" "hist_kws", "rug_kws",
+    ]
+    unused_keys = []
+    for key in distplot_keys:
+        if key in marginal_kws:
+            unused_keys.append(key)
+            marginal_kws.pop(key)
+    if unused_keys and kind != "kde":
+        msg = (
+            "The marginal plotting function has changed to `histplot`,"
+            " which does not accept the following argument(s): {}."
+        ).format(", ".join(unused_keys))
+        warnings.warn(msg, UserWarning)
+
     # Validate the plot kind
     plot_kinds = ["scatter", "hist", "hex", "kde", "reg", "resid"]
     _check_argument("kind", plot_kinds, kind)
@@ -2445,6 +2461,7 @@ def jointplot(
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
 
+        # TODO use kdeplto with hue?
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(histplot, **marginal_kws)
