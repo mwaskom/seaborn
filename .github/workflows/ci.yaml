@@ -8,6 +8,7 @@ on:
 
 env:
   NB_KERNEL: python
+  MPLBACKEND: Agg
 
 jobs:
 
