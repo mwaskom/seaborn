@@ -56,9 +56,22 @@ Deprecations
 
 Finally, the :func:`distplot` function is now formally deprecated. Its features have been subsumed by :func:`displot` and :func:`histplot`. Some effort was made to gradually transition :func:`distplot` by adding the features in :func:`displot` and handling backwards compatibility, but this proved to be too difficult. The similarity in the names will likely cause some confusion during the transition, which is regrettable.
 
+Related enhancements and changes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These additions facilitated new features and forced changes in :func:`jointplot` and :class:`JointGrid` :pr:`2210`):
+
+- Added support for the ``hue`` semantic in :func:`jointplot`/:class:`JointGrid`. This support is lightweight and simply delegates the mapping to the underlying axes-level functions.
+
+- Added ``kind="hist"`` to :func:`jointplot`, which draws a bivariate histogram on the joint axes and univariate histograms on the marginal axes.
+
+- The various modes of `jointplot` that plot marginal histograms now use `func:`histplot` rather than :func:`distplot`. This slightly changes the default appearance and affects the valid keyword arguments that can be passed to customize the plot.
+
 
 Other
 ~~~~~
+
+TODO organize by module.
 
 - Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
 
@@ -78,6 +91,8 @@ Other
 
 - Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes (:pr:`2046`).
 
+- Added the ``marginal_ticks`` parameter to :class:`JointGrid` which, if set to ``True``, will show ticks on the count/density axis of the marginal plots (:pr:`2210`).
+
 - Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones (:pr:`2083`).
 
 - Improved support for datetime variables in :func:`scatterplot` and :func:`lineplot` (:pr:`2138`). 
@@ -91,6 +106,8 @@ Other
 - Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
 
 - Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
+
+- Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`).
 
 - Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
 

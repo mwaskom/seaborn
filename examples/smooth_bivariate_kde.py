@@ -1,20 +1,16 @@
 """
-Smooth bivariate kernel density
-===============================
+Smooth kernel density with marginal histograms
+==============================================
 
-_thumb: .5, .45
+_thumb: .48, .41
 """
 import seaborn as sns
-sns.set(style="dark")
+sns.set(style="white")
 
-iris = sns.load_dataset("iris")
+df = sns.load_dataset("penguins")
 
-sns.kdeplot(
-    data=iris,
-    x="sepal_length",
-    y="sepal_width",
-    fill=True,
-    thresh=0,
-    levels=100,
-    cmap="rocket",
-)
+g = sns.JointGrid(data=df, x="body_mass_g", y="culmen_depth_mm", space=0)
+g.plot_joint(sns.kdeplot,
+             fill=True, clip=((2200, 6800), (10, 25)),
+             thresh=0, levels=100, cmap="rocket")
+g.plot_marginals(sns.histplot, color="#03051A", alpha=1, bins=25)

@@ -18,9 +18,13 @@ except ImportError:
 from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
+from ..relational import scatterplot
 from ..distributions import histplot, kdeplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
+from .._testing import (
+    assert_plots_equal,
+)
 
 rs = np.random.RandomState(0)
 
@@ -1340,9 +1344,13 @@ class TestJointGrid(object):
 
     def test_marginal_ticks(self):
 
-        g = ag.JointGrid(x="x", y="y", data=self.data)
-        nt.assert_true(~len(g.ax_marg_x.get_xticks()))
-        nt.assert_true(~len(g.ax_marg_y.get_yticks()))
+        g = ag.JointGrid(marginal_ticks=False)
+        assert not sum(t.get_visible() for t in g.ax_marg_x.get_yticklabels())
+        assert not sum(t.get_visible() for t in g.ax_marg_y.get_xticklabels())
+
+        g = ag.JointGrid(marginal_ticks=True)
+        assert sum(t.get_visible() for t in g.ax_marg_x.get_yticklabels())
+        assert sum(t.get_visible() for t in g.ax_marg_y.get_xticklabels())
 
     def test_bivariate_plot(self):
 
@@ -1417,6 +1425,31 @@ class TestJointGrid(object):
         nt.assert_equal(joint_bounds[2], marg_x_bounds[2])
         nt.assert_equal(joint_bounds[3], marg_y_bounds[3])
 
+    @pytest.mark.parametrize(
+        "as_vector", [True, False],
+    )
+    def test_hue(self, long_df, as_vector):
+
+        if as_vector:
+            data = None
+            x, y, hue = long_df["x"], long_df["y"], long_df["a"]
+        else:
+            data = long_df
+            x, y, hue = "x", "y", "a"
+
+        g = ag.JointGrid(data=data, x=x, y=y, hue=hue)
+        g.plot_joint(scatterplot)
+        g.plot_marginals(histplot)
+
+        g2 = ag.JointGrid()
+        scatterplot(data=long_df, x=x, y=y, hue=hue, ax=g2.ax_joint)
+        histplot(data=long_df, x=x, hue=hue, ax=g2.ax_marg_x)
+        histplot(data=long_df, y=y, hue=hue, ax=g2.ax_marg_y)
+
+        assert_plots_equal(g.ax_joint, g2.ax_joint)
+        assert_plots_equal(g.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g.ax_marg_y, g2.ax_marg_y, labels=False)
+
 
 class TestJointPlot(object):
 
@@ -1444,6 +1477,19 @@ class TestJointPlot(object):
             np.histogram_bin_edges(self.y, "auto")[:-1],
         )
 
+    def test_scatter_hue(self, long_df):
+
+        g1 = ag.jointplot(data=long_df, x="x", y="y", hue="a")
+
+        g2 = ag.JointGrid()
+        scatterplot(data=long_df, x="x", y="y", hue="a", ax=g2.ax_joint)
+        histplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x)
+        histplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
+
     def test_reg(self):
 
         g = ag.jointplot(x="x", y="y", data=self.data, kind="reg")
@@ -1465,7 +1511,21 @@ class TestJointPlot(object):
         assert g.ax_joint.collections
         assert g.ax_joint.lines
         assert not g.ax_marg_x.lines
-        assert g.ax_marg_y.lines
+        assert not g.ax_marg_y.lines
+
+    def test_hist(self, long_df):
+
+        bins = 3, 6
+        g1 = ag.jointplot(data=long_df, x="x", y="y", kind="hist", bins=bins)
+
+        g2 = ag.JointGrid()
+        histplot(data=long_df, x="x", y="y", ax=g2.ax_joint, bins=bins)
+        histplot(data=long_df, x="x", ax=g2.ax_marg_x, bins=bins[0])
+        histplot(data=long_df, y="y", ax=g2.ax_marg_y, bins=bins[1])
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
     def test_hex(self):
 
@@ -1474,16 +1534,31 @@ class TestJointPlot(object):
         assert g.ax_marg_x.patches
         assert g.ax_marg_y.patches
 
-    def test_kde(self):
+    def test_kde(self, long_df):
 
-        g = ag.jointplot(x="x", y="y", data=self.data, kind="kde")
+        g1 = ag.jointplot(data=long_df, x="x", y="y", kind="kde")
 
-        assert len(g.ax_joint.collections) > 0
-        assert len(g.ax_marg_x.collections) == 1
-        assert len(g.ax_marg_y.collections) == 1
+        g2 = ag.JointGrid()
+        histplot(data=long_df, x="x", y="y", ax=g2.ax_joint)
+        histplot(data=long_df, x="x", ax=g2.ax_marg_x)
+        histplot(data=long_df, y="y", ax=g2.ax_marg_y)
 
-        assert len(g.ax_marg_x.collections) == 1
-        assert len(g.ax_marg_y.collections) == 1
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
+
+    def test_kde_hue(self, long_df):
+
+        g1 = ag.jointplot(data=long_df, x="x", y="y", hue="a", kind="kde")
+
+        g2 = ag.JointGrid()
+        kdeplot(data=long_df, x="x", y="y", hue="a", ax=g2.ax_joint)
+        kdeplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x)
+        kdeplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
     def test_color(self):
 
@@ -1495,6 +1570,21 @@ class TestJointPlot(object):
 
         hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
         assert hist_color == purple
+
+    def test_palette(self, long_df):
+
+        kws = dict(data=long_df, hue="a", palette="Set2")
+
+        g1 = ag.jointplot(x="x", y="y", **kws)
+
+        g2 = ag.JointGrid()
+        kdeplot(x="x", y="y", ax=g2.ax_joint, **kws)
+        kdeplot(x="x", ax=g2.ax_marg_x, **kws)
+        kdeplot(y="y", ax=g2.ax_marg_y, **kws)
+
+        assert_plots_equal(g1.ax_joint, g2.ax_joint)
+        assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
+        assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
     def test_annotation(self):
 
@@ -1529,3 +1619,9 @@ class TestJointPlot(object):
                 ag.jointplot(x="x", y="y", data=self.data, kind=kind,
                              **{kwarg: empty_dict})
                 assert empty_dict == {}
+
+    def test_distplot_kwarg_warning(self, long_df):
+
+        with pytest.warns(UserWarning):
+            g = ag.jointplot(data=long_df, x="x", y="y", marginal_kws=dict(rug=True))
+            assert g.ax_marg_x.patches

@@ -1,4 +1,5 @@
 from itertools import product
+from inspect import signature
 import warnings
 from textwrap import dedent
 from distutils.version import LooseVersion
@@ -8,13 +9,23 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ._core import variable_type, categorical_order
+from ._core import VectorPlotter, variable_type, categorical_order
 from . import utils
+from .utils import _check_argument
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
+from ._docstrings import (
+    DocstringComponents,
+    _core_docs,
+)
 
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
+
+
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
+)
 
 
 class Grid(object):
@@ -1639,7 +1650,12 @@ class PairGrid(Grid):
 
 
 class JointGrid(object):
-    """Grid for drawing a bivariate plot with marginal univariate plots."""
+    """Grid for drawing a bivariate plot with marginal univariate plots.
+
+    Many plots can be drawn by using the figure-level interface :func:`jointplot`.
+    Use this class directly when you need more flexibility.
+
+    """
 
     @_deprecate_positional_args
     def __init__(
@@ -1647,106 +1663,9 @@ class JointGrid(object):
         x=None, y=None,
         data=None,
         height=6, ratio=5, space=.2,
-        dropna=False, xlim=None, ylim=None, size=None
+        dropna=False, xlim=None, ylim=None, size=None, marginal_ticks=False,
+        hue=None, palette=None, hue_order=None, hue_norm=None,
     ):
-        """Set up the grid of subplots.
-
-        Parameters
-        ----------
-        x, y : strings or vectors
-            Data or names of variables in ``data``.
-        data : DataFrame
-            DataFrame when ``x`` and ``y`` are variable names.
-        height : numeric
-            Size of each side of the figure in inches (it will be square).
-        ratio : numeric
-            Ratio of joint axes size to marginal axes height.
-        space : numeric
-            Space between the joint and marginal axes
-        dropna : bool
-            If True, remove observations that are missing from `x` and `y`.
-        {x, y}lim : two-tuples
-            Axis limits to set before plotting.
-
-        See Also
-        --------
-        jointplot : High-level interface for drawing bivariate plots with
-                    several different default plot kinds.
-
-        Examples
-        --------
-
-        Initialize the figure but don't draw any plots onto it:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
-            >>> tips = sns.load_dataset("tips")
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-
-        Add plots using default parameters:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot(sns.regplot, sns.histplot)
-
-        Draw the join and marginal plots separately, which allows finer-level
-        control other parameters:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import matplotlib.pyplot as plt
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(sns.scatterplot, color=".5")
-            >>> g = g.plot_marginals(sns.histplot, kde=True, color=".5")
-
-        Draw the two marginal plots separately:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import numpy as np
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips)
-            >>> g = g.plot_joint(sns.scatterplot, color="m")
-            >>> _ = sns.histplot(x=tips["total_bill"], color="b", binwidth=5,
-            ...                  ax=g.ax_marg_x)
-            >>> _ = sns.histplot(y=tips["tip"], color="r", binwidth=1,
-            ...                  ax=g.ax_marg_y)
-
-        Remove the space between the joint and marginal axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips, space=0)
-            >>> g = g.plot_joint(sns.kdeplot, color="b")
-            >>> g = g.plot_marginals(sns.kdeplot, fill=True)
-
-        Draw a smaller plot with relatively larger marginal axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
-            ...                   height=5, ratio=2)
-            >>> g = g.plot_joint(sns.kdeplot, color="r")
-            >>> g = g.plot_marginals(sns.kdeplot, color="r", fill=True)
-
-        Set limits on the axes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.JointGrid(x="total_bill", y="tip", data=tips,
-            ...                   xlim=(0, 50), ylim=(0, 8))
-            >>> g = g.plot_joint(sns.kdeplot, color="m")
-            >>> g = g.plot_marginals(sns.kdeplot, color="m", fill=True)
-
-        """
         # Handle deprecations
         if size is not None:
             height = size
@@ -1770,103 +1689,124 @@ class JointGrid(object):
         # Turn off tick visibility for the measure axis on the marginal plots
         plt.setp(ax_marg_x.get_xticklabels(), visible=False)
         plt.setp(ax_marg_y.get_yticklabels(), visible=False)
+        plt.setp(ax_marg_x.get_xticklabels(minor=True), visible=False)
+        plt.setp(ax_marg_y.get_yticklabels(minor=True), visible=False)
 
         # Turn off the ticks on the density axis for the marginal plots
-        plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
-        plt.setp(ax_marg_x.yaxis.get_minorticklines(), visible=False)
-        plt.setp(ax_marg_y.xaxis.get_majorticklines(), visible=False)
-        plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
-        plt.setp(ax_marg_x.get_yticklabels(), visible=False)
-        plt.setp(ax_marg_y.get_xticklabels(), visible=False)
-        ax_marg_x.yaxis.grid(False)
-        ax_marg_y.xaxis.grid(False)
+        if not marginal_ticks:
+            plt.setp(ax_marg_x.yaxis.get_majorticklines(), visible=False)
+            plt.setp(ax_marg_x.yaxis.get_minorticklines(), visible=False)
+            plt.setp(ax_marg_y.xaxis.get_majorticklines(), visible=False)
+            plt.setp(ax_marg_y.xaxis.get_minorticklines(), visible=False)
+            plt.setp(ax_marg_x.get_yticklabels(), visible=False)
+            plt.setp(ax_marg_y.get_xticklabels(), visible=False)
+            plt.setp(ax_marg_x.get_yticklabels(minor=True), visible=False)
+            plt.setp(ax_marg_y.get_xticklabels(minor=True), visible=False)
+            ax_marg_x.yaxis.grid(False)
+            ax_marg_y.xaxis.grid(False)
 
-        # Possibly extract the variables from a DataFrame
-        if data is not None:
-            x = data.get(x, x)
-            y = data.get(y, y)
-
-        for var in [x, y]:
-            if isinstance(var, str):
-                err = "Could not interpret input '{}'".format(var)
-                raise ValueError(err)
-
-        # Find the names of the variables
-        if hasattr(x, "name"):
-            xlabel = x.name
-            ax_joint.set_xlabel(xlabel)
-        if hasattr(y, "name"):
-            ylabel = y.name
-            ax_joint.set_ylabel(ylabel)
-
-        # Convert the x and y data to arrays for indexing and plotting
-        x_array = np.asarray(x)
-        y_array = np.asarray(y)
+        # Process the input variables
+        p = VectorPlotter(data=data, variables=dict(x=x, y=y, hue=hue))
+        plot_data = p.plot_data.loc[:, p.plot_data.notna().any()]
 
         # Possibly drop NA
         if dropna:
-            not_na = pd.notnull(x_array) & pd.notnull(y_array)
-            x_array = x_array[not_na]
-            y_array = y_array[not_na]
+            plot_data = plot_data.dropna()
 
-        self.x = x_array
-        self.y = y_array
+        def get_var(var):
+            vector = plot_data.get(var, None)
+            if vector is not None:
+                vector = vector.rename(p.variables.get(var, None))
+            return vector
+
+        self.x = get_var("x")
+        self.y = get_var("y")
+        self.hue = get_var("hue")
+
+        for axis in "xy":
+            name = p.variables.get(axis, None)
+            if name is not None:
+                getattr(ax_joint, f"set_{axis}label")(name)
 
         if xlim is not None:
             ax_joint.set_xlim(xlim)
         if ylim is not None:
             ax_joint.set_ylim(ylim)
 
+        # Store the semantic mapping parameters for axes-level functions
+        self._hue_params = dict(palette=palette, hue_order=hue_order, hue_norm=hue_norm)
+
         # Make the grid look nice
         utils.despine(f)
-        utils.despine(ax=ax_marg_x, left=True)
-        utils.despine(ax=ax_marg_y, bottom=True)
+        if not marginal_ticks:
+            utils.despine(ax=ax_marg_x, left=True)
+            utils.despine(ax=ax_marg_y, bottom=True)
         for axes in [ax_marg_x, ax_marg_y]:
             for axis in [axes.xaxis, axes.yaxis]:
                 axis.label.set_visible(False)
         f.tight_layout()
         f.subplots_adjust(hspace=space, wspace=space)
 
-    def plot(self, joint_func, marginal_func, annot_func=None):
-        """Shortcut to draw the full plot.
+    def _inject_kwargs(self, func, kws, params):
+        """Add params to kws if they are accepted by func."""
+        func_params = signature(func).parameters
+        for key, val in params.items():
+            if key in func_params:
+                kws.setdefault(key, val)
 
-        Use `plot_joint` and `plot_marginals` directly for more control.
+    def plot(self, joint_func, marginal_func, annot_func=None, **kwargs):
+        """Draw the plot by passing functions for joint and marginal axes.
+
+        This method passes the ``kwargs`` dictionary to both functions. If you
+        need more control, call :meth:`JointGrid.plot_joint` and
+        :meth:`JointGrid.plot_marginals` directly with specific parameters.
 
         Parameters
         ----------
         joint_func, marginal_func: callables
-            Functions to draw the bivariate and univariate plots.
+            Functions to draw the bivariate and univariate plots. See methods
+            referenced above for information about the required characteristics
+            of these functions.
+        kwargs
+            Additional keyword arguments are passed to both functions.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
-        self.plot_marginals(marginal_func)
-        self.plot_joint(joint_func)
+        self.plot_marginals(marginal_func, **kwargs)
+        self.plot_joint(joint_func, **kwargs)
         if annot_func is not None:
             self.annotate(annot_func)
         return self
 
     def plot_joint(self, func, **kwargs):
-        """Draw a bivariate plot of `x` and `y`.
+        """Draw a bivariate plot on the joint axes of the grid.
 
         Parameters
         ----------
         func : plotting callable
-            This must take two 1d arrays of data as the first two
+            If a seaborn function, it should accept ``x`` and ``y``. Otherwise,
+            it must accept ``x`` and ``y`` vectors of data as the first two
             positional arguments, and it must plot on the "current" axes.
-        kwargs : key, value mappings
+            If ``hue`` was defined in the class constructor, the function must
+            accept ``hue`` as a parameter.
+        kwargs
             Keyword argument are passed to the plotting function.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         plt.sca(self.ax_joint)
+        kwargs = kwargs.copy()
+        if self.hue is not None:
+            kwargs["hue"] = self.hue
+            self._inject_kwargs(func, kwargs, self._hue_params)
 
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, y=self.y, **kwargs)
@@ -1876,24 +1816,34 @@ class JointGrid(object):
         return self
 
     def plot_marginals(self, func, **kwargs):
-        """Draw univariate plots for `x` and `y` separately.
+        """Draw univariate plots on each marginal axes.
 
         Parameters
         ----------
         func : plotting callable
-            This must take a 1d array of data as the first positional
-            argument, it must plot on the "current" axes, and it must
-            accept a "vertical" keyword argument to orient the measure
-            dimension of the plot vertically.
-        kwargs : key, value mappings
+            If a seaborn function, it should  accept ``x`` and ``y`` and plot
+            when only one of them is defined. Otherwise, it must accept a vector
+            of data as the first positional argument and determine its orientation
+            using the ``vertical`` parameter, and it must plot on the "current" axes.
+            If ``hue`` was defined in the class constructor, it must accept ``hue``
+            as a parameter.
+        kwargs
             Keyword argument are passed to the plotting function.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
+        kwargs = kwargs.copy()
+        if self.hue is not None:
+            kwargs["hue"] = self.hue
+            self._inject_kwargs(func, kwargs, self._hue_params)
+
+        if "legend" in signature(func).parameters:
+            kwargs.setdefault("legend", False)
+
         plt.sca(self.ax_marg_x)
         if str(func.__module__).startswith("seaborn"):
             func(x=self.x, **kwargs)
@@ -1977,20 +1927,22 @@ class JointGrid(object):
         return self
 
     def set_axis_labels(self, xlabel="", ylabel="", **kwargs):
-        """Set the axis labels on the bivariate axes.
+        """Set axis labels on the bivariate axes.
 
         Parameters
         ----------
         xlabel, ylabel : strings
             Label names for the x and y variables.
         kwargs : key, value mappings
-            Other keyword arguments are passed to the set_xlabel or
-            set_ylabel.
+            Other keyword arguments are passed to the following functions:
+
+            - :meth:`matplotlib.axes.Axes.set_xlabel`
+            - :meth:`matplotlib.axes.Axes.set_ylabel`
 
         Returns
         -------
-        self : JointGrid instance
-            returns `self`
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         self.ax_joint.set_xlabel(xlabel, **kwargs)
@@ -1998,9 +1950,57 @@ class JointGrid(object):
         return self
 
     def savefig(self, *args, **kwargs):
-        """Wrap figure.savefig defaulting to tight bounding box."""
+        """Save the figure using a "tight" bounding box by default.
+
+        Wraps :meth:`matplotlib.figure.Figure.savefig`.
+
+        """
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
+
+JointGrid.__init__.__doc__ = """\
+Set up the grid of subplots and store data internally for easy plotting.
+
+Parameters
+----------
+{params.core.xy}
+{params.core.data}
+height : number
+    Size of each side of the figure in inches (it will be square).
+ratio : number
+    Ratio of joint axes height to marginal axes height.
+space : number
+    Space between the joint and marginal axes
+dropna : bool
+    If True, remove missing observations before plotting.
+{{x, y}}lim : pairs of numbers
+    Set axis limits to these values before plotting.
+marginal_ticks : bool
+    If False, suppress ticks on the count/density axis of the marginal plots.
+{params.core.hue}
+    Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
+    functions must support ``hue`` to use it in :class:`JointGrid`.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+
+See Also
+--------
+{seealso.jointplot}
+{seealso.pairgrid}
+{seealso.pairplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/JointGrid.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
@@ -2250,129 +2250,14 @@ def jointplot(
     data=None,
     kind="scatter", stat_func=None,
     color=None, height=6, ratio=5, space=.2,
-    dropna=False, xlim=None, ylim=None,
+    dropna=False, xlim=None, ylim=None, marginal_ticks=False,
     joint_kws=None, marginal_kws=None, annot_kws=None,
+    hue=None, palette=None, hue_order=None, hue_norm=None,
     **kwargs
 ):
-    """Draw a plot of two variables with bivariate and univariate graphs.
-
-    This function provides a convenient interface to the :class:`JointGrid`
-    class, with several canned plot kinds. This is intended to be a fairly
-    lightweight wrapper; if you need more flexibility, you should use
-    :class:`JointGrid` directly.
-
-    Parameters
-    ----------
-    x, y : strings or vectors
-        Data or names of variables in ``data``.
-    data : DataFrame
-        DataFrame when ``x`` and ``y`` are variable names.
-    kind : { "scatter" | "reg" | "resid" | "kde" | "hex" }
-        Kind of plot to draw.
-    stat_func : callable or None
-        *Deprecated*
-    color : matplotlib color
-        Color used for the plot elements.
-    height : numeric
-        Size of the figure (it will be square).
-    ratio : numeric
-        Ratio of joint axes height to marginal axes height.
-    space : numeric
-        Space between the joint and marginal axes
-    dropna : bool
-        If True, remove observations that are missing from ``x`` and ``y``.
-    {x, y}lim : two-tuples
-        Axis limits to set before plotting.
-    {joint, marginal, annot}_kws : dicts
-        Additional keyword arguments for the plot components.
-    kwargs : key, value pairings
-        Additional keyword arguments are passed to the function used to
-        draw the plot on the joint Axes, superseding items in the
-        ``joint_kws`` dictionary.
-
-    Returns
-    -------
-    grid : :class:`JointGrid`
-        :class:`JointGrid` object with the plot on it.
-
-    See Also
-    --------
-    JointGrid : The Grid class used for drawing this plot. Use it directly if
-                you need more flexibility.
-
-    Examples
-    --------
-
-    Draw a scatterplot with marginal histograms:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np, pandas as pd; np.random.seed(0)
-        >>> import seaborn as sns; sns.set(style="white", color_codes=True)
-        >>> tips = sns.load_dataset("tips")
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips)
-
-    Add regression and kernel density fits:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="reg")
-
-    Replace the scatterplot with a joint histogram using hexagonal bins:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips, kind="hex")
-
-    Replace the scatterplots and histograms with density estimates and align
-    the marginal Axes tightly with the joint Axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> iris = sns.load_dataset("iris")
-        >>> g = sns.jointplot(x="sepal_width", y="petal_length", data=iris,
-        ...                   kind="kde", space=0, color="g")
-
-    Draw a scatterplot, then add a joint density estimate:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = (sns.jointplot(x="sepal_length", y="sepal_width",
-        ...                    data=iris, color="k")
-        ...         .plot_joint(sns.kdeplot, zorder=0, levels=6))
-
-    Pass vectors in directly without using Pandas, then name the axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> x, y = np.random.randn(2, 300)
-        >>> g = (sns.jointplot(x=x, y=y, kind="hex")
-        ...         .set_axis_labels("x", "y"))
-
-    Draw a smaller figure with more space devoted to the marginal plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="total_bill", y="tip", data=tips,
-        ...                   height=5, ratio=3, color="g")
-
-    Pass keyword arguments down to the underlying plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.jointplot(x="petal_length", y="sepal_length", data=iris,
-        ...                   marginal_kws=dict(bins=15), marker="+")
-
-    """
-    # Avoid circular import
+    # Avoid circular imports
+    from .relational import scatterplot
+    from .regression import regplot, residplot
     from .distributions import histplot, kdeplot, _freedman_diaconis_bins
 
     # Handle deprecations
@@ -2388,32 +2273,99 @@ def jointplot(
     marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
     annot_kws = {} if annot_kws is None else annot_kws.copy()
 
+    # Handle deprecations of distplot-specific kwargs
+    distplot_keys = [
+        "rug", "fit", "hist_kws", "norm_hist" "hist_kws", "rug_kws",
+    ]
+    unused_keys = []
+    for key in distplot_keys:
+        if key in marginal_kws:
+            unused_keys.append(key)
+            marginal_kws.pop(key)
+    if unused_keys and kind != "kde":
+        msg = (
+            "The marginal plotting function has changed to `histplot`,"
+            " which does not accept the following argument(s): {}."
+        ).format(", ".join(unused_keys))
+        warnings.warn(msg, UserWarning)
+
+    # Validate the plot kind
+    plot_kinds = ["scatter", "hist", "hex", "kde", "reg", "resid"]
+    _check_argument("kind", plot_kinds, kind)
+
     # Make a colormap based off the plot color
+    # (Currently used only for kind="hex")
     if color is None:
-        color = color_palette()[0]
+        color = "C0"
     color_rgb = mpl.colors.colorConverter.to_rgb(color)
     colors = [utils.set_hls_values(color_rgb, l=l)  # noqa
               for l in np.linspace(1, 0, 12)]
     cmap = blend_palette(colors, as_cmap=True)
 
+    # Matplotlib's hexbin plot is not na-robust
+    if kind == "hex":
+        dropna = True
+
     # Initialize the JointGrid object
     grid = JointGrid(
-        data=data, x=x, y=y,
+        data=data, x=x, y=y, hue=hue,
+        palette=palette, hue_order=hue_order, hue_norm=hue_norm,
         dropna=dropna, height=height, ratio=ratio, space=space,
-        xlim=xlim, ylim=ylim
+        xlim=xlim, ylim=ylim, marginal_ticks=marginal_ticks,
     )
 
-    # Plot the data using the grid
-    if kind == "scatter":
+    if grid.hue is not None:
+        marginal_kws.setdefault("legend", False)
 
-        from .relational import scatterplot  # Avoid circular import
+    # Plot the data using the grid
+    if kind.startswith("scatter"):
 
         joint_kws.setdefault("color", color)
         grid.plot_joint(scatterplot, **joint_kws)
 
+        if grid.hue is None:
+            marg_func = histplot
+        else:
+            marg_func = kdeplot
+            marginal_kws.setdefault("fill", True)
+
+        marginal_kws.setdefault("color", color)
+        grid.plot_marginals(marg_func, **marginal_kws)
+
+    elif kind.startswith("hist"):
+
+        # TODO process pair parameters for bins, etc. and pass
+        # to both jount and marginal plots
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(histplot, **joint_kws)
+
         marginal_kws.setdefault("kde", False)
         marginal_kws.setdefault("color", color)
-        grid.plot_marginals(histplot, **marginal_kws)
+
+        marg_x_kws = marginal_kws.copy()
+        marg_y_kws = marginal_kws.copy()
+
+        pair_keys = "bins", "binwidth", "binrange"
+        for key in pair_keys:
+            if isinstance(joint_kws.get(key), tuple):
+                x_val, y_val = joint_kws[key]
+                marg_x_kws.setdefault(key, x_val)
+                marg_y_kws.setdefault(key, y_val)
+
+        histplot(data=data, x=x, hue=hue, **marg_x_kws, ax=grid.ax_marg_x)
+        histplot(data=data, y=y, hue=hue, **marg_y_kws, ax=grid.ax_marg_y)
+
+    elif kind.startswith("kde"):
+
+        joint_kws.setdefault("color", color)
+        grid.plot_joint(kdeplot, **joint_kws)
+
+        marginal_kws.setdefault("color", color)
+        if "fill" in joint_kws:
+            marginal_kws.setdefault("fill", joint_kws["fill"])
+
+        grid.plot_marginals(kdeplot, **marginal_kws)
 
     elif kind.startswith("hex"):
 
@@ -2429,19 +2381,7 @@ def jointplot(
         marginal_kws.setdefault("color", color)
         grid.plot_marginals(histplot, **marginal_kws)
 
-    elif kind.startswith("kde"):
-
-        joint_kws.setdefault("shade", True)
-        joint_kws.setdefault("cmap", cmap)
-        grid.plot_joint(kdeplot, **joint_kws)
-
-        marginal_kws.setdefault("shade", True)
-        marginal_kws.setdefault("color", color)
-        grid.plot_marginals(kdeplot, **marginal_kws)
-
     elif kind.startswith("reg"):
-
-        from .regression import regplot
 
         marginal_kws.setdefault("color", color)
         marginal_kws.setdefault("kde", True)
@@ -2452,21 +2392,79 @@ def jointplot(
 
     elif kind.startswith("resid"):
 
-        from .regression import residplot
-
         joint_kws.setdefault("color", color)
         grid.plot_joint(residplot, **joint_kws)
 
         x, y = grid.ax_joint.collections[0].get_offsets().T
         marginal_kws.setdefault("color", color)
-        histplot(x=x, ax=grid.ax_marg_x, kde=False, **marginal_kws)
-        histplot(y=y, ax=grid.ax_marg_y, kde=True, **marginal_kws)
+        histplot(x=x, hue=hue, ax=grid.ax_marg_x, **marginal_kws)
+        histplot(y=y, hue=hue, ax=grid.ax_marg_y, **marginal_kws)
         stat_func = None
-    else:
-        msg = "kind must be either 'scatter', 'reg', 'resid', 'kde', or 'hex'"
-        raise ValueError(msg)
 
     if stat_func is not None:
         grid.annotate(stat_func, **annot_kws)
 
     return grid
+
+
+jointplot.__doc__ = """\
+Draw a plot of two variables with bivariate and univariate graphs.
+
+This function provides a convenient interface to the :class:`JointGrid`
+class, with several canned plot kinds. This is intended to be a fairly
+lightweight wrapper; if you need more flexibility, you should use
+:class:`JointGrid` directly.
+
+Parameters
+----------
+{params.core.xy}
+{params.core.data}
+kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
+    Kind of plot to draw. See the examples for references to the underlying functions.
+stat_func : callable or None
+    *Deprecated*
+{params.core.color}
+height : numeric
+    Size of the figure (it will be square).
+ratio : numeric
+    Ratio of joint axes height to marginal axes height.
+space : numeric
+    Space between the joint and marginal axes
+dropna : bool
+    If True, remove observations that are missing from ``x`` and ``y``.
+{{x, y}}lim : pairs of numbers
+    Axis limits to set before plotting.
+marginal_ticks : bool
+    If False, suppress ticks on the count/density axis of the marginal plots.
+{{joint, marginal, annot}}_kws : dicts
+    Additional keyword arguments for the plot components.
+{params.core.hue}
+    Semantic variable that is mapped to determine the color of plot elements.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+kwargs
+    Additional keyword arguments are passed to the function used to
+    draw the plot on the joint Axes, superseding items in the
+    ``joint_kws`` dictionary.
+
+Returns
+-------
+{returns.jointgrid}
+
+See Also
+--------
+{seealso.jointgrid}
+{seealso.pairgrid}
+{seealso.pairplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/jointplot.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)

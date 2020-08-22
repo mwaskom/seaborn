@@ -1100,6 +1100,8 @@ class _DistributionPlotter(VectorPlotter):
             supports[key] = support
 
         # Define a grid of iso-proportion levels
+        if thresh is None:
+            thresh = 0
         if isinstance(levels, Number):
             levels = np.linspace(thresh, 1, levels)
         else:
@@ -1447,7 +1449,7 @@ def histplot(
 
 
 histplot.__doc__ = """\
-Plot univeriate or bivariate histograms to show distributions of datasets.
+Plot univariate or bivariate histograms to show distributions of datasets.
 
 A histogram is a classic visualization tool that represents the distribution
 of one or more variables by counting the number of observations that fall within

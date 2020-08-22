@@ -11,6 +11,7 @@ import glob
 import token
 import tokenize
 import shutil
+import warnings
 
 import matplotlib
 matplotlib.use('Agg')
@@ -148,8 +149,13 @@ def create_thumbnail(infile, thumbfile,
 
     ax = fig.add_axes([0, 0, 1, 1], aspect='auto',
                       frameon=False, xticks=[], yticks=[])
-    ax.imshow(thumb, aspect='auto', resample=True,
-              interpolation='bilinear')
+    if all(thumb.shape):
+        ax.imshow(thumb, aspect='auto', resample=True,
+                  interpolation='bilinear')
+    else:
+        warnings.warn(
+            f"Bad thumbnail crop. {thumbfile} will be empty."
+        )
     fig.savefig(thumbfile, dpi=dpi)
     return fig
 

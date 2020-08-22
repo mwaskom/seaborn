@@ -110,6 +110,16 @@ _core_returns = dict(
     An object managing one or more subplots that correspond to conditional data
     subsets with convenient methods for batch-setting of axes attributes.
     """,
+    jointgrid="""
+:class:`JointGrid`
+    An object managing multiple subplots that correspond to joint and marginal axes
+    for plotting a bivariate relationship or distribution.
+    """,
+    pairgrid="""
+:class:`PairGrid`
+    An object managing multiple subplots that correspond to joint and marginal axes
+    for pairwise combinations of multiple variables in a dataset.
+    """,
 )
 
 
@@ -157,6 +167,15 @@ pointplot : Plot point estimates and CIs using markers and lines.
     # Multiples
     jointplot="""
 jointplot : Draw a bivariate plot with univariate marginal distributions.
+    """,
+    pairplot="""
+jointplot : Draw multiple bivariate plots with univariate marginal distributions.
+    """,
+    jointgrid="""
+JointGrid : Set up a figure with joint and marginal views on bivariate data.
+    """,
+    pairgrid="""
+PairGrid : Set up a figure with joint and marginal views on multiple variables.
     """,
 )
 
