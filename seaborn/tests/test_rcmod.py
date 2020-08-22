@@ -1,3 +1,5 @@
+from distutils.version import LooseVersion
+
 import numpy as np
 import matplotlib as mpl
 import nose
@@ -154,6 +156,9 @@ class TestPlottingContext(RCParamTester):
 
         font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
                      "xtick.labelsize", "ytick.labelsize", "font.size"]
+
+        if LooseVersion(mpl.__version__) >= "3.0":
+            font_keys.append("legend.title_fontsize")
 
         for k in font_keys:
             nt.assert_equal(notebook_ref[k] * 2, notebook_big[k])

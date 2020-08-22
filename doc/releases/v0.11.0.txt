@@ -92,6 +92,8 @@ Other
 
 - Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
 
+- Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
+
 - Removed an optional (an undocumented) dependency on BeautifulSoup (:pr:`2190`).
 
 - Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
