@@ -14,9 +14,18 @@ from . import utils
 from .utils import _check_argument
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
+from ._docstrings import (
+    DocstringComponents,
+    _core_docs,
+)
 
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
+
+
+_param_docs = DocstringComponents.from_nested_components(
+    core=_core_docs["params"],
+)
 
 
 class Grid(object):
@@ -1641,7 +1650,12 @@ class PairGrid(Grid):
 
 
 class JointGrid(object):
-    """Grid for drawing a bivariate plot with marginal univariate plots."""
+    """Grid for drawing a bivariate plot with marginal univariate plots.
+
+    Many plots can be drawn by using the figure-level interface :func:`jointplot`.
+    Use this class directly when you need more flexibility.
+
+    """
 
     @_deprecate_positional_args
     def __init__(
@@ -1652,44 +1666,6 @@ class JointGrid(object):
         dropna=False, xlim=None, ylim=None, size=None, marginal_ticks=False,
         hue=None, palette=None, hue_order=None, hue_norm=None,
     ):
-        """Set up the grid of subplots.
-
-        Parameters
-        ----------
-        x, y : strings or vectors
-            Data or names of variables in ``data``.
-        data : DataFrame
-            DataFrame when ``x`` and ``y`` are variable names.
-        height : numeric
-            Size of each side of the figure in inches (it will be square).
-        ratio : numeric
-            Ratio of joint axes size to marginal axes height.
-        space : numeric
-            Space between the joint and marginal axes
-        dropna : bool
-            If True, remove observations that are missing from `x` and `y`.
-        {x, y}lim : two-tuples
-            Axis limits to set before plotting.
-        marginal_ticks : bool
-            If False, suppress ticks on the count/density axis of the marginal plots.
-        {params.core.hue}
-            Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
-            functions must support ``hue`` to use it in :class:`JointGrid`.
-        {params.core.palette}
-        {params.core.hue_order}
-        {params.core.hue_norm}
-
-        See Also
-        --------
-        jointplot : High-level interface for drawing bivariate plots with
-                    several different default plot kinds.
-
-        Examples
-        --------
-
-        .. include:: ../docstrings/JointGrid.rst
-
-        """
         # Handle deprecations
         if size is not None:
             height = size
@@ -1779,20 +1755,25 @@ class JointGrid(object):
                 kws.setdefault(key, val)
 
     def plot(self, joint_func, marginal_func, annot_func=None, **kwargs):
-        """Shortcut to draw the full plot.
+        """Draw the plot by passing functions for joint and marginal axes.
 
-        Use `plot_joint` and `plot_marginals` directly for more control.
+        This method passes the ``kwargs`` dictionary to both functions. If you
+        need more control, call :meth:`JointGrid.plot_joint` and
+        :meth:`JointGrid.plot_marginals` directly with specific parameters.
 
         Parameters
         ----------
         joint_func, marginal_func: callables
-            Functions to draw the bivariate and univariate plots.
-        Additional keyword arguments are passed to both functions.
+            Functions to draw the bivariate and univariate plots. See methods
+            referenced above for information about the required characteristics
+            of these functions.
+        kwargs
+            Additional keyword arguments are passed to both functions.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         self.plot_marginals(marginal_func, **kwargs)
@@ -1802,20 +1783,23 @@ class JointGrid(object):
         return self
 
     def plot_joint(self, func, **kwargs):
-        """Draw a bivariate plot with ``x`` and ``y``.
+        """Draw a bivariate plot on the joint axes of the grid.
 
         Parameters
         ----------
         func : plotting callable
-            This must take two 1d arrays of data as the first two
+            If a seaborn function, it should accept ``x`` and ``y``. Otherwise,
+            it must accept ``x`` and ``y`` vectors of data as the first two
             positional arguments, and it must plot on the "current" axes.
-        kwargs : key, value mappings
+            If ``hue`` was defined in the class constructor, the function must
+            accept ``hue`` as a parameter.
+        kwargs
             Keyword argument are passed to the plotting function.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         plt.sca(self.ax_joint)
@@ -1832,22 +1816,24 @@ class JointGrid(object):
         return self
 
     def plot_marginals(self, func, **kwargs):
-        """Draw univariate plots for ``x`` and ``y`` separately.
+        """Draw univariate plots on each marginal axes.
 
         Parameters
         ----------
         func : plotting callable
-            This must take a 1d array of data as the first positional
-            argument, it must plot on the "current" axes, and it must
-            accept a "vertical" keyword argument to orient the measure
-            dimension of the plot vertically.
-        kwargs : key, value mappings
+            If a seaborn function, it should  accept ``x`` and ``y`` and plot
+            when only one of them is defined. Otherwise, it must accept a vector
+            of data as the first positional argument and determine its orientation
+            using the ``vertical`` parameter, and it must plot on the "current" axes.
+            If ``hue`` was defined in the class constructor, it must accept ``hue``
+            as a parameter.
+        kwargs
             Keyword argument are passed to the plotting function.
 
         Returns
         -------
-        self : JointGrid instance
-            Returns `self`.
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         kwargs = kwargs.copy()
@@ -1941,20 +1927,22 @@ class JointGrid(object):
         return self
 
     def set_axis_labels(self, xlabel="", ylabel="", **kwargs):
-        """Set the axis labels on the bivariate axes.
+        """Set axis labels on the bivariate axes.
 
         Parameters
         ----------
         xlabel, ylabel : strings
             Label names for the x and y variables.
         kwargs : key, value mappings
-            Other keyword arguments are passed to the set_xlabel or
-            set_ylabel.
+            Other keyword arguments are passed to the following functions:
+
+            - :meth:`matplotlib.axes.Axes.set_xlabel`
+            - :meth:`matplotlib.axes.Axes.set_ylabel`
 
         Returns
         -------
-        self : JointGrid instance
-            returns `self`
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
 
         """
         self.ax_joint.set_xlabel(xlabel, **kwargs)
@@ -1962,9 +1950,57 @@ class JointGrid(object):
         return self
 
     def savefig(self, *args, **kwargs):
-        """Wrap figure.savefig defaulting to tight bounding box."""
+        """Save the figure using a "tight" bounding box by default.
+
+        Wraps :meth:`matplotlib.figure.Figure.savefig`.
+
+        """
         kwargs.setdefault("bbox_inches", "tight")
         self.fig.savefig(*args, **kwargs)
+
+
+JointGrid.__init__.__doc__ = """\
+Set up the grid of subplots and store data internally for easy plotting.
+
+Parameters
+----------
+{params.core.xy}
+{params.core.data}
+height : number
+    Size of each side of the figure in inches (it will be square).
+ratio : number
+    Ratio of joint axes height to marginal axes height.
+space : number
+    Space between the joint and marginal axes
+dropna : bool
+    If True, remove missing observations before plotting.
+{{x, y}}lim : pairs of numbers
+    Set axis limits to these values before plotting.
+marginal_ticks : bool
+    If False, suppress ticks on the count/density axis of the marginal plots.
+{params.core.hue}
+    Note: unlike in :class:`FacetGrid` or :class:`PairGrid`, the axes-level
+    functions must support ``hue`` to use it in :class:`JointGrid`.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+
+See Also
+--------
+{seealso.jointplot}
+{seealso.pairgrid}
+{seealso.pairplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/JointGrid.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
 
 
 @_deprecate_positional_args
@@ -2219,65 +2255,6 @@ def jointplot(
     hue=None, palette=None, hue_order=None, hue_norm=None,
     **kwargs
 ):
-    """Draw a plot of two variables with bivariate and univariate graphs.
-
-    This function provides a convenient interface to the :class:`JointGrid`
-    class, with several canned plot kinds. This is intended to be a fairly
-    lightweight wrapper; if you need more flexibility, you should use
-    :class:`JointGrid` directly.
-
-    Parameters
-    ----------
-    x, y : strings or vectors
-        Data or names of variables in ``data``.
-    data : DataFrame
-        DataFrame when ``x`` and ``y`` are variable names.
-    kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
-        Kind of plot to draw.
-    stat_func : callable or None
-        *Deprecated*
-    color : matplotlib color
-        Color used for the plot elements.
-    height : numeric
-        Size of the figure (it will be square).
-    ratio : numeric
-        Ratio of joint axes height to marginal axes height.
-    space : numeric
-        Space between the joint and marginal axes
-    dropna : bool
-        If True, remove observations that are missing from ``x`` and ``y``.
-    {{x, y}}lim : two-tuples
-        Axis limits to set before plotting.
-    marginal_ticks : bool
-        If False, suppress ticks on the count/density axis of the marginal plots.
-    {{joint, marginal, annot}}_kws : dicts
-        Additional keyword arguments for the plot components.
-    {params.core.hue}
-        Semantic variable that is mapped to determine the color of plot elements.
-    {params.core.palette}
-    {params.core.hue_order}
-    {params.core.hue_norm}
-    kwargs : key, value pairings
-        Additional keyword arguments are passed to the function used to
-        draw the plot on the joint Axes, superseding items in the
-        ``joint_kws`` dictionary.
-
-    Returns
-    -------
-    grid : :class:`JointGrid`
-        :class:`JointGrid` object with the plot on it.
-
-    See Also
-    --------
-    JointGrid : The Grid class used for drawing this plot. Use it directly if
-                you need more flexibility.
-
-    Examples
-    --------
-
-    .. include:: ../docstrings/jointplot.rst
-
-    """
     # Avoid circular imports
     from .relational import scatterplot
     from .regression import regplot, residplot
@@ -2428,3 +2405,66 @@ def jointplot(
         grid.annotate(stat_func, **annot_kws)
 
     return grid
+
+
+jointplot.__doc__ = """\
+Draw a plot of two variables with bivariate and univariate graphs.
+
+This function provides a convenient interface to the :class:`JointGrid`
+class, with several canned plot kinds. This is intended to be a fairly
+lightweight wrapper; if you need more flexibility, you should use
+:class:`JointGrid` directly.
+
+Parameters
+----------
+{params.core.xy}
+{params.core.data}
+kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
+    Kind of plot to draw. See the examples for references to the underlying functions.
+stat_func : callable or None
+    *Deprecated*
+{params.core.color}
+height : numeric
+    Size of the figure (it will be square).
+ratio : numeric
+    Ratio of joint axes height to marginal axes height.
+space : numeric
+    Space between the joint and marginal axes
+dropna : bool
+    If True, remove observations that are missing from ``x`` and ``y``.
+{{x, y}}lim : pairs of numbers
+    Axis limits to set before plotting.
+marginal_ticks : bool
+    If False, suppress ticks on the count/density axis of the marginal plots.
+{{joint, marginal, annot}}_kws : dicts
+    Additional keyword arguments for the plot components.
+{params.core.hue}
+    Semantic variable that is mapped to determine the color of plot elements.
+{params.core.palette}
+{params.core.hue_order}
+{params.core.hue_norm}
+kwargs
+    Additional keyword arguments are passed to the function used to
+    draw the plot on the joint Axes, superseding items in the
+    ``joint_kws`` dictionary.
+
+Returns
+-------
+{returns.jointgrid}
+
+See Also
+--------
+{seealso.jointgrid}
+{seealso.pairgrid}
+{seealso.pairplot}
+
+Examples
+--------
+
+.. include:: ../docstrings/jointplot.rst
+
+""".format(
+    params=_param_docs,
+    returns=_core_docs["returns"],
+    seealso=_core_docs["seealso"],
+)
