@@ -33,8 +33,8 @@ Official seaborn tutorial
             <hr>
             <div class="row">
               <div class="col-md-4">
-                <a href=./tutorial/categorical.html>
-                  <img src="_images/categorical_36_0.png" class="img-responsive center-block">
+                <a href=./tutorial/distributions.html>
+                  <img src="_images/distributions_66_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">
@@ -51,8 +51,8 @@ Official seaborn tutorial
             <hr>
             <div class="row">
               <div class="col-md-4">
-                <a href=./tutorial/regression.html>
-                  <img src="_images/regression_37_0.png" class="img-responsive center-block">
+                <a href=./tutorial/categorical.html>
+                  <img src="_images/categorical_36_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">
@@ -69,8 +69,8 @@ Official seaborn tutorial
             <hr>
             <div class="row">
               <div class="col-md-4">
-                <a href=./tutorial/distributions.html>
-                  <img src="_images/distributions_81_0.png" class="img-responsive center-block">
+                <a href=./tutorial/regression.html>
+                  <img src="_images/regression_37_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">
