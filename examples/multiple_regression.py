@@ -13,7 +13,7 @@ penguins = sns.load_dataset("penguins")
 # Plot sepal width as a function of sepal_length across days
 g = sns.lmplot(
     data=penguins,
-    x="culmen_length_mm", y="culmen_depth_mm", hue="species",
+    x="bill_length_mm", y="bill_depth_mm", hue="species",
     height=5
 )
 

@@ -9,7 +9,7 @@ sns.set(style="white")
 
 df = sns.load_dataset("penguins")
 
-g = sns.JointGrid(data=df, x="body_mass_g", y="culmen_depth_mm", space=0)
+g = sns.JointGrid(data=df, x="body_mass_g", y="bill_depth_mm", space=0)
 g.plot_joint(sns.kdeplot,
              fill=True, clip=((2200, 6800), (10, 25)),
              thresh=0, levels=100, cmap="rocket")
