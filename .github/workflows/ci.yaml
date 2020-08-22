@@ -33,8 +33,5 @@ jobs:
           pip install -r doc/requirements.txt
           sudo apt-get install pandoc
 
-      - name: Debug
-        run: for f in examples/*.py; do python $f; done
-
       - name: Build docs
         run: make -C doc notebooks html
