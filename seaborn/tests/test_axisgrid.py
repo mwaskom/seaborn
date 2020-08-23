@@ -2,7 +2,6 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -1383,37 +1382,6 @@ class TestJointGrid(object):
         y2, _ = g.ax_marg_y.lines[0].get_xydata().T
         npt.assert_array_equal(y1, y2)
 
-    def test_annotate(self):
-
-        g = ag.JointGrid(x="x", y="y", data=self.data)
-        rp = stats.pearsonr(self.x, self.y)
-
-        with pytest.warns(UserWarning):
-            g.annotate(stats.pearsonr)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "pearsonr = %.2g; p = %.2g" % rp)
-
-        with pytest.warns(UserWarning):
-            g.annotate(stats.pearsonr, stat="correlation")
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "correlation = %.2g; p = %.2g" % rp)
-
-        def rsquared(x, y):
-            return stats.pearsonr(x, y)[0] ** 2
-
-        r2 = rsquared(self.x, self.y)
-        with pytest.warns(UserWarning):
-            g.annotate(rsquared)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, "rsquared = %.2g" % r2)
-
-        template = "{stat} = {val:.3g} (p = {p:.3g})"
-        with pytest.warns(UserWarning):
-            g.annotate(stats.pearsonr, template=template)
-        annotation = g.ax_joint.legend_.texts[0].get_text()
-        nt.assert_equal(annotation, template.format(stat="pearsonr",
-                                                    val=rp[0], p=rp[1]))
-
     def test_space(self):
 
         g = ag.JointGrid(x="x", y="y", data=self.data, space=0)
@@ -1586,16 +1554,6 @@ class TestJointPlot(object):
         assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
         assert_plots_equal(g1.ax_marg_y, g2.ax_marg_y, labels=False)
 
-    def test_annotation(self):
-
-        with pytest.warns(UserWarning):
-            g = ag.jointplot(x="x", y="y", data=self.data,
-                             stat_func=stats.pearsonr)
-        assert len(g.ax_joint.legend_.get_texts()) == 1
-
-        g = ag.jointplot(x="x", y="y", data=self.data, stat_func=None)
-        assert g.ax_joint.legend_ is None
-
     def test_hex_customise(self):
 
         # test that default gridsize can be overridden
@@ -1613,7 +1571,7 @@ class TestJointPlot(object):
     def test_leaky_dict(self):
         # Validate input dicts are unchanged by jointplot plotting function
 
-        for kwarg in ("joint_kws", "marginal_kws", "annot_kws"):
+        for kwarg in ("joint_kws", "marginal_kws"):
             for kind in ("hex", "kde", "resid", "reg", "scatter"):
                 empty_dict = {}
                 ag.jointplot(x="x", y="y", data=self.data, kind=kind,

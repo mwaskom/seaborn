@@ -1754,7 +1754,7 @@ class JointGrid(object):
             if key in func_params:
                 kws.setdefault(key, val)
 
-    def plot(self, joint_func, marginal_func, annot_func=None, **kwargs):
+    def plot(self, joint_func, marginal_func, **kwargs):
         """Draw the plot by passing functions for joint and marginal axes.
 
         This method passes the ``kwargs`` dictionary to both functions. If you
@@ -1778,8 +1778,6 @@ class JointGrid(object):
         """
         self.plot_marginals(marginal_func, **kwargs)
         self.plot_joint(joint_func, **kwargs)
-        if annot_func is not None:
-            self.annotate(annot_func)
         return self
 
     def plot_joint(self, func, **kwargs):
@@ -1858,71 +1856,6 @@ class JointGrid(object):
 
         self.ax_marg_x.yaxis.get_label().set_visible(False)
         self.ax_marg_y.xaxis.get_label().set_visible(False)
-
-        return self
-
-    def annotate(self, func, template=None, stat=None, loc="best", **kwargs):
-        """Annotate the plot with a statistic about the relationship.
-
-        *Deprecated and will be removed in a future version*.
-
-        Parameters
-        ----------
-        func : callable
-            Statistical function that maps the x, y vectors either to (val, p)
-            or to val.
-        template : string format template
-            The template must have the format keys "stat" and "val";
-            if `func` returns a p value, it should also have the key "p".
-        stat : string
-            Name to use for the statistic in the annotation, by default it
-            uses the name of `func`.
-        loc : string or int
-            Matplotlib legend location code; used to place the annotation.
-        kwargs : key, value mappings
-            Other keyword arguments are passed to `ax.legend`, which formats
-            the annotation.
-
-        Returns
-        -------
-        self : JointGrid instance.
-            Returns `self`.
-
-        """
-        msg = ("JointGrid annotation is deprecated and will be removed "
-               "in a future release.")
-        warnings.warn(UserWarning(msg))
-
-        default_template = "{stat} = {val:.2g}; p = {p:.2g}"
-
-        # Call the function and determine the form of the return value(s)
-        out = func(self.x, self.y)
-        try:
-            val, p = out
-        except TypeError:
-            val, p = out, None
-            default_template, _ = default_template.split(";")
-
-        # Set the default template
-        if template is None:
-            template = default_template
-
-        # Default to name of the function
-        if stat is None:
-            stat = func.__name__
-
-        # Format the annotation
-        if p is None:
-            annotation = template.format(stat=stat, val=val)
-        else:
-            annotation = template.format(stat=stat, val=val, p=p)
-
-        # Draw an invisible plot and use the legend to draw the annotation
-        # This is a bit of a hack, but `loc=best` works nicely and is not
-        # easily abstracted.
-        phantom, = self.ax_joint.plot(self.x, self.y, linestyle="", alpha=0)
-        self.ax_joint.legend([phantom], [annotation], loc=loc, **kwargs)
-        phantom.remove()
 
         return self
 
@@ -2248,10 +2181,9 @@ def jointplot(
     *,
     x=None, y=None,
     data=None,
-    kind="scatter", stat_func=None,
-    color=None, height=6, ratio=5, space=.2,
+    kind="scatter", color=None, height=6, ratio=5, space=.2,
     dropna=False, xlim=None, ylim=None, marginal_ticks=False,
-    joint_kws=None, marginal_kws=None, annot_kws=None,
+    joint_kws=None, marginal_kws=None,
     hue=None, palette=None, hue_order=None, hue_norm=None,
     **kwargs
 ):
@@ -2271,7 +2203,6 @@ def jointplot(
     joint_kws = {} if joint_kws is None else joint_kws.copy()
     joint_kws.update(kwargs)
     marginal_kws = {} if marginal_kws is None else marginal_kws.copy()
-    annot_kws = {} if annot_kws is None else annot_kws.copy()
 
     # Handle deprecations of distplot-specific kwargs
     distplot_keys = [
@@ -2399,10 +2330,6 @@ def jointplot(
         marginal_kws.setdefault("color", color)
         histplot(x=x, hue=hue, ax=grid.ax_marg_x, **marginal_kws)
         histplot(y=y, hue=hue, ax=grid.ax_marg_y, **marginal_kws)
-        stat_func = None
-
-    if stat_func is not None:
-        grid.annotate(stat_func, **annot_kws)
 
     return grid
 
@@ -2421,8 +2348,6 @@ Parameters
 {params.core.data}
 kind : {{ "scatter" | "kde" | "hist" | "hex" | "reg" | "resid" }}
     Kind of plot to draw. See the examples for references to the underlying functions.
-stat_func : callable or None
-    *Deprecated*
 {params.core.color}
 height : numeric
     Size of the figure (it will be square).
@@ -2436,7 +2361,7 @@ dropna : bool
     Axis limits to set before plotting.
 marginal_ticks : bool
     If False, suppress ticks on the count/density axis of the marginal plots.
-{{joint, marginal, annot}}_kws : dicts
+{{joint, marginal}}_kws : dicts
     Additional keyword arguments for the plot components.
 {params.core.hue}
     Semantic variable that is mapped to determine the color of plot elements.

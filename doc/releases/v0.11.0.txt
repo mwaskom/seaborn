@@ -116,3 +116,5 @@ TODO organize by module.
 - Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
 
 - Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.
+
+- Final removal of the ``annotate`` method on :class:`JointGrid` and related parameters, which was deprecated in the v0.9.0 release.
