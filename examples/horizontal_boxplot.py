@@ -18,11 +18,11 @@ planets = sns.load_dataset("planets")
 
 # Plot the orbital period with horizontal boxes
 sns.boxplot(x="distance", y="method", data=planets,
-            whis=[0, 100], palette="vlag")
+            whis=[0, 100], width=.6, palette="vlag")
 
 # Add in points to show each observation
-sns.swarmplot(x="distance", y="method", data=planets,
-              size=2, color=".3", linewidth=0)
+sns.stripplot(x="distance", y="method", data=planets,
+              size=4, color=".3", linewidth=0)
 
 # Tweak the visual presentation
 ax.xaxis.grid(True)

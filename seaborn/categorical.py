@@ -1288,7 +1288,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
             points[off_high] = high_gutter
 
         gutter_prop = (off_high + off_low).sum() / len(points)
-        if gutter_prop > .02:
+        if gutter_prop > .05:
             msg = (
                 "{:.1%} of the points cannot be placed; you may want "
                 "to decrease the size of the markers or use stripplot."
@@ -3110,7 +3110,7 @@ swarmplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="time", y="tip", data=tips,
+        >>> ax = sns.swarmplot(x="time", y="total_bill", data=tips,
         ...                    order=["Dinner", "Lunch"])
 
     Plot using larger points:
@@ -3118,15 +3118,15 @@ swarmplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.swarmplot(x="time", y="tip", data=tips, size=6)
+        >>> ax = sns.swarmplot(x="time", y="total_bill", data=tips, size=6)
 
     Draw swarms of observations on top of a box plot:
 
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.swarmplot(x="tip", y="day", data=tips, color=".2")
+        >>> ax = sns.boxplot(x="total_bill", y="day", data=tips, whis=np.inf)
+        >>> ax = sns.swarmplot(x="total_bill", y="day", data=tips, color=".2")
 
     Draw swarms of observations on top of a violin plot:
 
