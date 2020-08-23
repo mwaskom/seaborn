@@ -8,6 +8,14 @@ Official seaborn tutorial
   <div class="container-fluid">
     <div class="row">
       <div class="col-md-6">
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorial/data_structure
+
+.. raw:: html
+
         <div class="panel panel-default">   
           <div class="panel-heading">
             <h3 class="panel-title">Plotting functions</h3>
