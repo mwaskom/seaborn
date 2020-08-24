@@ -12,6 +12,7 @@ Official seaborn tutorial
 .. toctree::
    :maxdepth: 2
 
+   tutorial/function_overview
    tutorial/data_structure
 
 .. raw:: html
