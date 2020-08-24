@@ -501,7 +501,7 @@ def heatmap(
     .. plot::
         :context: close-figs
 
-        >>> ax = sns.heatmap(flights, center=flights.loc["January", 1955])
+        >>> ax = sns.heatmap(flights, center=flights.loc["Jan", 1955])
 
     Plot every other column label and don't plot row labels:
 
