@@ -1,6 +1,6 @@
 .. _tutorial:
 
-Seaborn user guide and tutorial
+User guide and tutorial
 ===============================
 
 .. raw:: html

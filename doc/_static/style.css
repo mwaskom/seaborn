@@ -32,7 +32,7 @@ pre {
 
 code {
     color: #49759c !important;
-    background-color: transparent; !important;
+    background-color: transparent !important;
 }
 
 code.descclassname {
@@ -59,6 +59,10 @@ ul.dropdown-menu {
     background-color: #adb8cb !important;
     border-color: #adb8cb !important;
     color: #2c3e50 !important;
+}
+
+img {
+    margin-bottom: 10px !important;
 }
 
 /* From https://github.com/twbs/bootstrap/issues/1768 */
