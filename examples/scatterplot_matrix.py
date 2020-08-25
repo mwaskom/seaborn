@@ -2,7 +2,7 @@
 Scatterplot Matrix
 ==================
 
-_thumb: .2, .2
+_thumb: .23, .2
 """
 import seaborn as sns
 sns.set(style="ticks")
