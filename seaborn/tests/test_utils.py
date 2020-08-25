@@ -418,6 +418,15 @@ def test_load_datasets():
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
+def test_load_dataset_error():
+
+    name = "bad_name"
+    err = f"'{name}' is not one of the example datasets."
+    with pytest.raises(ValueError, match=err):
+        load_dataset(name)
+
+
+@_network(url="https://github.com/mwaskom/seaborn-data")
 def test_load_cached_datasets():
 
     # Heavy test to verify that we can load all available datasets

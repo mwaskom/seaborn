@@ -1,11 +1,59 @@
 .. _tutorial:
 
-Official seaborn tutorial
-=========================
+User guide and tutorial
+===============================
 
 .. raw:: html
 
   <div class="container-fluid">
+    <div class="row">
+
+.. raw:: html
+
+    <div class="panel panel-default">   
+      <div class="panel-heading">
+        <h3 class="panel-title">API overview</h3>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="col-md-4">
+              <a href=./tutorial/function_overview.html>
+                <img src="_images/function_overview_8_0.png" class="img-responsive center-block">
+              </a>
+            </div>
+            <div class="col-md-8">
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorial/function_overview
+
+.. raw:: html
+
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="col-md-4">
+              <a href=./tutorial/data_structure.html>
+                <img src="_images/data_structure_19_0.png" class="img-responsive center-block">
+              </a>
+            </div>
+            <div class="col-md-8">
+
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorial/data_structure
+
+.. raw:: html
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="row">
       <div class="col-md-6">
         <div class="panel panel-default">   

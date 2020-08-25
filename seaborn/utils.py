@@ -482,10 +482,13 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         cache_path = os.path.join(get_data_home(data_home),
                                   os.path.basename(full_path))
         if not os.path.exists(cache_path):
+            if name not in get_dataset_names():
+                raise ValueError(f"'{name}' is not one of the example datasets.")
             urlretrieve(full_path, cache_path)
         full_path = cache_path
 
     df = pd.read_csv(full_path, **kws)
+
     if df.iloc[-1].isnull().all():
         df = df.iloc[:-1]
 
@@ -498,7 +501,8 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["smoker"] = pd.Categorical(df["smoker"], ["Yes", "No"])
 
     if name == "flights":
-        df["month"] = pd.Categorical(df["month"], df.month.unique())
+        months = df["month"].str[:3]
+        df["month"] = pd.Categorical(months, months.unique())
 
     if name == "exercise":
         df["time"] = pd.Categorical(df["time"], ["1 min", "15 min", "30 min"])
@@ -508,6 +512,9 @@ def load_dataset(name, cache=True, data_home=None, **kws):
     if name == "titanic":
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
+
+    if name == "penguins":
+        df["sex"] = df["sex"].str.title()
 
     if name == "diamonds":
         df["color"] = pd.Categorical(
