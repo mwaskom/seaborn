@@ -718,9 +718,9 @@ style : vector or key in ``data``
 sort : boolean
     If True, the data will be sorted by the x and y variables, otherwise
     lines will connect points in the order they appear in the dataset.
-err_style : "band" or "bars"
+err_style : "band" or "bars" or None
     Whether to draw the confidence intervals with translucent error bands
-    or discrete error bars.
+    or discrete error bars. If ``None``, does not show confidence intervals.
 err_kws : dict of keyword arguments
     Additional paramters to control the aesthetics of the error bars. The
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
