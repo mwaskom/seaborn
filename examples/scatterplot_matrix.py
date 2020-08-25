@@ -7,5 +7,5 @@ _thumb: .5, .43
 import seaborn as sns
 sns.set(style="ticks")
 
-df = sns.load_dataset("iris")
+df = sns.load_dataset("penguins")
 sns.pairplot(df, hue="species")
