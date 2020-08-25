@@ -513,6 +513,9 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         df["class"] = pd.Categorical(df["class"], ["First", "Second", "Third"])
         df["deck"] = pd.Categorical(df["deck"], list("ABCDEFG"))
 
+    if name == "penguins":
+        df["sex"] = df["sex"].str.title()
+
     if name == "diamonds":
         df["color"] = pd.Categorical(
             df["color"], ["D", "E", "F", "G", "H", "I", "J"],
