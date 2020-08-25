@@ -420,7 +420,13 @@ class TestSizeMapping:
         m = SizeMapping(p, sizes=sizes)
         assert m.lookup_table == sizes
 
-        # Test excplicit categories
+        # Test specified size range
+        sizes = (2, 5)
+        m = SizeMapping(p, sizes=sizes)
+        values = np.linspace(*sizes, len(m.levels))[::-1]
+        assert m.lookup_table == dict(zip(m.levels, values))
+
+        # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", size="a_cat"))
         m = SizeMapping(p)
         assert m.levels == long_df["a_cat"].cat.categories.tolist()
