@@ -190,15 +190,6 @@ class _RelationalPlotter(VectorPlotter):
     # TODO where best to define default parameters?
     sort = True
 
-    def label_axes(self, ax):
-        """Set x and y labels with visibility that matches the ticklabels."""
-        if "x" in self.variables and self.variables["x"] is not None:
-            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
-            ax.set_xlabel(self.variables["x"], visible=x_visible)
-        if "y" in self.variables and self.variables["y"] is not None:
-            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
-            ax.set_ylabel(self.variables["y"], visible=y_visible)
-
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
@@ -526,7 +517,7 @@ class _LinePlotter(_RelationalPlotter):
                             pass
 
         # Finalize the axes details
-        self.label_axes(ax)
+        self._add_axis_labels(ax)
         if self.legend:
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
@@ -629,7 +620,7 @@ class _ScatterPlotter(_RelationalPlotter):
             points.set_paths(p)
 
         # Finalize the axes details
-        self.label_axes(ax)
+        self._add_axis_labels(ax)
         if self.legend:
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()

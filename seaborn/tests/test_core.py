@@ -846,6 +846,20 @@ class TestVectorPlotter:
         assert ax.get_xlabel() == "existing"
         assert ax.get_ylabel() == "also existing"
 
+        f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+        p = VectorPlotter(data=long_df, variables=dict(x="x", y="y"))
+
+        p._add_axis_labels(ax1)
+        p._add_axis_labels(ax2)
+
+        assert ax1.get_xlabel() == "x"
+        assert ax1.get_ylabel() == "y"
+        assert ax1.yaxis.label.get_visible()
+
+        assert ax2.get_xlabel() == "x"
+        assert ax2.get_ylabel() == "y"
+        assert not ax2.yaxis.label.get_visible()
+
     @pytest.mark.parametrize(
         "variables",
         [
