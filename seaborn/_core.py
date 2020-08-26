@@ -1172,11 +1172,17 @@ class VectorPlotter:
         return any(log_scaled)
 
     def _add_axis_labels(self, ax, default_x="", default_y=""):
-        """Add axis labels from internal variable names if not already existing."""
+        """Add axis labels if not present, set visibility to match ticklabels."""
+        # TODO ax could default to None and use attached axes if present
+        # but what to do about the case of facets? Currently using FacetGrid's
+        # set_axis_labels method, which doesn't add labels to the interior even
+        # when the axes are not shared. Maybe that makes sense?
         if not ax.get_xlabel():
-            ax.set_xlabel(self.variables.get("x", default_x))
+            x_visible = any(t.get_visible() for t in ax.get_xticklabels())
+            ax.set_xlabel(self.variables.get("x", default_x), visible=x_visible)
         if not ax.get_ylabel():
-            ax.set_ylabel(self.variables.get("y", default_y))
+            y_visible = any(t.get_visible() for t in ax.get_yticklabels())
+            ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
 
 
 def variable_type(vector, boolean_type="numeric"):
