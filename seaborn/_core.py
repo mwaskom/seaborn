@@ -398,8 +398,11 @@ class SizeMapping(SemanticMapping):
                 sizes = self.plotter._default_size_range
 
             # For categorical sizes, use regularly-spaced linear steps
-            # between the minimum and maximum sizes
-            sizes = np.linspace(*sizes, len(levels))
+            # between the minimum and maximum sizes. Then reverse the
+            # ramp so that the largest value is used for the first entry
+            # in size_order, etc. This is because "ordered" categoricals
+            # are often though to go in decreasing priority.
+            sizes = np.linspace(*sizes, len(levels))[::-1]
             lookup_table = dict(zip(levels, sizes))
 
         return levels, lookup_table
