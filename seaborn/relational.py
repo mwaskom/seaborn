@@ -156,11 +156,12 @@ seed : int, numpy.random.Generator, or numpy.random.RandomState
     Seed or random number generator for reproducible bootstrapping.
     """,
     legend="""
-legend : "brief", "full", or False
+legend : "auto", "brief", "full", or False
     How to draw the legend. If "brief", numeric ``hue`` and ``size``
     variables will be represented with a sample of evenly spaced values.
-    If "full", every group will get an entry in the legend. If ``False``,
-    no legend data is added and no legend is drawn.
+    If "full", every group will get an entry in the legend. If "auto",
+    choose between brief or full representation based on number of levels.
+    If ``False``, no legend data is added and no legend is drawn.
     """,
     ax_in="""
 ax : matplotlib Axes
@@ -193,8 +194,8 @@ class _RelationalPlotter(VectorPlotter):
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
-        if verbosity not in ["brief", "full"]:
-            err = "`legend` must be 'brief', 'full', or False"
+        if verbosity not in ["auto", "brief", "full"]:
+            err = "`legend` must be 'auto', 'brief', 'full', or False"
             raise ValueError(err)
 
         legend_kwargs = {}
@@ -216,7 +217,11 @@ class _RelationalPlotter(VectorPlotter):
         brief_ticks = 6
 
         # -- Add a legend for hue semantics
-        if verbosity == "brief" and self._hue_map.map_type == "numeric":
+        brief_hue = self._hue_map.map_type == "numeric" and (
+            verbosity == "brief"
+            or (verbosity == "auto" and len(self._hue_map.levels) > brief_ticks)
+        )
+        if brief_hue:
             if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=brief_ticks)
             else:
@@ -242,8 +247,11 @@ class _RelationalPlotter(VectorPlotter):
                 update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
-
-        if verbosity == "brief" and self._size_map.map_type == "numeric":
+        brief_size = self._size_map.map_type == "numeric" and (
+            verbosity == "brief"
+            or (verbosity == "auto" and len(self._size_map.levels) > brief_ticks)
+        )
+        if brief_size:
             # Define how ticks will interpolate between the min/max data values
             if isinstance(self._size_map.norm, mpl.colors.LogNorm):
                 locator = mpl.ticker.LogLocator(numticks=brief_ticks)
@@ -642,7 +650,7 @@ def lineplot(
     dashes=True, markers=None, style_order=None,
     units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
     sort=True, err_style="band", err_kws=None,
-    legend="brief", ax=None, **kwargs
+    legend="auto", ax=None, **kwargs
 ):
 
     variables = _LinePlotter.get_semantics(locals())
@@ -758,7 +766,7 @@ def scatterplot(
     x_bins=None, y_bins=None,
     units=None, estimator=None, ci=95, n_boot=1000,
     alpha=None, x_jitter=None, y_jitter=None,
-    legend="brief", ax=None, **kwargs
+    legend="auto", ax=None, **kwargs
 ):
 
     variables = _ScatterPlotter.get_semantics(locals())
@@ -869,7 +877,7 @@ def relplot(
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=None, dashes=None, style_order=None,
-    legend="brief", kind="scatter",
+    legend="auto", kind="scatter",
     height=5, aspect=1, facet_kws=None,
     units=None,
     **kwargs

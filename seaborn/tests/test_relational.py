@@ -944,6 +944,12 @@ class TestLinePlotter(Helpers):
         assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
+        p.legend = "auto"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) < len(p._size_map.levels)
+
+        ax.clear()
         p.legend = "bad_value"
         with pytest.raises(ValueError):
             p.add_legend_data(ax)
@@ -957,6 +963,16 @@ class TestLinePlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         assert float(labels[1]) / float(labels[0]) == 10
+
+        ax.clear()
+        p = _LinePlotter(
+            variables=dict(x=x, y=y, hue=z % 2),
+            legend="auto"
+        )
+        p.map_hue(norm=mpl.colors.LogNorm()),
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["0", "1"]
 
         ax.clear()
         p = _LinePlotter(
