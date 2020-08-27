@@ -212,12 +212,15 @@ class _RelationalPlotter(VectorPlotter):
 
                 legend_kwargs[key] = dict(**kws)
 
+        # Define the maximum number of ticks to use for "brief" legends
+        brief_ticks = 6
+
         # -- Add a legend for hue semantics
         if verbosity == "brief" and self._hue_map.map_type == "numeric":
             if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
             else:
-                locator = mpl.ticker.MaxNLocator(nbins=3)
+                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
                 locator, limits, self.plot_data["hue"].infer_objects().dtype
@@ -243,9 +246,9 @@ class _RelationalPlotter(VectorPlotter):
         if verbosity == "brief" and self._size_map.map_type == "numeric":
             # Define how ticks will interpolate between the min/max data values
             if isinstance(self._size_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
             else:
-                locator = mpl.ticker.MaxNLocator(nbins=3)
+                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(

@@ -927,7 +927,7 @@ class TestLinePlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._hue_map.levels)
 
         p = _LinePlotter(variables=dict(x=x, y=y, size=z))
 
@@ -941,7 +941,7 @@ class TestLinePlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
         p.legend = "bad_value"
@@ -956,7 +956,7 @@ class TestLinePlotter(Helpers):
         p.map_hue(norm=mpl.colors.LogNorm()),
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert float(labels[2]) / float(labels[1]) == 10
+        assert float(labels[1]) / float(labels[0]) == 10
 
         ax.clear()
         p = _LinePlotter(
@@ -966,7 +966,7 @@ class TestLinePlotter(Helpers):
         p.map_size(norm=mpl.colors.LogNorm())
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert float(labels[2]) / float(labels[1]) == 10
+        assert float(labels[1]) / float(labels[0]) == 10
 
         ax.clear()
         p = _LinePlotter(
@@ -975,7 +975,7 @@ class TestLinePlotter(Helpers):
             legend="brief",
         )
         p.add_legend_data(ax)
-        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        expected_levels = ['0.20', '0.22', '0.24', '0.26', '0.28']
         handles, labels = ax.get_legend_handles_labels()
         assert labels == ["f"] + expected_levels
 
@@ -986,7 +986,7 @@ class TestLinePlotter(Helpers):
             legend="brief",
         )
         p.add_legend_data(ax)
-        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        expected_levels = ['0.20', '0.22', '0.24', '0.26', '0.28']
         handles, labels = ax.get_legend_handles_labels()
         assert labels == ["f"] + expected_levels
 
@@ -1485,7 +1485,7 @@ class TestScatterPlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._hue_map.levels)
 
         p = _ScatterPlotter(
             variables=dict(x=x, y=y, size=z),
@@ -1501,7 +1501,7 @@ class TestScatterPlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
         p.legend = "bad_value"
