@@ -76,6 +76,19 @@ class _ColorPalette(list):
         hex = [mpl.colors.rgb2hex(rgb) for rgb in self]
         return _ColorPalette(hex)
 
+    def _repr_html_(self):
+        """Rich display of the color palette in an HTML frontend."""
+        s = 55
+        n = len(self)
+        html = f'<svg  width="{n * s}" height="{s}">'
+        for i, c in enumerate(self.as_hex()):
+            html += (
+                f'<rect x="{i * s}" y="0" width="{s}" height="{s}" style="fill:{c};'
+                'stroke-width:2;stroke:rgb(255,255,255)"/>'
+            )
+        html += '</svg>'
+        return html
+
 
 def color_palette(palette=None, n_colors=None, desat=None):
     """Return a list of colors defining a color palette.

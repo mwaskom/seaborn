@@ -359,3 +359,10 @@ class TestColorPalettes(object):
         pal_in = palettes.color_palette("Set1", 10)
         pal_out = palettes.color_palette(pal_in)
         nt.assert_equal(pal_in, pal_out)
+
+    def test_html_rep(self):
+
+        pal = palettes.color_palette()
+        html = pal._repr_html_()
+        for color in pal.as_hex():
+            assert color in html
