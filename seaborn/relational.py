@@ -194,9 +194,11 @@ class _RelationalPlotter(VectorPlotter):
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
-        if verbosity not in ["auto", "brief", "full"]:
-            err = "`legend` must be 'auto', 'brief', 'full', or False"
+        if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
+            err = "`legend` must be 'auto', 'brief', 'full', or a boolean."
             raise ValueError(err)
+        elif verbosity is True:
+            verbosity = "auto"
 
         legend_kwargs = {}
         keys = []
