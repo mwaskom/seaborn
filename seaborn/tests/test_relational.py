@@ -950,6 +950,12 @@ class TestLinePlotter(Helpers):
         assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
+        p.legend = True
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) < len(p._size_map.levels)
+
+        ax.clear()
         p.legend = "bad_value"
         with pytest.raises(ValueError):
             p.add_legend_data(ax)

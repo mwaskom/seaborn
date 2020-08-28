@@ -89,7 +89,7 @@ TODO organize by module.
 
 - Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot` (:pr:`2079`).
 
-- Added an explicit warning in :func:`swarmplot` when more than 2% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
+- Added an explicit warning in :func:`swarmplot` when more than 5% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
 
 - Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes (:pr:`2046`).
 
