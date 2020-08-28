@@ -697,6 +697,8 @@ def _assign_default_kwargs(kws, call_func, source_func):
 
 def adjust_legend_subtitles(legend):
     """Make invisible-handle "subtitles" entries look more like titles."""
+    # Legend title not in rcParams until 3.0
+    font_size = plt.rcParams.get("legend.title_fontsize", None)
     hpackers = legend.findobj(mpl.offsetbox.VPacker)[0].get_children()
     for hpack in hpackers:
         draw_area, text_area = hpack.get_children()
@@ -704,4 +706,5 @@ def adjust_legend_subtitles(legend):
         if not all(artist.get_visible() for artist in handles):
             draw_area.set_width(0)
             for text in text_area.get_children():
-                text.set_size(plt.rcParams["legend.title_fontsize"])
+                if font_size is not None:
+                    text.set_size(font_size)
