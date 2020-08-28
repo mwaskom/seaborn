@@ -79,6 +79,8 @@ TODO organize by module.
 
 - Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
 
+- Reduced some of the surprising behavior of relational plot legends when using a numeric hue or size mapping. Added an "auto" mode (the new default) that chooses between "brief" and "full" based on the number of unique levels of the variable(s). Modified the ticking algorithm to only show values inside the limits of the data and to show up to 6 values. Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined. The subtitles are now also left-aligned and set to the legend title font size. (:pr:`2229`).
+
 - Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. ``k_depth="tukey"`` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or just plot boxes that will cover most of the data points (with ``k_depth="full"``). Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. (:pr:`2086`).
 
 - Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend (:pr:`2073`).
@@ -87,7 +89,7 @@ TODO organize by module.
 
 - Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot` (:pr:`2079`).
 
-- Added an explicit warning in :func:`swarmplot` when more than 2% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
+- Added an explicit warning in :func:`swarmplot` when more than 5% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
 
 - Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes (:pr:`2046`).
 

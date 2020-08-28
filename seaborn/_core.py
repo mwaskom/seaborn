@@ -243,7 +243,7 @@ class HueMapping(SemanticMapping):
                 try:
                     cmap = mpl.cm.get_cmap(palette)
                 except (ValueError, TypeError):
-                    err = "Palette {} not understood"
+                    err = f"Palette {palette} not understood"
                     raise ValueError(err)
 
             # Now sort out the data normalization

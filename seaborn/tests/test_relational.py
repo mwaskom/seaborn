@@ -706,12 +706,12 @@ class TestRelationalPlotter(Helpers):
 
         g = relplot(data=long_df, x="x", y="y", hue="a")
         texts = [t.get_text() for t in g._legend.texts]
-        expected_texts = np.append(["a"], long_df["a"].unique())
+        expected_texts = long_df["a"].unique()
         assert_array_equal(texts, expected_texts)
 
         g = relplot(data=long_df, x="x", y="y", hue="s", size="s")
         texts = [t.get_text() for t in g._legend.texts]
-        assert_array_equal(texts[1:], np.sort(texts[1:]))
+        assert_array_equal(texts, np.sort(texts))
 
         g = relplot(data=long_df, x="x", y="y", hue="a", legend=False)
         assert g._legend is None
@@ -842,8 +842,8 @@ class TestLinePlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
-        assert labels == ["a"] + p._hue_map.levels
-        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
+        assert labels == p._hue_map.levels
+        assert colors == p._hue_map(p._hue_map.levels)
 
         # --
 
@@ -858,10 +858,10 @@ class TestLinePlotter(Helpers):
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         markers = [h.get_marker() for h in handles]
-        assert labels == ["a"] + p._hue_map.levels
-        assert labels == ["a"] + p._style_map.levels
-        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
-        assert markers == [""] + p._style_map(p._style_map.levels, "marker")
+        assert labels == p._hue_map.levels
+        assert labels == p._style_map.levels
+        assert colors == p._hue_map(p._hue_map.levels)
+        assert markers == p._style_map(p._style_map.levels, "marker")
 
         # --
 
@@ -905,10 +905,10 @@ class TestLinePlotter(Helpers):
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_color() for h in handles]
         widths = [h.get_linewidth() for h in handles]
-        assert labels == ["a"] + p._hue_map.levels
-        assert labels == ["a"] + p._size_map.levels
-        assert colors == ["w"] + p._hue_map(p._hue_map.levels)
-        assert widths == [0] + p._size_map(p._size_map.levels)
+        assert labels == p._hue_map.levels
+        assert labels == p._size_map.levels
+        assert colors == p._hue_map(p._hue_map.levels)
+        assert widths == p._size_map(p._size_map.levels)
 
         # --
 
@@ -927,7 +927,7 @@ class TestLinePlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._hue_map.levels)
 
         p = _LinePlotter(variables=dict(x=x, y=y, size=z))
 
@@ -941,7 +941,19 @@ class TestLinePlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._size_map.levels)
+
+        ax.clear()
+        p.legend = "auto"
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) < len(p._size_map.levels)
+
+        ax.clear()
+        p.legend = True
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
         p.legend = "bad_value"
@@ -956,7 +968,17 @@ class TestLinePlotter(Helpers):
         p.map_hue(norm=mpl.colors.LogNorm()),
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert float(labels[2]) / float(labels[1]) == 10
+        assert float(labels[1]) / float(labels[0]) == 10
+
+        ax.clear()
+        p = _LinePlotter(
+            variables=dict(x=x, y=y, hue=z % 2),
+            legend="auto"
+        )
+        p.map_hue(norm=mpl.colors.LogNorm()),
+        p.add_legend_data(ax)
+        handles, labels = ax.get_legend_handles_labels()
+        assert labels == ["0", "1"]
 
         ax.clear()
         p = _LinePlotter(
@@ -966,7 +988,7 @@ class TestLinePlotter(Helpers):
         p.map_size(norm=mpl.colors.LogNorm())
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert float(labels[2]) / float(labels[1]) == 10
+        assert float(labels[1]) / float(labels[0]) == 10
 
         ax.clear()
         p = _LinePlotter(
@@ -975,9 +997,9 @@ class TestLinePlotter(Helpers):
             legend="brief",
         )
         p.add_legend_data(ax)
-        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        expected_labels = ['0.20', '0.22', '0.24', '0.26', '0.28']
         handles, labels = ax.get_legend_handles_labels()
-        assert labels == ["f"] + expected_levels
+        assert labels == expected_labels
 
         ax.clear()
         p = _LinePlotter(
@@ -986,9 +1008,9 @@ class TestLinePlotter(Helpers):
             legend="brief",
         )
         p.add_legend_data(ax)
-        expected_levels = ['0.20', '0.24', '0.28', '0.32']
+        expected_levels = ['0.20', '0.22', '0.24', '0.26', '0.28']
         handles, labels = ax.get_legend_handles_labels()
-        assert labels == ["f"] + expected_levels
+        assert labels == expected_levels
 
     def test_plot(self, long_df, repeated_df):
 
@@ -1362,8 +1384,8 @@ class TestScatterPlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
-        assert labels == ["a"] + p._hue_map.levels
+        expected_colors = p._hue_map(p._hue_map.levels)
+        assert labels == p._hue_map.levels
         assert self.colors_equal(colors, expected_colors)
 
         # --
@@ -1378,11 +1400,11 @@ class TestScatterPlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
+        expected_colors = p._hue_map(p._hue_map.levels)
         paths = [h.get_paths()[0] for h in handles]
-        expected_paths = [null] + p._style_map(p._style_map.levels, "path")
-        assert labels == ["a"] + p._hue_map.levels
-        assert labels == ["a"] + p._style_map.levels
+        expected_paths = p._style_map(p._style_map.levels, "path")
+        assert labels == p._hue_map.levels
+        assert labels == p._style_map.levels
         assert self.colors_equal(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
@@ -1424,11 +1446,11 @@ class TestScatterPlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         colors = [h.get_facecolors()[0] for h in handles]
-        expected_colors = ["w"] + p._hue_map(p._hue_map.levels)
+        expected_colors = p._hue_map(p._hue_map.levels)
         sizes = [h.get_sizes()[0] for h in handles]
-        expected_sizes = [0] + p._size_map(p._size_map.levels)
-        assert labels == ["a"] + p._hue_map.levels
-        assert labels == ["a"] + p._size_map.levels
+        expected_sizes = p._size_map(p._size_map.levels)
+        assert labels == p._hue_map.levels
+        assert labels == p._size_map.levels
         assert self.colors_equal(colors, expected_colors)
         assert sizes == expected_sizes
 
@@ -1445,8 +1467,8 @@ class TestScatterPlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         sizes = [h.get_sizes()[0] for h in handles]
-        expected_sizes = [0] + p._size_map(p._size_map.levels)
-        assert labels == ["s"] + [str(l) for l in p._size_map.levels]
+        expected_sizes = p._size_map(p._size_map.levels)
+        assert labels == [str(l) for l in p._size_map.levels]
         assert sizes == expected_sizes
 
         # --
@@ -1462,8 +1484,8 @@ class TestScatterPlotter(Helpers):
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
         sizes = [h.get_sizes()[0] for h in handles]
-        expected_sizes = [0] + p._size_map(p._size_map.levels)
-        assert labels == ["s"] + [str(l) for l in p._size_map.levels]
+        expected_sizes = p._size_map(p._size_map.levels)
+        assert labels == [str(l) for l in p._size_map.levels]
         assert sizes == expected_sizes
 
         # --
@@ -1485,7 +1507,7 @@ class TestScatterPlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._hue_map.levels)
 
         p = _ScatterPlotter(
             variables=dict(x=x, y=y, size=z),
@@ -1501,7 +1523,7 @@ class TestScatterPlotter(Helpers):
         p.legend = "brief"
         p.add_legend_data(ax)
         handles, labels = ax.get_legend_handles_labels()
-        assert len(labels) == 4
+        assert len(labels) < len(p._size_map.levels)
 
         ax.clear()
         p.legend = "bad_value"

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from ._core import VectorPlotter, variable_type, categorical_order
 from . import utils
-from .utils import _check_argument
+from .utils import _check_argument, adjust_legend_subtitles
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -56,7 +56,7 @@ class Grid(object):
         self.fig.tight_layout(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
-                   **kwargs):
+                   adjust_subtitles=False, **kwargs):
         """Draw a legend, maybe placing it outside axes and resizing the figure.
 
         Parameters
@@ -70,6 +70,9 @@ class Grid(object):
         label_order : list of labels
             The order that the legend entries should appear in. The default
             reads from ``self.hue_names``.
+        adjust_subtitles : bool
+            If True, modify entries with invisible artists to left-align
+            the labels and set the font size to that of a title.
         kwargs : key, value pairings
             Other keyword arguments are passed to the underlying legend methods
             on the Figure or Axes object.
@@ -123,6 +126,9 @@ class Grid(object):
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
 
+            if adjust_subtitles:
+                adjust_legend_subtitles(figlegend)
+
             # Draw the plot to set the bounding boxes correctly
             if hasattr(self.fig.canvas, "get_renderer"):
                 self.fig.draw(self.fig.canvas.get_renderer())
@@ -151,6 +157,9 @@ class Grid(object):
             # Draw a legend in the first axis
             ax = self.axes.flat[0]
             kwargs.setdefault("loc", "best")
+
+            if adjust_subtitles:
+                adjust_legend_subtitles(figlegend)
 
             leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})

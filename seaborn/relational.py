@@ -11,6 +11,7 @@ from ._core import (
 from .utils import (
     ci_to_errsize,
     locator_to_legend_entries,
+    adjust_legend_subtitles,
     ci as ci_func
 )
 from .algorithms import bootstrap
@@ -156,11 +157,12 @@ seed : int, numpy.random.Generator, or numpy.random.RandomState
     Seed or random number generator for reproducible bootstrapping.
     """,
     legend="""
-legend : "brief", "full", or False
+legend : "auto", "brief", "full", or False
     How to draw the legend. If "brief", numeric ``hue`` and ``size``
     variables will be represented with a sample of evenly spaced values.
-    If "full", every group will get an entry in the legend. If ``False``,
-    no legend data is added and no legend is drawn.
+    If "full", every group will get an entry in the legend. If "auto",
+    choose between brief or full representation based on number of levels.
+    If ``False``, no legend data is added and no legend is drawn.
     """,
     ax_in="""
 ax : matplotlib Axes
@@ -193,14 +195,31 @@ class _RelationalPlotter(VectorPlotter):
     def add_legend_data(self, ax):
         """Add labeled artists to represent the different plot semantics."""
         verbosity = self.legend
-        if verbosity not in ["brief", "full"]:
-            err = "`legend` must be 'brief', 'full', or False"
+        if isinstance(verbosity, str) and verbosity not in ["auto", "brief", "full"]:
+            err = "`legend` must be 'auto', 'brief', 'full', or a boolean."
             raise ValueError(err)
+        elif verbosity is True:
+            verbosity = "auto"
 
         legend_kwargs = {}
         keys = []
 
-        title_kws = dict(color="w", s=0, linewidth=0, marker="", dashes="")
+        # Assign a legend title if there is only going to be one sub-legend,
+        # otherwise, subtitles will be inserted into the texts list with an
+        # invisible handle (which is a hack)
+        titles = {
+            title for title in
+            (self.variables.get(v, None) for v in ["hue", "size", "style"])
+            if title is not None
+        }
+        if len(titles) == 1:
+            legend_title = titles.pop()
+        else:
+            legend_title = ""
+
+        title_kws = dict(
+            visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
+        )
 
         def update(var_name, val_name, **kws):
 
@@ -212,12 +231,19 @@ class _RelationalPlotter(VectorPlotter):
 
                 legend_kwargs[key] = dict(**kws)
 
+        # Define the maximum number of ticks to use for "brief" legends
+        brief_ticks = 6
+
         # -- Add a legend for hue semantics
-        if verbosity == "brief" and self._hue_map.map_type == "numeric":
+        brief_hue = self._hue_map.map_type == "numeric" and (
+            verbosity == "brief"
+            or (verbosity == "auto" and len(self._hue_map.levels) > brief_ticks)
+        )
+        if brief_hue:
             if isinstance(self._hue_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
             else:
-                locator = mpl.ticker.MaxNLocator(nbins=3)
+                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             limits = min(self._hue_map.levels), max(self._hue_map.levels)
             hue_levels, hue_formatted_levels = locator_to_legend_entries(
                 locator, limits, self.plot_data["hue"].infer_objects().dtype
@@ -228,7 +254,7 @@ class _RelationalPlotter(VectorPlotter):
             hue_levels = hue_formatted_levels = self._hue_map.levels
 
         # Add the hue semantic subtitle
-        if "hue" in self.variables and self.variables["hue"] is not None:
+        if not legend_title and self.variables.get("hue", None) is not None:
             update((self.variables["hue"], "title"),
                    self.variables["hue"], **title_kws)
 
@@ -239,13 +265,16 @@ class _RelationalPlotter(VectorPlotter):
                 update(self.variables["hue"], formatted_level, color=color)
 
         # -- Add a legend for size semantics
-
-        if verbosity == "brief" and self._size_map.map_type == "numeric":
+        brief_size = self._size_map.map_type == "numeric" and (
+            verbosity == "brief"
+            or (verbosity == "auto" and len(self._size_map.levels) > brief_ticks)
+        )
+        if brief_size:
             # Define how ticks will interpolate between the min/max data values
             if isinstance(self._size_map.norm, mpl.colors.LogNorm):
-                locator = mpl.ticker.LogLocator(numticks=3)
+                locator = mpl.ticker.LogLocator(numticks=brief_ticks)
             else:
-                locator = mpl.ticker.MaxNLocator(nbins=3)
+                locator = mpl.ticker.MaxNLocator(nbins=brief_ticks)
             # Define the min/max data values
             limits = min(self._size_map.levels), max(self._size_map.levels)
             size_levels, size_formatted_levels = locator_to_legend_entries(
@@ -257,7 +286,7 @@ class _RelationalPlotter(VectorPlotter):
             size_levels = size_formatted_levels = self._size_map.levels
 
         # Add the size semantic subtitle
-        if "size" in self.variables and self.variables["size"] is not None:
+        if not legend_title and self.variables.get("size", None) is not None:
             update((self.variables["size"], "title"),
                    self.variables["size"], **title_kws)
 
@@ -275,7 +304,7 @@ class _RelationalPlotter(VectorPlotter):
         # -- Add a legend for style semantics
 
         # Add the style semantic title
-        if "style" in self.variables and self.variables["style"] is not None:
+        if not legend_title and self.variables.get("style", None) is not None:
             update((self.variables["style"], "title"),
                    self.variables["style"], **title_kws)
 
@@ -311,6 +340,7 @@ class _RelationalPlotter(VectorPlotter):
             legend_data[key] = artist
             legend_order.append(key)
 
+        self.legend_title = legend_title
         self.legend_data = legend_data
         self.legend_order = legend_order
 
@@ -522,7 +552,8 @@ class _LinePlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend()
+                legend = ax.legend(title=self.legend_title)
+                adjust_legend_subtitles(legend)
 
 
 class _ScatterPlotter(_RelationalPlotter):
@@ -625,7 +656,8 @@ class _ScatterPlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend()
+                legend = ax.legend(title=self.legend_title)
+                adjust_legend_subtitles(legend)
 
 
 @_deprecate_positional_args
@@ -639,7 +671,7 @@ def lineplot(
     dashes=True, markers=None, style_order=None,
     units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
     sort=True, err_style="band", err_kws=None,
-    legend="brief", ax=None, **kwargs
+    legend="auto", ax=None, **kwargs
 ):
 
     variables = _LinePlotter.get_semantics(locals())
@@ -755,7 +787,7 @@ def scatterplot(
     x_bins=None, y_bins=None,
     units=None, estimator=None, ci=95, n_boot=1000,
     alpha=None, x_jitter=None, y_jitter=None,
-    legend="brief", ax=None, **kwargs
+    legend="auto", ax=None, **kwargs
 ):
 
     variables = _ScatterPlotter.get_semantics(locals())
@@ -866,7 +898,7 @@ def relplot(
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     markers=None, dashes=None, style_order=None,
-    legend="brief", kind="scatter",
+    legend="auto", kind="scatter",
     height=5, aspect=1, facet_kws=None,
     units=None,
     **kwargs
@@ -996,7 +1028,9 @@ def relplot(
         p.add_legend_data(g.axes.flat[0])
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
-                         label_order=p.legend_order)
+                         label_order=p.legend_order,
+                         title=p.legend_title,
+                         adjust_subtitles=True)
 
     return g
 
