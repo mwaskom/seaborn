@@ -357,30 +357,30 @@ def test_locator_to_legend_entries():
     levels, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
-    assert str_levels == ["0.00", "0.15", "0.30", "0.45"]
+    assert str_levels == ["0.15", "0.30"]
 
     limits = (0.8, 0.9)
     levels, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
-    assert str_levels == ["0.80", "0.84", "0.88", "0.92"]
+    assert str_levels == ["0.80", "0.84", "0.88"]
 
     limits = (1, 6)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
-    assert str_levels == ["0", "2", "4", "6"]
+    assert str_levels == ["2", "4", "6"]
 
-    locator = mpl.ticker.LogLocator(numticks=3)
+    locator = mpl.ticker.LogLocator(numticks=5)
     limits = (5, 1425)
     levels, str_levels = utils.locator_to_legend_entries(locator, limits, int)
     if LooseVersion(mpl.__version__) >= "3.1":
-        assert str_levels == ['0', '1', '100', '10000', '1e+06']
+        assert str_levels == ['10', '100', '1000']
 
     limits = (0.00003, 0.02)
     levels, str_levels = utils.locator_to_legend_entries(
         locator, limits, float
     )
     if LooseVersion(mpl.__version__) >= "3.1":
-        assert str_levels == ['1e-07', '1e-05', '1e-03', '1e-01', '10']
+        assert str_levels == ['1e-04', '1e-03', '1e-02']
 
 
 def check_load_dataset(name):
