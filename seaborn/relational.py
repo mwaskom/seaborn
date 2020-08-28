@@ -203,7 +203,22 @@ class _RelationalPlotter(VectorPlotter):
         legend_kwargs = {}
         keys = []
 
-        title_kws = dict(color="w", s=0, linewidth=0, marker="", dashes="")
+        # Assign a legend title if there is only going to be one sub-legend,
+        # otherwise, subtitles will be inserted into the texts list with an
+        # invisible handle (which is a hack)
+        titles = {
+            title for title in
+            (self.variables.get(v, None) for v in ["hue", "size", "style"])
+            if title is not None
+        }
+        if len(titles) == 1:
+            legend_title = titles.pop()
+        else:
+            legend_title = ""
+
+        title_kws = dict(
+            visible=False, color="w", s=0, linewidth=0, marker="", dashes=""
+        )
 
         def update(var_name, val_name, **kws):
 
@@ -238,7 +253,7 @@ class _RelationalPlotter(VectorPlotter):
             hue_levels = hue_formatted_levels = self._hue_map.levels
 
         # Add the hue semantic subtitle
-        if "hue" in self.variables and self.variables["hue"] is not None:
+        if not legend_title and self.variables.get("hue", None) is not None:
             update((self.variables["hue"], "title"),
                    self.variables["hue"], **title_kws)
 
@@ -270,7 +285,7 @@ class _RelationalPlotter(VectorPlotter):
             size_levels = size_formatted_levels = self._size_map.levels
 
         # Add the size semantic subtitle
-        if "size" in self.variables and self.variables["size"] is not None:
+        if not legend_title and self.variables.get("size", None) is not None:
             update((self.variables["size"], "title"),
                    self.variables["size"], **title_kws)
 
@@ -288,7 +303,7 @@ class _RelationalPlotter(VectorPlotter):
         # -- Add a legend for style semantics
 
         # Add the style semantic title
-        if "style" in self.variables and self.variables["style"] is not None:
+        if not legend_title and self.variables.get("style", None) is not None:
             update((self.variables["style"], "title"),
                    self.variables["style"], **title_kws)
 
@@ -324,6 +339,7 @@ class _RelationalPlotter(VectorPlotter):
             legend_data[key] = artist
             legend_order.append(key)
 
+        self.legend_title = legend_title
         self.legend_data = legend_data
         self.legend_order = legend_order
 
@@ -535,7 +551,7 @@ class _LinePlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend()
+                ax.legend(title=self.legend_title)
 
 
 class _ScatterPlotter(_RelationalPlotter):
@@ -638,7 +654,7 @@ class _ScatterPlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend()
+                ax.legend(title=self.legend_title)
 
 
 @_deprecate_positional_args
@@ -1009,7 +1025,8 @@ def relplot(
         p.add_legend_data(g.axes.flat[0])
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
-                         label_order=p.legend_order)
+                         label_order=p.legend_order,
+                         title=p.legend_title)
 
     return g
 
