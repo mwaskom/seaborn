@@ -11,6 +11,7 @@ from ._core import (
 from .utils import (
     ci_to_errsize,
     locator_to_legend_entries,
+    adjust_legend_subtitles,
     ci as ci_func
 )
 from .algorithms import bootstrap
@@ -551,7 +552,8 @@ class _LinePlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend(title=self.legend_title)
+                legend = ax.legend(title=self.legend_title)
+                adjust_legend_subtitles(legend)
 
 
 class _ScatterPlotter(_RelationalPlotter):
@@ -654,7 +656,8 @@ class _ScatterPlotter(_RelationalPlotter):
             self.add_legend_data(ax)
             handles, _ = ax.get_legend_handles_labels()
             if handles:
-                ax.legend(title=self.legend_title)
+                legend = ax.legend(title=self.legend_title)
+                adjust_legend_subtitles(legend)
 
 
 @_deprecate_positional_args
@@ -1026,7 +1029,8 @@ def relplot(
         if p.legend_data:
             g.add_legend(legend_data=p.legend_data,
                          label_order=p.legend_order,
-                         title=p.legend_title)
+                         title=p.legend_title,
+                         adjust_subtitles=True)
 
     return g
 

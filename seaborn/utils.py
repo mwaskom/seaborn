@@ -683,7 +683,7 @@ def _assign_default_kwargs(kws, call_func, source_func):
     # the signature of the axes-level function.
     # An alternative would be to  have a decorator on the method that sets its
     # defaults based on those defined in the axes-level function.
-    # Then the figuer-level function would not need to worry about defaults.
+    # Then the figure-level function would not need to worry about defaults.
     # I am not sure which is better.
     needed = inspect.signature(call_func).parameters
     defaults = inspect.signature(source_func).parameters
@@ -693,3 +693,15 @@ def _assign_default_kwargs(kws, call_func, source_func):
             kws[param] = defaults[param].default
 
     return kws
+
+
+def adjust_legend_subtitles(legend):
+    """Make invisible-handle "subtitles" entries look more like titles."""
+    hpackers = legend.findobj(mpl.offsetbox.VPacker)[0].get_children()
+    for hpack in hpackers:
+        draw_area, text_area = hpack.get_children()
+        handles = draw_area.get_children()
+        if not all(artist.get_visible() for artist in handles):
+            draw_area.set_width(0)
+            for text in text_area.get_children():
+                text.set_size(plt.rcParams["legend.title_fontsize"])
