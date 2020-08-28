@@ -706,12 +706,12 @@ class TestRelationalPlotter(Helpers):
 
         g = relplot(data=long_df, x="x", y="y", hue="a")
         texts = [t.get_text() for t in g._legend.texts]
-        expected_texts = np.append(["a"], long_df["a"].unique())
+        expected_texts = long_df["a"].unique()
         assert_array_equal(texts, expected_texts)
 
         g = relplot(data=long_df, x="x", y="y", hue="s", size="s")
         texts = [t.get_text() for t in g._legend.texts]
-        assert_array_equal(texts[1:], np.sort(texts[1:]))
+        assert_array_equal(texts, np.sort(texts))
 
         g = relplot(data=long_df, x="x", y="y", hue="a", legend=False)
         assert g._legend is None
