@@ -1562,8 +1562,7 @@ class PairGrid(Grid):
             self.diag_axes = np.array(diag_axes, np.object)
 
         if "hue" not in signature(func).parameters:
-            self._map_diag_iter_hue(func, **kwargs)
-            return
+            return self._map_diag_iter_hue(func, **kwargs)
 
         # Loop over diagonal variables and axes, making one plot in each
         for var, ax in zip(self.diag_vars, self.diag_axes):
@@ -1591,6 +1590,7 @@ class PairGrid(Grid):
             self._clean_axis(ax)
 
         self._add_axis_labels()
+        return self
 
     def _map_diag_iter_hue(self, func, **kwargs):
         """Put marginal plot on each diagonal axes, iterating over hue."""
