@@ -1269,6 +1269,12 @@ class TestPairGrid(object):
         g.map_diag(histplot)
         assert g.axes[0, 0].spines["top"].get_visible()
 
+    def test_corner_set(self):
+
+        g = ag.PairGrid(self.df, corner=True, despine=False)
+        g.set(xlim=(0, 10))
+        assert g.axes[-1, 0].get_xlim() == (0, 10)
+
 
 class TestJointGrid(object):
 
