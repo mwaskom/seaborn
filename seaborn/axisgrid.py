@@ -2189,7 +2189,7 @@ def pairplot(
 
     """
     # Avoid circular import
-    from .distributions import kdeplot  # TODO histplot
+    from .distributions import histplot, kdeplot
 
     # Handle deprecations
     if size is not None:
@@ -2234,7 +2234,7 @@ def pairplot(
     diag_kws = diag_kws.copy()
     if grid.square_grid:
         if diag_kind == "hist":
-            grid.map_diag(plt.hist, **diag_kws)
+            grid.map_diag(histplot, **diag_kws)
         elif diag_kind == "kde":
             diag_kws.setdefault("fill", True)
             diag_kws["legend"] = False
