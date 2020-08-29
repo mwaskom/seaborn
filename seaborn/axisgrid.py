@@ -40,7 +40,8 @@ class Grid(object):
     def set(self, **kwargs):
         """Set attributes on each subplot Axes."""
         for ax in self.axes.flat:
-            ax.set(**kwargs)
+            if ax is not None:  # Handle removed axes
+                ax.set(**kwargs)
         return self
 
     def savefig(self, *args, **kwargs):
