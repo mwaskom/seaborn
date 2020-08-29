@@ -68,52 +68,15 @@ These additions facilitated new features and forced changes in :func:`jointplot`
 - The various modes of `jointplot` that plot marginal histograms now use `func:`histplot` rather than :func:`distplot`. This slightly changes the default appearance and affects the valid keyword arguments that can be passed to customize the plot.
 
 
-Other
-~~~~~
+Other changes
+~~~~~~~~~~~~~
 
-TODO organize by module.
+General API
+^^^^^^^^^^^^^
 
 - Added two new chapters to the user guide, one giving an overview of the :ref:`types of functions in seaborn <function_tutorial>`, and one discussing the different :ref:`data formats <data_tutorial>` that seaborn understands.
 
 - Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
-
-- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
-
-- Reduced some of the surprising behavior of relational plot legends when using a numeric hue or size mapping. Added an "auto" mode (the new default) that chooses between "brief" and "full" based on the number of unique levels of the variable(s). Modified the ticking algorithm to only show values inside the limits of the data and to show up to 6 values. Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined. The subtitles are now also left-aligned and set to the legend title font size. (:pr:`2229`).
-
-- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. ``k_depth="tukey"`` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or just plot boxes that will cover most of the data points (with ``k_depth="full"``). Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. (:pr:`2086`).
-
-- Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend (:pr:`2073`).
-
-- Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behavior is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to reproduce the previous behavior. (:pr:`2708`).
-
-- Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot` (:pr:`2079`).
-
-- Added an explicit warning in :func:`swarmplot` when more than 5% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
-
-- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes (:pr:`2046`).
-
-- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes (:pr:`2046`).
-
-- Added the ``marginal_ticks`` parameter to :class:`JointGrid` which, if set to ``True``, will show ticks on the count/density axis of the marginal plots (:pr:`2210`).
-
-- Improved :meth:`FacetGrid.set_titles` with `margin titles=True`, such that texts representing the original row titles are removed before adding new ones (:pr:`2083`).
-
-- Improved support for datetime variables in :func:`scatterplot` and :func:`lineplot` (:pr:`2138`). 
-
-- Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib (:pr:`2095`).
-
-- Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:2225).
-
-- Changed the default value for ``dropna`` to ``False`` in :class`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:2204).
-
-- Improved the error messages produced when categorical plots process the orientation parameter.
-
-- Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
-
-- Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
-
-- Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
 
 - Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`).
 
@@ -122,3 +85,53 @@ TODO organize by module.
 - Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.
 
 - Final removal of the ``annotate`` method on :class:`JointGrid` and related parameters, which was deprecated in the v0.9.0 release.
+
+Relational plots
+^^^^^^^^^^^^^^^^
+
+- Reduced some of the surprising behavior of relational plot legends when using a numeric hue or size mapping. Added an "auto" mode (the new default) that chooses between "brief" and "full" based on the number of unique levels of the variable(s). Modified the ticking algorithm to only show values inside the limits of the data and to show up to 6 values. Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined. The subtitles are now also left-aligned and set to the legend title font size. (:pr:`2229`).
+
+- Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
+
+- Changed how :func:`scatterplot` sets the default linewidth for the edges of the scatter points. New behavior is to scale with the point sizes themselves (on a plot-wise, not point-wise basis). This change also slightly reduces the default width when point sizes are not varied. Set ``linewidth=0.75`` to reproduce the previous behavior. (:pr:`2708`).
+
+- Improved support for datetime variables in :func:`scatterplot` and :func:`lineplot` (:pr:`2138`). 
+
+- Fixed a bug where :func:`lineplot` did not pass the ``linestyle`` parameter down to matplotlib (:pr:`2095`).
+
+- Adapted to a change in matplotlib that prevented passing vectors of literal values to ``c`` and ``s`` in :func:`scatterplot` (:pr:`2079`).
+
+Categorical plots
+^^^^^^^^^^^^^^^^^
+
+- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. ``k_depth="tukey"`` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or just plot boxes that will cover most of the data points (with ``k_depth="full"``). Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. (:pr:`2086`).
+
+- Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
+
+- Improved the error messages produced when categorical plots process the orientation parameter.
+
+- Added an explicit warning in :func:`swarmplot` when more than 5% of the points overlap in the "gutters" of the swarm (:pr:`2045`).
+
+Multi-plot grids
+^^^^^^^^^^^^^^^^
+
+- Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend (:pr:`2073`).
+
+- Added the ``axes_dict`` attribute to :class:`FacetGrid` for named access to the component axes (:pr:`2046`).
+
+- Made :meth:`FacetGrid.set_axis_labels` clear labels from "interior" axes (:pr:`2046`).
+
+- Added the ``marginal_ticks`` parameter to :class:`JointGrid` which, if set to ``True``, will show ticks on the count/density axis of the marginal plots (:pr:`2210`).
+
+- Improved :meth:`FacetGrid.set_titles` with ``margin_titles=True``, such that texts representing the original row titles are removed before adding new ones (:pr:`2083`).
+
+- Changed the default value for ``dropna`` to ``False`` in :class`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:2204).
+
+- Fixed bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
+
+Theming and style
+^^^^^^^^^^^^^^^^^
+
+- Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:2225).
+
+- Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
