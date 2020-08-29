@@ -1437,6 +1437,7 @@ class PairGrid(Grid):
         # Additional dict of kwarg -> list of values for mapping the hue var
         self.hue_kws = hue_kws if hue_kws is not None else {}
 
+        self._orig_palette = palette
         self.palette = self._get_palette(data, hue, hue_order, palette)
         self._legend_data = {}
 
@@ -1460,6 +1461,7 @@ class PairGrid(Grid):
         row_indices, col_indices = np.indices(self.axes.shape)
         indices = zip(row_indices.flat, col_indices.flat)
         self._map_bivariate(func, indices, **kwargs)
+
         return self
 
     def map_lower(self, func, **kwargs):
@@ -1559,6 +1561,39 @@ class PairGrid(Grid):
             self.diag_vars = np.array(diag_vars, np.object)
             self.diag_axes = np.array(diag_axes, np.object)
 
+        if "hue" not in signature(func).parameters:
+            self._map_diag_iter_hue(func, **kwargs)
+            return
+
+        # Loop over diagonal variables and axes, making one plot in each
+        for var, ax in zip(self.diag_vars, self.diag_axes):
+
+            plt.sca(ax)
+            plot_kwargs = kwargs.copy()
+
+            vector = self.data[var]
+            if self._hue_var is not None:
+                hue = self.data[self._hue_var]
+            else:
+                hue = None
+
+            if self._dropna:
+                not_na = vector.notna()
+                if hue is not None:
+                    not_na &= hue.notna()
+                vector = vector[not_na]
+                if hue is not None:
+                    hue = hue[not_na]
+
+            plot_kwargs.setdefault("hue", hue)
+            plot_kwargs.setdefault("palette", self._orig_palette)
+            func(x=vector, **plot_kwargs)
+            self._clean_axis(ax)
+
+        self._add_axis_labels()
+
+    def _map_diag_iter_hue(self, func, **kwargs):
+        """Put marginal plot on each diagonal axes, iterating over hue."""
         # Plot on each of the diagonal axes
         fixed_color = kwargs.pop("color", None)
 
@@ -1606,13 +1641,52 @@ class PairGrid(Grid):
             self._plot_bivariate(x_var, y_var, ax, func, kw_color, **kws)
         self._add_axis_labels()
 
+        if "hue" in signature(func).parameters:
+            self.hue_names = list(self._legend_data)
+
     def _plot_bivariate(self, x_var, y_var, ax, func, kw_color, **kwargs):
         """Draw a bivariate plot on the specified axes."""
+        if "hue" not in signature(func).parameters:
+            self._plot_bivariate_iter_hue(x_var, y_var, ax, func, kw_color, **kwargs)
+            return
+
+        plt.sca(ax)
+        kwargs = kwargs.copy()
+
+        if x_var == y_var:
+            axes_vars = [x_var]
+        else:
+            axes_vars = [x_var, y_var]
+
+        if self._hue_var is not None:
+            axes_vars.append(self._hue_var)
+
+        data = self.data[axes_vars]
+        if self._dropna:
+            data = data.dropna()
+
+        x = data[x_var]
+        y = data[y_var]
+        if self._hue_var is None:
+            hue = None
+        else:
+            hue = data.get(self._hue_var)
+
+        kwargs.setdefault("hue", hue)
+        kwargs.setdefault("palette", self._orig_palette)
+        func(x=x, y=y, **kwargs)
+
+        self._clean_axis(ax)
+        self._update_legend_data(ax)
+
+    def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, kw_color, **kwargs):
+        """Draw a bivariate plot while iterating over hue subsets."""
         plt.sca(ax)
         if x_var == y_var:
             axes_vars = [x_var]
         else:
             axes_vars = [x_var, y_var]
+
         hue_grouped = self.data.groupby(self.hue_vals)
         for k, label_k in enumerate(self.hue_names):
 
