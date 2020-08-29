@@ -939,7 +939,7 @@ class TestPairGrid(object):
         g.map_diag(kdeplot)
 
         for ax in g.diag_axes:
-            for line, color in zip(ax.lines, pal):
+            for line, color in zip(ax.lines[::-1], pal):
                 assert line.get_color() == color
 
     def test_map_diag_and_offdiag(self):
@@ -1196,7 +1196,7 @@ class TestPairGrid(object):
         g = ag.pairplot(self.df, diag_kind="hist", kind="reg")
 
         for ax in g.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
+            assert len(ax.patches)
 
         for i, j in zip(*np.triu_indices_from(g.axes, 1)):
             ax = g.axes[i, j]
