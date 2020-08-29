@@ -2,9 +2,10 @@
 v0.11.0 (Unreleased)
 --------------------
 
-- TODO stub for explaining improvements to variable specification. Make this good! (:issue:`2052`).
+Required keyword arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- TODO stub for enforced keyword-only arguments for most parameters of most functions and classes (:issue:`2052,2081`).
+Most plotting functions now require all of their parameters to be specified using keyword arguments. To ease adaptation, code without keyword arguments will trigger a ``FutureWarning`` in v0.11. In a future release (v0.12 or v0.13, depending on release cadence), this will become an error. Once keyword arguments are fully enforced, the signature of the plotting functions will be reorganized to accept ``data`` as the first and only positional argument (:pr:`2052,2081`).
 
 Modernization of distribution functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,7 +15,7 @@ The distribution module has been completely overhauled, modernizing the API and 
 New functions
 ^^^^^^^^^^^^^
 
-First, three new functions, :func:`displot`, :func:`histplot` and :func:`ecdfplot` has been added (:pr:`2125`, :pr:`2141`, and :pr:`2157`).
+First, three new functions, :func:`displot`, :func:`histplot` and :func:`ecdfplot` have been added (:pr:`2125`, :pr:`2141`, and :pr:`2157`).
 
 :func:`displot` is a figure-level interface to the various distribution plot functions (analogous to :func:`relplot` or :func:`catplot`). It can draw univariate or bivariate histograms, density curves, ECDFs, and rug plots on a :class:`FacetGrid`.
 
@@ -31,21 +32,20 @@ First, three new functions, :func:`displot`, :func:`histplot` and :func:`ecdfplo
 Changes to existing functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Second, the existing functions :func:`kdeplot` and :func:`rugplot` have been completely overhauled (see :pr:`2060,2104`).
+Second, the existing functions :func:`kdeplot` and :func:`rugplot` have been completely overhauled (:pr:`2060,2104`).
 
 Two of the oldest functions in the library, these lacked aspects of the otherwise-common seaborn API, such as the ability to assign variables by name from a ``data`` object; they had no capacity for semantic mapping; and they had numerous other inconsistencies and smaller issues.
 
-The overhauled functions now share a common API with the rest of seaborn, they can show conditional distributions by mapping a third variable with a ``hue`` semantic, and have been improved in numerous other ways. The github pull request (:pr:`2104`) has a longer explanation of the changes and the motivation behind them.
+The overhauled functions now share a common API with the rest of seaborn, they can show conditional distributions by mapping a third variable with a ``hue`` semantic, and they have been improved in numerous other ways. The github pull request (:pr:`2104`) has a longer explanation of the changes and the motivation behind them.
 
-This is a necessarily API-breaking change. The parameter names for the positional variables
-are now ``x`` and ``y``, and the old names have been deprecated. Efforts were made to handle and warn when using the deprecated API, but it is strongly suggested to check your plots carefully.
+This is a necessarily API-breaking change. The parameter names for the positional variables are now ``x`` and ``y``, and the old names have been deprecated. Efforts were made to handle and warn when using the deprecated API, but it is strongly suggested to check your plots carefully.
 
 Additionally, the optional statsmodels-based computation of the KDE has been removed. Because there were some inconsistencies between the way different parameters (specifically, ``bw``, ``clip``, and ``cut``) were implemented by each backend, this may cause plots to look different after an upgrade when non-default values were set for these parameters. Support for using non-Gaussian kernels, which was available only in the statsmodels backend, has been removed. Support for drawing a cumulative distribution function, which was not previously available with the scipy backend, has been added, including for bivariate densities.
 
 Other new features include:
 
 - several options for representing multiple densities from subsets of data defined by semantic variables (with the new ``multiple`` and ``common_norm`` parameters)
-- weighted KDE (using the new ``weights=`` parameter)
+- weighted KDE (using the new ``weights`` parameter)
 - better control over the smoothing bandwidth (using the new ``bw_adjust`` parameter)
 - more meaningful and configurable selection of the contours that represent a bivariate density (using the new ``thresh`` and ``levels`` parameters)
 - log-space density estimation (using the new ``log_scale`` parameter, or by scaling the data axis before plotting)
@@ -67,6 +67,20 @@ These additions facilitated new features and forced changes in :func:`jointplot`
 
 - The various modes of `jointplot` that plot marginal histograms now use `func:`histplot` rather than :func:`distplot`. This slightly changes the default appearance and affects the valid keyword arguments that can be passed to customize the plot.
 
+Enhancements and standardization of data ingest
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The code that processes input data has been refactored and expanded. In v0.11, this new code takes effect for the relational and distribution modules; other modules will be refactored to use it in future releases (:pr:`2071`).
+
+These changes should be transparent for most use-cases, although they allow a few new features:
+
+- Named variables for long-form data can refer to the named index of a :class:`pandas.DataFrame` or to levels in the case of a multi-index. Previously, it was necessary to call :meth:`pandas.DataFrame.reset_index` before using index variables (e.g., after a groupby operation).
+- :func:`relplot` now has the same flexibility as the axes-level functions to accept data in long- or wide-format and to accept data vectors (rather than named variables) in long-form mode.
+- The data parameter can now be a Python ``dict`` or an object that implements that interface. This is a new feature for wide-form data. For long-form data, it was previously supported but not documented.
+- A wide-form data object can have a mixture of types; the non-numeric types will be removed before plotting. Previously, this caused an error.
+- There are better error messages for other instances of data mis-specification.
+
+See the new user guide chapter on :ref:`data formats <data_tutorial>` for more information about what is supported.
 
 Other changes
 ~~~~~~~~~~~~~
@@ -78,18 +92,15 @@ General API
 
 - Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
 
-- Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`).
-
-- Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
-
-- Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.
-
-- Final removal of the ``annotate`` method on :class:`JointGrid` and related parameters, which was deprecated in the v0.9.0 release.
-
 Relational plots
 ^^^^^^^^^^^^^^^^
 
-- Reduced some of the surprising behavior of relational plot legends when using a numeric hue or size mapping. Added an "auto" mode (the new default) that chooses between "brief" and "full" based on the number of unique levels of the variable(s). Modified the ticking algorithm to only show values inside the limits of the data and to show up to 6 values. Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined. The subtitles are now also left-aligned and set to the legend title font size. (:pr:`2229`).
+- Reduced some of the surprising behavior of relational plot legends when using a numeric hue or size mapping (:pr:`2229`):
+
+  - Added an "auto" mode (the new default) that chooses between "brief" and "full" legends based on the number of unique levels of each variable.
+  - Modified the ticking algorithm for a "brief" legend to show up to 6 values and not to show values outside the limits of the data.
+  - Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined.
+  - Modified legend subtitles to be left-aligned and to be drawn in the default legend title font size.
 
 - Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
 
@@ -104,7 +115,12 @@ Relational plots
 Categorical plots
 ^^^^^^^^^^^^^^^^^
 
-- Fixed a few issues with :func:`boxenplot` regarding the way the number of boxes are calculated. ``k_depth="tukey"`` is now the default boxes calculation method as the previous default (`"proportion"`) produces too many boxes when datasets are small. Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or just plot boxes that will cover most of the data points (with ``k_depth="full"``). Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``. Additionally, the visual appearance of :func:`boxenplot` now more closely resembles :func:`boxplot`, and thin boxes will remain visible when the edges are white. Finally, the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`) has been removed. (:pr:`2086`).
+- Fixed a few computational issues in :func:`boxenplot` and improved its visual appearance (:pr:`2086`):
+
+  - Changed the default method for computing the number of boxes to``k_depth="tukey"``, as the previous default (``k_depth="proportion"``) is based on a heuristic and produces too many boxes when datasets are small.
+  - Added the option to specify the desired number of boxes as a scalar (e.g. ``k_depth=6``) or to just plot boxes that will cover most of the data points (``k_depth="full"``).
+  - Added a new parameter ``trust_alpha`` to control the number of boxes when ``k_depth="trustworthy"``.
+  - Changed the visual appearance of :func:`boxenplot` to more closely resemble :func:`boxplot`. Notably, thin boxes will remain visible when the edges are white.
 
 - Allowed :func:`catplot` to not unify categories across facets if the categorical axis is not shared (i.e. by specifying ``sharex=False``) (:pr:`2196`).
 
@@ -125,13 +141,26 @@ Multi-plot grids
 
 - Improved :meth:`FacetGrid.set_titles` with ``margin_titles=True``, such that texts representing the original row titles are removed before adding new ones (:pr:`2083`).
 
-- Changed the default value for ``dropna`` to ``False`` in :class`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:2204).
+- Changed the default value for ``dropna`` to ``False`` in :class:`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:`2204`).
 
 - Fixed bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
 
 Theming and style
 ^^^^^^^^^^^^^^^^^
 
-- Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:2225).
+- Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:`2225`).
 
 - Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
+
+Deprecations and removals
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`) in :func:get_dataset_names`.
+
+- Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
+
+- Deprecated the ``iqr`` function; use :func:`scipy.stats.iqr` instead.
+
+- Final removal of the previously-deprecated ``annotate`` method on :class:`JointGrid`, along with related parameters.
+
+- Final removal of the ``lvplot`` function (the previously-deprecated name for :func:`boxenplot`).
