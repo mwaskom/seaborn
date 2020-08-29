@@ -190,7 +190,7 @@ User guide and tutorial
             <div class="row">
               <div class="col-md-4">
                 <a href=tutorial/color_palettes.html>
-                  <img src="_images/color_palettes_8_0.png" class="img-responsive center-block">
+                  <img src="_images/color_palettes_7_0.png" class="img-responsive center-block">
                 </a>
               </div>
               <div class="col-md-8">
