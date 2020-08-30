@@ -1619,6 +1619,8 @@ class PairGrid(Grid):
         else:
             axes_vars = [x_var, y_var]
 
+        kwargs = kwargs.copy()
+
         hue_grouped = self.data.groupby(self.hue_vals)
         for k, label_k in enumerate(self.hue_names):
 
@@ -1638,11 +1640,14 @@ class PairGrid(Grid):
             for kw, val_list in self.hue_kws.items():
                 kwargs[kw] = val_list[k]
             color = self.palette[k] if kw_color is None else kw_color
+            kwargs.setdefault("color", color)
+            if self._hue_var is not None:
+                kwargs["label"] = label_k
 
             if str(func.__module__).startswith("seaborn"):
-                func(x=x, y=y, label=label_k, color=color, **kwargs)
+                func(x=x, y=y, **kwargs)
             else:
-                func(x, y, label=label_k, color=color, **kwargs)
+                func(x, y, **kwargs)
 
         self._update_legend_data(ax)
         self._clean_axis(ax)
@@ -2091,15 +2096,14 @@ def pairplot(
 
     diag_kws = diag_kws.copy()
     diag_kws.setdefault("legend", False)
-    if grid.square_grid:
-        if diag_kind == "hist":
-            grid.map_diag(histplot, **diag_kws)
-        elif diag_kind == "kde":
-            diag_kws.setdefault("fill", True)
-            grid.map_diag(kdeplot, **diag_kws)
+    if diag_kind == "hist":
+        grid.map_diag(histplot, **diag_kws)
+    elif diag_kind == "kde":
+        diag_kws.setdefault("fill", True)
+        grid.map_diag(kdeplot, **diag_kws)
 
     # Maybe plot on the off-diagonals
-    if grid.square_grid and diag_kind is not None:
+    if diag_kind is not None:
         plotter = grid.map_offdiag
     else:
         plotter = grid.map
