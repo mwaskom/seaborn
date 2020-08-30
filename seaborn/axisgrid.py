@@ -1620,10 +1620,10 @@ class PairGrid(Grid):
         else:
             axes_vars = [x_var, y_var]
 
-        kwargs = kwargs.copy()
-
         hue_grouped = self.data.groupby(self.hue_vals)
         for k, label_k in enumerate(self.hue_names):
+
+            kws = kwargs.copy()
 
             # Attempt to get data for this level, allowing for empty
             try:
@@ -1639,15 +1639,15 @@ class PairGrid(Grid):
             y = data_k[y_var]
 
             for kw, val_list in self.hue_kws.items():
-                kwargs[kw] = val_list[k]
-            kwargs.setdefault("color", self.palette[k])
+                kws[kw] = val_list[k]
+            kws.setdefault("color", self.palette[k])
             if self._hue_var is not None:
-                kwargs["label"] = label_k
+                kws["label"] = label_k
 
             if str(func.__module__).startswith("seaborn"):
-                func(x=x, y=y, **kwargs)
+                func(x=x, y=y, **kws)
             else:
-                func(x, y, **kwargs)
+                func(x, y, **kws)
 
         self._update_legend_data(ax)
         self._clean_axis(ax)

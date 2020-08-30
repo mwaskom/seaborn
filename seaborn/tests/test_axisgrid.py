@@ -1241,7 +1241,21 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    def test_pairplot_kde(self):
+    def test_pairplot_reg_hue(self):
+
+        markers = ["o", "s", "d"]
+        g = ag.pairplot(self.df, kind="reg", hue="a", markers=markers)
+
+        ax = g.axes[-1, 0]
+        c1 = ax.collections[0]
+        c2 = ax.collections[2]
+
+        assert not np.array_equal(c1.get_facecolor(), c2.get_facecolor())
+        assert not np.array_equal(
+            c1.get_paths()[0].vertices, c2.get_paths()[0].vertices,
+        )
+
+    def test_pairplot_diag_kde(self):
 
         vars = ["x", "y", "z"]
         g = ag.pairplot(self.df, diag_kind="kde")
@@ -1269,6 +1283,26 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
+    def test_pairplot_kde(self):
+
+        f, ax1 = plt.subplots()
+        kdeplot(data=self.df, x="x", y="y", ax=ax1)
+
+        g = ag.pairplot(self.df, kind="kde")
+        ax2 = g.axes[1, 0]
+
+        assert_plots_equal(ax1, ax2, labels=False)
+
+    def test_pairplot_hist(self):
+
+        f, ax1 = plt.subplots()
+        histplot(data=self.df, x="x", y="y", ax=ax1)
+
+        g = ag.pairplot(self.df, kind="hist")
+        ax2 = g.axes[1, 0]
+
+        assert_plots_equal(ax1, ax2, labels=False)
+
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]
@@ -1277,7 +1311,6 @@ class TestPairGrid(object):
         m1 = g._legend.legendHandles[0].get_paths()[0]
         m2 = g._legend.legendHandles[1].get_paths()[0]
         assert m1 != m2
-        plt.close("all")
 
         with pytest.raises(ValueError):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
@@ -1296,8 +1329,11 @@ class TestPairGrid(object):
 
     def test_legend(self):
 
-        g = ag.pairplot(self.df, hue="a")
-        assert isinstance(g.legend, mpl.legend.Legend)
+        g1 = ag.pairplot(self.df, hue="a")
+        assert isinstance(g1.legend, mpl.legend.Legend)
+
+        g2 = ag.pairplot(self.df)
+        assert g2.legend is None
 
 
 class TestJointGrid(object):
