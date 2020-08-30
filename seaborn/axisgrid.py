@@ -1438,6 +1438,7 @@ class PairGrid(Grid):
         self.hue_kws = hue_kws if hue_kws is not None else {}
 
         self._orig_palette = palette
+        self._hue_order = hue_order 
         self.palette = self._get_palette(data, hue, hue_order, palette)
         self._legend_data = {}
 
@@ -1585,6 +1586,7 @@ class PairGrid(Grid):
                     hue = hue[not_na]
 
             plot_kwargs.setdefault("hue", hue)
+            plot_kwargs.setdefault("hue_order", self._hue_order)
             plot_kwargs.setdefault("palette", self._orig_palette)
             func(x=vector, **plot_kwargs)
             self._clean_axis(ax)
@@ -1673,6 +1675,7 @@ class PairGrid(Grid):
             hue = data.get(self._hue_var)
 
         kwargs.setdefault("hue", hue)
+        kwargs.setdefault("hue_order", self._hue_order)
         kwargs.setdefault("palette", self._orig_palette)
         func(x=x, y=y, **kwargs)
 

@@ -934,8 +934,9 @@ class TestPairGrid(object):
 
     def test_map_diag_palette(self):
 
-        pal = color_palette(n_colors=len(self.df.a.unique()))
-        g = ag.PairGrid(self.df, hue="a")
+        palette = "muted"
+        pal = color_palette(palette, n_colors=len(self.df.a.unique()))
+        g = ag.PairGrid(self.df, hue="a", palette=palette)
         g.map_diag(kdeplot)
 
         for ax in g.diag_axes:
@@ -1104,13 +1105,13 @@ class TestPairGrid(object):
 
         plt.close("all")
 
-    def test_nondefault_index(self):
+    def test_nondefault_index(self, func):
 
         df = self.df.copy().set_index("b")
 
         plot_vars = ["x", "y", "z"]
         g1 = ag.PairGrid(df)
-        g1.map(plt.scatter)
+        g1.map(func)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
@@ -1121,7 +1122,7 @@ class TestPairGrid(object):
                 npt.assert_array_equal(y_in, y_out)
 
         g2 = ag.PairGrid(df, hue="a")
-        g2.map(plt.scatter)
+        g2.map(func)
 
         for i, axes_i in enumerate(g2.axes):
             for j, ax in enumerate(axes_i):
@@ -1134,7 +1135,8 @@ class TestPairGrid(object):
                 npt.assert_array_equal(x_in_k, x_out)
                 npt.assert_array_equal(y_in_k, y_out)
 
-    def test_dropna(self):
+    @pytest.mark.parametrize("func", [scatterplot, plt.scatter])
+    def test_dropna(self, func):
 
         df = self.df.copy()
         n_null = 20
@@ -1143,7 +1145,7 @@ class TestPairGrid(object):
         plot_vars = ["x", "y", "z"]
 
         g1 = ag.PairGrid(df, vars=plot_vars, dropna=True)
-        g1.map(plt.scatter)
+        g1.map(func)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
@@ -1155,6 +1157,12 @@ class TestPairGrid(object):
 
                 assert n_valid == len(x_out)
                 assert n_valid == len(y_out)
+
+        g1.map_diag(histplot)
+        for i, ax in enumerate(g1.diag_axes):
+            var = plot_vars[i]
+            count = sum([p.get_height() for p in ax.patches])
+            assert count == df[var].notna().sum()
 
     def test_pairplot(self):
 
