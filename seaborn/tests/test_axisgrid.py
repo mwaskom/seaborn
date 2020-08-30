@@ -1164,6 +1164,15 @@ class TestPairGrid(object):
             count = sum([p.get_height() for p in ax.patches])
             assert count == df[var].notna().sum()
 
+    def test_histplot_legend(self):
+
+        # Tests _extract_legend_handles
+        g = ag.PairGrid(self.df, vars=["x", "y"], hue="a")
+        g.map_offdiag(histplot)
+        g.add_legend()
+
+        assert len(g._legend.legendHandles) == len(self.df["a"].unique())
+
     def test_pairplot(self):
 
         vars = ["x", "y", "z"]

@@ -37,6 +37,10 @@ class Grid(object):
 
         self._tight_layout_rect = [0, 0, 1, 1]
 
+        # This attribute is set externally and is a hack to handle newer functions that
+        # don't add proxy artists onto the Axes. We need an overall cleaner approach.
+        self._extract_legend_handles = False
+
     def set(self, **kwargs):
         """Set attributes on each subplot Axes."""
         for ax in self.axes.flat:
@@ -177,8 +181,15 @@ class Grid(object):
 
     def _update_legend_data(self, ax):
         """Extract the legend data from an axes object and save it."""
+        data = {}
+        if ax.legend_ is not None and self._extract_legend_handles:
+            handles = ax.legend_.legendHandles
+            labels = [t.get_text() for t in ax.legend_.texts]
+            data.update({l: h for h, l in zip(handles, labels)})
+
         handles, labels = ax.get_legend_handles_labels()
-        data = {l: h for h, l in zip(handles, labels)}
+        data.update({l: h for h, l in zip(handles, labels)})
+
         self._legend_data.update(data)
 
     def _get_palette(self, data, hue, hue_order, palette):
@@ -1545,6 +1556,13 @@ class PairGrid(Grid):
 
     def _map_bivariate(self, func, indices, **kwargs):
         """Draw a bivariate plot on the indicated axes."""
+        # This is a hack to handle the fact that new distribution plots don't add
+        # their artists onto the axes. This is probably superior in general, but
+        # we'll need a better way to handle it in the axisgrid functions.
+        from .distributions import histplot, kdeplot
+        if func is histplot or func is kdeplot:
+            self._extract_legend_handles = True
+
         kws = kwargs.copy()  # Use copy as we insert other kwargs
         kw_color = kws.pop("color", None)
         for i, j in indices:
@@ -1590,8 +1608,8 @@ class PairGrid(Grid):
         kwargs.setdefault("palette", self._orig_palette)
         func(x=x, y=y, **kwargs)
 
-        self._clean_axis(ax)
         self._update_legend_data(ax)
+        self._clean_axis(ax)
 
     def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, kw_color, **kwargs):
         """Draw a bivariate plot while iterating over hue subsets."""
@@ -1626,8 +1644,8 @@ class PairGrid(Grid):
             else:
                 func(x, y, label=label_k, color=color, **kwargs)
 
-        self._clean_axis(ax)
         self._update_legend_data(ax)
+        self._clean_axis(ax)
 
     def _add_axis_labels(self):
         """Add labels to the left and bottom Axes."""
@@ -2014,92 +2032,7 @@ def pairplot(
     Examples
     --------
 
-    Draw scatterplots for joint relationships and histograms for univariate
-    distributions:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
-        >>> iris = sns.load_dataset("iris")
-        >>> g = sns.pairplot(iris)
-
-    Show different levels of a categorical variable by the color of plot
-    elements:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, hue="species")
-
-    Use a different color palette:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, hue="species", palette="husl")
-
-    Use different markers for each level of the hue variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, hue="species", markers=["o", "s", "D"])
-
-    Plot a subset of variables:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, vars=["sepal_width", "sepal_length"])
-
-    Draw larger plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, height=3,
-        ...                  vars=["sepal_width", "sepal_length"])
-
-    Plot different variables in the rows and columns:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris,
-        ...                  x_vars=["sepal_width", "sepal_length"],
-        ...                  y_vars=["petal_width", "petal_length"])
-
-    Plot only the lower triangle of bivariate axes:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, corner=True)
-
-    Use kernel density estimates for univariate plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, diag_kind="kde")
-
-    Fit linear regression models to the scatter plots:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, kind="reg")
-
-    Pass keyword arguments down to the underlying functions (it may be easier
-    to use :class:`PairGrid` directly):
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.pairplot(iris, diag_kind="kde", markers="+",
-        ...                  plot_kws=dict(s=50, edgecolor="b", linewidth=1),
-        ...                  diag_kws=dict(fill=True))
+    .. include:: ../docstrings/pointplot.rst
 
     """
     # Avoid circular import
@@ -2130,28 +2063,39 @@ def pairplot(
     # Add the markers here as PairGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
     if markers is not None:
-        if grid.hue_names is None:
-            n_markers = 1
-        else:
-            n_markers = len(grid.hue_names)
-        if not isinstance(markers, list):
-            markers = [markers] * n_markers
-        if len(markers) != n_markers:
-            raise ValueError(("markers must be a singleton or a list of "
-                              "markers for each level of the hue variable"))
-        grid.hue_kws = {"marker": markers}
+        if kind == "reg":
+            # Needed until regplot supports style
+            if grid.hue_names is None:
+                n_markers = 1
+            else:
+                n_markers = len(grid.hue_names)
+            if not isinstance(markers, list):
+                markers = [markers] * n_markers
+            if len(markers) != n_markers:
+                raise ValueError(("markers must be a singleton or a list of "
+                                  "markers for each level of the hue variable"))
+            grid.hue_kws = {"marker": markers}
+        elif kind == "scatter":
+            if isinstance(markers, str):
+                plot_kws["marker"] = markers
+            elif hue is not None:
+                plot_kws["style"] = data[hue]
+                plot_kws["markers"] = markers
 
     # Maybe plot on the diagonal
     if diag_kind == "auto":
-        diag_kind = "hist" if hue is None else "kde"
+        if hue is None:
+            diag_kind = "kde" if kind == "kde" else "hist"
+        else:
+            diag_kind = "hist" if kind == "hist" else "kde"
 
     diag_kws = diag_kws.copy()
+    diag_kws.setdefault("legend", False)
     if grid.square_grid:
         if diag_kind == "hist":
             grid.map_diag(histplot, **diag_kws)
         elif diag_kind == "kde":
             diag_kws.setdefault("fill", True)
-            diag_kws["legend"] = False
             grid.map_diag(kdeplot, **diag_kws)
 
     # Maybe plot on the off-diagonals
@@ -2166,6 +2110,12 @@ def pairplot(
     elif kind == "reg":
         from .regression import regplot  # Avoid circular import
         plotter(regplot, **plot_kws)
+    elif kind == "kde":
+        from .distributions import kdeplot  # Avoid circular import
+        plotter(kdeplot, **plot_kws)
+    elif kind == "hist":
+        from .distributions import histplot  # Avoid circular import
+        plotter(histplot, **plot_kws)
 
     # Add a legend
     if hue is not None:
