@@ -1294,6 +1294,11 @@ class TestPairGrid(object):
         g.set(xlim=(0, 10))
         assert g.axes[-1, 0].get_xlim() == (0, 10)
 
+    def test_legend(self):
+
+        g = ag.pairplot(self.df, hue="a")
+        assert isinstance(g.legend, mpl.legend.Legend)
+
 
 class TestJointGrid(object):
 

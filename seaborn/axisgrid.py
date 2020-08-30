@@ -172,6 +172,14 @@ class Grid(object):
 
         return self
 
+    @property
+    def legend(self):
+        """Access to the legend object."""
+        try:
+            return self._legend
+        except AttributeError:
+            return None
+
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
         ax.set_xlabel("")
