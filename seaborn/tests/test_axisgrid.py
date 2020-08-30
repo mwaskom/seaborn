@@ -1272,9 +1272,11 @@ class TestPairGrid(object):
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]
-        markers = ["o", "x", "s"]
+        markers = ["o", "X", "s"]
         g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers)
-        assert g.hue_kws["marker"] == markers
+        m1 = g._legend.legendHandles[0].get_paths()[0]
+        m2 = g._legend.legendHandles[1].get_paths()[0]
+        assert m1 != m2
         plt.close("all")
 
         with pytest.raises(ValueError):
