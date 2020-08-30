@@ -354,7 +354,7 @@ class _LinePlotter(_RelationalPlotter):
         seed = self.seed
 
         # Define a "null" CI for when we only have one value
-        null_ci = pd.Series(index=["low", "high"], dtype=np.float)
+        null_ci = pd.Series(index=["low", "high"], dtype=float)
 
         # Function to bootstrap in the context of a pandas group by
         def bootstrapped_cis(vals):

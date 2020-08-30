@@ -79,7 +79,7 @@ class _CategoricalPlotter(object):
 
                 # Convert to a list of arrays, the common representation
                 iter_data = plot_data.iteritems()
-                plot_data = [np.asarray(s, np.float) for k, s in iter_data]
+                plot_data = [np.asarray(s, float) for k, s in iter_data]
 
             # Option 1b:
             # The input data is an array or list
@@ -125,7 +125,7 @@ class _CategoricalPlotter(object):
                     plot_data = data
 
                 # Convert to a list of arrays, the common representation
-                plot_data = [np.asarray(d, np.float) for d in plot_data]
+                plot_data = [np.asarray(d, float) for d in plot_data]
 
                 # The group names will just be numeric indices
                 group_names = list(range((len(plot_data))))
@@ -1058,7 +1058,7 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
         for i, group_data in enumerate(self.plot_data):
 
             # Initialize the array for this group level
-            group_colors = np.empty(group_data.size, np.int)
+            group_colors = np.empty(group_data.size, int)
             if isinstance(group_data, pd.Series):
                 group_colors = pd.Series(group_colors, group_data.index)
 
@@ -1118,10 +1118,10 @@ class _StripPlotter(_CategoricalScatterPlotter):
             if self.plot_hues is None or not self.dodge:
 
                 if self.hue_names is None:
-                    hue_mask = np.ones(group_data.size, np.bool)
+                    hue_mask = np.ones(group_data.size, bool)
                 else:
                     hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]], np.bool)
+                                         for h in self.plot_hues[i]], bool)
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
@@ -1354,10 +1354,10 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 width = self.width
 
                 if self.hue_names is None:
-                    hue_mask = np.ones(group_data.size, np.bool)
+                    hue_mask = np.ones(group_data.size, bool)
                 else:
                     hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]], np.bool)
+                                         for h in self.plot_hues[i]], bool)
                     # Broken on older numpys
                     # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 

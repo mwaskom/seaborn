@@ -622,7 +622,7 @@ class TestFacetGrid(object):
     def test_dropna(self):
 
         df = self.df.copy()
-        hasna = pd.Series(np.tile(np.arange(6), 10), dtype=np.float)
+        hasna = pd.Series(np.tile(np.arange(6), 10), dtype=float)
         hasna[hasna == 5] = np.nan
         df["hasna"] = hasna
         g = ag.FacetGrid(df, dropna=False, row="hasna")

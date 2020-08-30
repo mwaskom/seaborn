@@ -21,7 +21,7 @@ d = pd.DataFrame(data=rs.normal(size=(100, 26)),
 corr = d.corr()
 
 # Generate a mask for the upper triangle
-mask = np.triu(np.ones_like(corr, dtype=np.bool))
+mask = np.triu(np.ones_like(corr, dtype=bool))
 
 # Set up the matplotlib figure
 f, ax = plt.subplots(figsize=(11, 9))
