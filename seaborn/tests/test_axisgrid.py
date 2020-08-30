@@ -1105,13 +1105,13 @@ class TestPairGrid(object):
 
         plt.close("all")
 
-    def test_nondefault_index(self, func):
+    def test_nondefault_index(self):
 
         df = self.df.copy().set_index("b")
 
         plot_vars = ["x", "y", "z"]
         g1 = ag.PairGrid(df)
-        g1.map(func)
+        g1.map(plt.scatter)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
@@ -1122,7 +1122,7 @@ class TestPairGrid(object):
                 npt.assert_array_equal(y_in, y_out)
 
         g2 = ag.PairGrid(df, hue="a")
-        g2.map(func)
+        g2.map(plt.scatter)
 
         for i, axes_i in enumerate(g2.axes):
             for j, ax in enumerate(axes_i):
@@ -1132,8 +1132,8 @@ class TestPairGrid(object):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
                     x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
+                    npt.assert_array_equal(x_in_k, x_out)
+                    npt.assert_array_equal(y_in_k, y_out)
 
     @pytest.mark.parametrize("func", [scatterplot, plt.scatter])
     def test_dropna(self, func):
