@@ -1261,96 +1261,7 @@ class PairGrid(Grid):
         Examples
         --------
 
-        Draw a scatterplot for each pairwise relationship:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import matplotlib.pyplot as plt
-            >>> import seaborn as sns; sns.set()
-            >>> iris = sns.load_dataset("iris")
-            >>> g = sns.PairGrid(iris)
-            >>> g = g.map(sns.scatterplot)
-
-        Show a univariate distribution on the diagonal:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris)
-            >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(sns.scatterplot)
-
-        (It's not actually necessary to catch the return value every time,
-        as it is the same object, but it makes it easier to deal with the
-        doctests).
-
-        Color the points using a categorical variable:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris, hue="species")
-            >>> g = g.map_diag(plt.hist)
-            >>> g = g.map_offdiag(sns.scatterplot)
-            >>> g = g.add_legend()
-
-        Use a different style to show multiple histograms:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris, hue="species")
-            >>> g = g.map_diag(plt.hist, histtype="step", linewidth=3)
-            >>> g = g.map_offdiag(sns.scatterplot)
-            >>> g = g.add_legend()
-
-        Plot a subset of variables
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris, vars=["sepal_length", "sepal_width"])
-            >>> g = g.map(sns.scatterplot)
-
-        Pass additional keyword arguments to the functions
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris)
-            >>> g = g.map_diag(plt.hist, edgecolor="w")
-            >>> g = g.map_offdiag(sns.scatterplot)
-
-        Use different variables for the rows and columns:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris,
-            ...                  x_vars=["sepal_length", "sepal_width"],
-            ...                  y_vars=["petal_length", "petal_width"])
-            >>> g = g.map(sns.scatterplot)
-
-        Use different functions on the upper and lower triangles:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris)
-            >>> g = g.map_upper(sns.scatterplot)
-            >>> g = g.map_lower(sns.kdeplot, color="C0")
-            >>> g = g.map_diag(sns.kdeplot, lw=2)
-
-        Use different colors and markers for each categorical level:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.PairGrid(iris, hue="species", palette="Set2",
-            ...                  hue_kws={"marker": ["o", "s", "D"]})
-            >>> g = g.map(sns.scatterplot)
-            >>> g = g.add_legend()
+        .. include:: ../docstrings/PairGrid.rst
 
         """
 
@@ -1438,7 +1349,7 @@ class PairGrid(Grid):
         self.hue_kws = hue_kws if hue_kws is not None else {}
 
         self._orig_palette = palette
-        self._hue_order = hue_order 
+        self._hue_order = hue_order
         self.palette = self._get_palette(data, hue, hue_order, palette)
         self._legend_data = {}
 
@@ -1660,7 +1571,7 @@ class PairGrid(Grid):
         else:
             axes_vars = [x_var, y_var]
 
-        if self._hue_var is not None:
+        if self._hue_var is not None and self._hue_var not in axes_vars:
             axes_vars.append(self._hue_var)
 
         data = self.data[axes_vars]
