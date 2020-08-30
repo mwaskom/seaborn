@@ -1202,17 +1202,13 @@ class FacetGrid(Grid):
 class PairGrid(Grid):
     """Subplot grid for plotting pairwise relationships in a dataset.
 
-    This class maps each variable in a dataset onto a column and row in a
+    This object maps each variable in a dataset onto a column and row in a
     grid of multiple axes. Different axes-level plotting functions can be
     used to draw bivariate plots in the upper and lower triangles, and the
     the marginal distribution of each variable can be shown on the diagonal.
 
-    It can also represent an additional level of conditionalization with the
-    ``hue`` parameter, which plots different subsets of data in different
-    colors. This uses color to resolve elements on a third dimension, but
-    only draws subsets on top of each other and will not tailor the ``hue``
-    parameter for the specific visualization the way that axes-level functions
-    that accept ``hue`` will.
+    Several different common plots can be generated in a single line using
+    :func:`pairplot`. Use :class:`PairGrid` when you need more flexibility.
 
     See the :ref:`tutorial <grid_tutorial>` for more information.
 
@@ -1286,17 +1282,15 @@ class PairGrid(Grid):
             warnings.warn(UserWarning(msg))
 
         # Sort out the variables that define the grid
+        numeric_cols = self._find_numeric_cols(data)
+        if hue in numeric_cols:
+            numeric_cols.remove(hue)
         if vars is not None:
             x_vars = list(vars)
             y_vars = list(vars)
-        elif (x_vars is not None) or (y_vars is not None):
-            if (x_vars is None) or (y_vars is None):
-                raise ValueError("Must specify `x_vars` and `y_vars`")
-        else:
-            numeric_cols = self._find_numeric_cols(data)
-            if hue in numeric_cols:
-                numeric_cols.remove(hue)
+        if x_vars is None:
             x_vars = numeric_cols
+        if y_vars is None:
             y_vars = numeric_cols
 
         if np.isscalar(x_vars):
@@ -1564,21 +1558,20 @@ class PairGrid(Grid):
             self._extract_legend_handles = True
 
         kws = kwargs.copy()  # Use copy as we insert other kwargs
-        kw_color = kws.pop("color", None)
         for i, j in indices:
             x_var = self.x_vars[j]
             y_var = self.y_vars[i]
             ax = self.axes[i, j]
-            self._plot_bivariate(x_var, y_var, ax, func, kw_color, **kws)
+            self._plot_bivariate(x_var, y_var, ax, func, **kws)
         self._add_axis_labels()
 
         if "hue" in signature(func).parameters:
             self.hue_names = list(self._legend_data)
 
-    def _plot_bivariate(self, x_var, y_var, ax, func, kw_color, **kwargs):
+    def _plot_bivariate(self, x_var, y_var, ax, func, **kwargs):
         """Draw a bivariate plot on the specified axes."""
         if "hue" not in signature(func).parameters:
-            self._plot_bivariate_iter_hue(x_var, y_var, ax, func, kw_color, **kwargs)
+            self._plot_bivariate_iter_hue(x_var, y_var, ax, func, **kwargs)
             return
 
         plt.sca(ax)
@@ -1611,7 +1604,7 @@ class PairGrid(Grid):
         self._update_legend_data(ax)
         self._clean_axis(ax)
 
-    def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, kw_color, **kwargs):
+    def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, **kwargs):
         """Draw a bivariate plot while iterating over hue subsets."""
         plt.sca(ax)
         if x_var == y_var:
@@ -1639,8 +1632,7 @@ class PairGrid(Grid):
 
             for kw, val_list in self.hue_kws.items():
                 kwargs[kw] = val_list[k]
-            color = self.palette[k] if kw_color is None else kw_color
-            kwargs.setdefault("color", color)
+            kwargs.setdefault("color", self.palette[k])
             if self._hue_var is not None:
                 kwargs["label"] = label_k
 
