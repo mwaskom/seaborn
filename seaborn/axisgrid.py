@@ -1532,10 +1532,9 @@ class PairGrid(Grid):
 
                 # Attempt to get data for this level, allowing for empty
                 try:
-                    # TODO newer matplotlib(?) doesn't need array for hist
-                    data_k = np.asarray(hue_grouped.get_group(label_k))
+                    data_k = hue_grouped.get_group(label_k)
                 except KeyError:
-                    data_k = np.array([])
+                    data_k = pd.Series([], dtype=float)
 
                 if fixed_color is None:
                     color = self.palette[k]
