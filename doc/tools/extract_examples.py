@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     # Parse the docstring and get the examples section
     obj = getattr(seaborn, name)
-    if obj.__class__ != "function":
+    if obj.__class__.__name__ != "function":
         obj = obj.__init__
     lines = NumpyDocString(pydoc.getdoc(obj))["Examples"]
 

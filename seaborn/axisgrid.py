@@ -1961,10 +1961,10 @@ def pairplot(
     """Plot pairwise relationships in a dataset.
 
     By default, this function will create a grid of Axes such that each numeric
-    variable in ``data`` will by shared in the y-axis across a single row and
-    in the x-axis across a single column. The diagonal Axes are treated
-    differently, drawing a plot to show the univariate distribution of the data
-    for the variable in that column.
+    variable in ``data`` will by shared across the y-axes across a single row and
+    the x-axes across a single column. The diagonal plots are treated
+    differently: a univariate distribution plot is drawn to show the marginal
+    distribution of the data in each column.
 
     It is also possible to show a subset of variables or plot different
     variables on the rows and columns.
@@ -1975,10 +1975,10 @@ def pairplot(
 
     Parameters
     ----------
-    data : DataFrame
+    data : `pandas.DataFrame`
         Tidy (long-form) dataframe where each column is a variable and
         each row is an observation.
-    hue : string (variable name)
+    hue : name of variable in ``data``
         Variable in ``data`` to map plot aspects to different colors.
     hue_order : list of strings
         Order for the levels of the hue variable in the palette
@@ -1991,14 +1991,14 @@ def pairplot(
     {x, y}_vars : lists of variable names
         Variables within ``data`` to use separately for the rows and
         columns of the figure; i.e. to make a non-square plot.
-    kind : {'scatter', 'reg'}
-        Kind of plot for the non-identity relationships.
+    kind : {'scatter', 'kde', 'hist', 'reg'}
+        Kind of plot to make.
     diag_kind : {'auto', 'hist', 'kde', None}
-        Kind of plot for the diagonal subplots. The default depends on whether
-        ``"hue"`` is used or not.
+        Kind of plot for the diagonal subplots. If 'auto', choose based on
+        whether or not ``hue`` is used.
     markers : single matplotlib marker code or list
-        Either the marker to use for all datapoints or a list of markers with
-        a length the same as the number of levels in the hue variable so that
+        Either the marker to use for all scatterplot points or a list of markers
+        with a length the same as the number of levels in the hue variable so that
         differently colored points will also have different scatterplot
         markers.
     height : scalar
@@ -2023,13 +2023,13 @@ def pairplot(
 
     See Also
     --------
-    PairGrid : Subplot grid for more flexible plotting of pairwise
-               relationships.
+    PairGrid : Subplot grid for more flexible plotting of pairwise relationships.
+    JointGrid : Grid for plotting joint and marginal distributions of two variables.
 
     Examples
     --------
 
-    .. include:: ../docstrings/pointplot.rst
+    .. include:: ../docstrings/pairplot.rst
 
     """
     # Avoid circular import
