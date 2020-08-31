@@ -2309,7 +2309,7 @@ for making plots with this interface.
 More information about the relative strengths and weaknesses of each approach
 is provided in the :ref:`user guide <distribution_tutorial>`. The distinction
 between figure-level and axes-level functions is also explained further in the
-:ref:`user guide <userguide_function_types>`.
+:ref:`user guide <function_tutorial>`.
 
 Parameters
 ----------
