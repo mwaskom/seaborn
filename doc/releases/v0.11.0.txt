@@ -157,6 +157,8 @@ Multi-plot grids
 Theming and style
 ^^^^^^^^^^^^^^^^^
 
+- Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes.
+
 - Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:`2225`).
 
 - Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
