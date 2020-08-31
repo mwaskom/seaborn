@@ -66,7 +66,7 @@ def _matrix_mask(data, mask):
 
     """
     if mask is None:
-        mask = np.zeros(data.shape, np.bool)
+        mask = np.zeros(data.shape, bool)
 
     if isinstance(mask, np.ndarray):
         # For array masks, ensure that shape matches data then convert
@@ -76,7 +76,7 @@ def _matrix_mask(data, mask):
         mask = pd.DataFrame(mask,
                             index=data.index,
                             columns=data.columns,
-                            dtype=np.bool)
+                            dtype=bool)
 
     elif isinstance(mask, pd.DataFrame):
         # For DataFrame masks, ensure that semantic labels match data
@@ -196,7 +196,7 @@ class _HeatMapper(object):
         """Use some heuristics to set good defaults for colorbar and range."""
 
         # plot_data is a np.ma.array instance
-        calc_data = plot_data.astype(np.float).filled(np.nan)
+        calc_data = plot_data.astype(float).filled(np.nan)
         if vmin is None:
             if robust:
                 vmin = np.nanpercentile(calc_data, 2)

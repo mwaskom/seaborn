@@ -87,7 +87,7 @@ class TestHeatmap(object):
         npt.assert_array_equal(p.xticklabels, combined_tick_labels)
         nt.assert_equal(p.xlabel, "letter-number")
 
-    @pytest.mark.parametrize("dtype", [np.float, np.int64, np.object])
+    @pytest.mark.parametrize("dtype", [float, np.int64, object])
     def test_mask_input(self, dtype):
         kws = self.default_kws.copy()
 
@@ -443,7 +443,7 @@ class TestHeatmap(object):
 
     def test_missing_data_mask(self):
 
-        data = pd.DataFrame(np.arange(4, dtype=np.float).reshape(2, 2))
+        data = pd.DataFrame(np.arange(4, dtype=float).reshape(2, 2))
         data.loc[0, 0] = np.nan
         mask = mat._matrix_mask(data, None)
         npt.assert_array_equal(mask, [[True, False], [False, False]])

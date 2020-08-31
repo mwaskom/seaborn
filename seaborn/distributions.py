@@ -2553,7 +2553,7 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         a = x
 
     # Make a a 1-d float array
-    a = np.asarray(a, np.float)
+    a = np.asarray(a, float)
     if a.ndim > 1:
         a = a.squeeze()
 

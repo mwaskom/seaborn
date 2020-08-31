@@ -337,7 +337,7 @@ class FacetGrid(Grid):
 
         # Make a boolean mask that is True anywhere there is an NA
         # value in one of the faceting variables, but only if dropna is True
-        none_na = np.zeros(len(data), np.bool)
+        none_na = np.zeros(len(data), bool)
         if dropna:
             row_na = none_na if row is None else data[row].isnull()
             col_na = none_na if col is None else data[col].isnull()
@@ -1483,8 +1483,8 @@ class PairGrid(Grid):
                 for ax in diag_axes[1:]:
                     group.join(ax, diag_axes[0])
 
-            self.diag_vars = np.array(diag_vars, np.object)
-            self.diag_axes = np.array(diag_axes, np.object)
+            self.diag_vars = np.array(diag_vars, np.object_)
+            self.diag_axes = np.array(diag_axes, np.object_)
 
         if "hue" not in signature(func).parameters:
             return self._map_diag_iter_hue(func, **kwargs)
@@ -1629,7 +1629,7 @@ class PairGrid(Grid):
                 data_k = hue_grouped.get_group(label_k)
             except KeyError:
                 data_k = pd.DataFrame(columns=axes_vars,
-                                      dtype=np.float)
+                                      dtype=float)
 
             if self._dropna:
                 data_k = data_k[axes_vars].dropna()
