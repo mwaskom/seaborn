@@ -498,9 +498,7 @@ class _DistributionPlotter(VectorPlotter):
                         # Avoid drawing empty fill_between on date axis
                         # https://github.com/matplotlib/matplotlib/issues/17586
                         scout = None
-                        default_color = plot_kws.pop(
-                            "color", plot_kws.pop("facecolor", None)
-                        )
+                        default_color = plot_kws.pop("facecolor", color)
                         if default_color is None:
                             default_color = "C0"
                     else:
@@ -508,7 +506,6 @@ class _DistributionPlotter(VectorPlotter):
                         plot_kws = _normalize_kwargs(plot_kws, artist)
                         scout = self.ax.fill_between([], [], color=color, **plot_kws)
                         default_color = tuple(scout.get_facecolor().squeeze())
-                        plot_kws.pop("color", None)
                 else:
                     artist = mpl.lines.Line2D
                     plot_kws = _normalize_kwargs(plot_kws, artist)

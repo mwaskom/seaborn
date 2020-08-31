@@ -934,12 +934,13 @@ class TestPairGrid(object):
 
     def test_map_diag_palette(self):
 
-        pal = color_palette(n_colors=len(self.df.a.unique()))
-        g = ag.PairGrid(self.df, hue="a")
+        palette = "muted"
+        pal = color_palette(palette, n_colors=len(self.df.a.unique()))
+        g = ag.PairGrid(self.df, hue="a", palette=palette)
         g.map_diag(kdeplot)
 
         for ax in g.diag_axes:
-            for line, color in zip(ax.lines, pal):
+            for line, color in zip(ax.lines[::-1], pal):
                 assert line.get_color() == color
 
     def test_map_diag_and_offdiag(self):
@@ -1131,10 +1132,11 @@ class TestPairGrid(object):
                     x_in_k = x_in[self.df.a == k_level]
                     y_in_k = y_in[self.df.a == k_level]
                     x_out, y_out = ax.collections[k].get_offsets().T
-                npt.assert_array_equal(x_in_k, x_out)
-                npt.assert_array_equal(y_in_k, y_out)
+                    npt.assert_array_equal(x_in_k, x_out)
+                    npt.assert_array_equal(y_in_k, y_out)
 
-    def test_dropna(self):
+    @pytest.mark.parametrize("func", [scatterplot, plt.scatter])
+    def test_dropna(self, func):
 
         df = self.df.copy()
         n_null = 20
@@ -1143,7 +1145,7 @@ class TestPairGrid(object):
         plot_vars = ["x", "y", "z"]
 
         g1 = ag.PairGrid(df, vars=plot_vars, dropna=True)
-        g1.map(plt.scatter)
+        g1.map(func)
 
         for i, axes_i in enumerate(g1.axes):
             for j, ax in enumerate(axes_i):
@@ -1155,6 +1157,21 @@ class TestPairGrid(object):
 
                 assert n_valid == len(x_out)
                 assert n_valid == len(y_out)
+
+        g1.map_diag(histplot)
+        for i, ax in enumerate(g1.diag_axes):
+            var = plot_vars[i]
+            count = sum([p.get_height() for p in ax.patches])
+            assert count == df[var].notna().sum()
+
+    def test_histplot_legend(self):
+
+        # Tests _extract_legend_handles
+        g = ag.PairGrid(self.df, vars=["x", "y"], hue="a")
+        g.map_offdiag(histplot)
+        g.add_legend()
+
+        assert len(g._legend.legendHandles) == len(self.df["a"].unique())
 
     def test_pairplot(self):
 
@@ -1196,7 +1213,7 @@ class TestPairGrid(object):
         g = ag.pairplot(self.df, diag_kind="hist", kind="reg")
 
         for ax in g.diag_axes:
-            nt.assert_equal(len(ax.patches), 10)
+            assert len(ax.patches)
 
         for i, j in zip(*np.triu_indices_from(g.axes, 1)):
             ax = g.axes[i, j]
@@ -1224,7 +1241,21 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
-    def test_pairplot_kde(self):
+    def test_pairplot_reg_hue(self):
+
+        markers = ["o", "s", "d"]
+        g = ag.pairplot(self.df, kind="reg", hue="a", markers=markers)
+
+        ax = g.axes[-1, 0]
+        c1 = ax.collections[0]
+        c2 = ax.collections[2]
+
+        assert not np.array_equal(c1.get_facecolor(), c2.get_facecolor())
+        assert not np.array_equal(
+            c1.get_paths()[0].vertices, c2.get_paths()[0].vertices,
+        )
+
+    def test_pairplot_diag_kde(self):
 
         vars = ["x", "y", "z"]
         g = ag.pairplot(self.df, diag_kind="kde")
@@ -1252,13 +1283,34 @@ class TestPairGrid(object):
             ax = g.axes[i, j]
             nt.assert_equal(len(ax.collections), 0)
 
+    def test_pairplot_kde(self):
+
+        f, ax1 = plt.subplots()
+        kdeplot(data=self.df, x="x", y="y", ax=ax1)
+
+        g = ag.pairplot(self.df, kind="kde")
+        ax2 = g.axes[1, 0]
+
+        assert_plots_equal(ax1, ax2, labels=False)
+
+    def test_pairplot_hist(self):
+
+        f, ax1 = plt.subplots()
+        histplot(data=self.df, x="x", y="y", ax=ax1)
+
+        g = ag.pairplot(self.df, kind="hist")
+        ax2 = g.axes[1, 0]
+
+        assert_plots_equal(ax1, ax2, labels=False)
+
     def test_pairplot_markers(self):
 
         vars = ["x", "y", "z"]
-        markers = ["o", "x", "s"]
+        markers = ["o", "X", "s"]
         g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers)
-        assert g.hue_kws["marker"] == markers
-        plt.close("all")
+        m1 = g._legend.legendHandles[0].get_paths()[0]
+        m2 = g._legend.legendHandles[1].get_paths()[0]
+        assert m1 != m2
 
         with pytest.raises(ValueError):
             g = ag.pairplot(self.df, hue="a", vars=vars, markers=markers[:-2])
@@ -1274,6 +1326,14 @@ class TestPairGrid(object):
         g = ag.PairGrid(self.df, corner=True, despine=False)
         g.set(xlim=(0, 10))
         assert g.axes[-1, 0].get_xlim() == (0, 10)
+
+    def test_legend(self):
+
+        g1 = ag.pairplot(self.df, hue="a")
+        assert isinstance(g1.legend, mpl.legend.Legend)
+
+        g2 = ag.pairplot(self.df)
+        assert g2.legend is None
 
 
 class TestJointGrid(object):
