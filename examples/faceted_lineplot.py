@@ -2,7 +2,7 @@
 Line plots on multiple facets
 =============================
 
-_thumb: .45, .42
+_thumb: .48, .42
 
 """
 import seaborn as sns
@@ -10,14 +10,14 @@ sns.set(style="ticks")
 
 dots = sns.load_dataset("dots")
 
-# Define a palette to ensure that colors will be
-# shared across the facets
-palette = dict(zip(dots.coherence.unique(),
-                   sns.color_palette("rocket_r", len(dots.coherence.unique()))))
+# Define the palette as a list to specify exact values
+palette = sns.color_palette("rocket_r")
 
 # Plot the lines on two facets
-sns.relplot(x="time", y="firing_rate",
-            hue="coherence", size="choice", col="align",
-            size_order=["T1", "T2"], palette=palette,
-            height=5, aspect=.75, facet_kws=dict(sharex=False),
-            kind="line", legend="full", data=dots)
+sns.relplot(
+    data=dots,
+    x="time", y="firing_rate",
+    hue="coherence", size="choice", col="align",
+    kind="line", size_order=["T1", "T2"], palette=palette,
+    height=5, aspect=.75, facet_kws=dict(sharex=False),
+)
