@@ -1,6 +1,6 @@
 """
-Scatterplot with categorical and numerical semantics
-====================================================
+Scatterplot with multiple semantics
+===================================
 
 _thumb: .45, .5
 
