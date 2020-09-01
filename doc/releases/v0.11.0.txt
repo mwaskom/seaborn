@@ -154,14 +154,22 @@ Multi-plot grids
 
 - Fixed bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
 
-Theming and style
-^^^^^^^^^^^^^^^^^
+Color palettes
+~~~~~~~~~~~~~~
 
-- Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes.
+- Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes (:pr:`2237`).
+
+- Added string-based access within the :func:`color_palette` interface to :func:`dark_palette`, :func:`light_palette`, and :func:`blend_palette`. This means that anywhere you specify a palette in seaborn, a name like ``"dark:blue"`` will use :func:`dark_palette` with the input ``"blue"``.
+
+- Added the ``as_cmap`` parameter to :func:`color_palette` and changed internal code that uses a continuous colormap to take this route.
 
 - Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:`2225`).
 
-- Fixed a bug in :func:`set_context` that prevented ``legend.title_fontsize`` rcParam from scaling when scaling fonts (:pr:`2214`).
+- Tweaked the :func:`light_palette` and :func:`dark_palette` functions to use an endpoint that is a very desaturated version of the input color, rather than a pure gray. This produces smoother ramps. To exactly reproduce previous plots, use :func:`blend_palette` with ".13" for dark or ".95" for light.
+
+- Changed :func:`diverging_palette` to have a default value of ``sep=1``, which gives better results.
+
+- Fixed the ``"{palette}_d"`` logic to modify reversed colormaps and to use the correct direction of the luminance ramp in both cases.
 
 Deprecations and removals
 ^^^^^^^^^^^^^^^^^^^^^^^^^
