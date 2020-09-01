@@ -37,9 +37,14 @@ seaborn: statistical data visualization
             <img src="_static/errorband_lineplots_thumb.png">
           </div>
         </a>
-        <a href="examples/different_scatter_variables.html">
+        <a href="examples/scatterplot_sizes.html">
           <div class="col-md-2 thumbnail">
-            <img src="_static/different_scatter_variables_thumb.png">
+            <img src="_static/scatterplot_sizes_thumb.png">
+          </div>
+        </a>
+        <a href="examples/timeseries_facets.html">
+          <div class="col-md-2 thumbnail">
+            <img src="_static/timeseries_facets_thumb.png">
           </div>
         </a>
         <a href="examples/horizontal_boxplot.html">
@@ -50,11 +55,6 @@ seaborn: statistical data visualization
         <a href="examples/regression_marginals.html">
           <div class="col-md-2 thumbnail">
             <img src="_static/regression_marginals_thumb.png">
-          </div>
-        </a>
-        <a href="examples/many_facets.html">
-          <div class="col-md-2 thumbnail">
-            <img src="_static/many_facets_thumb.png">
           </div>
         </a>
       </div>
