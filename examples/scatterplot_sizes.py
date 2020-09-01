@@ -2,7 +2,7 @@
 Scatterplot with continuous hues and sizes
 ==========================================
 
-_thumb: .45, .45
+_thumb: .48, .45
 
 """
 import seaborn as sns

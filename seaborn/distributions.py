@@ -31,6 +31,7 @@ from .utils import (
     _check_argument,
     _assign_default_kwargs,
 )
+from .palettes import color_palette
 from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -801,9 +802,12 @@ class _DistributionPlotter(VectorPlotter):
                 cmap = self._cmap_from_color(color)
                 artist_kws["cmap"] = cmap
             else:
-                if "cmap" not in artist_kws:
+                cmap = artist_kws.pop("cmap", None)
+                if isinstance(cmap, str):
+                    cmap = color_palette(cmap, as_cmap=True)
+                elif cmap is None:
                     cmap = self._cmap_from_color(color)
-                    artist_kws["cmap"] = cmap
+                artist_kws["cmap"] = cmap
 
             # Set the upper norm on the colormap
             if not common_color_norm and pmax is not None:
@@ -1129,12 +1133,21 @@ class _DistributionPlotter(VectorPlotter):
                     warnings.warn(msg, UserWarning)
                     contour_kws.pop(param)
         else:
+
+            # Work out a default coloring of the contours
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
                 cmap = self._cmap_from_color(default_color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
                 contour_kws["colors"] = [default_color]
+
+            # Use our internal colormap lookup
+            cmap = contour_kws.pop("cmap", None)
+            if isinstance(cmap, str):
+                cmap = color_palette(cmap, as_cmap=True)
+            if cmap is not None:
+                contour_kws["cmap"] = cmap
 
         # Loop through the subsets again and plot the data
         for sub_vars, _ in self.iter_data("hue"):
@@ -2309,7 +2322,7 @@ for making plots with this interface.
 More information about the relative strengths and weaknesses of each approach
 is provided in the :ref:`user guide <distribution_tutorial>`. The distinction
 between figure-level and axes-level functions is also explained further in the
-:ref:`user guide <userguide_function_types>`.
+:ref:`user guide <function_tutorial>`.
 
 Parameters
 ----------

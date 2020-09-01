@@ -6,7 +6,7 @@ import matplotlib as mpl
 
 from .external import husl
 
-from .utils import desaturate, set_hls_values, get_color_cycle
+from .utils import desaturate, get_color_cycle
 from .colors import xkcd_rgb, crayons
 
 
@@ -90,7 +90,7 @@ class _ColorPalette(list):
         return html
 
 
-def color_palette(palette=None, n_colors=None, desat=None):
+def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
     """Return a list of colors defining a color palette.
 
     Available seaborn palette names:
@@ -126,10 +126,12 @@ def color_palette(palette=None, n_colors=None, desat=None):
         more colors than exist in the palette will cause it to cycle.
     desat : float, optional
         Proportion to desaturate each color by.
+    as_cmap : bool
+        If True, return a :class:matplotlib.colors.Colormap` object.
 
     Returns
     -------
-    palette : list of RGB tuples.
+    palette : list of RGB tuples or :class:`matplotlib.colors.Colormap`
         Color palette. Behaves like a list, but can be used as a context
         manager and possesses an ``as_hex`` method to convert to hex color
         codes.
@@ -217,16 +219,16 @@ def color_palette(palette=None, n_colors=None, desat=None):
             n_colors = QUAL_PALETTE_SIZES.get(palette, 6)
 
         if palette in SEABORN_PALETTES:
-            # Named "seaborn variant" of old matplotlib default palette
+            # Named "seaborn variant" of matplotlib default color cycle
             palette = SEABORN_PALETTES[palette]
 
         elif palette == "hls":
             # Evenly spaced colors in cylindrical RGB space
-            palette = hls_palette(n_colors)
+            palette = hls_palette(n_colors, as_cmap=as_cmap)
 
         elif palette == "husl":
             # Evenly spaced colors in cylindrical Lab space
-            palette = husl_palette(n_colors)
+            palette = husl_palette(n_colors, as_cmap=as_cmap)
 
         elif palette.lower() == "jet":
             # Paternalism
@@ -235,33 +237,57 @@ def color_palette(palette=None, n_colors=None, desat=None):
         elif palette.startswith("ch:"):
             # Cubehelix palette with params specified in string
             args, kwargs = _parse_cubehelix_args(palette)
-            palette = cubehelix_palette(n_colors, *args, **kwargs)
+            palette = cubehelix_palette(n_colors, *args, **kwargs, as_cmap=as_cmap)
+
+        elif palette.startswith("light:"):
+            # light palette to color specified in string
+            _, color = palette.split(":")
+            reverse = color.endswith("_r")
+            if reverse:
+                color = color[:-2]
+            palette = light_palette(color, reverse=reverse, as_cmap=as_cmap)
+
+        elif palette.startswith("dark:"):
+            # light palette to color specified in string
+            _, color = palette.split(":")
+            reverse = color.endswith("_r")
+            if reverse:
+                color = color[:-2]
+            palette = dark_palette(color, reverse=reverse, as_cmap=as_cmap)
+
+        elif palette.startswith("blend:"):
+            # blend palette between colors specified in string
+            _, colors = palette.split(":")
+            colors = colors.split(",")
+            palette = blend_palette(colors, as_cmap=as_cmap)
 
         else:
             try:
                 # Perhaps a named matplotlib colormap?
-                palette = mpl_palette(palette, n_colors)
+                palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except ValueError:
                 raise ValueError("%s is not a valid palette name" % palette)
 
     if desat is not None:
         palette = [desaturate(c, desat) for c in palette]
 
-    # Always return as many colors as we asked for
-    pal_cycle = cycle(palette)
-    palette = [next(pal_cycle) for _ in range(n_colors)]
+    if not as_cmap:
 
-    # Always return in r, g, b tuple format
-    try:
-        palette = map(mpl.colors.colorConverter.to_rgb, palette)
-        palette = _ColorPalette(palette)
-    except ValueError:
-        raise ValueError("Could not generate a palette for %s" % str(palette))
+        # Always return as many colors as we asked for
+        pal_cycle = cycle(palette)
+        palette = [next(pal_cycle) for _ in range(n_colors)]
+
+        # Always return in r, g, b tuple format
+        try:
+            palette = map(mpl.colors.colorConverter.to_rgb, palette)
+            palette = _ColorPalette(palette)
+        except ValueError:
+            raise ValueError(f"Could not generate a palette for {palette}")
 
     return palette
 
 
-def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
+def hls_palette(n_colors=6, h=.01, l=.6, s=.65, as_cmap=False):  # noqa
     """Get a set of evenly spaced colors in HLS hue space.
 
     h, l, and s should be between 0 and 1
@@ -280,13 +306,11 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
 
     Returns
     -------
-    palette : seaborn color palette
-        List-like object of colors as RGB tuples.
+    seaborn color palette or matplotlib.colors.ListedColormap
 
     See Also
     --------
-    husl_palette : Make a palette using evently spaced circular hues in the
-                   HUSL system.
+    husl_palette : Make a palette using evenly spaced hues in the HUSL system.
 
     Examples
     --------
@@ -321,15 +345,20 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65):  # noqa
         >>> sns.palplot(sns.hls_palette(10, s=.4))
 
     """
+    if as_cmap:
+        n_colors = 256
     hues = np.linspace(0, 1, int(n_colors) + 1)[:-1]
     hues += h
     hues %= 1
     hues -= hues.astype(int)
     palette = [colorsys.hls_to_rgb(h_i, l, s) for h_i in hues]
-    return _ColorPalette(palette)
+    if as_cmap:
+        return mpl.colors.ListedColormap(palette, "hls")
+    else:
+        return _ColorPalette(palette)
 
 
-def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
+def husl_palette(n_colors=6, h=.01, s=.9, l=.65, as_cmap=False):  # noqa
     """Get a set of evenly spaced colors in HUSL hue space.
 
     h, s, and l should be between 0 and 1
@@ -389,17 +418,22 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65):  # noqa
         >>> sns.palplot(sns.husl_palette(10, s=.4))
 
     """
+    if as_cmap:
+        n_colors = 256
     hues = np.linspace(0, 1, int(n_colors) + 1)[:-1]
     hues += h
     hues %= 1
     hues *= 359
     s *= 99
     l *= 99  # noqa
-    palette = [_color_to_rgb((h_i, s, l), input='husl') for h_i in hues]
-    return _ColorPalette(palette)
+    palette = [_color_to_rgb((h_i, s, l), input="husl") for h_i in hues]
+    if as_cmap:
+        return mpl.colors.ListedColormap(palette, "hsl")
+    else:
+        return _ColorPalette(palette)
 
 
-def mpl_palette(name, n_colors=6):
+def mpl_palette(name, n_colors=6, as_cmap=False):
     """Return discrete colors from a matplotlib palette.
 
     Note that this handles the qualitative colorbrewer palettes
@@ -421,7 +455,7 @@ def mpl_palette(name, n_colors=6):
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette cmap : seaborn color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -460,20 +494,29 @@ def mpl_palette(name, n_colors=6):
 
     """
     if name.endswith("_d"):
-        pal = ["#333333"]
-        pal.extend(color_palette(name.replace("_d", "_r"), 2))
+        sub_name = name[:-2]
+        if sub_name.endswith("_r"):
+            reverse = True
+            sub_name = sub_name[:-2]
+        else:
+            reverse = False
+        pal = color_palette(sub_name, 2) + ["#333333"]
+        if reverse:
+            pal = pal[::-1]
         cmap = blend_palette(pal, n_colors, as_cmap=True)
     else:
         cmap = mpl.cm.get_cmap(name)
-        if cmap is None:
-            raise ValueError("{} is not a valid colormap".format(name))
+
     if name in MPL_QUAL_PALS:
         bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, int(n_colors) + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
 
-    return _ColorPalette(palette)
+    if as_cmap:
+        return cmap
+    else:
+        return _ColorPalette(palette)
 
 
 def _color_to_rgb(color, input):
@@ -486,7 +529,7 @@ def _color_to_rgb(color, input):
     elif input == "xkcd":
         color = xkcd_rgb[color]
 
-    return color
+    return mpl.colors.to_rgb(color)
 
 
 def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
@@ -565,14 +608,15 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    color = _color_to_rgb(color, input)
-    gray = "#222222"
-    colors = [color, gray] if reverse else [gray, color]
+    rgb = _color_to_rgb(color, input)
+    h, s, l = husl.rgb_to_husl(*rgb)
+    gray_s, gray_l = .15 * s, 15
+    gray = _color_to_rgb((h, gray_s, gray_l), input="husl")
+    colors = [rgb, gray] if reverse else [gray, rgb]
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
-                  input="rgb"):
+def light_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     """Make a sequential palette that blends from light to ``color``.
 
     This kind of palette is good for data that range between relatively
@@ -648,14 +692,15 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False,
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    color = _color_to_rgb(color, input)
-    light = set_hls_values(color, l=.95)  # noqa
-    colors = [color, light] if reverse else [light, color]
+    rgb = _color_to_rgb(color, input)
+    h, s, l = husl.rgb_to_husl(*rgb)
+    gray_s, gray_l = .15 * s, 95
+    gray = _color_to_rgb((h, gray_s, gray_l), input="husl")
+    colors = [rgb, gray] if reverse else [gray, rgb]
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
-                  input="rgb"):
+def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     """Make a sequential palette that blends from gray to ``color``.
 
     Parameters
@@ -681,7 +726,7 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False,
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
+def diverging_palette(h_neg, h_pos, s=75, l=50, sep=1, n=6,  # noqa
                       center="light", as_cmap=False):
     """Make a diverging palette between two HUSL colors.
 
@@ -751,11 +796,11 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.diverging_palette(220, 20, sep=20, as_cmap=True)
+        >>> cmap = sns.diverging_palette(220, 20, as_cmap=True)
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    palfunc = dark_palette if center == "dark" else light_palette
+    palfunc = dict(dark=dark_palette, light=light_palette)[center]
     n_half = int(128 - (sep // 2))
     neg = palfunc((h_neg, s, l), n_half, reverse=True, input="husl")
     pos = palfunc((h_pos, s, l), n_half, input="husl")

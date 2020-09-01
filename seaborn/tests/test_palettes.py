@@ -72,26 +72,44 @@ class TestColorPalettes(object):
 
     def test_hls_palette(self):
 
-        hls_pal1 = palettes.hls_palette()
-        hls_pal2 = palettes.color_palette("hls")
-        npt.assert_array_equal(hls_pal1, hls_pal2)
+        pal1 = palettes.hls_palette()
+        pal2 = palettes.color_palette("hls")
+        npt.assert_array_equal(pal1, pal2)
+
+        cmap1 = palettes.hls_palette(as_cmap=True)
+        cmap2 = palettes.color_palette("hls", as_cmap=True)
+        npt.assert_array_equal(cmap1([.2, .8]), cmap2([.2, .8]))
 
     def test_husl_palette(self):
 
-        husl_pal1 = palettes.husl_palette()
-        husl_pal2 = palettes.color_palette("husl")
-        npt.assert_array_equal(husl_pal1, husl_pal2)
+        pal1 = palettes.husl_palette()
+        pal2 = palettes.color_palette("husl")
+        npt.assert_array_equal(pal1, pal2)
+
+        cmap1 = palettes.husl_palette(as_cmap=True)
+        cmap2 = palettes.color_palette("husl", as_cmap=True)
+        npt.assert_array_equal(cmap1([.2, .8]), cmap2([.2, .8]))
 
     def test_mpl_palette(self):
 
-        mpl_pal1 = palettes.mpl_palette("Reds")
-        mpl_pal2 = palettes.color_palette("Reds")
-        npt.assert_array_equal(mpl_pal1, mpl_pal2)
+        pal1 = palettes.mpl_palette("Reds")
+        pal2 = palettes.color_palette("Reds")
+        npt.assert_array_equal(pal1, pal2)
+
+        cmap1 = mpl.cm.get_cmap("Reds")
+        cmap2 = palettes.mpl_palette("Reds", as_cmap=True)
+        cmap3 = palettes.color_palette("Reds", as_cmap=True)
+        npt.assert_array_equal(cmap1, cmap2)
+        npt.assert_array_equal(cmap1, cmap3)
 
     def test_mpl_dark_palette(self):
 
         mpl_pal1 = palettes.mpl_palette("Blues_d")
         mpl_pal2 = palettes.color_palette("Blues_d")
+        npt.assert_array_equal(mpl_pal1, mpl_pal2)
+
+        mpl_pal1 = palettes.mpl_palette("Blues_r_d")
+        mpl_pal2 = palettes.color_palette("Blues_r_d")
         npt.assert_array_equal(mpl_pal1, mpl_pal2)
 
     def test_bad_palette_name(self):
@@ -207,7 +225,7 @@ class TestColorPalettes(object):
 
         color = "dull red"
         rgb_got = palettes._color_to_rgb(color, "xkcd")
-        rgb_want = xkcd_rgb[color]
+        rgb_want = mpl.colors.to_rgb(xkcd_rgb[color])
         nt.assert_equal(rgb_got, rgb_want)
 
     def test_light_palette(self):
@@ -217,10 +235,17 @@ class TestColorPalettes(object):
         assert np.allclose(pal_forward, pal_reverse[::-1])
 
         red = mpl.colors.colorConverter.to_rgb("red")
-        nt.assert_equal(pal_forward[-1], red)
+        assert pal_forward[-1] == red
 
         pal_cmap = palettes.light_palette("blue", as_cmap=True)
-        nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+        pal_cmap_from_string = palettes.color_palette("light:blue", as_cmap=True)
+        assert pal_cmap(.8) == pal_cmap_from_string(.8)
+
+        pal_cmap = palettes.light_palette("blue", as_cmap=True, reverse=True)
+        pal_cmap_from_string = palettes.color_palette("light:blue_r", as_cmap=True)
+        assert pal_cmap(.8) == pal_cmap_from_string(.8)
 
     def test_dark_palette(self):
 
@@ -233,6 +258,13 @@ class TestColorPalettes(object):
 
         pal_cmap = palettes.dark_palette("blue", as_cmap=True)
         assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+        pal_cmap_from_string = palettes.color_palette("dark:blue", as_cmap=True)
+        assert pal_cmap(.8) == pal_cmap_from_string(.8)
+
+        pal_cmap = palettes.dark_palette("blue", as_cmap=True, reverse=True)
+        pal_cmap_from_string = palettes.color_palette("dark:blue_r", as_cmap=True)
+        assert pal_cmap(.8) == pal_cmap_from_string(.8)
 
     def test_diverging_palette(self):
 
@@ -260,7 +292,13 @@ class TestColorPalettes(object):
 
         colors = ["red", "yellow", "white"]
         pal_cmap = palettes.blend_palette(colors, as_cmap=True)
-        nt.assert_is_instance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+        assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
+
+        colors = ["red", "blue"]
+        pal = palettes.blend_palette(colors)
+        pal_str = "blend:" + ",".join(colors)
+        pal_from_str = palettes.color_palette(pal_str)
+        assert pal == pal_from_str
 
     def test_cubehelix_against_matplotlib(self):
 
@@ -318,6 +356,10 @@ class TestColorPalettes(object):
         pal1 = color_palette("ch:_r", 6)
         pal2 = color_palette(cubehelix_palette(6, reverse=True))
         assert pal1 == pal2
+
+        pal1 = color_palette("ch:_r", as_cmap=True)
+        pal2 = cubehelix_palette(6, reverse=True, as_cmap=True)
+        assert pal1(.5) == pal2(.5)
 
     def test_xkcd_palette(self):
 
