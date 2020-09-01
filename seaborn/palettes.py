@@ -264,10 +264,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
         else:
             try:
                 # Perhaps a named matplotlib colormap?
-                if as_cmap:
-                    palette = mpl.cm.get_cmap(palette)
-                else:
-                    palette = mpl_palette(palette, n_colors)
+                palette = mpl_palette(palette, n_colors, as_cmap=as_cmap)
             except ValueError:
                 raise ValueError("%s is not a valid palette name" % palette)
 
@@ -436,7 +433,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65, as_cmap=False):  # noqa
         return _ColorPalette(palette)
 
 
-def mpl_palette(name, n_colors=6):
+def mpl_palette(name, n_colors=6, as_cmap=False):
     """Return discrete colors from a matplotlib palette.
 
     Note that this handles the qualitative colorbrewer palettes
@@ -458,7 +455,7 @@ def mpl_palette(name, n_colors=6):
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
+    palette cmap : seaborn color palette or matplotlib colormap
         List-like object of colors as RGB tuples, or colormap object that
         can map continuous values to colors, depending on the value of the
         ``as_cmap`` parameter.
@@ -497,20 +494,29 @@ def mpl_palette(name, n_colors=6):
 
     """
     if name.endswith("_d"):
-        pal = ["#333333"]
-        pal.extend(color_palette(name.replace("_d", "_r"), 2))
+        sub_name = name[:-2]
+        if sub_name.endswith("_r"):
+            reverse = True
+            sub_name = sub_name[:-2]
+        else:
+            reverse = False
+        pal = color_palette(sub_name, 2) + ["#333333"]
+        if reverse:
+            pal = pal[::-1]
         cmap = blend_palette(pal, n_colors, as_cmap=True)
     else:
         cmap = mpl.cm.get_cmap(name)
-        if cmap is None:
-            raise ValueError("{} is not a valid colormap".format(name))
+
     if name in MPL_QUAL_PALS:
         bins = np.linspace(0, 1, MPL_QUAL_PALS[name])[:n_colors]
     else:
         bins = np.linspace(0, 1, int(n_colors) + 2)[1:-1]
     palette = list(map(tuple, cmap(bins)[:, :3]))
 
-    return _ColorPalette(palette)
+    if as_cmap:
+        return cmap
+    else:
+        return _ColorPalette(palette)
 
 
 def _color_to_rgb(color, input):
