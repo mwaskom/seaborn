@@ -1133,12 +1133,21 @@ class _DistributionPlotter(VectorPlotter):
                     warnings.warn(msg, UserWarning)
                     contour_kws.pop(param)
         else:
+
+            # Work out a default coloring of the contours
             coloring_given = set(contour_kws) & {"cmap", "colors"}
             if fill and not coloring_given:
                 cmap = self._cmap_from_color(default_color)
                 contour_kws["cmap"] = cmap
             if not fill and not coloring_given:
                 contour_kws["colors"] = [default_color]
+
+            # Use our internal colormap lookup
+            cmap = contour_kws.pop("cmap", None)
+            if isinstance(cmap, str):
+                cmap = color_palette(cmap, as_cmap=True)
+            if cmap is not None:
+                contour_kws["cmap"] = cmap
 
         # Loop through the subsets again and plot the data
         for sub_vars, _ in self.iter_data("hue"):
