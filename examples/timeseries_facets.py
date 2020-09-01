@@ -24,7 +24,7 @@ for year, ax in g.axes_dict.items():
     # Add the title as an annotation within the plot
     ax.text(.8, .85, year, transform=ax.transAxes, fontweight="bold")
 
-    # Plot ever year's time series in the background
+    # Plot every year's time series in the background
     sns.lineplot(
         data=flights, x="month", y="passengers", units="year",
         estimator=None, color=".7", linewidth=1, ax=ax,
