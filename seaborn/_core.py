@@ -17,8 +17,6 @@ from ._decorators import (
 from .palettes import (
     QUAL_PALETTES,
     color_palette,
-    cubehelix_palette,
-    _parse_cubehelix_args,
 )
 from .utils import (
     get_color_cycle,
@@ -236,15 +234,8 @@ class HueMapping(SemanticMapping):
 
             if isinstance(palette, mpl.colors.Colormap):
                 cmap = palette
-            elif str(palette).startswith("ch:"):
-                args, kwargs = _parse_cubehelix_args(palette)
-                cmap = cubehelix_palette(0, *args, as_cmap=True, **kwargs)
             else:
-                try:
-                    cmap = mpl.cm.get_cmap(palette)
-                except (ValueError, TypeError):
-                    err = f"Palette {palette} not understood"
-                    raise ValueError(err)
+                cmap = color_palette(palette, as_cmap=True)
 
             # Now sort out the data normalization
             if norm is None:

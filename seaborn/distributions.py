@@ -31,6 +31,7 @@ from .utils import (
     _check_argument,
     _assign_default_kwargs,
 )
+from .palettes import color_palette
 from .external import husl
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -801,9 +802,12 @@ class _DistributionPlotter(VectorPlotter):
                 cmap = self._cmap_from_color(color)
                 artist_kws["cmap"] = cmap
             else:
-                if "cmap" not in artist_kws:
+                cmap = artist_kws.pop("cmap", None)
+                if isinstance(cmap, str):
+                    cmap = color_palette(cmap, as_cmap=True)
+                elif cmap is None:
                     cmap = self._cmap_from_color(color)
-                    artist_kws["cmap"] = cmap
+                artist_kws["cmap"] = cmap
 
             # Set the upper norm on the colormap
             if not common_color_norm and pmax is not None:
