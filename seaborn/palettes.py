@@ -726,7 +726,7 @@ def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
+def diverging_palette(h_neg, h_pos, s=75, l=50, sep=1, n=6,  # noqa
                       center="light", as_cmap=False):
     """Make a diverging palette between two HUSL colors.
 
@@ -796,11 +796,11 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=10, n=6,  # noqa
 
         >>> from numpy import arange
         >>> x = arange(25).reshape(5, 5)
-        >>> cmap = sns.diverging_palette(220, 20, sep=20, as_cmap=True)
+        >>> cmap = sns.diverging_palette(220, 20, as_cmap=True)
         >>> ax = sns.heatmap(x, cmap=cmap)
 
     """
-    palfunc = dark_palette if center == "dark" else light_palette
+    palfunc = dict(dark=dark_palette, light=light_palette)[center]
     n_half = int(128 - (sep // 2))
     neg = palfunc((h_neg, s, l), n_half, reverse=True, input="husl")
     pos = palfunc((h_pos, s, l), n_half, input="husl")
