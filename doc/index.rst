@@ -78,7 +78,7 @@ and then check out the :doc:`tutorial <tutorial>` and :doc:`API reference
 
 To see the code or report a bug, please visit the `github repository
 <https://github.com/mwaskom/seaborn>`_. General support issues are most at home
-on `stackoverflow <http://stackoverflow.com/questions/tagged/seaborn/>`_, where
+on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_, where
 there is a seaborn tag.
    
 

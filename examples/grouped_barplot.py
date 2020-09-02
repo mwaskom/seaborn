@@ -2,7 +2,7 @@
 Grouped barplots
 ================
 
-_thumb: .45, .5
+_thumb: .36, .5
 """
 import seaborn as sns
 sns.set(style="whitegrid")

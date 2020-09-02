@@ -146,7 +146,7 @@ User guide and tutorial
               <div class="row">
                 <div class="col-md-4">
                   <a href=./tutorial/axis_grids.html>
-                    <img src="_images/axis_grids_53_0.png" class="img-responsive center-block">
+                    <img src="_images/axis_grids_46_0.png" class="img-responsive center-block">
                   </a>
                 </div>
                 <div class="col-md-8">
