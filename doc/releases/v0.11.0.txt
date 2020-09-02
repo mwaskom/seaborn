@@ -2,6 +2,8 @@
 v0.11.0 (Unreleased)
 --------------------
 
+This is a major release with several important new features, enhancements to existing functions, and changes to the library. Highlights include an overhaul and modernization of the distributions plotting functions, more flexible data specification, new colormaps, and better narrative documentation.
+
 Required keyword arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -63,11 +65,11 @@ These additions facilitated new features (and forced changes) in :func:`jointplo
 
 - Added support for the ``hue`` semantic in :func:`jointplot`/:class:`JointGrid`. This support is lightweight and simply delegates the mapping to the underlying axes-level functions.
 
-- Delegated the handling of ``hue`` in :class:`PairGrid`/:func:`pairplot` to the plotting function when it understands ``hue``, meaning that (1) the zorder of scatterplot points will be determined by row in dataframe, (2) additional options for resolving hue (e.g. the ``multiple`` parameter) can be used, and numeric hue variables can be naturally mapped when using :func:`scatterplot`.
+- Delegated the handling of ``hue`` in :class:`PairGrid`/:func:`pairplot` to the plotting function when it understands ``hue``, meaning that (1) the zorder of scatterplot points will be determined by row in dataframe, (2) additional options for resolving hue (e.g. the ``multiple`` parameter) can be used, and (3) numeric hue variables can be naturally mapped when using :func:`scatterplot`.
 
-- Added ``kind="hist"`` to :func:`jointplot`, which draws a bivariate histogram on the joint axes and univariate histograms on the marginal axes, as well as both ``kind="hist"`` and ``kind="kde"`` for :func:`pairplot`, which behaves likewise.
+- Added ``kind="hist"`` to :func:`jointplot`, which draws a bivariate histogram on the joint axes and univariate histograms on the marginal axes, as well as both ``kind="hist"`` and ``kind="kde"`` to :func:`pairplot`, which behaves likewise.
 
-- The various modes of `jointplot` that plot marginal histograms now use `func:`histplot` rather than :func:`distplot`. This slightly changes the default appearance and affects the valid keyword arguments that can be passed to customize the plot. Likewise, the marginal histogram plots in :func:`pairplot` now use `histplot`.
+- The various modes of :func:`jointplot` that plot marginal histograms now use `func:`histplot` rather than :func:`distplot`. This slightly changes the default appearance and affects the valid keyword arguments that can be passed to customize the plot. Likewise, the marginal histogram plots in :func:`pairplot` now use `histplot`.
 
 Enhancements and standardization of data ingest
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,17 +159,18 @@ Multi-plot grids
 Color palettes
 ~~~~~~~~~~~~~~
 
+- Improved and modernized the `color palettes chapter <palette_tutorial>` of the seaborn tutorial.
+
 - Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes (:pr:`2237`).
 
-- Added string-based access within the :func:`color_palette` interface to :func:`dark_palette`, :func:`light_palette`, and :func:`blend_palette`. This means that anywhere you specify a palette in seaborn, a name like ``"dark:blue"`` will use :func:`dark_palette` with the input ``"blue"``.
+- Enhanced numeric colormap functionality in several ways (:pr:`2237):
 
-- Added the ``as_cmap`` parameter to :func:`color_palette` and changed internal code that uses a continuous colormap to take this route.
+  - Added string-based access within the :func:`color_palette` interface to :func:`dark_palette`, :func:`light_palette`, and :func:`blend_palette`. This means that anywhere you specify a palette in seaborn, a name like ``"dark:blue"`` will use :func:`dark_palette` with the input ``"blue"``.
+  - Added the ``as_cmap`` parameter to :func:`color_palette` and changed internal code that uses a continuous colormap to take this route.
+  - Tweaked the :func:`light_palette` and :func:`dark_palette` functions to use an endpoint that is a very desaturated version of the input color, rather than a pure gray. This produces smoother ramps. To exactly reproduce previous plots, use :func:`blend_palette` with ".13" for dark or ".95" for light.
+  - Changed :func:`diverging_palette` to have a default value of ``sep=1``, which gives better results.
 
 - Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:`2225`).
-
-- Tweaked the :func:`light_palette` and :func:`dark_palette` functions to use an endpoint that is a very desaturated version of the input color, rather than a pure gray. This produces smoother ramps. To exactly reproduce previous plots, use :func:`blend_palette` with ".13" for dark or ".95" for light.
-
-- Changed :func:`diverging_palette` to have a default value of ``sep=1``, which gives better results.
 
 - Fixed the ``"{palette}_d"`` logic to modify reversed colormaps and to use the correct direction of the luminance ramp in both cases.
 
