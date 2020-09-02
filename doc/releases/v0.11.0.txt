@@ -14,7 +14,7 @@ Most plotting functions now require all of their parameters to be specified usin
 Modernization of distribution functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The distribution module has been completely overhauled, modernizing the API and introducing several new functions and features within existing functions. Some new features are explained here; the :ref:`tutorial documentation <distribution_tutorial>` has also been rewritten and serves as a good introduction to the functions.
+The distribution module has been completely overhauled, modernizing the API and introducing several new functions and features within existing functions. Some new features are explained here; the :doc:`tutorial documentation <tutorial/distributions>` has also been rewritten and serves as a good introduction to the functions.
 
 New plotting functions
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -94,7 +94,7 @@ These changes should be transparent for most use-cases, although they allow a fe
 - A wide-form data object can have a mixture of types; the non-numeric types will be removed before plotting. Previously, this caused an error.
 - There are better error messages for other instances of data mis-specification.
 
-See the new user guide chapter on :ref:`data formats <data_tutorial>` for more information about what is supported.
+See the new user guide chapter on :doc:`data formats <tutorial/data_structure>` for more information about what is supported.
 
 Other changes
 ~~~~~~~~~~~~~
@@ -131,7 +131,7 @@ Categorical plots
 
 - |Enhancement| |Defaults| |Fix| Fixed a few computational issues in :func:`boxenplot` and improved its visual appearance (:pr:`2086`):
 
-  - Changed the default method for computing the number of boxes to``k_depth="tukey"```, as the previous default (``k_depth="proportion"``) is based on a heuristic that produces too many boxes for small datasets.
+  - Changed the default method for computing the number of boxes to``k_depth="tukey"``, as the previous default (``k_depth="proportion"``) is based on a heuristic that produces too many boxes for small datasets.
   - Added the option to specify the specific number of boxes (e.g. ``k_depth=6``) or to plot boxes that will cover most of the data points (``k_depth="full"``).
   - Added a new parameter, ``trust_alpha``, to control the number of boxes when ``k_depth="trustworthy"``.
   - Changed the visual appearance of :func:`boxenplot` to more closely resemble :func:`boxplot`. Notably, thin boxes will remain visible when the edges are white.
@@ -169,7 +169,7 @@ Multi-plot grids
 Color palettes
 ~~~~~~~~~~~~~~
 
-- |Docs| Improved and modernized the :ref:`color palettes chapter <palette_tutorial>` of the seaborn tutorial.
+- |Docs| Improved and modernized the :doc:`color palettes chapter <tutorial/color_palettes>` of the seaborn tutorial.
 
 - |Feature| Added two new perceptually-uniform colormaps: "flare" and "crest". The new colormaps are similar to "rocket" and "mako", but their luminance range is reduced. This makes them well suited to numeric mappings of line or scatter plots, which need contrast with the axes background at the extremes (:pr:`2237`).
 
