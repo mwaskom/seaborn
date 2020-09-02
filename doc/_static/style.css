@@ -61,6 +61,12 @@ ul.dropdown-menu {
     color: #2c3e50 !important;
 }
 
+.alert-warning {
+    background-color: #e09572 !important;
+    border-color: #e09572 !important;
+    color: #222222 !important;
+}
+
 img {
     margin-bottom: 10px !important;
 }
