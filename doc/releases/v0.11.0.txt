@@ -104,6 +104,8 @@ General API
 
 - |Docs| Added two new chapters to the user guide, one giving an overview of the :doc:`types of functions in seaborn <tutorial/function_overview>`, and one discussing the different :doc:`data formats <tutorial/data_structure>` that seaborn understands.
 
+- |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
+
 - |Enhancement| |Defaults| Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
 
 Relational plots
