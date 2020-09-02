@@ -91,22 +91,18 @@ class _ColorPalette(list):
 
 
 def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
-    """Return a list of colors defining a color palette.
+    """Return a list of colors or continuous colormap defining a palette.
 
-    Available seaborn palette names:
-        deep, muted, bright, pastel, dark, colorblind
-
-    Other options:
-        name of matplotlib cmap, 'ch:<cubehelix arguments>', 'hls', 'husl',
-        or a list of colors in any format matplotlib accepts
+    Possible ``palette`` values include:
+        - Name of a seaborn palette (deep, muted, bright, pastel, dark, colorblind)
+        - Name of matplotlib colormap
+        - 'husl' or 'hsl'
+        - 'ch:<cubehelix arguments>'
+        - 'light:<color>', 'dark:<color>', 'blend:<color>,<color>',
+        - A sequence of colors in any format matplotlib accepts
 
     Calling this function with ``palette=None`` will return the current
     matplotlib color cycle.
-
-    Matplotlib palettes can be specified as reversed palettes by appending
-    "_r" to the name or as "dark" palettes by appending "_d" to the name.
-    (These options are mutually exclusive, but the resulting list of colors
-    can also be reversed).
 
     This function can also be used in a ``with`` statement to temporarily
     set the color cycle for a plot or set of plots.
@@ -123,18 +119,16 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
         on how ``palette`` is specified. Named palettes default to 6 colors,
         but grabbing the current palette or passing in a list of colors will
         not change the number of colors unless this is specified. Asking for
-        more colors than exist in the palette will cause it to cycle.
+        more colors than exist in the palette will cause it to cycle. Ignored
+        when ``as_cmap`` is True.
     desat : float, optional
         Proportion to desaturate each color by.
     as_cmap : bool
-        If True, return a :class:matplotlib.colors.Colormap` object.
+        If True, return a :class:`matplotlib.colors.Colormap`.
 
     Returns
     -------
-    palette : list of RGB tuples or :class:`matplotlib.colors.Colormap`
-        Color palette. Behaves like a list, but can be used as a context
-        manager and possesses an ``as_hex`` method to convert to hex color
-        codes.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -145,62 +139,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
     Examples
     --------
 
-    Calling with no arguments returns all colors from the current default
-    color cycle:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns; sns.set()
-        >>> sns.palplot(sns.color_palette())
-
-    Show one of the other "seaborn palettes", which have the same basic order
-    of hues as the default matplotlib color cycle but more attractive colors.
-    Calling with the name of a palette will return 6 colors by default:
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.palplot(sns.color_palette("muted"))
-
-    Use discrete values from one of the built-in matplotlib colormaps:
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.palplot(sns.color_palette("RdBu", n_colors=7))
-
-    Make a customized cubehelix color palette:
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.palplot(sns.color_palette("ch:2.5,-.2,dark=.3"))
-
-    Use a categorical matplotlib palette and add some desaturation:
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.palplot(sns.color_palette("Set1", n_colors=8, desat=.5))
-
-    Make a "dark" matplotlib sequential palette variant. (This can be good
-    when coloring multiple lines or points that correspond to an ordered
-    variable, where you don't want the lightest lines to be invisible):
-
-    .. plot::
-        :context: close-figs
-
-        >>> sns.palplot(sns.color_palette("Blues_d"))
-
-    Use as a context manager:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np, matplotlib.pyplot as plt
-        >>> with sns.color_palette("husl", 8):
-        ...    _ = plt.plot(np.c_[np.zeros(8), np.arange(8)].T)
+    .. include:: ../docstrings/color_palette.rst
 
     """
     if palette is None:
@@ -306,7 +245,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65, as_cmap=False):  # noqa
 
     Returns
     -------
-    seaborn color palette or matplotlib.colors.ListedColormap
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -377,8 +316,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65, as_cmap=False):  # noqa
 
     Returns
     -------
-    palette : seaborn color palette
-        List-like object of colors as RGB tuples.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -455,10 +393,7 @@ def mpl_palette(name, n_colors=6, as_cmap=False):
 
     Returns
     -------
-    palette cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     Examples
     --------
@@ -555,17 +490,14 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     reverse : bool, optional
         if True, reverse the direction of the blend
     as_cmap : bool, optional
-        if True, return as a matplotlib colormap instead of list
+        If True, return a :class:`matplotlib.colors.Colormap`.
     input : {'rgb', 'hls', 'husl', xkcd'}
         Color space to interpret the input color. The first three options
         apply to tuple inputs and the latter applies to string inputs.
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -639,17 +571,14 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     reverse : bool, optional
         if True, reverse the direction of the blend
     as_cmap : bool, optional
-        if True, return as a matplotlib colormap instead of list
+        If True, return a :class:`matplotlib.colors.Colormap`.
     input : {'rgb', 'hls', 'husl', xkcd'}
         Color space to interpret the input color. The first three options
         apply to tuple inputs and the latter applies to string inputs.
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -700,32 +629,6 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     return blend_palette(colors, n_colors, as_cmap)
 
 
-def _flat_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
-    """Make a sequential palette that blends from gray to ``color``.
-
-    Parameters
-    ----------
-    color : matplotlib color
-        hex, rgb-tuple, or html color name
-    n_colors : int, optional
-        number of colors in the palette
-    reverse : bool, optional
-        if True, reverse the direction of the blend
-    as_cmap : bool, optional
-        if True, return as a matplotlib colormap instead of list
-
-    Returns
-    -------
-    palette : list or colormap
-    dark_palette : Create a sequential palette with dark low values.
-
-    """
-    color = _color_to_rgb(color, input)
-    flat = desaturate(color, 0)
-    colors = [color, flat] if reverse else [flat, color]
-    return blend_palette(colors, n_colors, as_cmap)
-
-
 def diverging_palette(h_neg, h_pos, s=75, l=50, sep=1, n=6,  # noqa
                       center="light", as_cmap=False):
     """Make a diverging palette between two HUSL colors.
@@ -748,15 +651,11 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=1, n=6,  # noqa
     center : {"light", "dark"}, optional
         Whether the center of the palette is light or dark
     as_cmap : bool, optional
-        If true, return a matplotlib colormap object rather than a
-        list of colors.
+        If True, return a :class:`matplotlib.colors.Colormap`.
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
@@ -820,14 +719,11 @@ def blend_palette(colors, n_colors=6, as_cmap=False, input="rgb"):
     n_colors : int, optional
         Number of colors in the palette.
     as_cmap : bool, optional
-        If True, return as a matplotlib colormap instead of list.
+        If True, return a :class:`matplotlib.colors.Colormap`.
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     """
     colors = [_color_to_rgb(color, input) for color in colors]
@@ -929,14 +825,11 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     reverse : bool
         If True, the palette will go from dark to light.
     as_cmap : bool
-        If True, return a matplotlib colormap instead of a list of colors.
+        If True, return a :class:`matplotlib.colors.Colormap`.
 
     Returns
     -------
-    palette or cmap : seaborn color palette or matplotlib colormap
-        List-like object of colors as RGB tuples, or colormap object that
-        can map continuous values to colors, depending on the value of the
-        ``as_cmap`` parameter.
+    list of RGB tuples or :class:`matplotlib.colors.Colormap`
 
     See Also
     --------
