@@ -2,6 +2,19 @@
 
 .. currentmodule:: seaborn
 
+.. role:: raw-html(raw)
+   :format: html
+
+.. role:: raw-latex(raw)
+   :format: latex
+
+.. |API| replace:: :raw-html:`<span class="badge badge-api">API</span>` :raw-latex:`{\small\sc [API]}`
+.. |Defaults| replace:: :raw-html:`<span class="badge badge-defaults">Defaults</span>` :raw-latex:`{\small\sc [Defaults]}`
+.. |Docs| replace:: :raw-html:`<span class="badge badge-docs">Docs</span>` :raw-latex:`{\small\sc [Docs]}`
+.. |Feature| replace:: :raw-html:`<span class="badge badge-feature">Feature</span>` :raw-latex:`{\small\sc [Feature]}`
+.. |Enhancement| replace:: :raw-html:`<span class="badge badge-enhancement">Enhancement</span>` :raw-latex:`{\small\sc [Enhancement]}`
+.. |Fix| replace:: :raw-html:`<span class="badge badge-fix">Fix</span>` :raw-latex:`{\small\sc [Fix]}`
+
 What's new in each version
 ==========================
 

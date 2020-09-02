@@ -85,7 +85,7 @@ if LooseVersion(mpl.__version__) >= "3.0":
 
 def set(context="notebook", style="darkgrid", palette="deep",
         font="sans-serif", font_scale=1, color_codes=True, rc=None):
-    """Set aesthetic parameters in one step.
+    """Set multiple theme parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
     referenced functions below for more information.
@@ -93,11 +93,11 @@ def set(context="notebook", style="darkgrid", palette="deep",
     Parameters
     ----------
     context : string or dict
-        Plotting context parameters, see :func:`plotting_context`
+        Plotting context parameters, see :func:`plotting_context`.
     style : string or dict
-        Axes style parameters, see :func:`axes_style`
+        Axes style parameters, see :func:`axes_style`.
     palette : string or sequence
-        Color palette, see :func:`color_palette`
+        Color palette, see :func:`color_palette`.
     font : string
         Font family, see matplotlib font manager.
     font_scale : float, optional

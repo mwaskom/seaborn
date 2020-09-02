@@ -26,7 +26,7 @@ Style and color palettes
 
 - Added the :func:`cubehelix_palette` function for generating sequential palettes from the cubehelix system. See the :ref:`palette docs <cubehelix_palettes>` for more information on how these palettes can be used. There is also the :func:`choose_cubehelix` which will launch an interactive app to select cubehelix parameters in the notebook.
 
-- Added the :func:`xkcd_palette` and the ``xkcd_rgb`` dictionary so that colors :ref:`can be specified <using_xkcd_palettes>` with names from the `xkcd color survey <https://blog.xkcd.com/2010/05/03/color-survey-results/>`_.
+- Added the :func:`xkcd_palette` and the ``xkcd_rgb`` dictionary so that colors can be specified with names from the `xkcd color survey <https://blog.xkcd.com/2010/05/03/color-survey-results/>`_.
 
 - Added the ``font_scale`` option to :func:`plotting_context`, :func:`set_context`, and :func:`set`. ``font_scale`` can independently increase or decrease the size of the font elements in the plot.
 

@@ -26,13 +26,15 @@ def execfile(filename, globals=None, locals=None):
 
 RST_TEMPLATE = """
 
+.. currentmodule:: seaborn
+
 .. _{sphinx_tag}:
 
 {docstring}
 
 .. image:: {img_file}
 
-**Python source code:** :download:`[download source: {fname}]<{fname}>`
+**seaborn components used:** {components}
 
 .. raw:: html
 
@@ -240,6 +242,19 @@ class ExampleGenerator(object):
             return match.group(1)
         return ""
 
+    @property
+    def components(self):
+
+        objects = re.findall(r"sns\.(\w+)\(", self.filetext)
+
+        refs = []
+        for obj in objects:
+            if obj[0].isupper():
+                refs.append(f":class:`{obj}`")
+            else:
+                refs.append(f":func:`{obj}`")
+        return ", ".join(refs)
+
     def extract_docstring(self):
         """ Extract a module-level docstring
         """
@@ -360,6 +375,7 @@ def main(app):
         output = RST_TEMPLATE.format(sphinx_tag=ex.sphinxtag,
                                      docstring=ex.docstring,
                                      end_line=ex.end_line,
+                                     components=ex.components,
                                      fname=ex.pyfilename,
                                      img_file=ex.pngfilename)
         with open(op.join(target_dir, ex.rstfilename), 'w') as f:
