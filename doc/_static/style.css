@@ -115,3 +115,43 @@ tbody tr:nth-child(odd) {
 tbody tr:hover {
     background: rgba(66, 165, 245, 0.2);
 }
+
+.label,
+.badge {
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 11.844px;
+  /* font-weight: bold; */
+  line-height: 13px;
+  color: #ffffff;
+  vertical-align: baseline;
+  white-space: nowrap;
+  /* text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25); */
+  background-color: #999999;
+}
+.badge {
+  padding-left: 9px;
+  padding-right: 9px;
+  -webkit-border-radius: 9px;
+  -moz-border-radius: 9px;
+  border-radius: 9px;
+  opacity: 70%;
+}
+.badge-api {
+  background-color: #c44e52;
+}
+.badge-defaults {
+  background-color: #dd8452;
+}
+.badge-docs {
+  background-color: #8172b3;
+}
+.badge-feature {
+  background-color: #55a868;
+}
+.badge-enhancement {
+  background-color: #4c72b0;
+}
+.badge-fix {
+    background-color: #ccb974;
+}
