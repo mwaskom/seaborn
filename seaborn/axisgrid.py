@@ -482,13 +482,6 @@ class FacetGrid(Grid):
         parameter for the specific visualization the way that axes-level
         functions that accept ``hue`` will.
 
-        When using seaborn functions that infer semantic mappings from a
-        dataset, care must be taken to synchronize those mappings across
-        facets (e.g., by defing the ``hue`` mapping with a palette dict or
-        setting the data type of the variables to ``category``). In most cases,
-        it will be better to use a figure-level function (e.g. :func:`relplot`
-        or :func:`catplot`) than to use :class:`FacetGrid` directly.
-
         The basic workflow is to initialize the :class:`FacetGrid` object with
         the dataset and the variables that are used to structure the grid. Then
         one or more plotting functions can be applied to each subset by calling
@@ -497,6 +490,15 @@ class FacetGrid(Grid):
         axis labels, use different ticks, or add a legend. See the detailed
         code examples below for more information.
 
+        .. warning::
+
+            When using seaborn functions that infer semantic mappings from a
+            dataset, care must be taken to synchronize those mappings across
+            facets (e.g., by defing the ``hue`` mapping with a palette dict or
+            setting the data type of the variables to ``category``). In most cases,
+            it will be better to use a figure-level function (e.g. :func:`relplot`
+            or :func:`catplot`) than to use :class:`FacetGrid` directly.
+
         See the :ref:`tutorial <grid_tutorial>` for more information.
 
         Parameters
@@ -504,7 +506,7 @@ class FacetGrid(Grid):
         {data}
         row, col, hue : strings
             Variables that define subsets of the data, which will be drawn on
-            separate facets in the grid. See the ``*_order`` parameters to
+            separate facets in the grid. See the ``{{var}}_order`` parameters to
             control the order of levels of this variable.
         {col_wrap}
         {share_xy}
@@ -530,9 +532,10 @@ class FacetGrid(Grid):
             Dictionary of keyword arguments passed to matplotlib subplot(s)
             methods.
         gridspec_kws : dict
-            Dictionary of keyword arguments passed to matplotlib's ``gridspec``
-            module (via ``plt.subplots``). Ignored if ``col_wrap`` is not
-            ``None``.
+            Dictionary of keyword arguments passed to
+            :class:`matplotlib.gridspec.GridSpec`
+            (via :func:`matplotlib.pyplot.subplots`).
+            Ignored if ``col_wrap`` is not ``None``.
 
         See Also
         --------
@@ -545,189 +548,14 @@ class FacetGrid(Grid):
         Examples
         --------
 
-        Initialize a 2x2 grid of facets using the tips dataset:
+        .. note::
 
-        .. plot::
-            :context: close-figs
+            These examples use seaborn functions to demonstrate some of the
+            advanced features of the class, but in most cases you will want
+            to use figue-level functions (e.g. :func:`displot`, :func:`relplot`)
+            to make the plots shown here.
 
-            >>> import seaborn as sns; sns.set(style="ticks", color_codes=True)
-            >>> tips = sns.load_dataset("tips")
-            >>> g = sns.FacetGrid(tips, col="time", row="smoker")
-
-        Draw a univariate plot on each facet:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import matplotlib.pyplot as plt
-            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
-            >>> g = g.map(plt.hist, "total_bill")
-
-        (Note that it's not necessary to re-catch the returned variable; it's
-        the same object, but doing so in the examples makes dealing with the
-        doctests somewhat less annoying).
-
-        Pass additional keyword arguments to the mapped function:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import numpy as np
-            >>> bins = np.arange(0, 65, 5)
-            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
-            >>> g = g.map(plt.hist, "total_bill", bins=bins, color="r")
-
-        Plot a bivariate function on each facet:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="time",  row="smoker")
-            >>> g = g.map(sns.scatterplot, "total_bill", "tip")
-
-        Assign one of the variables to the color of the plot elements:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="time",  hue="smoker")
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip")
-            ...       .add_legend())
-
-        Change the height and aspect ratio of each facet:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="day", height=4, aspect=.5)
-            >>> g = g.map(plt.hist, "total_bill", bins=bins)
-
-        Specify the order for plot elements:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="smoker", col_order=["Yes", "No"])
-            >>> g = g.map(plt.hist, "total_bill", bins=bins, color="m")
-
-        Use a different color palette:
-
-        .. plot::
-            :context: close-figs
-
-            >>> kws = dict(s=50, linewidth=.5)
-            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette="Set1",
-            ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
-            ...      .add_legend())
-
-        Use a dictionary mapping hue levels to colors:
-
-        .. plot::
-            :context: close-figs
-
-            >>> pal = dict(Lunch="seagreen", Dinner="gray")
-            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
-            ...                   hue_order=["Dinner", "Lunch"])
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
-            ...      .add_legend())
-
-        Additionally use a different marker for the hue levels:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="sex", hue="time", palette=pal,
-            ...                   hue_order=["Dinner", "Lunch"],
-            ...                   hue_kws=dict(marker=["^", "v"]))
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip", **kws)
-            ...      .add_legend())
-
-        "Wrap" a column variable with many levels into the rows:
-
-        .. plot::
-            :context: close-figs
-
-            >>> att = sns.load_dataset("attention")
-            >>> g = sns.FacetGrid(att, col="subject", col_wrap=5, height=1.5)
-            >>> g = g.map(plt.plot, "solutions", "score", marker=".")
-
-        Define a custom bivariate function to map onto the grid:
-
-        .. plot::
-            :context: close-figs
-
-            >>> from scipy import stats
-            >>> def qqplot(x, y, **kwargs):
-            ...     _, xr = stats.probplot(x, fit=False)
-            ...     _, yr = stats.probplot(y, fit=False)
-            ...     sns.scatterplot(x=xr, y=yr, **kwargs)
-            >>> g = sns.FacetGrid(tips, col="smoker", hue="sex")
-            >>> g = (g.map(qqplot, "total_bill", "tip", **kws)
-            ...       .add_legend())
-
-        Define a custom function that uses a ``DataFrame`` object and accepts
-        column names as positional variables:
-
-        .. plot::
-            :context: close-figs
-
-            >>> import pandas as pd
-            >>> df = pd.DataFrame(
-            ...     data=np.random.randn(90, 4),
-            ...     columns=pd.Series(list("ABCD"), name="walk"),
-            ...     index=pd.date_range("2015-01-01", "2015-03-31",
-            ...                         name="date"))
-            >>> df = df.cumsum(axis=0).stack().reset_index(name="val")
-            >>> def dateplot(x, y, **kwargs):
-            ...     ax = plt.gca()
-            ...     data = kwargs.pop("data")
-            ...     data.plot(x=x, y=y, ax=ax, grid=False, **kwargs)
-            >>> g = sns.FacetGrid(df, col="walk", col_wrap=2, height=3.5)
-            >>> g = g.map_dataframe(dateplot, "date", "val")
-
-        Use different axes labels after plotting:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
-            ...            color="g", **kws)
-            ...       .set_axis_labels("Total bill (US Dollars)", "Tip"))
-
-        Set other attributes that are shared across the facetes:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="smoker", row="sex")
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
-            ...            color="r", **kws)
-            ...       .set(xlim=(0, 60), ylim=(0, 12),
-            ...            xticks=[10, 30, 50], yticks=[2, 6, 10]))
-
-        Use a different template for the facet titles:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="size", col_wrap=3)
-            >>> g = (g.map(plt.hist, "tip", bins=np.arange(0, 13), color="c")
-            ...       .set_titles("{{col_name}} diners"))
-
-        Tighten the facets:
-
-        .. plot::
-            :context: close-figs
-
-            >>> g = sns.FacetGrid(tips, col="smoker", row="sex",
-            ...                   margin_titles=True)
-            >>> g = (g.map(sns.scatterplot, "total_bill", "tip",
-            ...            color="m", **kws)
-            ...       .set(xlim=(0, 60), ylim=(0, 12),
-            ...            xticks=[10, 30, 50], yticks=[2, 6, 10])
-            ...       .fig.subplots_adjust(wspace=.05, hspace=.05))
+        .. include:: ../docstrings/FacetGrid.rst
 
         """).format(**_facet_docs)
 
