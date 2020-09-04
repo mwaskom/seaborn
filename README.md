@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="doc/_static/logo-wide-lightbg.svg"><br>
-</div>
+<img src="doc/_static/logo-wide-lightbg.svg"><br>
 
 --------------------------------------
 
