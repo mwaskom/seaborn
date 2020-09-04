@@ -161,3 +161,8 @@ tbody tr:hover {
 .badge-fix {
     background-color: #ccb974;
 }
+
+.navbar-brand {
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
