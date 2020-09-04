@@ -102,6 +102,11 @@ there is a seaborn tag.
    Tutorial <tutorial>
    API reference <api>
 
+.. toctree::
+  :hidden:
+
+  Citing <citing>
+
 .. raw:: html
 
        </div>

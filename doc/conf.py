@@ -128,15 +128,16 @@ html_theme = 'bootstrap'
 html_theme_options = {
     'source_link_position': "footer",
     'bootswatch_theme': "paper",
+    'navbar_title': " ",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
     'navbar_links': [
-                     ("Gallery", "examples/index"),
-                     ("Tutorial", "tutorial"),
-                     ("API", "api"),
-                     ],
+        ("Gallery", "examples/index"),
+        ("Tutorial", "tutorial"),
+        ("API", "api"),
+    ],
 
-    }
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
@@ -150,7 +151,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = "_static/logo-wide-lightbg.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
