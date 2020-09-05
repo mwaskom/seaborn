@@ -28,7 +28,7 @@ _param_docs = DocstringComponents.from_nested_components(
 )
 
 
-class Grid(object):
+class Grid:
     """Base class for grids of subplots."""
     _margin_titles = False
     _legend_out = True
@@ -423,7 +423,6 @@ class FacetGrid(Grid):
         self.data = data
         self.fig = fig
         self.axes = axes
-        self.axes_dict = axes_dict
 
         self.row_names = row_names
         self.col_names = col_names
@@ -444,6 +443,7 @@ class FacetGrid(Grid):
         self._legend_out = legend_out
         self._legend = None
         self._legend_data = {}
+        self._axes_dict = axes_dict
         self._x_var = None
         self._y_var = None
         self._dropna = dropna
@@ -947,6 +947,18 @@ class FacetGrid(Grid):
                 # Index the flat array so col_wrap works
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
+
+    @property
+    def axes_dict(self):
+        """
+        Dict-like access to axes.
+
+        If only `row` was defined, each entry corresponds to a value from `row`. if
+        only `col` was defined, each entry corresponds to a value from `col`. If both
+        `row` and `col` were defined, each entry is a tuple of values from `row` and
+        `col`, respectively.
+        """
+        return self._axes_dict
 
     @property
     def ax(self):
