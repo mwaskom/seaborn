@@ -230,12 +230,19 @@ class TestColorPalettes(object):
 
     def test_light_palette(self):
 
-        pal_forward = palettes.light_palette("red")
-        pal_reverse = palettes.light_palette("red", reverse=True)
+        n = 4
+        pal_forward = palettes.light_palette("red", n)
+        pal_reverse = palettes.light_palette("red", n, reverse=True)
         assert np.allclose(pal_forward, pal_reverse[::-1])
 
         red = mpl.colors.colorConverter.to_rgb("red")
         assert pal_forward[-1] == red
+
+        pal_f_from_string = palettes.color_palette("light:red", n)
+        assert pal_forward[3] == pal_f_from_string[3]
+
+        pal_r_from_string = palettes.color_palette("light:red_r", n)
+        assert pal_reverse[3] == pal_r_from_string[3]
 
         pal_cmap = palettes.light_palette("blue", as_cmap=True)
         assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
@@ -249,12 +256,19 @@ class TestColorPalettes(object):
 
     def test_dark_palette(self):
 
-        pal_forward = palettes.dark_palette("red")
-        pal_reverse = palettes.dark_palette("red", reverse=True)
+        n = 4
+        pal_forward = palettes.dark_palette("red", n)
+        pal_reverse = palettes.dark_palette("red", n, reverse=True)
         assert np.allclose(pal_forward, pal_reverse[::-1])
 
         red = mpl.colors.colorConverter.to_rgb("red")
         assert pal_forward[-1] == red
+
+        pal_f_from_string = palettes.color_palette("dark:red", n)
+        assert pal_forward[3] == pal_f_from_string[3]
+
+        pal_r_from_string = palettes.color_palette("dark:red_r", n)
+        assert pal_reverse[3] == pal_r_from_string[3]
 
         pal_cmap = palettes.dark_palette("blue", as_cmap=True)
         assert isinstance(pal_cmap, mpl.colors.LinearSegmentedColormap)
