@@ -25,10 +25,11 @@ for ax, s in zip(axes.flat, np.linspace(0, 3, 10)):
     sns.kdeplot(
         x=x, y=y,
         cmap=cmap, fill=True,
-        cut=4, thresh=.05, levels=15,
+        clip=(-5, 5), cut=10,
+        thresh=0, levels=15,
         ax=ax,
     )
     ax.set_axis_off()
 
 ax.set(xlim=(-3.5, 3.5), ylim=(-3.5, 3.5))
-f.subplots_adjust(0, 0, 1, 1, 0, 0)
+f.subplots_adjust(0, 0, 1, 1, .08, .08)
