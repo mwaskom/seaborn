@@ -172,14 +172,6 @@ class Grid:
 
         return self
 
-    @property
-    def legend(self):
-        """Access to the legend object."""
-        try:
-            return self._legend
-        except AttributeError:
-            return None
-
     def _clean_axis(self, ax):
         """Turn off axis labels and legend."""
         ax.set_xlabel("")
@@ -229,6 +221,14 @@ class Grid:
             palette = color_palette(colors, n_colors)
 
         return palette
+
+    @property
+    def legend(self):
+        """The :class:`matplotlib.legend.Legend` object, if present."""
+        try:
+            return self._legend
+        except AttributeError:
+            return None
 
 
 _facet_docs = dict(
@@ -419,11 +419,16 @@ class FacetGrid(Grid):
 
         # --- Set up the class attributes
 
-        # First the public API
-        self.data = data
-        self.fig = fig
-        self.axes = axes
+        # Attributes that are part of the public API but accessed through
+        # a  property so that Sphinx adds them to the auto class doc
+        self._fig = fig
+        self._axes = axes
+        self._axes_dict = axes_dict
+        self._legend = None
 
+        # Public attributes that aren't explicitly documented
+        # (It's not obvious that having them be public was a good idea)
+        self.data = data
         self.row_names = row_names
         self.col_names = col_names
         self.hue_names = hue_names
@@ -441,9 +446,7 @@ class FacetGrid(Grid):
         self._hue_var = hue_var
         self._colors = colors
         self._legend_out = legend_out
-        self._legend = None
         self._legend_data = {}
-        self._axes_dict = axes_dict
         self._x_var = None
         self._y_var = None
         self._dropna = dropna
@@ -948,27 +951,41 @@ class FacetGrid(Grid):
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
 
-    @property
-    def axes_dict(self):
-        """
-        Dict-like access to axes.
+    # ------ Properties that are part of the public API and documented by Sphinx
 
-        If only `row` was defined, each entry corresponds to a value from `row`. if
-        only `col` was defined, each entry corresponds to a value from `col`. If both
-        `row` and `col` were defined, each entry is a tuple of values from `row` and
-        `col`, respectively.
-        """
-        return self._axes_dict
+    @property
+    def fig(self):
+        """The :class:`matplotlib.figure.Figure` with the plot."""
+        return self._fig
+
+    @property
+    def axes(self):
+        """An array of the :class:`matplotlib.axes.Axes` objects in the grid."""
+        return self._axes
 
     @property
     def ax(self):
-        """Easy access to single axes."""
+        """The :class:`matplotlib.axes.Axes` when no faceting variables are assigned."""
         if self.axes.shape == (1, 1):
             return self.axes[0, 0]
         else:
-            err = ("You must use the `.axes` attribute (an array) when "
-                   "there is more than one plot.")
+            err = (
+                "Use the `.axes` attribute when facet variables are assigned."
+            )
             raise AttributeError(err)
+
+    @property
+    def axes_dict(self):
+        """A mapping of facet names to corresponding :class:`matplotlib.axes.Axes`.
+
+        If only one of ``row`` or ``col`` is assigned, each key is a string
+        representing a level of that variable. If both facet dimensions are
+        assigned, each key is a ``({row_level}, {col_level})`` tuple.
+
+        """
+        return self._axes_dict
+
+    # ------ Private properties, that require some computation to get
 
     @property
     def _inner_axes(self):
