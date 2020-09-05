@@ -20,7 +20,7 @@ sns.histplot(
     diamonds,
     x="price", hue="cut",
     multiple="stack",
-    palette="Blues_r",
+    palette="light:m_r",
     edgecolor=".3",
     linewidth=.5,
     log_scale=True,
