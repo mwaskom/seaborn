@@ -184,7 +184,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             reverse = color.endswith("_r")
             if reverse:
                 color = color[:-2]
-            palette = light_palette(color, reverse=reverse, as_cmap=as_cmap)
+            palette = light_palette(color, n_colors, reverse=reverse, as_cmap=as_cmap)
 
         elif palette.startswith("dark:"):
             # light palette to color specified in string
@@ -192,13 +192,13 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
             reverse = color.endswith("_r")
             if reverse:
                 color = color[:-2]
-            palette = dark_palette(color, reverse=reverse, as_cmap=as_cmap)
+            palette = dark_palette(color, n_colors, reverse=reverse, as_cmap=as_cmap)
 
         elif palette.startswith("blend:"):
             # blend palette between colors specified in string
             _, colors = palette.split(":")
             colors = colors.split(",")
-            palette = blend_palette(colors, as_cmap=as_cmap)
+            palette = blend_palette(colors, n_colors, as_cmap=as_cmap)
 
         else:
             try:
