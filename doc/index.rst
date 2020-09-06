@@ -71,10 +71,10 @@ attractive and informative statistical graphics.
 
 For a brief introduction to the ideas behind the library, you can read the
 :doc:`introductory notes <introduction>`. Visit the :doc:`installation page
-<installing>` to see how you can download the package. You can browse the
-:doc:`example gallery <examples/index>` to see what you can do with seaborn,
-and then check out the :doc:`tutorial <tutorial>` and :doc:`API reference
-<api>` to find out how.
+<installing>` to see how you can download the package and get started with it.
+You can browse the :doc:`example gallery <examples/index>` to see what you
+can do with seaborn, and then check out the :doc:`tutorial <tutorial>` and
+:doc:`API reference <api>` to find out how.
 
 To see the code or report a bug, please visit the `github repository
 <https://github.com/mwaskom/seaborn>`_. General support issues are most at home
@@ -97,7 +97,7 @@ there is a seaborn tag.
 
    Introduction <introduction>
    Release notes <whatsnew>
-   Installing <installing>
+   Installation <installing>
    Example gallery <examples/index>
    Tutorial <tutorial>
    API reference <api>
