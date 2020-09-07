@@ -7,7 +7,7 @@ from cycler import cycler
 from . import palettes
 
 
-__all__ = ["set", "reset_defaults", "reset_orig",
+__all__ = ["set_theme", "set", "reset_defaults", "reset_orig",
            "axes_style", "set_style", "plotting_context", "set_context",
            "set_palette"]
 
