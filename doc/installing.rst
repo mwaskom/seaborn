@@ -123,7 +123,7 @@ step if it's not obvious how to do it.
 
 General support questions are more at home on either `stackoverflow
 <https://stackoverflow.com/questions/tagged/seaborn/>`_ or `discourse
-<https://discourse.matplotlib.org/c/3rdparty/18>`_, which have a larger
+<https://discourse.matplotlib.org/c/3rdparty/seaborn/21>`_, which have a larger
 audience of people who will see your post and may be able to offer
 assistance. StackOverflow is better for specific issues, while discourse is
 better for more open-ended discussion. Your chance of getting a quick answer
