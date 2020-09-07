@@ -6,7 +6,7 @@ _thumb: .52, .505
 
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 # Load the planets dataset and initialize the figure
 planets = sns.load_dataset("planets")

@@ -6,7 +6,7 @@ _thumb: .3, .25
 """
 import pandas as pd
 import seaborn as sns
-sns.set()
+sns.set_theme()
 
 # Load the brain networks example dataset
 df = sns.load_dataset("brain_networks", header=[0, 1, 2], index_col=0)

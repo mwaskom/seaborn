@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 iris = sns.load_dataset("iris")
 
 # "Melt" the dataset to "long-form" or "tidy" representation

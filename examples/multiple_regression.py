@@ -5,7 +5,7 @@ Multiple linear regression
 _thumb: .45, .45
 """
 import seaborn as sns
-sns.set()
+sns.set_theme()
 
 # Load the penguins dataset
 penguins = sns.load_dataset("penguins")

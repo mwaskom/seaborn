@@ -5,7 +5,7 @@ Dot plot with several variables
 _thumb: .3, .3
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the dataset
 crashes = sns.load_dataset("car_crashes")

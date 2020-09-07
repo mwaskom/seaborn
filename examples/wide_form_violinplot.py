@@ -6,7 +6,7 @@ _thumb: .6, .45
 """
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example dataset of brain network correlations
 df = sns.load_dataset("brain_networks", header=[0, 1, 2], index_col=0)

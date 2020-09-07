@@ -6,7 +6,7 @@ _thumb: .45, .5
 
 """
 import seaborn as sns
-sns.set(style="white")
+sns.set_theme(style="white")
 
 # Load the example mpg dataset
 mpg = sns.load_dataset("mpg")

@@ -7,7 +7,7 @@ _thumb: .42, .58
 """
 import seaborn as sns
 
-sns.set(style="dark")
+sns.set_theme(style="dark")
 flights = sns.load_dataset("flights")
 
 # Plot each year's time series in its own facet

@@ -5,7 +5,7 @@ Joint kernel density estimate
 _thumb: .6, .4
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 # Load the penguins dataset
 penguins = sns.load_dataset("penguins")

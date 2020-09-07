@@ -6,7 +6,7 @@ _thumb: .48, .42
 
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 dots = sns.load_dataset("dots")
 

@@ -9,7 +9,7 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 diamonds = sns.load_dataset("diamonds")
 

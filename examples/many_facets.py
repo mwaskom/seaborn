@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 # Create a dataset with many short random walks
 rs = np.random.RandomState(4)

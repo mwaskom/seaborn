@@ -5,7 +5,7 @@ Facetted ECDF plots
 _thumb: .30, .49
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 mpg = sns.load_dataset("mpg")
 
 colors = (250, 70, 50), (350, 70, 50)

@@ -6,7 +6,7 @@ _thumb: .33, .57
 """
 import seaborn as sns
 
-sns.set(style="darkgrid")
+sns.set_theme(style="darkgrid")
 df = sns.load_dataset("penguins")
 sns.displot(
     df, x="flipper_length_mm", col="species", row="sex",

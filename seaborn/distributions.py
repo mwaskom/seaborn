@@ -2479,7 +2479,7 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         :context: close-figs
 
         >>> import seaborn as sns, numpy as np
-        >>> sns.set(); np.random.seed(0)
+        >>> sns.set_theme(); np.random.seed(0)
         >>> x = np.random.randn(100)
         >>> ax = sns.distplot(x)
 

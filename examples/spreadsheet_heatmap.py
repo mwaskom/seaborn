@@ -5,7 +5,7 @@ Annotated heatmaps
 """
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set()
+sns.set_theme()
 
 # Load the example flights dataset and convert to long-form
 flights_long = sns.load_dataset("flights")

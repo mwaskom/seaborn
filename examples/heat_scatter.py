@@ -6,7 +6,7 @@ _thumb: .5, .5
 
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the brain networks dataset, select subset, and collapse the multi-index
 df = sns.load_dataset("brain_networks", header=[0, 1, 2], index_col=0)

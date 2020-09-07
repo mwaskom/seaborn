@@ -6,7 +6,7 @@ _thumb: .45, .4
 """
 import numpy as np
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 rs = np.random.RandomState(11)
 x = rs.gamma(2, size=1000)
