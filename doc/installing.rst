@@ -14,35 +14,37 @@ Official releases of seaborn can be installed from `PyPI
 
     pip install seaborn
 
-The library is also included as part of `Anaconda <https://repo.anaconda.com/>`_::
+The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution::
 
     conda install seaborn
 
 Dependencies
 ~~~~~~~~~~~~
 
-Support Python versions
-^^^^^^^^^^^^^^^^^^^^^^^
+Supported Python versions
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Python 3.6+
 
 Required dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <https://numpy.org/>`__
-
--  `scipy <https://www.scipy.org/>`__
-
--  `pandas <https://pandas.pydata.org/>`__
-
--  `matplotlib <https://matplotlib.org>`__
-
 If not already present, these libraries will be downloaded when you install seaborn.
+
+- `numpy <https://numpy.org/>`__
+
+- `scipy <https://www.scipy.org/>`__
+
+- `pandas <https://pandas.pydata.org/>`__
+
+- `matplotlib <https://matplotlib.org>`__
 
 Optional dependencies
 ^^^^^^^^^^^^^^^^^^^^^
 
--  `statsmodels <https://www.statsmodels.org/>`__, for advanced regression plots
+- `statsmodels <https://www.statsmodels.org/>`__, for advanced regression plots
+
+- `fastcluster <https://pypi.org/project/fastcluster/>`__, for clustering large matrices
 
 Quickstart
 ~~~~~~~~~~
@@ -75,7 +77,7 @@ Debugging install issues
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The seaborn codebase is pure Python, and the library should generally install
-without issue. Occasionally, difficulties will arise because its dependencies
+without issue. Occasionally, difficulties will arise because the dependencies
 include compiled code and link to system libraries. These difficulties
 typically manifest as errors on import with messages such as ``"DLL load
 failed"``. To debug such problems, read through the exception trace to
@@ -86,7 +88,7 @@ system.
 In some cases, an installation of seaborn will appear to succeed, but trying
 to import it will raise an error with the message ``"No module named
 seaborn"``. This usually means that you have multiple Python installations on
-your system and that your ``pip`` or ``conda`` point towards a different
+your system and that your ``pip`` or ``conda`` points towards a different
 installation than where your interpreter lives. Resolving this issue
 will involve sorting out the paths on your system, but it can sometimes be
 avoided by invoking ``pip`` with ``python -m pip install seaborn``.
@@ -98,8 +100,8 @@ If you think you've encountered a bug in seaborn, please report it on the
 `GitHub issue tracker <https://github.com/mwaskom/seaborn/issues>`_.
 To be useful, bug reports must include the following information:
 
-- A reproducible code example that demonstrates the problem (with code as text)
-- The output that you are seeing (as a saved image or screenshot)
+- A reproducible code example that demonstrates the problem
+- The output that you are seeing (an image of a plot, or the error message)
 - A clear explanation of why you think something is wrong
 - The specific versions of seaborn and matplotlib that you are working with
 
@@ -116,8 +118,8 @@ avoid making a duplicate report.
 Because matplotlib handles the actual rendering, errors or incorrect outputs
 may be due to a problem in matplotlib rather than one in seaborn. It can save time
 if you try to reproduce the issue in an example that uses only matplotlib,
-so that you can report it in the right place. But it is alright if it is not
-obvious how to do that.
+so that you can report it in the right place. But it is alright to skip this
+step if it's not obvious how to do it.
 
 General support questions are more at home on either `stackoverflow
 <https://stackoverflow.com/questions/tagged/seaborn/>`_ or `discourse
@@ -126,7 +128,7 @@ audience of people who will see your post and may be able to offer
 assistance. StackOverflow is better for specific issues, while discourse is
 better for more open-ended discussion. Your chance of getting a quick answer
 will be higher if you include `runnable code
-<https://stackoverflow.com/help/minimal-reproducible-example>`_, a clear
+<https://stackoverflow.com/help/minimal-reproducible-example>`_, a precise
 statement of what you are hoping to achieve, and a clear explanation of the
 problems that you have encountered.
 
