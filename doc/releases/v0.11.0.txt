@@ -99,14 +99,16 @@ See the new user guide chapter on :doc:`data formats <tutorial/data_structure>` 
 Other changes
 ~~~~~~~~~~~~~
 
-General API
-^^^^^^^^^^^^^
+Documentation improvements
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - |Docs| Added two new chapters to the user guide, one giving an overview of the :doc:`types of functions in seaborn <tutorial/function_overview>`, and one discussing the different :doc:`data formats <tutorial/data_structure>` that seaborn understands.
 
-- |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
+- |Docs| Expanded the :doc:`color palette tutorial <tutorial/color_palettes>` to give more background on color theory and better motivate the use of color in statistical graphics.
 
-- |Enhancement| |Defaults| Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
+- |Docs| Added more information to the :doc:`installation guidelines <installing>` and streamlined the :doc:`introduction <introduction>` page.
+
+- |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
 
 Relational plots
 ^^^^^^^^^^^^^^^^
@@ -117,6 +119,8 @@ Relational plots
   - Modified the ticking algorithm for a "brief" legend to show up to 6 values and not to show values outside the limits of the data.
   - Changed the approach to the legend title: the normal matplotlib legend title is used when only one variable is assigned a semantic mapping, whereas the old approach of adding an invisible legend artist with a subtitle label is used only when multiple semantic variables are defined.
   - Modified legend subtitles to be left-aligned and to be drawn in the default legend title font size.
+
+- |Enhancement| |Defaults| Changed how functions that use different representations for numeric and categorical data handle vectors with an ``object`` data type. Previously, data was considered numeric if it could be coerced to a float representation without error. Now, object-typed vectors are considered numeric only when their contents are themselves numeric. As a consequence, numbers that are encoded as strings will now be treated as categorical data (:pr:`2084`).
 
 - |Enhancement| |Defaults| Plots with a ``style`` semantic can now generate an infinite number of unique dashes and/or markers by default. Previously, an error would be raised if the ``style`` variable had more levels than could be mapped using the default lists. The existing defaults were slightly modified as part of this change; if you need to exactly reproduce plots from earlier versions, refer to the `old defaults <https://github.com/mwaskom/seaborn/blob/v0.10.1/seaborn/relational.py#L24>`_ (:pr:`2075`).
 

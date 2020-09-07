@@ -71,15 +71,16 @@ attractive and informative statistical graphics.
 
 For a brief introduction to the ideas behind the library, you can read the
 :doc:`introductory notes <introduction>`. Visit the :doc:`installation page
-<installing>` to see how you can download the package. You can browse the
-:doc:`example gallery <examples/index>` to see what you can do with seaborn,
-and then check out the :doc:`tutorial <tutorial>` and :doc:`API reference
-<api>` to find out how.
+<installing>` to see how you can download the package and get started with it.
+You can browse the :doc:`example gallery <examples/index>` to see what you
+can do with seaborn, and then check out the :doc:`tutorial <tutorial>` and
+:doc:`API reference <api>` to find out how.
 
-To see the code or report a bug, please visit the `github repository
-<https://github.com/mwaskom/seaborn>`_. General support issues are most at home
-on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_, where
-there is a seaborn tag.
+To see the code or report a bug, please visit the `GitHub repository
+<https://github.com/mwaskom/seaborn>`_. General support questions are most at home
+on `stackoverflow <https://stackoverflow.com/questions/tagged/seaborn/>`_ or
+`discourse <https://discourse.matplotlib.org/c/3rdparty/seaborn/21>`_, which
+have dedicated channels for seaborn.
    
 
 .. raw:: html
