@@ -14,7 +14,7 @@ flights = sns.load_dataset("flights")
 g = sns.relplot(
     data=flights,
     x="month", y="passengers", col="year", hue="year",
-    kind="line", palette="flare", linewidth=4, zorder=5,
+    kind="line", palette="crest", linewidth=4, zorder=5,
     col_wrap=3, height=2, aspect=1.5, legend=False,
 )
 
