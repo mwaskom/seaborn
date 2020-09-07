@@ -2319,10 +2319,10 @@ Extra keyword arguments are passed to the underlying function, so you should
 refer to the documentation for each to understand the complete set of options
 for making plots with this interface.
 
-More information about the relative strengths and weaknesses of each approach
-is provided in the :ref:`user guide <distribution_tutorial>`. The distinction
-between figure-level and axes-level functions is also explained further in the
-:ref:`user guide <function_tutorial>`.
+See the :ref:`distribution plots tutorial <distribution_tutorial>` for a more
+in-depth discussion of the relative strengths and weaknesses of each approach.
+The distinction between figure-level and axes-level functions is explained
+further in the :ref:`user guide <function_tutorial>`.
 
 Parameters
 ----------

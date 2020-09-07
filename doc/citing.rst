@@ -34,14 +34,14 @@ Logo files
 Additional logo files, including hi-res PNGs and images suitable for use over a dark background, are available
 `on GitHub <https://github.com/mwaskom/seaborn/tree/master/doc/_static>`_.
 
-Primary logo
-~~~~~~~~~~~~
+Wide logo
+~~~~~~~~~
 
 .. image:: _static/logo-wide-lightbg.svg
    :width: 400px
 
-Secondary logo
-~~~~~~~~~~~~~~
+Tall logo
+~~~~~~~~~
 
 .. image:: _static/logo-tall-lightbg.svg
    :width: 150px 

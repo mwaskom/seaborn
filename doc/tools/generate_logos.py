@@ -121,8 +121,12 @@ def logo(
         hist_y = gaussian(x.size, hist_sigma)
         hist = 1.1 * h * (hist_y[x0 - hist_mean:-hist_mean] + hist_y0)
         dx = x[skip] - x[0]
+        hist_x = xx[::skip]
+        hist_h = h + hist[::skip]
+        # Magic number to avoid tiny sliver of bar on edge
+        use = hist_x < center[0] + radius * .5
         bars = ax.bar(
-            xx[::skip], h + hist[::skip], bottom=-h, width=dx,
+            hist_x[use], hist_h[use], bottom=-h, width=dx,
             align="edge", color=hist_color, ec="w", lw=lw,
             zorder=3,
         )
@@ -137,8 +141,12 @@ def logo(
     # Add scatterplot in top wave area
     if scatter:
         seed = sum(map(ord, "seaborn logo"))
-        x, y = poisson_disc_sample(radius - edge - ring, pad, seed=seed).T
+        xy = poisson_disc_sample(radius - edge - ring, pad, seed=seed)
+        clearance = distance.cdist(xy + center, np.c_[xx, pdfs[-2]])
+        use = clearance.min(axis=1) > pad / 1.8
+        x, y = xy[use].T
         sizes = (x - y) % 9
+
         points = ax.scatter(
             x + center[0], y + center[1], s=scale * (10 + sizes * 5),
             zorder=5, color=colors[-1], ec="w", lw=scale / 2,
