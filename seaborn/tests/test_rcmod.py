@@ -30,6 +30,20 @@ class RCParamTester(object):
             else:
                 nt.assert_equal((k, mpl.rcParams[k]), (k, v))
 
+    def assert_rc_params_equal(self, params1, params2):
+
+        for key, v1 in params1.items():
+            # Various subtle issues in matplotlib lead to unexpected
+            # values for the backend rcParam, which isn't relevant here
+            if key == "backend":
+                continue
+
+            v2 = params2[key]
+            if isinstance(v1, np.ndarray):
+                npt.assert_array_equal(v1, v2)
+            else:
+                nt.assert_equal(v1, v2)
+
 
 class TestAxesStyle(RCParamTester):
 
@@ -125,6 +139,19 @@ class TestAxesStyle(RCParamTester):
 
         rcmod.reset_orig()
         self.assert_rc_params(mpl.rcParamsOrig)
+        rcmod.set()
+
+    def test_set_is_alias(self):
+
+        rcmod.set(context="paper", style="white")
+        params1 = mpl.rcParams.copy()
+        rcmod.reset_orig()
+
+        rcmod.set_theme(context="paper", style="white")
+        params2 = mpl.rcParams.copy()
+
+        self.assert_rc_params_equal(params1, params2)
+
         rcmod.set()
 
 
