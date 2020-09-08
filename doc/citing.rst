@@ -21,11 +21,11 @@ using the following DOI:
         year         = 2020,
         publisher    = {Zenodo},
         version      = {latest},
-        doi          = {10.5281/zenodo.4012680},
-        url          = {https://doi.org/10.5281/zenodo.4012680},
+        doi          = {10.5281/zenodo.592845},
+        url          = {https://doi.org/10.5281/zenodo.592845},
     }
 
-Visit the `Zenodo page <https://zenodo.org/record/4012680/>`_ for
+Visit the `Zenodo page <https://zenodo.org/record/592845/>`_ for
 version-specific DOIs and contributor lists.
 
 Logo files

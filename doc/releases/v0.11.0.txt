@@ -2,6 +2,9 @@
 v0.11.0 (September 2020)
 ------------------------
 
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4019146.svg
+   :target: https://doi.org/10.5281/zenodo.4019146
+
 This is a major release with several important new features, enhancements to existing functions, and changes to the library. Highlights include an overhaul and modernization of the distributions plotting functions, more flexible data specification, new colormaps, and better narrative documentation.
 
 Required keyword arguments
