@@ -36,6 +36,7 @@ class Grid:
     def __init__(self):
 
         self._tight_layout_rect = [0, 0, 1, 1]
+        self._tight_layout_pad = None
 
         # This attribute is set externally and is a hack to handle newer functions that
         # don't add proxy artists onto the Axes. We need an overall cleaner approach.
@@ -58,6 +59,8 @@ class Grid:
         """Call fig.tight_layout within rect that exclude the legend."""
         kwargs = kwargs.copy()
         kwargs.setdefault("rect", self._tight_layout_rect)
+        if self._tight_layout_pad is not None:
+            kwargs.setdefault("pad", self._tight_layout_pad)
         self.fig.tight_layout(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
@@ -1084,7 +1087,7 @@ class PairGrid(Grid):
         hue=None, hue_order=None, palette=None,
         hue_kws=None, vars=None, x_vars=None, y_vars=None,
         corner=False, diag_sharey=True, height=2.5, aspect=1,
-        layout_pad=0, despine=True, dropna=False, size=None
+        layout_pad=.5, despine=True, dropna=False, size=None
     ):
         """Initialize the plot figure and PairGrid object.
 
@@ -1224,6 +1227,8 @@ class PairGrid(Grid):
         self._legend_data = {}
 
         # Make the plot look nice
+        self._tight_layout_rect = [.01, .01, .99, .99]
+        self._tight_layout_pad = layout_pad
         self._despine = despine
         if despine:
             utils.despine(fig=fig)
@@ -1980,6 +1985,8 @@ def pairplot(
     # Add a legend
     if hue is not None:
         grid.add_legend()
+
+    grid.tight_layout()
 
     return grid
 
