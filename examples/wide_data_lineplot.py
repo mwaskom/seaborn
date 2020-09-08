@@ -8,7 +8,7 @@ _thumb: .52, .5
 import numpy as np
 import pandas as pd
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 rs = np.random.RandomState(365)
 values = rs.randn(365, 4).cumsum(axis=0)

@@ -259,7 +259,7 @@ def hls_palette(n_colors=6, h=.01, l=.6, s=.65, as_cmap=False):  # noqa
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.hls_palette(10))
 
     Create a palette of 10 colors that begins at a different hue value:
@@ -331,7 +331,7 @@ def husl_palette(n_colors=6, h=.01, s=.9, l=.65, as_cmap=False):  # noqa
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.husl_palette(10))
 
     Create a palette of 10 colors that begins at a different hue value:
@@ -403,7 +403,7 @@ def mpl_palette(name, n_colors=6, as_cmap=False):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.mpl_palette("Set2", 8))
 
     Create a sequential colorbrewer palette:
@@ -512,7 +512,7 @@ def dark_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.dark_palette("purple"))
 
     Generate a palette that decreases in lightness:
@@ -593,7 +593,7 @@ def light_palette(color, n_colors=6, reverse=False, as_cmap=False, input="rgb"):
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.light_palette("purple"))
 
     Generate a palette that increases in lightness:
@@ -670,7 +670,7 @@ def diverging_palette(h_neg, h_pos, s=75, l=50, sep=1, n=6,  # noqa
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.diverging_palette(240, 10, n=9))
 
     Generate a brighter green-white-purple palette:
@@ -852,7 +852,7 @@ def cubehelix_palette(n_colors=6, start=0, rot=.4, gamma=1.0, hue=0.8,
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.palplot(sns.cubehelix_palette())
 
     Rotate backwards from the same starting location:
@@ -1004,7 +1004,7 @@ def set_color_codes(palette="deep"):
         :context: close-figs
 
         >>> import matplotlib.pyplot as plt
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> sns.set_color_codes()
         >>> _ = plt.plot([0, 1], color="r")
 

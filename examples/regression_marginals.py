@@ -5,7 +5,7 @@ Linear regression with marginal distributions
 _thumb: .65, .65
 """
 import seaborn as sns
-sns.set(style="darkgrid")
+sns.set_theme(style="darkgrid")
 
 tips = sns.load_dataset("tips")
 g = sns.jointplot(x="total_bill", y="tip", data=tips,

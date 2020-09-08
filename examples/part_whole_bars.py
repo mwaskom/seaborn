@@ -5,7 +5,7 @@ Horizontal bar plots
 """
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Initialize the matplotlib figure
 f, ax = plt.subplots(figsize=(6, 15))

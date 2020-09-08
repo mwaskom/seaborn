@@ -5,7 +5,7 @@ Plotting a three-way ANOVA
 _thumb: .42, .5
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example exercise dataset
 df = sns.load_dataset("exercise")

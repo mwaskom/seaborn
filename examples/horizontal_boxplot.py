@@ -7,7 +7,7 @@ _thumb: .7, .37
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 # Initialize the figure with a logarithmic x axis
 f, ax = plt.subplots(figsize=(7, 6))

@@ -5,7 +5,7 @@ Smooth kernel density with marginal histograms
 _thumb: .48, .41
 """
 import seaborn as sns
-sns.set(style="white")
+sns.set_theme(style="white")
 
 df = sns.load_dataset("penguins")
 

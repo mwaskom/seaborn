@@ -5,7 +5,7 @@ Anscombe's quartet
 _thumb: .4, .4
 """
 import seaborn as sns
-sns.set(style="ticks")
+sns.set_theme(style="ticks")
 
 # Load the example dataset for Anscombe's quartet
 df = sns.load_dataset("anscombe")

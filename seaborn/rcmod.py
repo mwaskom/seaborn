@@ -7,7 +7,7 @@ from cycler import cycler
 from . import palettes
 
 
-__all__ = ["set", "reset_defaults", "reset_orig",
+__all__ = ["set_theme", "set", "reset_defaults", "reset_orig",
            "axes_style", "set_style", "plotting_context", "set_context",
            "set_palette"]
 
@@ -83,8 +83,8 @@ if LooseVersion(mpl.__version__) >= "3.0":
     _context_keys.append("legend.title_fontsize")
 
 
-def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, color_codes=True, rc=None):
+def set_theme(context="notebook", style="darkgrid", palette="deep",
+              font="sans-serif", font_scale=1, color_codes=True, rc=None):
     """Set multiple theme parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
@@ -115,6 +115,11 @@ def set(context="notebook", style="darkgrid", palette="deep",
     set_palette(palette, color_codes=color_codes)
     if rc is not None:
         mpl.rcParams.update(rc)
+
+
+def set(*args, **kwargs):
+    """Alias for :func:`set_theme`, which is the preferred interface."""
+    set_theme(*args, **kwargs)
 
 
 def reset_defaults():

@@ -7,7 +7,7 @@ _thumb: .6, .45
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="darkgrid")
+sns.set_theme(style="darkgrid")
 iris = sns.load_dataset("iris")
 
 # Set up the figure

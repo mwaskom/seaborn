@@ -6,7 +6,7 @@ Violinplots with observations
 import numpy as np
 import seaborn as sns
 
-sns.set()
+sns.set_theme()
 
 # Create a random dataset across several variables
 rs = np.random.default_rng(0)

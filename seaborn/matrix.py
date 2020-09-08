@@ -447,7 +447,7 @@ def heatmap(
         :context: close-figs
 
         >>> import numpy as np; np.random.seed(0)
-        >>> import seaborn as sns; sns.set()
+        >>> import seaborn as sns; sns.set_theme()
         >>> uniform_data = np.random.rand(10, 12)
         >>> ax = sns.heatmap(uniform_data)
 
@@ -1333,7 +1333,7 @@ def clustermap(
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> import seaborn as sns; sns.set_theme(color_codes=True)
         >>> iris = sns.load_dataset("iris")
         >>> species = iris.pop("species")
         >>> g = sns.clustermap(iris)

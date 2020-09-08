@@ -110,6 +110,11 @@ Documentation improvements
 
 - |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
 
+Theming
+~~~~~~~
+
+- |API| The :func:`set` function has been renamed to :func:`set_theme` for more clarity about what it does. For the foreseeable future, :func:`set` will remain as an alias, but it is recommended to update your code.
+
 Relational plots
 ^^^^^^^^^^^^^^^^
 

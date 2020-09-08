@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-sns.set()
+sns.set_theme()
 
 # Generate an example radial datast
 r = np.linspace(0, 10, num=100)

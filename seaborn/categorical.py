@@ -2296,7 +2296,7 @@ boxplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.boxplot(x=tips["total_bill"])
 
@@ -2481,7 +2481,7 @@ violinplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.violinplot(x=tips["total_bill"])
 
@@ -2706,7 +2706,7 @@ boxenplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.boxenplot(x=tips["total_bill"])
 
@@ -2872,7 +2872,7 @@ stripplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.stripplot(x=tips["total_bill"])
 
@@ -3072,7 +3072,7 @@ swarmplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.swarmplot(x=tips["total_bill"])
 
@@ -3241,7 +3241,7 @@ barplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="whitegrid")
+        >>> sns.set_theme(style="whitegrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.barplot(x="day", y="total_bill", data=tips)
 
@@ -3440,7 +3440,7 @@ pointplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="darkgrid")
+        >>> sns.set_theme(style="darkgrid")
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.pointplot(x="time", y="total_bill", data=tips)
 
@@ -3642,7 +3642,7 @@ countplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="darkgrid")
+        >>> sns.set_theme(style="darkgrid")
         >>> titanic = sns.load_dataset("titanic")
         >>> ax = sns.countplot(x="class", data=titanic)
 
@@ -3943,7 +3943,7 @@ catplot.__doc__ = dedent("""\
         :context: close-figs
 
         >>> import seaborn as sns
-        >>> sns.set(style="ticks")
+        >>> sns.set_theme(style="ticks")
         >>> exercise = sns.load_dataset("exercise")
         >>> g = sns.catplot(x="time", y="pulse", hue="kind", data=exercise)
 

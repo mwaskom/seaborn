@@ -5,7 +5,7 @@ Grouped barplots
 _thumb: .36, .5
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 penguins = sns.load_dataset("penguins")
 

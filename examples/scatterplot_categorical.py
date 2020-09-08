@@ -6,7 +6,7 @@ _thumb: .45, .45
 
 """
 import seaborn as sns
-sns.set(style="whitegrid", palette="muted")
+sns.set_theme(style="whitegrid", palette="muted")
 
 # Load the penguins dataset
 df = sns.load_dataset("penguins")
