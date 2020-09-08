@@ -931,7 +931,8 @@ class _DistributionPlotter(VectorPlotter):
         # Handle default visual attributes
         if "hue" not in self.variables:
             if self.ax is None:
-                default_color = plot_kws.pop("color", "C0")
+                color = plot_kws.pop("color", None)
+                default_color = "C0" if color is None else color
             else:
                 if fill:
                     if self.var_types[self.data_variable] == "datetime":
