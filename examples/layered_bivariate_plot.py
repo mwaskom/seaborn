@@ -7,7 +7,7 @@ Bivariate plot with multiple elements
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="dark")
+sns.set_theme(style="dark")
 
 # Simulate data from a bivariate Gaussian
 n = 10000

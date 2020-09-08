@@ -5,7 +5,7 @@ Faceted logistic regression
 _thumb: .58, .5
 """
 import seaborn as sns
-sns.set(style="darkgrid")
+sns.set_theme(style="darkgrid")
 
 # Load the example Titanic dataset
 df = sns.load_dataset("titanic")

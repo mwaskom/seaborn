@@ -5,7 +5,7 @@ Grouped violinplots with split violins
 _thumb: .44, .47
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example tips dataset
 tips = sns.load_dataset("tips")

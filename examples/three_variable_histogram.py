@@ -6,7 +6,7 @@ _thumb: .32, .55
 
 """
 import seaborn as sns
-sns.set(style="dark")
+sns.set_theme(style="dark")
 
 diamonds = sns.load_dataset("diamonds")
 sns.displot(

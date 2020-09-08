@@ -5,7 +5,7 @@ Conditional kernel density estimate
 _thumb: .4, .5
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the diamonds dataset
 diamonds = sns.load_dataset("diamonds")

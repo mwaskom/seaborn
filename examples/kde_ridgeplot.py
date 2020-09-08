@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
+sns.set_theme(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 
 # Create the data
 rs = np.random.RandomState(1979)

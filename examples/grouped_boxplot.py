@@ -6,7 +6,7 @@ _thumb: .66, .45
 
 """
 import seaborn as sns
-sns.set(style="ticks", palette="pastel")
+sns.set_theme(style="ticks", palette="pastel")
 
 # Load the example tips dataset
 tips = sns.load_dataset("tips")

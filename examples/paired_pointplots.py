@@ -4,7 +4,7 @@ Paired categorical plots
 
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example Titanic dataset
 titanic = sns.load_dataset("titanic")

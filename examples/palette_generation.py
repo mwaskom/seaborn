@@ -8,7 +8,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="white")
+sns.set_theme(style="white")
 rs = np.random.RandomState(50)
 
 # Set up the matplotlib figure

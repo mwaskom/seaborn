@@ -5,7 +5,7 @@ Scatterplot with marginal ticks
 _thumb: .66, .34
 """
 import seaborn as sns
-sns.set(style="white", color_codes=True)
+sns.set_theme(style="white", color_codes=True)
 mpg = sns.load_dataset("mpg")
 
 # Use JointGrid directly to draw a custom plot

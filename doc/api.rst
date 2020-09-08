@@ -116,13 +116,13 @@ Joint grids
 
 .. _style_api:
 
-Style control 
--------------
+Themes
+------
 
 .. autosummary::
     :toctree: generated/
 
-    set
+    set_theme
     axes_style
     set_style
     plotting_context
@@ -130,6 +130,7 @@ Style control
     set_color_codes
     reset_defaults
     reset_orig
+    set
 
 .. _palette_api:
 

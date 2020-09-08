@@ -6,7 +6,7 @@ _thumb: .51, .44
 
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example planets dataset
 planets = sns.load_dataset("planets")

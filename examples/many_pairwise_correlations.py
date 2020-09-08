@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-sns.set(style="white")
+sns.set_theme(style="white")
 
 # Generate a large random dataset
 rs = np.random.RandomState(33)
