@@ -52,6 +52,10 @@ def assert_artists_equal(list1, list2, properties):
                     assert_array_equal(p1.codes, p2.codes)
             elif isinstance(v1, np.ndarray):
                 assert_array_equal(v1, v2)
+            elif key == "color":
+                v1 = mpl.colors.to_rgba(v1)
+                v2 = mpl.colors.to_rgba(v2)
+                assert v1 == v2
             else:
                 assert v1 == v2
 
