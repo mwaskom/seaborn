@@ -931,7 +931,8 @@ class _DistributionPlotter(VectorPlotter):
         # Handle default visual attributes
         if "hue" not in self.variables:
             if self.ax is None:
-                default_color = plot_kws.pop("color", "C0")
+                color = plot_kws.pop("color", None)
+                default_color = "C0" if color is None else color
             else:
                 if fill:
                     if self.var_types[self.data_variable] == "datetime":
@@ -2215,11 +2216,9 @@ def displot(
             estimate_kws["discrete"] = p._default_discrete()
 
         hist_kws["estimate_kws"] = estimate_kws
+        hist_kws.setdefault("color", color)
 
         if p.univariate:
-
-            if "hue" not in p.variables:
-                hist_kws.setdefault("color", color)
 
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
             p.plot_univariate_histogram(**hist_kws)
