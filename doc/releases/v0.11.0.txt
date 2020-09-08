@@ -111,7 +111,7 @@ Documentation improvements
 - |Docs| Improved cross-linking within the seaborn docs and between the seaborn and matplotlib docs.
 
 Theming
-~~~~~~~
+^^^^^^^
 
 - |API| The :func:`set` function has been renamed to :func:`set_theme` for more clarity about what it does. For the foreseeable future, :func:`set` will remain as an alias, but it is recommended to update your code.
 
@@ -147,7 +147,7 @@ Categorical plots
   - Added a new parameter, ``trust_alpha``, to control the number of boxes when ``k_depth="trustworthy"``.
   - Changed the visual appearance of :func:`boxenplot` to more closely resemble :func:`boxplot`. Notably, thin boxes will remain visible when the edges are white.
 
-- |Enhancement| Allowed :func:`catplot` use different values on the cateogical axis of each facet when axis sharing is turned off (i.e. by specifying ``sharex=False``) (:pr:`2196`).
+- |Enhancement| Allowed :func:`catplot` to use different values on the categorical axis of each facet when axis sharing is turned off (e.g. by specifying ``sharex=False``) (:pr:`2196`).
 
 - |Enhancement| Improved the error messages produced when categorical plots process the orientation parameter.
 
@@ -156,12 +156,13 @@ Categorical plots
 Multi-plot grids
 ^^^^^^^^^^^^^^^^
 
-- |Feature| |Enhancement| A few small changes to make life easier when using :class:`PairGrid` (:pr:`2234`):
+- |Feature| |Enhancement| |Defaults| A few small changes to make life easier when using :class:`PairGrid` (:pr:`2234`):
 
   - Added public access to the legend object through the ``legend`` attribute (also affects :class:`FacetGrid`).
   - The ``color`` and ``label`` parameters are no longer passed to the plotting functions when ``hue`` is not used.
   - The data is no longer converted to a numpy object before plotting on the marginal axes.
   - It is possible to specify only one of ``x_vars`` or ``y_vars``, using all variables for the unspecified dimension.
+  - The ``layout_pad`` parameter is stored and used every time you call the :meth:`PairGrid.tight_layout` method.
 
 - |Feature| Added a ``tight_layout`` method to :class:`FacetGrid` and :class:`PairGrid`, which runs the :func:`matplotlib.pyplot.tight_layout` algorithm without interference from the external legend (:pr:`2073`).
 
@@ -173,9 +174,9 @@ Multi-plot grids
 
 - |Enhancement| Improved :meth:`FacetGrid.set_titles` with ``margin_titles=True``, such that texts representing the original row titles are removed before adding new ones (:pr:`2083`).
 
-- |Defaults| Changed the default value for ``dropna`` to ``False`` in :class:`FacetGrid`, :class:`PairGrid`, :class`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:`2204`).
+- |Defaults| Changed the default value for ``dropna`` to ``False`` in :class:`FacetGrid`, :class:`PairGrid`, :class:`JointGrid`, and corresponding functions. As all or nearly all seaborn and matplotlib plotting functions handle missing data well, this option is no longer useful, but it causes problems in some edge cases. It may be deprecated in the future. (:pr:`2204`).
 
-- |Fix| Fixed bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
+- |Fix| Fixed a bug in :class:`PairGrid` that appeared when setting ``corner=True`` and ``despine=False`` (:pr:`2203`).
 
 Color palettes
 ~~~~~~~~~~~~~~
@@ -188,7 +189,7 @@ Color palettes
 
   - Added string-based access within the :func:`color_palette` interface to :func:`dark_palette`, :func:`light_palette`, and :func:`blend_palette`. This means that anywhere you specify a palette in seaborn, a name like ``"dark:blue"`` will use :func:`dark_palette` with the input ``"blue"``.
   - Added the ``as_cmap`` parameter to :func:`color_palette` and changed internal code that uses a continuous colormap to take this route.
-  - Tweaked the :func:`light_palette` and :func:`dark_palette` functions to use an endpoint that is a very desaturated version of the input color, rather than a pure gray. This produces smoother ramps. To exactly reproduce previous plots, use :func:`blend_palette` with ".13" for dark or ".95" for light.
+  - Tweaked the :func:`light_palette` and :func:`dark_palette` functions to use an endpoint that is a very desaturated version of the input color, rather than a pure gray. This produces smoother ramps. To exactly reproduce previous plots, use :func:`blend_palette` with ``".13"`` for dark or ``".95"`` for light.
   - Changed :func:`diverging_palette` to have a default value of ``sep=1``, which gives better results.
 
 - |Enhancement| Added a rich HTML representation to the object returned by :func:`color_palette` (:pr:`2225`).
@@ -198,7 +199,7 @@ Color palettes
 Deprecations and removals
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- |Enhancement| Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`) in :func:get_dataset_names`.
+- |Enhancement| Removed an optional (and undocumented) dependency on BeautifulSoup (:pr:`2190`) in :func:`get_dataset_names`.
 
 - |API| Deprecated the ``axlabel`` function; use ``ax.set(xlabel=, ylabel=)`` instead.
 
