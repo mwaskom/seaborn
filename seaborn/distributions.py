@@ -2215,11 +2215,9 @@ def displot(
             estimate_kws["discrete"] = p._default_discrete()
 
         hist_kws["estimate_kws"] = estimate_kws
+        hist_kws.setdefault("color", color)
 
         if p.univariate:
-
-            if "hue" not in p.variables:
-                hist_kws.setdefault("color", color)
 
             _assign_default_kwargs(hist_kws, p.plot_univariate_histogram, histplot)
             p.plot_univariate_histogram(**hist_kws)
