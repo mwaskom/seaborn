@@ -107,6 +107,7 @@ have dedicated channels for seaborn.
   :hidden:
 
   Citing <citing>
+  Archive <archive>
 
 .. raw:: html
 
