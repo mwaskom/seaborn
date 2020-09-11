@@ -2180,7 +2180,9 @@ def displot(
 
     g = FacetGrid(
         data=data, row=row_name, col=col_name,
-        col_wrap=col_wrap, height=height, aspect=aspect,
+        col_wrap=col_wrap, row_order=row_order,
+        col_order=col_order, height=height,
+        aspect=aspect,
         **facet_kws,
     )
 
