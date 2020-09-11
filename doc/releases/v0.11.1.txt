@@ -1,0 +1,5 @@
+
+v0.11.1 (Unreleased)
+--------------------
+
+- Fix bug in :class:`PairGrid`/:func:`pairplot` where diagonal axes would be empty when the grid was not square and the diagonal axes did not contain the marginal plots. (:pr:`2270`)
