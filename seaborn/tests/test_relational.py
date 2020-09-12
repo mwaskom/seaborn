@@ -718,7 +718,7 @@ class TestRelationalPlotter(Helpers):
 
 class TestLinePlotter(Helpers):
 
-    def test_aggregate(self, long_df):
+    def test_aggregate(self, long_df, missing_df):
 
         p = _LinePlotter(data=long_df, variables=dict(x="x", y="y"))
         p.n_boot = 10000
@@ -796,6 +796,18 @@ class TestLinePlotter(Helpers):
             warnings.simplefilter("error", RuntimeWarning)
             index, est, cis = p.aggregate(y, x)
             assert cis.loc[["c"]].isnull().all().all()
+
+        p = _LinePlotter(data=missing_df, variables=dict(x="s", y="y"))
+        p.estimator = "mean"
+        p.n_boot = 100
+        p.ci = 95
+
+        x = p.plot_data["x"]
+        y = p.plot_data["y"]
+
+        _, est, cis = p.aggregate(y, x)
+        assert not est.isna().any()
+        assert not cis.isna().any().any()
 
     def test_legend_data(self, long_df):
 
