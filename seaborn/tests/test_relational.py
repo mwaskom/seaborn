@@ -52,7 +52,8 @@ class Helpers:
 
     def paths_equal(self, *args):
 
-        equal = True
+        equal = all([len(a) == len(args[0]) for a in args])
+
         for p1, p2 in zip(*args):
             equal &= np.array_equal(p1.vertices, p2.vertices)
             equal &= np.array_equal(p1.codes, p2.codes)
