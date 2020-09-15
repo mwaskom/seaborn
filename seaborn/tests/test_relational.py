@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.colors import same_color
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -48,29 +49,6 @@ class Helpers:
             rgb = tuple(col.get_facecolor().squeeze()[:3])
             rgbs.append(rgb)
         return rgbs
-
-    def colors_equal(self, *args):
-
-        equal = True
-
-        args = [
-            mpl.colors.hex2color(a) if isinstance(a, str) and a.startswith("#") else a
-            for a in args
-        ]
-
-        if np.ndim(args[0]) < 2:
-            args = [[a] for a in args]
-
-        for c1, c2 in zip(*args):
-            if isinstance(c1, np.ndarray):
-                c1 = c1.squeeze()
-            if isinstance(c2, np.ndarray):
-                c2 = c2.squeeze()
-            c1 = mpl.colors.to_rgb(c1)
-            c2 = mpl.colors.to_rgb(c2)
-            equal &= c1 == c2
-
-        return equal
 
     def paths_equal(self, *args):
 
@@ -642,7 +620,7 @@ class TestRelationalPlotter(Helpers):
         for (_, grp_df), ax in zip(grouped, g.axes.flat):
             points = ax.collections[0]
             expected_hues = [palette[val] for val in grp_df["a"]]
-            assert self.colors_equal(points.get_facecolors(), expected_hues)
+            assert same_color(points.get_facecolors(), expected_hues)
 
     def test_relplot_sizes(self, long_df):
 
@@ -1259,7 +1237,7 @@ class TestLinePlotter(Helpers):
 
         for l1, l2 in zip(lin_lines, rel_lines):
             assert_array_equal(l1.get_xydata(), l2.get_xydata())
-            assert self.colors_equal(l1.get_color(), l2.get_color())
+            assert same_color(l1.get_color(), l2.get_color())
             assert l1.get_linewidth() == l2.get_linewidth()
             assert l1.get_linestyle() == l2.get_linestyle()
 
@@ -1386,7 +1364,7 @@ class TestScatterPlotter(Helpers):
         colors = [h.get_facecolors()[0] for h in handles]
         expected_colors = p._hue_map(p._hue_map.levels)
         assert labels == p._hue_map.levels
-        assert self.colors_equal(colors, expected_colors)
+        assert same_color(colors, expected_colors)
 
         # --
 
@@ -1405,7 +1383,7 @@ class TestScatterPlotter(Helpers):
         expected_paths = p._style_map(p._style_map.levels, "path")
         assert labels == p._hue_map.levels
         assert labels == p._style_map.levels
-        assert self.colors_equal(colors, expected_colors)
+        assert same_color(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
         # --
@@ -1432,7 +1410,7 @@ class TestScatterPlotter(Helpers):
         assert labels == (
             ["a"] + p._hue_map.levels + ["b"] + p._style_map.levels
         )
-        assert self.colors_equal(colors, expected_colors)
+        assert same_color(colors, expected_colors)
         assert self.paths_equal(paths, expected_paths)
 
         # --
@@ -1451,7 +1429,7 @@ class TestScatterPlotter(Helpers):
         expected_sizes = p._size_map(p._size_map.levels)
         assert labels == p._hue_map.levels
         assert labels == p._size_map.levels
-        assert self.colors_equal(colors, expected_colors)
+        assert same_color(colors, expected_colors)
         assert sizes == expected_sizes
 
         # --
@@ -1543,7 +1521,7 @@ class TestScatterPlotter(Helpers):
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
         points = ax.collections[0]
-        assert self.colors_equal(points.get_facecolor(), "k")
+        assert same_color(points.get_facecolor(), "k")
         assert points.get_label() == "test"
 
         p = _ScatterPlotter(
@@ -1554,7 +1532,7 @@ class TestScatterPlotter(Helpers):
         p.plot(ax, {})
         points = ax.collections[0]
         expected_colors = p._hue_map(p.plot_data["hue"])
-        assert self.colors_equal(points.get_facecolors(), expected_colors)
+        assert same_color(points.get_facecolors(), expected_colors)
 
         p = _ScatterPlotter(
             data=long_df,
@@ -1566,7 +1544,7 @@ class TestScatterPlotter(Helpers):
         color = (1, .3, .8)
         p.plot(ax, {"color": color})
         points = ax.collections[0]
-        assert self.colors_equal(points.get_edgecolors(), [color])
+        assert same_color(points.get_edgecolors(), [color])
 
         p = _ScatterPlotter(
             data=long_df, variables=dict(x="x", y="y", size="a"),
@@ -1589,7 +1567,7 @@ class TestScatterPlotter(Helpers):
         points = ax.collections[0]
         expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = p._style_map(p.plot_data["style"], "path")
-        assert self.colors_equal(points.get_facecolors(), expected_colors)
+        assert same_color(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
         p = _ScatterPlotter(
@@ -1603,7 +1581,7 @@ class TestScatterPlotter(Helpers):
         points = ax.collections[0]
         expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = p._style_map(p.plot_data["style"], "path")
-        assert self.colors_equal(points.get_facecolors(), expected_colors)
+        assert same_color(points.get_facecolors(), expected_colors)
         assert self.paths_equal(points.get_paths(), expected_paths)
 
         x_str = long_df["x"].astype(str)
