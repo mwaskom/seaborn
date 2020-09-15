@@ -1586,6 +1586,7 @@ class TestScatterPlotter(Helpers):
 
         ax.clear()
         p.plot(ax, {})
+        points = ax.collections[0]
         expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = p._style_map(p.plot_data["style"], "path")
         assert self.colors_equal(points.get_facecolors(), expected_colors)
@@ -1599,6 +1600,7 @@ class TestScatterPlotter(Helpers):
 
         ax.clear()
         p.plot(ax, {})
+        points = ax.collections[0]
         expected_colors = p._hue_map(p.plot_data["hue"])
         expected_paths = p._style_map(p.plot_data["style"], "path")
         assert self.colors_equal(points.get_facecolors(), expected_colors)
