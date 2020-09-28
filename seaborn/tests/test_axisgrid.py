@@ -303,6 +303,18 @@ class TestFacetGrid(object):
         g1.map(plt.plot, "x", "y")
         g1.add_legend()
 
+        g1 = ag.FacetGrid(self.df, hue="b")
+        g1.add_legend(adjust_subtitles=True)
+
+        g1 = ag.FacetGrid(self.df, hue="b")
+        g1.add_legend(adjust_subtitles=False)
+
+        g1 = ag.FacetGrid(self.df, hue="b", legend_out=False)
+        g1.add_legend(adjust_subtitles=True)
+
+        g1 = ag.FacetGrid(self.df, hue="b", legend_out=False)
+        g1.add_legend(adjust_subtitles=False)
+
     def test_legendout_with_colwrap(self):
 
         g = ag.FacetGrid(self.df, col="d", hue='b',
