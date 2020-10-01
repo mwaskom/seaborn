@@ -1135,6 +1135,25 @@ class TestClustermap(object):
             g.ax_col_colors.collections[0].get_facecolors()[:, :3]
         )
 
+    def test_row_col_colors_raise_on_mixed_index_types(self):
+
+        row_colors = pd.Series(list(self.row_colors),
+                               name='row_annot',
+                               index=self.df_norm.index
+                              )
+        col_colors = pd.Series(list(self.col_colors),
+                               name='col_annot',
+                               index=self.df_norm.columns
+                              )
+
+        data = self.df_norm.to_numpy()
+
+        with pytest.raises(TypeError):
+            mat.clustermap(data, row_colors=row_colors)
+
+        with pytest.raises(TypeError):
+            mat.clustermap(data, col_colors=col_colors)
+
     def test_mask_reorganization(self):
 
         kws = self.default_kws.copy()
