@@ -872,6 +872,17 @@ class ClusterGrid(Grid):
 
         if colors is not None:
             if isinstance(colors, (pd.DataFrame, pd.Series)):
+
+                # If data is unindexed, raise
+                if (not hasattr(data, "index") and axis == 0) or (
+                    not hasattr(data, "columns") and axis == 1
+                ):
+                    axis_name = "col" if axis else "row"
+                    msg = (f"{axis_name}_colors indices can't be matched with data "
+                           f"indices. Provide {axis_name}_colors as non-indexed "
+                           "datatype, e.g. by using `.to_numpy()``")
+                    raise TypeError(msg)
+
                 # Ensure colors match data indices
                 if axis == 0:
                     colors = colors.reindex(data.index)
