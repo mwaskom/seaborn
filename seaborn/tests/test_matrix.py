@@ -1137,14 +1137,13 @@ class TestClustermap(object):
 
     def test_row_col_colors_raise_on_mixed_index_types(self):
 
-        row_colors = pd.Series(list(self.row_colors),
-                               name='row_annot',
-                               index=self.df_norm.index
-                              )
-        col_colors = pd.Series(list(self.col_colors),
-                               name='col_annot',
-                               index=self.df_norm.columns
-                              )
+        row_colors = pd.Series(
+            list(self.row_colors), name="row_annot", index=self.df_norm.index
+        )
+
+        col_colors = pd.Series(
+            list(self.col_colors), name="col_annot", index=self.df_norm.columns
+        )
 
         data = self.df_norm.to_numpy()
 
