@@ -29,7 +29,7 @@ except ImportError:
     _no_fastcluster = True
 
 
-class TestHeatmap(object):
+class TestHeatmap:
     rs = np.random.RandomState(sum(map(ord, "heatmap")))
 
     x_norm = rs.randn(4, 8)
@@ -460,7 +460,7 @@ class TestHeatmap(object):
         assert len(ax2.collections) == 2
 
 
-class TestDendrogram(object):
+class TestDendrogram:
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -703,7 +703,7 @@ class TestDendrogram(object):
         plt.close(f)
 
 
-class TestClustermap(object):
+class TestClustermap:
     rs = np.random.RandomState(sum(map(ord, "clustermap")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -1145,13 +1145,11 @@ class TestClustermap(object):
             list(self.col_colors), name="col_annot", index=self.df_norm.columns
         )
 
-        data = self.df_norm.to_numpy()
+        with pytest.raises(TypeError):
+            mat.clustermap(self.x_norm, row_colors=row_colors)
 
         with pytest.raises(TypeError):
-            mat.clustermap(data, row_colors=row_colors)
-
-        with pytest.raises(TypeError):
-            mat.clustermap(data, col_colors=col_colors)
+            mat.clustermap(self.x_norm, col_colors=col_colors)
 
     def test_mask_reorganization(self):
 
