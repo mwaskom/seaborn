@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib as mpl
 
 import pytest
-import nose.tools as nt
 import numpy.testing as npt
 
 from .. import palettes, utils, rcmod
@@ -11,7 +10,7 @@ from ..external import husl
 from ..colors import xkcd_rgb, crayons
 
 
-class TestColorPalettes(object):
+class TestColorPalettes:
 
     def test_current_palette(self):
 
@@ -26,9 +25,9 @@ class TestColorPalettes(object):
         context_pal = palettes.color_palette("muted")
 
         with palettes.color_palette(context_pal):
-            nt.assert_equal(utils.get_color_cycle(), context_pal)
+            assert utils.get_color_cycle() == context_pal
 
-        nt.assert_equal(utils.get_color_cycle(), default_pal)
+        assert utils.get_color_cycle() == default_pal
 
     def test_big_palette_context(self):
 
@@ -37,9 +36,9 @@ class TestColorPalettes(object):
 
         rcmod.set_palette(original_pal)
         with palettes.color_palette(context_pal, 10):
-            nt.assert_equal(utils.get_color_cycle(), context_pal)
+            assert utils.get_color_cycle() == context_pal
 
-        nt.assert_equal(utils.get_color_cycle(), original_pal)
+        assert utils.get_color_cycle() == original_pal
 
         # Reset default
         rcmod.set()
@@ -114,18 +113,18 @@ class TestColorPalettes(object):
 
     def test_bad_palette_name(self):
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             palettes.color_palette("IAmNotAPalette")
 
     def test_terrible_palette_name(self):
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             palettes.color_palette("jet")
 
     def test_bad_palette_colors(self):
 
         pal = ["red", "blue", "iamnotacolor"]
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             palettes.color_palette(pal)
 
     def test_palette_desat(self):
@@ -140,16 +139,16 @@ class TestColorPalettes(object):
         pal_in = np.array(["red", "blue", "green"])
         pal_out = palettes.color_palette(pal_in, 3)
 
-        nt.assert_is_instance(pal_out, list)
-        nt.assert_is_instance(pal_out[0], tuple)
-        nt.assert_is_instance(pal_out[0][0], float)
-        nt.assert_equal(len(pal_out[0]), 3)
+        assert isinstance(pal_out, list)
+        assert isinstance(pal_out[0], tuple)
+        assert isinstance(pal_out[0][0], float)
+        assert len(pal_out[0]) == 3
 
     def test_palette_cycles(self):
 
         deep = palettes.color_palette("deep6")
         double_deep = palettes.color_palette("deep6", 12)
-        nt.assert_equal(double_deep, deep + deep)
+        assert double_deep == deep + deep
 
     def test_hls_values(self):
 
@@ -189,11 +188,11 @@ class TestColorPalettes(object):
 
         pal_short = palettes.mpl_palette("Set1", 4)
         pal_long = palettes.mpl_palette("Set1", 6)
-        nt.assert_equal(pal_short, pal_long[:4])
+        assert pal_short == pal_long[:4]
 
         pal_full = palettes.mpl_palette("Set2", 8)
         pal_long = palettes.mpl_palette("Set2", 10)
-        nt.assert_equal(pal_full, pal_long[:8])
+        assert pal_full == pal_long[:8]
 
     def test_mpl_reversal(self):
 
@@ -206,7 +205,7 @@ class TestColorPalettes(object):
         color = .5, .8, .4
         rgb_got = palettes._color_to_rgb(color, "hls")
         rgb_want = colorsys.hls_to_rgb(*color)
-        nt.assert_equal(rgb_got, rgb_want)
+        assert rgb_got == rgb_want
 
     def test_rgb_from_husl(self):
 
@@ -226,7 +225,7 @@ class TestColorPalettes(object):
         color = "dull red"
         rgb_got = palettes._color_to_rgb(color, "xkcd")
         rgb_want = mpl.colors.to_rgb(xkcd_rgb[color])
-        nt.assert_equal(rgb_got, rgb_want)
+        assert rgb_got == rgb_want
 
     def test_light_palette(self):
 
@@ -322,24 +321,24 @@ class TestColorPalettes(object):
         sns_pal = palettes.cubehelix_palette(8, start=0.5, rot=-1.5, hue=1,
                                              dark=0, light=1, reverse=True)
 
-        nt.assert_list_equal(sns_pal, mpl_pal)
+        assert sns_pal == mpl_pal
 
     def test_cubehelix_n_colors(self):
 
         for n in [3, 5, 8]:
             pal = palettes.cubehelix_palette(n)
-            nt.assert_equal(len(pal), n)
+            assert len(pal) == n
 
     def test_cubehelix_reverse(self):
 
         pal_forward = palettes.cubehelix_palette()
         pal_reverse = palettes.cubehelix_palette(reverse=True)
-        nt.assert_list_equal(pal_forward, pal_reverse[::-1])
+        assert pal_forward == pal_reverse[::-1]
 
     def test_cubehelix_cmap(self):
 
         cmap = palettes.cubehelix_palette(as_cmap=True)
-        nt.assert_is_instance(cmap, mpl.colors.ListedColormap)
+        assert isinstance(cmap, mpl.colors.ListedColormap)
         pal = palettes.cubehelix_palette()
         x = np.linspace(0, 1, 6)
         npt.assert_array_equal(cmap(x)[:, :3], pal)
@@ -348,7 +347,7 @@ class TestColorPalettes(object):
         x = np.linspace(0, 1, 6)
         pal_forward = cmap(x).tolist()
         pal_reverse = cmap_rev(x[::-1]).tolist()
-        nt.assert_list_equal(pal_forward, pal_reverse)
+        assert pal_forward == pal_reverse
 
     def test_cubehelix_code(self):
 
@@ -381,7 +380,7 @@ class TestColorPalettes(object):
         colors = palettes.xkcd_palette(names)
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
-            nt.assert_equal(as_hex, xkcd_rgb[name])
+            assert as_hex == xkcd_rgb[name]
 
     def test_crayon_palette(self):
 
@@ -389,7 +388,7 @@ class TestColorPalettes(object):
         colors = palettes.crayon_palette(names)
         for name, color in zip(names, colors):
             as_hex = mpl.colors.rgb2hex(color)
-            nt.assert_equal(as_hex, crayons[name].lower())
+            assert as_hex == crayons[name].lower()
 
     def test_color_codes(self):
 
@@ -398,7 +397,7 @@ class TestColorPalettes(object):
         for code, color in zip("bgrmyck", colors):
             rgb_want = mpl.colors.colorConverter.to_rgb(color)
             rgb_got = mpl.colors.colorConverter.to_rgb(code)
-            nt.assert_equal(rgb_want, rgb_got)
+            assert rgb_want == rgb_got
         palettes.set_color_codes("reset")
 
         with pytest.raises(ValueError):
@@ -408,13 +407,13 @@ class TestColorPalettes(object):
 
         pal = palettes.color_palette("deep")
         for rgb, hex in zip(pal, pal.as_hex()):
-            nt.assert_equal(mpl.colors.rgb2hex(rgb), hex)
+            assert mpl.colors.rgb2hex(rgb) == hex
 
     def test_preserved_palette_length(self):
 
         pal_in = palettes.color_palette("Set1", 10)
         pal_out = palettes.color_palette(pal_in)
-        nt.assert_equal(pal_in, pal_out)
+        assert pal_in == pal_out
 
     def test_html_rep(self):
 
