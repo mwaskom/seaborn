@@ -681,13 +681,13 @@ class TestPairGrid:
         assert g.y_vars == ["x", "y", "z"]
         assert g.square_grid
 
-    def test_specific_square_axes(self):
+    @pytest.mark.parametrize("vars", [["z", "x"], np.array(["z", "x"])])
+    def test_specific_square_axes(self, vars):
 
-        vars = ["z", "x"]
         g = ag.PairGrid(self.df, vars=vars)
         assert g.axes.shape == (len(vars), len(vars))
-        assert g.x_vars == vars
-        assert g.y_vars == vars
+        assert g.x_vars == list(vars)
+        assert g.y_vars == list(vars)
         assert g.square_grid
 
     def test_remove_hue_from_default(self):
@@ -702,37 +702,16 @@ class TestPairGrid:
         assert hue in g.x_vars
         assert hue in g.y_vars
 
-    def test_specific_nonsquare_axes(self):
+    @pytest.mark.parametrize(
+        "x_vars, y_vars",
+        [
+            (["x", "y"], ["z", "y", "x"]),
+            (["x", "y"], "z"),
+            (np.array(["x", "y"]), np.array(["z", "y", "x"])),
+        ],
+    )
+    def test_specific_nonsquare_axes(self, x_vars, y_vars):
 
-        x_vars = ["x", "y"]
-        y_vars = ["z", "y", "x"]
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        assert g.axes.shape == (len(y_vars), len(x_vars))
-        assert g.x_vars == x_vars
-        assert g.y_vars == y_vars
-        assert not g.square_grid
-
-        x_vars = ["x", "y"]
-        y_vars = "z"
-        g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
-        assert g.axes.shape, (len(y_vars), len(x_vars))
-        assert g.x_vars, list(x_vars)
-        assert g.y_vars, list(y_vars)
-        assert not g.square_grid
-
-    def test_specific_square_axes_with_array(self):
-
-        vars = np.array(["z", "x"])
-        g = ag.PairGrid(self.df, vars=vars)
-        assert g.axes.shape == (len(vars), len(vars))
-        assert g.x_vars, list(vars)
-        assert g.y_vars, list(vars)
-        assert g.square_grid
-
-    def test_specific_nonsquare_axes_with_array(self):
-
-        x_vars = np.array(["x", "y"])
-        y_vars = np.array(["z", "y", "x"])
         g = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
         assert g.axes.shape == (len(y_vars), len(x_vars))
         assert g.x_vars == list(x_vars)
