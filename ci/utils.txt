@@ -2,4 +2,3 @@ pytest!=5.3.4
 pytest-cov
 pytest-xdist
 flake8
-nose
