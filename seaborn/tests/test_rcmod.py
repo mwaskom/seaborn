@@ -242,7 +242,9 @@ class TestPalette:
 
 class TestFonts:
 
-    @pytest.mark.skipif(not has_verdana(), reason="Verdana font is not present")
+    _no_verdana = not has_verdana()
+
+    @pytest.mark.skipif(_no_verdana, reason="Verdana font is not present")
     def test_set_font(self):
 
         rcmod.set_theme(font="Verdana")
@@ -265,7 +267,7 @@ class TestFonts:
 
         rcmod.set_theme()
 
-    @pytest.mark.skipif(not has_verdana(), reason="Verdana font is not present")
+    @pytest.mark.skipif(_no_verdana, reason="Verdana font is not present")
     def test_different_sans_serif(self):
 
         rcmod.set_theme()
