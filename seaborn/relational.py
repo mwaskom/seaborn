@@ -143,9 +143,14 @@ estimator : name of pandas method or callable or None
     be drawn.
     """,
     ci="""
-ci : int or "sd" or None
+ci : int or "sd" or callable or None
     Size of the confidence interval to draw when aggregating with an
     estimator. "sd" means to draw the standard deviation of the data.
+    If callable, ci should take a list of values representing multiple
+    observations of the ``y`` variable at the same ``x`` level and return
+    a list [lower_bound, upper_bound] where lower_bound is the lower value
+    for the shaded region and upper_bound is the upper value for the shaded
+    region.
     Setting to ``None`` will skip bootstrapping.
     """,
     n_boot="""
@@ -357,7 +362,7 @@ class _LinePlotter(_RelationalPlotter):
         sort=True, err_style=None, err_kws=None, legend=None
     ):
 
-        # TODO this is messy, we want the mapping to be agnoistic about
+        # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
         # this information so the SizeMapping can use it
         self._default_size_range = (
@@ -410,6 +415,20 @@ class _LinePlotter(_RelationalPlotter):
             cis = pd.DataFrame(np.c_[est - sd, est + sd],
                                index=est.index,
                                columns=["low", "high"]).stack()
+        elif callable(ci):
+            def ci_series(vals):
+                interval = ci(vals)
+                if (not hasattr(interval, '__len__') or len(interval) != 2
+                        or isinstance(interval, str)):
+                    raise ValueError("If ci is callable, it must return a"
+                                     "length-two array-like object that holds"
+                                     "numerical values, such as a list of floats.")
+                else:
+                    interval = [interval[0], interval[1]]  # Make sure data is in a form
+
+                return pd.Series(interval, ["low", "high"])
+
+            cis = grouped.apply(ci_series)
         else:
             cis = grouped.apply(bootstrapped_cis)
 
