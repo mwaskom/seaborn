@@ -1166,7 +1166,7 @@ class ClusterGrid(Grid):
 
         # Reorganize the annotations to match the heatmap
         annot = kws.pop("annot", None)
-        if annot is None:
+        if annot is None or annot is False:
             pass
         else:
             if isinstance(annot, bool):
