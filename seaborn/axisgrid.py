@@ -166,12 +166,12 @@ class Grid:
             ax = self.axes.flat[0]
             kwargs.setdefault("loc", "best")
 
-            if adjust_subtitles:
-                adjust_legend_subtitles(figlegend)
-
             leg = ax.legend(handles, labels, **kwargs)
             leg.set_title(title, prop={"size": title_size})
             self._legend = leg
+
+            if adjust_subtitles:
+                adjust_legend_subtitles(leg)
 
         return self
 
