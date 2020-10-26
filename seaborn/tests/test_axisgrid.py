@@ -878,9 +878,10 @@ class TestPairGrid(object):
     def test_map_diag_rectangular(self):
 
         x_vars = ["x", "y"]
-        y_vars = ["x", "y", "z"]
+        y_vars = ["x", "z", "y"]
         g1 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
         g1.map_diag(plt.hist)
+        g1.map_offdiag(plt.scatter)
 
         assert set(g1.diag_vars) == (set(x_vars) & set(y_vars))
 
@@ -888,11 +889,22 @@ class TestPairGrid(object):
             nt.assert_equal(len(ax.patches), 10)
             assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
 
-        for i, ax in enumerate(np.diag(g1.axes)):
-            assert ax.bbox.bounds == g1.diag_axes[i].bbox.bounds
+        for j, x_var in enumerate(x_vars):
+            for i, y_var in enumerate(y_vars):
+
+                ax = g1.axes[i, j]
+                if x_var == y_var:
+                    diag_ax = g1.diag_axes[j]  # because fewer x than y vars
+                    assert ax.bbox.bounds == diag_ax.bbox.bounds
+
+                else:
+                    x, y = ax.collections[0].get_offsets().T
+                    assert_array_equal(x, self.df[x_var])
+                    assert_array_equal(y, self.df[y_var])
 
         g2 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars, hue="a")
         g2.map_diag(plt.hist)
+        g2.map_offdiag(plt.scatter)
 
         assert set(g2.diag_vars) == (set(x_vars) & set(y_vars))
 
@@ -900,9 +912,10 @@ class TestPairGrid(object):
             nt.assert_equal(len(ax.patches), 30)
 
         x_vars = ["x", "y", "z"]
-        y_vars = ["x", "y"]
+        y_vars = ["x", "z"]
         g3 = ag.PairGrid(self.df, x_vars=x_vars, y_vars=y_vars)
         g3.map_diag(plt.hist)
+        g3.map_offdiag(plt.scatter)
 
         assert set(g3.diag_vars) == (set(x_vars) & set(y_vars))
 
@@ -910,8 +923,17 @@ class TestPairGrid(object):
             nt.assert_equal(len(ax.patches), 10)
             assert pytest.approx(ax.patches[0].get_x()) == self.df[var].min()
 
-        for i, ax in enumerate(np.diag(g3.axes)):
-            assert ax.bbox.bounds == g3.diag_axes[i].bbox.bounds
+        for j, x_var in enumerate(x_vars):
+            for i, y_var in enumerate(y_vars):
+
+                ax = g3.axes[i, j]
+                if x_var == y_var:
+                    diag_ax = g3.diag_axes[i]  # because fewer y than x vars
+                    assert ax.bbox.bounds == diag_ax.bbox.bounds
+                else:
+                    x, y = ax.collections[0].get_offsets().T
+                    assert_array_equal(x, self.df[x_var])
+                    assert_array_equal(y, self.df[y_var])
 
     def test_map_diag_color(self):
 

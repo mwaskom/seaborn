@@ -1292,10 +1292,17 @@ class PairGrid(Grid):
             called ``color`` and  ``label``.
 
         """
-
-        self.map_lower(func, **kwargs)
-        if not self._corner:
-            self.map_upper(func, **kwargs)
+        if self.square_grid:
+            self.map_lower(func, **kwargs)
+            if not self._corner:
+                self.map_upper(func, **kwargs)
+        else:
+            indices = []
+            for i, (y_var) in enumerate(self.y_vars):
+                for j, (x_var) in enumerate(self.x_vars):
+                    if x_var != y_var:
+                        indices.append((i, j))
+            self._map_bivariate(func, indices, **kwargs)
         return self
 
     def map_diag(self, func, **kwargs):
