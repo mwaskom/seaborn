@@ -1813,7 +1813,6 @@ class _LVPlotter(_CategoricalPlotter):
             raise ValueError(msg)
         self.k_depth = k_depth
 
-        # TODO seems this member is only used to frame the legend artists
         if linewidth is None:
             linewidth = mpl.rcParams["lines.linewidth"]
         self.linewidth = linewidth
@@ -1900,7 +1899,9 @@ class _LVPlotter(_CategoricalPlotter):
 
         # If we only have one data point, plot a line
         if len(box_data) == 1:
-            kws.update({'color': self.gray, 'linestyle': '-'})
+            kws.update({
+                'color': self.gray, 'linestyle': '-', 'linewidth': self.linewidth
+            })
             ys = [box_data[0], box_data[0]]
             xs = [x - widths / 2, x + widths / 2]
             if vert:
@@ -1966,8 +1967,15 @@ class _LVPlotter(_CategoricalPlotter):
                      for i, b in enumerate(zip(box_ends, w_area))]
 
             # Plot the medians
-            ax.plot(xs_median, ys_median, c='.15', alpha=.45,
-                    solid_capstyle="butt", **kws)
+            ax.plot(
+                xs_median,
+                ys_median,
+                c=".15",
+                alpha=0.45,
+                solid_capstyle="butt",
+                linewidth=self.linewidth,
+                **kws
+            )
 
             # Plot outliers (if any)
             if len(outliers) > 0:
@@ -1980,7 +1988,9 @@ class _LVPlotter(_CategoricalPlotter):
             # Make sure that the last boxes contain hue and are not pure white
             rgb = [hex_color, cmap(.85)]
             cmap = mpl.colors.LinearSegmentedColormap.from_list('new_map', rgb)
-            collection = PatchCollection(boxes, cmap=cmap, edgecolor=self.gray)
+            collection = PatchCollection(
+                boxes, cmap=cmap, edgecolor=self.gray, linewidth=self.linewidth
+            )
 
             # Set the color gradation, first box will have color=hex_color
             collection.set_array(np.array(np.linspace(1, 0, len(boxes))))
