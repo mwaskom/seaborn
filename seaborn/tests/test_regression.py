@@ -530,6 +530,12 @@ class TestRegressionPlots(object):
         nt.assert_equal(len(ax.lines), 6)
         nt.assert_equal(len(ax.collections), 2)
 
+    def test_lmplot_no_data(self):
+
+        with pytest.raises(TypeError):
+            # keyword argument `data` is required
+            lm.lmplot(x="x", y="y")
+
     def test_lmplot_basic(self):
 
         g = lm.lmplot(x="x", y="y", data=self.df)

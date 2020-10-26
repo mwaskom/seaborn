@@ -579,6 +579,9 @@ def lmplot(
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
+    if data is None:
+        raise TypeError("Missing required keyword argument `data`.")
+
     # Reduce the dataframe to only needed columns
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
     cols = np.unique([a for a in need_cols if a is not None]).tolist()
