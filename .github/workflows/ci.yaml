@@ -21,6 +21,9 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v2
+        with:
+          # Avoid Python 3.9 until scipy stack can cleanly build
+          python-version: '3.8.x'
 
       - name: Install seaborn
         run: |
