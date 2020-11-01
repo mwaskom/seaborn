@@ -410,6 +410,11 @@ class _LinePlotter(_RelationalPlotter):
             cis = pd.DataFrame(np.c_[est - sd, est + sd],
                                index=est.index,
                                columns=["low", "high"]).stack()
+        elif ci == "sem":
+            sem = grouped.std()
+            cis = pd.DataFrame(np.c_[est - sem, est + sem],
+                               index=est.index,
+                               columns=["low", "high"]).stack()
         else:
             cis = grouped.apply(bootstrapped_cis)
 
