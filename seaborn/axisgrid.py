@@ -461,13 +461,13 @@ class FacetGrid(Grid):
         if despine:
             self.despine()
 
-        if sharex:
+        if sharex != 'row':
             for ax in self._not_bottom_axes:
                 for label in ax.get_xticklabels():
                     label.set_visible(False)
                 ax.xaxis.offsetText.set_visible(False)
 
-        if sharey:
+        if sharey != 'col':
             for ax in self._not_left_axes:
                 for label in ax.get_yticklabels():
                     label.set_visible(False)
