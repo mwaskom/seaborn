@@ -1,3 +1,5 @@
+from distutils.version import LooseVersion
+
 import numpy as np
 import matplotlib as mpl
 import nose
@@ -19,10 +21,28 @@ class RCParamTester(object):
     def assert_rc_params(self, params):
 
         for k, v in params.items():
+            # Various subtle issues in matplotlib lead to unexpected
+            # values for the backend rcParam, which isn't relevant here
+            if k == "backend":
+                continue
             if isinstance(v, np.ndarray):
                 npt.assert_array_equal(mpl.rcParams[k], v)
             else:
                 nt.assert_equal((k, mpl.rcParams[k]), (k, v))
+
+    def assert_rc_params_equal(self, params1, params2):
+
+        for key, v1 in params1.items():
+            # Various subtle issues in matplotlib lead to unexpected
+            # values for the backend rcParam, which isn't relevant here
+            if key == "backend":
+                continue
+
+            v2 = params2[key]
+            if isinstance(v1, np.ndarray):
+                npt.assert_array_equal(v1, v2)
+            else:
+                nt.assert_equal(v1, v2)
 
 
 class TestAxesStyle(RCParamTester):
@@ -82,44 +102,57 @@ class TestAxesStyle(RCParamTester):
 
     def test_set_rc(self):
 
-        rcmod.set(rc={"lines.linewidth": 4})
+        rcmod.set_theme(rc={"lines.linewidth": 4})
         nt.assert_equal(mpl.rcParams["lines.linewidth"], 4)
-        rcmod.set()
+        rcmod.set_theme()
 
     def test_set_with_palette(self):
 
         rcmod.reset_orig()
 
-        rcmod.set(palette="deep")
+        rcmod.set_theme(palette="deep")
         assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
         rcmod.reset_orig()
 
-        rcmod.set(palette="deep", color_codes=False)
+        rcmod.set_theme(palette="deep", color_codes=False)
         assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
         rcmod.reset_orig()
 
         pal = palettes.color_palette("deep")
-        rcmod.set(palette=pal)
+        rcmod.set_theme(palette=pal)
         assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
         rcmod.reset_orig()
 
-        rcmod.set(palette=pal, color_codes=False)
+        rcmod.set_theme(palette=pal, color_codes=False)
         assert utils.get_color_cycle() == palettes.color_palette("deep", 10)
         rcmod.reset_orig()
 
-        rcmod.set()
+        rcmod.set_theme()
 
     def test_reset_defaults(self):
 
         rcmod.reset_defaults()
         self.assert_rc_params(mpl.rcParamsDefault)
-        rcmod.set()
+        rcmod.set_theme()
 
     def test_reset_orig(self):
 
         rcmod.reset_orig()
         self.assert_rc_params(mpl.rcParamsOrig)
-        rcmod.set()
+        rcmod.set_theme()
+
+    def test_set_is_alias(self):
+
+        rcmod.set_theme(context="paper", style="white")
+        params1 = mpl.rcParams.copy()
+        rcmod.reset_orig()
+
+        rcmod.set_theme(context="paper", style="white")
+        params2 = mpl.rcParams.copy()
+
+        self.assert_rc_params_equal(params1, params2)
+
+        rcmod.set_theme()
 
 
 class TestPlottingContext(RCParamTester):
@@ -150,6 +183,9 @@ class TestPlottingContext(RCParamTester):
 
         font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
                      "xtick.labelsize", "ytick.labelsize", "font.size"]
+
+        if LooseVersion(mpl.__version__) >= "3.0":
+            font_keys.append("legend.title_fontsize")
 
         for k in font_keys:
             nt.assert_equal(notebook_ref[k] * 2, notebook_big[k])
@@ -208,7 +244,7 @@ class TestFonts(object):
 
     def test_set_font(self):
 
-        rcmod.set(font="Verdana")
+        rcmod.set_theme(font="Verdana")
 
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
@@ -222,11 +258,11 @@ class TestFonts(object):
             else:
                 raise nose.SkipTest("Verdana font is not present")
         finally:
-            rcmod.set()
+            rcmod.set_theme()
 
     def test_set_serif_font(self):
 
-        rcmod.set(font="serif")
+        rcmod.set_theme(font="serif")
 
         _, ax = plt.subplots()
         ax.set_xlabel("foo")
@@ -234,11 +270,11 @@ class TestFonts(object):
         nt.assert_in(ax.xaxis.label.get_fontname(),
                      mpl.rcParams["font.serif"])
 
-        rcmod.set()
+        rcmod.set_theme()
 
     def test_different_sans_serif(self):
 
-        rcmod.set()
+        rcmod.set_theme()
         rcmod.set_style(rc={"font.sans-serif": ["Verdana"]})
 
         _, ax = plt.subplots()
@@ -253,7 +289,7 @@ class TestFonts(object):
             else:
                 raise nose.SkipTest("Verdana font is not present")
         finally:
-            rcmod.set()
+            rcmod.set_theme()
 
 
 def has_verdana():

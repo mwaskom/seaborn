@@ -1,8 +1,11 @@
 
-v0.10.1 (Unreleased)
+v0.10.1 (April 2020)
 --------------------
 
-This is minor release with bug fixes issues in 0.10.0.
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3767070.svg
+   :target: https://doi.org/10.5281/zenodo.3767070
+
+This is minor release with bug fixes for issues identified since 0.10.0.
 
 - Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.
 
@@ -13,3 +16,13 @@ This is minor release with bug fixes issues in 0.10.0.
 - Fixed a bug where :func:`heatmap` would use values from masked cells when computing default colormap limits.
 
 - Fixed a bug where :func:`despine` would cause an error when trying to trim spines on a matplotlib categorical axis.
+
+- Adapted to a change in matplotlib that caused problems with single swarm plots.
+
+- Added the ``showfliers`` parameter to :func:`boxenplot` to suppress plotting of outlier data points, matching the API of :func:`boxplot`.
+
+- Avoided seeing an error from statmodels when data with an IQR of 0 is passed to :func:`kdeplot`.
+
+- Added the ``legend.title_fontsize`` to the :func:`plotting_context` definition.
+
+- Deprecated several utility functions that are no longer used internally (``percentiles``, ``sig_stars``, ``pmf_hist``, and ``sort_df``).

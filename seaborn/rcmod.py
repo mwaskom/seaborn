@@ -1,12 +1,13 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
 import warnings
 import functools
+from distutils.version import LooseVersion
 import matplotlib as mpl
 from cycler import cycler
-from . import palettes, _orig_rc_params
+from . import palettes
 
 
-__all__ = ["set", "reset_defaults", "reset_orig",
+__all__ = ["set_theme", "set", "reset_defaults", "reset_orig",
            "axes_style", "set_style", "plotting_context", "set_context",
            "set_palette"]
 
@@ -49,7 +50,7 @@ _style_keys = [
     "axes.spines.right",
     "axes.spines.top",
 
-    ]
+]
 
 _context_keys = [
 
@@ -76,12 +77,15 @@ _context_keys = [
     "xtick.minor.size",
     "ytick.minor.size",
 
-    ]
+]
+
+if LooseVersion(mpl.__version__) >= "3.0":
+    _context_keys.append("legend.title_fontsize")
 
 
-def set(context="notebook", style="darkgrid", palette="deep",
-        font="sans-serif", font_scale=1, color_codes=True, rc=None):
-    """Set aesthetic parameters in one step.
+def set_theme(context="notebook", style="darkgrid", palette="deep",
+              font="sans-serif", font_scale=1, color_codes=True, rc=None):
+    """Set multiple theme parameters in one step.
 
     Each set of parameters can be set directly or temporarily, see the
     referenced functions below for more information.
@@ -89,11 +93,11 @@ def set(context="notebook", style="darkgrid", palette="deep",
     Parameters
     ----------
     context : string or dict
-        Plotting context parameters, see :func:`plotting_context`
+        Plotting context parameters, see :func:`plotting_context`.
     style : string or dict
-        Axes style parameters, see :func:`axes_style`
+        Axes style parameters, see :func:`axes_style`.
     palette : string or sequence
-        Color palette, see :func:`color_palette`
+        Color palette, see :func:`color_palette`.
     font : string
         Font family, see matplotlib font manager.
     font_scale : float, optional
@@ -113,6 +117,11 @@ def set(context="notebook", style="darkgrid", palette="deep",
         mpl.rcParams.update(rc)
 
 
+def set(*args, **kwargs):
+    """Alias for :func:`set_theme`, which is the preferred interface."""
+    set_theme(*args, **kwargs)
+
+
 def reset_defaults():
     """Restore all RC params to default settings."""
     mpl.rcParams.update(mpl.rcParamsDefault)
@@ -120,6 +129,7 @@ def reset_defaults():
 
 def reset_orig():
     """Restore all RC params to original settings (respects custom rc)."""
+    from . import _orig_rc_params
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', mpl.cbook.MatplotlibDeprecationWarning)
         mpl.rcParams.update(_orig_rc_params)
@@ -206,17 +216,17 @@ def axes_style(style=None, rc=None):
             "xtick.top": False,
             "ytick.right": False,
 
-            }
+        }
 
         # Set grid on or off
         if "grid" in style:
             style_dict.update({
                 "axes.grid": True,
-                })
+            })
         else:
             style_dict.update({
                 "axes.grid": False,
-                })
+            })
 
         # Set the color of the background, spines, and grids
         if style.startswith("dark"):
@@ -231,7 +241,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style == "whitegrid":
             style_dict.update({
@@ -245,7 +255,7 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         elif style in ["white", "ticks"]:
             style_dict.update({
@@ -259,19 +269,19 @@ def axes_style(style=None, rc=None):
                 "axes.spines.right": True,
                 "axes.spines.top": True,
 
-                })
+            })
 
         # Show or hide the axes ticks
         if style == "ticks":
             style_dict.update({
                 "xtick.bottom": True,
                 "ytick.left": True,
-                })
+            })
         else:
             style_dict.update({
                 "xtick.bottom": False,
                 "ytick.left": False,
-                })
+            })
 
     # Remove entries that are not defined in the base list of valid keys
     # This lets us handle matplotlib <=/> 2.0
@@ -378,7 +388,7 @@ def plotting_context(context=None, font_scale=1, rc=None):
             raise ValueError("context must be in %s" % ", ".join(contexts))
 
         # Set up dictionary of default parameters
-        base_context = {
+        texts_base_context = {
 
             "font.size": 12,
             "axes.labelsize": 12,
@@ -386,6 +396,13 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "xtick.labelsize": 11,
             "ytick.labelsize": 11,
             "legend.fontsize": 11,
+
+        }
+
+        if LooseVersion(mpl.__version__) >= "3.0":
+            texts_base_context["legend.title_fontsize"] = 12
+
+        base_context = {
 
             "axes.linewidth": 1.25,
             "grid.linewidth": 1,
@@ -403,15 +420,15 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "xtick.minor.size": 4,
             "ytick.minor.size": 4,
 
-            }
+        }
+        base_context.update(texts_base_context)
 
         # Scale all the parameters by the same factor depending on the context
         scaling = dict(paper=.8, notebook=1, talk=1.5, poster=2)[context]
         context_dict = {k: v * scaling for k, v in base_context.items()}
 
         # Now independently scale the fonts
-        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
-                     "xtick.labelsize", "ytick.labelsize", "font.size"]
+        font_keys = texts_base_context.keys()
         font_dict = {k: context_dict[k] * font_scale for k in font_keys}
         context_dict.update(font_dict)
 

@@ -7,17 +7,17 @@ services:
 
 
 env:
-  - PYTHON=3.6 DEPS=pinned BACKEND=agg DOCTESTS=true
-  - PYTHON=3.6 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.7 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.8 DEPS=latest BACKEND=agg DOCTESTS=true
-  - PYTHON=3.8 DEPS=latest BACKEND=qtagg DOCTESTS=true
-  - PYTHON=3.8 DEPS=minimal BACKEND=agg DOCTESTS=false
+  - PYTHON=3.6 DEPS=pinned MPLBACKEND=agg DOCTESTS=false
+  - PYTHON=3.6 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.7 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest MPLBACKEND=agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=latest MPLBACKEND=qt5agg DOCTESTS=true
+  - PYTHON=3.8 DEPS=minimal MPLBACKEND=agg DOCTESTS=false
 
 
 before_install:
   - sudo apt-get update -yq
-  - sudo sh testing/getmsfonts.sh
+  - sudo sh ci/getmsfonts.sh
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -32,24 +32,24 @@ before_install:
 install:
   - conda create -n testenv pip python=$PYTHON
   - source activate testenv
-  - cat testing/deps_${DEPS}.txt testing/utils.txt > deps.txt
+  # Add pyqt for interactive tests since it doesn't always listed as a dependency
+  # for non-interactive tests, use the lightweight matplotlib-base only
+  - if [ $MPLBACKEND == "qt5agg" ];
+    then (cat ci/deps_${DEPS}.txt ci/utils.txt; echo "pyqt") > deps.txt;
+    else cat ci/deps_${DEPS}.txt ci/utils.txt | sed 's/matplotlib$/matplotlib-base/' > deps.txt;
+    fi
   - conda install --file deps.txt
   - pip install .
 
 
 before_script:
-  - cp testing/matplotlibrc_${BACKEND} matplotlibrc
-  - if [ $BACKEND == "qtagg" ]; then
-    export DISPLAY=:99.0;
-    sh -e /etc/init.d/xvfb start;
-    sleep 3;
-    fi
+  - python ci/cache_test_datasets.py
 
 
 script:
   - make lint
   - if [ $DOCTESTS == 'true' ];
-    then make coverage;
+    then make test;
     else make unittests;
     fi
 

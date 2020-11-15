@@ -26,12 +26,13 @@ blockquote {
 }
 
 pre {
+    margin-top: 11.5px !important;
     background-color: #f6f6f9 !important;
 }
 
 code {
     color: #49759c !important;
-    background-color: transparent; !important;
+    background-color: transparent !important;
 }
 
 code.descclassname {
@@ -55,9 +56,19 @@ ul.dropdown-menu {
 }
 
 .alert-info {
-    background-color: #adb8cb !important;
-    border-color: #adb8cb !important;
+    background-color: #bbd2ea !important;
+    border-color: #bbd2ea !important;
     color: #2c3e50 !important;
+}
+
+.alert-warning {
+    background-color: #e09572 !important;
+    border-color: #e09572 !important;
+    color: #222222 !important;
+}
+
+img {
+    margin-bottom: 10px !important;
 }
 
 /* From https://github.com/twbs/bootstrap/issues/1768 */
@@ -109,4 +120,49 @@ tbody tr:nth-child(odd) {
 
 tbody tr:hover {
     background: rgba(66, 165, 245, 0.2);
+}
+
+.label,
+.badge {
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 11.844px;
+  /* font-weight: bold; */
+  line-height: 13px;
+  color: #ffffff;
+  vertical-align: baseline;
+  white-space: nowrap;
+  /* text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25); */
+  background-color: #999999;
+}
+.badge {
+  padding-left: 9px;
+  padding-right: 9px;
+  -webkit-border-radius: 9px;
+  -moz-border-radius: 9px;
+  border-radius: 9px;
+  opacity: 70%;
+}
+.badge-api {
+  background-color: #c44e52;
+}
+.badge-defaults {
+  background-color: #dd8452;
+}
+.badge-docs {
+  background-color: #8172b3;
+}
+.badge-feature {
+  background-color: #55a868;
+}
+.badge-enhancement {
+  background-color: #4c72b0;
+}
+.badge-fix {
+    background-color: #ccb974;
+}
+
+.navbar-brand {
+    padding-top: 16px;
+    padding-bottom: 16px;
 }

@@ -4,13 +4,5 @@ generated/
 examples/
 example_thumbs/
 introduction.rst
-aesthetics.rst
-relational.rst
-color_palettes.rst
-distributions.rst
-regression.rst
-categorical.rst
-plotting_distributions.rst
-dataset_exploration.rst
-timeseries_plots.rst
-axis_grids.rst
+tutorial/*.rst
+docstrings/*.rst

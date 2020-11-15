@@ -13,8 +13,6 @@
 
 import sys, os
 import sphinx_bootstrap_theme
-import matplotlib as mpl
-mpl.use("Agg")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -39,7 +37,11 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'gallery_generator',
     'numpydoc',
+    'sphinx_issues',
 ]
+
+# Sphinx-issues configuration
+issues_github_path = 'mwaskom/seaborn'
 
 # Generate the API documentation when building
 autosummary_generate = True
@@ -91,10 +93,10 @@ release = seaborn.__version__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ['_build', 'docstrings']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
-#default_role = None
+default_role = 'literal'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True
@@ -126,15 +128,16 @@ html_theme = 'bootstrap'
 html_theme_options = {
     'source_link_position': "footer",
     'bootswatch_theme': "paper",
+    'navbar_title': " ",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
     'navbar_links': [
-                     ("Gallery", "examples/index"),
-                     ("Tutorial", "tutorial"),
-                     ("API", "api"),
-                     ],
+        ("Gallery", "examples/index"),
+        ("Tutorial", "tutorial"),
+        ("API", "api"),
+    ],
 
-    }
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
@@ -148,7 +151,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = "_static/logo-wide-lightbg.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -289,7 +292,7 @@ def setup(app):
 # -- Intersphinx ------------------------------------------------
 
 intersphinx_mapping = {
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'matplotlib': ('https://matplotlib.org/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),

@@ -17,6 +17,21 @@ Relational plots
     scatterplot
     lineplot
 
+.. _distribution_api:
+
+Distribution plots
+------------------
+
+.. autosummary::
+    :toctree: generated/
+
+    displot
+    histplot
+    kdeplot
+    ecdfplot
+    rugplot
+    distplot
+
 .. _categorical_api:
 
 Categorical plots
@@ -34,18 +49,6 @@ Categorical plots
     pointplot
     barplot
     countplot
-
-.. _distribution_api:
-
-Distribution plots
-------------------
-
-.. autosummary::
-    :toctree: generated/
-
-    distplot
-    kdeplot
-    rugplot
 
 .. _regression_api:
 
@@ -113,13 +116,13 @@ Joint grids
 
 .. _style_api:
 
-Style control 
--------------
+Themes
+------
 
 .. autosummary::
     :toctree: generated/
 
-    set
+    set_theme
     axes_style
     set_style
     plotting_context
@@ -127,6 +130,7 @@ Style control
     set_color_codes
     reset_defaults
     reset_orig
+    set
 
 .. _palette_api:
 
@@ -169,6 +173,8 @@ Utility functions
     :toctree: generated/
 
     load_dataset
+    get_dataset_names
+    get_data_home
     despine
     desaturate
     saturate

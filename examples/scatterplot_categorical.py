@@ -2,17 +2,15 @@
 Scatterplot with categorical variables
 ======================================
 
+_thumb: .45, .45
+
 """
-import pandas as pd
 import seaborn as sns
-sns.set(style="whitegrid", palette="muted")
+sns.set_theme(style="whitegrid", palette="muted")
 
-# Load the example iris dataset
-iris = sns.load_dataset("iris")
-
-# "Melt" the dataset to "long-form" or "tidy" representation
-iris = pd.melt(iris, "species", var_name="measurement")
+# Load the penguins dataset
+df = sns.load_dataset("penguins")
 
 # Draw a categorical scatterplot to show each observation
-sns.swarmplot(x="measurement", y="value", hue="species",
-              palette=["r", "c", "y"], data=iris)
+ax = sns.swarmplot(data=df, x="body_mass_g", y="sex", hue="species")
+ax.set(ylabel="")

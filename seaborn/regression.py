@@ -18,6 +18,7 @@ except ImportError:
 from . import utils
 from . import algorithms as algo
 from .axisgrid import FacetGrid, _facet_docs
+from ._decorators import _deprecate_positional_args
 
 
 __all__ = ["lmplot", "regplot", "residplot"]
@@ -320,7 +321,7 @@ class _RegressionPlotter(_LinearPlotter):
         x = self.x
         if np.isscalar(bins):
             percentiles = np.linspace(0, 100, bins + 2)[1:-1]
-            bins = np.c_[utils.percentiles(x, percentiles)]
+            bins = np.c_[np.percentile(x, percentiles)]
         else:
             bins = np.c_[np.ravel(bins)]
 
@@ -551,19 +552,25 @@ _regression_docs = dict(
         Additional keyword arguments to pass to ``plt.scatter`` and
         ``plt.plot``.\
     """),
-    )
+)
 _regression_docs.update(_facet_docs)
 
 
-def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
-           col_wrap=None, height=5, aspect=1, markers="o", sharex=True,
-           sharey=True, hue_order=None, col_order=None, row_order=None,
-           legend=True, legend_out=True, x_estimator=None, x_bins=None,
-           x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
-           units=None, seed=None, order=1, logistic=False, lowess=False,
-           robust=False, logx=False, x_partial=None, y_partial=None,
-           truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
-           line_kws=None, size=None):
+@_deprecate_positional_args
+def lmplot(
+    *,
+    x=None, y=None,
+    data=None,
+    hue=None, col=None, row=None,  # TODO move before data once * is enforced
+    palette=None, col_wrap=None, height=5, aspect=1, markers="o",
+    sharex=True, sharey=True, hue_order=None, col_order=None, row_order=None,
+    legend=True, legend_out=True, x_estimator=None, x_bins=None,
+    x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
+    units=None, seed=None, order=1, logistic=False, lowess=False,
+    robust=False, logx=False, x_partial=None, y_partial=None,
+    truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
+    line_kws=None, size=None
+):
 
     # Handle deprecations
     if size is not None:
@@ -572,17 +579,22 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
                "please update your code.")
         warnings.warn(msg, UserWarning)
 
+    if data is None:
+        raise TypeError("Missing required keyword argument `data`.")
+
     # Reduce the dataframe to only needed columns
     need_cols = [x, y, hue, col, row, units, x_partial, y_partial]
     cols = np.unique([a for a in need_cols if a is not None]).tolist()
     data = data[cols]
 
     # Initialize the grid
-    facets = FacetGrid(data, row, col, hue, palette=palette,
-                       row_order=row_order, col_order=col_order,
-                       hue_order=hue_order, height=height, aspect=aspect,
-                       col_wrap=col_wrap, sharex=sharex, sharey=sharey,
-                       legend_out=legend_out)
+    facets = FacetGrid(
+        data, row=row, col=col, hue=hue,
+        palette=palette,
+        row_order=row_order, col_order=col_order, hue_order=hue_order,
+        height=height, aspect=aspect, col_wrap=col_wrap,
+        sharex=sharex, sharey=sharey, legend_out=legend_out
+    )
 
     # Add the markers here as FacetGrid has figured out how many levels of the
     # hue variable are needed and we don't want to duplicate that process
@@ -612,8 +624,11 @@ def lmplot(x, y, data, hue=None, col=None, row=None, palette=None,
         robust=robust, logx=logx, x_partial=x_partial, y_partial=y_partial,
         truncate=truncate, x_jitter=x_jitter, y_jitter=y_jitter,
         scatter_kws=scatter_kws, line_kws=line_kws,
-        )
-    facets.map_dataframe(regplot, x, y, **regplot_kws)
+    )
+    facets.map_dataframe(regplot, x=x, y=y, **regplot_kws)
+
+    # TODO this will need to change when we relax string requirement
+    facets.set_axis_labels(x, y)
 
     # Add a legend
     if legend and (hue is not None) and (hue not in [col, row]):
@@ -709,7 +724,7 @@ lmplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> import seaborn as sns; sns.set_theme(color_codes=True)
         >>> tips = sns.load_dataset("tips")
         >>> g = sns.lmplot(x="total_bill", y="tip", data=tips)
 
@@ -794,13 +809,19 @@ lmplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-def regplot(x, y, data=None, x_estimator=None, x_bins=None, x_ci="ci",
-            scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
-            seed=None, order=1, logistic=False, lowess=False, robust=False,
-            logx=False, x_partial=None, y_partial=None,
-            truncate=True, dropna=True, x_jitter=None, y_jitter=None,
-            label=None, color=None, marker="o",
-            scatter_kws=None, line_kws=None, ax=None):
+@_deprecate_positional_args
+def regplot(
+    *,
+    x=None, y=None,
+    data=None,
+    x_estimator=None, x_bins=None, x_ci="ci",
+    scatter=True, fit_reg=True, ci=95, n_boot=1000, units=None,
+    seed=None, order=1, logistic=False, lowess=False, robust=False,
+    logx=False, x_partial=None, y_partial=None,
+    truncate=True, dropna=True, x_jitter=None, y_jitter=None,
+    label=None, color=None, marker="o",
+    scatter_kws=None, line_kws=None, ax=None
+):
 
     plotter = _RegressionPlotter(x, y, data, x_estimator, x_bins, x_ci,
                                  scatter, fit_reg, ci, n_boot, units, seed,
@@ -893,7 +914,7 @@ regplot.__doc__ = dedent("""\
     .. plot::
         :context: close-figs
 
-        >>> import seaborn as sns; sns.set(color_codes=True)
+        >>> import seaborn as sns; sns.set_theme(color_codes=True)
         >>> tips = sns.load_dataset("tips")
         >>> ax = sns.regplot(x="total_bill", y="tip", data=tips)
 
@@ -987,9 +1008,15 @@ regplot.__doc__ = dedent("""\
     """).format(**_regression_docs)
 
 
-def residplot(x, y, data=None, lowess=False, x_partial=None, y_partial=None,
-              order=1, robust=False, dropna=True, label=None, color=None,
-              scatter_kws=None, line_kws=None, ax=None):
+@_deprecate_positional_args
+def residplot(
+    *,
+    x=None, y=None,
+    data=None,
+    lowess=False, x_partial=None, y_partial=None,
+    order=1, robust=False, dropna=True, label=None, color=None,
+    scatter_kws=None, line_kws=None, ax=None
+):
     """Plot the residuals of a linear regression.
 
     This function will regress y on x (possibly as a robust or polynomial

@@ -2,11 +2,11 @@
 Discovering structure in heatmap data
 =====================================
 
-_thumb: .4, .25
+_thumb: .3, .25
 """
 import pandas as pd
 import seaborn as sns
-sns.set()
+sns.set_theme()
 
 # Load the brain networks example dataset
 df = sns.load_dataset("brain_networks", header=[0, 1, 2], index_col=0)
@@ -27,6 +27,10 @@ networks = df.columns.get_level_values("network")
 network_colors = pd.Series(networks, index=df.columns).map(network_lut)
 
 # Draw the full plot
-sns.clustermap(df.corr(), center=0, cmap="vlag",
-               row_colors=network_colors, col_colors=network_colors,
-               linewidths=.75, figsize=(13, 13))
+g = sns.clustermap(df.corr(), center=0, cmap="vlag",
+                   row_colors=network_colors, col_colors=network_colors,
+                   dendrogram_ratio=(.1, .2),
+                   cbar_pos=(.02, .32, .03, .2),
+                   linewidths=.75, figsize=(12, 13))
+
+g.ax_row_dendrogram.remove()

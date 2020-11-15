@@ -25,11 +25,11 @@ New features
 
 - Exposed the ``layout_pad`` parameter in :class:`PairGrid` and set a smaller default than what matptlotlib sets for more efficient use of space in dense grids.
 
-- It is now possible to force a categorical interpretation of the ``hue`` varaible in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passig a list/dict of colors.
+- It is now possible to force a categorical interpretation of the ``hue`` variable in a relational plot by passing the name of a categorical palette (e.g. ``"deep"``, or ``"Set2"``). This complements the (previously supported) option of passing a list/dict of colors.
 
 - Added the ``tree_kws`` parameter to :func:`clustermap` to control the properties of the lines in the dendrogram.
 
-- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in diffent semantics.
+- Added the ability to pass hierarchical label names to the :class:`FacetGrid` legend, which also fixes a bug in :func:`relplot` when the same label appeared in different semantics.
 
 - Improved support for grouping observations based on pandas index information in categorical plots.
 

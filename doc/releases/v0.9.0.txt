@@ -52,7 +52,7 @@ A few functions have been renamed or have had changes to their default parameter
 
 - Renamed the ``size`` parameter to ``height`` in multi-plot grid objects (:class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid`) along with functions that use them (``factorplot``, :func:`lmplot`, :func:`pairplot`, and :func:`jointplot`) to avoid conflicts with the ``size`` parameter that is used in ``scatterplot`` and ``lineplot`` (necessary to make :func:`relplot` work) and also makes the meaning of the parameter a bit more clear.
 
-- Changed the default diagonal plots in :func:`pairplot` to use `func`:kdeplot` when a ``"hue"`` dimension is used.
+- Changed the default diagonal plots in :func:`pairplot` to use func:`kdeplot` when a ``"hue"`` dimension is used.
 
 - Deprecated the statistical annotation component of :class:`JointGrid`. The method is still available but will be removed in a future version.
 

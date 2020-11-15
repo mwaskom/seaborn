@@ -1,13 +1,13 @@
 """
-Scatterplot with categorical and numerical semantics
-====================================================
+Scatterplot with multiple semantics
+===================================
 
 _thumb: .45, .5
 
 """
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the example diamonds dataset
 diamonds = sns.load_dataset("diamonds")

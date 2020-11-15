@@ -26,14 +26,14 @@ MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.11.0.dev0'
+VERSION = '0.12.0.dev0'
 PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
-    'numpy>=1.13.3',
-    'scipy>=1.0.1',
-    'pandas>=0.22.0',
-    'matplotlib>=2.1.2',
+    'numpy>=1.15',
+    'scipy>=1.0',
+    'pandas>=0.23',
+    'matplotlib>=2.2',
 ]
 
 
@@ -52,9 +52,8 @@ CLASSIFIERS = [
     'License :: OSI Approved :: BSD License',
     'Topic :: Scientific/Engineering :: Visualization',
     'Topic :: Multimedia :: Graphics',
-    'Operating System :: POSIX',
-    'Operating System :: Unix',
-    'Operating System :: MacOS'
+    'Operating System :: OS Independent',
+    'Framework :: Matplotlib',
 ]
 
 

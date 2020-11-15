@@ -29,7 +29,7 @@ except ImportError:
     _no_fastcluster = True
 
 
-class TestHeatmap(object):
+class TestHeatmap:
     rs = np.random.RandomState(sum(map(ord, "heatmap")))
 
     x_norm = rs.randn(4, 8)
@@ -87,13 +87,15 @@ class TestHeatmap(object):
         npt.assert_array_equal(p.xticklabels, combined_tick_labels)
         nt.assert_equal(p.xlabel, "letter-number")
 
-    def test_mask_input(self):
+    @pytest.mark.parametrize("dtype", [float, np.int64, object])
+    def test_mask_input(self, dtype):
         kws = self.default_kws.copy()
 
         mask = self.x_norm > 0
         kws['mask'] = mask
-        p = mat._HeatMapper(self.x_norm, **kws)
-        plot_data = np.ma.masked_where(mask, self.x_norm)
+        data = self.x_norm.astype(dtype)
+        p = mat._HeatMapper(data, **kws)
+        plot_data = np.ma.masked_where(mask, data)
 
         npt.assert_array_equal(p.plot_data, plot_data)
 
@@ -420,7 +422,10 @@ class TestHeatmap(object):
     def test_square_aspect(self):
 
         ax = mat.heatmap(self.df_norm, square=True)
-        nt.assert_equal(ax.get_aspect(), "equal")
+        obs_aspect = ax.get_aspect()
+        # mpl>3.3 returns 1 for setting "equal" aspect
+        # so test for the two possible equal outcomes
+        assert obs_aspect == "equal" or obs_aspect == 1
 
     def test_mask_validation(self):
 
@@ -438,7 +443,7 @@ class TestHeatmap(object):
 
     def test_missing_data_mask(self):
 
-        data = pd.DataFrame(np.arange(4, dtype=np.float).reshape(2, 2))
+        data = pd.DataFrame(np.arange(4, dtype=float).reshape(2, 2))
         data.loc[0, 0] = np.nan
         mask = mat._matrix_mask(data, None)
         npt.assert_array_equal(mask, [[True, False], [False, False]])
@@ -455,7 +460,7 @@ class TestHeatmap(object):
         assert len(ax2.collections) == 2
 
 
-class TestDendrogram(object):
+class TestDendrogram:
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -698,7 +703,7 @@ class TestDendrogram(object):
         plt.close(f)
 
 
-class TestClustermap(object):
+class TestClustermap:
     rs = np.random.RandomState(sum(map(ord, "clustermap")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -1129,6 +1134,22 @@ class TestClustermap(object):
             np.array(self.col_colors)[g.dendrogram_col.reordered_ind],
             g.ax_col_colors.collections[0].get_facecolors()[:, :3]
         )
+
+    def test_row_col_colors_raise_on_mixed_index_types(self):
+
+        row_colors = pd.Series(
+            list(self.row_colors), name="row_annot", index=self.df_norm.index
+        )
+
+        col_colors = pd.Series(
+            list(self.col_colors), name="col_annot", index=self.df_norm.columns
+        )
+
+        with pytest.raises(TypeError):
+            mat.clustermap(self.x_norm, row_colors=row_colors)
+
+        with pytest.raises(TypeError):
+            mat.clustermap(self.x_norm, col_colors=col_colors)
 
     def test_mask_reorganization(self):
 

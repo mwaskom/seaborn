@@ -2,16 +2,19 @@
 Grouped barplots
 ================
 
-_thumb: .45, .5
+_thumb: .36, .5
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
-# Load the example Titanic dataset
-titanic = sns.load_dataset("titanic")
+penguins = sns.load_dataset("penguins")
 
-# Draw a nested barplot to show survival for class and sex
-g = sns.catplot(x="class", y="survived", hue="sex", data=titanic,
-                height=6, kind="bar", palette="muted")
+# Draw a nested barplot by species and sex
+g = sns.catplot(
+    data=penguins, kind="bar",
+    x="species", y="body_mass_g", hue="sex",
+    ci="sd", palette="dark", alpha=.6, height=6
+)
 g.despine(left=True)
-g.set_ylabels("survival probability")
+g.set_axis_labels("", "Body mass (g)")
+g.legend.set_title("")

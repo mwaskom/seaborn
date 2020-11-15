@@ -5,7 +5,7 @@ Dot plot with several variables
 _thumb: .3, .3
 """
 import seaborn as sns
-sns.set(style="whitegrid")
+sns.set_theme(style="whitegrid")
 
 # Load the dataset
 crashes = sns.load_dataset("car_crashes")
@@ -17,7 +17,7 @@ g = sns.PairGrid(crashes.sort_values("total", ascending=False),
 
 # Draw a dot plot using the stripplot function
 g.map(sns.stripplot, size=10, orient="h",
-      palette="ch:s=1,r=-.1,h=1_r", linewidth=1, edgecolor="w")
+      palette="flare_r", linewidth=1, edgecolor="w")
 
 # Use the same x axis limits on all columns and add better labels
 g.set(xlim=(0, 25), xlabel="Crashes", ylabel="")

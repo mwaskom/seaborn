@@ -2,17 +2,16 @@
 Grouped violinplots with split violins
 ======================================
 
-_thumb: .43, .47
+_thumb: .44, .47
 """
 import seaborn as sns
-sns.set(style="whitegrid", palette="pastel", color_codes=True)
+sns.set_theme(style="whitegrid")
 
 # Load the example tips dataset
 tips = sns.load_dataset("tips")
 
 # Draw a nested violinplot and split the violins for easier comparison
-sns.violinplot(x="day", y="total_bill", hue="smoker",
-               split=True, inner="quart",
-               palette={"Yes": "y", "No": "b"},
-               data=tips)
+sns.violinplot(data=tips, x="day", y="total_bill", hue="smoker",
+               split=True, inner="quart", linewidth=1,
+               palette={"Yes": "b", "No": ".85"})
 sns.despine(left=True)
