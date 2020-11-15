@@ -354,7 +354,7 @@ class _LinePlotter(_RelationalPlotter):
         self, *,
         data=None, variables={},
         estimator=None, ci=None, n_boot=None, seed=None,
-        sort=True, err_style=None, err_kws=None, legend=None
+        sort=True, sort_dim="x", err_style=None, err_kws=None, legend=None
     ):
 
         # TODO this is messy, we want the mapping to be agnoistic about
@@ -371,6 +371,7 @@ class _LinePlotter(_RelationalPlotter):
         self.n_boot = n_boot
         self.seed = seed
         self.sort = sort
+        self.sort_dim = sort_dim
         self.err_style = err_style
         self.err_kws = {} if err_kws is None else err_kws
 
@@ -471,7 +472,13 @@ class _LinePlotter(_RelationalPlotter):
         for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
 
             if self.sort:
-                sort_vars = ["units", "x", "y"]
+                if self.sort_dim == "x":
+                    sort_vars = ["units", "x", "y"]
+                elif self.sort_dim == "y":
+                    sort_vars = ["units", "y", "x"]
+                else:
+                    err = "`sort_dim` must be 'x' or 'y', not {}"
+                    raise ValueError(err.format(self.sort_dim))
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
 
@@ -489,7 +496,12 @@ class _LinePlotter(_RelationalPlotter):
                 if "units" in self.variables:
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                x, y, y_ci = self.aggregate(y, x, u)
+                if self.sort_dim == "x":
+                    # grouper variable is on x-axis
+                    x, y, y_ci = self.aggregate(y, x, u)
+                else:
+                    # grouper variable is on y-axis
+                    y, x, y_ci = self.aggregate(x, y, u)
             else:
                 y_ci = None
 
@@ -528,13 +540,18 @@ class _LinePlotter(_RelationalPlotter):
                 low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
 
                 if self.err_style == "band":
-
-                    ax.fill_between(x, low, high, color=line_color, **err_kws)
+                    if self.sort_dim == "x":
+                        ax.fill_between(x, low, high, color=line_color, **err_kws)
+                    else:
+                        ax.fill_betweenx(y, low, high, color=line_color, **err_kws)
 
                 elif self.err_style == "bars":
+                    if self.sort_dim == "x":
+                        err_kws["yerr"] = ci_to_errsize((low, high), y)
+                    else:
+                        err_kws["xerr"] = ci_to_errsize((low, high), x)
 
-                    y_err = ci_to_errsize((low, high), y)
-                    ebars = ax.errorbar(x, y, y_err, linestyle="",
+                    ebars = ax.errorbar(x, y, linestyle="",
                                         color=line_color, alpha=line_alpha,
                                         **err_kws)
 
@@ -670,7 +687,7 @@ def lineplot(
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
     units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
-    sort=True, err_style="band", err_kws=None,
+    sort=True, sort_dim="x", err_style="band", err_kws=None,
     legend="auto", ax=None, **kwargs
 ):
 
@@ -678,7 +695,8 @@ def lineplot(
     p = _LinePlotter(
         data=data, variables=variables,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
-        sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
+        sort=sort, sort_dim=sort_dim,
+        err_style=err_style, err_kws=err_kws, legend=legend,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -741,6 +759,9 @@ style : vector or key in ``data``
 sort : boolean
     If True, the data will be sorted by the x and y variables, otherwise
     lines will connect points in the order they appear in the dataset.
+sort_dim : "x" or "y"
+    Dimension to be sorted first. If the y-variable is drawn as a function
+    of the x-variable, use "x". If it is vice versa, use "y".
 err_style : "band" or "bars"
     Whether to draw the confidence intervals with translucent error bands
     or discrete error bars.

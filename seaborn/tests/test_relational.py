@@ -1117,6 +1117,48 @@ class TestLinePlotter(Helpers):
             assert isinstance(c, mpl.collections.LineCollection)
 
         p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="y", y="x", hue="a"),
+            sort_dim="y",
+            estimator="mean", err_style="band", ci="sd"
+        )
+
+        ax.clear()
+        p.plot(ax, {})
+        assert len(ax.lines) == len(ax.collections) == len(p._hue_map.levels)
+        for c in ax.collections:
+            assert isinstance(c, mpl.collections.PolyCollection)
+        for line in ax.lines:
+            x, y = line.get_data()
+            assert((y == sorted(y)).all())
+
+        p = _LinePlotter(
+            data=long_df,
+            variables=dict(x="y", y="x", hue="a"),
+            sort_dim="y",
+            estimator="mean", err_style="bars", ci="sd"
+        )
+
+        ax.clear()
+        p.plot(ax, {})
+        n_lines = len(ax.lines)
+        assert n_lines / 2 == len(ax.collections) == len(p._hue_map.levels)
+        assert len(ax.collections) == len(p._hue_map.levels)
+        for c in ax.collections:
+            assert isinstance(c, mpl.collections.LineCollection)
+        for line in ax.lines:
+            x, y = line.get_data()
+            assert((y == sorted(y)).all())
+
+        with pytest.raises(ValueError):
+            p = _LinePlotter(
+                data=long_df,
+                variables=dict(x="y", y="x", hue="a"),
+                sort_dim="bad"
+            )
+            p.plot(ax, {})
+
+        p = _LinePlotter(
             data=repeated_df,
             variables=dict(x="x", y="y", units="u"),
             estimator=None
