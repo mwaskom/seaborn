@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 import pytest
-import nose.tools as nt
 import numpy.testing as npt
 try:
     import pandas.testing as pdt
@@ -23,7 +22,7 @@ from ..palettes import color_palette
 rs = np.random.RandomState(0)
 
 
-class TestLinearPlotter(object):
+class TestLinearPlotter:
 
     rs = np.random.RandomState(77)
     df = pd.DataFrame(dict(x=rs.normal(size=60),
@@ -48,7 +47,7 @@ class TestLinearPlotter(object):
         p.establish_variables(None, x=self.df.x, y=self.df.y)
         pdt.assert_series_equal(p.x, self.df.x)
         pdt.assert_series_equal(p.y, self.df.y)
-        nt.assert_is(p.data, None)
+        assert p.data is None
 
     def test_establish_variables_from_array(self):
 
@@ -58,7 +57,7 @@ class TestLinearPlotter(object):
                               y=self.df.y.values)
         npt.assert_array_equal(p.x, self.df.x)
         npt.assert_array_equal(p.y, self.df.y)
-        nt.assert_is(p.data, None)
+        assert p.data is None
 
     def test_establish_variables_from_lists(self):
 
@@ -68,7 +67,7 @@ class TestLinearPlotter(object):
                               y=self.df.y.values.tolist())
         npt.assert_array_equal(p.x, self.df.x)
         npt.assert_array_equal(p.y, self.df.y)
-        nt.assert_is(p.data, None)
+        assert p.data is None
 
     def test_establish_variables_from_mix(self):
 
@@ -81,7 +80,7 @@ class TestLinearPlotter(object):
     def test_establish_variables_from_bad(self):
 
         p = lm._LinearPlotter()
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             p.establish_variables(None, x="x", y=self.df.y)
 
     def test_dropna(self):
@@ -97,7 +96,7 @@ class TestLinearPlotter(object):
         pdt.assert_series_equal(p.y_na, self.df.y_na[mask])
 
 
-class TestRegressionPlotter(object):
+class TestRegressionPlotter:
 
     rs = np.random.RandomState(49)
 
@@ -136,7 +135,7 @@ class TestRegressionPlotter(object):
         npt.assert_array_equal(p.x, self.df.x)
         npt.assert_array_equal(p.y, self.df.y)
         npt.assert_array_equal(p.units, self.df.s)
-        nt.assert_is(p.data, None)
+        assert p.data is None
 
     def test_variables_from_mix(self):
 
@@ -158,10 +157,10 @@ class TestRegressionPlotter(object):
     def test_dropna(self):
 
         p = lm._RegressionPlotter("x", "y_na", data=self.df)
-        nt.assert_equal(len(p.x), pd.notnull(self.df.y_na).sum())
+        assert len(p.x) == pd.notnull(self.df.y_na).sum()
 
         p = lm._RegressionPlotter("x", "y_na", data=self.df, dropna=False)
-        nt.assert_equal(len(p.x), len(self.df.y_na))
+        assert len(p.x) == len(self.df.y_na)
 
     @pytest.mark.parametrize("x,y",
                              [([1.5], [2]),
@@ -174,16 +173,16 @@ class TestRegressionPlotter(object):
     def test_ci(self):
 
         p = lm._RegressionPlotter("x", "y", data=self.df, ci=95)
-        nt.assert_equal(p.ci, 95)
-        nt.assert_equal(p.x_ci, 95)
+        assert p.ci == 95
+        assert p.x_ci == 95
 
         p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci=68)
-        nt.assert_equal(p.ci, 95)
-        nt.assert_equal(p.x_ci, 68)
+        assert p.ci == 95
+        assert p.x_ci == 68
 
         p = lm._RegressionPlotter("x", "y", data=self.df, ci=95, x_ci="sd")
-        nt.assert_equal(p.ci, 95)
-        nt.assert_equal(p.x_ci, "sd")
+        assert p.ci == 95
+        assert p.x_ci == "sd"
 
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_fast_regression(self):
@@ -223,9 +222,9 @@ class TestRegressionPlotter(object):
         yhat_lin, _ = p.fit_fast(grid)
         yhat_log, _ = p.fit_logx(grid)
 
-        nt.assert_greater(yhat_lin[0], yhat_log[0])
-        nt.assert_greater(yhat_log[20], yhat_lin[20])
-        nt.assert_greater(yhat_lin[90], yhat_log[90])
+        assert yhat_lin[0] > yhat_log[0]
+        assert yhat_log[20] > yhat_lin[20]
+        assert yhat_lin[90] > yhat_log[90]
 
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_regress_n_boot(self):
@@ -252,15 +251,15 @@ class TestRegressionPlotter(object):
 
         # Fast (linear algebra) version
         _, boots_fast = p.fit_fast(self.grid)
-        nt.assert_is(boots_fast, None)
+        assert boots_fast is None
 
         # Slower (np.polyfit) version
         _, boots_poly = p.fit_poly(self.grid, 1)
-        nt.assert_is(boots_poly, None)
+        assert boots_poly is None
 
         # Slowest (statsmodels) version
         _, boots_smod = p.fit_statsmodels(self.grid, smlm.OLS)
-        nt.assert_is(boots_smod, None)
+        assert boots_smod is None
 
     def test_regress_bootstrap_seed(self):
 
@@ -291,10 +290,8 @@ class TestRegressionPlotter(object):
 
         p = lm._RegressionPlotter(self.df.x, self.df.y)
         x_binned, bins = p.bin_predictor(self.bins_given)
-        nt.assert_greater(self.df.x[x_binned == 0].min(),
-                          self.df.x[x_binned == -1].max())
-        nt.assert_greater(self.df.x[x_binned == 1].min(),
-                          self.df.x[x_binned == 0].max())
+        assert self.df.x[x_binned == 0].min() > self.df.x[x_binned == -1].max()
+        assert self.df.x[x_binned == 1].min() > self.df.x[x_binned == 0].max()
 
     def test_scatter_data(self):
 
@@ -310,7 +307,7 @@ class TestRegressionPlotter(object):
 
         p = lm._RegressionPlotter(self.df.d, self.df.y, x_jitter=.1)
         x, y = p.scatter_data
-        nt.assert_true((x != self.df.d).any())
+        assert (x != self.df.d).any()
         npt.assert_array_less(np.abs(self.df.d - x), np.repeat(.1, len(x)))
         npt.assert_array_equal(y, self.df.y)
 
@@ -375,17 +372,17 @@ class TestRegressionPlotter(object):
 
         p = lm._RegressionPlotter(y, z, y_partial=x)
         _, r_semipartial = np.corrcoef(p.x, p.y)[0]
-        nt.assert_less(r_semipartial, r_orig)
+        assert r_semipartial < r_orig
 
         p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
         _, r_partial = np.corrcoef(p.x, p.y)[0]
-        nt.assert_less(r_partial, r_orig)
+        assert r_partial < r_orig
 
         x = pd.Series(x)
         y = pd.Series(y)
         p = lm._RegressionPlotter(y, z, x_partial=x, y_partial=x)
         _, r_partial = np.corrcoef(p.x, p.y)[0]
-        nt.assert_less(r_partial, r_orig)
+        assert r_partial < r_orig
 
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_logistic_regression(self):
@@ -404,7 +401,7 @@ class TestRegressionPlotter(object):
                                   logistic=True, n_boot=10)
         with np.errstate(all="ignore"):
             _, yhat, _ = p.fit_regression(x_range=(-3, 3))
-        nt.assert_true(np.isnan(yhat).all())
+        assert np.isnan(yhat).all()
 
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_robust_regression(self):
@@ -417,7 +414,7 @@ class TestRegressionPlotter(object):
                                          robust=True, n_boot=self.n_boot)
         _, robust_yhat, _ = p_robust.fit_regression(x_range=(-3, 3))
 
-        nt.assert_equal(len(ols_yhat), len(robust_yhat))
+        assert len(ols_yhat) == len(robust_yhat)
 
     @pytest.mark.skipif(_no_statsmodels, reason="no statsmodels")
     def test_lowess_regression(self):
@@ -425,16 +422,16 @@ class TestRegressionPlotter(object):
         p = lm._RegressionPlotter("x", "y", data=self.df, lowess=True)
         grid, yhat, err_bands = p.fit_regression(x_range=(-3, 3))
 
-        nt.assert_equal(len(grid), len(yhat))
-        nt.assert_is(err_bands, None)
+        assert len(grid) == len(yhat)
+        assert err_bands is None
 
     def test_regression_options(self):
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             lm._RegressionPlotter("x", "y", data=self.df,
                                   lowess=True, order=2)
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             lm._RegressionPlotter("x", "y", data=self.df,
                                   lowess=True, logistic=True)
 
@@ -445,16 +442,16 @@ class TestRegressionPlotter(object):
         p = lm._RegressionPlotter("x", "y", data=self.df)
         grid, _, _ = p.fit_regression(ax)
         xlim = ax.get_xlim()
-        nt.assert_equal(grid.min(), xlim[0])
-        nt.assert_equal(grid.max(), xlim[1])
+        assert grid.min() == xlim[0]
+        assert grid.max() == xlim[1]
 
         p = lm._RegressionPlotter("x", "y", data=self.df, truncate=True)
         grid, _, _ = p.fit_regression()
-        nt.assert_equal(grid.min(), self.df.x.min())
-        nt.assert_equal(grid.max(), self.df.x.max())
+        assert grid.min() == self.df.x.min()
+        assert grid.max() == self.df.x.max()
 
 
-class TestRegressionPlots(object):
+class TestRegressionPlots:
 
     rs = np.random.RandomState(56)
     df = pd.DataFrame(dict(x=rs.randn(90),
@@ -470,8 +467,8 @@ class TestRegressionPlots(object):
 
         f, ax = plt.subplots()
         lm.regplot(x="x", y="y", data=self.df)
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 2)
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 2
 
         x, y = ax.collections[0].get_offsets().T
         npt.assert_array_equal(x, self.df.x)
@@ -481,20 +478,20 @@ class TestRegressionPlots(object):
 
         f, ax = plt.subplots()
         ax = lm.regplot(x="x", y="y", data=self.df, scatter=False, ax=ax)
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 1)
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 1
         ax.clear()
 
         f, ax = plt.subplots()
         ax = lm.regplot(x="x", y="y", data=self.df, fit_reg=False)
-        nt.assert_equal(len(ax.lines), 0)
-        nt.assert_equal(len(ax.collections), 1)
+        assert len(ax.lines) == 0
+        assert len(ax.collections) == 1
         ax.clear()
 
         f, ax = plt.subplots()
         ax = lm.regplot(x="x", y="y", data=self.df, ci=None)
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 1)
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 1
         ax.clear()
 
     def test_regplot_scatter_kws_alpha(self):
@@ -503,32 +500,32 @@ class TestRegressionPlots(object):
         color = np.array([[0.3, 0.8, 0.5, 0.5]])
         ax = lm.regplot(x="x", y="y", data=self.df,
                         scatter_kws={'color': color})
-        nt.assert_is(ax.collections[0]._alpha, None)
-        nt.assert_equal(ax.collections[0]._facecolors[0, 3], 0.5)
+        assert ax.collections[0]._alpha is None
+        assert ax.collections[0]._facecolors[0, 3] == 0.5
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
         ax = lm.regplot(x="x", y="y", data=self.df,
                         scatter_kws={'color': color})
-        nt.assert_equal(ax.collections[0]._alpha, 0.8)
+        assert ax.collections[0]._alpha == 0.8
 
         f, ax = plt.subplots()
         color = np.array([[0.3, 0.8, 0.5]])
         ax = lm.regplot(x="x", y="y", data=self.df,
                         scatter_kws={'color': color, 'alpha': 0.4})
-        nt.assert_equal(ax.collections[0]._alpha, 0.4)
+        assert ax.collections[0]._alpha == 0.4
 
         f, ax = plt.subplots()
         color = 'r'
         ax = lm.regplot(x="x", y="y", data=self.df,
                         scatter_kws={'color': color})
-        nt.assert_equal(ax.collections[0]._alpha, 0.8)
+        assert ax.collections[0]._alpha == 0.8
 
     def test_regplot_binned(self):
 
         ax = lm.regplot(x="x", y="y", data=self.df, x_bins=5)
-        nt.assert_equal(len(ax.lines), 6)
-        nt.assert_equal(len(ax.collections), 2)
+        assert len(ax.lines) == 6
+        assert len(ax.collections) == 2
 
     def test_lmplot_no_data(self):
 
@@ -540,8 +537,8 @@ class TestRegressionPlots(object):
 
         g = lm.lmplot(x="x", y="y", data=self.df)
         ax = g.axes[0, 0]
-        nt.assert_equal(len(ax.lines), 1)
-        nt.assert_equal(len(ax.collections), 2)
+        assert len(ax.lines) == 1
+        assert len(ax.collections) == 2
 
         x, y = ax.collections[0].get_offsets().T
         npt.assert_array_equal(x, self.df.x)
@@ -552,18 +549,18 @@ class TestRegressionPlots(object):
         g = lm.lmplot(x="x", y="y", data=self.df, hue="h")
         ax = g.axes[0, 0]
 
-        nt.assert_equal(len(ax.lines), 2)
-        nt.assert_equal(len(ax.collections), 4)
+        assert len(ax.lines) == 2
+        assert len(ax.collections) == 4
 
     def test_lmplot_markers(self):
 
         g1 = lm.lmplot(x="x", y="y", data=self.df, hue="h", markers="s")
-        nt.assert_equal(g1.hue_kws, {"marker": ["s", "s"]})
+        assert g1.hue_kws == {"marker": ["s", "s"]}
 
         g2 = lm.lmplot(x="x", y="y", data=self.df, hue="h", markers=["o", "s"])
-        nt.assert_equal(g2.hue_kws, {"marker": ["o", "s"]})
+        assert g2.hue_kws == {"marker": ["o", "s"]}
 
-        with nt.assert_raises(ValueError):
+        with pytest.raises(ValueError):
             lm.lmplot(x="x", y="y", data=self.df, hue="h",
                       markers=["o", "s", "d"])
 
@@ -572,24 +569,23 @@ class TestRegressionPlots(object):
         g = lm.lmplot(x="x", y="y", data=self.df, hue="h",
                       fit_reg=False, markers=["o", "+"])
         c = g.axes[0, 0].collections
-        nt.assert_equal(c[1].get_linewidths()[0],
-                        mpl.rcParams["lines.linewidth"])
+        assert c[1].get_linewidths()[0] == mpl.rcParams["lines.linewidth"]
 
     def test_lmplot_facets(self):
 
         g = lm.lmplot(x="x", y="y", data=self.df, row="g", col="h")
-        nt.assert_equal(g.axes.shape, (3, 2))
+        assert g.axes.shape == (3, 2)
 
         g = lm.lmplot(x="x", y="y", data=self.df, col="u", col_wrap=4)
-        nt.assert_equal(g.axes.shape, (6,))
+        assert g.axes.shape == (6,)
 
         g = lm.lmplot(x="x", y="y", data=self.df, hue="h", col="u")
-        nt.assert_equal(g.axes.shape, (1, 6))
+        assert g.axes.shape == (1, 6)
 
     def test_lmplot_hue_col_nolegend(self):
 
         g = lm.lmplot(x="x", y="y", data=self.df, col="h", hue="h")
-        nt.assert_is(g._legend, None)
+        assert g._legend is None
 
     def test_lmplot_scatter_kws(self):
 
@@ -615,7 +611,7 @@ class TestRegressionPlots(object):
     def test_residplot_lowess(self):
 
         ax = lm.residplot(x="x", y="y", data=self.df, lowess=True)
-        nt.assert_equal(len(ax.lines), 2)
+        assert len(ax.lines) == 2
 
         x, y = ax.lines[1].get_xydata().T
         npt.assert_array_equal(x, np.sort(self.df.x))
