@@ -40,6 +40,7 @@ BAR_PROPS = [
 
 def assert_artists_equal(list1, list2, properties):
 
+    assert len(list1) == len(list2)
     for a1, a2 in zip(list1, list2):
         prop1 = a1.properties()
         prop2 = a2.properties()
