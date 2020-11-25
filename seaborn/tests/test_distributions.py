@@ -2039,15 +2039,13 @@ class TestDisPlot:
 
         ax = rugplot(data=long_df, **kwargs)
         g = displot(long_df, rug=True, **kwargs)
-        for bar in g.ax.patches:
-            bar.remove()
+        g.ax.patches = []
 
         assert_plots_equal(ax, g.ax, labels=False)
 
         long_df["_"] = "_"
         g2 = displot(long_df, col="_", rug=True, **kwargs)
-        for bar in g2.ax.patches:
-            bar.remove()
+        g2.ax.patches = []
 
         assert_plots_equal(ax, g2.ax, labels=False)
 
