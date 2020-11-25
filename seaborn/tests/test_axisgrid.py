@@ -1515,8 +1515,8 @@ class TestJointPlot:
 
         g2 = ag.JointGrid()
         scatterplot(data=long_df, x="x", y="y", hue="a", ax=g2.ax_joint)
-        histplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x)
-        histplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y)
+        kdeplot(data=long_df, x="x", hue="a", ax=g2.ax_marg_x, fill=True)
+        kdeplot(data=long_df, y="y", hue="a", ax=g2.ax_marg_y, fill=True)
 
         assert_plots_equal(g1.ax_joint, g2.ax_joint)
         assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
@@ -1571,9 +1571,9 @@ class TestJointPlot:
         g1 = ag.jointplot(data=long_df, x="x", y="y", kind="kde")
 
         g2 = ag.JointGrid()
-        histplot(data=long_df, x="x", y="y", ax=g2.ax_joint)
-        histplot(data=long_df, x="x", ax=g2.ax_marg_x)
-        histplot(data=long_df, y="y", ax=g2.ax_marg_y)
+        kdeplot(data=long_df, x="x", y="y", ax=g2.ax_joint)
+        kdeplot(data=long_df, x="x", ax=g2.ax_marg_x)
+        kdeplot(data=long_df, y="y", ax=g2.ax_marg_y)
 
         assert_plots_equal(g1.ax_joint, g2.ax_joint)
         assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
@@ -1610,9 +1610,9 @@ class TestJointPlot:
         g1 = ag.jointplot(x="x", y="y", **kws)
 
         g2 = ag.JointGrid()
-        kdeplot(x="x", y="y", ax=g2.ax_joint, **kws)
-        kdeplot(x="x", ax=g2.ax_marg_x, **kws)
-        kdeplot(y="y", ax=g2.ax_marg_y, **kws)
+        scatterplot(x="x", y="y", ax=g2.ax_joint, **kws)
+        kdeplot(x="x", ax=g2.ax_marg_x, fill=True, **kws)
+        kdeplot(y="y", ax=g2.ax_marg_y, fill=True, **kws)
 
         assert_plots_equal(g1.ax_joint, g2.ax_joint)
         assert_plots_equal(g1.ax_marg_x, g2.ax_marg_x, labels=False)
