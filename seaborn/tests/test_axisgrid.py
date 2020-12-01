@@ -829,6 +829,21 @@ class TestPairGrid:
             ax = g.axes[i, j]
             assert len(ax.collections) == 0
 
+    def test_map_mixed_funcsig(self):
+
+        vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df, vars=vars)
+        g.map_lower(scatterplot)
+        g.map_upper(plt.scatter)
+
+        for i, j in zip(*np.triu_indices_from(g.axes, 1)):
+            ax = g.axes[i, j]
+            x_in = self.df[vars[j]]
+            y_in = self.df[vars[i]]
+            x_out, y_out = ax.collections[0].get_offsets().T
+            npt.assert_array_equal(x_in, x_out)
+            npt.assert_array_equal(y_in, y_out)
+
     def test_map_diag(self):
 
         g = ag.PairGrid(self.df)
