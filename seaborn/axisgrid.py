@@ -1207,11 +1207,19 @@ class PairGrid(Grid):
         # Sort out the hue variable
         self._hue_var = hue
         if hue is None:
-            self.hue_names = ["_nolegend_"]
+            self.hue_names = hue_order = ["_nolegend_"]
             self.hue_vals = pd.Series(["_nolegend_"] * len(data),
                                       index=data.index)
         else:
-            hue_names = categorical_order(data[hue], hue_order)
+            # We need hue_order and hue_names because the former is used to control
+            # the order of drawing and the latter is used to control the order of
+            # the legend. hue_names can become string-typed while hue_order must
+            # retain the type of the input data. This is messy but results from
+            # the fact that PairGrid can implement the hue-mapping logic itself
+            # (and was originally written exclusively that way) but now can delegate
+            # to the axes-level functions, while always handling legend creation.
+            # See GH2307
+            hue_names = hue_order = categorical_order(data[hue], hue_order)
             if dropna:
                 # Filter NA from the list of unique hue names
                 hue_names = list(filter(pd.notnull, hue_names))
@@ -1397,7 +1405,7 @@ class PairGrid(Grid):
 
             plt.sca(ax)
 
-            for k, label_k in enumerate(self.hue_names):
+            for k, label_k in enumerate(self._hue_order):
 
                 # Attempt to get data for this level, allowing for empty
                 try:
@@ -1489,7 +1497,7 @@ class PairGrid(Grid):
             axes_vars = [x_var, y_var]
 
         hue_grouped = self.data.groupby(self.hue_vals)
-        for k, label_k in enumerate(self.hue_names):
+        for k, label_k in enumerate(self._hue_order):
 
             kws = kwargs.copy()
 
