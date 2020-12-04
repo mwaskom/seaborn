@@ -475,6 +475,13 @@ class _LinePlotter(_RelationalPlotter):
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
 
+            # TODO
+            # How to handle NA? We don't want NA to propagate through to the
+            # estimate/CI when some values are present, but we would also like
+            # matplotlib to show "gaps" in the line when all values are missing.
+            # This is straightforward absent aggregation, but complicated with it.
+            sub_data = sub_data.dropna()
+
             # Due to the original design, code below was written assuming that
             # sub_data always has x, y, and units columns, which may be empty.
             # Adding this here to avoid otherwise disruptive changes, but it
