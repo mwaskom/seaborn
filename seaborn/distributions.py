@@ -2396,7 +2396,10 @@ def _freedman_diaconis_bins(a):
     if h == 0:
         return int(np.sqrt(a.size))
     else:
-        return int(np.ceil((a.max() - a.min()) / h))
+        try:
+            return int(np.ceil((a.max() - a.min()) / h))
+        except OverflowError:
+            return 30
 
 
 def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
