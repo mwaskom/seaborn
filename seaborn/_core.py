@@ -1199,6 +1199,10 @@ def variable_type(vector, boolean_type="numeric"):
     var_type : 'numeric', 'categorical', or 'datetime'
         Name identifying the type of data in the vector.
     """
+    # If a categorical dtype is set, infer categorical
+    if pd.api.types.is_categorical_dtype(vector):
+        return "categorical"
+
     # Special-case all-na data, which is always "numeric"
     if pd.isna(vector).all():
         return "numeric"
@@ -1221,9 +1225,6 @@ def variable_type(vector, boolean_type="numeric"):
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
         return "numeric"
-
-    if pd.api.types.is_categorical_dtype(vector):
-        return "categorical"
 
     if pd.api.types.is_datetime64_dtype(vector):
         return "datetime"
