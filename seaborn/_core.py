@@ -1177,27 +1177,27 @@ class VectorPlotter:
 
 
 def variable_type(vector, boolean_type="numeric"):
-    """Determine whether a vector contains numeric, categorical, or dateime data.
+    """
+    Determine whether a vector contains numeric, categorical, or datetime data.
 
     This function differs from the pandas typing API in two ways:
 
     - Python sequences or object-typed PyData objects are considered numeric if
       all of their entries are numeric.
     - String or mixed-type data are considered categorical even if not
-      explicitly represented as a :class:pandas.api.types.CategoricalDtype`.
+      explicitly represented as a :class:`pandas.api.types.CategoricalDtype`.
 
     Parameters
     ----------
     vector : :func:`pandas.Series`, :func:`numpy.ndarray`, or Python sequence
         Input data to test.
-    binary_type : 'numeric' or 'categorical'
+    boolean_type : 'numeric' or 'categorical'
         Type to use for vectors containing only 0s and 1s (and NAs).
 
     Returns
     -------
     var_type : 'numeric', 'categorical', or 'datetime'
         Name identifying the type of data in the vector.
-
     """
     # Special-case all-na data, which is always "numeric"
     if pd.isna(vector).all():
