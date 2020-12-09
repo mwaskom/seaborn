@@ -1050,7 +1050,7 @@ class _DistributionPlotter(VectorPlotter):
 
         estimator = KDE(**estimate_kws)
 
-        if "hue" not in self.variables:
+        if not set(self.variables) - {"x", "y"}:
             common_norm = False
 
         all_data = self.plot_data.dropna()

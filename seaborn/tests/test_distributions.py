@@ -2115,3 +2115,18 @@ class TestDisPlot:
 
         with pytest.raises(NotImplementedError):
             displot(long_df, x="x", y="y", kind="ecdf")
+
+    def test_bivariate_kde_norm(self, rng):
+
+        x, y = rng.normal(0, 1, (2, 100))
+        z = [0] * 80 + [1] * 20
+
+        g = displot(x=x, y=y, col=z, kind="kde", levels=10)
+        l1 = sum(bool(c.get_segments()) for c in g.axes.flat[0].collections)
+        l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
+        assert l1 > l2
+
+        g = displot(x=x, y=y, col=z, kind="kde", levels=10, common_norm=False)
+        l1 = sum(bool(c.get_segments()) for c in g.axes.flat[0].collections)
+        l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
+        assert l1 == l2
