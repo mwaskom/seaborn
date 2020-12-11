@@ -718,7 +718,7 @@ class TestRelationalPlotter(Helpers):
 
 class TestLinePlotter(Helpers):
 
-    def test_aggregate(self, long_df, missing_df):
+    def test_aggregate(self, long_df):
 
         p = _LinePlotter(data=long_df, variables=dict(x="x", y="y"))
         p.n_boot = 10000
@@ -796,18 +796,6 @@ class TestLinePlotter(Helpers):
             warnings.simplefilter("error", RuntimeWarning)
             index, est, cis = p.aggregate(y, x)
             assert cis.loc[["c"]].isnull().all().all()
-
-        p = _LinePlotter(data=missing_df, variables=dict(x="s", y="y"))
-        p.estimator = "mean"
-        p.n_boot = 100
-        p.ci = 95
-
-        x = p.plot_data["x"]
-        y = p.plot_data["y"]
-
-        _, est, cis = p.aggregate(y, x)
-        assert not est.isna().any()
-        assert not cis.isna().any().any()
 
     def test_legend_data(self, long_df):
 
@@ -1101,6 +1089,23 @@ class TestLinePlotter(Helpers):
         assert_array_equal(line.get_xdata(), expected_data.index.values)
         assert np.allclose(line.get_ydata(), expected_data.values)
         assert len(ax.collections) == 1
+
+        # Test that nans do not propagate to means or CIs
+
+        p = _LinePlotter(
+            variables=dict(
+                x=[1, 1, 1, 2, 2, 2, 3, 3, 3],
+                y=[1, 2, 3, 3, np.nan, 5, 4, 5, 6],
+            ),
+            estimator="mean", err_style="band", ci=95, n_boot=100, sort=True,
+        )
+        ax.clear()
+        p.plot(ax, {})
+        line, = ax.lines
+        assert line.get_xdata().tolist() == [1, 2, 3]
+        err_band = ax.collections[0].get_paths()
+        assert len(err_band) == 1
+        assert len(err_band[0].vertices) == 9
 
         p = _LinePlotter(
             data=long_df,
