@@ -1090,6 +1090,23 @@ class TestLinePlotter(Helpers):
         assert np.allclose(line.get_ydata(), expected_data.values)
         assert len(ax.collections) == 1
 
+        # Test that nans do not propagate to means or CIs
+
+        p = _LinePlotter(
+            variables=dict(
+                x=[1, 1, 1, 2, 2, 2, 3, 3, 3],
+                y=[1, 2, 3, 3, np.nan, 5, 4, 5, 6],
+            ),
+            estimator="mean", err_style="band", ci=95, n_boot=100, sort=True,
+        )
+        ax.clear()
+        p.plot(ax, {})
+        line, = ax.lines
+        assert line.get_xdata().tolist() == [1, 2, 3]
+        err_band = ax.collections[0].get_paths()
+        assert len(err_band) == 1
+        assert len(err_band[0].vertices) == 9
+
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
