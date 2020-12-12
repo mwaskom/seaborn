@@ -1942,6 +1942,13 @@ def pairplot(
     diag_kws = {} if diag_kws is None else diag_kws.copy()
     grid_kws = {} if grid_kws is None else grid_kws.copy()
 
+    # Resolve "auto" diag kind
+    if diag_kind == "auto":
+        if hue is None:
+            diag_kind = "kde" if kind == "kde" else "hist"
+        else:
+            diag_kind = "hist" if kind == "hist" else "kde"
+
     # Set up the PairGrid
     grid_kws.setdefault("diag_sharey", diag_kind == "hist")
     grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
@@ -1970,13 +1977,8 @@ def pairplot(
                 plot_kws["style"] = data[hue]
                 plot_kws["markers"] = markers
 
-    # Maybe plot on the diagonal
-    if diag_kind == "auto":
-        if hue is None:
-            diag_kind = "kde" if kind == "kde" else "hist"
-        else:
-            diag_kind = "hist" if kind == "hist" else "kde"
 
+    # Draw the marginal plots on the diagonal
     diag_kws = diag_kws.copy()
     diag_kws.setdefault("legend", False)
     if diag_kind == "hist":
