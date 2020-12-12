@@ -1166,9 +1166,14 @@ class PairGrid(Grid):
         if np.isscalar(y_vars):
             y_vars = [y_vars]
 
-        self.x_vars = list(x_vars)
-        self.y_vars = list(y_vars)
+        self.x_vars = x_vars = list(x_vars)
+        self.y_vars = y_vars = list(y_vars)
         self.square_grid = self.x_vars == self.y_vars
+
+        if not x_vars:
+            raise ValueError("No variables found for grid columns.")
+        if not y_vars:
+            raise ValueError("No variables found for grid rows.")
 
         # Create the figure and the array of subplots
         figsize = len(x_vars) * height * aspect, len(y_vars) * height
@@ -1353,7 +1358,7 @@ class PairGrid(Grid):
                             # TODO add optional density ticks (on the right)
                             # when drawing a corner plot?
 
-            if self.diag_sharey:
+            if self.diag_sharey and diag_axes:
                 # This may change in future matplotlibs
                 # See https://github.com/matplotlib/matplotlib/pull/9923
                 group = diag_axes[0].get_shared_y_axes()
@@ -1446,6 +1451,8 @@ class PairGrid(Grid):
             x_var = self.x_vars[j]
             y_var = self.y_vars[i]
             ax = self.axes[i, j]
+            if ax is None:  # i.e. we are in corner mode
+                continue
             self._plot_bivariate(x_var, y_var, ax, func, **kws)
         self._add_axis_labels()
 
@@ -1935,6 +1942,13 @@ def pairplot(
     diag_kws = {} if diag_kws is None else diag_kws.copy()
     grid_kws = {} if grid_kws is None else grid_kws.copy()
 
+    # Resolve "auto" diag kind
+    if diag_kind == "auto":
+        if hue is None:
+            diag_kind = "kde" if kind == "kde" else "hist"
+        else:
+            diag_kind = "hist" if kind == "hist" else "kde"
+
     # Set up the PairGrid
     grid_kws.setdefault("diag_sharey", diag_kind == "hist")
     grid = PairGrid(data, vars=vars, x_vars=x_vars, y_vars=y_vars, hue=hue,
@@ -1963,13 +1977,7 @@ def pairplot(
                 plot_kws["style"] = data[hue]
                 plot_kws["markers"] = markers
 
-    # Maybe plot on the diagonal
-    if diag_kind == "auto":
-        if hue is None:
-            diag_kind = "kde" if kind == "kde" else "hist"
-        else:
-            diag_kind = "hist" if kind == "hist" else "kde"
-
+    # Draw the marginal plots on the diagonal
     diag_kws = diag_kws.copy()
     diag_kws.setdefault("legend", False)
     if diag_kind == "hist":
@@ -2053,6 +2061,13 @@ def jointplot(
     # Validate the plot kind
     plot_kinds = ["scatter", "hist", "hex", "kde", "reg", "resid"]
     _check_argument("kind", plot_kinds, kind)
+
+    # Raise early if using `hue` with a kind that does not support it
+    if hue is not None and kind in ["hex", "reg", "resid"]:
+        msg = (
+            f"Use of `hue` with `kind='{kind}'` is not currently supported."
+        )
+        raise ValueError(msg)
 
     # Make a colormap based off the plot color
     # (Currently used only for kind="hex")

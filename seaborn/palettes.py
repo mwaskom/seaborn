@@ -96,7 +96,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
     Possible ``palette`` values include:
         - Name of a seaborn palette (deep, muted, bright, pastel, dark, colorblind)
         - Name of matplotlib colormap
-        - 'husl' or 'hsl'
+        - 'husl' or 'hls'
         - 'ch:<cubehelix arguments>'
         - 'light:<color>', 'dark:<color>', 'blend:<color>,<color>',
         - A sequence of colors in any format matplotlib accepts

@@ -16,7 +16,7 @@ g = sns.PairGrid(crashes.sort_values("total", ascending=False),
                  height=10, aspect=.25)
 
 # Draw a dot plot using the stripplot function
-g.map(sns.stripplot, size=10, orient="h",
+g.map(sns.stripplot, size=10, orient="h", jitter=False,
       palette="flare_r", linewidth=1, edgecolor="w")
 
 # Use the same x axis limits on all columns and add better labels
