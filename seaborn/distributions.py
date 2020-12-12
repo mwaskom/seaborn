@@ -1812,7 +1812,7 @@ shade_lowest : bool
 {params.dist.cbar_kws}
 {params.core.ax}
 weights : vector or key in ``data``
-    If provided, perform weighted kernel density estimation.
+    If provided, weight the kernel density estimation using these values.
 {params.core.hue}
 {params.core.palette}
 {params.core.hue_order}
@@ -1977,6 +1977,9 @@ Parameters
 {params.core.data}
 {params.core.xy}
 {params.core.hue}
+weights : vector or key in ``data``
+    If provided, weight the contribution of the corresponding data points
+    towards the cumulative distribution using these values.
 {params.ecdf.stat}
 {params.ecdf.complementary}
 {params.core.palette}
