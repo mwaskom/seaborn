@@ -1446,6 +1446,8 @@ class PairGrid(Grid):
             x_var = self.x_vars[j]
             y_var = self.y_vars[i]
             ax = self.axes[i, j]
+            if ax is None:  # i.e. we are in corner mode
+                continue
             self._plot_bivariate(x_var, y_var, ax, func, **kws)
         self._add_axis_labels()
 
