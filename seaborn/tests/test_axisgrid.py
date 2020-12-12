@@ -757,7 +757,7 @@ class TestPairGrid:
 
     def test_empty_grid(self):
 
-        with pytest.raises(ValueError, match="No numeric variables"):
+        with pytest.raises(ValueError, match="No variables found"):
             ag.PairGrid(self.df[["a", "b"]])
 
     def test_map(self):
