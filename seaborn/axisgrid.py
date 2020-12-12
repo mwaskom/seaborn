@@ -1358,7 +1358,7 @@ class PairGrid(Grid):
                             # TODO add optional density ticks (on the right)
                             # when drawing a corner plot?
 
-            if self.diag_sharey:
+            if self.diag_sharey and diag_axes:
                 # This may change in future matplotlibs
                 # See https://github.com/matplotlib/matplotlib/pull/9923
                 group = diag_axes[0].get_shared_y_axes()
@@ -1976,7 +1976,6 @@ def pairplot(
             elif hue is not None:
                 plot_kws["style"] = data[hue]
                 plot_kws["markers"] = markers
-
 
     # Draw the marginal plots on the diagonal
     diag_kws = diag_kws.copy()
