@@ -2054,6 +2054,13 @@ def jointplot(
     plot_kinds = ["scatter", "hist", "hex", "kde", "reg", "resid"]
     _check_argument("kind", plot_kinds, kind)
 
+    # Raise early if using `hue` with a kind that does not support it
+    if hue is not None and kind in ["hex", "reg", "resid"]:
+        msg = (
+            f"Use of `hue` with `kind='{kind}'` is not currently supported."
+        )
+        raise ValueError(msg)
+
     # Make a colormap based off the plot color
     # (Currently used only for kind="hex")
     if color is None:

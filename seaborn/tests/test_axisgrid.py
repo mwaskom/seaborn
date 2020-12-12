@@ -1647,6 +1647,12 @@ class TestJointPlot:
         with pytest.raises(ValueError):
             ag.jointplot(x="x", y="y", data=self.data, kind="not_a_kind")
 
+    def test_unsupported_hue_kind(self):
+
+        for kind in ["reg", "resid", "hex"]:
+            with pytest.raises(ValueError):
+                ag.jointplot(x="x", y="y", hue="a", data=self.data, kind=kind)
+
     def test_leaky_dict(self):
         # Validate input dicts are unchanged by jointplot plotting function
 
