@@ -1161,6 +1161,11 @@ class PairGrid(Grid):
         if y_vars is None:
             y_vars = numeric_cols
 
+        if not x_vars:
+            raise ValueError("No numeric variables found in for grid columns.")
+        if not y_vars:
+            raise ValueError("No numeric variables found for grid rows.")
+
         if np.isscalar(x_vars):
             x_vars = [x_vars]
         if np.isscalar(y_vars):

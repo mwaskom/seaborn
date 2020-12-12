@@ -755,6 +755,11 @@ class TestPairGrid:
                          height=2, aspect=2)
         npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
 
+    def test_empty_grid(self):
+
+        with pytest.raises(ValueError, match="No numeric variables"):
+            ag.PairGrid(self.df[["a", "b"]])
+
     def test_map(self):
 
         vars = ["x", "y", "z"]
