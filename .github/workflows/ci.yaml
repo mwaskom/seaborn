@@ -21,9 +21,6 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v2
-        with:
-          # Avoid Python 3.9 until scipy stack can cleanly build
-          python-version: '3.8.x'
 
       - name: Install seaborn
         run: |
@@ -38,3 +35,61 @@ jobs:
 
       - name: Build docs
         run: make -C doc notebooks html
+
+
+  run-tests:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+
+        python: [3.6.x, 3.7.x, 3.8.x, 3.9.x]
+        target: [test]
+        deps: [latest]
+        backend: [agg]
+        prefix: ['']
+
+        include:
+          - python: 3.6.x
+            target: unittests
+            deps: pinned
+            backend: agg
+            prefix: ''
+          - python: 3.9.x
+            target: unittests
+            deps: minimal
+            backend: agg
+            prefix: ''
+          - python: 3.9.x
+            target: test
+            deps: latest
+            backend: tkagg
+            prefix: xvfb-run -a
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install seaborn
+        run: |
+          python -m pip install --upgrade pip
+          pip install `cat ci/deps_${{ matrix.deps }}.txt ci/utils.txt`
+          pip install .
+
+      - name: Cache datastes
+        run: python ci/cache_test_datasets.py
+
+      - name: Run tests
+        env:
+          MPLBACKEND: ${{ matrix.backend }}
+        run: ${{ matrix.prefix }} make ${{ matrix.target }}
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        if: ${{ success() }}
