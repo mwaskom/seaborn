@@ -727,16 +727,21 @@ class TestPairGrid:
     def test_corner(self):
 
         plot_vars = ["x", "y", "z"]
-        g1 = ag.PairGrid(self.df, vars=plot_vars, corner=True)
+        g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
         corner_size = sum([i + 1 for i in range(len(plot_vars))])
-        assert len(g1.fig.axes) == corner_size
+        assert len(g.fig.axes) == corner_size
 
-        g1.map_diag(plt.hist)
-        assert len(g1.fig.axes) == (corner_size + len(plot_vars))
+        g.map_diag(plt.hist)
+        assert len(g.fig.axes) == (corner_size + len(plot_vars))
 
-        for ax in np.diag(g1.axes):
+        for ax in np.diag(g.axes):
             assert not ax.yaxis.get_visible()
-            assert not g1.axes[0, 0].get_ylabel()
+            assert not g.axes[0, 0].get_ylabel()
+
+        plot_vars = ["x", "y", "z"]
+        g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
+        g.map(scatterplot)
+        assert len(g.fig.axes) == corner_size
 
     def test_size(self):
 
@@ -749,6 +754,11 @@ class TestPairGrid:
         g3 = ag.PairGrid(self.df, y_vars=["z"], x_vars=["x", "y"],
                          height=2, aspect=2)
         npt.assert_array_equal(g3.fig.get_size_inches(), (8, 2))
+
+    def test_empty_grid(self):
+
+        with pytest.raises(ValueError, match="No variables found"):
+            ag.PairGrid(self.df[["a", "b"]])
 
     def test_map(self):
 
@@ -1646,6 +1656,12 @@ class TestJointPlot:
 
         with pytest.raises(ValueError):
             ag.jointplot(x="x", y="y", data=self.data, kind="not_a_kind")
+
+    def test_unsupported_hue_kind(self):
+
+        for kind in ["reg", "resid", "hex"]:
+            with pytest.raises(ValueError):
+                ag.jointplot(x="x", y="y", hue="a", data=self.data, kind=kind)
 
     def test_leaky_dict(self):
         # Validate input dicts are unchanged by jointplot plotting function

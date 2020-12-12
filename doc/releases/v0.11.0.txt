@@ -7,7 +7,7 @@ v0.11.0 (September 2020)
 
 This is a major release with several important new features, enhancements to existing functions, and changes to the library. Highlights include an overhaul and modernization of the distributions plotting functions, more flexible data specification, new colormaps, and better narrative documentation.
 
-For an overview of the new features and a guide to updating, see `this Medium post <https://medium.com/@michaelwaskom/announcing-the-release-of-seaborn-0-11-3df0341af042?source=friends_link&sk=85146c0b2f01d2b41d214f8c3835b697>`_
+For an overview of the new features and a guide to updating, see `this Medium post <https://medium.com/@michaelwaskom/announcing-the-release-of-seaborn-0-11-3df0341af042?source=friends_link&sk=85146c0b2f01d2b41d214f8c3835b697>`_.
 
 Required keyword arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

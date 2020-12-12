@@ -1,6 +1,7 @@
 """Plotting functions for visualizing distributions."""
 from numbers import Number
 from functools import partial
+import math
 import warnings
 
 import numpy as np
@@ -300,7 +301,7 @@ class _DistributionPlotter(VectorPlotter):
             observations = sub_data[data_variable]
 
             observation_variance = observations.var()
-            if np.isclose(observation_variance, 0) or np.isnan(observation_variance):
+            if math.isclose(observation_variance, 0) or np.isnan(observation_variance):
                 msg = "Dataset has 0 variance; skipping density estimate."
                 warnings.warn(msg, UserWarning)
                 continue
@@ -1072,7 +1073,7 @@ class _DistributionPlotter(VectorPlotter):
 
             # Check that KDE will not error out
             variance = observations[["x", "y"]].var()
-            if np.isclose(variance, 0).any() or variance.isna().any():
+            if any(math.isclose(x, 0) for x in variance) or variance.isna().any():
                 msg = "Dataset has 0 variance; skipping density estimate."
                 warnings.warn(msg, UserWarning)
                 continue
@@ -1812,7 +1813,7 @@ shade_lowest : bool
 {params.dist.cbar_kws}
 {params.core.ax}
 weights : vector or key in ``data``
-    If provided, perform weighted kernel density estimation.
+    If provided, weight the kernel density estimation using these values.
 {params.core.hue}
 {params.core.palette}
 {params.core.hue_order}
@@ -1977,6 +1978,9 @@ Parameters
 {params.core.data}
 {params.core.xy}
 {params.core.hue}
+weights : vector or key in ``data``
+    If provided, weight the contribution of the corresponding data points
+    towards the cumulative distribution using these values.
 {params.ecdf.stat}
 {params.ecdf.complementary}
 {params.core.palette}
