@@ -1107,6 +1107,9 @@ class TestCoreFunc:
         s = pd.Series([True, False, False])
         assert variable_type(s) == "numeric"
         assert variable_type(s, boolean_type="categorical") == "categorical"
+        s_cat = s.astype("category")
+        assert variable_type(s_cat, boolean_type="categorical") == "categorical"
+        assert variable_type(s_cat, boolean_type="numeric") == "categorical"
 
         s = pd.Series([pd.Timestamp(1), pd.Timestamp(2)])
         assert variable_type(s) == "datetime"
