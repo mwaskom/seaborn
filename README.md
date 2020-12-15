@@ -27,7 +27,7 @@ To build the documentation locally, please refer to [`doc/README.md`](doc/README
 Dependencies
 ------------
 
-Seaborn supports Python 3.6+ and no longer supports Python 2.
+Seaborn supports [Python 3.6](https://www.python.org/downloads/release/python-360/)+ and no longer supports [Python 2](https://www.python.org/download/releases/2.0/).
 
 Installation requires [numpy](https://numpy.org/), [scipy](https://www.scipy.org/), [pandas](https://pandas.pydata.org/), and [matplotlib](https://matplotlib.org/). Some functions will optionally use [statsmodels](https://www.statsmodels.org/) if it is installed.
 
@@ -35,7 +35,7 @@ Installation requires [numpy](https://numpy.org/), [scipy](https://www.scipy.org
 Installation
 ------------
 
-The latest stable release (and older versions) can be installed from PyPI:
+The latest stable release (and older versions) can be installed from [PyPI](https://pypi.org/):
 
     pip install seaborn
 
