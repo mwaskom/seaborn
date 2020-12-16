@@ -898,9 +898,9 @@ class VectorPlotter:
 
             else:
 
-                # Otherwise, assume the value is itself a vector of data
+                # Otherwise, assume the value is itself data
 
-                # Raise when data is present and a vector can't be combined with it
+                # Raise when data object is present and a vector can't matched
                 if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
                     if np.ndim(val) and len(data) != len(val):
                         val_cls = val.__class__.__name__
