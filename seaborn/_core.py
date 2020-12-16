@@ -871,20 +871,30 @@ class VectorPlotter:
         # The caller will determine the order of variables in plot_data
         for key, val in kwargs.items():
 
-            if isinstance(val, (str, bytes)):
-                # String inputs trigger __getitem__
+            # First try to treat the argument as a key for the data collection.
+            # But be flexible about what can be used as a key.
+            # Usually it will be a string, but allow numbers or tuples too.
+            try:
+                val_as_data_key = val in data or val in index
+            except (KeyError, TypeError):
+                val_as_data_key = False
+
+            if val_as_data_key:
+
+                # We know that __getitem__ will work
+
                 if val in data:
-                    # First try to get an entry in the data object
                     plot_data[key] = data[val]
-                    variables[key] = val
                 elif val in index:
-                    # Failing that, try to get an entry in the index object
                     plot_data[key] = index[val]
-                    variables[key] = val
-                else:
-                    # We don't know what this name means
-                    err = f"Could not interpret value `{val}` for parameter `{key}`"
-                    raise ValueError(err)
+                variables[key] = val
+
+            elif isinstance(val, (str, bytes)):
+
+                # This looks like a column name but we don't know what it means!
+
+                err = f"Could not interpret value `{val}` for parameter `{key}`"
+                raise ValueError(err)
 
             else:
 
@@ -892,7 +902,7 @@ class VectorPlotter:
 
                 # Raise when data is present and a vector can't be combined with it
                 if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
-                    if val is not None and len(data) != len(val):
+                    if np.ndim(val) and len(data) != len(val):
                         val_cls = val.__class__.__name__
                         err = (
                             f"Length of {val_cls} vectors must match length of `data`"
