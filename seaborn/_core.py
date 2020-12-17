@@ -873,9 +873,14 @@ class VectorPlotter:
 
             # First try to treat the argument as a key for the data collection.
             # But be flexible about what can be used as a key.
-            # Usually it will be a string, but allow numbers or tuples too.
+            # Usually it will be a string, but allow numbers or tuples too when
+            # taking from the main data object. Only allow strings to reference
+            # fields in the index, because otherwise there is too much ambiguity.
             try:
-                val_as_data_key = val in data or val in index
+                val_as_data_key = (
+                    val in data
+                    or (isinstance(val, (str, bytes)) and val in index)
+                )
             except (KeyError, TypeError):
                 val_as_data_key = False
 
