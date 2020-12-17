@@ -2,13 +2,15 @@
 v0.11.1 (Unreleased)
 --------------------
 
+- |Fix| Restored support for using tuples or numeric keys to reference fields in a long-form `data` object (:pr:`2386`).
+
 - |Fix| Fixed a bug in :func:`lineplot` where NAs were propagating into the confidence interval, sometimes erasing it from the plot (:pr:`2273`).
 
 - |Fix| Fixed a bug in :class:`PairGrid`/:func:`pairplot` where diagonal axes would be empty when the grid was not square and the diagonal axes did not contain the marginal plots (:pr:`2270`).
 
 - |Fix| Fixed a bug in :class:`PairGrid`/:func:`pairplot` where off-diagonal plots would not appear when column names in `data` had non-string type (:pr:`2368`).
 
-- |Fix| Fixed a bug where categorical dtype information was ignored when data consisted of boolean values (:pr:`2379`).
+- |Fix| Fixed a bug where categorical dtype information was ignored when data consisted of boolean or boolean-like values (:pr:`2379`).
 
 - |Fix| Fixed a bug in :class:`FacetGrid` where interior tick labels would be hidden when only the orthogonal axis was shared (:pr:`2347`).
 
@@ -18,12 +20,12 @@ v0.11.1 (Unreleased)
 
 - |Fix| Fixed a bug in :func:`displot` where the ``row_order`` and ``col_order`` parameters were not used (:pr:`2262`).
 
-- |Fix| Fixed a bug in :class:`PairGrid`/:func:`pairplot` that caused an exception when using `corent=True` and `diag_kind=None` (:pr:`2382`).
-
-- |Fix| Raised a more informative error in :class:`PairGrid`/:func:`pairplot` when no variables cold be found to define the rows/columns of the grid (:func:`2382`).
+- |Fix| Fixed a bug in :class:`PairGrid`/:func:`pairplot` that caused an exception when using `corner=True` and `diag_kind=None` (:pr:`2382`).
 
 - |Fix| Fixed a bug in :func:`clustermap` where `annot=False` was ignored (:pr:`2323`).
 
 - |Fix| Fixed a bug in :func:`boxenplot` where the `linewidth` parameter was ignored (:func:`2287`).
 
-- |Fix| Raised a more informative error from :func:`clustermap` if row/col color objects have semantic index but data object does not (:pr:`2313`).
+- |Fix| Raise a more informative error in :class:`PairGrid`/:func:`pairplot` when no variables can be found to define the rows/columns of the grid (:func:`2382`).
+
+- |Fix| Raise a more informative error from :func:`clustermap` if row/col color objects have semantic index but data object does not (:pr:`2313`).

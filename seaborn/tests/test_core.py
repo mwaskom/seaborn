@@ -605,6 +605,36 @@ class TestVectorPlotter:
     # TODO note that most of the other tests that exercise the core
     # variable assignment code still live in test_relational
 
+    @pytest.mark.parametrize("name", [3, 4.5])
+    def test_long_numeric_name(self, long_df, name):
+
+        long_df[name] = long_df["x"]
+        p = VectorPlotter()
+        p.assign_variables(data=long_df, variables={"x": name})
+        assert_array_equal(p.plot_data["x"], long_df[name])
+        assert p.variables["x"] == name
+
+    def test_long_hierarchical_index(self, rng):
+
+        cols = pd.MultiIndex.from_product([["a"], ["x", "y"]])
+        data = rng.uniform(size=(50, 2))
+        df = pd.DataFrame(data, columns=cols)
+
+        name = ("a", "y")
+        var = "y"
+
+        p = VectorPlotter()
+        p.assign_variables(data=df, variables={var: name})
+        assert_array_equal(p.plot_data[var], df[name])
+        assert p.variables[var] == name
+
+    def test_long_scalar_and_data(self, long_df):
+
+        val = 22
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": val})
+        assert (p.plot_data["y"] == val).all()
+        assert p.variables["y"] is None
+
     def test_wide_semantic_error(self, wide_df):
 
         err = "The following variable cannot be assigned with wide-form data: `hue`"
