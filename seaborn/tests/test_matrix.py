@@ -780,6 +780,26 @@ class TestClustermap:
 
         assert len(cg.fig.axes) == 6
 
+    def test_categorical_colors_input(self):
+        kws = self.default_kws.copy()
+
+        row_colors = pd.Series(self.row_colors, dtype="category")
+        col_colors = pd.Series(
+            self.col_colors, dtype="category", index=self.df_norm.columns
+        )
+
+        kws['row_colors'] = row_colors
+        kws['col_colors'] = col_colors
+
+        exp_row_colors = list(map(mpl.colors.to_rgb, row_colors))
+        exp_col_colors = list(map(mpl.colors.to_rgb, col_colors))
+
+        cg = mat.ClusterGrid(self.df_norm, **kws)
+        npt.assert_array_equal(cg.row_colors, exp_row_colors)
+        npt.assert_array_equal(cg.col_colors, exp_col_colors)
+
+        assert len(cg.fig.axes) == 6
+
     def test_nested_colors_input(self):
         kws = self.default_kws.copy()
 
