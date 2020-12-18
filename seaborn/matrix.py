@@ -86,7 +86,7 @@ def _matrix_mask(data, mask):
     return mask
 
 
-class _HeatMapper(object):
+class _HeatMapper:
     """Draw a heatmap plot of a matrix with nice labels and colormaps."""
 
     def __init__(self, data, vmin, vmax, cmap, center, robust, annot, fmt,
@@ -124,9 +124,6 @@ class _HeatMapper(object):
             yticklabels = _index_to_ticklabels(data.index)
         elif yticklabels is False:
             yticklabels = []
-
-        # Get the positions and used label for the ticks
-        nx, ny = data.T.shape
 
         if not len(xticklabels):
             self.xticks = []
