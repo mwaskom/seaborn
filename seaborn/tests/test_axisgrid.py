@@ -415,6 +415,8 @@ class TestFacetGrid:
 
         def plot(x, y, data=None, **kws):
             plt.plot(data[x], data[y], **kws)
+        # Modify __module__ so this doesn't look like a seaborn function
+        plot.__module__ = "test"
 
         g.map_dataframe(plot, "x", "y", linestyle="--")
 

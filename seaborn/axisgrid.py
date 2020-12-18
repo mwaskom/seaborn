@@ -631,10 +631,8 @@ class FacetGrid(Grid):
         # If color was a keyword argument, grab it here
         kw_color = kwargs.pop("color", None)
 
-        if hasattr(func, "__module__"):
-            func_module = str(func.__module__)
-        else:
-            func_module = ""
+        # How we use the function depends on where it comes from
+        func_module = str(getattr(func, "__module__", ""))
 
         # Check for categorical plots without order information
         if func_module == "seaborn.categorical":
@@ -657,7 +655,8 @@ class FacetGrid(Grid):
                 continue
 
             # Get the current axis
-            ax = self.facet_axis(row_i, col_j)
+            modify_state = not func_module.startswith("seaborn")
+            ax = self.facet_axis(row_i, col_j, modify_state)
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
@@ -728,7 +727,8 @@ class FacetGrid(Grid):
                 continue
 
             # Get the current axis
-            ax = self.facet_axis(row_i, col_j)
+            modify_state = not func.__module__.startswith("seaborn")
+            ax = self.facet_axis(row_i, col_j, modify_state)
 
             # Decide what color to plot with
             kwargs["color"] = self._facet_color(hue_k, kw_color)
@@ -771,6 +771,7 @@ class FacetGrid(Grid):
             for key, val in zip(semantics, plot_args):
                 plot_kwargs[key] = val
             plot_args = []
+            plot_kwargs["ax"] = ax
         func(*plot_args, **plot_kwargs)
 
         # Sort out the supporting information
@@ -783,7 +784,7 @@ class FacetGrid(Grid):
         self.set_titles()
         self.tight_layout()
 
-    def facet_axis(self, row_i, col_j):
+    def facet_axis(self, row_i, col_j, modify_state=True):
         """Make the axis identified by these indices active and return it."""
 
         # Calculate the actual indices of the axes to plot on
@@ -793,7 +794,8 @@ class FacetGrid(Grid):
             ax = self.axes[row_i, col_j]
 
         # Get a reference to the axes object we want, and make it active
-        plt.sca(ax)
+        if modify_state:
+            plt.sca(ax)
         return ax
 
     def despine(self, **kwargs):
@@ -1374,8 +1376,11 @@ class PairGrid(Grid):
         # Loop over diagonal variables and axes, making one plot in each
         for var, ax in zip(self.diag_vars, self.diag_axes):
 
-            plt.sca(ax)
             plot_kwargs = kwargs.copy()
+            if str(func.__module__).startswith("seaborn"):
+                plot_kwargs["ax"] = ax
+            else:
+                plt.sca(ax)
 
             vector = self.data[var]
             if self._hue_var is not None:
@@ -1408,7 +1413,11 @@ class PairGrid(Grid):
         for var, ax in zip(self.diag_vars, self.diag_axes):
             hue_grouped = self.data[var].groupby(self.hue_vals)
 
-            plt.sca(ax)
+            plot_kwargs = kwargs.copy()
+            if str(func.__module__).startswith("seaborn"):
+                plot_kwargs["ax"] = ax
+            else:
+                plt.sca(ax)
 
             for k, label_k in enumerate(self._hue_order):
 
@@ -1427,9 +1436,9 @@ class PairGrid(Grid):
                     data_k = utils.remove_na(data_k)
 
                 if str(func.__module__).startswith("seaborn"):
-                    func(x=data_k, label=label_k, color=color, **kwargs)
+                    func(x=data_k, label=label_k, color=color, **plot_kwargs)
                 else:
-                    func(data_k, label=label_k, color=color, **kwargs)
+                    func(data_k, label=label_k, color=color, **plot_kwargs)
 
             self._clean_axis(ax)
 
@@ -1465,8 +1474,11 @@ class PairGrid(Grid):
             self._plot_bivariate_iter_hue(x_var, y_var, ax, func, **kwargs)
             return
 
-        plt.sca(ax)
         kwargs = kwargs.copy()
+        if str(func.__module__).startswith("seaborn"):
+            kwargs["ax"] = ax
+        else:
+            plt.sca(ax)
 
         if x_var == y_var:
             axes_vars = [x_var]
@@ -1497,7 +1509,12 @@ class PairGrid(Grid):
 
     def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, **kwargs):
         """Draw a bivariate plot while iterating over hue subsets."""
-        plt.sca(ax)
+        kwargs = kwargs.copy()
+        if str(func.__module__).startswith("seaborn"):
+            kwargs["ax"] = ax
+        else:
+            plt.sca(ax)
+
         if x_var == y_var:
             axes_vars = [x_var]
         else:
@@ -1704,8 +1721,11 @@ class JointGrid(object):
             Returns ``self`` for easy method chaining.
 
         """
-        plt.sca(self.ax_joint)
         kwargs = kwargs.copy()
+        if str(func.__module__).startswith("seaborn"):
+            kwargs["ax"] = self.ax_joint
+        else:
+            plt.sca(self.ax_joint)
         if self.hue is not None:
             kwargs["hue"] = self.hue
             self._inject_kwargs(func, kwargs, self._hue_params)
@@ -1738,6 +1758,7 @@ class JointGrid(object):
             Returns ``self`` for easy method chaining.
 
         """
+        seaborn_func = str(func.__module__).startswith("seaborn")
         kwargs = kwargs.copy()
         if self.hue is not None:
             kwargs["hue"] = self.hue
@@ -1746,16 +1767,16 @@ class JointGrid(object):
         if "legend" in signature(func).parameters:
             kwargs.setdefault("legend", False)
 
-        plt.sca(self.ax_marg_x)
-        if str(func.__module__).startswith("seaborn"):
-            func(x=self.x, **kwargs)
+        if seaborn_func:
+            func(x=self.x, ax=self.ax_marg_x, **kwargs)
         else:
+            plt.sca(self.ax_marg_x)
             func(self.x, vertical=False, **kwargs)
 
-        plt.sca(self.ax_marg_y)
-        if str(func.__module__).startswith("seaborn"):
-            func(y=self.y, **kwargs)
+        if seaborn_func:
+            func(y=self.y, ax=self.ax_marg_y, **kwargs)
         else:
+            plt.sca(self.ax_marg_y)
             func(self.y, vertical=True, **kwargs)
 
         self.ax_marg_x.yaxis.get_label().set_visible(False)
