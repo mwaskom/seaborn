@@ -889,9 +889,9 @@ class ClusterGrid(Grid):
                 else:
                     colors = colors.reindex(data.columns)
 
-                # Replace na's with background color
+                # Replace na's with white color
                 # TODO We should set these to transparent instead
-                colors = colors.fillna('white')
+                colors = colors.astype(object).fillna('white')
 
                 # Extract color values and labels from frame/series
                 if isinstance(colors, pd.DataFrame):
