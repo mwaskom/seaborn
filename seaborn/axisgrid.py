@@ -727,7 +727,7 @@ class FacetGrid(Grid):
                 continue
 
             # Get the current axis
-            modify_state = not func.__module__.startswith("seaborn")
+            modify_state = not str(func.__module__).startswith("seaborn")
             ax = self.facet_axis(row_i, col_j, modify_state)
 
             # Decide what color to plot with
