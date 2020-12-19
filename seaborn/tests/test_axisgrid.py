@@ -15,7 +15,7 @@ from .._core import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
 from ..relational import scatterplot
-from ..distributions import histplot, kdeplot
+from ..distributions import histplot, kdeplot, distplot
 from ..categorical import pointplot
 from .. import axisgrid as ag
 from .._testing import (
@@ -1005,6 +1005,20 @@ class TestPairGrid:
         for ax in g.diag_axes[1:]:
             assert ax.get_ylim() == g.diag_axes[0].get_ylim()
 
+    def test_map_diag_matplotlib(self):
+
+        bins = 10
+        g = ag.PairGrid(self.df)
+        g.map_diag(plt.hist, bins=bins)
+        for ax in g.diag_axes:
+            assert len(ax.patches) == bins
+
+        levels = len(self.df["a"].unique())
+        g = ag.PairGrid(self.df, hue="a")
+        g.map_diag(plt.hist, bins=bins)
+        for ax in g.diag_axes:
+            assert len(ax.patches) == (bins * levels)
+
     def test_palette(self):
 
         rcmod.set()
@@ -1459,6 +1473,25 @@ class TestJointGrid:
         _, y1 = g.ax_marg_x.lines[0].get_xydata().T
         y2, _ = g.ax_marg_y.lines[0].get_xydata().T
         npt.assert_array_equal(y1, y2)
+
+    def test_univariate_plot_distplot(self):
+
+        bins = 10
+        g = ag.JointGrid(x="x", y="x", data=self.data)
+        with pytest.warns(FutureWarning):
+            g.plot_marginals(distplot, bins=bins)
+        assert len(g.ax_marg_x.patches) == bins
+        assert len(g.ax_marg_y.patches) == bins
+        for x, y in zip(g.ax_marg_x.patches, g.ax_marg_y.patches):
+            assert x.get_height() == y.get_width()
+
+    def test_univariate_plot_matplotlib(self):
+
+        bins = 10
+        g = ag.JointGrid(x="x", y="x", data=self.data)
+        g.plot_marginals(plt.hist, bins=bins)
+        assert len(g.ax_marg_x.patches) == bins
+        assert len(g.ax_marg_y.patches) == bins
 
     def test_plot(self):
 

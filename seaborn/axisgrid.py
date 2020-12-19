@@ -1758,26 +1758,40 @@ class JointGrid(object):
             Returns ``self`` for easy method chaining.
 
         """
-        seaborn_func = str(func.__module__).startswith("seaborn")
+        seaborn_func = (
+            str(func.__module__).startswith("seaborn")
+            # deprecated distplot has a legacy API, special case it
+            and not func.__name__ == "distplot"
+        )
+        func_params = signature(func).parameters
         kwargs = kwargs.copy()
         if self.hue is not None:
             kwargs["hue"] = self.hue
             self._inject_kwargs(func, kwargs, self._hue_params)
 
-        if "legend" in signature(func).parameters:
+        if "legend" in func_params:
             kwargs.setdefault("legend", False)
+
+        if "orientation" in func_params:
+            # e.g. plt.hist
+            orient_kw_x = {"orientation": "vertical"}
+            orient_kw_y = {"orientation": "horizontal"}
+        elif "vertical" in func_params:
+            # e.g. sns.distplot (also how did this get backwards?)
+            orient_kw_x = {"vertical": False}
+            orient_kw_y = {"vertical": True}
 
         if seaborn_func:
             func(x=self.x, ax=self.ax_marg_x, **kwargs)
         else:
             plt.sca(self.ax_marg_x)
-            func(self.x, vertical=False, **kwargs)
+            func(self.x, **orient_kw_x, **kwargs)
 
         if seaborn_func:
             func(y=self.y, ax=self.ax_marg_y, **kwargs)
         else:
             plt.sca(self.ax_marg_y)
-            func(self.y, vertical=True, **kwargs)
+            func(self.y, **orient_kw_y, **kwargs)
 
         self.ax_marg_x.yaxis.get_label().set_visible(False)
         self.ax_marg_y.xaxis.get_label().set_visible(False)
