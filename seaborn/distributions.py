@@ -1576,9 +1576,6 @@ specific locations where the bins should break.
 Examples
 --------
 
-See the API documentation for the axes-level functions for more details
-about the breadth of options available for each plot kind.
-
 .. include:: ../docstrings/histplot.rst
 
 """.format(
@@ -2374,6 +2371,9 @@ See Also
 
 Examples
 --------
+
+See the API documentation for the axes-level functions for more details
+about the breadth of options available for each plot kind.
 
 .. include:: ../docstrings/displot.rst
 
