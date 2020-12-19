@@ -11,7 +11,8 @@ Relational plots
 ----------------
 
 .. autosummary::
-    :toctree: generated
+     :toctree: generated/
+    :nosignatures:
 
     relplot
     scatterplot
@@ -23,7 +24,8 @@ Distribution plots
 ------------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     displot
     histplot
@@ -38,7 +40,8 @@ Categorical plots
 -----------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     catplot
     stripplot
@@ -56,7 +59,8 @@ Regression plots
 ----------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     lmplot
     regplot
@@ -68,7 +72,8 @@ Matrix plots
 ------------
 
 .. autosummary::
-   :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     heatmap
     clustermap
@@ -82,7 +87,8 @@ Facet grids
 ~~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     FacetGrid
     FacetGrid.map
@@ -92,7 +98,8 @@ Pair grids
 ~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
+    :nosignatures:
 
     pairplot
     PairGrid
@@ -106,7 +113,8 @@ Joint grids
 ~~~~~~~~~~~
 
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
+    :nosignatures:
 
     jointplot
     JointGrid
@@ -120,7 +128,8 @@ Themes
 ------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     set_theme
     axes_style
@@ -138,7 +147,8 @@ Color palettes
 --------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     set_palette
     color_palette
@@ -157,7 +167,8 @@ Palette widgets
 ---------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     choose_colorbrewer_palette
     choose_cubehelix_palette
@@ -170,7 +181,8 @@ Utility functions
 -----------------
 
 .. autosummary::
-    :toctree: generated/
+     :toctree: generated/
+    :nosignatures:
 
     load_dataset
     get_dataset_names
