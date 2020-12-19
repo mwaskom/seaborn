@@ -2,6 +2,8 @@
 v0.11.1 (Unreleased)
 --------------------
 
+- [Enhancement| Reduced the use of matplotlib global state in the :ref:`multi-grid classes <multi-plot-grids>` (pr:`2388`).
+
 - |Fix| Restored support for using tuples or numeric keys to reference fields in a long-form `data` object (:pr:`2386`).
 
 - |Fix| Fixed a bug in :func:`lineplot` where NAs were propagating into the confidence interval, sometimes erasing it from the plot (:pr:`2273`).
@@ -23,6 +25,8 @@ v0.11.1 (Unreleased)
 - |Fix| Fixed a bug in :class:`PairGrid`/:func:`pairplot` that caused an exception when using `corner=True` and `diag_kind=None` (:pr:`2382`).
 
 - |Fix| Fixed a bug in :func:`clustermap` where `annot=False` was ignored (:pr:`2323`).
+
+- |Fix| Fixed a bug in :func:`clustermap` where row/col color annotations could not have a categorical dtype (:pr:`2389`).
 
 - |Fix| Fixed a bug in :func:`boxenplot` where the `linewidth` parameter was ignored (:func:`2287`).
 
