@@ -124,11 +124,11 @@ Joint grids
 
 .. _style_api:
 
-Themes
+Themeing
 ------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     set_theme
@@ -147,7 +147,7 @@ Color palettes
 --------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     set_palette
@@ -167,7 +167,7 @@ Palette widgets
 ---------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     choose_colorbrewer_palette
@@ -181,7 +181,7 @@ Utility functions
 -----------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     load_dataset
