@@ -11,7 +11,7 @@ Relational plots
 ----------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     relplot
@@ -24,7 +24,7 @@ Distribution plots
 ------------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     displot
@@ -40,7 +40,7 @@ Categorical plots
 -----------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     catplot
@@ -59,7 +59,7 @@ Regression plots
 ----------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     lmplot
@@ -72,7 +72,7 @@ Matrix plots
 ------------
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     heatmap
@@ -87,7 +87,7 @@ Facet grids
 ~~~~~~~~~~~
 
 .. autosummary::
-     :toctree: generated/
+    :toctree: generated/
     :nosignatures:
 
     FacetGrid
@@ -125,7 +125,7 @@ Joint grids
 .. _style_api:
 
 Themeing
-------
+--------
 
 .. autosummary::
     :toctree: generated/
