@@ -14,6 +14,8 @@ jobs:
 
   build-docs:
     runs-on: ubuntu-latest
+    env:
+      MAKEFLAGS: "-j `nproc`"
     steps:
 
       - name: Checkout
