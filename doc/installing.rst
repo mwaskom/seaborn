@@ -24,7 +24,7 @@ Dependencies
 Supported Python versions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Python 3.6+
+- Python 3.7+
 
 Required dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
