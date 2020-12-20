@@ -14,8 +14,6 @@ jobs:
 
   build-docs:
     runs-on: ubuntu-latest
-    env:
-      MAKEFLAGS: "-j `nproc`"
     steps:
 
       - name: Checkout
@@ -36,7 +34,9 @@ jobs:
           sudo apt-get install pandoc
 
       - name: Build docs
-        run: make -C doc notebooks html
+        run: |
+          make -C doc -j `nproc` notebooks
+          make -C doc html
 
 
   run-tests:
