@@ -18,7 +18,7 @@ This a bug fix release and is a recommended upgrade for all users on v0.11.0.
 
 - |Fix| Fixed a bug in :class:`FacetGrid` where interior tick labels would be hidden when only the orthogonal axis was shared (:pr:`2347`).
 
-- |Fix| Fixed a bug in :class:`FacetGrid` that caused an error when `legend_out=False` was set (:pr:`2292`).
+- |Fix| Fixed a bug in :class:`FacetGrid` that caused an error when `legend_out=False` was set (:pr:`2304`).
 
 - |Fix| Fixed a bug in :func:`kdeplot` where ``common_norm=True`` was ignored if ``hue`` was not assigned (:pr:`2378`).
 
