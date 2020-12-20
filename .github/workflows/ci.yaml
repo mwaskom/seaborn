@@ -41,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
 
         python: [3.6.x, 3.7.x, 3.8.x, 3.9.x]
