@@ -3863,8 +3863,7 @@ def catplot(
 
 
 catplot.__doc__ = dedent("""\
-    Figure-level interface for drawing categorical plots onto a
-    :class:`FacetGrid`.
+    Figure-level interface for drawing categorical plots onto a FacetGrid.
 
     This function provides access to several axes-level functions that
     show the relationship between a numerical and one or more categorical

@@ -131,6 +131,8 @@ html_theme_options = {
     'navbar_title': " ",
     'navbar_sidebarrel': False,
     'bootstrap_version': "3",
+    'nosidebar': True,
+    'body_max_width': '100%',
     'navbar_links': [
         ("Gallery", "examples/index"),
         ("Tutorial", "tutorial"),

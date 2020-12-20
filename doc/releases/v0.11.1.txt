@@ -1,8 +1,10 @@
 
-v0.11.1 (Unreleased)
---------------------
+v0.11.1 (December 2020)
+-----------------------
 
-- [Enhancement| Reduced the use of matplotlib global state in the :ref:`multi-grid classes <multi-plot-grids>` (pr:`2388`).
+This a bug fix release and is a recommended upgrade for all users on v0.11.0.
+
+- |Enhancement| Reduced the use of matplotlib global state in the :ref:`multi-grid classes <grid_api>` (:pr:`2388`).
 
 - |Fix| Restored support for using tuples or numeric keys to reference fields in a long-form `data` object (:pr:`2386`).
 
@@ -16,7 +18,7 @@ v0.11.1 (Unreleased)
 
 - |Fix| Fixed a bug in :class:`FacetGrid` where interior tick labels would be hidden when only the orthogonal axis was shared (:pr:`2347`).
 
-- |Fix| Fixed a bug in :class:`FacetGrid` that caused an error when `legend_out=False` was set (:pr:`2292`).
+- |Fix| Fixed a bug in :class:`FacetGrid` that caused an error when `legend_out=False` was set (:pr:`2304`).
 
 - |Fix| Fixed a bug in :func:`kdeplot` where ``common_norm=True`` was ignored if ``hue`` was not assigned (:pr:`2378`).
 
@@ -28,8 +30,8 @@ v0.11.1 (Unreleased)
 
 - |Fix| Fixed a bug in :func:`clustermap` where row/col color annotations could not have a categorical dtype (:pr:`2389`).
 
-- |Fix| Fixed a bug in :func:`boxenplot` where the `linewidth` parameter was ignored (:func:`2287`).
+- |Fix| Fixed a bug in :func:`boxenplot` where the `linewidth` parameter was ignored (:pr:`2287`).
 
-- |Fix| Raise a more informative error in :class:`PairGrid`/:func:`pairplot` when no variables can be found to define the rows/columns of the grid (:func:`2382`).
+- |Fix| Raise a more informative error in :class:`PairGrid`/:func:`pairplot` when no variables can be found to define the rows/columns of the grid (:pr:`2382`).
 
 - |Fix| Raise a more informative error from :func:`clustermap` if row/col color objects have semantic index but data object does not (:pr:`2313`).
