@@ -47,24 +47,20 @@ jobs:
         target: [test]
         deps: [latest]
         backend: [agg]
-        prefix: ['']
 
         include:
           - python: 3.6.x
             target: unittests
             deps: pinned
             backend: agg
-            prefix: ''
           - python: 3.9.x
             target: unittests
             deps: minimal
             backend: agg
-            prefix: ''
           - python: 3.9.x
             target: test
             deps: latest
             backend: tkagg
-            prefix: xvfb-run -a
 
     steps:
 
@@ -88,7 +84,9 @@ jobs:
       - name: Run tests
         env:
           MPLBACKEND: ${{ matrix.backend }}
-        run: ${{ matrix.prefix }} make ${{ matrix.target }}
+        run: |
+          if [[ ${{ matrix.backend }} == 'tkagg' ]]; then PREFIX='xvfb-run -a'; fi
+          $PREFIX make ${{ matrix.target }}
 
       - name: Upload coverage
         uses: codecov/codecov-action@v1
