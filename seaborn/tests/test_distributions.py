@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
-import scipy
 from scipy import stats, integrate
 
 import pytest
@@ -883,10 +882,6 @@ class TestKDEPlotBivariate:
                 x2 = seg2[0][:, 0]
                 assert np.abs(x2).max() > np.abs(x1).max()
 
-    @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
-        reason="Weights require scipy >= 1.2.0"
-    )
     def test_weights(self, rng):
 
         import warnings
@@ -1980,9 +1975,6 @@ class TestDisPlot:
         ],
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
-
-        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
-            pytest.skip("Weights require scipy >= 1.2")
 
         ax = kdeplot(data=long_df, **kwargs)
         g = displot(long_df, kind="kde", **kwargs)

@@ -4,7 +4,6 @@ from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
-from distutils.version import LooseVersion
 
 import pytest
 from pytest import approx
@@ -2996,12 +2995,7 @@ class TestBoxenPlotter(CategoricalFixture):
     @pytest.mark.parametrize("size", ["large", "medium", "small", 22, 12])
     def test_legend_titlesize(self, size):
 
-        if LooseVersion(mpl.__version__) >= LooseVersion("3.0"):
-            rc_ctx = {"legend.title_fontsize": size}
-        else:  # Old matplotlib doesn't have legend.title_fontsize rcparam
-            rc_ctx = {"axes.labelsize": size}
-            if isinstance(size, int):
-                size = size * .85
+        rc_ctx = {"legend.title_fontsize": size}
         exp = mpl.font_manager.FontProperties(size=size).get_size()
 
         with plt.rc_context(rc=rc_ctx):
