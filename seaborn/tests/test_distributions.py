@@ -709,21 +709,17 @@ class TestKDEPlotUnivariate:
         integral = integrate.trapz(ydata, np.log10(xdata))
         assert integral == pytest.approx(1)
 
-    @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
-        reason="Weights require scipy >= 1.2.0"
-    )
     def test_weights(self):
 
         x = [1, 2]
         weights = [2, 1]
 
-        ax = kdeplot(x=x, weights=weights)
+        ax = kdeplot(x=x, weights=weights, bw_method=.1)
 
         xdata, ydata = ax.lines[0].get_xydata().T
 
-        y1 = ydata[np.argwhere(np.abs(xdata - 1).min())]
-        y2 = ydata[np.argwhere(np.abs(xdata - 2).min())]
+        y1 = ydata[np.abs(xdata - 1).argmin()]
+        y2 = ydata[np.abs(xdata - 2).argmin()]
 
         assert y1 == pytest.approx(2 * y2)
 
