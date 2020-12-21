@@ -1,5 +1,3 @@
-from distutils.version import LooseVersion
-
 import pytest
 import numpy as np
 import matplotlib as mpl
@@ -181,11 +179,12 @@ class TestPlottingContext(RCParamTester):
         notebook_ref = rcmod.plotting_context("notebook")
         notebook_big = rcmod.plotting_context("notebook", 2)
 
-        font_keys = ["axes.labelsize", "axes.titlesize", "legend.fontsize",
-                     "xtick.labelsize", "ytick.labelsize", "font.size"]
-
-        if LooseVersion(mpl.__version__) >= "3.0":
-            font_keys.append("legend.title_fontsize")
+        font_keys = [
+            "font.size",
+            "axes.labelsize", "axes.titlesize",
+            "xtick.labelsize", "ytick.labelsize",
+            "legend.fontsize", "legend.title_fontsize",
+        ]
 
         for k in font_keys:
             assert notebook_ref[k] * 2 == notebook_big[k]

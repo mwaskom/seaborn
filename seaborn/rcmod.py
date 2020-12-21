@@ -1,7 +1,6 @@
 """Control plot style and scaling using the matplotlib rcParams interface."""
 import warnings
 import functools
-from distutils.version import LooseVersion
 import matplotlib as mpl
 from cycler import cycler
 from . import palettes
@@ -60,6 +59,7 @@ _context_keys = [
     "xtick.labelsize",
     "ytick.labelsize",
     "legend.fontsize",
+    "legend.title_fontsize",
 
     "axes.linewidth",
     "grid.linewidth",
@@ -78,9 +78,6 @@ _context_keys = [
     "ytick.minor.size",
 
 ]
-
-if LooseVersion(mpl.__version__) >= "3.0":
-    _context_keys.append("legend.title_fontsize")
 
 
 def set_theme(context="notebook", style="darkgrid", palette="deep",
@@ -396,11 +393,9 @@ def plotting_context(context=None, font_scale=1, rc=None):
             "xtick.labelsize": 11,
             "ytick.labelsize": 11,
             "legend.fontsize": 11,
+            "legend.title_fontsize": 12,
 
         }
-
-        if LooseVersion(mpl.__version__) >= "3.0":
-            texts_base_context["legend.title_fontsize"] = 12
 
         base_context = {
 

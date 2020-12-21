@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
-import scipy
 from scipy import stats, integrate
 
 import pytest
@@ -709,21 +708,17 @@ class TestKDEPlotUnivariate:
         integral = integrate.trapz(ydata, np.log10(xdata))
         assert integral == pytest.approx(1)
 
-    @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
-        reason="Weights require scipy >= 1.2.0"
-    )
     def test_weights(self):
 
         x = [1, 2]
         weights = [2, 1]
 
-        ax = kdeplot(x=x, weights=weights)
+        ax = kdeplot(x=x, weights=weights, bw_method=.1)
 
         xdata, ydata = ax.lines[0].get_xydata().T
 
-        y1 = ydata[np.argwhere(np.abs(xdata - 1).min())]
-        y2 = ydata[np.argwhere(np.abs(xdata - 2).min())]
+        y1 = ydata[np.abs(xdata - 1).argmin()]
+        y2 = ydata[np.abs(xdata - 2).argmin()]
 
         assert y1 == pytest.approx(2 * y2)
 
@@ -887,10 +882,6 @@ class TestKDEPlotBivariate:
                 x2 = seg2[0][:, 0]
                 assert np.abs(x2).max() > np.abs(x1).max()
 
-    @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
-        reason="Weights require scipy >= 1.2.0"
-    )
     def test_weights(self, rng):
 
         import warnings
@@ -1984,9 +1975,6 @@ class TestDisPlot:
         ],
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
-
-        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
-            pytest.skip("Weights require scipy >= 1.2")
 
         ax = kdeplot(data=long_df, **kwargs)
         g = displot(long_df, kind="kde", **kwargs)

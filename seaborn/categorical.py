@@ -9,7 +9,6 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 import warnings
-from distutils.version import LooseVersion
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
@@ -376,16 +375,7 @@ class _CategoricalPlotter(object):
             ax.set_ylim(-.5, len(self.plot_data) - .5, auto=None)
 
         if self.hue_names is not None:
-            leg = ax.legend(loc="best", title=self.hue_title)
-            if self.hue_title is not None:
-                if LooseVersion(mpl.__version__) < "3.0":
-                    # Old Matplotlib has no legend title size rcparam
-                    try:
-                        title_size = mpl.rcParams["axes.labelsize"] * .85
-                    except TypeError:  # labelsize is something like "large"
-                        title_size = mpl.rcParams["axes.labelsize"]
-                    prop = mpl.font_manager.FontProperties(size=title_size)
-                    leg.set_title(self.hue_title, prop=prop)
+            ax.legend(loc="best", title=self.hue_title)
 
     def add_legend_data(self, ax, color, label):
         """Add a dummy patch object so we can get legend data."""
