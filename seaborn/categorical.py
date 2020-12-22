@@ -2,6 +2,7 @@ from textwrap import dedent
 from numbers import Number
 import warnings
 import colorsys
+from functools import partial
 
 import numpy as np
 import pandas as pd
