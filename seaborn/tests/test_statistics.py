@@ -13,7 +13,7 @@ from .._statistics import (
     KDE,
     Histogram,
     ECDF,
-    _has_scipy,
+    _no_scipy,
 )
 
 
@@ -78,7 +78,7 @@ class TestKDE:
         density, support = kde(x)
         assert integrate.trapz(density, support) == pytest.approx(1, abs=1e-5)
 
-    @pytest.mark.skipif(not _has_scipy, reason="Test requires scipy")
+    @pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
     def test_cumulative(self, rng):
 
         x = rng.normal(0, 3, 1000)
@@ -140,7 +140,7 @@ class TestKDE:
         total = density.sum() * (dx * dy)
         assert total == pytest.approx(1, abs=1e-2)
 
-    @pytest.mark.skipif(not _has_scipy, reason="Test requires scipy")
+    @pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
     def test_bivariate_cumulative(self, rng):
 
         x, y = rng.normal(0, 3, (2, 50))

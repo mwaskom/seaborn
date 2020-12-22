@@ -9,10 +9,10 @@ import pandas as pd
 try:
     from scipy import stats
     from scipy.stats import gaussian_kde
-    _has_scipy = True
+    _no_scipy = False
 except ImportError:
     from .external.kde import gaussian_kde
-    _has_scipy = False
+    _no_scipy = True
 
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
@@ -951,7 +951,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         """Draw boxplot information at center of the density."""
         # Compute the boxplot statistics
         q25, q50, q75 = np.percentile(data, [25, 50, 75])
-        whisker_lim = 1.5 * stats.iqr(data)
+        whisker_lim = 1.5 * (q75 - q25)
         h1 = np.min(data[data >= (q25 - whisker_lim)])
         h2 = np.max(data[data <= (q75 + whisker_lim)])
 

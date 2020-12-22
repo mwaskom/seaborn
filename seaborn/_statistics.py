@@ -28,10 +28,10 @@ from numbers import Number
 import numpy as np
 try:
     from scipy.stats import gaussian_kde
-    _has_scipy = True
+    _no_scipy = False
 except ImportError:
     from .external.kde import gaussian_kde
-    _has_scipy = False
+    _no_scipy = True
 
 from .utils import _check_argument
 
@@ -79,7 +79,7 @@ class KDE:
         self.clip = clip
         self.cumulative = cumulative
 
-        if cumulative and not _has_scipy:
+        if cumulative and _no_scipy:
             raise RuntimeError("Cumulative KDE evaluation requires scipy")
 
         self.support = None
