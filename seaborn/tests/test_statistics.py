@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import integrate
 
 try:
     import statsmodels.distributions as smdist
@@ -33,6 +32,12 @@ class DistributionFixtures:
 
 
 class TestKDE:
+
+    def integrate(self, y, x):
+        y = np.asarray(y)
+        x = np.asarray(x)
+        dx = np.diff(x)
+        return (dx * y[:-1] + dx * y[1:]).sum() / 2
 
     def test_gridsize(self, rng):
 
@@ -76,7 +81,7 @@ class TestKDE:
         x = rng.normal(0, 3, 1000)
         kde = KDE()
         density, support = kde(x)
-        assert integrate.trapz(density, support) == pytest.approx(1, abs=1e-5)
+        assert self.integrate(density, support) == pytest.approx(1, abs=1e-5)
 
     @pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
     def test_cumulative(self, rng):
