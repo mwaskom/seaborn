@@ -573,6 +573,12 @@ class TestKDEPlotUnivariate:
         assert y[0] == pytest.approx(0)
         assert y[-1] == pytest.approx(1)
 
+    @pytest.mark.skipif(not _no_scipy, reason="Test requires scipy's absence")
+    def test_cumulative_requires_scipy(self, long_df):
+
+        with pytest.raises(RuntimeError):
+            kdeplot(data=long_df, x="x", cut=5, cumulative=True)
+
     def test_common_norm(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(ncols=2)

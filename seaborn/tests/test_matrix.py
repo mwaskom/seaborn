@@ -1330,3 +1330,19 @@ class TestClustermap:
         for ax in [g.ax_col_dendrogram, g.ax_row_dendrogram]:
             tree, = ax.collections
             assert tuple(tree.get_color().squeeze())[:3] == rgb
+
+
+if _no_scipy:
+
+    def test_required_scipy_errors():
+
+        x = np.random.normal(0, 1, (10, 10))
+
+        with pytest.raises(RuntimeError):
+            mat.clustermap(x)
+
+        with pytest.raises(RuntimeError):
+            mat.ClusterGrid(x)
+
+        with pytest.raises(RuntimeError):
+            mat.dendrogram(x)
