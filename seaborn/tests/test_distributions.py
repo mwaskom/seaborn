@@ -21,6 +21,7 @@ from .._core import (
 from .._statistics import (
     KDE,
     Histogram,
+    _has_scipy,
 )
 from ..distributions import (
     _DistributionPlotter,
@@ -557,6 +558,7 @@ class TestKDEPlotUnivariate:
         x, y = ax.lines[0].get_xydata().T
         assert integrate.trapz(y, x) == pytest.approx(1)
 
+    @pytest.mark.skipif(not _has_scipy, reason="Test requires scipy")
     def test_cumulative(self, long_df):
 
         ax = kdeplot(data=long_df, x="x", cut=5, cumulative=True)

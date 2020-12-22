@@ -26,7 +26,12 @@ The classes should behave roughly in the style of scikit-learn.
 """
 from numbers import Number
 import numpy as np
-from scipy import stats
+try:
+    from scipy.stats import gaussian_kde
+    _has_scipy = True
+except ImportError:
+    from .external.kde import gaussian_kde
+    _has_scipy = False
 
 from .utils import _check_argument
 
@@ -73,6 +78,9 @@ class KDE:
         self.cut = cut
         self.clip = clip
         self.cumulative = cumulative
+
+        if cumulative and not _has_scipy:
+            raise RuntimeError("Cumulative KDE evaluation requires scipy")
 
         self.support = None
 
@@ -129,7 +137,7 @@ class KDE:
         if weights is not None:
             fit_kws["weights"] = weights
 
-        kde = stats.gaussian_kde(fit_data, **fit_kws)
+        kde = gaussian_kde(fit_data, **fit_kws)
         kde.set_bandwidth(kde.factor * self.bw_adjust)
 
         return kde
