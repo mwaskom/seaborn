@@ -9,12 +9,17 @@ Installing and getting started
 
    <div class="col-md-9">
 
-Official releases of seaborn can be installed from `PyPI
-<https://pypi.org/project/seaborn/>`_::
+Official releases of seaborn can be installed from `PyPI <https://pypi.org/project/seaborn/>`_:
 
     pip install seaborn
 
-The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution::
+The basic invocation of `pip` will install seaborn and, if necessary, its mandatory dependencies.
+It is possible to include optional dependencies that give access to a few advanced features:
+
+    pip install seaborn[all]
+
+The library is also included as part of the `Anaconda <https://repo.anaconda.com/>`_ distribution,
+and it can be installed with `conda`:
 
     conda install seaborn
 
@@ -26,14 +31,10 @@ Supported Python versions
 
 - Python 3.7+
 
-Required dependencies
+Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
-If not already present, these libraries will be downloaded when you install seaborn.
-
 - `numpy <https://numpy.org/>`__
-
-- `scipy <https://www.scipy.org/>`__
 
 - `pandas <https://pandas.pydata.org/>`__
 
@@ -44,7 +45,9 @@ Optional dependencies
 
 - `statsmodels <https://www.statsmodels.org/>`__, for advanced regression plots
 
-- `fastcluster <https://pypi.org/project/fastcluster/>`__, for clustering large matrices
+- `scipy <https://www.scipy.org/>`__, for clustering matrices and some advanced options
+
+- `fastcluster <https://pypi.org/project/fastcluster/>`__, faster clustering of large matrices
 
 Quickstart
 ~~~~~~~~~~
