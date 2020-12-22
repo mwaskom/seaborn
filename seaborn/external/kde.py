@@ -12,7 +12,8 @@ have a simple and pure Python implementation. These include:
 - logpdf
 - resample
 
-Additionally, the numpy.linalg module was subsituted for the scipy.linalg module.
+Additionally, the numpy.linalg module was subsituted for scipy.linalg,
+and the examples section (with doctests) was removed from the docstring
 
 The original scipy license is copied below:
 
@@ -189,42 +190,6 @@ class gaussian_kde(object):
            Analysis, Vol. 36, pp. 279-298, 2001.
     .. [5] Gray P. G., 1969, Journal of the Royal Statistical Society.
            Series A (General), 132, 272
-
-    Examples
-    --------
-    Generate some random two-dimensional data:
-
-    >>> from scipy import stats
-    >>> def measure(n):
-    ...     "Measurement model, return two coupled measurements."
-    ...     m1 = np.random.normal(size=n)
-    ...     m2 = np.random.normal(scale=0.5, size=n)
-    ...     return m1+m2, m1-m2
-
-    >>> m1, m2 = measure(2000)
-    >>> xmin = m1.min()
-    >>> xmax = m1.max()
-    >>> ymin = m2.min()
-    >>> ymax = m2.max()
-
-    Perform a kernel density estimate on the data:
-
-    >>> X, Y = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-    >>> positions = np.vstack([X.ravel(), Y.ravel()])
-    >>> values = np.vstack([m1, m2])
-    >>> kernel = stats.gaussian_kde(values)
-    >>> Z = np.reshape(kernel(positions).T, X.shape)
-
-    Plot the results:
-
-    >>> import matplotlib.pyplot as plt
-    >>> fig, ax = plt.subplots()
-    >>> ax.imshow(np.rot90(Z), cmap=plt.cm.gist_earth_r,
-    ...           extent=[xmin, xmax, ymin, ymax])
-    >>> ax.plot(m1, m2, 'k.', markersize=2)
-    >>> ax.set_xlim([xmin, xmax])
-    >>> ax.set_ylim([ymin, ymax])
-    >>> plt.show()
 
     """
     def __init__(self, dataset, bw_method=None, weights=None):
