@@ -317,7 +317,7 @@ class _RegressionPlotter(_LinearPlotter):
 
     def bin_predictor(self, bins):
         """Discretize a predictor by assigning value to closest bin."""
-        x = self.x
+        x = np.asarray(self.x)
         if np.isscalar(bins):
             percentiles = np.linspace(0, 100, bins + 2)[1:-1]
             bins = np.percentile(x, percentiles)
@@ -327,7 +327,7 @@ class _RegressionPlotter(_LinearPlotter):
         dist = np.abs(np.subtract.outer(x, bins))
         x_binned = bins[np.argmin(dist, axis=1)].ravel()
 
-        return x_binned, bins.ravel()
+        return x_binned, bins
 
     def regress_out(self, a, b):
         """Regress b from a keeping a's original mean."""

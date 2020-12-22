@@ -7,7 +7,6 @@ from functools import partial
 import numpy as np
 import pandas as pd
 try:
-    from scipy import stats
     from scipy.stats import gaussian_kde
     _no_scipy = False
 except ImportError:
@@ -21,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
-from .utils import remove_na
+from .utils import remove_na, _normal_quantile_func
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -1855,7 +1854,7 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            point_conf = 2 * stats.norm.ppf((1 - self.trust_alpha / 2)) ** 2
+            point_conf = 2 * _normal_quantile_func((1 - self.trust_alpha / 2)) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
             k = int(self.k_depth)  # allow having k as input
