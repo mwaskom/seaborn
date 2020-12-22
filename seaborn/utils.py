@@ -48,6 +48,29 @@ def ci_to_errsize(cis, heights):
     return errsize
 
 
+def _normal_quantile_func(q):
+    """
+    Compute the quantile function of the standard normal distribution.
+
+    This wrapper exists because we are dropping scipy as a mandatory dependency
+    but statistics.NormalDist was added to the standard library in 3.8.
+
+    """
+    try:
+        from statistics import NormalDist
+        qf = np.vectorize(NormalDist().inv_cdf)
+    except ImportError:
+        try:
+            from scipy.stats import norm
+            qf = norm.ppf
+        except ImportError:
+            msg = (
+                "Standard normal quantile functions require either Python>=3.8 or scipy"
+            )
+            raise RuntimeError(msg)
+    return qf(q)
+
+
 def desaturate(color, prop):
     """Decrease the saturation channel of a color by some percent.
 

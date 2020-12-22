@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
@@ -11,6 +10,7 @@ import numpy.testing as npt
 
 from .. import categorical as cat
 from .. import palettes
+from ..utils import _normal_quantile_func
 
 
 class CategoricalFixture:
@@ -450,10 +450,9 @@ class TestCategoricalStatPlotter(CategoricalFixture):
                                       y.groupby(g).mean())
 
         for ci, (_, grp_y) in zip(p.confint, y.groupby(g)):
-            sem = stats.sem(grp_y)
+            sem = grp_y.std() / np.sqrt(len(grp_y))
             mean = grp_y.mean()
-            stats.norm.ppf(.975)
-            half_ci = stats.norm.ppf(.975) * sem
+            half_ci = _normal_quantile_func(.975) * sem
             ci_want = mean - half_ci, mean + half_ci
             npt.assert_array_almost_equal(ci_want, ci, 2)
 
@@ -493,9 +492,10 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         assert p.statistic.shape == (4,)
         assert p.confint.shape == (4, 2)
 
-        mean = y[g == "b"].mean()
-        sem = stats.sem(y[g == "b"])
-        half_ci = stats.norm.ppf(.975) * sem
+        rows = g == "b"
+        mean = y[rows].mean()
+        sem = y[rows].std() / np.sqrt(rows.sum())
+        half_ci = _normal_quantile_func(.975) * sem
         ci = mean - half_ci, mean + half_ci
         npt.assert_almost_equal(p.statistic[1], mean)
         npt.assert_array_almost_equal(p.confint[1], ci, 2)
@@ -522,9 +522,9 @@ class TestCategoricalStatPlotter(CategoricalFixture):
 
         for ci_g, (_, grp_y) in zip(p.confint, y.groupby(g)):
             for ci, hue_y in zip(ci_g, [grp_y[::2], grp_y[1::2]]):
-                sem = stats.sem(hue_y)
+                sem = hue_y.std() / np.sqrt(len(hue_y))
                 mean = hue_y.mean()
-                half_ci = stats.norm.ppf(.975) * sem
+                half_ci = _normal_quantile_func(.975) * sem
                 ci_want = mean - half_ci, mean + half_ci
                 npt.assert_array_almost_equal(ci_want, ci, 2)
 
@@ -584,9 +584,10 @@ class TestCategoricalStatPlotter(CategoricalFixture):
         assert p.statistic.shape == (4, 3)
         assert p.confint.shape == (4, 3, 2)
 
-        mean = y[(g == "b") & (h == "x")].mean()
-        sem = stats.sem(y[(g == "b") & (h == "x")])
-        half_ci = stats.norm.ppf(.975) * sem
+        rows = (g == "b") & (h == "x")
+        mean = y[rows].mean()
+        sem = y[rows].std() / np.sqrt(rows.sum())
+        half_ci = _normal_quantile_func(.975) * sem
         ci = mean - half_ci, mean + half_ci
         npt.assert_almost_equal(p.statistic[1, 2], mean)
         npt.assert_array_almost_equal(p.confint[1, 2], ci, 2)
@@ -1131,13 +1132,11 @@ class TestViolinPlotter(CategoricalFixture):
 
         # Test reference rule bandwidth
         kde, bw = p.fit_kde(data, "scott")
-        assert isinstance(kde, stats.gaussian_kde)
         assert kde.factor == kde.scotts_factor()
         assert bw == kde.scotts_factor() * data_std
 
         # Test numeric scale factor
         kde, bw = p.fit_kde(self.y, .2)
-        assert isinstance(kde, stats.gaussian_kde)
         assert kde.factor == .2
         assert bw == .2 * data_std
 
@@ -1749,7 +1748,7 @@ class TestSwarmPlotter(CategoricalFixture):
         y = np.sort(self.y)
         orig_xy = np.c_[x, y]
         swarm = p.beeswarm(orig_xy, d)
-        dmat = spatial.distance.cdist(swarm, swarm)
+        dmat = np.sqrt(np.sum(np.square(swarm[:, np.newaxis] - swarm), axis=-1))
         triu = dmat[np.triu_indices_from(dmat, 1)]
         npt.assert_array_less(d, triu)
         npt.assert_array_equal(y, swarm[:, 1])

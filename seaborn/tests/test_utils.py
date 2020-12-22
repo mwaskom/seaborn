@@ -58,7 +58,6 @@ def _network(t=None, url="https://github.com"):
     return wrapper
 
 
-
 def test_ci_to_errsize():
     """Test behavior of ci_to_errsize."""
     cis = [[.5, .5],
