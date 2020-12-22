@@ -6,8 +6,20 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
-from scipy.spatial import distance
-from scipy.cluster import hierarchy
+
+try:
+    from scipy.spatial import distance
+    from scipy.cluster import hierarchy
+    _no_scipy = False
+except ImportError:
+    _no_scipy = True
+
+try:
+    import fastcluster
+    assert fastcluster
+    _no_fastcluster = False
+except ImportError:
+    _no_fastcluster = True
 
 import numpy.testing as npt
 try:
@@ -18,14 +30,6 @@ import pytest
 
 from .. import matrix as mat
 from .. import color_palette
-
-try:
-    import fastcluster
-
-    assert fastcluster
-    _no_fastcluster = False
-except ImportError:
-    _no_fastcluster = True
 
 
 class TestHeatmap:
@@ -459,7 +463,9 @@ class TestHeatmap:
         assert len(ax2.collections) == 2
 
 
+@pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
 class TestDendrogram:
+
     rs = np.random.RandomState(sum(map(ord, "dendrogram")))
 
     x_norm = rs.randn(4, 8) + np.arange(8)
@@ -468,15 +474,14 @@ class TestDendrogram:
                         name="letters")
 
     df_norm = pd.DataFrame(x_norm, columns=letters)
-    try:
-        import fastcluster
-
+    if _no_fastcluster:
+        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
+        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
+    else:
         x_norm_linkage = fastcluster.linkage_vector(x_norm.T,
                                                     metric='euclidean',
                                                     method='single')
-    except ImportError:
-        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
-        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
+
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
@@ -701,6 +706,7 @@ class TestDendrogram:
         plt.close(f)
 
 
+@pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
 class TestClustermap:
     rs = np.random.RandomState(sum(map(ord, "clustermap")))
 
@@ -710,15 +716,14 @@ class TestClustermap:
                         name="letters")
 
     df_norm = pd.DataFrame(x_norm, columns=letters)
-    try:
-        import fastcluster
-
+    if _no_fastcluster:
+        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
+        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
+    else:
         x_norm_linkage = fastcluster.linkage_vector(x_norm.T,
                                                     metric='euclidean',
                                                     method='single')
-    except ImportError:
-        x_norm_distances = distance.pdist(x_norm.T, metric='euclidean')
-        x_norm_linkage = hierarchy.linkage(x_norm_distances, method='single')
+
     x_norm_dendrogram = hierarchy.dendrogram(x_norm_linkage, no_plot=True,
                                              color_threshold=-np.inf)
     x_norm_leaves = x_norm_dendrogram['leaves']
