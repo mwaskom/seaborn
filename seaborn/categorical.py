@@ -1,14 +1,22 @@
 from textwrap import dedent
 from numbers import Number
+import warnings
 import colorsys
+
 import numpy as np
-from scipy import stats
 import pandas as pd
+try:
+    from scipy import stats
+    from scipy.stats import gaussian_kde
+    _has_scipy = True
+except ImportError:
+    from .external.kde import gaussian_kde
+    _has_scipy = False
+
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
-import warnings
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
@@ -662,7 +670,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def fit_kde(self, x, bw):
         """Estimate a KDE for a vector of data with flexible bandwidth."""
-        kde = stats.gaussian_kde(x, bw)
+        kde = gaussian_kde(x, bw)
 
         # Extract the numeric bandwidth from the KDE object
         bw_used = kde.factor
@@ -1099,7 +1107,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
             jlim = float(jitter)
         if self.hue_names is not None and dodge:
             jlim /= len(self.hue_names)
-        self.jitterer = stats.uniform(-jlim, jlim * 2).rvs
+        self.jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
@@ -1120,7 +1128,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(strip_data.size) * i
-                cat_pos += self.jitterer(len(strip_data))
+                cat_pos += self.jitterer(size=len(strip_data))
                 kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     ax.scatter(cat_pos, strip_data, **kws)
@@ -1138,7 +1146,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(strip_data.size) * center
-                    cat_pos += self.jitterer(len(strip_data))
+                    cat_pos += self.jitterer(size=len(strip_data))
                     kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         ax.scatter(cat_pos, strip_data, **kws)
