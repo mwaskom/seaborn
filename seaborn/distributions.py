@@ -1486,7 +1486,7 @@ discrete : bool
     centered on their corresponding data points. This avoids "gaps" that may
     otherwise appear when using discrete (integer) data.
 cumulative : bool
-    If True, plot the cumulative counts as bins increase.
+    If True, plot the cumulative counts as bins increase. Requires scipy.
 common_bins : bool
     If True, use the same bins when semantic variables produce multiple
     plots. If using a reference rule to determine the bins, it will be computed
