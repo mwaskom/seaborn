@@ -66,7 +66,7 @@ class KDE:
         clip : pair of numbers None, or a pair of such pairs
             Do not evaluate the density outside of these limits.
         cumulative : bool, optional
-            If True, estimate a cumulative distribution function.
+            If True, estimate a cumulative distribution function. Requires scipy.
 
         """
         if clip is None:

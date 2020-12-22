@@ -794,7 +794,7 @@ class ClusterGrid(Grid):
                  dendrogram_ratio=None, colors_ratio=None, cbar_pos=None):
         """Grid object for organizing clustered heatmap input on to axes"""
         if _no_scipy:
-            raise RuntimeError("Clustergrid requires scipy to be installed")
+            raise RuntimeError("ClusterGrid requires scipy to be available")
 
         if isinstance(data, pd.DataFrame):
             self.data = data
@@ -1411,7 +1411,7 @@ def clustermap(
         >>> g = sns.clustermap(iris, z_score=0, cmap="vlag")
     """
     if _no_scipy:
-        raise RuntimeError("clustermap requires scipy to be installed")
+        raise RuntimeError("clustermap requires scipy to be available")
 
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
