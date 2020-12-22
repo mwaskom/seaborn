@@ -31,10 +31,16 @@ PYTHON_REQUIRES = ">=3.7"
 
 INSTALL_REQUIRES = [
     'numpy>=1.16',
-    'scipy>=1.2',
     'pandas>=0.23',
     'matplotlib>=3.0',
 ]
+
+EXTRAS_REQUIRE = {
+    'all': [
+        'scipy>=1.2',
+        'statsmodels>=0.9',
+    ]
+}
 
 
 PACKAGES = [
