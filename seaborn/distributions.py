@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as tx
 from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
-from scipy import stats
 
 from ._core import (
     VectorPlotter,
@@ -34,6 +33,7 @@ from .utils import (
 )
 from .palettes import color_palette
 from .external import husl
+from .external.kde import gaussian_kde
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
     DocstringComponents,
@@ -2395,7 +2395,8 @@ def _freedman_diaconis_bins(a):
     a = np.asarray(a)
     if len(a) < 2:
         return 1
-    h = 2 * stats.iqr(a) / (len(a) ** (1 / 3))
+    iqr = np.subtract.reduce(np.nanpercentile(a, [75, 25]))
+    h = 2 * iqr / (len(a) ** (1 / 3))
     # fall back to sqrt(a) bins if iqr is 0
     if h == 0:
         return int(np.sqrt(a.size))
@@ -2642,7 +2643,7 @@ def distplot(a=None, bins=None, hist=True, kde=True, rug=False, fit=None,
         gridsize = fit_kws.pop("gridsize", 200)
         cut = fit_kws.pop("cut", 3)
         clip = fit_kws.pop("clip", (-np.inf, np.inf))
-        bw = stats.gaussian_kde(a).scotts_factor() * a.std(ddof=1)
+        bw = gaussian_kde(a).scotts_factor() * a.std(ddof=1)
         x = _kde_support(a, bw, gridsize, cut, clip)
         params = fit.fit(a)
         y = pdf(x)

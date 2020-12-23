@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 import pandas as pd
-from scipy.cluster import hierarchy
+try:
+    from scipy.cluster import hierarchy
+    _no_scipy = False
+except ImportError:
+    _no_scipy = True
 
 from . import cm
 from .axisgrid import Grid
@@ -771,6 +775,9 @@ def dendrogram(
     dendrogramplotter.reordered_ind
 
     """
+    if _no_scipy:
+        raise RuntimeError("dendrogram requires scipy to be installed")
+
     plotter = _DendrogramPlotter(data, linkage=linkage, axis=axis,
                                  metric=metric, method=method,
                                  label=label, rotate=rotate)
@@ -786,6 +793,8 @@ class ClusterGrid(Grid):
                  figsize=None, row_colors=None, col_colors=None, mask=None,
                  dendrogram_ratio=None, colors_ratio=None, cbar_pos=None):
         """Grid object for organizing clustered heatmap input on to axes"""
+        if _no_scipy:
+            raise RuntimeError("ClusterGrid requires scipy to be available")
 
         if isinstance(data, pd.DataFrame):
             self.data = data
@@ -1250,6 +1259,8 @@ def clustermap(
     """
     Plot a matrix dataset as a hierarchically-clustered heatmap.
 
+    This function requires scipy to be available.
+
     Parameters
     ----------
     data : 2D array-like
@@ -1399,6 +1410,9 @@ def clustermap(
 
         >>> g = sns.clustermap(iris, z_score=0, cmap="vlag")
     """
+    if _no_scipy:
+        raise RuntimeError("clustermap requires scipy to be available")
+
     plotter = ClusterGrid(data, pivot_kws=pivot_kws, figsize=figsize,
                           row_colors=row_colors, col_colors=col_colors,
                           z_score=z_score, standard_scale=standard_scale,

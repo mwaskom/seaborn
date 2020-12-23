@@ -4,7 +4,6 @@ from textwrap import dedent
 import warnings
 import numpy as np
 import pandas as pd
-from scipy.spatial import distance
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -318,17 +317,17 @@ class _RegressionPlotter(_LinearPlotter):
 
     def bin_predictor(self, bins):
         """Discretize a predictor by assigning value to closest bin."""
-        x = self.x
+        x = np.asarray(self.x)
         if np.isscalar(bins):
             percentiles = np.linspace(0, 100, bins + 2)[1:-1]
-            bins = np.c_[np.percentile(x, percentiles)]
+            bins = np.percentile(x, percentiles)
         else:
-            bins = np.c_[np.ravel(bins)]
+            bins = np.ravel(bins)
 
-        dist = distance.cdist(np.c_[x], bins)
+        dist = np.abs(np.subtract.outer(x, bins))
         x_binned = bins[np.argmin(dist, axis=1)].ravel()
 
-        return x_binned, bins.ravel()
+        return x_binned, bins
 
     def regress_out(self, a, b):
         """Regress b from a keeping a's original mean."""

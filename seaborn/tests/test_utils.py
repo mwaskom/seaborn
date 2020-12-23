@@ -58,37 +58,6 @@ def _network(t=None, url="https://github.com"):
     return wrapper
 
 
-def test_pmf_hist_basics():
-    """Test the function to return barplot args for pmf hist."""
-    with pytest.warns(FutureWarning):
-        out = utils.pmf_hist(a_norm)
-    assert len(out) == 3
-    x, h, w = out
-    assert len(x) == len(h)
-
-    # Test simple case
-    a = np.arange(10)
-    with pytest.warns(FutureWarning):
-        x, h, w = utils.pmf_hist(a, 10)
-    assert np.all(h == h[0])
-
-    # Test width
-    with pytest.warns(FutureWarning):
-        x, h, w = utils.pmf_hist(a_norm)
-    assert x[1] - x[0] == w
-
-    # Test normalization
-    with pytest.warns(FutureWarning):
-        x, h, w = utils.pmf_hist(a_norm)
-    assert sum(h) == pytest.approx(1)
-    assert h.max() <= 1
-
-    # Test bins
-    with pytest.warns(FutureWarning):
-        x, h, w = utils.pmf_hist(a_norm, 20)
-    assert len(x) == 20
-
-
 def test_ci_to_errsize():
     """Test behavior of ci_to_errsize."""
     cis = [[.5, .5],
@@ -128,24 +97,6 @@ def test_saturate():
     """Test performance of saturation function."""
     out = utils.saturate((.75, .25, .25))
     assert out == (1, 0, 0)
-
-
-@pytest.mark.parametrize(
-    "p,annot", [(.0001, "***"), (.001, "**"), (.01, "*"), (.09, "."), (1, "")]
-)
-def test_sig_stars(p, annot):
-    """Test the sig stars function."""
-    with pytest.warns(FutureWarning):
-        stars = utils.sig_stars(p)
-        assert stars == annot
-
-
-def test_iqr():
-    """Test the IQR function."""
-    a = np.arange(5)
-    with pytest.warns(FutureWarning):
-        iqr = utils.iqr(a)
-    assert iqr == 2
 
 
 @pytest.mark.parametrize(

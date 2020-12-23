@@ -26,7 +26,12 @@ The classes should behave roughly in the style of scikit-learn.
 """
 from numbers import Number
 import numpy as np
-from scipy import stats
+try:
+    from scipy.stats import gaussian_kde
+    _no_scipy = False
+except ImportError:
+    from .external.kde import gaussian_kde
+    _no_scipy = True
 
 from .utils import _check_argument
 
@@ -61,7 +66,7 @@ class KDE:
         clip : pair of numbers None, or a pair of such pairs
             Do not evaluate the density outside of these limits.
         cumulative : bool, optional
-            If True, estimate a cumulative distribution function.
+            If True, estimate a cumulative distribution function. Requires scipy.
 
         """
         if clip is None:
@@ -73,6 +78,9 @@ class KDE:
         self.cut = cut
         self.clip = clip
         self.cumulative = cumulative
+
+        if cumulative and _no_scipy:
+            raise RuntimeError("Cumulative KDE evaluation requires scipy")
 
         self.support = None
 
@@ -129,7 +137,7 @@ class KDE:
         if weights is not None:
             fit_kws["weights"] = weights
 
-        kde = stats.gaussian_kde(fit_data, **fit_kws)
+        kde = gaussian_kde(fit_data, **fit_kws)
         kde.set_bandwidth(kde.factor * self.bw_adjust)
 
         return kde

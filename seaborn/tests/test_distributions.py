@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb, to_rgba
-from scipy import stats, integrate
 
 import pytest
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -21,6 +20,7 @@ from .._core import (
 from .._statistics import (
     KDE,
     Histogram,
+    _no_scipy,
 )
 from ..distributions import (
     _DistributionPlotter,
@@ -84,9 +84,17 @@ class TestDistPlot(object):
             assert len(ax.lines) == 0
             assert len(ax.collections) == 1
 
+            class Norm:
+                """Dummy object that looks like a scipy RV"""
+                def fit(self, x):
+                    return ()
+
+                def pdf(self, x, *params):
+                    return np.zeros_like(x)
+
             plt.close(ax.figure)
-            ax = distplot(self.x,
-                          hist=False, kde=False, rug=False, fit=stats.norm)
+            ax = distplot(
+                self.x, hist=False, kde=False, rug=False, fit=Norm())
             assert len(ax.patches) == 0
             assert len(ax.lines) == 1
             assert len(ax.collections) == 0
@@ -555,14 +563,21 @@ class TestKDEPlotUnivariate:
 
         ax = kdeplot(data=long_df, x="x", cut=5)
         x, y = ax.lines[0].get_xydata().T
-        assert integrate.trapz(y, x) == pytest.approx(1)
+        assert integrate(y, x) == pytest.approx(1)
 
+    @pytest.mark.skipif(_no_scipy, reason="Test requires scipy")
     def test_cumulative(self, long_df):
 
         ax = kdeplot(data=long_df, x="x", cut=5, cumulative=True)
         y = ax.lines[0].get_ydata()
         assert y[0] == pytest.approx(0)
         assert y[-1] == pytest.approx(1)
+
+    @pytest.mark.skipif(not _no_scipy, reason="Test requires scipy's absence")
+    def test_cumulative_requires_scipy(self, long_df):
+
+        with pytest.raises(RuntimeError):
+            kdeplot(data=long_df, x="x", cut=5, cumulative=True)
 
     def test_common_norm(self, long_df):
 
@@ -578,12 +593,12 @@ class TestKDEPlotUnivariate:
         total_area = 0
         for line in ax1.lines:
             xdata, ydata = line.get_xydata().T
-            total_area += integrate.trapz(ydata, xdata)
+            total_area += integrate(ydata, xdata)
         assert total_area == pytest.approx(1)
 
         for line in ax2.lines:
             xdata, ydata = line.get_xydata().T
-            assert integrate.trapz(ydata, xdata) == pytest.approx(1)
+            assert integrate(ydata, xdata) == pytest.approx(1)
 
     def test_common_grid(self, long_df):
 
@@ -705,7 +720,7 @@ class TestKDEPlotUnivariate:
         x = rng.lognormal(0, 1, 100)
         ax = kdeplot(x=x, log_scale=True, cut=10)
         xdata, ydata = ax.lines[0].get_xydata().T
-        integral = integrate.trapz(ydata, np.log10(xdata))
+        integral = integrate(ydata, np.log10(xdata))
         assert integral == pytest.approx(1)
 
     def test_weights(self):
@@ -1294,7 +1309,7 @@ class TestHistPlotUnivariate:
         hist_area = np.multiply(bar_widths, bar_heights).sum()
 
         density, = ax.lines
-        kde_area = integrate.trapz(density.get_ydata(), density.get_xdata())
+        kde_area = integrate(density.get_ydata(), density.get_xdata())
 
         assert kde_area == pytest.approx(hist_area)
 
@@ -1317,7 +1332,7 @@ class TestHistPlotUnivariate:
             hist_area = np.multiply(bar_widths, bar_heights).sum()
 
             x, y = ax.lines[i].get_xydata().T
-            kde_area = integrate.trapz(y, x)
+            kde_area = integrate(y, x)
 
             if multiple == "layer":
                 assert kde_area == pytest.approx(hist_area)
@@ -2118,3 +2133,11 @@ class TestDisPlot:
         l1 = sum(bool(c.get_segments()) for c in g.axes.flat[0].collections)
         l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
         assert l1 == l2
+
+
+def integrate(y, x):
+    """"Simple numerical integration for testing KDE code."""
+    y = np.asarray(y)
+    x = np.asarray(x)
+    dx = np.diff(x)
+    return (dx * y[:-1] + dx * y[1:]).sum() / 2

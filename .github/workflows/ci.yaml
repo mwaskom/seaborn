@@ -25,8 +25,7 @@ jobs:
       - name: Install seaborn
         run: |
           python -m pip install --upgrade pip
-          pip install `cat ci/deps_latest.txt ci/utils.txt`
-          pip install .
+          pip install .[all] -r ci/utils.txt
 
       - name: Install doc tools
         run: |
@@ -47,20 +46,24 @@ jobs:
 
         python: [3.7.x, 3.8.x, 3.9.x]
         target: [test]
+        install: [all]
         deps: [latest]
         backend: [agg]
 
         include:
           - python: 3.7.x
             target: unittests
+            install: all
             deps: pinned
             backend: agg
           - python: 3.9.x
             target: unittests
-            deps: minimal
+            install: light
+            deps: latest
             backend: agg
           - python: 3.9.x
             target: test
+            install: all
             deps: latest
             backend: tkagg
 
@@ -77,8 +80,9 @@ jobs:
       - name: Install seaborn
         run: |
           python -m pip install --upgrade pip
-          pip install `cat ci/deps_${{ matrix.deps }}.txt ci/utils.txt`
-          pip install .
+          if [[ ${{matrix.install}} == 'all' ]]; then EXTRAS='[all]'; fi
+          if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
+          pip install .$EXTRAS $DEPS -r ci/utils.txt
 
       - name: Cache datastes
         run: python ci/cache_test_datasets.py

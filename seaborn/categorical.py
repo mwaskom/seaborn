@@ -1,18 +1,26 @@
 from textwrap import dedent
 from numbers import Number
+import warnings
 import colorsys
+from functools import partial
+
 import numpy as np
-from scipy import stats
 import pandas as pd
+try:
+    from scipy.stats import gaussian_kde
+    _no_scipy = False
+except ImportError:
+    from .external.kde import gaussian_kde
+    _no_scipy = True
+
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
-import warnings
 
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
-from .utils import remove_na
+from .utils import remove_na, _normal_quantile_func
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -662,7 +670,7 @@ class _ViolinPlotter(_CategoricalPlotter):
 
     def fit_kde(self, x, bw):
         """Estimate a KDE for a vector of data with flexible bandwidth."""
-        kde = stats.gaussian_kde(x, bw)
+        kde = gaussian_kde(x, bw)
 
         # Extract the numeric bandwidth from the KDE object
         bw_used = kde.factor
@@ -942,7 +950,7 @@ class _ViolinPlotter(_CategoricalPlotter):
         """Draw boxplot information at center of the density."""
         # Compute the boxplot statistics
         q25, q50, q75 = np.percentile(data, [25, 50, 75])
-        whisker_lim = 1.5 * stats.iqr(data)
+        whisker_lim = 1.5 * (q75 - q25)
         h1 = np.min(data[data >= (q25 - whisker_lim)])
         h2 = np.max(data[data <= (q75 + whisker_lim)])
 
@@ -1099,7 +1107,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
             jlim = float(jitter)
         if self.hue_names is not None and dodge:
             jlim /= len(self.hue_names)
-        self.jitterer = stats.uniform(-jlim, jlim * 2).rvs
+        self.jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
 
     def draw_stripplot(self, ax, kws):
         """Draw the points onto `ax`."""
@@ -1120,7 +1128,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
 
                 # Plot the points in centered positions
                 cat_pos = np.ones(strip_data.size) * i
-                cat_pos += self.jitterer(len(strip_data))
+                cat_pos += self.jitterer(size=len(strip_data))
                 kws.update(c=palette[point_colors])
                 if self.orient == "v":
                     ax.scatter(cat_pos, strip_data, **kws)
@@ -1138,7 +1146,7 @@ class _StripPlotter(_CategoricalScatterPlotter):
                     # Plot the points in centered positions
                     center = i + offsets[j]
                     cat_pos = np.ones(strip_data.size) * center
-                    cat_pos += self.jitterer(len(strip_data))
+                    cat_pos += self.jitterer(size=len(strip_data))
                     kws.update(c=palette[point_colors])
                     if self.orient == "v":
                         ax.scatter(cat_pos, strip_data, **kws)
@@ -1846,7 +1854,7 @@ class _LVPlotter(_CategoricalPlotter):
         elif self.k_depth == 'proportion':
             k = int(np.log2(n)) - int(np.log2(n * p)) + 1
         elif self.k_depth == 'trustworthy':
-            point_conf = 2 * stats.norm.ppf((1 - self.trust_alpha / 2)) ** 2
+            point_conf = 2 * _normal_quantile_func((1 - self.trust_alpha / 2)) ** 2
             k = int(np.log2(n / point_conf)) + 1
         else:
             k = int(self.k_depth)  # allow having k as input
