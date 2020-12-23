@@ -131,8 +131,7 @@ class Grid:
                 adjust_legend_subtitles(figlegend)
 
             # Draw the plot to set the bounding boxes correctly
-            if hasattr(self.fig.canvas, "get_renderer"):
-                self.fig.draw(self.fig.canvas.get_renderer())
+            self.fig.canvas.draw()
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
@@ -140,8 +139,7 @@ class Grid:
             self.fig.set_size_inches(fig_width + legend_width, fig_height)
 
             # Draw the plot again to get the new transformations
-            if hasattr(self.fig.canvas, "get_renderer"):
-                self.fig.draw(self.fig.canvas.get_renderer())
+            self.fig.canvas.draw()
 
             # Now calculate how much space we need on the right side
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
