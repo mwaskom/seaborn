@@ -180,6 +180,7 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
     facets=DocstringComponents(_facet_docs),
     rel=DocstringComponents(_relational_docs),
+    stat=DocstringComponents.from_function_params(EstimateAggregator.__init__),
 )
 
 
@@ -774,6 +775,7 @@ err_kws : dict of keyword arguments
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
     or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
 {params.rel.legend}
+{params.stat.errorbar}
 {params.core.ax}
 kwargs : key, value mappings
     Other keyword arguments are passed down to
