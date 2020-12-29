@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 try:
     import statsmodels.distributions as smdist
@@ -12,6 +13,8 @@ from .._statistics import (
     KDE,
     Histogram,
     ECDF,
+    EstimateAggregator,
+    _validate_errorbar_arg,
     _no_scipy,
 )
 
@@ -463,3 +466,131 @@ class TestECDF(DistributionFixtures):
         with pytest.raises(NotImplementedError, match="Bivariate ECDF"):
             ecdf = ECDF()
             ecdf(x, y)
+
+
+class TestEstimateAggregator:
+
+    def test_func_estimator(self, long_df):
+
+        func = np.mean
+        agg = EstimateAggregator(func)
+        out = agg(long_df, "x")
+        assert out["x"] == func(long_df["x"])
+
+    def test_name_estimator(self, long_df):
+
+        agg = EstimateAggregator("mean")
+        out = agg(long_df, "x")
+        assert out["x"] == long_df["x"].mean()
+
+    def test_se_errorbars(self, long_df):
+
+        agg = EstimateAggregator("mean", "se")
+        out = agg(long_df, "x")
+        assert out["x"] == long_df["x"].mean()
+        assert out["xmin"] == (long_df["x"].mean() - long_df["x"].sem())
+        assert out["xmax"] == (long_df["x"].mean() + long_df["x"].sem())
+
+        agg = EstimateAggregator("mean", ("se", 2))
+        out = agg(long_df, "x")
+        assert out["x"] == long_df["x"].mean()
+        assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].sem())
+        assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].sem())
+
+    def test_sd_errorbars(self, long_df):
+
+        agg = EstimateAggregator("mean", "sd")
+        out = agg(long_df, "x")
+        assert out["x"] == long_df["x"].mean()
+        assert out["xmin"] == (long_df["x"].mean() - long_df["x"].std())
+        assert out["xmax"] == (long_df["x"].mean() + long_df["x"].std())
+
+        agg = EstimateAggregator("mean", ("sd", 2))
+        out = agg(long_df, "x")
+        assert out["x"] == long_df["x"].mean()
+        assert out["xmin"] == (long_df["x"].mean() - 2 * long_df["x"].std())
+        assert out["xmax"] == (long_df["x"].mean() + 2 * long_df["x"].std())
+
+    def test_pi_errorbars(self, long_df):
+
+        agg = EstimateAggregator("mean", "pi")
+        out = agg(long_df, "y")
+        assert out["ymin"] == np.percentile(long_df["y"], 2.5)
+        assert out["ymax"] == np.percentile(long_df["y"], 97.5)
+
+        agg = EstimateAggregator("mean", ("pi", 50))
+        out = agg(long_df, "y")
+        assert out["ymin"] == np.percentile(long_df["y"], 25)
+        assert out["ymax"] == np.percentile(long_df["y"], 75)
+
+    def test_ci_errorbars(self, long_df):
+
+        agg = EstimateAggregator("mean", "ci", n_boot=100000, seed=0)
+        out = agg(long_df, "y")
+
+        agg_ref = EstimateAggregator("mean", ("se", 1.96))
+        out_ref = agg_ref(long_df, "y")
+
+        assert out["ymin"] == pytest.approx(out_ref["ymin"], abs=1e-2)
+        assert out["ymax"] == pytest.approx(out_ref["ymax"], abs=1e-2)
+
+        agg = EstimateAggregator("mean", ("ci", 68), n_boot=100000, seed=0)
+        out = agg(long_df, "y")
+
+        agg_ref = EstimateAggregator("mean", ("se", 1))
+        out_ref = agg_ref(long_df, "y")
+
+        assert out["ymin"] == pytest.approx(out_ref["ymin"], abs=1e-2)
+        assert out["ymax"] == pytest.approx(out_ref["ymax"], abs=1e-2)
+
+        agg = EstimateAggregator("mean", "ci", seed=0)
+        out_orig = agg_ref(long_df, "y")
+        out_test = agg_ref(long_df, "y")
+        assert_array_equal(out_orig, out_test)
+
+    def test_custom_errorbars(self, long_df):
+
+        f = lambda x: (x.min(), x.max())  # noqa: E731
+        agg = EstimateAggregator("mean", f)
+        out = agg(long_df, "y")
+        assert out["ymin"] == long_df["y"].min()
+        assert out["ymax"] == long_df["y"].max()
+
+    def test_singleton_errorbars(self):
+
+        agg = EstimateAggregator("mean", "ci")
+        val = 7
+        out = agg(pd.DataFrame(dict(y=[val])), "y")
+        assert out["y"] == val
+        assert pd.isna(out["ymin"])
+        assert pd.isna(out["ymax"])
+
+    def test_errorbar_validation(self):
+
+        method, level = _validate_errorbar_arg(("ci", 99))
+        assert method == "ci"
+        assert level == 99
+
+        method, level = _validate_errorbar_arg("sd")
+        assert method == "sd"
+        assert level == 1
+
+        f = lambda x: (x.min(), x.max())  # noqa: E731
+        method, level = _validate_errorbar_arg(f)
+        assert method is f
+        assert level is None
+
+        with pytest.raises(ValueError, match="`errorbar` must be one of"):
+            _validate_errorbar_arg("sem")
+
+        with pytest.raises(ValueError, match="`errorbar` must be one of"):
+            _validate_errorbar_arg(("std", 2))
+
+        with pytest.raises(ValueError, match="errorbar argument must be"):
+            _validate_errorbar_arg(("pi", 5, 95))
+
+        with pytest.raises(TypeError, match="errorbar argument must be"):
+            _validate_errorbar_arg(95)
+
+        with pytest.raises(TypeError, match="errorbar argument must be"):
+            _validate_errorbar_arg(("ci", "large"))

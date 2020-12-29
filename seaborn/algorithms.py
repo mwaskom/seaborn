@@ -61,6 +61,8 @@ def bootstrap(*args, **kwargs):
         units = np.asarray(units)
 
     # Allow for a function that is the name of a method on an array
+    # TODO also allow for named numpy function? Is there an inventory of aggregators?
+    # TODO also check for nans in array, use nan-aware version of available and needed?
     if isinstance(func, str):
         def f(x):
             return getattr(x, func)()

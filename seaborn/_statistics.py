@@ -433,30 +433,35 @@ class ECDF:
 
 class EstimateAggregator:
 
-    def __init__(self, estimator, error_method=None, error_level=None, **boot_kws):
+    def __init__(self, estimator, errorbar=None, **boot_kws):
         """
+        Data aggregator that produces an estimate and error bar interval.
 
         Parameters
         ----------
         estimator : callable or string
-            Function (name) that maps a vector to a scalar.
-        error_method : callable or string
-            Name of method or a function that maps a vector to a (min, max) tuple.
-        error_level : number
-            Multiplicative scaling factor for parametric error measure or width of
-            nonparametric error interval.
+            Function (or method name) that maps a vector to a scalar.
+        errorbar : string, (string, number) tuple, or callable
+            Name of errorbar method (either "ci", "pi", "se", or "sd"), or a tuple
+            with a method name and a level parameter, or a function that maps from a
+            vector to a (min, max) interval.
+            TODO add link to errorbar tutorial when written
         boot_kws
             Additional keywords are passed to bootstrap when error_method is "ci".
 
         """
         self.estimator = estimator
-        self.error_method = error_method
-        self.error_level = error_level
+
+        method, level = _validate_errorbar_arg(errorbar)
+        self.error_method = method
+        self.error_level = level
+
         self.boot_kws = boot_kws
 
     def __call__(self, data, var):
         """Aggregate over `var` column of `data` with estimate and error interval."""
-        estimate = data[var].agg(self.estimator)
+        vals = data[var]
+        estimate = vals.agg(self.estimator)
 
         # Options that produce no error bars
         if self.error_method is None:
@@ -466,22 +471,22 @@ class EstimateAggregator:
 
         # Generic errorbars from use-supplied function
         elif callable(self.error_method):
-            err_min, err_max = self.error_method(data)
+            err_min, err_max = self.error_method(vals)
 
         # Parametric options
         elif self.error_method == "sd":
-            half_interval = data.std() * self.error_level
+            half_interval = vals.std() * self.error_level
             err_min, err_max = estimate - half_interval, estimate + half_interval
         elif self.error_method == "se":
-            half_interval = data.sem() * self.error_level
+            half_interval = vals.sem() * self.error_level
             err_min, err_max = estimate - half_interval, estimate + half_interval
 
         # Nonparametric options
         elif self.error_method == "pi":
-            err_min, err_max = _percentile_interval(data, self.error_level)
+            err_min, err_max = _percentile_interval(vals, self.error_level)
         elif self.error_method == "ci":
             units = data.get("units", None)
-            boots = bootstrap(data, units=units, func=self.estimator, **self.boot_kws)
+            boots = bootstrap(vals, units=units, func=self.estimator, **self.boot_kws)
             err_min, err_max = _percentile_interval(boots, self.error_level)
 
         return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
@@ -510,7 +515,7 @@ def _validate_errorbar_arg(arg):
     elif callable(arg):
         return arg, None
     elif isinstance(arg, str):
-        method = arg.lower()
+        method = arg
         level = DEFAULT_LEVELS.get(method, None)
     else:
         try:
