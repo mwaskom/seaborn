@@ -1079,7 +1079,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
-            estimator="mean", err_style="band", ci="sd", sort=True
+            estimator="mean", err_style="band", errorbar="sd", sort=True
         )
 
         ax.clear()
@@ -1097,7 +1097,7 @@ class TestLinePlotter(Helpers):
                 x=[1, 1, 1, 2, 2, 2, 3, 3, 3],
                 y=[1, 2, 3, 3, np.nan, 5, 4, 5, 6],
             ),
-            estimator="mean", err_style="band", ci=95, n_boot=100, sort=True,
+            estimator="mean", err_style="band", errorbar="ci", n_boot=100, sort=True,
         )
         ax.clear()
         p.plot(ax, {})
@@ -1110,7 +1110,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
-            estimator="mean", err_style="band", ci="sd"
+            estimator="mean", err_style="band", errorbar="sd"
         )
 
         ax.clear()
@@ -1122,7 +1122,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
-            estimator="mean", err_style="bars", ci="sd"
+            estimator="mean", err_style="bars", errorbar="sd"
         )
 
         ax.clear()
