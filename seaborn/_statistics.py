@@ -6,8 +6,8 @@ of the public API.
 The classes should behave roughly in the style of scikit-learn.
 
 - All data-independent parameters should be passed to the class constructor.
-- Each class should impelment a default transformation that is exposed through
-  __call__. These are currently written for vector arguements, but I think
+- Each class should implement a default transformation that is exposed through
+  __call__. These are currently written for vector arguments, but I think
   consuming a whole `plot_data` DataFrame and return it with transformed
   variables would make more sense.
 - Some class have data-dependent preprocessing that should be cached and used
@@ -26,6 +26,7 @@ The classes should behave roughly in the style of scikit-learn.
 """
 from numbers import Number
 import numpy as np
+import pandas as pd
 try:
     from scipy.stats import gaussian_kde
     _no_scipy = False
@@ -33,6 +34,7 @@ except ImportError:
     from .external.kde import gaussian_kde
     _no_scipy = True
 
+from .algorithms import bootstrap
 from .utils import _check_argument
 
 
@@ -427,3 +429,97 @@ class ECDF:
             return self._eval_univariate(x1, weights)
         else:
             return self._eval_bivariate(x1, x2, weights)
+
+
+class EstimateAggregator:
+
+    def __init__(self, estimator, error_method=None, error_level=None, **boot_kws):
+        """
+
+        Parameters
+        ----------
+        estimator : callable or string
+            Function (name) that maps a vector to a scalar.
+        error_method : callable or string
+            Name of method or a function that maps a vector to a (min, max) tuple.
+        error_level : number
+            Multiplicative scaling factor for parametric error measure or width of
+            nonparametric error interval.
+        boot_kws
+            Additional keywords are passed to bootstrap when error_method is "ci".
+
+        """
+        self.estimator = estimator
+        self.error_method = error_method
+        self.error_level = error_level
+        self.boot_kws = boot_kws
+
+    def __call__(self, data, var):
+        """Aggregate over `var` column of `data` with estimate and error interval."""
+        estimate = data[var].agg(self.estimator)
+
+        # Options that produce no error bars
+        if self.error_method is None:
+            err_min = err_max = np.nan
+        elif len(data) <= 1:
+            err_min = err_max = np.nan
+
+        # Generic errorbars from use-supplied function
+        elif callable(self.error_method):
+            err_min, err_max = self.error_method(data)
+
+        # Parametric options
+        elif self.error_method == "sd":
+            half_interval = data.std() * self.error_level
+            err_min, err_max = estimate - half_interval, estimate + half_interval
+        elif self.error_method == "se":
+            half_interval = data.sem() * self.error_level
+            err_min, err_max = estimate - half_interval, estimate + half_interval
+
+        # Nonparametric options
+        elif self.error_method == "pi":
+            err_min, err_max = _percentile_interval(data, self.error_level)
+        elif self.error_method == "ci":
+            units = data.get("units", None)
+            boots = bootstrap(data, units=units, func=self.estimator, **self.boot_kws)
+            err_min, err_max = _percentile_interval(boots, self.error_level)
+
+        return pd.Series({var: estimate, f"{var}min": err_min, f"{var}max": err_max})
+
+
+def _percentile_interval(data, width):
+    """Return a percentile interval from data of a given width."""
+    edge = (100 - width) / 2
+    percentiles = edge, 100 - edge
+    return np.percentile(data, percentiles)
+
+
+def _validate_errorbar_arg(arg):
+    """Check type and value of errorbar argument and assign default level."""
+    DEFAULT_LEVELS = {
+        "ci": 95,
+        "pi": 95,
+        "se": 1,
+        "sd": 1,
+    }
+
+    usage = "errorbar argument must be a callable, string, or (string, number) tuple"
+
+    if arg is None:
+        return None, None
+    elif callable(arg):
+        return arg, None
+    elif isinstance(arg, str):
+        method = arg.lower()
+        level = DEFAULT_LEVELS.get(method, None)
+    else:
+        try:
+            method, level = arg
+        except (ValueError, TypeError) as err:
+            raise err.__class__(usage) from err
+
+    _check_argument("errorbar", list(DEFAULT_LEVELS), method)
+    if level is not None and not isinstance(level, Number):
+        raise TypeError(usage)
+
+    return method, level
