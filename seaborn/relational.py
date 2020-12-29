@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -11,9 +10,7 @@ from ._core import (
 from .utils import (
     locator_to_legend_entries,
     adjust_legend_subtitles,
-    ci as ci_func
 )
-from .algorithms import bootstrap
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args
@@ -378,51 +375,6 @@ class _LinePlotter(_RelationalPlotter):
         self.err_kws = {} if err_kws is None else err_kws
 
         self.legend = legend
-
-    def aggregate(self, vals, grouper, units=None):
-        """Compute an estimate and confidence interval using grouper."""
-        func = self.estimator
-        ci = self.ci
-        n_boot = self.n_boot
-        seed = self.seed
-
-        # Define a "null" CI for when we only have one value
-        null_ci = pd.Series(index=["low", "high"], dtype=float)
-
-        # Function to bootstrap in the context of a pandas group by
-        def bootstrapped_cis(vals):
-
-            if len(vals) <= 1:
-                return null_ci
-
-            boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)
-            cis = ci_func(boots, ci)
-            return pd.Series(cis, ["low", "high"])
-
-        # Group and get the aggregation estimate
-        grouped = vals.groupby(grouper, sort=self.sort)
-        est = grouped.agg(func)
-
-        # Exit early if we don't want a confidence interval
-        if ci is None:
-            return est.index, est, None
-
-        # Compute the error bar extents
-        if ci == "sd":
-            sd = grouped.std()
-            cis = pd.DataFrame(np.c_[est - sd, est + sd],
-                               index=est.index,
-                               columns=["low", "high"]).stack()
-        else:
-            cis = grouped.apply(bootstrapped_cis)
-
-        # Unpack the CIs into "wide" format for plotting
-        if cis.notnull().any():
-            cis = cis.unstack().reindex(est.index)
-        else:
-            cis = None
-
-        return est.index, est, cis
 
     def plot(self, ax, kws):
         """Draw the plot onto an axes, passing matplotlib kwargs."""
