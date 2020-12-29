@@ -20,6 +20,8 @@ from ..relational import (
     scatterplot
 )
 
+from .._testing import assert_plots_equal
+
 
 @pytest.fixture(params=[
     dict(x="x", y="y"),
@@ -1346,6 +1348,20 @@ class TestLinePlotter(Helpers):
 
         lineplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
+
+    def test_ci_deprecation(self, long_df):
+
+        axs = plt.figure().subplots(2)
+        lineplot(data=long_df, x="x", y="y", errorbar=("ci", 95), seed=0, ax=axs[0])
+        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+            lineplot(data=long_df, x="x", y="y", ci=95, seed=0, ax=axs[1])
+        assert_plots_equal(*axs)
+
+        axs = plt.figure().subplots(2)
+        lineplot(data=long_df, x="x", y="y", errorbar="sd", ax=axs[0])
+        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+            lineplot(data=long_df, x="x", y="y", ci="sd", ax=axs[1])
+        assert_plots_equal(*axs)
 
 
 class TestScatterPlotter(Helpers):
