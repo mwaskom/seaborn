@@ -456,6 +456,12 @@ class _LinePlotter(_RelationalPlotter):
                 # but that fails on a corner case with older pandas.
                 sub_data = grouped.apply(agg, agg_var).reset_index()
 
+            # TODO this is pretty ad hoc ; see GH2409
+            for var in "xy":
+                if self._log_scaled(var):
+                    for col in sub_data.filter(regex=f"^{var}"):
+                        sub_data[col] = np.power(10, sub_data[col])
+
             if "hue" in sub_vars:
                 kws["color"] = self._hue_map(sub_vars["hue"])
             if "size" in sub_vars:

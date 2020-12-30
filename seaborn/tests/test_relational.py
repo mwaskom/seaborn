@@ -1122,6 +1122,34 @@ class TestLinePlotter(Helpers):
         ax.clear()
         p.plot(ax, {})
 
+    def test_log_scale(self):
+
+        f, ax = plt.subplots()
+        ax.set_xscale("log")
+
+        x = [1, 10, 100]
+        y = [1, 2, 3]
+
+        lineplot(x=x, y=y)
+        line = ax.lines[0]
+        assert_array_equal(line.get_xdata(), x)
+        assert_array_equal(line.get_ydata(), y)
+
+        f, ax = plt.subplots()
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        x = [1, 1, 2, 2]
+        y = [1, 10, 1, 100]
+
+        lineplot(x=x, y=y, err_style="bars", errorbar=("pi", 100))
+        line = ax.lines[0]
+        assert line.get_ydata()[1] == 10
+
+        ebars = ax.collections[0].get_segments()
+        assert_array_equal(ebars[0][:, 1], y[:2])
+        assert_array_equal(ebars[1][:, 1], y[2:])
+
     def test_axis_labels(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
