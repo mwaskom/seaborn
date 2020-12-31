@@ -508,7 +508,7 @@ def _validate_errorbar_arg(arg):
         "sd": 1,
     }
 
-    usage = "errorbar argument must be a callable, string, or (string, number) tuple"
+    usage = "`errorbar` must be a callable, string, or (string, number) tuple"
 
     if arg is None:
         return None, None

@@ -580,17 +580,14 @@ class TestEstimateAggregator:
         assert method is f
         assert level is None
 
-        with pytest.raises(ValueError, match="`errorbar` must be one of"):
-            _validate_errorbar_arg("sem")
+        bad_args = [
+            ("sem", ValueError),
+            (("std", 2), ValueError),
+            (("pi", 5, 95), ValueError),
+            (95, TypeError),
+            (("ci", "large"), TypeError),
+        ]
 
-        with pytest.raises(ValueError, match="`errorbar` must be one of"):
-            _validate_errorbar_arg(("std", 2))
-
-        with pytest.raises(ValueError, match="errorbar argument must be"):
-            _validate_errorbar_arg(("pi", 5, 95))
-
-        with pytest.raises(TypeError, match="errorbar argument must be"):
-            _validate_errorbar_arg(95)
-
-        with pytest.raises(TypeError, match="errorbar argument must be"):
-            _validate_errorbar_arg(("ci", "large"))
+        for arg, exception in bad_args:
+            with pytest.raises(exception, match="`errorbar` must be"):
+                _validate_errorbar_arg(arg)

@@ -631,6 +631,7 @@ def _deprecate_ci(errorbar, ci):
         else:
             errorbar = ("ci", ci)
             msg = f"use `errorbar=('ci', {ci})` for same effect."
-        warnings.warn(f"The `ci` parameter is deprecated; {msg}", UserWarning)
+        msg = f"The `ci` parameter is deprecated; {msg}"
+        warnings.warn(msg, UserWarning)
 
     return errorbar
