@@ -10,6 +10,7 @@ from ._core import (
 from .utils import (
     locator_to_legend_entries,
     adjust_legend_subtitles,
+    _deprecate_ci,
 )
 from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
@@ -141,9 +142,11 @@ estimator : name of pandas method or callable or None
     """,
     ci="""
 ci : int or "sd" or None
-    Size of the confidence interval to draw when aggregating with an
-    estimator. "sd" means to draw the standard deviation of the data.
-    Setting to ``None`` will skip bootstrapping.
+    Size of the confidence interval to draw when aggregating.
+
+    .. deprecated:: 0.12.0
+        Use the new `errorbar` parameter for more flexibility.
+
     """,
     n_boot="""
 n_boot : int
@@ -647,15 +650,8 @@ def lineplot(
     ax=None, **kwargs
 ):
 
-    # TODO deprecate ci=
-    if ci is not None:
-        if ci == "sd":
-            errorbar = "sd"
-            msg = "use `errorbar='sd'` for same effect."
-        else:
-            errorbar = ("ci", ci)
-            msg = f"use `errorbar=('ci', {ci})` for same effect."
-        warnings.warn(f"The `ci` parameter is deprecated; {msg}", UserWarning)
+    # Handle deprecation of ci parameter
+    errorbar = _deprecate_ci(errorbar, ci)
 
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
