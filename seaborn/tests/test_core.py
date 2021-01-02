@@ -24,6 +24,24 @@ from .._core import (
 from ..palettes import color_palette
 
 
+@pytest.fixture(params=[
+    dict(x="x", y="y"),
+    dict(x="t", y="y"),
+    dict(x="a", y="y"),
+    dict(x="x", y="y", hue="y"),
+    dict(x="x", y="y", hue="a"),
+    dict(x="x", y="y", size="a"),
+    dict(x="x", y="y", style="a"),
+    dict(x="x", y="y", hue="s"),
+    dict(x="x", y="y", size="s"),
+    dict(x="x", y="y", style="s"),
+    dict(x="x", y="y", hue="a", style="a"),
+    dict(x="x", y="y", hue="a", size="b", style="b"),
+])
+def long_variables(request):
+    return request.param
+
+
 class TestSemanticMapping:
 
     def test_call_lookup(self):
@@ -93,7 +111,7 @@ class TestHueMapping:
 
         p = VectorPlotter(data=wide_df)
         m = HueMapping(p)
-        assert m.levels == wide_df.columns.tolist()
+        assert m.levels == wide_df.columns.to_list()
         assert m.map_type == "categorical"
         assert m.cmap is None
 
@@ -190,7 +208,7 @@ class TestHueMapping:
         # Test excplicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", hue="a_cat"))
         m = HueMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test numeric data with category type
@@ -429,7 +447,7 @@ class TestSizeMapping:
         # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", size="a_cat"))
         m = SizeMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test sizes list with wrong length
@@ -538,7 +556,7 @@ class TestStyleMapping:
         # Test excplicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", style="a_cat"))
         m = StyleMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
 
         # Test style order with defaults
         order = p.plot_data["style"].unique()[[1, 2, 0]]
@@ -602,8 +620,119 @@ class TestVectorPlotter:
         assert p.variables["x"] == expected_x_name
         assert p.variables["y"] == expected_y_name
 
-    # TODO note that most of the other tests that exercise the core
-    # variable assignment code still live in test_relational
+    def test_long_df(self, long_df, long_variables):
+
+        p = VectorPlotter()
+        p.assign_variables(data=long_df, variables=long_variables)
+        assert p.input_format == "long"
+        assert p.variables == long_variables
+
+        for key, val in long_variables.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+    def test_long_df_with_index(self, long_df, long_variables):
+
+        p = VectorPlotter()
+        p.assign_variables(
+            data=long_df.set_index("a"),
+            variables=long_variables,
+        )
+        assert p.input_format == "long"
+        assert p.variables == long_variables
+
+        for key, val in long_variables.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+    def test_long_df_with_multiindex(self, long_df, long_variables):
+
+        p = VectorPlotter()
+        p.assign_variables(
+            data=long_df.set_index(["a", "x"]),
+            variables=long_variables,
+        )
+        assert p.input_format == "long"
+        assert p.variables == long_variables
+
+        for key, val in long_variables.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+    def test_long_dict(self, long_dict, long_variables):
+
+        p = VectorPlotter()
+        p.assign_variables(
+            data=long_dict,
+            variables=long_variables,
+        )
+        assert p.input_format == "long"
+        assert p.variables == long_variables
+
+        for key, val in long_variables.items():
+            assert_array_equal(p.plot_data[key], pd.Series(long_dict[val]))
+
+    @pytest.mark.parametrize(
+        "vector_type",
+        ["series", "numpy", "list"],
+    )
+    def test_long_vectors(self, long_df, long_variables, vector_type):
+
+        variables = {key: long_df[val] for key, val in long_variables.items()}
+        if vector_type == "numpy":
+            variables = {key: val.to_numpy() for key, val in variables.items()}
+        elif vector_type == "list":
+            variables = {key: val.to_list() for key, val in variables.items()}
+
+        p = VectorPlotter()
+        p.assign_variables(variables=variables)
+        assert p.input_format == "long"
+
+        assert list(p.variables) == list(long_variables)
+        if vector_type == "series":
+            assert p.variables == long_variables
+
+        for key, val in long_variables.items():
+            assert_array_equal(p.plot_data[key], long_df[val])
+
+    def test_long_undefined_variables(self, long_df):
+
+        p = VectorPlotter()
+
+        with pytest.raises(ValueError):
+            p.assign_variables(
+                data=long_df, variables=dict(x="not_in_df"),
+            )
+
+        with pytest.raises(ValueError):
+            p.assign_variables(
+                data=long_df, variables=dict(x="x", y="not_in_df"),
+            )
+
+        with pytest.raises(ValueError):
+            p.assign_variables(
+                data=long_df, variables=dict(x="x", y="y", hue="not_in_df"),
+            )
+
+    @pytest.mark.parametrize(
+        "arg", [[], np.array([]), pd.DataFrame()],
+    )
+    def test_empty_data_input(self, arg):
+
+        p = VectorPlotter()
+        p.assign_variables(data=arg)
+        assert not p.variables
+
+        if not isinstance(arg, pd.DataFrame):
+            p = VectorPlotter()
+            p.assign_variables(variables=dict(x=arg, y=arg))
+            assert not p.variables
+
+    def test_units(self, repeated_df):
+
+        p = VectorPlotter()
+        p.assign_variables(
+            data=repeated_df,
+            variables=dict(x="x", y="y", units="u"),
+        )
+        assert_array_equal(p.plot_data["units"], repeated_df["u"])
 
     @pytest.mark.parametrize("name", [3, 4.5])
     def test_long_numeric_name(self, long_df, name):
@@ -1115,10 +1244,8 @@ class TestCoreFunc:
         assert variable_type(s) == "numeric"
         assert variable_type(s.astype(int)) == "numeric"
         assert variable_type(s.astype(object)) == "numeric"
-        # assert variable_type(s.to_numpy()) == "numeric"
-        assert variable_type(s.values) == "numeric"
-        # assert variable_type(s.to_list()) == "numeric"
-        assert variable_type(s.tolist()) == "numeric"
+        assert variable_type(s.to_numpy()) == "numeric"
+        assert variable_type(s.to_list()) == "numeric"
 
         s = pd.Series([1, 2, 3, np.nan], dtype=object)
         assert variable_type(s) == "numeric"
@@ -1129,10 +1256,8 @@ class TestCoreFunc:
 
         s = pd.Series(["1", "2", "3"])
         assert variable_type(s) == "categorical"
-        # assert variable_type(s.to_numpy()) == "categorical"
-        assert variable_type(s.values) == "categorical"
-        # assert variable_type(s.to_list()) == "categorical"
-        assert variable_type(s.tolist()) == "categorical"
+        assert variable_type(s.to_numpy()) == "categorical"
+        assert variable_type(s.to_list()) == "categorical"
 
         s = pd.Series([True, False, False])
         assert variable_type(s) == "numeric"
@@ -1144,10 +1269,8 @@ class TestCoreFunc:
         s = pd.Series([pd.Timestamp(1), pd.Timestamp(2)])
         assert variable_type(s) == "datetime"
         assert variable_type(s.astype(object)) == "datetime"
-        # assert variable_type(s.to_numpy()) == "datetime"
-        assert variable_type(s.values) == "datetime"
-        # assert variable_type(s.to_list()) == "datetime"
-        assert variable_type(s.tolist()) == "datetime"
+        assert variable_type(s.to_numpy()) == "datetime"
+        assert variable_type(s.to_list()) == "datetime"
 
     def test_infer_orient(self):
 

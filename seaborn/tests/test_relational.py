@@ -1,6 +1,5 @@
 from itertools import product
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import same_color
@@ -76,11 +75,11 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
-        expected_y = wide_df.values.ravel(order="f")
+        expected_y = wide_df.to_numpy().ravel(order="f")
         assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.repeat(wide_df.columns.values, wide_df.shape[0])
+        expected_hue = np.repeat(wide_df.columns.to_numpy(), wide_df.shape[0])
         assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
@@ -108,12 +107,12 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
-        expected_y = numeric_df.values.ravel(order="f")
+        expected_y = numeric_df.to_numpy().ravel(order="f")
         assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
         expected_hue = np.repeat(
-            numeric_df.columns.values, numeric_df.shape[0]
+            numeric_df.columns.to_numpy(), numeric_df.shape[0]
         )
         assert_array_equal(hue, expected_hue)
 
@@ -419,120 +418,6 @@ class TestRelationalPlotter(Helpers):
         assert p.variables["hue"] is None
         assert p.variables["style"] is None
 
-    def test_long_df(self, long_df, long_semantics):
-
-        p = _RelationalPlotter(data=long_df, variables=long_semantics)
-        assert p.input_format == "long"
-        assert p.variables == long_semantics
-
-        for key, val in long_semantics.items():
-            assert_array_equal(p.plot_data[key], long_df[val])
-
-    def test_long_df_with_index(self, long_df, long_semantics):
-
-        p = _RelationalPlotter(
-            data=long_df.set_index("a"),
-            variables=long_semantics,
-        )
-        assert p.input_format == "long"
-        assert p.variables == long_semantics
-
-        for key, val in long_semantics.items():
-            assert_array_equal(p.plot_data[key], long_df[val])
-
-    def test_long_df_with_multiindex(self, long_df, long_semantics):
-
-        p = _RelationalPlotter(
-            data=long_df.set_index(["a", "x"]),
-            variables=long_semantics,
-        )
-        assert p.input_format == "long"
-        assert p.variables == long_semantics
-
-        for key, val in long_semantics.items():
-            assert_array_equal(p.plot_data[key], long_df[val])
-
-    def test_long_dict(self, long_dict, long_semantics):
-
-        p = _RelationalPlotter(
-            data=long_dict,
-            variables=long_semantics,
-        )
-        assert p.input_format == "long"
-        assert p.variables == long_semantics
-
-        for key, val in long_semantics.items():
-            assert_array_equal(p.plot_data[key], pd.Series(long_dict[val]))
-
-    @pytest.mark.parametrize(
-        "vector_type",
-        ["series", "numpy", "list"],
-    )
-    def test_long_vectors(self, long_df, long_semantics, vector_type):
-
-        variables = {key: long_df[val] for key, val in long_semantics.items()}
-        if vector_type == "numpy":
-            # Requires pandas >= 0.24
-            # {key: val.to_numpy() for key, val in variables.items()}
-            variables = {
-                key: np.asarray(val) for key, val in variables.items()
-            }
-        elif vector_type == "list":
-            # Requires pandas >= 0.24
-            # {key: val.to_list() for key, val in variables.items()}
-            variables = {
-                key: val.tolist() for key, val in variables.items()
-            }
-
-        p = _RelationalPlotter(variables=variables)
-        assert p.input_format == "long"
-
-        assert list(p.variables) == list(long_semantics)
-        if vector_type == "series":
-            assert p.variables == long_semantics
-
-        for key, val in long_semantics.items():
-            assert_array_equal(p.plot_data[key], long_df[val])
-
-    def test_long_undefined_variables(self, long_df):
-
-        p = _RelationalPlotter()
-
-        with pytest.raises(ValueError):
-            p.assign_variables(
-                data=long_df, variables=dict(x="not_in_df"),
-            )
-
-        with pytest.raises(ValueError):
-            p.assign_variables(
-                data=long_df, variables=dict(x="x", y="not_in_df"),
-            )
-
-        with pytest.raises(ValueError):
-            p.assign_variables(
-                data=long_df, variables=dict(x="x", y="y", hue="not_in_df"),
-            )
-
-    @pytest.mark.parametrize(
-        "arg", [[], np.array([]), pd.DataFrame()],
-    )
-    def test_empty_data_input(self, arg):
-
-        p = _RelationalPlotter(data=arg)
-        assert not p.variables
-
-        if not isinstance(arg, pd.DataFrame):
-            p = _RelationalPlotter(variables=dict(x=arg, y=arg))
-            assert not p.variables
-
-    def test_units(self, repeated_df):
-
-        p = _RelationalPlotter(
-            data=repeated_df,
-            variables=dict(x="x", y="y", units="u"),
-        )
-        assert_array_equal(p.plot_data["units"], repeated_df["u"])
-
     def test_relplot_simple(self, long_df):
 
         g = relplot(data=long_df, x="x", y="y", kind="scatter")
@@ -607,7 +492,7 @@ class TestRelationalPlotter(Helpers):
 
         g = relplot(data=wide_df)
         x, y = g.ax.collections[0].get_offsets().T
-        assert_array_equal(y, wide_df.values.T.ravel())
+        assert_array_equal(y, wide_df.to_numpy().T.ravel())
 
     def test_relplot_hues(self, long_df):
 
@@ -925,8 +810,8 @@ class TestLinePlotter(Helpers):
         )
         p.plot(ax, {})
         line, = ax.lines
-        assert_array_equal(line.get_xdata(), long_df.x.values)
-        assert_array_equal(line.get_ydata(), long_df.y.values)
+        assert_array_equal(line.get_xdata(), long_df.x.to_numpy())
+        assert_array_equal(line.get_ydata(), long_df.y.to_numpy())
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -944,8 +829,8 @@ class TestLinePlotter(Helpers):
         p.plot(ax, {})
         line, = ax.lines
         sorted_data = long_df.sort_values(["x", "y"])
-        assert_array_equal(line.get_xdata(), sorted_data.x.values)
-        assert_array_equal(line.get_ydata(), sorted_data.y.values)
+        assert_array_equal(line.get_xdata(), sorted_data.x.to_numpy())
+        assert_array_equal(line.get_ydata(), sorted_data.y.to_numpy())
 
         p = _LinePlotter(
             data=long_df,
@@ -1008,8 +893,8 @@ class TestLinePlotter(Helpers):
         p.plot(ax, {})
         line, = ax.lines
         expected_data = long_df.groupby("x").y.mean()
-        assert_array_equal(line.get_xdata(), expected_data.index.values)
-        assert np.allclose(line.get_ydata(), expected_data.values)
+        assert_array_equal(line.get_xdata(), expected_data.index.to_numpy())
+        assert np.allclose(line.get_ydata(), expected_data.to_numpy())
         assert len(ax.collections) == 1
 
         # Test that nans do not propagate to means or CIs
@@ -1255,7 +1140,7 @@ class TestLinePlotter(Helpers):
         lineplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        lineplot(x="x", y=long_df.y.values, data=long_df)
+        lineplot(x="x", y=long_df.y.to_numpy(), data=long_df)
         ax.clear()
 
         lineplot(x="x", y="t", data=long_df)
@@ -1498,7 +1383,7 @@ class TestScatterPlotter(Helpers):
 
         p.plot(ax, {})
         points = ax.collections[0]
-        assert_array_equal(points.get_offsets(), long_df[["x", "y"]].values)
+        assert_array_equal(points.get_offsets(), long_df[["x", "y"]].to_numpy())
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -1717,7 +1602,7 @@ class TestScatterPlotter(Helpers):
         scatterplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        scatterplot(x="x", y=long_df.y.values, data=long_df)
+        scatterplot(x="x", y=long_df.y.to_numpy(), data=long_df)
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", data=long_df)

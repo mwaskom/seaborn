@@ -128,7 +128,7 @@ class TestRugPlot:
 
         vector = long_df[variable]
         vectors = [
-            variable, vector, np.asarray(vector), vector.tolist(),
+            variable, vector, np.asarray(vector), vector.to_list(),
         ]
 
         f, ax = plt.subplots()
@@ -274,7 +274,7 @@ class TestKDEPlotUnivariate:
 
         vector = long_df[variable]
         vectors = [
-            variable, vector, np.asarray(vector), vector.tolist(),
+            variable, vector, vector.to_numpy(), vector.to_list(),
         ]
 
         f, ax = plt.subplots()
@@ -806,10 +806,10 @@ class TestKDEPlotBivariate:
         ax1 = kdeplot(data=long_df, x="x", y="y")
 
         x = long_df["x"]
-        x_values = [x, np.asarray(x), x.tolist()]
+        x_values = [x, x.to_numpy(), x.to_list()]
 
         y = long_df["y"]
-        y_values = [y, np.asarray(y), y.tolist()]
+        y_values = [y, y.to_numpy(), y.to_list()]
 
         for x, y in zip(x_values, y_values):
             f, ax2 = plt.subplots()
@@ -1003,7 +1003,7 @@ class TestHistPlotUnivariate:
 
         vector = long_df[variable]
         vectors = [
-            variable, vector, np.asarray(vector), vector.tolist(),
+            variable, vector, vector.to_numpy(), vector.to_list(),
         ]
 
         f, axs = plt.subplots(3)
@@ -1846,7 +1846,7 @@ class TestECDFPlotUnivariate:
 
         vector = long_df[variable]
         vectors = [
-            variable, vector, np.asarray(vector), vector.tolist(),
+            variable, vector, vector.to_numpy(), vector.to_list(),
         ]
 
         f, ax = plt.subplots()
@@ -2097,7 +2097,7 @@ class TestDisPlot:
     @pytest.mark.parametrize("key", ["col", "row"])
     def test_array_faceting(self, long_df, key):
 
-        a = np.asarray(long_df["a"])  # .to_numpy on pandas 0.24
+        a = long_df["a"].to_numpy()
         vals = categorical_order(a)
         g = displot(long_df, x="x", **{key: a})
         assert len(g.axes.flat) == len(vals)

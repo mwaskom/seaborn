@@ -31,7 +31,7 @@ PYTHON_REQUIRES = ">=3.7"
 
 INSTALL_REQUIRES = [
     'numpy>=1.16',
-    'pandas>=0.23',
+    'pandas>=0.24',
     'matplotlib>=3.0',
 ]
 
