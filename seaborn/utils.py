@@ -613,3 +613,25 @@ def adjust_legend_subtitles(legend):
             for text in text_area.get_children():
                 if font_size is not None:
                     text.set_size(font_size)
+
+
+def _deprecate_ci(errorbar, ci):
+    """
+    Warn on usage of ci= and convert to appropriate errorbar= arg.
+
+    ci was deprecated when errorbar was added in 0.12. It should not be removed
+    completely for some time, but it can be moved out of function definitions
+    (and extracted from kwargs) after one cycle.
+
+    """
+    if ci is not None:
+        if ci == "sd":
+            errorbar = "sd"
+            msg = "use `errorbar='sd'` for same effect."
+        else:
+            errorbar = ("ci", ci)
+            msg = f"use `errorbar=('ci', {ci})` for same effect."
+        msg = f"The `ci` parameter is deprecated; {msg}"
+        warnings.warn(msg, UserWarning)
+
+    return errorbar

@@ -1162,6 +1162,9 @@ class VectorPlotter:
 
     def _log_scaled(self, axis):
         """Return True if specified axis is log scaled on all attached axes."""
+        if not hasattr(self, "ax"):
+            return False
+
         if self.ax is None:
             axes_list = self.facets.axes.flatten()
         else:

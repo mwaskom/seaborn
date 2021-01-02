@@ -200,3 +200,20 @@ def test_bad_seed_old():
 
     with pytest.raises(ValueError):
         algo._handle_random_seed("not_a_random_seed")
+
+
+def test_nanaware_func_auto(random):
+
+    x = np.random.normal(size=10)
+    x[0] = np.nan
+    boots = algo.bootstrap(x, func="mean")
+    assert not np.isnan(boots).any()
+
+
+def test_nanaware_func_warning(random):
+
+    x = np.random.normal(size=10)
+    x[0] = np.nan
+    with pytest.warns(UserWarning, match="Data contain nans but"):
+        boots = algo.bootstrap(x, func="ptp")
+    assert np.isnan(boots).any()

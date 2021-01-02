@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -9,12 +8,11 @@ from ._core import (
     VectorPlotter,
 )
 from .utils import (
-    ci_to_errsize,
     locator_to_legend_entries,
     adjust_legend_subtitles,
-    ci as ci_func
+    _deprecate_ci,
 )
-from .algorithms import bootstrap
+from ._statistics import EstimateAggregator
 from .axisgrid import FacetGrid, _facet_docs
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -144,9 +142,11 @@ estimator : name of pandas method or callable or None
     """,
     ci="""
 ci : int or "sd" or None
-    Size of the confidence interval to draw when aggregating with an
-    estimator. "sd" means to draw the standard deviation of the data.
-    Setting to ``None`` will skip bootstrapping.
+    Size of the confidence interval to draw when aggregating.
+
+    .. deprecated:: 0.12.0
+        Use the new `errorbar` parameter for more flexibility.
+
     """,
     n_boot="""
 n_boot : int
@@ -180,6 +180,7 @@ _param_docs = DocstringComponents.from_nested_components(
     core=_core_docs["params"],
     facets=DocstringComponents(_facet_docs),
     rel=DocstringComponents(_relational_docs),
+    stat=DocstringComponents.from_function_params(EstimateAggregator.__init__),
 )
 
 
@@ -354,10 +355,11 @@ class _LinePlotter(_RelationalPlotter):
         self, *,
         data=None, variables={},
         estimator=None, ci=None, n_boot=None, seed=None,
-        sort=True, err_style=None, err_kws=None, legend=None
+        sort=True, err_style=None, err_kws=None, legend=None,
+        errorbar=None,
     ):
 
-        # TODO this is messy, we want the mapping to be agnoistic about
+        # TODO this is messy, we want the mapping to be agnostic about
         # the kind of plot to draw, but for the time being we need to set
         # this information so the SizeMapping can use it
         self._default_size_range = (
@@ -367,6 +369,7 @@ class _LinePlotter(_RelationalPlotter):
         super().__init__(data=data, variables=variables)
 
         self.estimator = estimator
+        self.errorbar = errorbar
         self.ci = ci
         self.n_boot = n_boot
         self.seed = seed
@@ -375,51 +378,6 @@ class _LinePlotter(_RelationalPlotter):
         self.err_kws = {} if err_kws is None else err_kws
 
         self.legend = legend
-
-    def aggregate(self, vals, grouper, units=None):
-        """Compute an estimate and confidence interval using grouper."""
-        func = self.estimator
-        ci = self.ci
-        n_boot = self.n_boot
-        seed = self.seed
-
-        # Define a "null" CI for when we only have one value
-        null_ci = pd.Series(index=["low", "high"], dtype=float)
-
-        # Function to bootstrap in the context of a pandas group by
-        def bootstrapped_cis(vals):
-
-            if len(vals) <= 1:
-                return null_ci
-
-            boots = bootstrap(vals, func=func, n_boot=n_boot, seed=seed)
-            cis = ci_func(boots, ci)
-            return pd.Series(cis, ["low", "high"])
-
-        # Group and get the aggregation estimate
-        grouped = vals.groupby(grouper, sort=self.sort)
-        est = grouped.agg(func)
-
-        # Exit early if we don't want a confidence interval
-        if ci is None:
-            return est.index, est, None
-
-        # Compute the error bar extents
-        if ci == "sd":
-            sd = grouped.std()
-            cis = pd.DataFrame(np.c_[est - sd, est + sd],
-                               index=est.index,
-                               columns=["low", "high"]).stack()
-        else:
-            cis = grouped.apply(bootstrapped_cis)
-
-        # Unpack the CIs into "wide" format for plotting
-        if cis.notnull().any():
-            cis = cis.unstack().reindex(est.index)
-        else:
-            cis = None
-
-        return est.index, est, cis
 
     def plot(self, ax, kws):
         """Draw the plot onto an axes, passing matplotlib kwargs."""
@@ -466,6 +424,15 @@ class _LinePlotter(_RelationalPlotter):
             linestyle=orig_linestyle,
         ))
 
+        # Initialize the aggregation object
+        agg = EstimateAggregator(
+            self.estimator, self.errorbar, n_boot=self.n_boot, seed=self.seed,
+        )
+
+        # TODO abstract variable to aggregate over here-ish. Better name?
+        agg_var = "y"
+        grouper = ["x"]
+
         # Loop over the semantic subsets and add to the plot
         grouping_vars = "hue", "size", "style"
         for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
@@ -482,23 +449,21 @@ class _LinePlotter(_RelationalPlotter):
             # This is straightforward absent aggregation, but complicated with it.
             sub_data = sub_data.dropna()
 
-            # Due to the original design, code below was written assuming that
-            # sub_data always has x, y, and units columns, which may be empty.
-            # Adding this here to avoid otherwise disruptive changes, but it
-            # could get removed if the rest of the logic is sorted out
-            null = pd.Series(index=sub_data.index, dtype=float)
-
-            x = sub_data.get("x", null)
-            y = sub_data.get("y", null)
-            u = sub_data.get("units", null)
-
             if self.estimator is not None:
                 if "units" in self.variables:
+                    # TODO eventually relax this constraint
                     err = "estimator must be None when specifying units"
                     raise ValueError(err)
-                x, y, y_ci = self.aggregate(y, x, u)
-            else:
-                y_ci = None
+                grouped = sub_data.groupby(grouper, sort=self.sort)
+                # Could pass as_index=False instead of reset_index,
+                # but that fails on a corner case with older pandas.
+                sub_data = grouped.apply(agg, agg_var).reset_index()
+
+            # TODO this is pretty ad hoc ; see GH2409
+            for var in "xy":
+                if self._log_scaled(var):
+                    for col in sub_data.filter(regex=f"^{var}"):
+                        sub_data[col] = np.power(10, sub_data[col])
 
             if "hue" in sub_vars:
                 kws["color"] = self._hue_map(sub_vars["hue"])
@@ -519,39 +484,41 @@ class _LinePlotter(_RelationalPlotter):
 
             # --- Draw the main line
 
-            x, y = np.asarray(x), np.asarray(y)
-
             if "units" in self.variables:
-                for u_i in u.unique():
-                    rows = np.asarray(u == u_i)
-                    ax.plot(x[rows], y[rows], **kws)
+                for _, unit_data in sub_data.groupby("units"):
+                    ax.plot(unit_data["x"], unit_data["y"], **kws)
             else:
-                line, = ax.plot(x, y, **kws)
+                line, = ax.plot(sub_data["x"], sub_data["y"], **kws)
 
             # --- Draw the confidence intervals
 
-            if y_ci is not None:
+            if self.estimator is not None and self.errorbar is not None:
 
-                low, high = np.asarray(y_ci["low"]), np.asarray(y_ci["high"])
+                # TODO handling of orientation will need to happen here
 
                 if self.err_style == "band":
 
-                    ax.fill_between(x, low, high, color=line_color, **err_kws)
+                    ax.fill_between(
+                        sub_data["x"], sub_data["ymin"], sub_data["ymax"],
+                        color=line_color, **err_kws
+                    )
 
                 elif self.err_style == "bars":
 
-                    y_err = ci_to_errsize((low, high), y)
-                    ebars = ax.errorbar(x, y, y_err, linestyle="",
-                                        color=line_color, alpha=line_alpha,
-                                        **err_kws)
+                    error_deltas = (
+                        sub_data["y"] - sub_data["ymin"],
+                        sub_data["ymax"] - sub_data["y"],
+                    )
+                    ebars = ax.errorbar(
+                        sub_data["x"], sub_data["y"], error_deltas,
+                        linestyle="", color=line_color, alpha=line_alpha,
+                        **err_kws
+                    )
 
                     # Set the capstyle properly on the error bars
                     for obj in ebars.get_children():
-                        try:
+                        if isinstance(obj, mpl.collections.LineCollection):
                             obj.set_capstyle(line_capstyle)
-                        except AttributeError:
-                            # Does not exist on mpl < 2.2
-                            pass
 
         # Finalize the axes details
         self._add_axis_labels(ax)
@@ -676,16 +643,22 @@ def lineplot(
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
-    units=None, estimator="mean", ci=95, n_boot=1000, seed=None,
+    units=None, estimator="mean", ci=None, n_boot=1000, seed=None,
     sort=True, err_style="band", err_kws=None,
-    legend="auto", ax=None, **kwargs
+    legend="auto",
+    errorbar=("ci", 95),
+    ax=None, **kwargs
 ):
+
+    # Handle deprecation of ci parameter
+    errorbar = _deprecate_ci(errorbar, ci)
 
     variables = _LinePlotter.get_semantics(locals())
     p = _LinePlotter(
         data=data, variables=variables,
         estimator=estimator, ci=ci, n_boot=n_boot, seed=seed,
         sort=sort, err_style=err_style, err_kws=err_kws, legend=legend,
+        errorbar=errorbar,
     )
 
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
@@ -756,6 +729,7 @@ err_kws : dict of keyword arguments
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
     or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
 {params.rel.legend}
+{params.stat.errorbar}
 {params.core.ax}
 kwargs : key, value mappings
     Other keyword arguments are passed down to

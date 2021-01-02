@@ -11,17 +11,18 @@ def bootstrap(*args, **kwargs):
     axis and pass to a summary function.
 
     Keyword arguments:
-        n_boot : int, default 10000
+        n_boot : int, default=10000
             Number of iterations
-        axis : int, default None
+        axis : int, default=None
             Will pass axis to ``func`` as a keyword argument.
-        units : array, default None
+        units : array, default=None
             Array of sampling unit IDs. When used the bootstrap resamples units
             and then observations within units instead of individual
             datapoints.
-        func : string or callable, default np.mean
-            Function to call on the args that are passed in. If string, tries
-            to use as named method on numpy array.
+        func : string or callable, default="mean"
+            Function to call on the args that are passed in. If string, uses as
+            name of function in the numpy namespace. If nans are present in the
+            data, will try to use nan-aware version of named function.
         seed : Generator | SeedSequence | RandomState | int | None
             Seed for the random number generator; useful if you want
             reproducible resamples.
@@ -39,7 +40,7 @@ def bootstrap(*args, **kwargs):
 
     # Default keyword arguments
     n_boot = kwargs.get("n_boot", 10000)
-    func = kwargs.get("func", np.mean)
+    func = kwargs.get("func", "mean")
     axis = kwargs.get("axis", None)
     units = kwargs.get("units", None)
     random_seed = kwargs.get("random_seed", None)
@@ -60,10 +61,22 @@ def bootstrap(*args, **kwargs):
     if units is not None:
         units = np.asarray(units)
 
-    # Allow for a function that is the name of a method on an array
     if isinstance(func, str):
-        def f(x):
-            return getattr(x, func)()
+
+        # Allow named numpy functions
+        f = getattr(np, func)
+
+        # Try to use nan-aware version of function if necessary
+        missing_data = np.isnan(np.sum(np.column_stack(args)))
+
+        if missing_data and not func.startswith("nan"):
+            nanf = getattr(np, f"nan{func}", None)
+            if nanf is None:
+                msg = f"Data contain nans but no nan-aware version of `{func}` found"
+                warnings.warn(msg, UserWarning)
+            else:
+                f = nanf
+
     else:
         f = func
 

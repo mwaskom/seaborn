@@ -1,5 +1,4 @@
 from itertools import product
-import warnings
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -19,6 +18,8 @@ from ..relational import (
     lineplot,
     scatterplot
 )
+
+from .._testing import assert_plots_equal
 
 
 @pytest.fixture(params=[
@@ -718,85 +719,6 @@ class TestRelationalPlotter(Helpers):
 
 class TestLinePlotter(Helpers):
 
-    def test_aggregate(self, long_df):
-
-        p = _LinePlotter(data=long_df, variables=dict(x="x", y="y"))
-        p.n_boot = 10000
-        p.sort = False
-
-        x = pd.Series(np.tile([1, 2], 100))
-        y = pd.Series(np.random.randn(200))
-        y_mean = y.groupby(x).mean()
-
-        def sem(x):
-            return np.std(x) / np.sqrt(len(x))
-
-        y_sem = y.groupby(x).apply(sem)
-        y_cis = pd.DataFrame(dict(low=y_mean - y_sem,
-                                  high=y_mean + y_sem),
-                             columns=["low", "high"])
-
-        p.ci = 68
-        p.estimator = "mean"
-        index, est, cis = p.aggregate(y, x)
-        assert_array_equal(index.values, x.unique())
-        assert est.index.equals(index)
-        assert est.values == pytest.approx(y_mean.values)
-        assert cis.values == pytest.approx(y_cis.values, 4)
-        assert list(cis.columns) == ["low", "high"]
-
-        p.estimator = np.mean
-        index, est, cis = p.aggregate(y, x)
-        assert_array_equal(index.values, x.unique())
-        assert est.index.equals(index)
-        assert est.values == pytest.approx(y_mean.values)
-        assert cis.values == pytest.approx(y_cis.values, 4)
-        assert list(cis.columns) == ["low", "high"]
-
-        p.seed = 0
-        _, _, ci1 = p.aggregate(y, x)
-        _, _, ci2 = p.aggregate(y, x)
-        assert_array_equal(ci1, ci2)
-
-        y_std = y.groupby(x).std()
-        y_cis = pd.DataFrame(dict(low=y_mean - y_std,
-                                  high=y_mean + y_std),
-                             columns=["low", "high"])
-
-        p.ci = "sd"
-        index, est, cis = p.aggregate(y, x)
-        assert_array_equal(index.values, x.unique())
-        assert est.index.equals(index)
-        assert est.values == pytest.approx(y_mean.values)
-        assert cis.values == pytest.approx(y_cis.values)
-        assert list(cis.columns) == ["low", "high"]
-
-        p.ci = None
-        index, est, cis = p.aggregate(y, x)
-        assert cis is None
-
-        p.ci = 68
-        x, y = pd.Series([1, 2, 3]), pd.Series([4, 3, 2])
-        index, est, cis = p.aggregate(y, x)
-        assert_array_equal(index.values, x)
-        assert_array_equal(est.values, y)
-        assert cis is None
-
-        x, y = pd.Series([1, 1, 2]), pd.Series([2, 3, 4])
-        index, est, cis = p.aggregate(y, x)
-        assert cis.loc[2].isnull().all()
-
-        p = _LinePlotter(data=long_df, variables=dict(x="x", y="y"))
-        p.estimator = "mean"
-        p.n_boot = 100
-        p.ci = 95
-        x = pd.Categorical(["a", "b", "a", "b"], ["a", "b", "c"])
-        y = pd.Series([1, 1, 2, 2])
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", RuntimeWarning)
-            index, est, cis = p.aggregate(y, x)
-            assert cis.loc[["c"]].isnull().all().all()
-
     def test_legend_data(self, long_df):
 
         f, ax = plt.subplots()
@@ -1079,7 +1001,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y"),
-            estimator="mean", err_style="band", ci="sd", sort=True
+            estimator="mean", err_style="band", errorbar="sd", sort=True
         )
 
         ax.clear()
@@ -1097,7 +1019,7 @@ class TestLinePlotter(Helpers):
                 x=[1, 1, 1, 2, 2, 2, 3, 3, 3],
                 y=[1, 2, 3, 3, np.nan, 5, 4, 5, 6],
             ),
-            estimator="mean", err_style="band", ci=95, n_boot=100, sort=True,
+            estimator="mean", err_style="band", errorbar="ci", n_boot=100, sort=True,
         )
         ax.clear()
         p.plot(ax, {})
@@ -1110,7 +1032,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
-            estimator="mean", err_style="band", ci="sd"
+            estimator="mean", err_style="band", errorbar="sd"
         )
 
         ax.clear()
@@ -1122,7 +1044,7 @@ class TestLinePlotter(Helpers):
         p = _LinePlotter(
             data=long_df,
             variables=dict(x="x", y="y", hue="a"),
-            estimator="mean", err_style="bars", ci="sd"
+            estimator="mean", err_style="bars", errorbar="sd"
         )
 
         ax.clear()
@@ -1199,6 +1121,34 @@ class TestLinePlotter(Helpers):
         )
         ax.clear()
         p.plot(ax, {})
+
+    def test_log_scale(self):
+
+        f, ax = plt.subplots()
+        ax.set_xscale("log")
+
+        x = [1, 10, 100]
+        y = [1, 2, 3]
+
+        lineplot(x=x, y=y)
+        line = ax.lines[0]
+        assert_array_equal(line.get_xdata(), x)
+        assert_array_equal(line.get_ydata(), y)
+
+        f, ax = plt.subplots()
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        x = [1, 1, 2, 2]
+        y = [1, 10, 1, 100]
+
+        lineplot(x=x, y=y, err_style="bars", errorbar=("pi", 100))
+        line = ax.lines[0]
+        assert line.get_ydata()[1] == 10
+
+        ebars = ax.collections[0].get_segments()
+        assert_array_equal(ebars[0][:, 1], y[:2])
+        assert_array_equal(ebars[1][:, 1], y[2:])
 
     def test_axis_labels(self, long_df):
 
@@ -1346,6 +1296,20 @@ class TestLinePlotter(Helpers):
 
         lineplot(x="x", y="y", hue="f", size="s", data=object_df)
         ax.clear()
+
+    def test_ci_deprecation(self, long_df):
+
+        axs = plt.figure().subplots(2)
+        lineplot(data=long_df, x="x", y="y", errorbar=("ci", 95), seed=0, ax=axs[0])
+        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+            lineplot(data=long_df, x="x", y="y", ci=95, seed=0, ax=axs[1])
+        assert_plots_equal(*axs)
+
+        axs = plt.figure().subplots(2)
+        lineplot(data=long_df, x="x", y="y", errorbar="sd", ax=axs[0])
+        with pytest.warns(UserWarning, match="The `ci` parameter is deprecated"):
+            lineplot(data=long_df, x="x", y="y", ci="sd", ax=axs[1])
+        assert_plots_equal(*axs)
 
 
 class TestScatterPlotter(Helpers):
