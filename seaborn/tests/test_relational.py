@@ -75,11 +75,11 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
-        expected_y = wide_df.values.ravel(order="f")
+        expected_y = wide_df.to_numpy().ravel(order="f")
         assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
-        expected_hue = np.repeat(wide_df.columns.values, wide_df.shape[0])
+        expected_hue = np.repeat(wide_df.columns.to_numpy(), wide_df.shape[0])
         assert_array_equal(hue, expected_hue)
 
         style = p.plot_data["style"]
@@ -107,12 +107,12 @@ class TestRelationalPlotter(Helpers):
         assert_array_equal(x, expected_x)
 
         y = p.plot_data["y"]
-        expected_y = numeric_df.values.ravel(order="f")
+        expected_y = numeric_df.to_numpy().ravel(order="f")
         assert_array_equal(y, expected_y)
 
         hue = p.plot_data["hue"]
         expected_hue = np.repeat(
-            numeric_df.columns.values, numeric_df.shape[0]
+            numeric_df.columns.to_numpy(), numeric_df.shape[0]
         )
         assert_array_equal(hue, expected_hue)
 
@@ -492,7 +492,7 @@ class TestRelationalPlotter(Helpers):
 
         g = relplot(data=wide_df)
         x, y = g.ax.collections[0].get_offsets().T
-        assert_array_equal(y, wide_df.values.T.ravel())
+        assert_array_equal(y, wide_df.to_numpy().T.ravel())
 
     def test_relplot_hues(self, long_df):
 
@@ -810,8 +810,8 @@ class TestLinePlotter(Helpers):
         )
         p.plot(ax, {})
         line, = ax.lines
-        assert_array_equal(line.get_xdata(), long_df.x.values)
-        assert_array_equal(line.get_ydata(), long_df.y.values)
+        assert_array_equal(line.get_xdata(), long_df.x.to_numpy())
+        assert_array_equal(line.get_ydata(), long_df.y.to_numpy())
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -829,8 +829,8 @@ class TestLinePlotter(Helpers):
         p.plot(ax, {})
         line, = ax.lines
         sorted_data = long_df.sort_values(["x", "y"])
-        assert_array_equal(line.get_xdata(), sorted_data.x.values)
-        assert_array_equal(line.get_ydata(), sorted_data.y.values)
+        assert_array_equal(line.get_xdata(), sorted_data.x.to_numpy())
+        assert_array_equal(line.get_ydata(), sorted_data.y.to_numpy())
 
         p = _LinePlotter(
             data=long_df,
@@ -893,8 +893,8 @@ class TestLinePlotter(Helpers):
         p.plot(ax, {})
         line, = ax.lines
         expected_data = long_df.groupby("x").y.mean()
-        assert_array_equal(line.get_xdata(), expected_data.index.values)
-        assert np.allclose(line.get_ydata(), expected_data.values)
+        assert_array_equal(line.get_xdata(), expected_data.index.to_numpy())
+        assert np.allclose(line.get_ydata(), expected_data.to_numpy())
         assert len(ax.collections) == 1
 
         # Test that nans do not propagate to means or CIs
@@ -1140,7 +1140,7 @@ class TestLinePlotter(Helpers):
         lineplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        lineplot(x="x", y=long_df.y.values, data=long_df)
+        lineplot(x="x", y=long_df.y.to_numpy(), data=long_df)
         ax.clear()
 
         lineplot(x="x", y="t", data=long_df)
@@ -1383,7 +1383,7 @@ class TestScatterPlotter(Helpers):
 
         p.plot(ax, {})
         points = ax.collections[0]
-        assert_array_equal(points.get_offsets(), long_df[["x", "y"]].values)
+        assert_array_equal(points.get_offsets(), long_df[["x", "y"]].to_numpy())
 
         ax.clear()
         p.plot(ax, {"color": "k", "label": "test"})
@@ -1602,7 +1602,7 @@ class TestScatterPlotter(Helpers):
         scatterplot(x=long_df.x, y="y", data=long_df)
         ax.clear()
 
-        scatterplot(x="x", y=long_df.y.values, data=long_df)
+        scatterplot(x="x", y=long_df.y.to_numpy(), data=long_df)
         ax.clear()
 
         scatterplot(x="x", y="y", hue="a", data=long_df)
