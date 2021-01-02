@@ -111,7 +111,7 @@ class TestHueMapping:
 
         p = VectorPlotter(data=wide_df)
         m = HueMapping(p)
-        assert m.levels == wide_df.columns.tolist()
+        assert m.levels == wide_df.columns.to_list()
         assert m.map_type == "categorical"
         assert m.cmap is None
 
@@ -208,7 +208,7 @@ class TestHueMapping:
         # Test excplicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", hue="a_cat"))
         m = HueMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test numeric data with category type
@@ -447,7 +447,7 @@ class TestSizeMapping:
         # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", size="a_cat"))
         m = SizeMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
         assert m.map_type == "categorical"
 
         # Test sizes list with wrong length
@@ -556,7 +556,7 @@ class TestStyleMapping:
         # Test excplicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", style="a_cat"))
         m = StyleMapping(p)
-        assert m.levels == long_df["a_cat"].cat.categories.tolist()
+        assert m.levels == long_df["a_cat"].cat.categories.to_list()
 
         # Test style order with defaults
         order = p.plot_data["style"].unique()[[1, 2, 0]]
@@ -677,17 +677,9 @@ class TestVectorPlotter:
 
         variables = {key: long_df[val] for key, val in long_variables.items()}
         if vector_type == "numpy":
-            # Requires pandas >= 0.24
-            # {key: val.to_numpy() for key, val in variables.items()}
-            variables = {
-                key: np.asarray(val) for key, val in variables.items()
-            }
+            variables = {key: val.to_numpy() for key, val in variables.items()}
         elif vector_type == "list":
-            # Requires pandas >= 0.24
-            # {key: val.to_list() for key, val in variables.items()}
-            variables = {
-                key: val.tolist() for key, val in variables.items()
-            }
+            variables = {key: val.to_list() for key, val in variables.items()}
 
         p = VectorPlotter()
         p.assign_variables(variables=variables)
@@ -1255,7 +1247,7 @@ class TestCoreFunc:
         # assert variable_type(s.to_numpy()) == "numeric"
         assert variable_type(s.values) == "numeric"
         # assert variable_type(s.to_list()) == "numeric"
-        assert variable_type(s.tolist()) == "numeric"
+        assert variable_type(s.to_list()) == "numeric"
 
         s = pd.Series([1, 2, 3, np.nan], dtype=object)
         assert variable_type(s) == "numeric"
@@ -1269,7 +1261,7 @@ class TestCoreFunc:
         # assert variable_type(s.to_numpy()) == "categorical"
         assert variable_type(s.values) == "categorical"
         # assert variable_type(s.to_list()) == "categorical"
-        assert variable_type(s.tolist()) == "categorical"
+        assert variable_type(s.to_list()) == "categorical"
 
         s = pd.Series([True, False, False])
         assert variable_type(s) == "numeric"
@@ -1284,7 +1276,7 @@ class TestCoreFunc:
         # assert variable_type(s.to_numpy()) == "datetime"
         assert variable_type(s.values) == "datetime"
         # assert variable_type(s.to_list()) == "datetime"
-        assert variable_type(s.tolist()) == "datetime"
+        assert variable_type(s.to_list()) == "datetime"
 
     def test_infer_orient(self):
 
