@@ -43,7 +43,7 @@ class SemanticMapping:
 
         # TODO Putting this here so we can continue to use a lot of the
         # logic that's built into the library, but the idea of this class
-        # is to move towards semantic mappings that are agnositic about the
+        # is to move towards semantic mappings that are agnostic about the
         # kind of plot they're going to be used to draw.
         # Fully achieving that is going to take some thinking.
         self.plotter = plotter
@@ -939,6 +939,7 @@ class VectorPlotter:
 
     def iter_data(
         self, grouping_vars=None, reverse=False, from_comp_data=False,
+        allow_empty=False,
     ):
         """Generator for getting subsets of data defined by semantic variables.
 
@@ -948,10 +949,13 @@ class VectorPlotter:
         ----------
         grouping_vars : string or list of strings
             Semantic variables that define the subsets of data.
-        reverse : bool, optional
+        reverse : bool
             If True, reverse the order of iteration.
-        from_comp_data : bool, optional
+        from_comp_data : bool
             If True, use self.comp_data rather than self.plot_data
+        allow_empty : bool
+            If True, yield an empty dataframe when no observations exist for
+            combinations of grouping variables.
 
         Yields
         ------
@@ -1008,7 +1012,14 @@ class VectorPlotter:
                 try:
                     data_subset = grouped_data.get_group(pd_key)
                 except KeyError:
-                    continue
+                    if allow_empty:
+                        # XXX we are adding this to allow backwards compatability
+                        # with the empty artists that old categorical plots would
+                        # add (before 0.12), which we may decide to break, in which
+                        # case this option could be removed
+                        data_subset = pd.DataFrame(columns=data.columns)
+                    else:
+                        continue
 
                 sub_vars = dict(zip(grouping_vars, key))
 

@@ -18,6 +18,7 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
+from ._core import VectorPlotter
 from ._core import variable_type, infer_orient, categorical_order
 from . import utils
 from .utils import remove_na, _normal_quantile_func
@@ -33,6 +34,229 @@ __all__ = [
     "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
 ]
+
+
+class _CategoricalPlotterNew(VectorPlotter):
+
+    semantics = "x", "y", "hue", "units"
+
+    wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
+    flat_structure = {"x": "@index", "y": "@values"}
+
+    def __init__(
+        self,
+        data=None,
+        variables={},
+        order=None,
+        orient=None,
+        require_numeric=False,
+    ):
+
+        super().__init__(data=data, variables=variables)
+
+        # XXX 2021 refactor notes:
+        # We have a newer way of enforcing variable types
+        # (allowed_types= in self._attach)
+        # and we can also now do aggregation over datetime values.
+        # So we probably revisit that and move away from require_numeric
+        # in the `infer_orient` function.
+
+        self.orient = infer_orient(
+            x=self.plot_data.get("x", None),
+            y=self.plot_data.get("y", None),
+            orient=orient,
+            require_numeric=require_numeric,
+        )
+
+        # XXX we need to handle univariate plots. Is this the best way?
+        unspecified_cat_var = {"x", "y"} - set(self.variables)
+        if self.has_xy_data and unspecified_cat_var:
+            var = unspecified_cat_var.pop()
+            self.variables[var] = None
+            self.var_types[var] = "categorical"
+            self.plot_data[var] = ""
+
+        cat_data = self.plot_data[self.cat_axis]
+
+        # XXX Get the initial categorical order, which we do before string
+        # conversion because we want to respect the numeric ordering rule.
+        order = categorical_order(cat_data, order)
+
+        # XXX XXX TODO
+        # This is failing on dates because categorical_order calls
+        # Series.unique which returns a numpy array and numpy datetime objects
+        # convert to string differently from pandas ones. Perhaps the best way
+        # to deal with that is to augment categorical_order with special date
+        # handling?
+
+        # XXX Then convert data to strings. This is because in matplotlib,
+        # "categorical" data really mean "string" data. We want a more general
+        # approach for "fixed width" positioning, which will likely require
+        # writing our own unit converters and registering them with mpl.
+        # UPDATE: thinking more, maybe this is a good solution. And then we
+        # can expose an option for non-fixed-width (needs a name) positioning
+        # that just skips the string conversion. But, like will be some issues.
+        # XXX should we try to auto-format dates to a nice representation,
+        # and perhaps expose a formatter object to do it?
+        cat_data = cat_data.astype(str)
+        order = list(map(str, order))
+
+        # XXX here we are inserting the levels of the categorical variable
+        # into the var_levels object so that it can be used in iter_data.
+        # This is necessary because originally the categorical plots (often)
+        # drew separate artists for each level of the categorical variable.
+        # It makes things complicated and we probably want to break it.
+        # But is that just kicking the complications down the road?
+        # Note: levels is numeric because we iterate over comp_data
+        self.var_levels[self.cat_axis] = [i for i, _ in enumerate(order)]
+
+        # XXX Force the "categorical" variable to be categorical according to
+        # our internal var_types metadata
+        self.var_types[self.cat_axis] = "categorical"
+
+        # XXX ensure that order takes effect by setting a categorical dtype
+        # This will mean that _attach will use the order to update the
+        # matplotlib units converter without passing order into it.
+        # I don't think this is the best approach see above.
+        if cat_data.dtype.name != "category":
+            cat_data = cat_data.astype("category")
+
+        # XXX Now set the category order
+        # Watch out for category information (if data come in as a categorical)
+        # overriding a given order list, which isn't what the logic of
+        # categorical_order says should happen, but does because _attach doesn't
+        # get the order argument. This *should* resolve that problem.
+        if cat_data.cat.categories.to_list() != order:
+            cat_data = cat_data.cat.set_categories(order, ordered=True)
+
+        self.plot_data[self.cat_axis] = cat_data
+
+        # XXX Need to decide if this is something that should hang around on the plotter
+        # adding it now so that function bodies can make use of possibly type-converted
+        # order list.
+        self.order = order
+
+    @property
+    def cat_axis(self):
+        return {"v": "x", "h": "y"}[self.orient]
+
+    def _get_gray(self, color="C0"):
+
+        # XXX 2021 refactor notes
+        # Originally the code had a default "gray" that scaled for good contrast
+        # with the palette. Is this a good idea? We should reconsider it...
+        if "hue" in self.variables:
+            rgb_colors = list(self._hue_map.lookup_table.values())
+        else:
+            rgb_colors = [mpl.colors.to_rgb(color)]
+
+        light_vals = [colorsys.rgb_to_hls(*mpl.colors.to_rgb(c))[1] for c in rgb_colors]
+        lum = min(light_vals) * .6
+        gray = mpl.colors.rgb2hex((lum, lum, lum))
+        return gray
+
+    def _adjust_cat_axis(self, ax):
+        # XXX 2021 refactor -- should we do this in core for all categorical axes?
+        # TODO also give this a better name if we keep it
+        max_tick = self.comp_data[self.cat_axis].max()
+        if self.cat_axis == "x":
+            ax.xaxis.grid(False)
+            ax.set_xlim(-.5, max_tick + .5, auto=None)
+        else:
+            ax.yaxis.grid(False)
+            # Note limits that imply inverted y axis
+            ax.set_ylim(max_tick + .5, -.5, auto=None)
+
+    def plot_strips(
+        self,
+        jitter,
+        dodge,
+        color,
+        plot_kws,
+    ):
+
+        # XXX 2021 refactor notes
+        # note, original categorical plots do not follow the cycle!
+        # They probably should ... but no changes in this first round of refactoring
+        # if self.ax is None:
+        #     default_color = "C0"
+        # else:
+        #     scout = self.ax.scatter([], [], color=color, **plot_kws)
+        #     default_color = scout.get_facecolors()
+        #     scout.remove()
+        default_color = "C0" if color is None else color
+
+        if jitter is True:
+            jlim = 0.1
+        else:
+            jlim = float(jitter)
+        if "hue" in self.variables and dodge:
+            jlim /= len(self._hue_map.levels)
+        jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
+
+        # XXX this is a property on the original class and probably broadly useful
+        if "hue" in self.variables:
+            width = .8  # XXX should not be hardcoded here
+            n_levels = len(self._hue_map.levels)
+            if dodge:
+                each_width = width / n_levels
+                offsets = np.linspace(0, width - each_width, n_levels)
+                offsets -= offsets.mean()
+            else:
+                offsets = np.zeros(n_levels)
+        else:
+            dodge = False
+
+        # XXX 2021 refactor notes:
+        # We could just just adjust x/y and make one big scatterplot,
+        # but the original function drew separate scatters for strip.
+        # A strong candidate for breaking artist representation.
+        iter_vars = [self.cat_axis]
+        if dodge:
+            iter_vars.append("hue")
+
+        # XXX note further that the old plots add empty artists for combinations
+        # of variables that have no observations, but as the iter_data code is written,
+        # that's not possible. We could add an option to force iter_data to return empty
+        # subsets if we decide we do want to match previous behavior exactly
+
+        # XXX Initialize this as otherwise we won't get it when not looping over hue
+        # This exposes a weakness that needs more thinking
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            sub_data = sub_data.dropna()
+
+            if dodge:
+                dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
+            else:
+                dodge_move = 0
+            jitter_move = 0 if not jitter else jitterer(size=len(sub_data))
+
+            sub_data = sub_data.assign(**{
+                self.cat_axis: sub_data[self.cat_axis] + dodge_move + jitter_move
+            })
+
+            if "hue" in self.variables:
+                c = self._hue_map(sub_data["hue"])
+            else:
+                c = mpl.colors.to_hex(default_color)
+
+            ax = self._get_axes(sub_vars)
+            ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
+
+        if "hue" in self.variables and not self._redundant_hue:  # TODO and legend:
+            # XXX 2021 refactor notes
+            # As we know, legends are an ongoing challenge.
+            # I'm duplicating the old approach here, but I don't love it,
+            # and it's not going to scale to a FacetGrid context
+            for level in self._hue_map.levels:
+                color = self._hue_map(level)
+                ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
+            ax.legend(loc="best", title=self.variables["hue"])
 
 
 class _CategoricalPlotter(object):
@@ -2786,8 +3010,100 @@ boxenplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
+#  @_deprecate_positional_args  # XXX disables autoreload
 def stripplot(
+    *,
+    x=None, y=None,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    jitter=True, dodge=False, orient=None, color=None, palette=None,
+    size=5, edgecolor="gray", linewidth=0, ax=None,
+    **kwargs
+):
+
+    # XXX we need to add a legend= param!!!
+
+    p = _CategoricalPlotterNew(  # TODO update name on switchover
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+    )
+
+    # XXX The original categorical functions applied a palette to the
+    # categorical axis by default. We are going to break that and require
+    # an explicit hue mapping, but I would like to try to make all tests
+    # pass on the refactored version first. Hence this business.
+    if "hue" not in p.variables and (color is None or palette is not None):
+        p._redundant_hue = True
+        p.plot_data["hue"] = p.plot_data[p.cat_axis]
+        p.variables["hue"] = p.variables[p.cat_axis]
+        p.var_types["hue"] = "categorical"
+        hue_order = p.order
+
+        # XXX Because we convert the categorical axis variable to string,
+        # we need to update a dictionary palette too
+        if isinstance(palette, dict):
+            palette = {str(k): v for k, v in palette.items()}
+
+    else:
+        p._redundant_hue = False
+
+    # XXX categorical plots had a trick where color= could seed the palette
+    # which I don't think we need to keep backwards compatability for
+    # (now that it's easy to achieve the same thing through palette=)
+    # but let's add this in for now
+    if "hue" in p.variables and palette is None and color is not None:
+        color = mpl.colors.to_hex(color)
+        palette = f"dark:{color}"
+
+    p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
+
+    if ax is None:
+        ax = plt.gca()
+
+    # XXX need to make `order` take effect; currently happens in the constructor
+    # for _CategoricalPlotterNew but possibly could happen in _attach
+    p._attach(ax)
+
+    if not p.has_xy_data:
+        return ax
+
+    # XXX Copying possibly bad default decisions from original code for now
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+
+    # XXX Here especially is tricky. Old code didn't follow the color cycle.
+    # If new code does, then we won't know the default non-mapped color out here.
+    # But also I think in general at logic should move to the outer functions.
+    if edgecolor == "gray":
+        edgecolor = p._get_gray("C0" if color is None else color)
+
+    kwargs.update(dict(
+        s=size ** 2,
+        edgecolor=edgecolor,
+        linewidth=linewidth)
+    )
+
+    p.plot_strips(
+        jitter=jitter,
+        dodge=dodge,
+        color=color,
+        plot_kws=kwargs,
+    )
+
+    # XXX this happens inside a plotting method in the distribution plots
+    # but maybe it's better out here?
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax)
+
+    #  return p  # XXX
+    return ax
+
+
+@_deprecate_positional_args
+def stripplot_old(
     *,
     x=None, y=None,
     hue=None, data=None,
@@ -3812,8 +4128,17 @@ def catplot(
     # so we need to define ``palette`` to get default behavior for the
     # categorical functions
     p.establish_colors(color, palette, 1)
-    if kind != "point" or hue is not None:
-        palette = p.colors
+    if (
+        (kind != "point" or hue is not None)
+        # XXX changing this to temporarily support bad sharex=False behavior where
+        # cat variables could take different colors, which we already warned
+        # about "breaking" (aka fixing) in the future
+        and ((sharex and p.orient == "v") or (sharey and p.orient == "h"))
+    ):
+        if p.hue_names is None:
+            palette = dict(zip(p.group_names, p.colors))
+        else:
+            palette = dict(zip(p.hue_names, p.colors))
 
     # Determine keyword arguments for the facets
     facet_kws = {} if facet_kws is None else facet_kws
