@@ -1228,17 +1228,20 @@ class TestVectorPlotter:
         if NA is None:
             pytest.skip("No pandas.NA available")
 
+        comp_data = [0, 1, np.nan, 2, np.nan, 1]
         if var_type == "numeric":
             orig_data = [0, 1, NA, 2, np.inf, 1]
         elif var_type == "category":
             orig_data = ["a", "b", NA, "c", NA, "b"]
         elif var_type == "datetime":
-            numbers = [0, 1, 2, 1]
+            # Use 1-based numbers to avoid issue on matplotlib<3.2
+            # Could simplify the test a bit when we roll off that version
+            comp_data = [1, 2, np.nan, 3, np.nan, 2]
+            numbers = [1, 2, 3, 2]
+
             orig_data = mpl.dates.num2date(numbers)
             orig_data.insert(2, NA)
             orig_data.insert(4, np.inf)
-
-        comp_data = [0, 1, np.nan, 2, np.nan, 1]
 
         return orig_data, comp_data
 
