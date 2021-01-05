@@ -1048,10 +1048,16 @@ class VectorPlotter:
                     ax = self.ax
                 axis = getattr(ax, f"{var}axis")
 
-                comp_var = axis.convert_units(self.plot_data[var])
+                # Use the converter assigned to the axis to get a float representation
+                # of the data, passing np.nan or pd.NA through (pd.NA becomes np.nan)
+                with pd.option_context('mode.use_inf_as_null', True):
+                    orig = self.plot_data[var].dropna()
+                comp_col = pd.Series(index=orig.index, dtype=float, name=var)
+                comp_col.loc[orig.index] = pd.to_numeric(axis.convert_units(orig))
+
                 if axis.get_scale() == "log":
-                    comp_var = np.log10(comp_var)
-                comp_data.insert(0, var, comp_var)
+                    comp_col = np.log10(comp_col)
+                comp_data.insert(0, var, comp_col)
 
             self._comp_data = comp_data
 
