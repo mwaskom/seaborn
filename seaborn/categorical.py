@@ -82,24 +82,18 @@ class _CategoricalPlotterNew(VectorPlotter):
         # conversion because we want to respect the numeric ordering rule.
         order = categorical_order(cat_data, order)
 
-        # XXX XXX TODO
-        # This is failing on dates because categorical_order calls
-        # Series.unique which returns a numpy array and numpy datetime objects
-        # convert to string differently from pandas ones. Perhaps the best way
-        # to deal with that is to augment categorical_order with special date
-        # handling?
-
         # XXX Then convert data to strings. This is because in matplotlib,
         # "categorical" data really mean "string" data. We want a more general
         # approach for "fixed width" positioning, which will likely require
         # writing our own unit converters and registering them with mpl.
         # UPDATE: thinking more, maybe this is a good solution. And then we
         # can expose an option for non-fixed-width (needs a name) positioning
-        # that just skips the string conversion. But, like will be some issues.
+        # that just skips the string conversion. But, likely will have some issues.
         # XXX should we try to auto-format dates to a nice representation,
-        # and perhaps expose a formatter object to do it?
+        # and perhaps expose a formatter object to do it? We're getting ok-ish
+        # results from the default pandas conversion right now.
         cat_data = cat_data.astype(str)
-        order = list(map(str, order))
+        order = pd.Index(order).astype(str)
 
         # XXX here we are inserting the levels of the categorical variable
         # into the var_levels object so that it can be used in iter_data.
@@ -126,7 +120,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         # overriding a given order list, which isn't what the logic of
         # categorical_order says should happen, but does because _attach doesn't
         # get the order argument. This *should* resolve that problem.
-        if cat_data.cat.categories.to_list() != order:
+        if not cat_data.cat.categories.equals(order):
             cat_data = cat_data.cat.set_categories(order, ordered=True)
 
         self.plot_data[self.cat_axis] = cat_data
@@ -134,7 +128,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         # XXX Need to decide if this is something that should hang around on the plotter
         # adding it now so that function bodies can make use of possibly type-converted
         # order list.
-        self.order = order
+        self.order = order.to_list()
 
     @property
     def cat_axis(self):
