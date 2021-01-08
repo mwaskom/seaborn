@@ -228,6 +228,8 @@ class _CategoricalPlotterNew(VectorPlotter):
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
             else:
                 dodge_move = 0
+
+            # TODO should jitter_move be 0 if len(sub_data) == 1?
             jitter_move = 0 if not jitter else jitterer(size=len(sub_data))
 
             sub_data = sub_data.assign(**{
