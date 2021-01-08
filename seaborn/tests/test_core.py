@@ -1327,9 +1327,13 @@ class TestCoreFunc:
 
         nums = pd.Series(np.arange(6))
         cats = pd.Series(["a", "b"] * 3)
+        dates = pd.date_range("1999-09-22", "2006-05-14", 6)
 
         assert infer_orient(cats, nums) == "v"
         assert infer_orient(nums, cats) == "h"
+
+        assert infer_orient(cats, dates, require_numeric=False) == "v"
+        assert infer_orient(dates, cats, require_numeric=False) == "h"
 
         assert infer_orient(nums, None) == "h"
         with pytest.warns(UserWarning, match="Vertical .+ `x`"):
