@@ -16,8 +16,13 @@ except ImportError:
 
 from . import cm
 from .axisgrid import Grid
-from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
-                    to_utf8)
+from .utils import (
+    despine,
+    axis_ticklabels_overlap,
+    relative_luminance,
+    to_utf8,
+    _draw_figure,
+)
 from ._decorators import _deprecate_positional_args
 
 
@@ -332,9 +337,7 @@ class _HeatMapper:
         ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
 
         # Possibly rotate them if they overlap
-        # ax.figure.canvas.draw()
-        if hasattr(ax.figure.canvas, "get_renderer"):
-            ax.figure.draw(ax.figure.canvas.get_renderer())
+        _draw_figure(ax.figure)
 
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
@@ -725,9 +728,7 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        # ax.figure.canvas.draw()
-        if hasattr(ax.figure.canvas, "get_renderer"):
-            ax.figure.draw(ax.figure.canvas.get_renderer())
+        _draw_figure(ax.figure)
 
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")

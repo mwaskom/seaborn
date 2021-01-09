@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from ._core import VectorPlotter, variable_type, categorical_order
 from . import utils
-from .utils import _check_argument, adjust_legend_subtitles
+from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
 from .palettes import color_palette, blend_palette
 from ._decorators import _deprecate_positional_args
 from ._docstrings import (
@@ -131,10 +131,7 @@ class Grid:
                 adjust_legend_subtitles(figlegend)
 
             # Draw the plot to set the bounding boxes correctly
-            # self.fig.canvas.draw()
-            if hasattr(self.fig.canvas, "get_renderer"):
-                self.fig.draw(self.fig.canvas.get_renderer())
-
+            _draw_figure(self.fig)
 
             # Calculate and set the new width of the figure so the legend fits
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
@@ -142,9 +139,7 @@ class Grid:
             self.fig.set_size_inches(fig_width + legend_width, fig_height)
 
             # Draw the plot again to get the new transformations
-            # self.fig.canvas.draw()
-            if hasattr(self.fig.canvas, "get_renderer"):
-                self.fig.draw(self.fig.canvas.get_renderer())
+            _draw_figure(self.fig)
 
             # Now calculate how much space we need on the right side
             legend_width = figlegend.get_window_extent().width / self.fig.dpi
