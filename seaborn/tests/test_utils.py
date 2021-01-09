@@ -26,7 +26,8 @@ from ..utils import (
     get_color_cycle,
     remove_na,
     load_dataset,
-    _assign_default_kwargs
+    _assign_default_kwargs,
+    _draw_figure,
 )
 
 
@@ -504,3 +505,13 @@ def test_assign_default_kwargs():
 
     kws = _assign_default_kwargs(kws, f, g)
     assert kws == {"c": 3, "d": 2}
+
+
+def test_draw_figure():
+
+    f, ax = plt.subplots()
+    ax.plot(["a", "b", "c"], [1, 2, 3])
+    _draw_figure(f)
+    assert not f.stale
+    # ticklabels are not populated until a draw, but this may change
+    assert ax.get_xticklabels()[0].get_text() == "a"

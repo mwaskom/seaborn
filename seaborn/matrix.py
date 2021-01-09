@@ -11,8 +11,13 @@ from scipy.cluster import hierarchy
 
 from . import cm
 from .axisgrid import Grid
-from .utils import (despine, axis_ticklabels_overlap, relative_luminance,
-                    to_utf8)
+from .utils import (
+    despine,
+    axis_ticklabels_overlap,
+    relative_luminance,
+    to_utf8,
+    _draw_figure,
+)
 from ._decorators import _deprecate_positional_args
 
 
@@ -328,8 +333,8 @@ class _HeatMapper:
         plt.setp(ytl, va="center")  # GH2484
 
         # Possibly rotate them if they overlap
-        if hasattr(ax.figure.canvas, "get_renderer"):
-            ax.figure.draw(ax.figure.canvas.get_renderer())
+        _draw_figure(ax.figure)
+
         if axis_ticklabels_overlap(xtl):
             plt.setp(xtl, rotation="vertical")
         if axis_ticklabels_overlap(ytl):
@@ -719,8 +724,8 @@ class _DendrogramPlotter(object):
         ytl = ax.set_yticklabels(self.yticklabels, rotation='vertical')
 
         # Force a draw of the plot to avoid matplotlib window error
-        if hasattr(ax.figure.canvas, "get_renderer"):
-            ax.figure.draw(ax.figure.canvas.get_renderer())
+        _draw_figure(ax.figure)
+
         if len(ytl) > 0 and axis_ticklabels_overlap(ytl):
             plt.setp(ytl, rotation="horizontal")
         if len(xtl) > 0 and axis_ticklabels_overlap(xtl):
