@@ -2277,8 +2277,8 @@ boxplot.__doc__ = dedent("""\
     {linewidth}
     whis : float, optional
         Maximum length of the plot whiskers as proportion of the
-        interquartile range. Whiskers extend to the furthest datum within
-        that length. Points further out will be identified as outliers.
+        interquartile range. Whiskers extend to the furthest datapoint
+        within that range. More extreme points are marked as outliers.
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
