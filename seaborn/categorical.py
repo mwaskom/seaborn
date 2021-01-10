@@ -2276,9 +2276,9 @@ boxplot.__doc__ = dedent("""\
         Size of the markers used to indicate outlier observations.
     {linewidth}
     whis : float, optional
-        Proportion of the IQR past the low and high quartiles to extend the
-        plot whiskers. Points outside this range will be identified as
-        outliers.
+        Maximum length of the plot whiskers as proportion of the
+        interquartile range. Whiskers extend to the furthest datum within
+        that length. Points further out will be identified as outliers.
     {ax_in}
     kwargs : key, value mappings
         Other keyword arguments are passed through to
