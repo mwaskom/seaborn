@@ -8,10 +8,19 @@ import pytest
 from pytest import approx
 import numpy.testing as npt
 from distutils.version import LooseVersion
+from numpy.testing import (
+    assert_array_equal,
+    assert_array_almost_equal,
+)
 
 from .. import categorical as cat
 from .. import palettes
-from ..utils import _normal_quantile_func
+
+from .._core import categorical_order
+from ..categorical import (
+    stripplot,
+)
+from ..utils import _normal_quantile_func, _draw_figure
 
 
 class CategoricalFixture:
@@ -1564,105 +1573,128 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
 
 class TestStripPlotter(CategoricalFixture):
 
-    def test_stripplot_vertical(self):
+    @pytest.mark.parametrize(
+        "variables,orient",
+        [
+            # Order matters for assigning to x/y
+            ({"cat": "a", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "a", "hue": None}, None),
+            ({"cat": "a", "val": "y", "hue": "a"}, None),
+            ({"val": "y", "cat": "a", "hue": "a"}, None),
+            ({"cat": "a", "val": "y", "hue": "b"}, None),
+            ({"val": "y", "cat": "a", "hue": "x"}, None),
+            ({"cat": "s", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "s", "hue": None}, "h"),
+            ({"cat": "a", "val": "t", "hue": None}, None),
+            ({"val": "t", "cat": "a", "hue": None}, None),
+            ({"cat": "d", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "d", "hue": None}, None),
+        ],
+    )
+    def test_stripplot_positions_undodged(self, long_df, variables, orient):
 
-        pal = palettes.color_palette()
+        cat_var = variables["cat"]
+        val_var = variables["val"]
+        hue_var = variables["hue"]
+        var_names = list(variables.values())
+        x_var, y_var, *_ = var_names
 
-        ax = cat.stripplot(x="g", y="y", jitter=False, data=self.df)
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+        ax = stripplot(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient, jitter=False,
+        )
 
-            x, y = ax.collections[i].get_offsets().T
+        _draw_figure(ax.figure)
+        cat_axis = [ax.xaxis, ax.yaxis][var_names.index(cat_var)]
 
-            npt.assert_array_equal(x, np.ones(len(x)) * i)
-            npt.assert_array_equal(y, vals)
+        grouper = long_df[cat_var].astype(str)
+        grouped_vals = long_df[val_var].groupby(grouper, sort=False)
+        for i, (label, vals) in enumerate(grouped_vals):
 
-            npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
+            points = ax.collections[i].get_offsets().T
+            cat_points = points[var_names.index(cat_var)]
+            val_points = points[var_names.index(val_var)]
 
-    def test_stripplot_horiztonal(self):
+            if pd.api.types.is_datetime64_any_dtype(vals):
+                vals = mpl.dates.date2num(vals)
 
-        df = self.df.copy()
-        df.g = df.g.astype("category")
+            assert_array_equal(val_points, vals)
+            assert_array_equal(cat_points, np.full(len(cat_points), i))
 
-        ax = cat.stripplot(x="y", y="g", jitter=False, data=df)
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+            assert cat_axis.get_majorticklabels()[i].get_text() == str(label)
 
-            x, y = ax.collections[i].get_offsets().T
+    @pytest.mark.parametrize(
+        "variables",
+        [
+            # Order matters for assigning to x/y
+            {"cat": "a", "val": "y", "hue": "b"},
+            {"val": "y", "cat": "a", "hue": "c"},
+            {"cat": "a", "val": "y", "hue": "f"},
+        ],
+    )
+    def test_stripplot_positions_dodged(self, long_df, variables):
 
-            npt.assert_array_equal(x, vals)
-            npt.assert_array_equal(y, np.ones(len(x)) * i)
+        cat_var = variables["cat"]
+        val_var = variables["val"]
+        hue_var = variables["hue"]
+        var_names = list(variables.values())
+        x_var, y_var, *_ = var_names
 
-    def test_stripplot_jitter(self):
+        ax = stripplot(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True, jitter=False,
+        )
 
-        pal = palettes.color_palette()
+        cat_vals = categorical_order(long_df[cat_var])
+        hue_vals = categorical_order(long_df[hue_var])
 
-        ax = cat.stripplot(x="g", y="y", data=self.df, jitter=True)
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+        n_hue = len(hue_vals)
+        offsets = np.linspace(0, .8, n_hue + 1)[:-1]
+        offsets -= offsets.mean()
 
-            x, y = ax.collections[i].get_offsets().T
+        for i, cat_val in enumerate(cat_vals):
+            for j, hue_val in enumerate(hue_vals):
+                rows = (long_df[cat_var] == cat_val) & (long_df[hue_var] == hue_val)
+                vals = long_df.loc[rows, val_var]
 
-            npt.assert_array_less(np.ones(len(x)) * i - .1, x)
-            npt.assert_array_less(x, np.ones(len(x)) * i + .1)
-            npt.assert_array_equal(y, vals)
+                points = ax.collections[n_hue * i + j].get_offsets().T
+                cat_points = points[var_names.index(cat_var)]
+                val_points = points[var_names.index(val_var)]
 
-            npt.assert_equal(ax.collections[i].get_facecolors()[0, :3], pal[i])
+                if pd.api.types.is_datetime64_any_dtype(vals):
+                    vals = mpl.dates.date2num(vals)
 
-    def test_dodge_nested_stripplot_vertical(self):
+                assert_array_equal(val_points, vals)
 
-        pal = palettes.color_palette()
+                expected = np.full(len(cat_points), i + offsets[j])
+                assert_array_almost_equal(cat_points, expected)
 
-        ax = cat.stripplot(x="g", y="y", hue="h", data=self.df,
-                           jitter=False, dodge=True)
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
+    @pytest.mark.parametrize(
+        "orient", ["v", "h"],
+    )
+    def test_stripplot_jitter(self, long_df, orient):
 
-                x, y = ax.collections[i * 2 + j].get_offsets().T
+        cat_var, val_var = "a", "y"
+        if orient == "v":
+            x_var, y_var = cat_var, val_var
+            cat_idx, val_idx = 0, 1
+        else:
+            x_var, y_var = val_var, cat_var
+            cat_idx, val_idx = 1, 0
 
-                npt.assert_array_equal(x, np.ones(len(x)) * i + [-.2, .2][j])
-                npt.assert_array_equal(y, vals)
+        cat_vals = categorical_order(long_df[cat_var])
 
-                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                assert tuple(fc) == pal[j]
+        ax = stripplot(
+            data=long_df, x=x_var, y=y_var, jitter=True,
+        )
 
-    def test_dodge_nested_stripplot_horizontal(self):
+        for i, level in enumerate(cat_vals):
 
-        df = self.df.copy()
-        df.g = df.g.astype("category")
-
-        ax = cat.stripplot(x="y", y="g", hue="h", data=df,
-                           jitter=False, dodge=True)
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
-
-                x, y = ax.collections[i * 2 + j].get_offsets().T
-
-                npt.assert_array_equal(x, vals)
-                npt.assert_array_equal(y, np.ones(len(x)) * i + [-.2, .2][j])
-
-    def test_nested_stripplot_vertical(self):
-
-        # Test a simple vertical strip plot
-        ax = cat.stripplot(x="g", y="y", hue="h", data=self.df,
-                           jitter=False, dodge=False)
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-
-            x, y = ax.collections[i].get_offsets().T
-
-            npt.assert_array_equal(x, np.ones(len(x)) * i)
-            npt.assert_array_equal(y, group_vals)
-
-    def test_nested_stripplot_horizontal(self):
-
-        df = self.df.copy()
-        df.g = df.g.astype("category")
-
-        ax = cat.stripplot(x="y", y="g", hue="h", data=df,
-                           jitter=False, dodge=False)
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-
-            x, y = ax.collections[i].get_offsets().T
-
-            npt.assert_array_equal(x, group_vals)
-            npt.assert_array_equal(y, np.ones(len(x)) * i)
+            vals = long_df.loc[long_df[cat_var] == level, val_var]
+            points = ax.collections[i].get_offsets().T
+            cat_points = points[cat_idx]
+            val_points = points[val_idx]
+            assert_array_equal(val_points, vals)
+            assert np.std(cat_points) > 0
+            assert np.ptp(cat_points) <= .4
 
     def test_three_strip_points(self):
 

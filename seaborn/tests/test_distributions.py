@@ -815,8 +815,8 @@ class TestKDEPlotBivariate:
             f, ax2 = plt.subplots()
             kdeplot(x=x, y=y, ax=ax2)
 
-        for c1, c2 in zip(ax1.collections, ax2.collections):
-            assert_array_equal(c1.get_offsets(), c2.get_offsets())
+            for c1, c2 in zip(ax1.collections, ax2.collections):
+                assert_array_equal(c1.get_offsets(), c2.get_offsets())
 
     def test_singular_data(self):
 
