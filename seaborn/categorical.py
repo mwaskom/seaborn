@@ -68,6 +68,9 @@ class _CategoricalPlotterNew(VectorPlotter):
             require_numeric=require_numeric,
         )
 
+        if not self.has_xy_data:
+            return
+
         # XXX we need to handle univariate plots. Is this the best way?
         unspecified_cat_var = {"x", "y"} - set(self.variables)
         if self.has_xy_data and unspecified_cat_var:
@@ -248,7 +251,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             # XXX 2021 refactor notes
             # As we know, legends are an ongoing challenge.
             # I'm duplicating the old approach here, but I don't love it,
-            # and it's not going to scale to a FacetGrid context
+            # and it doesn't handle numeric hue mapping properly
             for level in self._hue_map.levels:
                 color = self._hue_map(level)
                 ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
@@ -3027,6 +3030,16 @@ def stripplot(
         require_numeric=False,
     )
 
+    if ax is None:
+        ax = plt.gca()
+
+    # XXX need to make `order` take effect; currently happens in the constructor
+    # for _CategoricalPlotterNew but possibly could happen in _attach
+    p._attach(ax)
+
+    if not p.has_xy_data:
+        return ax
+
     # XXX The original categorical functions applied a palette to the
     # categorical axis by default. We are going to break that and require
     # an explicit hue mapping, but I would like to try to make all tests
@@ -3055,16 +3068,6 @@ def stripplot(
         palette = f"dark:{color}"
 
     p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
-
-    if ax is None:
-        ax = plt.gca()
-
-    # XXX need to make `order` take effect; currently happens in the constructor
-    # for _CategoricalPlotterNew but possibly could happen in _attach
-    p._attach(ax)
-
-    if not p.has_xy_data:
-        return ax
 
     # XXX Copying possibly bad default decisions from original code for now
     kwargs.setdefault("zorder", 3)
