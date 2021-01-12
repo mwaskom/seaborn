@@ -18,8 +18,12 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
-from ._core import VectorPlotter
-from ._core import variable_type, infer_orient, categorical_order
+from ._core import (
+    VectorPlotter,
+    variable_type,
+    infer_orient,
+    categorical_order,
+)
 from . import utils
 from .utils import remove_na, _normal_quantile_func
 from .algorithms import bootstrap
