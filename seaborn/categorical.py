@@ -146,6 +146,55 @@ class _CategoricalPlotterNew(VectorPlotter):
         # order list.
         self.order = order.to_list()
 
+    def _hue_backcompat(self, color, palette, hue_order, force_hue):
+        """Implement backwards compatability for hue parametrization.
+
+        Note: the force_hue parameter is used so that functions can be shown to
+        pass existing tests during refactoring and then tested for new behavior.
+        It can be removed after completion of the work.
+
+        """
+        # The original categorical functions applied a palette to the categorical axis
+        # by default. We want to require an explicit hue mapping, to be more consistent
+        # with how things work elsewhere now. I don't think there's any good way to
+        # do this gently -- because it's triggered by the default value of hue=None,
+        # users would always get a warning, unless we introduce some sentinel "default"
+        # argument for this change. That's possible, but asking users to set `hue=None`
+        # on every call is annoying.
+        # We are keeping the logic for implementing the old behavior in with the current
+        # system so that (a) we can punt on that decision and (b) we can ensure that
+        # refactored code passes old tests.
+        default_behavior = color is None or palette is not None
+        if force_hue and "hue" not in self.variables and default_behavior:
+            self._redundant_hue = True
+            self.plot_data["hue"] = self.plot_data[self.cat_axis]
+            self.variables["hue"] = self.variables[self.cat_axis]
+            self.var_types["hue"] = "categorical"
+            hue_order = self.order
+
+            # Because we convert the categorical axis variable to string,
+            # we need to update a dictionary palette too
+            if isinstance(palette, dict):
+                palette = {str(k): v for k, v in palette.items()}
+
+        else:
+            self._redundant_hue = False
+
+        # Previously, categorical plots had a trick where color= could seed the palette.
+        # Because that's an explicit parameterization, we are going to give it one
+        # release cycle with a warning before removing.
+        if "hue" in self.variables and palette is None and color is not None:
+            if not isinstance(color, str):
+                color = mpl.colors.to_hex(color)
+            palette = f"dark:{color}"
+            msg = (
+                "Setting a gradient palette using color= is deprecated and will be "
+                f"removed in version 0.13. Set `palette='{palette}'` for same effect."
+            )
+            warnings.warn(msg, FutureWarning)
+
+        return palette, hue_order
+
     @property
     def cat_axis(self):
         return {"v": "x", "h": "y"}[self.orient]
@@ -3053,33 +3102,7 @@ def stripplot(
     if not p.has_xy_data:
         return ax
 
-    # XXX The original categorical functions applied a palette to the
-    # categorical axis by default. We are going to break that and require
-    # an explicit hue mapping, but I would like to try to make all tests
-    # pass on the refactored version first. Hence this business.
-    if "hue" not in p.variables and (color is None or palette is not None):
-        p._redundant_hue = True
-        p.plot_data["hue"] = p.plot_data[p.cat_axis]
-        p.variables["hue"] = p.variables[p.cat_axis]
-        p.var_types["hue"] = "categorical"
-        hue_order = p.order
-
-        # XXX Because we convert the categorical axis variable to string,
-        # we need to update a dictionary palette too
-        if isinstance(palette, dict):
-            palette = {str(k): v for k, v in palette.items()}
-
-    else:
-        p._redundant_hue = False
-
-    # XXX categorical plots had a trick where color= could seed the palette
-    # which I don't think we need to keep backwards compatability for
-    # (now that it's easy to achieve the same thing through palette=)
-    # but let's add this in for now
-    if "hue" in p.variables and palette is None and color is not None:
-        color = mpl.colors.to_hex(color)
-        palette = f"dark:{color}"
-
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order, force_hue=False)
     p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
 
     # XXX Copying possibly bad default decisions from original code for now

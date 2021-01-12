@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import rgb2hex, to_rgba
+from matplotlib.colors import rgb2hex, to_rgb, to_rgba
 
 import pytest
 from pytest import approx
@@ -1891,6 +1891,21 @@ class TestStripPlot:
         facecolors = ax.collections[0].get_facecolor()
         assert facecolors.shape == (3, 4)
         assert_array_equal(facecolors[0], facecolors[1])
+
+    def test_palette_from_color_deprecation(self, long_df):
+
+        color = "C3"
+
+        hue_var = "a"
+        n_hue = long_df[hue_var].nunique()
+        palette = color_palette(f"dark:{color}", n_hue)
+
+        with pytest.warns(FutureWarning, match="Setting a gradient palette"):
+            ax = stripplot(data=long_df, x="z", hue=hue_var, color=color)
+
+        points = ax.collections[0]
+        for point_color in points.get_facecolors():
+            assert to_rgb(point_color) in palette
 
 
 class TestSwarmPlotter(CategoricalFixture):
