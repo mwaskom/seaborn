@@ -75,6 +75,15 @@ class _CategoricalPlotterNew(VectorPlotter):
         if not self.has_xy_data:
             return
 
+        # XXX For wide data, orient determines assignment to x/y differently
+        # from the wide_structure rules in _core. This is a hack to enforce that
+        # that behavior for now  ... unclear how we could more generally support it.
+        if self.input_format == "wide" and self.orient == "h":
+            self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
+            orig_x = self.variables["x"]
+            orig_y = self.variables["y"]
+            self.variables.update({"x": orig_y, "y": orig_x})
+
         # XXX we need to handle univariate plots. Is this the best way?
         unspecified_cat_var = {"x", "y"} - set(self.variables)
         if self.has_xy_data and unspecified_cat_var:

@@ -1573,7 +1573,63 @@ class TestCategoricalScatterPlotter(CategoricalFixture):
             assert tuple(rgb) == tuple(deep_colors[i])
 
 
-class TestStripPlotter(CategoricalFixture):
+class TestStripPlot:
+
+    @pytest.mark.parametrize(
+        "orient,data_type",
+        itertools.product(["h", "v"], ["dataframe", "dict"]),
+    )
+    def test_wide(self, wide_df, orient, data_type):
+
+        if data_type == "dict":
+            wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
+
+        ax = stripplot(data=wide_df, orient=orient, jitter=False)
+        _draw_figure(ax.figure)
+        palette = color_palette()
+
+        cat_idx = 0 if orient == "v" else 1
+        val_idx = int(not cat_idx)
+
+        axis_objs = ax.xaxis, ax.yaxis
+        cat_axis = axis_objs[cat_idx]
+
+        for i, label in enumerate(cat_axis.get_majorticklabels()):
+            key = label.get_text()
+            points = ax.collections[i]
+            point_pos = points.get_offsets().T
+            val_pos = point_pos[val_idx]
+            cat_pos = point_pos[cat_idx]
+
+            assert (cat_pos == i).all()
+            assert_array_equal(val_pos, wide_df[key])
+
+            for point_color in points.get_facecolors():
+                assert tuple(point_color) == to_rgba(palette[i])
+
+    @pytest.mark.parametrize("orient", ["h", "v"])
+    def test_flat(self, flat_series, orient):
+
+        ax = stripplot(data=flat_series, orient=orient, jitter=False)
+        _draw_figure(ax.figure)
+
+        cat_idx = 0 if orient == "v" else 1
+        val_idx = int(not cat_idx)
+
+        axis_objs = ax.xaxis, ax.yaxis
+        cat_axis = axis_objs[cat_idx]
+
+        for i, label in enumerate(cat_axis.get_majorticklabels()):
+
+            points = ax.collections[i]
+            point_pos = points.get_offsets().T
+            val_pos = point_pos[val_idx]
+            cat_pos = point_pos[cat_idx]
+
+            assert (cat_pos == i).all()
+
+            key = int(label.get_text())  # because fixture has integer index
+            assert_array_equal(val_pos, flat_series[key])
 
     @pytest.mark.parametrize(
         "variables,orient",
@@ -1587,6 +1643,8 @@ class TestStripPlotter(CategoricalFixture):
             ({"val": "y", "cat": "a", "hue": "x"}, None),
             ({"cat": "s", "val": "y", "hue": None}, None),
             ({"val": "y", "cat": "s", "hue": None}, "h"),
+            ({"cat": "a", "val": "b", "hue": None}, None),
+            ({"val": "a", "cat": "b", "hue": None}, "h"),
             ({"cat": "a", "val": "t", "hue": None}, None),
             ({"val": "t", "cat": "a", "hue": None}, None),
             ({"cat": "d", "val": "y", "hue": None}, None),
@@ -1606,7 +1664,12 @@ class TestStripPlotter(CategoricalFixture):
         )
 
         _draw_figure(ax.figure)
-        cat_axis = [ax.xaxis, ax.yaxis][var_names.index(cat_var)]
+        cat_idx = var_names.index(cat_var)
+        val_idx = var_names.index(val_var)
+
+        axis_objs = ax.xaxis, ax.yaxis
+        cat_axis = axis_objs[cat_idx]
+        val_axis = axis_objs[val_idx]
 
         grouper = long_df[cat_var].astype(str)
         grouped_vals = long_df[val_var].groupby(grouper, sort=False)
@@ -1616,10 +1679,7 @@ class TestStripPlotter(CategoricalFixture):
             cat_points = points[var_names.index(cat_var)]
             val_points = points[var_names.index(val_var)]
 
-            if pd.api.types.is_datetime64_any_dtype(vals):
-                vals = mpl.dates.date2num(vals)
-
-            assert_array_equal(val_points, vals)
+            assert_array_equal(val_points, val_axis.convert_units(vals))
             assert_array_equal(cat_points, np.full(len(cat_points), i))
 
             assert cat_axis.get_majorticklabels()[i].get_text() == str(label)
