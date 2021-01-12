@@ -1768,8 +1768,6 @@ class TestStripPlot:
     @pytest.mark.parametrize("color", [None, "C1"])
     def test_color(self, long_df, color):
 
-        pytest.skip("Nonfunctional until hue is made explicit")
-
         ax = stripplot(data=long_df, x="a", y="y", color=color)
 
         expected = to_rgba("C0" if color is None else color)

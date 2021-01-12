@@ -146,7 +146,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         # order list.
         self.order = order.to_list()
 
-    def _hue_backcompat(self, color, palette, hue_order, force_hue):
+    def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
 
         Note: the force_hue parameter is used so that functions can be shown to
@@ -3102,7 +3102,7 @@ def stripplot(
     if not p.has_xy_data:
         return ax
 
-    palette, hue_order = p._hue_backcompat(color, palette, hue_order, force_hue=False)
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
     p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
 
     # XXX Copying possibly bad default decisions from original code for now
