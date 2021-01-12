@@ -22,7 +22,6 @@ from .palettes import (
 from .utils import (
     get_color_cycle,
     remove_na,
-    _check_argument,
 )
 
 
@@ -1376,7 +1375,11 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
         return "h"
 
     elif orient is not None:
-        _check_argument("orient", {"h", "v", None}, orient)
+        err = (
+            "`orient` must start with 'v' or 'h' or be None, "
+            f"but `{repr(orient)}` was passed."
+        )
+        raise ValueError(err)
 
     elif x_type != "categorical" and y_type == "categorical":
         return "h"

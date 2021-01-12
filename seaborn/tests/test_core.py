@@ -1365,6 +1365,9 @@ class TestCoreFunc:
         with pytest.raises(TypeError, match="Neither"):
             infer_orient(cats, cats)
 
+        with pytest.raises(ValueError, match="`orient` must start with"):
+            infer_orient(cats, nums, orient="bad value")
+
     def test_categorical_order(self):
 
         x = ["a", "c", "c", "b", "a", "d"]
