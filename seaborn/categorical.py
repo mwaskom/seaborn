@@ -320,6 +320,11 @@ class _CategoricalPlotterNew(VectorPlotter):
             ax.legend(loc="best", title=self.variables["hue"])
 
 
+class _CategoricalFacetPlotter(_CategoricalPlotterNew):
+
+    semantics = _CategoricalPlotterNew.semantics + ("col", "row")
+
+
 class _CategoricalPlotter(object):
 
     width = .8
@@ -3133,7 +3138,6 @@ def stripplot(
     p._add_axis_labels(ax)
     p._adjust_cat_axis(ax)
 
-    #  return p  # XXX
     return ax
 
 
@@ -4076,7 +4080,7 @@ def factorplot(*args, **kwargs):
     return catplot(*args, **kwargs)
 
 
-@_deprecate_positional_args
+# XXX interfering with autoreload @_deprecate_positional_args
 def catplot(
     *,
     x=None, y=None,
@@ -4105,6 +4109,107 @@ def catplot(
         err = "Plot kind '{}' is not recognized".format(kind)
         raise ValueError(err)
 
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = ("catplot is a figure-level function and does not accept "
+               "target axes. You may wish to try {}".format(kind + "plot"))
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
+
+    if kind == "strip":  # XXX gradually incorporate the refactored functions
+
+        p = _CategoricalFacetPlotter(
+            data=data,
+            variables=_CategoricalFacetPlotter.get_semantics(locals()),
+            order=order,
+            orient=orient,
+            require_numeric=False,
+        )
+
+        # XXX Copying a fair amount from displot, which is not ideal
+
+        # Check for attempt to plot onto specific axes and warn
+        if "ax" in kwargs:
+            msg = (
+                "`catplot` is a figure-level function and does not accept "
+                "the ax= paramter. You may wish to try {}plot.".format(kind)
+            )
+            warnings.warn(msg, UserWarning)
+            kwargs.pop("ax")
+
+        for var in ["row", "col"]:
+            # Handle faceting variables that lack name information
+            if var in p.variables and p.variables[var] is None:
+                p.variables[var] = f"_{var}_"
+
+        # Adapt the plot_data dataframe for use with FacetGrid
+        data = p.plot_data.rename(columns=p.variables)
+        data = data.loc[:, ~data.columns.duplicated()]
+
+        col_name = p.variables.get("col", None)
+        row_name = p.variables.get("row", None)
+
+        if facet_kws is None:
+            facet_kws = {}
+
+        g = FacetGrid(
+            data=data, row=row_name, col=col_name,
+            col_wrap=col_wrap, row_order=row_order,
+            col_order=col_order, height=height,
+            aspect=aspect,
+            **facet_kws,
+        )
+
+        p._attach(g)
+
+        if not p.has_xy_data:
+            return g
+
+        palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+        p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
+
+        if kind == "strip":
+
+            # TODO get these defaults programatically?
+            jitter = kwargs.pop("jitter", True)
+            dodge = kwargs.pop("dodge", False)
+
+            strip_kws = kwargs.copy()
+
+            # XXX Copying possibly bad default decisions from original code for now
+            strip_kws.setdefault("zorder", 3)
+            if "size" in strip_kws:
+                strip_kws["s"] = strip_kws.pop("size")
+
+            if "edgecolor" in strip_kws and strip_kws["edgecolor"] == "gray":
+                strip_kws["edgecolor"] = p._get_gray("C0" if color is None else color)
+
+            p.plot_strips(
+                jitter=jitter,
+                dodge=dodge,
+                color=color,
+                plot_kws=strip_kws,
+            )
+
+        # XXX best way to do this housekeeping?
+        for ax in g.axes.flat:
+            p._adjust_cat_axis(ax)
+
+        g.set_axis_labels(
+            p.variables.get("x", None),
+            p.variables.get("y", None),
+        )
+
+        # XXX Hack to get the legend data in the right place
+        for ax in g.axes.flat:
+            g._update_legend_data(ax)
+            ax.legend_ = None
+
+        if legend and (hue is not None) and (hue not in [x, row, col]):
+            g.add_legend(title=hue, label_order=hue_order)
+
+        return g
+
     # Alias the input variables to determine categorical order and palette
     # correctly in the case of a count plot
     if kind == "count":
@@ -4116,13 +4221,6 @@ def catplot(
             raise ValueError("Either `x` or `y` must be None for kind='count'")
     else:
         x_, y_ = x, y
-
-    # Check for attempt to plot onto specific axes and warn
-    if "ax" in kwargs:
-        msg = ("catplot is a figure-level function and does not accept "
-               "target axes. You may wish to try {}".format(kind + "plot"))
-        warnings.warn(msg, UserWarning)
-        kwargs.pop("ax")
 
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot

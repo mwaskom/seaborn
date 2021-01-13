@@ -19,10 +19,12 @@ from .. import palettes
 
 from .._core import categorical_order
 from ..categorical import (
+    catplot,
     stripplot,
 )
 from ..palettes import color_palette
 from ..utils import _normal_quantile_func, _draw_figure
+from .._testing import assert_plots_equal
 
 
 class CategoricalFixture:
@@ -1904,6 +1906,29 @@ class TestStripPlot:
         points = ax.collections[0]
         for point_color in points.get_facecolors():
             assert to_rgb(point_color) in palette
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="long", x="x", color="C3"),
+            dict(data="long", y="y", hue="a", jitter=False),
+            dict(data="long", x="a", y="y", hue="z"),
+            dict(data="long", x="y", y="s", hue="c", dodge=True),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+
+        ax = stripplot(**kwargs)
+        g = catplot(**kwargs)
+
+        assert_plots_equal(ax, g.ax)
 
 
 class TestSwarmPlotter(CategoricalFixture):
