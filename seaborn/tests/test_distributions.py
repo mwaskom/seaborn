@@ -2040,15 +2040,16 @@ class TestDisPlot:
     )
     def test_with_rug(self, long_df, kwargs):
 
-        ax = rugplot(data=long_df, **kwargs)
+        ax = plt.figure().subplots()
+        histplot(data=long_df, **kwargs, ax=ax)
+        rugplot(data=long_df, **kwargs, ax=ax)
+
         g = displot(long_df, rug=True, **kwargs)
-        g.ax.patches = []
 
         assert_plots_equal(ax, g.ax, labels=False)
 
         long_df["_"] = "_"
         g2 = displot(long_df, col="_", rug=True, **kwargs)
-        g2.ax.patches = []
 
         assert_plots_equal(ax, g2.ax, labels=False)
 

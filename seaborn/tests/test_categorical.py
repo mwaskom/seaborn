@@ -1888,9 +1888,8 @@ class TestStripPlot:
 
         x = np.arange(3)
         ax = stripplot(x=x)
-        facecolors = ax.collections[0].get_facecolor()
-        assert facecolors.shape == (3, 4)
-        assert_array_equal(facecolors[0], facecolors[1])
+        for point_color in ax.collections[0].get_facecolor():
+            assert tuple(point_color) == to_rgba("C0")
 
     def test_palette_from_color_deprecation(self, long_df):
 
@@ -1914,8 +1913,8 @@ class TestStripPlot:
             dict(data="wide", orient="h"),
             dict(data="long", x="x", color="C3"),
             dict(data="long", y="y", hue="a", jitter=False),
-            dict(data="long", x="a", y="y", hue="z"),
-            dict(data="long", x="y", y="s", hue="c", dodge=True),
+            dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
         ]
     )
     def test_vs_catplot(self, long_df, wide_df, kwargs):
@@ -1925,7 +1924,9 @@ class TestStripPlot:
         elif kwargs["data"] == "wide":
             kwargs["data"] = wide_df
 
+        np.random.seed(0)  # for jitter
         ax = stripplot(**kwargs)
+        np.random.seed(0)
         g = catplot(**kwargs)
 
         assert_plots_equal(ax, g.ax)
@@ -2830,12 +2831,16 @@ class TestCatPlot(CategoricalFixture):
 
         # Test unsharing works
         with pytest.warns(UserWarning):
-            g = cat.catplot(x="g", y="y", col="g", data=self.df, sharex=False)
+            g = cat.catplot(
+                x="g", y="y", col="g", data=self.df, sharex=False, kind="box",
+            )
             for ax in g.axes.flat:
                 assert len(ax.collections) == 1
 
         with pytest.warns(UserWarning):
-            g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False)
+            g = cat.catplot(
+                x="y", y="g", col="g", data=self.df, sharey=False, kind="box",
+            )
             for ax in g.axes.flat:
                 assert len(ax.collections) == 1
 

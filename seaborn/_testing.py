@@ -79,10 +79,7 @@ def assert_plots_equal(ax1, ax2, labels=True):
 
     assert_artists_equal(ax1.patches, ax2.patches, BAR_PROPS)
     assert_artists_equal(ax1.lines, ax2.lines, LINE_PROPS)
-
-    poly1 = ax1.findobj(mpl.collections.PolyCollection)
-    poly2 = ax2.findobj(mpl.collections.PolyCollection)
-    assert_artists_equal(poly1, poly2, COLLECTION_PROPS)
+    assert_artists_equal(ax1.collections, ax2.collections, COLLECTION_PROPS)
 
     if labels:
         assert ax1.get_xlabel() == ax2.get_xlabel()

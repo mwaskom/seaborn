@@ -309,7 +309,8 @@ class _CategoricalPlotterNew(VectorPlotter):
             ax = self._get_axes(sub_vars)
             ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
 
-        if "hue" in self.variables and not self._redundant_hue:  # TODO and legend:
+        show_legend = not self._redundant_hue and self.input_format != "wide"
+        if "hue" in self.variables and show_legend:  # TODO and legend:
             # XXX 2021 refactor notes
             # As we know, legends are an ongoing challenge.
             # I'm duplicating the old approach here, but I don't love it,
@@ -3117,6 +3118,7 @@ def stripplot(
     # XXX Here especially is tricky. Old code didn't follow the color cycle.
     # If new code does, then we won't know the default non-mapped color out here.
     # But also I think in general at logic should move to the outer functions.
+    # XXX Wait how does this work with a custom palette?
     if edgecolor == "gray":
         edgecolor = p._get_gray("C0" if color is None else color)
 
@@ -4173,6 +4175,7 @@ def catplot(
             # TODO get these defaults programatically?
             jitter = kwargs.pop("jitter", True)
             dodge = kwargs.pop("dodge", False)
+            edgecolor = kwargs.pop("edgecolor", "gray")
 
             strip_kws = kwargs.copy()
 
@@ -4181,8 +4184,11 @@ def catplot(
             if "size" in strip_kws:
                 strip_kws["s"] = strip_kws.pop("size")
 
-            if "edgecolor" in strip_kws and strip_kws["edgecolor"] == "gray":
-                strip_kws["edgecolor"] = p._get_gray("C0" if color is None else color)
+            if edgecolor == "gray":
+                edgecolor = p._get_gray("C0" if color is None else color)
+            strip_kws["edgecolor"] = edgecolor
+
+            strip_kws.setdefault("linewidth", 0)
 
             p.plot_strips(
                 jitter=jitter,
