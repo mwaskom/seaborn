@@ -1377,79 +1377,6 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
                            s=60)
 
 
-class _StripPlotter(_CategoricalScatterPlotter):
-    """1-d scatterplot with categorical organization."""
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 jitter, dodge, orient, color, palette):
-        """Initialize the plotter."""
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, 1)
-
-        # Set object attributes
-        self.dodge = dodge
-        self.width = .8
-
-        if jitter == 1:  # Use a good default for `jitter = True`
-            jlim = 0.1
-        else:
-            jlim = float(jitter)
-        if self.hue_names is not None and dodge:
-            jlim /= len(self.hue_names)
-        self.jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
-
-    def draw_stripplot(self, ax, kws):
-        """Draw the points onto `ax`."""
-        palette = np.asarray(self.colors)
-        for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None or not self.dodge:
-
-                if self.hue_names is None:
-                    hue_mask = np.ones(group_data.size, bool)
-                else:
-                    hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]], bool)
-                    # Broken on older numpys
-                    # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
-
-                strip_data = group_data[hue_mask]
-                point_colors = np.asarray(self.point_colors[i][hue_mask])
-
-                # Plot the points in centered positions
-                cat_pos = np.ones(strip_data.size) * i
-                cat_pos += self.jitterer(size=len(strip_data))
-                kws.update(c=palette[point_colors])
-                if self.orient == "v":
-                    ax.scatter(cat_pos, strip_data, **kws)
-                else:
-                    ax.scatter(strip_data, cat_pos, **kws)
-
-            else:
-                offsets = self.hue_offsets
-                for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
-                    strip_data = group_data[hue_mask]
-
-                    point_colors = np.asarray(self.point_colors[i][hue_mask])
-
-                    # Plot the points in centered positions
-                    center = i + offsets[j]
-                    cat_pos = np.ones(strip_data.size) * center
-                    cat_pos += self.jitterer(size=len(strip_data))
-                    kws.update(c=palette[point_colors])
-                    if self.orient == "v":
-                        ax.scatter(cat_pos, strip_data, **kws)
-                    else:
-                        ax.scatter(strip_data, cat_pos, **kws)
-
-    def plot(self, ax, kws):
-        """Make the plot."""
-        self.draw_stripplot(ax, kws)
-        self.add_legend_data(ax)
-        self.annotate_axes(ax)
-        if self.orient == "h":
-            ax.invert_yaxis()
-
-
 class _SwarmPlotter(_CategoricalScatterPlotter):
 
     def __init__(self, x, y, hue, data, order, hue_order,
@@ -3139,41 +3066,6 @@ def stripplot(
     return ax
 
 
-@_deprecate_positional_args
-def stripplot_old(
-    *,
-    x=None, y=None,
-    hue=None, data=None,
-    order=None, hue_order=None,
-    jitter=True, dodge=False, orient=None, color=None, palette=None,
-    size=5, edgecolor="gray", linewidth=0, ax=None,
-    **kwargs
-):
-
-    if "split" in kwargs:
-        dodge = kwargs.pop("split")
-        msg = "The `split` parameter has been renamed to `dodge`."
-        warnings.warn(msg, UserWarning)
-
-    plotter = _StripPlotter(x, y, hue, data, order, hue_order,
-                            jitter, dodge, orient, color, palette)
-    if ax is None:
-        ax = plt.gca()
-
-    kwargs.setdefault("zorder", 3)
-    size = kwargs.get("s", size)
-    if linewidth is None:
-        linewidth = size / 10
-    if edgecolor == "gray":
-        edgecolor = plotter.gray
-    kwargs.update(dict(s=size ** 2,
-                       edgecolor=edgecolor,
-                       linewidth=linewidth))
-
-    plotter.plot(ax, kwargs)
-    return ax
-
-
 stripplot.__doc__ = dedent("""\
     Draw a scatterplot where one variable is categorical.
 
@@ -4232,7 +4124,6 @@ def catplot(
         "boxen": _LVPlotter,
         "bar": _BarPlotter,
         "point": _PointPlotter,
-        "strip": _StripPlotter,
         "swarm": _SwarmPlotter,
         "count": _CountPlotter,
     }[kind]
