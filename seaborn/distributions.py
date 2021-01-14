@@ -2159,7 +2159,7 @@ def displot(
     if "ax" in kwargs:
         msg = (
             "`displot` is a figure-level function and does not accept "
-            "the ax= paramter. You may wish to try {}plot.".format(kind)
+            "the ax= parameter. You may wish to try {}plot.".format(kind)
         )
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
