@@ -1138,6 +1138,23 @@ class TestVectorPlotter:
         assert p.ax is None
         assert p.facets == g
 
+    def test_attach_order(self):
+
+        vector = ["b", "b", "a", "c"]
+        p = VectorPlotter(variables={"x": vector, "y": vector})
+
+        ax = plt.figure().subplots()
+        p._attach(ax)
+        assert_array_equal(ax.xaxis.convert_units(["a", "b", "c"]), [1, 0, 2])
+
+        ax = plt.figure().subplots()
+        p._attach(ax, x_order=["a", "b", "c"])
+        assert_array_equal(ax.xaxis.convert_units(["a", "b", "c"]), [0, 1, 2])
+
+        ax = plt.figure().subplots()
+        p._attach(ax, y_order=["a", "c"])
+        assert_array_equal(ax.yaxis.convert_units(["a", "b", "c"]), [0, 2, 1])
+
     def test_get_axes_single(self, long_df):
 
         ax = plt.figure().subplots()

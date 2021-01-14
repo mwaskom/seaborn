@@ -57,6 +57,7 @@ class _CategoricalPlotterNew(VectorPlotter):
     ):
 
         super().__init__(data=data, variables=variables)
+        self.order = order
 
         # This method takes care of some bookkeeping that is necessary because the
         # original categorical plots (prior to the 2021 refactor) had some rules that
@@ -213,16 +214,18 @@ class _CategoricalPlotterNew(VectorPlotter):
 
     def _adjust_cat_axis(self, ax):
         """Set ticks and limits for a categorical variable."""
-        # TODO this should potentially be something that happens in _attach for all axes
-        # with a categorical variable type
-        max_tick = self.comp_data[self.cat_axis].max()
+        # Note: in theory this could happen in _attach for all categorical axes
+        # But two reasons not to do that:
+        # - If it happens before plotting, autoscaling messes up the plot limits
+        # - It would change existing plots from other seaborn functions
+        order = categorical_order(self.plot_data[self.cat_axis], self.order)
         if self.cat_axis == "x":
             ax.xaxis.grid(False)
-            ax.set_xlim(-.5, max_tick + .5, auto=None)
+            ax.set_xlim(-.5, len(order) - .5, auto=None)
         else:
             ax.yaxis.grid(False)
-            # Note limits that imply inverted y axis
-            ax.set_ylim(max_tick + .5, -.5, auto=None)
+            # Note limits that correspond to previously-inverted y axis
+            ax.set_ylim(len(order) + .5, -.5, auto=None)
 
     def plot_strips(
         self,
@@ -3025,7 +3028,8 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
-    p._attach(ax)
+    order_kw = {f"{p.cat_axis}_order": p.order}
+    p._attach(ax, **order_kw)
 
     if not p.has_xy_data:
         return ax

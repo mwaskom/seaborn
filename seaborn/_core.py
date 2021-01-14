@@ -1092,7 +1092,14 @@ class VectorPlotter:
         else:
             return self.ax
 
-    def _attach(self, obj, allowed_types=None, log_scale=None):
+    def _attach(
+        self,
+        obj,
+        allowed_types=None,
+        log_scale=None,
+        x_order=None,
+        y_order=None,
+    ):
         """Associate the plotter with an Axes manager and initialize its units.
 
         Parameters
@@ -1106,6 +1113,8 @@ class VectorPlotter:
             If not False, set the axes to use log scaling, with the given
             base or defaulting to 10. If a tuple, interpreted as separate
             arguments for the x and y axes.
+        {x,y}_order : lists of strings
+            Set the order that categorical variables should appear on each axis.
 
         """
         from .axisgrid import FacetGrid
@@ -1127,6 +1136,8 @@ class VectorPlotter:
         elif isinstance(allowed_types, str):
             allowed_types = [allowed_types]
 
+        order = {"x": x_order, "y": y_order}
+
         for var in set("xy").intersection(self.variables):
             # Check types of x/y variables
             var_type = self.var_types[var]
@@ -1145,9 +1156,11 @@ class VectorPlotter:
             # its mapping, meaning that it won't handle unshared axes well either.
             for ax in ax_list:
                 axis = getattr(ax, f"{var}axis")
+
                 seed_data = self.plot_data[var]
                 if var_type == "categorical":
-                    seed_data = categorical_order(seed_data)
+                    seed_data = categorical_order(seed_data, order[var])
+
                 axis.update_units(seed_data)
 
         # For categorical y, we want the "first" level to be at the top of the axis

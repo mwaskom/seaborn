@@ -1732,6 +1732,51 @@ class TestStripPlot:
                 assert_array_almost_equal(cat_points, expected)
 
     @pytest.mark.parametrize(
+        "x_type,order",
+        [
+            (str, None),
+            (str, ["a", "b", "c"]),
+            (str, ["c", "a"]),
+            (str, ["a", "b", "c", "d"]),
+            (int, None),
+            (int, [3, 1, 2]),
+            (int, [3, 1]),
+            (int, [1, 2, 3, 4]),
+            (int, ["3", "1", "2"]),
+        ]
+    )
+    def test_order(self, x_type, order):
+
+        if x_type is str:
+            x = ["b", "a", "c"]
+        else:
+            x = [2, 1, 3]
+        y = [1, 2, 3]
+
+        ax = stripplot(x=x, y=y, order=order)
+        _draw_figure(ax.figure)
+
+        if order is None:
+            order = x
+            if x_type is int:
+                order = np.sort(order)
+
+        assert len(ax.collections) == len(order)
+        tick_labels = ax.xaxis.get_majorticklabels()
+
+        assert ax.get_xlim()[1] == (len(order) - .5)
+
+        for i, points in enumerate(ax.collections):
+            cat = order[i]
+            assert tick_labels[i].get_text() == str(cat)
+            positions = points.get_offsets()
+            if x_type(cat) in x:
+                val = y[x.index(x_type(cat))]
+                assert positions[0, 1] == val
+            else:
+                assert not positions.size
+
+    @pytest.mark.parametrize(
         "orient,jitter",
         itertools.product(["v", "h"], [True, .1]),
     )
