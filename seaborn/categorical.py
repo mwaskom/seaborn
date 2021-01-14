@@ -86,9 +86,10 @@ class _CategoricalPlotterNew(VectorPlotter):
         # _core variable assignment, we'll want to figure out how to express that.
         if self.input_format == "wide" and self.orient == "h":
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
-            orig_x = self.variables["x"]
-            orig_y = self.variables["y"]
+            orig_x, orig_x_type = self.variables["x"], self.var_types["x"]
+            orig_y, orig_y_type = self.variables["y"], self.var_types["y"]
             self.variables.update({"x": orig_y, "y": orig_x})
+            self.var_types.update({"x": orig_y_type, "y": orig_x_type})
 
         # Categorical plots can be "univariate" in which case they get an anonymous
         # category label on the opposite axis.
@@ -99,11 +100,24 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.var_types[var] = "categorical"
             self.plot_data[var] = ""
 
+        # If the "categorical" variable has a numeric type, sort the rows so that
+        # default the result from categorical_order has those values sorted after
+        # they have been coerced to strings. The reason for this is so that later
+        # we can get facet-wise orders that are correct.
+        # XXX should this also sort datetimes?
+        # It feels more consistent, but technically will be a default change
+        # If so, should also change categorical_order to behave that way
+        if self.var_types[self.cat_axis] == "numeric":
+            self.plot_data = self.plot_data.sort_values(self.cat_axis, kind="mergesort")
+
         # Now get a reference to the categorical data vector
         cat_data = self.plot_data[self.cat_axis]
 
         # Get the initial categorical order, which we do before string
-        # conversion because we want to respect the numeric ordering rule.
+        # conversion to respect the original types of the order list.
+        # Track whether the order is given explicitly so that we can know
+        # whether or not to use the order constructed here downstream
+        explicit_order = order is not None
         order = categorical_order(cat_data, order)
 
         # Then convert data to strings. This is because in matplotlib,
@@ -127,25 +141,12 @@ class _CategoricalPlotterNew(VectorPlotter):
         # Now ensure that seaborn will use categorical rules internally
         self.var_types[self.cat_axis] = "categorical"
 
-        # The _core operations also have no concept of a separate `order`
-        # parameterization for the categorical axis. We have it here so we ensure
-        # that the internal pandas object has a category dtype with an explicit
-        # ordering that may differ from the order that the categories appear in the
-        # data (which is what would determine the naive ordering given the matplotlib)
-        # category units rules. Note that `order` could be useful for distribution
-        # plots too, so this is again something we might want to incorporate into _core,
-        # but are not doing now.
-        if cat_data.dtype.name != "category":
-            cat_data = cat_data.astype("category")
-
-        if not cat_data.cat.categories.equals(order):
-            cat_data = cat_data.cat.set_categories(order, ordered=True)
-
         # Put the categorical vector with its new metadata back into plot_data structure
         self.plot_data[self.cat_axis] = cat_data
 
-        # Update outself with the new order list, which may have been stringified.
-        self.order = order.to_list()
+        # Update ourself with the new order list, which may have been stringified.
+        if explicit_order:
+            self.order = order.to_list()
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
@@ -225,7 +226,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         else:
             ax.yaxis.grid(False)
             # Note limits that correspond to previously-inverted y axis
-            ax.set_ylim(len(order) + .5, -.5, auto=None)
+            ax.set_ylim(len(order) - .5, -.5, auto=None)
 
     def plot_strips(
         self,

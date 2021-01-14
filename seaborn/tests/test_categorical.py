@@ -1662,7 +1662,8 @@ class TestStripPlot:
         x_var, y_var, *_ = var_names
 
         ax = stripplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient, jitter=False,
+            data=long_df, x=x_var, y=y_var, hue=hue_var,
+            orient=orient, jitter=False,
         )
 
         _draw_figure(ax.figure)
@@ -1673,9 +1674,12 @@ class TestStripPlot:
         cat_axis = axis_objs[cat_idx]
         val_axis = axis_objs[val_idx]
 
-        grouper = long_df[cat_var].astype(str)
-        grouped_vals = long_df[val_var].groupby(grouper, sort=False)
-        for i, (label, vals) in enumerate(grouped_vals):
+        cat_data = long_df[cat_var]
+        cat_levels = categorical_order(cat_data)
+
+        for i, label in enumerate(cat_levels):
+
+            vals = long_df.loc[cat_data == label, val_var]
 
             points = ax.collections[i].get_offsets().T
             cat_points = points[var_names.index(cat_var)]
@@ -1684,7 +1688,8 @@ class TestStripPlot:
             assert_array_equal(val_points, val_axis.convert_units(vals))
             assert_array_equal(cat_points, np.full(len(cat_points), i))
 
-            assert cat_axis.get_majorticklabels()[i].get_text() == str(label)
+            label = pd.Index([label]).astype(str)[0]
+            assert cat_axis.get_majorticklabels()[i].get_text() == label
 
     @pytest.mark.parametrize(
         "variables",
