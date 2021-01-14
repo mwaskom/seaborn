@@ -58,13 +58,17 @@ class _CategoricalPlotterNew(VectorPlotter):
 
         super().__init__(data=data, variables=variables)
 
-        # XXX 2021 refactor notes:
-        # We have a newer way of enforcing variable types
-        # (allowed_types= in self._attach)
-        # and we can also now do aggregation over datetime values.
-        # So we probably revisit that and move away from require_numeric
-        # in the `infer_orient` function.
+        # This method takes care of some bookkeeping that is necessary because the
+        # original categorical plots (prior to the 2021 refactor) had some rules that
+        # don't fit exactly into the logic of _core. It may be wise to have a second
+        # round of refactoring that moves the logic deeper, but this will keep things
+        # relatively sensible for now.
 
+        # The concept of an "orientation" is important to the original categorical
+        # plots, but there's no provision for it in _core, so we need to do it here.
+        # Note that it could be useful for the other functions in at least two ways
+        # (orienting a univariate distribution plot from long-form data and selecting
+        # the aggregation axis in lineplot), so we may want to eventually refactor it.
         self.orient = infer_orient(
             x=self.plot_data.get("x", None),
             y=self.plot_data.get("y", None),
@@ -72,19 +76,21 @@ class _CategoricalPlotterNew(VectorPlotter):
             require_numeric=require_numeric,
         )
 
+        # Short-circuit in the case of an empty plot
         if not self.has_xy_data:
             return
 
-        # XXX For wide data, orient determines assignment to x/y differently
-        # from the wide_structure rules in _core. This is a hack to enforce that
-        # that behavior for now  ... unclear how we could more generally support it.
+        # For wide data, orient determines assignment to x/y differently from the
+        # wide_structure rules in _core. If we do decide to make orient part of the
+        # _core variable assignment, we'll want to figure out how to express that.
         if self.input_format == "wide" and self.orient == "h":
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
             orig_x = self.variables["x"]
             orig_y = self.variables["y"]
             self.variables.update({"x": orig_y, "y": orig_x})
 
-        # XXX we need to handle univariate plots. Is this the best way?
+        # Categorical plots can be "univariate" in which case they get an anonymous
+        # category label on the opposite axis.
         unspecified_cat_var = {"x", "y"} - set(self.variables)
         if self.has_xy_data and unspecified_cat_var:
             var = unspecified_cat_var.pop()
@@ -92,58 +98,52 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.var_types[var] = "categorical"
             self.plot_data[var] = ""
 
+        # Now get a reference to the categorical data vector
         cat_data = self.plot_data[self.cat_axis]
 
-        # XXX Get the initial categorical order, which we do before string
+        # Get the initial categorical order, which we do before string
         # conversion because we want to respect the numeric ordering rule.
         order = categorical_order(cat_data, order)
 
-        # XXX Then convert data to strings. This is because in matplotlib,
-        # "categorical" data really mean "string" data. We want a more general
-        # approach for "fixed width" positioning, which will likely require
-        # writing our own unit converters and registering them with mpl.
-        # UPDATE: thinking more, maybe this is a good solution. And then we
-        # can expose an option for non-fixed-width (needs a name) positioning
-        # that just skips the string conversion. But, likely will have some issues.
-        # XXX should we try to auto-format dates to a nice representation,
-        # and perhaps expose a formatter object to do it? We're getting ok-ish
-        # results from the default pandas conversion right now.
+        # Then convert data to strings. This is because in matplotlib,
+        # "categorical" data really mean "string" data, so doing this artists
+        # will be drawn on the categorical axis with a fixed scale.
+        # # Note: this would be a good place to apply a formatter object or function
+        # to allow users control over the string representation of things like dates
+        # or float data.
         cat_data = cat_data.astype(str)
         order = pd.Index(order).astype(str)
 
-        # XXX here we are inserting the levels of the categorical variable
-        # into the var_levels object so that it can be used in iter_data.
-        # This is necessary because originally the categorical plots (often)
-        # drew separate artists for each level of the categorical variable.
-        # It makes things complicated and we probably want to break it.
-        # But is that just kicking the complications down the road?
-        # Note: levels is numeric because we iterate over comp_data
+        # Here we are inserting the levels of the categorical variable into the
+        # var_levels object so that it can be used in iter_data. This is
+        # necessary because originally the categorical plots (often) drew
+        # separate artists for each level of the categorical variable.
+        # Note: levels are numeric because we iterate over comp_data, but it might
+        # be better if that logic were handled elsewhere (i.e. if iter_data knew
+        # to iterate with an index when from_comp_data is True).
         self.var_levels[self.cat_axis] = [i for i, _ in enumerate(order)]
 
-        # XXX Force the "categorical" variable to be categorical according to
-        # our internal var_types metadata
+        # Now ensure that seaborn will use categorical rules internally
         self.var_types[self.cat_axis] = "categorical"
 
-        # XXX ensure that order takes effect by setting a categorical dtype
-        # This will mean that _attach will use the order to update the
-        # matplotlib units converter without passing order into it.
-        # I don't think this is the best approach see above.
+        # The _core operations also have no concept of a separate `order`
+        # parameterization for the categorical axis. We have it here so we ensure
+        # that the internal pandas object has a category dtype with an explicit
+        # ordering that may differ from the order that the categories appear in the
+        # data (which is what would determine the naive ordering given the matplotlib)
+        # category units rules. Note that `order` could be useful for distribution
+        # plots too, so this is again something we might want to incorporate into _core,
+        # but are not doing now.
         if cat_data.dtype.name != "category":
             cat_data = cat_data.astype("category")
 
-        # XXX Now set the category order
-        # Watch out for category information (if data come in as a categorical)
-        # overriding a given order list, which isn't what the logic of
-        # categorical_order says should happen, but does because _attach doesn't
-        # get the order argument. This *should* resolve that problem.
         if not cat_data.cat.categories.equals(order):
             cat_data = cat_data.cat.set_categories(order, ordered=True)
 
+        # Put the categorical vector with its new metadata back into plot_data structure
         self.plot_data[self.cat_axis] = cat_data
 
-        # XXX Need to decide if this is something that should hang around on the plotter
-        # adding it now so that function bodies can make use of possibly type-converted
-        # order list.
+        # Update outself with the new order list, which may have been stringified.
         self.order = order.to_list()
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
@@ -200,10 +200,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         return {"v": "x", "h": "y"}[self.orient]
 
     def _get_gray(self, color="C0"):
-
-        # XXX 2021 refactor notes
-        # Originally the code had a default "gray" that scaled for good contrast
-        # with the palette. Is this a good idea? We should reconsider it...
+        """Get a grayscale value that looks good with color."""
         if "hue" in self.variables:
             rgb_colors = list(self._hue_map.lookup_table.values())
         else:
@@ -215,8 +212,9 @@ class _CategoricalPlotterNew(VectorPlotter):
         return gray
 
     def _adjust_cat_axis(self, ax):
-        # XXX 2021 refactor -- should we do this in core for all categorical axes?
-        # TODO also give this a better name if we keep it
+        """Set ticks and limits for a categorical variable."""
+        # TODO this should potentially be something that happens in _attach for all axes
+        # with a categorical variable type
         max_tick = self.comp_data[self.cat_axis].max()
         if self.cat_axis == "x":
             ax.xaxis.grid(False)
@@ -266,21 +264,20 @@ class _CategoricalPlotterNew(VectorPlotter):
         else:
             dodge = False
 
-        # XXX 2021 refactor notes:
-        # We could just just adjust x/y and make one big scatterplot,
-        # but the original function drew separate scatters for strip.
-        # A strong candidate for breaking artist representation.
+        # Note that stripplot iterates over categorical positions (and hue levels only
+        # in the case of dodged strips) to match the original way artists were added.
         iter_vars = [self.cat_axis]
         if dodge:
             iter_vars.append("hue")
-
-        # XXX note further that the old plots add empty artists for combinations
-        # of variables that have no observations, but as the iter_data code is written,
-        # that's not possible. We could add an option to force iter_data to return empty
-        # subsets if we decide we do want to match previous behavior exactly
-
-        # XXX Initialize this as otherwise we won't get it when not looping over hue
-        # This exposes a weakness that needs more thinking
+        
+        # Note further that, unlike most modern functions, stripplot adds empty
+        # artists for combinations of variables that have no observations, hence the
+        # addition/use of allow_empty in iter_data during the 2021 refactor.
+        
+        # Initialize ax as otherwise we won't get it when not looping over hue.
+        # If we are in a faceted context, this will be None, but _get_axes will
+        # return an Axes later. Perhaps _get_axes should have some awareness of
+        # cases when x/y are part of the iter_data grouper?
         ax = self.ax
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
@@ -3101,15 +3098,13 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
-    # XXX need to make `order` take effect; currently happens in the constructor
-    # for _CategoricalPlotterNew but possibly could happen in _attach
     p._attach(ax)
 
     if not p.has_xy_data:
         return ax
 
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
-    p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
+    p.map_hue(palette=palette, order=hue_order)  # XXX add hue_norm
 
     # XXX Copying possibly bad default decisions from original code for now
     kwargs.setdefault("zorder", 3)
@@ -3136,7 +3131,8 @@ def stripplot(
     )
 
     # XXX this happens inside a plotting method in the distribution plots
-    # but maybe it's better out here?
+    # but maybe it's better out here? Alternatively, we have an open issue
+    # suggesting that _attach could add default axes labels, which seems smart.
     p._add_axis_labels(ax)
     p._adjust_cat_axis(ax)
 
