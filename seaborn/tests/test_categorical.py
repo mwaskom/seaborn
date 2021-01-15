@@ -1651,6 +1651,8 @@ class TestStripPlot:
             ({"val": "t", "cat": "a", "hue": None}, None),
             ({"cat": "d", "val": "y", "hue": None}, None),
             ({"val": "y", "cat": "d", "hue": None}, None),
+            ({"cat": "a_cat", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "s_cat", "hue": None}, None),
         ],
     )
     def test_positions(self, long_df, variables, orient):
@@ -2879,7 +2881,7 @@ class TestCatPlot(CategoricalFixture):
         for ax in g.axes.flat:
             assert len(ax.collections) == len(self.df.g.unique())
 
-        # Test unsharing works
+        # Test unsharing workscol
         with pytest.warns(UserWarning):
             g = cat.catplot(
                 x="g", y="y", col="g", data=self.df, sharex=False, kind="bar",

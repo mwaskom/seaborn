@@ -117,7 +117,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         # conversion to respect the original types of the order list.
         # Track whether the order is given explicitly so that we can know
         # whether or not to use the order constructed here downstream
-        explicit_order = order is not None
+        explicit_order = order is not None or cat_data.dtype.name == "category"
         order = categorical_order(cat_data, order)
 
         # Then convert data to strings. This is because in matplotlib,
@@ -286,11 +286,11 @@ class _CategoricalPlotterNew(VectorPlotter):
         iter_vars = [self.cat_axis]
         if dodge:
             iter_vars.append("hue")
-        
+
         # Note further that, unlike most modern functions, stripplot adds empty
         # artists for combinations of variables that have no observations, hence the
         # addition/use of allow_empty in iter_data during the 2021 refactor.
-        
+
         # Initialize ax as otherwise we won't get it when not looping over hue.
         # If we are in a faceted context, this will be None, but _get_axes will
         # return an Axes later. Perhaps _get_axes should have some awareness of
@@ -4070,7 +4070,8 @@ def catplot(
             **facet_kws,
         )
 
-        p._attach(g)
+        order_kw = {f"{p.cat_axis}_order": p.order}
+        p._attach(g, **order_kw)
 
         if not p.has_xy_data:
             return g

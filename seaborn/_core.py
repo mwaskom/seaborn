@@ -1191,7 +1191,7 @@ class VectorPlotter:
             # Now actually update the matplotib objects to do the conversion we want
             grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
             for converter, seed_data in grouped:
-                if var_type == "categorical":
+                if self.var_types[var] == "categorical":
                     seed_data = categorical_order(seed_data, order[var])
                 converter.update_units(seed_data)
 
