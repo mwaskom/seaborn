@@ -22,6 +22,7 @@ COLLECTION_PROPS = [
     "linewidth",
     "paths",
     "zorder",
+    "sizes",
 ]
 
 BAR_PROPS = [

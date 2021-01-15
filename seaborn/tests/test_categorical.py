@@ -1966,6 +1966,7 @@ class TestStripPlot:
             dict(data="long", x="x", color="C3"),
             dict(data="long", y="y", hue="a", jitter=False),
             dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
         ]
     )

@@ -4090,8 +4090,7 @@ def catplot(
 
             # XXX Copying possibly bad default decisions from original code for now
             strip_kws.setdefault("zorder", 3)
-            if "size" in strip_kws:
-                strip_kws["s"] = strip_kws.pop("size")
+            strip_kws.setdefault("s", 25)
 
             if edgecolor == "gray":
                 edgecolor = p._get_gray("C0" if color is None else color)
