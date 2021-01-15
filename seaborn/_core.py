@@ -938,8 +938,9 @@ class VectorPlotter:
         return plot_data, variables
 
     def iter_data(
-        self, grouping_vars=None, reverse=False, from_comp_data=False,
-        allow_empty=False,
+        self, grouping_vars=None, *,
+        reverse=False, from_comp_data=False,
+        by_facet=True, allow_empty=False,
     ):
         """Generator for getting subsets of data defined by semantic variables.
 
@@ -953,6 +954,8 @@ class VectorPlotter:
             If True, reverse the order of iteration.
         from_comp_data : bool
             If True, use self.comp_data rather than self.plot_data
+        by_facet : bool
+            If True, add faceting variables to the set of grouping variables.
         allow_empty : bool
             If True, yield an empty dataframe when no observations exist for
             combinations of grouping variables.
@@ -975,10 +978,11 @@ class VectorPlotter:
             grouping_vars = list(grouping_vars)
 
         # Always insert faceting variables
-        facet_vars = {"col", "row"}
-        grouping_vars.extend(
-            facet_vars & set(self.variables) - set(grouping_vars)
-        )
+        if by_facet:
+            facet_vars = {"col", "row"}
+            grouping_vars.extend(
+                facet_vars & set(self.variables) - set(grouping_vars)
+            )
 
         # Reduce to the semantics used in this plot
         grouping_vars = [
@@ -1050,27 +1054,16 @@ class VectorPlotter:
                 if var not in self.variables:
                     continue
 
-                # Get a corresponding axis object so that we can convert the units
-                # to matplotlib's numeric representation, which we can compute on
-                # This is messy and it would probably be better for VectorPlotter
-                # to manage its own converters (using the matplotlib tools).
-                # XXX Currently does not support unshared categorical axes!
-                # (But see comment in _attach about how those don't exist)
-                if self.ax is None:
-                    ax = self.facets.axes.flat[0]
-                else:
-                    ax = self.ax
-                axis = getattr(ax, f"{var}axis")
+                comp_col = pd.Series(index=self.plot_data.index, dtype=float, name=var)
+                grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
+                for converter, orig in grouped:
+                    with pd.option_context('mode.use_inf_as_null', True):
+                        orig = orig.dropna()
+                    comp = pd.to_numeric(converter.convert_units(orig))
+                    if converter.get_scale() == "log":
+                        comp = np.log10(comp)
+                    comp_col.loc[orig.index] = comp
 
-                # Use the converter assigned to the axis to get a float representation
-                # of the data, passing np.nan or pd.NA through (pd.NA becomes np.nan)
-                with pd.option_context('mode.use_inf_as_null', True):
-                    orig = self.plot_data[var].dropna()
-                comp_col = pd.Series(index=orig.index, dtype=float, name=var)
-                comp_col.loc[orig.index] = pd.to_numeric(axis.convert_units(orig))
-
-                if axis.get_scale() == "log":
-                    comp_col = np.log10(comp_col)
                 comp_data.insert(0, var, comp_col)
 
             self._comp_data = comp_data
@@ -1131,15 +1124,21 @@ class VectorPlotter:
             self.facets = None
             ax_list = [obj]
 
+        # Identify which "axis" variables we have defined
+        axis_variables = set("xy").intersection(self.variables)
+
+        # -- Verify the types of our x and y variables here.
+        # This doesn't really make complete sense being here here, but it's a fine
+        # place for it, given  the current sytstem.
+        # (Note that for some plots, there might be more complicated restrictions)
+        # e.g. the categorical plots have their own check that as specific to the
+        # non-categorical axis.
         if allowed_types is None:
             allowed_types = ["numeric", "datetime", "categorical"]
         elif isinstance(allowed_types, str):
             allowed_types = [allowed_types]
 
-        order = {"x": x_order, "y": y_order}
-
-        for var in set("xy").intersection(self.variables):
-            # Check types of x/y variables
+        for var in axis_variables:
             var_type = self.var_types[var]
             if var_type not in allowed_types:
                 err = (
@@ -1148,20 +1147,79 @@ class VectorPlotter:
                 )
                 raise TypeError(err)
 
-            # Register with the matplotlib unit conversion machinery
-            # Perhaps cleaner to manage our own transform objects?
-            # XXX Currently this does not allow "unshared" categorical axes
-            # We could add metadata to a FacetGrid and set units based on that.
-            # See also comment in comp_data, which only uses a single axes to do
-            # its mapping, meaning that it won't handle unshared axes well either.
-            for ax in ax_list:
-                axis = getattr(ax, f"{var}axis")
+        # -- Get axis objects for each row in plot_data for type conversions and scaling
 
-                seed_data = self.plot_data[var]
+        order = {"x": x_order, "y": y_order}
+        facet_dim = {"x": "col", "y": "row"}
+
+        self.converters = {}
+        for var in axis_variables:
+            other_var = {"x": "y", "y": "x"}[var]
+
+            converter = pd.Series(index=self.plot_data.index, name=var, dtype=object)
+            share_state = getattr(self.facets, f"_share{var}", True)
+
+            # Simplest cases are that we have a single axes, all axes are shared,
+            # or sharing is only on the orthogonal facet dimension. In these cases,
+            # all datapoints get converted the same way, so use the first axis
+            if share_state is True or share_state == facet_dim[other_var]:
+                converter.loc[:] = getattr(ax_list[0], f"{var}axis")
+
+            else:
+
+                # Next simplest case is when no axes are shared, and we can
+                # use the axis objects within each facet
+                if share_state is False:
+                    for axes_vars, axes_data in self.iter_data():
+                        ax = self._get_axes(axes_vars)
+                        converter.loc[axes_data.index] = getattr(ax, f"{var}axis")
+
+                # In the more complicated case, the axes are shared within each
+                # "file" of the facetgrid. In that case, we need to subset the data
+                # for that file and assign it the first axis in the slice of the grid
+                else:
+
+                    names = getattr(self.facets, f"{share_state}_names")
+                    for i, level in enumerate(names):
+                        idx = (i, 0) if share_state == "row" else (0, i)
+                        axis = getattr(self.facets.axes[idx], f"{var}axis")
+                        converter.loc[self.plot_data[share_state] == level] = axis
+
+            # Store the converter vector, which we use elsewhere (e.g comp_data)
+            self.converters[var] = converter
+
+            # Now actually update the matplotib objects to do the conversion we want
+            grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
+            for converter, seed_data in grouped:
                 if var_type == "categorical":
                     seed_data = categorical_order(seed_data, order[var])
+                converter.update_units(seed_data)
 
-                axis.update_units(seed_data)
+        # -- Set numerical axis scales
+
+        # First unpack the log_scale argument
+        if log_scale is None:
+            scalex = scaley = False
+        else:
+            # Allow single value or x, y tuple
+            try:
+                scalex, scaley = log_scale
+            except TypeError:
+                scalex = log_scale if "x" in self.variables else False
+                scaley = log_scale if "y" in self.variables else False
+
+        # Now use it
+        for axis, scale in zip("xy", (scalex, scaley)):
+            if scale:
+                for ax in ax_list:
+                    set_scale = getattr(ax, f"set_{axis}scale")
+                    if scale is True:
+                        set_scale("log")
+                    else:
+                        if LooseVersion(mpl.__version__) >= "3.3":
+                            set_scale("log", base=scale)
+                        else:
+                            set_scale("log", **{f"base{axis}": scale})
 
         # For categorical y, we want the "first" level to be at the top of the axis
         if self.var_types.get("y", None) == "categorical":
@@ -1172,26 +1230,7 @@ class VectorPlotter:
                     if not ax.yaxis_inverted():
                         ax.invert_yaxis()
 
-        # Possibly log-scale one or both axes
-        if log_scale is not None:
-            # Allow single value or x, y tuple
-            try:
-                scalex, scaley = log_scale
-            except TypeError:
-                scalex = log_scale if "x" in self.variables else False
-                scaley = log_scale if "y" in self.variables else False
-
-            for axis, scale in zip("xy", (scalex, scaley)):
-                if scale:
-                    for ax in ax_list:
-                        set_scale = getattr(ax, f"set_{axis}scale")
-                        if scale is True:
-                            set_scale("log")
-                        else:
-                            if LooseVersion(mpl.__version__) >= "3.3":
-                                set_scale("log", base=scale)
-                            else:
-                                set_scale("log", **{f"base{axis}": scale})
+        # TODO -- Add axes labels
 
     def _log_scaled(self, axis):
         """Return True if specified axis is log scaled on all attached axes."""

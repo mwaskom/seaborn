@@ -2882,17 +2882,17 @@ class TestCatPlot(CategoricalFixture):
         # Test unsharing works
         with pytest.warns(UserWarning):
             g = cat.catplot(
-                x="g", y="y", col="g", data=self.df, sharex=False, kind="box",
+                x="g", y="y", col="g", data=self.df, sharex=False, kind="bar",
             )
             for ax in g.axes.flat:
-                assert len(ax.collections) == 1
+                assert len(ax.patches) == 1
 
         with pytest.warns(UserWarning):
             g = cat.catplot(
-                x="y", y="g", col="g", data=self.df, sharey=False, kind="box",
+                x="y", y="g", col="g", data=self.df, sharey=False, kind="bar",
             )
             for ax in g.axes.flat:
-                assert len(ax.collections) == 1
+                assert len(ax.patches) == 1
 
         # Make sure no warning is raised if color is provided on unshared plot
         with pytest.warns(None) as record:
@@ -2900,12 +2900,16 @@ class TestCatPlot(CategoricalFixture):
                 x="g", y="y", col="g", data=self.df, sharex=False, color="b"
             )
             assert not len(record)
+        for ax in g.axes.flat:
+            assert ax.get_xlim() == (-.5, .5)
 
         with pytest.warns(None) as record:
             g = cat.catplot(
                 x="y", y="g", col="g", data=self.df, sharey=False, color="r"
             )
             assert not len(record)
+        for ax in g.axes.flat:
+            assert ax.get_ylim() == (.5, -.5)
 
         # Make sure order is used if given, regardless of sharex value
         order = self.df.g.unique()

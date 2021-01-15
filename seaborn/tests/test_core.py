@@ -1138,6 +1138,67 @@ class TestVectorPlotter:
         assert p.ax is None
         assert p.facets == g
 
+    def test_attach_shared_axes(self, long_df):
+
+        g = FacetGrid(long_df)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", sharex=False)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", sharex=False, col_wrap=2)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharex=False)
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == len(g.axes.flat)
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharex="col")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharey="row")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == p.plot_data["row"].nunique()
+        assert p.converters["y"].groupby(p.plot_data["row"]).nunique().max() == 1
+
     def test_attach_order(self):
 
         vector = ["b", "b", "a", "c"]

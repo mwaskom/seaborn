@@ -126,6 +126,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         # # Note: this would be a good place to apply a formatter object or function
         # to allow users control over the string representation of things like dates
         # or float data.
+        # XXX this is stripping categorical info that we do want to keep
         cat_data = cat_data.astype(str)
         order = pd.Index(order).astype(str)
 
@@ -215,11 +216,23 @@ class _CategoricalPlotterNew(VectorPlotter):
 
     def _adjust_cat_axis(self, ax):
         """Set ticks and limits for a categorical variable."""
-        # Note: in theory this could happen in _attach for all categorical axes
+        # Note: in theory, this could happen in _attach for all categorical axes
         # But two reasons not to do that:
         # - If it happens before plotting, autoscaling messes up the plot limits
         # - It would change existing plots from other seaborn functions
-        order = categorical_order(self.plot_data[self.cat_axis], self.order)
+
+        data = self.plot_data[self.cat_axis]
+        if self.facets is not None:
+            share_group = getattr(ax, f"get_shared_{self.cat_axis}_axes")()
+            shared_axes = [getattr(ax, f"{self.cat_axis}axis")] + [
+                getattr(other_ax, f"{self.cat_axis}axis")
+                for other_ax in self.facets.axes.flat
+                if share_group.joined(ax, other_ax)
+            ]
+            data = data[self.converters[self.cat_axis].isin(shared_axes)]
+
+        order = categorical_order(data, self.order)
+
         if self.cat_axis == "x":
             ax.xaxis.grid(False)
             ax.set_xlim(-.5, len(order) - .5, auto=None)
@@ -310,6 +323,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             ax = self._get_axes(sub_vars)
             ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
 
+        # TODO XXX remove redundant hue or always define and use when legend is "auto"
         show_legend = not self._redundant_hue and self.input_format != "wide"
         if "hue" in self.variables and show_legend:  # TODO and legend:
             # XXX 2021 refactor notes
@@ -4051,6 +4065,7 @@ def catplot(
             data=data, row=row_name, col=col_name,
             col_wrap=col_wrap, row_order=row_order,
             col_order=col_order, height=height,
+            sharex=sharex, sharey=sharey,
             aspect=aspect,
             **facet_kws,
         )
@@ -4098,6 +4113,8 @@ def catplot(
             p.variables.get("x", None),
             p.variables.get("y", None),
         )
+        g.set_titles()
+        g.tight_layout()
 
         # XXX Hack to get the legend data in the right place
         for ax in g.axes.flat:
