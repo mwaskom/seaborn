@@ -9,6 +9,7 @@ from distutils.version import LooseVersion
 import pytest
 from pytest import approx
 import numpy.testing as npt
+from distutils.version import LooseVersion
 
 from .. import categorical as cat
 from .. import palettes
@@ -3008,5 +3009,17 @@ class TestBoxenPlotter(CategoricalFixture):
             ax = cat.boxenplot(x="g", y="y", hue="h", data=self.df)
             obs = ax.get_legend().get_title().get_fontproperties().get_size()
             assert obs == exp
+
+        plt.close("all")
+
+    @pytest.mark.skipif(
+        LooseVersion(pd.__version__) < "1.2",
+        reason="Test requires pandas>=1.2")
+    def test_Float64_input(self):
+        data = pd.DataFrame(
+            {"x": np.random.choice(["a", "b"], 20), "y": np.random.random(20)}
+        )
+        data['y'] = data['y'].astype(pd.Float64Dtype())
+        _ = cat.boxenplot(x="x", y="y", data=data)
 
         plt.close("all")
