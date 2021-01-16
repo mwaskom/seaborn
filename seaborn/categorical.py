@@ -1840,7 +1840,10 @@ class _LVPlotter(_CategoricalPlotter):
         """Get the number of data points and calculate `depth` of
         letter-value plot."""
         vals = np.asarray(vals)
-        vals = vals[np.isfinite(vals)]
+        # Remove infinite values while handling a 'object' dtype
+        # that can come from pd.Float64Dtype() input
+        with pd.option_context('mode.use_inf_as_null', True):
+            vals = vals[~pd.isnull(vals)]
         n = len(vals)
         p = self.outlier_prop
 
