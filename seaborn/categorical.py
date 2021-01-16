@@ -54,6 +54,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         order=None,
         orient=None,
         require_numeric=False,
+        fixed_scale=True,
     ):
 
         super().__init__(data=data, variables=variables)
@@ -120,34 +121,42 @@ class _CategoricalPlotterNew(VectorPlotter):
         explicit_order = order is not None or cat_data.dtype.name == "category"
         order = categorical_order(cat_data, order)
 
-        # Then convert data to strings. This is because in matplotlib,
-        # "categorical" data really mean "string" data, so doing this artists
-        # will be drawn on the categorical axis with a fixed scale.
-        # # Note: this would be a good place to apply a formatter object or function
-        # to allow users control over the string representation of things like dates
-        # or float data.
-        # XXX this is stripping categorical info that we do want to keep
-        cat_data = cat_data.astype(str)
-        order = pd.Index(order).astype(str)
+        if fixed_scale or self.var_types[self.cat_axis] == "categorical":
 
-        # Here we are inserting the levels of the categorical variable into the
-        # var_levels object so that it can be used in iter_data. This is
-        # necessary because originally the categorical plots (often) drew
-        # separate artists for each level of the categorical variable.
-        # Note: levels are numeric because we iterate over comp_data, but it might
-        # be better if that logic were handled elsewhere (i.e. if iter_data knew
-        # to iterate with an index when from_comp_data is True).
-        self.var_levels[self.cat_axis] = [i for i, _ in enumerate(order)]
+            # Then convert data to strings. This is because in matplotlib,
+            # "categorical" data really mean "string" data, so doing this artists
+            # will be drawn on the categorical axis with a fixed scale.
+            # # Note: this would be a good place to apply a formatter object or function
+            # to allow users control over the string representation of things like dates
+            # or float data.
+            # XXX this is stripping categorical info that we do want to keep
+            cat_data = cat_data.astype(str)
+            order = pd.Index(order).astype(str)
 
-        # Now ensure that seaborn will use categorical rules internally
-        self.var_types[self.cat_axis] = "categorical"
+            # Here we are inserting the levels of the categorical variable into the
+            # var_levels object so that it can be used in iter_data. This is
+            # necessary because originally the categorical plots (often) drew
+            # separate artists for each level of the categorical variable.
+            # Note: levels are numeric because we iterate over comp_data, but it might
+            # be better if that logic were handled elsewhere (i.e. if iter_data knew
+            # to iterate with an index when from_comp_data is True).
+            self.var_levels[self.cat_axis] = [i for i, _ in enumerate(order)]
 
-        # Put the categorical vector with its new metadata back into plot_data structure
-        self.plot_data[self.cat_axis] = cat_data
+            # Now ensure that seaborn will use categorical rules internally
+            self.var_types[self.cat_axis] = "categorical"
 
-        # Update ourself with the new order list, which may have been stringified.
-        if explicit_order:
-            self.order = order.to_list()
+            # Put the string-typed categorical vector back into the plot_data structure
+            self.plot_data[self.cat_axis] = cat_data
+
+            # Update ourself with the new order list, which may have been stringified.
+            if explicit_order:
+                self.order = order.to_list()
+
+        else:
+
+            if self.var_types[self.cat_axis] == "datetime":
+                order = [mpl.dates.date2num(x) for x in order]
+            self.var_levels[self.cat_axis] = order
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
@@ -260,17 +269,25 @@ class _CategoricalPlotterNew(VectorPlotter):
         #     scout.remove()
         default_color = "C0" if color is None else color
 
+        # TODO this should be centralized
+        unique_values = np.unique(self.comp_data[self.cat_axis])
+        if len(unique_values) > 1:
+            native_width = np.nanmin(np.diff(unique_values))
+        else:
+            native_width = 1
+        width = .8 * native_width
+
         if jitter is True:
             jlim = 0.1
         else:
             jlim = float(jitter)
         if "hue" in self.variables and dodge:
             jlim /= len(self._hue_map.levels)
+        jlim *= native_width
         jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
 
         # XXX this is a property on the original class and probably broadly useful
         if "hue" in self.variables:
-            width = .8  # XXX should not be hardcoded here
             n_levels = len(self._hue_map.levels)
             if dodge:
                 each_width = width / n_levels
@@ -3027,6 +3044,7 @@ def stripplot(
     order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
+    fixed_scale=True,
     **kwargs
 ):
 
@@ -3038,6 +3056,7 @@ def stripplot(
         order=order,
         orient=orient,
         require_numeric=False,
+        fixed_scale=fixed_scale,
     )
 
     if ax is None:
@@ -4001,6 +4020,7 @@ def catplot(
     orient=None, color=None, palette=None,
     legend=True, legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
+    fixed_scale=True,
     **kwargs
 ):
 
@@ -4033,6 +4053,7 @@ def catplot(
             order=order,
             orient=orient,
             require_numeric=False,
+            fixed_scale=fixed_scale,
         )
 
         # XXX Copying a fair amount from displot, which is not ideal

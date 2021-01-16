@@ -1188,7 +1188,7 @@ class VectorPlotter:
             # Store the converter vector, which we use elsewhere (e.g comp_data)
             self.converters[var] = converter
 
-            # Now actually update the matplotib objects to do the conversion we want
+            # Now actually update the matplotlib objects to do the conversion we want
             grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
             for converter, seed_data in grouped:
                 if self.var_types[var] == "categorical":

@@ -1738,6 +1738,39 @@ class TestStripPlot:
                 expected = np.full(len(cat_points), i + offsets[j])
                 assert_array_almost_equal(cat_points, expected)
 
+    @pytest.mark.parametrize("cat_var", ["a", "s", "d"])
+    def test_positions_unfixed(self, long_df, cat_var):
+
+        long_df = long_df.sort_values(cat_var)
+        ax = stripplot(data=long_df, x=cat_var, y="y", jitter=False, fixed_scale=False)
+
+        for i, (cat_level, cat_data) in enumerate(long_df.groupby(cat_var)):
+
+            points = ax.collections[i].get_offsets().T
+            cat_points = points[0]
+            val_points = points[1]
+
+            comp_level = ax.xaxis.convert_units(cat_level)
+
+            assert_array_equal(cat_points, np.full_like(cat_points, comp_level))
+            assert_array_equal(val_points, cat_data["y"])
+
+    def test_jitter_unfixed(self, long_df):
+
+        ax1, ax2 = plt.figure().subplots(2)
+        kws = dict(data=long_df, x="y", orient="h", fixed_scale=False)
+
+        np.random.seed(0)
+        stripplot(**kws, y="s", ax=ax1)
+
+        np.random.seed(0)
+        stripplot(**kws, y=long_df["s"] * 2, ax=ax2)
+
+        p1 = ax1.collections[0].get_offsets()[1]
+        p2 = ax2.collections[0].get_offsets()[1]
+
+        assert p2.std() > p1.std()
+
     @pytest.mark.parametrize(
         "x_type,order",
         [
@@ -1968,6 +2001,7 @@ class TestStripPlot:
             dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
             dict(data="long", x="a_cat", y="y", hue="z"),
             dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
+            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
         ]
     )
     def test_vs_catplot(self, long_df, wide_df, kwargs):
