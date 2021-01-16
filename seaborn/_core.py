@@ -2,6 +2,7 @@ import warnings
 import itertools
 from copy import copy
 from functools import partial
+from collections import UserString
 from collections.abc import Iterable, Sequence, Mapping
 from numbers import Number
 from datetime import datetime
@@ -780,8 +781,10 @@ class VectorPlotter:
             wide_data = pd.DataFrame(data, copy=True)
 
             # At this point we should reduce the dataframe to numeric cols
-            numeric_cols = wide_data.apply(variable_type) == "numeric"
-            wide_data = wide_data.loc[:, numeric_cols]
+            numeric_cols = [
+                k for k, v in wide_data.items() if variable_type(v) == "numeric"
+            ]
+            wide_data = wide_data[numeric_cols]
 
             # Now melt the data to long form
             melt_kws = {"var_name": "@columns", "value_name": "@values"}
@@ -1200,6 +1203,25 @@ class VectorPlotter:
             ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
 
 
+class VariableType(UserString):
+    """
+    Prevent comparisons elsewhere in the library from using the wrong name.
+
+    Errors are simple assertions because users should not be able to trigger
+    them. If that changes, they should be more verbose.
+
+    """
+    allowed = "numeric", "datetime", "categorical"
+
+    def __init__(self, data):
+        assert data in self.allowed, data
+        super().__init__(data)
+
+    def __eq__(self, other):
+        assert other in self.allowed, other
+        return self.data == other
+
+
 def variable_type(vector, boolean_type="numeric"):
     """
     Determine whether a vector contains numeric, categorical, or datetime data.
@@ -1223,13 +1245,14 @@ def variable_type(vector, boolean_type="numeric"):
     var_type : 'numeric', 'categorical', or 'datetime'
         Name identifying the type of data in the vector.
     """
+
     # If a categorical dtype is set, infer categorical
     if pd.api.types.is_categorical_dtype(vector):
-        return "categorical"
+        return VariableType("categorical")
 
     # Special-case all-na data, which is always "numeric"
     if pd.isna(vector).all():
-        return "numeric"
+        return VariableType("numeric")
 
     # Special-case binary/boolean data, allow caller to determine
     # This triggers a numpy warning when vector has strings/objects
@@ -1244,14 +1267,14 @@ def variable_type(vector, boolean_type="numeric"):
             action='ignore', category=(FutureWarning, DeprecationWarning)
         )
         if np.isin(vector, [0, 1, np.nan]).all():
-            return boolean_type
+            return VariableType(boolean_type)
 
     # Defer to positive pandas tests
     if pd.api.types.is_numeric_dtype(vector):
-        return "numeric"
+        return VariableType("numeric")
 
     if pd.api.types.is_datetime64_dtype(vector):
-        return "datetime"
+        return VariableType("datetime")
 
     # --- If we get to here, we need to check the entries
 
@@ -1264,7 +1287,7 @@ def variable_type(vector, boolean_type="numeric"):
         return True
 
     if all_numeric(vector):
-        return "numeric"
+        return VariableType("numeric")
 
     # Check for a collection where everything is a datetime
 
@@ -1275,11 +1298,11 @@ def variable_type(vector, boolean_type="numeric"):
         return True
 
     if all_datetime(vector):
-        return "datetime"
+        return VariableType("datetime")
 
     # Otherwise, our final fallback is to consider things categorical
 
-    return "categorical"
+    return VariableType("categorical")
 
 
 def infer_orient(x=None, y=None, orient=None, require_numeric=True):
