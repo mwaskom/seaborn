@@ -2138,7 +2138,7 @@ _categorical_docs = dict(
     orient : "v" | "h", optional
         Orientation of the plot (vertical or horizontal). This is usually
         inferred based on the type of the input variables, but it can be used
-        to resolve ambiguitiy when both `x` and `y` are numeric or when
+        to resolve ambiguity when both `x` and `y` are numeric or when
         plotting wide-form data.\
     """),
     color=dedent("""\
