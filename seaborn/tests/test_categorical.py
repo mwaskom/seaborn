@@ -19,12 +19,70 @@ from .. import palettes
 
 from .._core import categorical_order
 from ..categorical import (
+    _CategoricalPlotterNew,
     catplot,
     stripplot,
 )
 from ..palettes import color_palette
 from ..utils import _normal_quantile_func, _draw_figure
 from .._testing import assert_plots_equal
+
+
+PLOT_FUNCS = [
+    catplot,
+    stripplot,
+]
+
+
+class TestCategoricalPlotterNew:
+
+    @pytest.mark.parametrize(
+        "func,kwargs",
+        itertools.product(
+            PLOT_FUNCS,
+            [
+                {"x": "x", "y": "a"},
+                {"x": "a", "y": "y"},
+                {"x": "y"},
+                {"y": "x"},
+            ],
+        ),
+    )
+    def test_axis_labels(self, long_df, func, kwargs):
+
+        func(data=long_df, **kwargs)
+
+        ax = plt.gca()
+        for axis in "xy":
+            val = kwargs.get(axis, "")
+            label_func = getattr(ax, f"get_{axis}label")
+            assert label_func() == val
+
+    @pytest.mark.parametrize("func", PLOT_FUNCS)
+    def test_empty(self, func):
+
+        func()
+        ax = plt.gca()
+        assert not ax.collections
+        assert not ax.patches
+        assert not ax.lines
+
+    def test_redundant_hue_backcompat(self, long_df):
+
+        p = _CategoricalPlotterNew(
+            data=long_df,
+            variables={"x": "s", "y": "y"},
+        )
+
+        color = None
+        palette = dict(zip(long_df["s"].unique(), color_palette()))
+        hue_order = None
+
+        palette, _ = p._hue_backcompat(color, palette, hue_order, force_hue=True)
+
+        assert p.variables["hue"] == "s"
+        assert_array_equal(p.plot_data["hue"], p.plot_data["x"])
+        assert all(isinstance(k, str) for k in palette)
 
 
 class CategoricalFixture:
@@ -1964,11 +2022,6 @@ class TestStripPlot:
         assert points.get_linewidths().item() == kwargs["linewidth"]
         assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
 
-    def test_empty(self):
-
-        ax = stripplot()
-        assert not ax.collections
-
     def test_three_strip_points(self):
 
         x = np.arange(3)
@@ -1978,11 +2031,12 @@ class TestStripPlot:
 
     def test_palette_from_color_deprecation(self, long_df):
 
-        color = "C3"
+        color = (.9, .4, .5)
+        hex_color = mpl.colors.to_hex(color)
 
         hue_var = "a"
         n_hue = long_df[hue_var].nunique()
-        palette = color_palette(f"dark:{color}", n_hue)
+        palette = color_palette(f"dark:{hex_color}", n_hue)
 
         with pytest.warns(FutureWarning, match="Setting a gradient palette"):
             ax = stripplot(data=long_df, x="z", hue=hue_var, color=color)
@@ -2892,7 +2946,7 @@ class TestCatPlot(CategoricalFixture):
     def test_ax_kwarg_removal(self):
 
         f, ax = plt.subplots()
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="catplot is a figure-level"):
             g = cat.catplot(x="g", y="y", data=self.df, ax=ax)
         assert len(ax.collections) == 0
         assert len(g.ax.collections) > 0
@@ -2958,6 +3012,15 @@ class TestCatPlot(CategoricalFixture):
         g = cat.catplot(x="y", y="g", col="g", data=self.df, sharey=False, order=order)
         for ax in g.axes.flat:
             assert len(ax.collections) == len(self.df.g.unique())
+
+    @pytest.mark.parametrize("var", ["col", "row"])
+    def test_array_faceter(self, long_df, var):
+
+        g1 = catplot(data=long_df, x="y", **{var: "a"})
+        g2 = catplot(data=long_df, x="y", **{var: long_df["a"].to_numpy()})
+
+        for ax1, ax2 in zip(g1.axes.flat, g2.axes.flat):
+            assert_plots_equal(ax1, ax2)
 
 
 class TestBoxenPlotter(CategoricalFixture):

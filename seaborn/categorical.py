@@ -229,6 +229,8 @@ class _CategoricalPlotterNew(VectorPlotter):
         # But two reasons not to do that:
         # - If it happens before plotting, autoscaling messes up the plot limits
         # - It would change existing plots from other seaborn functions
+        if self.var_types[self.cat_axis] != "categorical":
+            return
 
         data = self.plot_data[self.cat_axis]
         if self.facets is not None:
@@ -4041,7 +4043,7 @@ def catplot(
     # Check for attempt to plot onto specific axes and warn
     if "ax" in kwargs:
         msg = ("catplot is a figure-level function and does not accept "
-               "target axes. You may wish to try {}".format(kind + "plot"))
+               f"target axes. You may wish to try {kind}plot")
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
@@ -4057,15 +4059,6 @@ def catplot(
         )
 
         # XXX Copying a fair amount from displot, which is not ideal
-
-        # Check for attempt to plot onto specific axes and warn
-        if "ax" in kwargs:
-            msg = (
-                "`catplot` is a figure-level function and does not accept "
-                "the ax= paramter. You may wish to try {}plot.".format(kind)
-            )
-            warnings.warn(msg, UserWarning)
-            kwargs.pop("ax")
 
         for var in ["row", "col"]:
             # Handle faceting variables that lack name information
