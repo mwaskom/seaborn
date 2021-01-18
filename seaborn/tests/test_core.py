@@ -1281,7 +1281,7 @@ class TestVectorPlotter:
     )
     def comp_data_missing_fixture(self, request):
 
-        # This fixture holds the logic for parametrizing
+        # This fixture holds the logic for parameterizing
         # the following test (test_comp_data_missing)
 
         NA, var_type = request.param
@@ -1324,6 +1324,61 @@ class TestVectorPlotter:
             mapper(order=order)
 
             assert p.var_levels[var] == order
+
+    def test_scale_native(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        with pytest.raises(NotImplementedError):
+            p.scale_native("x")
+
+    def test_scale_numeric(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"y": "y"})
+        with pytest.raises(NotImplementedError):
+            p.scale_numeric("y")
+
+    def test_scale_datetime(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "t"})
+        with pytest.raises(NotImplementedError):
+            p.scale_datetime("x")
+
+    def test_scale_categorical(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p.scale_categorical("y")
+        assert p.variables["y"] is None
+        assert p.var_types["y"] == "categorical"
+        assert (p.plot_data["y"] == "").all()
+
+        p = VectorPlotter(data=long_df, variables={"x": "s"})
+        p.scale_categorical("x")
+        assert p.var_types["x"] == "categorical"
+        assert hasattr(p.plot_data["x"], "str")
+        assert not p._var_ordered["x"]
+        assert p.plot_data["x"].is_monotonic_increasing
+        assert_array_equal(p.var_levels["x"], p.plot_data["x"].unique())
+
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+        p.scale_categorical("x")
+        assert not p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], categorical_order(long_df["a"]))
+
+        p = VectorPlotter(data=long_df, variables={"x": "a_cat"})
+        p.scale_categorical("x")
+        assert p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], categorical_order(long_df["a_cat"]))
+
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+        order = np.roll(long_df["a"].unique(), 1)
+        p.scale_categorical("x", order=order)
+        assert p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], order)
+
+        p = VectorPlotter(data=long_df, variables={"x": "s"})
+        p.scale_categorical("x", formatter=lambda x: f"{x:%}")
+        assert p.plot_data["x"].str.endswith("%").all()
+        assert all(s.endswith("%") for s in p.var_levels["x"])
 
 
 class TestCoreFunc:

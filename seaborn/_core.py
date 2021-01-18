@@ -20,6 +20,7 @@ from .palettes import (
     color_palette,
 )
 from .utils import (
+    _check_argument,
     get_color_cycle,
     remove_na,
 )
@@ -1306,7 +1307,7 @@ class VectorPlotter:
     def scale_numeric(self, axis, *args, **kwargs):
 
         # Feels needed to completeness, what should it do?
-        # Perhaps handle log scaling here?
+        # Perhaps handle log scaling? Set the ticker/formatter/limits?
 
         raise NotImplementedError
 
@@ -1317,7 +1318,44 @@ class VectorPlotter:
 
         raise NotImplementedError
 
-    def scale_categorical(self, axis, order=None, formatter=None, grid=False):
+    def scale_categorical(self, axis, order=None, formatter=None):
+        """
+        Enforce categorical (fixed-scale) rules for the data on given axis.
+
+        Parameters
+        ----------
+        axis : "x" or "y"
+            Axis of the plot to operate on.
+        order : list
+            Order that unique values should appear in.
+        formatter : callable
+            Function mapping values to a string representation.
+
+        Returns
+        -------
+        self
+
+        """
+        # This method both modifies the internal representation of the data
+        # (converting it to string) and sets some attributes on self. It might be
+        # a good idea to have a separate object attached to self that contains the
+        # information in those attributes (i.e. whether to enforce variable order
+        # across facets, the order to use) similar to the SemanticMapping objects
+        # we have for semantic variables. That object could also hold the converter
+        # objects that get used, if we can decouple those from an existing axis
+        # (cf. https://github.com/matplotlib/matplotlib/issues/19229).
+        # There are some interactions with faceting information that would need
+        # to be thought through, since the converts to use depend on facets.
+        # If we go that route, these methods could become "borrowed" methods similar
+        # to what happens with the alternate semantic mapper constructors, although
+        # that approach is kind of fussy and confusing.
+
+        # TODO this method could also set the grid state? Since we like to have no
+        # grid on the categorical axis by default. Again, a case where we'll need to
+        # store information until we use it, so best to have a way to collect the
+        # attributes that this method sets.
+
+        _check_argument("axis", ["x", "y"], axis)
 
         # Categorical plots can be "univariate" in which case they get an anonymous
         # category label on the opposite axis.
@@ -1344,23 +1382,29 @@ class VectorPlotter:
         # Track whether the order is given explicitly so that we can know
         # whether or not to use the order constructed here downstream
         self._var_ordered[axis] = order is not None or cat_data.dtype.name == "category"
-        order = categorical_order(cat_data, order)
+        order = pd.Index(categorical_order(cat_data, order))
 
         # Then convert data to strings. This is because in matplotlib,
         # "categorical" data really mean "string" data, so doing this artists
         # will be drawn on the categorical axis with a fixed scale.
-        # TODO implement formatter here; check that it returns strings
-        cat_data = cat_data.astype(str)
-        order = pd.Index(order).astype(str)
+        # TODO implement formatter here; check that it returns strings?
+        if formatter is not None:
+            cat_data = cat_data.map(formatter)
+            order = order.map(formatter)
+        else:
+            cat_data = cat_data.astype(str)
+            order = order.astype(str)
 
         # Update the levels list with the type-converted order variable
-        self.var_levels[self.cat_axis] = order
+        self.var_levels[axis] = order
 
         # Now ensure that seaborn will use categorical rules internally
-        self.var_types[self.cat_axis] = "categorical"
+        self.var_types[axis] = "categorical"
 
         # Put the string-typed categorical vector back into the plot_data structure
-        self.plot_data[self.cat_axis] = cat_data
+        self.plot_data[axis] = cat_data
+
+        return self
 
 
 class VariableType(UserString):
