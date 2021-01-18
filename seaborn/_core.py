@@ -1022,6 +1022,8 @@ class VectorPlotter:
                         levels[axis] = np.sort(data[axis].unique())
                 elif self.var_types[axis] == "datetime":
                     levels[axis] = mpl.dates.date2num(levels[axis])
+                elif self.var_types[axis] == "numeric" and self._log_scaled(axis):
+                    levels[axis] = np.log10(levels[axis])
 
         if grouping_vars:
 

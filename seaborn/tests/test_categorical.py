@@ -2032,11 +2032,21 @@ class TestStripPlot:
     def test_log_scale(self):
 
         x = [1, 10, 100, 1000]
+
         ax = plt.figure().subplots()
         ax.set_xscale("log")
         stripplot(x=x)
         vals = ax.collections[0].get_offsets()[:, 0]
         assert_array_equal(x, vals)
+
+        y = [1, 2, 3, 4]
+
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        stripplot(x=x, y=y, fixed_scale=False, jitter=False)
+        for i, point in enumerate(ax.collections):
+            val = point.get_offsets()[0, 0]
+            assert val == x[i]
 
     def test_palette_from_color_deprecation(self, long_df):
 
