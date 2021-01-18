@@ -602,6 +602,12 @@ class VectorPlotter:
 
     def __init__(self, data=None, variables={}):
 
+        self._var_levels = {}
+        # var_ordered is relevant only for categorical axis variables, and may
+        # be better handled by an internal axis information object that tracks
+        # such information and is set up by the scale_* methods. The analogous
+        # information for numeric axes would be information about log scales.
+        self._var_ordered = {"x": False, "y": False}  # alt., used DefaultDict
         self.assign_variables(data, variables)
 
         for var, cls in self._semantic_mappings.items():
@@ -612,8 +618,6 @@ class VectorPlotter:
 
             # Call the mapping function to initialize with default values
             getattr(self, f"map_{var}")()
-
-        self._var_levels = {}
 
     @classmethod
     def get_semantics(cls, kwargs, semantics=None):
@@ -678,6 +682,12 @@ class VectorPlotter:
             )
             for v in variables
         }
+
+        # XXX does this make sense here?
+        for axis in "xy":
+            if axis not in variables:
+                continue
+            self.var_levels[axis] = categorical_order(self.plot_data[axis])
 
         return self
 
@@ -994,6 +1004,24 @@ class VectorPlotter:
         else:
             data = self.plot_data
 
+        levels = self.var_levels.copy()
+        if from_comp_data:
+            for axis in {"x", "y"} & set(grouping_vars):
+                if self.var_types[axis] == "categorical":
+                    if self._var_ordered[axis]:
+                        # If the axis is ordered, then the axes in a possible
+                        # facet grid are by definition "shared", or there is a
+                        # single axis with a unique cat -> idx mapping.
+                        # So we can just take the first converter object.
+                        converter = self.converters[axis].iloc[0]
+                        levels[axis] = converter.convert_units(levels[axis])
+                    else:
+                        # Otherwise, the mappings may not be unique, but we can
+                        # use the unique set of index values in comp_data.
+                        levels[axis] = np.sort(data[axis].unique())
+                elif self.var_types[axis] == "datetime":
+                    levels[axis] = mpl.dates.date2num(levels[axis])
+
         if grouping_vars:
 
             grouped_data = data.groupby(
@@ -1002,7 +1030,7 @@ class VectorPlotter:
 
             grouping_keys = []
             for var in grouping_vars:
-                grouping_keys.append(self.var_levels.get(var, []))
+                grouping_keys.append(levels.get(var, []))
 
             iter_keys = itertools.product(*grouping_keys)
             if reverse:
@@ -1090,8 +1118,6 @@ class VectorPlotter:
         obj,
         allowed_types=None,
         log_scale=None,
-        x_order=None,
-        y_order=None,
     ):
         """Associate the plotter with an Axes manager and initialize its units.
 
@@ -1106,8 +1132,6 @@ class VectorPlotter:
             If not False, set the axes to use log scaling, with the given
             base or defaulting to 10. If a tuple, interpreted as separate
             arguments for the x and y axes.
-        {x,y}_order : lists of strings
-            Set the order that categorical variables should appear on each axis.
 
         """
         from .axisgrid import FacetGrid
@@ -1149,7 +1173,6 @@ class VectorPlotter:
 
         # -- Get axis objects for each row in plot_data for type conversions and scaling
 
-        order = {"x": x_order, "y": y_order}
         facet_dim = {"x": "col", "y": "row"}
 
         self.converters = {}
@@ -1192,7 +1215,11 @@ class VectorPlotter:
             grouped = self.plot_data[var].groupby(self.converters[var], sort=False)
             for converter, seed_data in grouped:
                 if self.var_types[var] == "categorical":
-                    seed_data = categorical_order(seed_data, order[var])
+                    if self._var_ordered[var]:
+                        order = self.var_levels[var]
+                    else:
+                        order = None
+                    seed_data = categorical_order(seed_data, order)
                 converter.update_units(seed_data)
 
         # -- Set numerical axis scales
@@ -1264,6 +1291,76 @@ class VectorPlotter:
         if not ax.get_ylabel():
             y_visible = any(t.get_visible() for t in ax.get_yticklabels())
             ax.set_ylabel(self.variables.get("y", default_y), visible=y_visible)
+
+    # XXX If the scale_* methods are going to modify the plot_data structure, they
+    # can't be called twice. That means that if they are called twice, they should
+    # raise. Alternatively, we could store an original version of plot_data and each
+    # time they are called they operate on the store, not the current state.
+
+    def scale_native(self, axis, *args, **kwargs):
+
+        # Default, defer to matplotlib
+
+        raise NotImplementedError
+
+    def scale_numeric(self, axis, *args, **kwargs):
+
+        # Feels needed to completeness, what should it do?
+        # Perhaps handle log scaling here?
+
+        raise NotImplementedError
+
+    def scale_datetime(self, axis, *args, **kwargs):
+
+        # Use pd.to_datetime to convert strings or numbers to datetime objects
+        # Note, use day-resolution for numeric->datetime to match matplotlib
+
+        raise NotImplementedError
+
+    def scale_categorical(self, axis, order=None, formatter=None, grid=False):
+
+        # Categorical plots can be "univariate" in which case they get an anonymous
+        # category label on the opposite axis.
+        if axis not in self.variables:
+            self.variables[axis] = None
+            self.var_types[axis] = "categorical"
+            self.plot_data[axis] = ""
+
+        # If the "categorical" variable has a numeric type, sort the rows so that
+        # the default result from categorical_order has those values sorted after
+        # they have been coerced to strings. The reason for this is so that later
+        # we can get facet-wise orders that are correct.
+        # XXX Should this also sort datetimes?
+        # It feels more consistent, but technically will be a default change
+        # If so, should also change categorical_order to behave that way
+        if self.var_types[axis] == "numeric":
+            self.plot_data = self.plot_data.sort_values(axis, kind="mergesort")
+
+        # Now get a reference to the categorical data vector
+        cat_data = self.plot_data[axis]
+
+        # Get the initial categorical order, which we do before string
+        # conversion to respect the original types of the order list.
+        # Track whether the order is given explicitly so that we can know
+        # whether or not to use the order constructed here downstream
+        self._var_ordered[axis] = order is not None or cat_data.dtype.name == "category"
+        order = categorical_order(cat_data, order)
+
+        # Then convert data to strings. This is because in matplotlib,
+        # "categorical" data really mean "string" data, so doing this artists
+        # will be drawn on the categorical axis with a fixed scale.
+        # TODO implement formatter here; check that it returns strings
+        cat_data = cat_data.astype(str)
+        order = pd.Index(order).astype(str)
+
+        # Update the levels list with the type-converted order variable
+        self.var_levels[self.cat_axis] = order
+
+        # Now ensure that seaborn will use categorical rules internally
+        self.var_types[self.cat_axis] = "categorical"
+
+        # Put the string-typed categorical vector back into the plot_data structure
+        self.plot_data[self.cat_axis] = cat_data
 
 
 class VariableType(UserString):

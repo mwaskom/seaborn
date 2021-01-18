@@ -92,72 +92,6 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.variables.update({"x": orig_y, "y": orig_x})
             self.var_types.update({"x": orig_y_type, "y": orig_x_type})
 
-        # Categorical plots can be "univariate" in which case they get an anonymous
-        # category label on the opposite axis.
-        unspecified_cat_var = {"x", "y"} - set(self.variables)
-        if self.has_xy_data and unspecified_cat_var:
-            var = unspecified_cat_var.pop()
-            self.variables[var] = None
-            self.var_types[var] = "categorical"
-            self.plot_data[var] = ""
-
-        # If the "categorical" variable has a numeric type, sort the rows so that
-        # default the result from categorical_order has those values sorted after
-        # they have been coerced to strings. The reason for this is so that later
-        # we can get facet-wise orders that are correct.
-        # XXX should this also sort datetimes?
-        # It feels more consistent, but technically will be a default change
-        # If so, should also change categorical_order to behave that way
-        if self.var_types[self.cat_axis] == "numeric":
-            self.plot_data = self.plot_data.sort_values(self.cat_axis, kind="mergesort")
-
-        # Now get a reference to the categorical data vector
-        cat_data = self.plot_data[self.cat_axis]
-
-        # Get the initial categorical order, which we do before string
-        # conversion to respect the original types of the order list.
-        # Track whether the order is given explicitly so that we can know
-        # whether or not to use the order constructed here downstream
-        explicit_order = order is not None or cat_data.dtype.name == "category"
-        order = categorical_order(cat_data, order)
-
-        if fixed_scale or self.var_types[self.cat_axis] == "categorical":
-
-            # Then convert data to strings. This is because in matplotlib,
-            # "categorical" data really mean "string" data, so doing this artists
-            # will be drawn on the categorical axis with a fixed scale.
-            # # Note: this would be a good place to apply a formatter object or function
-            # to allow users control over the string representation of things like dates
-            # or float data.
-            # XXX this is stripping categorical info that we do want to keep
-            cat_data = cat_data.astype(str)
-            order = pd.Index(order).astype(str)
-
-            # Here we are inserting the levels of the categorical variable into the
-            # var_levels object so that it can be used in iter_data. This is
-            # necessary because originally the categorical plots (often) drew
-            # separate artists for each level of the categorical variable.
-            # Note: levels are numeric because we iterate over comp_data, but it might
-            # be better if that logic were handled elsewhere (i.e. if iter_data knew
-            # to iterate with an index when from_comp_data is True).
-            self.var_levels[self.cat_axis] = [i for i, _ in enumerate(order)]
-
-            # Now ensure that seaborn will use categorical rules internally
-            self.var_types[self.cat_axis] = "categorical"
-
-            # Put the string-typed categorical vector back into the plot_data structure
-            self.plot_data[self.cat_axis] = cat_data
-
-            # Update ourself with the new order list, which may have been stringified.
-            if explicit_order:
-                self.order = order.to_list()
-
-        else:
-
-            if self.var_types[self.cat_axis] == "datetime":
-                order = [mpl.dates.date2num(x) for x in order]
-            self.var_levels[self.cat_axis] = order
-
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
 
@@ -242,6 +176,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             ]
             data = data[self.converters[self.cat_axis].isin(shared_axes)]
 
+        # XXX use self.var_levels[self.cat_axis]
         order = categorical_order(data, self.order)
 
         if self.cat_axis == "x":
@@ -3064,8 +2999,10 @@ def stripplot(
     if ax is None:
         ax = plt.gca()
 
-    order_kw = {f"{p.cat_axis}_order": p.order}
-    p._attach(ax, **order_kw)
+    if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+        p.scale_categorical(p.cat_axis, order=order)
+
+    p._attach(ax)
 
     if not p.has_xy_data:
         return ax
@@ -4084,8 +4021,10 @@ def catplot(
             **facet_kws,
         )
 
-        order_kw = {f"{p.cat_axis}_order": p.order}
-        p._attach(g, **order_kw)
+        if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+            p.scale_categorical(p.cat_axis, order=order)
+
+        p._attach(g)
 
         if not p.has_xy_data:
             return g
