@@ -1354,6 +1354,8 @@ class VectorPlotter:
         # grid on the categorical axis by default. Again, a case where we'll need to
         # store information until we use it, so best to have a way to collect the
         # attributes that this method sets.
+        # TODO if we are going to set visual properties of the axes with these methods,
+        # then we could do the steps currently in CategoricalPlotter._adjust_cat_axis
 
         _check_argument("axis", ["x", "y"], axis)
 

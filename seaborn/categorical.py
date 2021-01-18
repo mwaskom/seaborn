@@ -58,7 +58,6 @@ class _CategoricalPlotterNew(VectorPlotter):
     ):
 
         super().__init__(data=data, variables=variables)
-        self.order = order
 
         # This method takes care of some bookkeeping that is necessary because the
         # original categorical plots (prior to the 2021 refactor) had some rules that
@@ -116,7 +115,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.plot_data["hue"] = self.plot_data[self.cat_axis]
             self.variables["hue"] = self.variables[self.cat_axis]
             self.var_types["hue"] = "categorical"
-            hue_order = self.order
+            hue_order = self.var_levels[self.cat_axis]
 
             # Because we convert the categorical axis variable to string,
             # we need to update a dictionary palette too
@@ -157,29 +156,31 @@ class _CategoricalPlotterNew(VectorPlotter):
         gray = mpl.colors.rgb2hex((lum, lum, lum))
         return gray
 
-    def _adjust_cat_axis(self, ax):
+    def _adjust_cat_axis(self, ax, axis):
         """Set ticks and limits for a categorical variable."""
         # Note: in theory, this could happen in _attach for all categorical axes
         # But two reasons not to do that:
         # - If it happens before plotting, autoscaling messes up the plot limits
         # - It would change existing plots from other seaborn functions
-        if self.var_types[self.cat_axis] != "categorical":
+        if self.var_types[axis] != "categorical":
             return
 
-        data = self.plot_data[self.cat_axis]
+        data = self.plot_data[axis]
         if self.facets is not None:
-            share_group = getattr(ax, f"get_shared_{self.cat_axis}_axes")()
-            shared_axes = [getattr(ax, f"{self.cat_axis}axis")] + [
-                getattr(other_ax, f"{self.cat_axis}axis")
+            share_group = getattr(ax, f"get_shared_{axis}_axes")()
+            shared_axes = [getattr(ax, f"{axis}axis")] + [
+                getattr(other_ax, f"{axis}axis")
                 for other_ax in self.facets.axes.flat
                 if share_group.joined(ax, other_ax)
             ]
-            data = data[self.converters[self.cat_axis].isin(shared_axes)]
+            data = data[self.converters[axis].isin(shared_axes)]
 
-        # XXX use self.var_levels[self.cat_axis]
-        order = categorical_order(data, self.order)
+        if self._var_ordered[axis]:
+            order = categorical_order(data, self.var_levels[axis])
+        else:
+            order = categorical_order(data)
 
-        if self.cat_axis == "x":
+        if axis == "x":
             ax.xaxis.grid(False)
             ax.set_xlim(-.5, len(order) - .5, auto=None)
         else:
@@ -2981,7 +2982,7 @@ def stripplot(
     order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    fixed_scale=True,
+    hue_norm=None, fixed_scale=True, formatter=None,
     **kwargs
 ):
 
@@ -3000,7 +3001,7 @@ def stripplot(
         ax = plt.gca()
 
     if fixed_scale or p.var_types[p.cat_axis] == "categorical":
-        p.scale_categorical(p.cat_axis, order=order)
+        p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
     p._attach(ax)
 
@@ -3008,7 +3009,7 @@ def stripplot(
         return ax
 
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
-    p.map_hue(palette=palette, order=hue_order)  # XXX add hue_norm
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     # XXX Copying possibly bad default decisions from original code for now
     kwargs.setdefault("zorder", 3)
@@ -3016,8 +3017,10 @@ def stripplot(
 
     # XXX Here especially is tricky. Old code didn't follow the color cycle.
     # If new code does, then we won't know the default non-mapped color out here.
-    # But also I think in general at logic should move to the outer functions.
+    # But also I think in general that logic should move to the outer functions.
     # XXX Wait how does this work with a custom palette?
+    # XXX Regardless of implementation, I think we should change this default
+    # name to "auto" or something similar that doesn't overlap with a real color name
     if edgecolor == "gray":
         edgecolor = p._get_gray("C0" if color is None else color)
 
@@ -3038,7 +3041,7 @@ def stripplot(
     # but maybe it's better out here? Alternatively, we have an open issue
     # suggesting that _attach could add default axes labels, which seems smart.
     p._add_axis_labels(ax)
-    p._adjust_cat_axis(ax)
+    p._adjust_cat_axis(ax, axis=p.cat_axis)
 
     return ax
 
@@ -3959,7 +3962,7 @@ def catplot(
     orient=None, color=None, palette=None,
     legend=True, legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
-    fixed_scale=True,
+    hue_norm=None, fixed_scale=True, formatter=None,
     **kwargs
 ):
 
@@ -4022,7 +4025,7 @@ def catplot(
         )
 
         if fixed_scale or p.var_types[p.cat_axis] == "categorical":
-            p.scale_categorical(p.cat_axis, order=order)
+            p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
         p._attach(g)
 
@@ -4030,7 +4033,7 @@ def catplot(
             return g
 
         palette, hue_order = p._hue_backcompat(color, palette, hue_order)
-        p.map_hue(palette=palette, order=hue_order)  # TODO add hue_norm
+        p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
         if kind == "strip":
 
@@ -4060,7 +4063,7 @@ def catplot(
 
         # XXX best way to do this housekeeping?
         for ax in g.axes.flat:
-            p._adjust_cat_axis(ax)
+            p._adjust_cat_axis(ax, axis=p.cat_axis)
 
         g.set_axis_labels(
             p.variables.get("x", None),
