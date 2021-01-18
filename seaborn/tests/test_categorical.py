@@ -2029,6 +2029,15 @@ class TestStripPlot:
         for point_color in ax.collections[0].get_facecolor():
             assert tuple(point_color) == to_rgba("C0")
 
+    def test_log_scale(self):
+
+        x = [1, 10, 100, 1000]
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        stripplot(x=x)
+        vals = ax.collections[0].get_offsets()[:, 0]
+        assert_array_equal(x, vals)
+
     def test_palette_from_color_deprecation(self, long_df):
 
         color = (.9, .4, .5)

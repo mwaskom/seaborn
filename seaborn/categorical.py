@@ -275,6 +275,10 @@ class _CategoricalPlotterNew(VectorPlotter):
             else:
                 c = mpl.colors.to_hex(default_color)
 
+            for var in "xy":
+                if self._log_scaled(var):
+                    sub_data[var] = np.power(10, sub_data[var])
+
             ax = self._get_axes(sub_vars)
             ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
 
