@@ -2974,7 +2974,7 @@ boxenplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-#  @_deprecate_positional_args  # XXX disables autoreload
+@_deprecate_positional_args
 def stripplot(
     *,
     x=None, y=None,
@@ -3849,7 +3849,7 @@ def factorplot(*args, **kwargs):
     return catplot(*args, **kwargs)
 
 
-# XXX interfering with autoreload @_deprecate_positional_args
+@_deprecate_positional_args
 def catplot(
     *,
     x=None, y=None,
