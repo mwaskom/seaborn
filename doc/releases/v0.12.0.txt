@@ -6,6 +6,10 @@ v0.12.0 (Unreleased)
 
 - |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417).
 
+- TODO function specific categorical enhancements, including:
+
+  - In :func:`stripplot`, a "strip" with a single observation will be plotted without jitter (:pr:`2413`)
+
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
 - Following `NEP29 <https://numpy.org/neps/nep-0029-deprecation_policy.html>`_, dropped support for Python 3.6 and bumped the minimally-supported versions of the library dependencies.

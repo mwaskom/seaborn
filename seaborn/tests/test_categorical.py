@@ -2043,7 +2043,7 @@ class TestStripPlot:
 
         ax = plt.figure().subplots()
         ax.set_xscale("log")
-        stripplot(x=x, y=y, fixed_scale=False, jitter=False)
+        stripplot(x=x, y=y, fixed_scale=False)
         for i, point in enumerate(ax.collections):
             val = point.get_offsets()[0, 0]
             assert val == x[i]

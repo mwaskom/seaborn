@@ -263,8 +263,10 @@ class _CategoricalPlotterNew(VectorPlotter):
             else:
                 dodge_move = 0
 
-            # TODO should jitter_move be 0 if len(sub_data) == 1?
-            jitter_move = 0 if not jitter else jitterer(size=len(sub_data))
+            if jitter and len(sub_data) > 1:
+                jitter_move = jitterer(size=len(sub_data))
+            else:
+                jitter_move = 0
 
             sub_data = sub_data.assign(**{
                 self.cat_axis: sub_data[self.cat_axis] + dodge_move + jitter_move
