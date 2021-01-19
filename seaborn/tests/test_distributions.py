@@ -815,8 +815,8 @@ class TestKDEPlotBivariate:
             f, ax2 = plt.subplots()
             kdeplot(x=x, y=y, ax=ax2)
 
-        for c1, c2 in zip(ax1.collections, ax2.collections):
-            assert_array_equal(c1.get_offsets(), c2.get_offsets())
+            for c1, c2 in zip(ax1.collections, ax2.collections):
+                assert_array_equal(c1.get_offsets(), c2.get_offsets())
 
     def test_singular_data(self):
 
@@ -2040,15 +2040,16 @@ class TestDisPlot:
     )
     def test_with_rug(self, long_df, kwargs):
 
-        ax = rugplot(data=long_df, **kwargs)
+        ax = plt.figure().subplots()
+        histplot(data=long_df, **kwargs, ax=ax)
+        rugplot(data=long_df, **kwargs, ax=ax)
+
         g = displot(long_df, rug=True, **kwargs)
-        g.ax.patches = []
 
         assert_plots_equal(ax, g.ax, labels=False)
 
         long_df["_"] = "_"
         g2 = displot(long_df, col="_", rug=True, **kwargs)
-        g2.ax.patches = []
 
         assert_plots_equal(ax, g2.ax, labels=False)
 

@@ -443,6 +443,8 @@ class FacetGrid(Grid):
         self._legend_data = {}
         self._x_var = None
         self._y_var = None
+        self._sharex = sharex
+        self._sharey = sharey
         self._dropna = dropna
         self._not_na = not_na
 

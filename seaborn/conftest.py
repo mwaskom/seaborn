@@ -156,7 +156,8 @@ def long_df(rng):
         a=rng.choice(list("abc"), n),
         b=rng.choice(list("mnop"), n),
         c=rng.choice([0, 1], n, [.3, .7]),
-        t=rng.choice(np.arange("2004-07-30", "2007-07-30", dtype="datetime64[Y]"), n),
+        d=rng.choice(np.arange("2004-07-30", "2007-07-30", dtype="datetime64[Y]"), n),
+        t=rng.choice(np.arange("2004-07-30", "2004-07-31", dtype="datetime64[m]"), n),
         s=rng.choice([2, 4, 8], n),
         f=rng.choice([0.2, 0.3], n),
     ))

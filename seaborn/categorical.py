@@ -18,7 +18,12 @@ from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
 import matplotlib.pyplot as plt
 
-from ._core import variable_type, infer_orient, categorical_order
+from ._core import (
+    VectorPlotter,
+    variable_type,
+    infer_orient,
+    categorical_order,
+)
 from . import utils
 from .utils import remove_na, _normal_quantile_func
 from .algorithms import bootstrap
@@ -33,6 +38,268 @@ __all__ = [
     "boxplot", "violinplot", "boxenplot",
     "pointplot", "barplot", "countplot",
 ]
+
+
+class _CategoricalPlotterNew(VectorPlotter):
+
+    semantics = "x", "y", "hue", "units"
+
+    wide_structure = {"x": "@columns", "y": "@values", "hue": "@columns"}
+    flat_structure = {"x": "@index", "y": "@values"}
+
+    def __init__(
+        self,
+        data=None,
+        variables={},
+        order=None,
+        orient=None,
+        require_numeric=False,
+        fixed_scale=True,
+    ):
+
+        super().__init__(data=data, variables=variables)
+
+        # This method takes care of some bookkeeping that is necessary because the
+        # original categorical plots (prior to the 2021 refactor) had some rules that
+        # don't fit exactly into the logic of _core. It may be wise to have a second
+        # round of refactoring that moves the logic deeper, but this will keep things
+        # relatively sensible for now.
+
+        # The concept of an "orientation" is important to the original categorical
+        # plots, but there's no provision for it in _core, so we need to do it here.
+        # Note that it could be useful for the other functions in at least two ways
+        # (orienting a univariate distribution plot from long-form data and selecting
+        # the aggregation axis in lineplot), so we may want to eventually refactor it.
+        self.orient = infer_orient(
+            x=self.plot_data.get("x", None),
+            y=self.plot_data.get("y", None),
+            orient=orient,
+            require_numeric=require_numeric,
+        )
+
+        # Short-circuit in the case of an empty plot
+        if not self.has_xy_data:
+            return
+
+        # For wide data, orient determines assignment to x/y differently from the
+        # wide_structure rules in _core. If we do decide to make orient part of the
+        # _core variable assignment, we'll want to figure out how to express that.
+        if self.input_format == "wide" and self.orient == "h":
+            self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
+            orig_x, orig_x_type = self.variables["x"], self.var_types["x"]
+            orig_y, orig_y_type = self.variables["y"], self.var_types["y"]
+            self.variables.update({"x": orig_y, "y": orig_x})
+            self.var_types.update({"x": orig_y_type, "y": orig_x_type})
+
+    def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
+        """Implement backwards compatability for hue parametrization.
+
+        Note: the force_hue parameter is used so that functions can be shown to
+        pass existing tests during refactoring and then tested for new behavior.
+        It can be removed after completion of the work.
+
+        """
+        # The original categorical functions applied a palette to the categorical axis
+        # by default. We want to require an explicit hue mapping, to be more consistent
+        # with how things work elsewhere now. I don't think there's any good way to
+        # do this gently -- because it's triggered by the default value of hue=None,
+        # users would always get a warning, unless we introduce some sentinel "default"
+        # argument for this change. That's possible, but asking users to set `hue=None`
+        # on every call is annoying.
+        # We are keeping the logic for implementing the old behavior in with the current
+        # system so that (a) we can punt on that decision and (b) we can ensure that
+        # refactored code passes old tests.
+        default_behavior = color is None or palette is not None
+        if force_hue and "hue" not in self.variables and default_behavior:
+            self._redundant_hue = True
+            self.plot_data["hue"] = self.plot_data[self.cat_axis]
+            self.variables["hue"] = self.variables[self.cat_axis]
+            self.var_types["hue"] = "categorical"
+            hue_order = self.var_levels[self.cat_axis]
+
+            # Because we convert the categorical axis variable to string,
+            # we need to update a dictionary palette too
+            if isinstance(palette, dict):
+                palette = {str(k): v for k, v in palette.items()}
+
+        else:
+            self._redundant_hue = False
+
+        # Previously, categorical plots had a trick where color= could seed the palette.
+        # Because that's an explicit parameterization, we are going to give it one
+        # release cycle with a warning before removing.
+        if "hue" in self.variables and palette is None and color is not None:
+            if not isinstance(color, str):
+                color = mpl.colors.to_hex(color)
+            palette = f"dark:{color}"
+            msg = (
+                "Setting a gradient palette using color= is deprecated and will be "
+                f"removed in version 0.13. Set `palette='{palette}'` for same effect."
+            )
+            warnings.warn(msg, FutureWarning)
+
+        return palette, hue_order
+
+    @property
+    def cat_axis(self):
+        return {"v": "x", "h": "y"}[self.orient]
+
+    def _get_gray(self, color="C0"):
+        """Get a grayscale value that looks good with color."""
+        if "hue" in self.variables:
+            rgb_colors = list(self._hue_map.lookup_table.values())
+        else:
+            rgb_colors = [mpl.colors.to_rgb(color)]
+
+        light_vals = [colorsys.rgb_to_hls(*mpl.colors.to_rgb(c))[1] for c in rgb_colors]
+        lum = min(light_vals) * .6
+        gray = mpl.colors.rgb2hex((lum, lum, lum))
+        return gray
+
+    def _adjust_cat_axis(self, ax, axis):
+        """Set ticks and limits for a categorical variable."""
+        # Note: in theory, this could happen in _attach for all categorical axes
+        # But two reasons not to do that:
+        # - If it happens before plotting, autoscaling messes up the plot limits
+        # - It would change existing plots from other seaborn functions
+        if self.var_types[axis] != "categorical":
+            return
+
+        data = self.plot_data[axis]
+        if self.facets is not None:
+            share_group = getattr(ax, f"get_shared_{axis}_axes")()
+            shared_axes = [getattr(ax, f"{axis}axis")] + [
+                getattr(other_ax, f"{axis}axis")
+                for other_ax in self.facets.axes.flat
+                if share_group.joined(ax, other_ax)
+            ]
+            data = data[self.converters[axis].isin(shared_axes)]
+
+        if self._var_ordered[axis]:
+            order = categorical_order(data, self.var_levels[axis])
+        else:
+            order = categorical_order(data)
+
+        if axis == "x":
+            ax.xaxis.grid(False)
+            ax.set_xlim(-.5, len(order) - .5, auto=None)
+        else:
+            ax.yaxis.grid(False)
+            # Note limits that correspond to previously-inverted y axis
+            ax.set_ylim(len(order) - .5, -.5, auto=None)
+
+    def plot_strips(
+        self,
+        jitter,
+        dodge,
+        color,
+        plot_kws,
+    ):
+
+        # XXX 2021 refactor notes
+        # note, original categorical plots do not follow the cycle!
+        # They probably should ... but no changes in this first round of refactoring
+        # if self.ax is None:
+        #     default_color = "C0"
+        # else:
+        #     scout = self.ax.scatter([], [], color=color, **plot_kws)
+        #     default_color = scout.get_facecolors()
+        #     scout.remove()
+        default_color = "C0" if color is None else color
+
+        # TODO this should be centralized
+        unique_values = np.unique(self.comp_data[self.cat_axis])
+        if len(unique_values) > 1:
+            native_width = np.nanmin(np.diff(unique_values))
+        else:
+            native_width = 1
+        width = .8 * native_width
+
+        if jitter is True:
+            jlim = 0.1
+        else:
+            jlim = float(jitter)
+        if "hue" in self.variables and dodge:
+            jlim /= len(self._hue_map.levels)
+        jlim *= native_width
+        jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
+
+        # XXX this is a property on the original class and probably broadly useful
+        if "hue" in self.variables:
+            n_levels = len(self._hue_map.levels)
+            if dodge:
+                each_width = width / n_levels
+                offsets = np.linspace(0, width - each_width, n_levels)
+                offsets -= offsets.mean()
+            else:
+                offsets = np.zeros(n_levels)
+        else:
+            dodge = False
+
+        # Note that stripplot iterates over categorical positions (and hue levels only
+        # in the case of dodged strips) to match the original way artists were added.
+        iter_vars = [self.cat_axis]
+        if dodge:
+            iter_vars.append("hue")
+
+        # Note further that, unlike most modern functions, stripplot adds empty
+        # artists for combinations of variables that have no observations, hence the
+        # addition/use of allow_empty in iter_data during the 2021 refactor.
+
+        # Initialize ax as otherwise we won't get it when not looping over hue.
+        # If we are in a faceted context, this will be None, but _get_axes will
+        # return an Axes later. Perhaps _get_axes should have some awareness of
+        # cases when x/y are part of the iter_data grouper?
+        ax = self.ax
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            sub_data = sub_data.dropna()
+
+            if dodge:
+                dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
+            else:
+                dodge_move = 0
+
+            if jitter and len(sub_data) > 1:
+                jitter_move = jitterer(size=len(sub_data))
+            else:
+                jitter_move = 0
+
+            sub_data = sub_data.assign(**{
+                self.cat_axis: sub_data[self.cat_axis] + dodge_move + jitter_move
+            })
+
+            if "hue" in self.variables:
+                c = self._hue_map(sub_data["hue"])
+            else:
+                c = mpl.colors.to_hex(default_color)
+
+            for var in "xy":
+                if self._log_scaled(var):
+                    sub_data[var] = np.power(10, sub_data[var])
+
+            ax = self._get_axes(sub_vars)
+            ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
+
+        # TODO XXX remove redundant hue or always define and use when legend is "auto"
+        show_legend = not self._redundant_hue and self.input_format != "wide"
+        if "hue" in self.variables and show_legend:  # TODO and legend:
+            # XXX 2021 refactor notes
+            # As we know, legends are an ongoing challenge.
+            # I'm duplicating the old approach here, but I don't love it,
+            # and it doesn't handle numeric hue mapping properly
+            for level in self._hue_map.levels:
+                color = self._hue_map(level)
+                ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
+            ax.legend(loc="best", title=self.variables["hue"])
+
+
+class _CategoricalFacetPlotter(_CategoricalPlotterNew):
+
+    semantics = _CategoricalPlotterNew.semantics + ("col", "row")
 
 
 class _CategoricalPlotter(object):
@@ -1087,79 +1354,6 @@ class _CategoricalScatterPlotter(_CategoricalPlotter):
                            color=mpl.colors.rgb2hex(rgb),
                            label=label,
                            s=60)
-
-
-class _StripPlotter(_CategoricalScatterPlotter):
-    """1-d scatterplot with categorical organization."""
-    def __init__(self, x, y, hue, data, order, hue_order,
-                 jitter, dodge, orient, color, palette):
-        """Initialize the plotter."""
-        self.establish_variables(x, y, hue, data, orient, order, hue_order)
-        self.establish_colors(color, palette, 1)
-
-        # Set object attributes
-        self.dodge = dodge
-        self.width = .8
-
-        if jitter == 1:  # Use a good default for `jitter = True`
-            jlim = 0.1
-        else:
-            jlim = float(jitter)
-        if self.hue_names is not None and dodge:
-            jlim /= len(self.hue_names)
-        self.jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
-
-    def draw_stripplot(self, ax, kws):
-        """Draw the points onto `ax`."""
-        palette = np.asarray(self.colors)
-        for i, group_data in enumerate(self.plot_data):
-            if self.plot_hues is None or not self.dodge:
-
-                if self.hue_names is None:
-                    hue_mask = np.ones(group_data.size, bool)
-                else:
-                    hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]], bool)
-                    # Broken on older numpys
-                    # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
-
-                strip_data = group_data[hue_mask]
-                point_colors = np.asarray(self.point_colors[i][hue_mask])
-
-                # Plot the points in centered positions
-                cat_pos = np.ones(strip_data.size) * i
-                cat_pos += self.jitterer(size=len(strip_data))
-                kws.update(c=palette[point_colors])
-                if self.orient == "v":
-                    ax.scatter(cat_pos, strip_data, **kws)
-                else:
-                    ax.scatter(strip_data, cat_pos, **kws)
-
-            else:
-                offsets = self.hue_offsets
-                for j, hue_level in enumerate(self.hue_names):
-                    hue_mask = self.plot_hues[i] == hue_level
-                    strip_data = group_data[hue_mask]
-
-                    point_colors = np.asarray(self.point_colors[i][hue_mask])
-
-                    # Plot the points in centered positions
-                    center = i + offsets[j]
-                    cat_pos = np.ones(strip_data.size) * center
-                    cat_pos += self.jitterer(size=len(strip_data))
-                    kws.update(c=palette[point_colors])
-                    if self.orient == "v":
-                        ax.scatter(cat_pos, strip_data, **kws)
-                    else:
-                        ax.scatter(strip_data, cat_pos, **kws)
-
-    def plot(self, ax, kws):
-        """Make the plot."""
-        self.draw_stripplot(ax, kws)
-        self.add_legend_data(ax)
-        self.annotate_axes(ax)
-        if self.orient == "h":
-            ax.invert_yaxis()
 
 
 class _SwarmPlotter(_CategoricalScatterPlotter):
@@ -2794,30 +2988,67 @@ def stripplot(
     order=None, hue_order=None,
     jitter=True, dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
+    hue_norm=None, fixed_scale=True, formatter=None,
     **kwargs
 ):
 
-    if "split" in kwargs:
-        dodge = kwargs.pop("split")
-        msg = "The `split` parameter has been renamed to `dodge`."
-        warnings.warn(msg, UserWarning)
+    # XXX we need to add a legend= param!!!
 
-    plotter = _StripPlotter(x, y, hue, data, order, hue_order,
-                            jitter, dodge, orient, color, palette)
+    p = _CategoricalPlotterNew(  # TODO update name on switchover
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        fixed_scale=fixed_scale,
+    )
+
     if ax is None:
         ax = plt.gca()
 
+    if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+        p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    if not p.has_xy_data:
+        return ax
+
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    # XXX Copying possibly bad default decisions from original code for now
     kwargs.setdefault("zorder", 3)
     size = kwargs.get("s", size)
-    if linewidth is None:
-        linewidth = size / 10
-    if edgecolor == "gray":
-        edgecolor = plotter.gray
-    kwargs.update(dict(s=size ** 2,
-                       edgecolor=edgecolor,
-                       linewidth=linewidth))
 
-    plotter.plot(ax, kwargs)
+    # XXX Here especially is tricky. Old code didn't follow the color cycle.
+    # If new code does, then we won't know the default non-mapped color out here.
+    # But also I think in general that logic should move to the outer functions.
+    # XXX Wait how does this work with a custom palette?
+    # XXX Regardless of implementation, I think we should change this default
+    # name to "auto" or something similar that doesn't overlap with a real color name
+    if edgecolor == "gray":
+        edgecolor = p._get_gray("C0" if color is None else color)
+
+    kwargs.update(dict(
+        s=size ** 2,
+        edgecolor=edgecolor,
+        linewidth=linewidth)
+    )
+
+    p.plot_strips(
+        jitter=jitter,
+        dodge=dodge,
+        color=color,
+        plot_kws=kwargs,
+    )
+
+    # XXX this happens inside a plotting method in the distribution plots
+    # but maybe it's better out here? Alternatively, we have an open issue
+    # suggesting that _attach could add default axes labels, which seems smart.
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.cat_axis)
+
     return ax
 
 
@@ -2877,108 +3108,7 @@ stripplot.__doc__ = dedent("""\
     Examples
     --------
 
-    Draw a single horizontal strip plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import seaborn as sns
-        >>> sns.set_theme(style="whitegrid")
-        >>> tips = sns.load_dataset("tips")
-        >>> ax = sns.stripplot(x=tips["total_bill"])
-
-    Group the strips by a categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
-
-    Use a smaller amount of jitter:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips, jitter=0.05)
-
-    Draw horizontal strips:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips)
-
-    Draw outlines around the points:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="total_bill", y="day", data=tips,
-        ...                    linewidth=1)
-
-    Nest the strips within a second categorical variable:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="sex", y="total_bill", hue="day", data=tips)
-
-    Draw each level of the ``hue`` variable at different locations on the
-    major categorical axis:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set2", dodge=True)
-
-    Control strip order by passing an explicit order:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.stripplot(x="time", y="tip", data=tips,
-        ...                    order=["Dinner", "Lunch"])
-
-    Draw strips with large points and different aesthetics:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax =  sns.stripplot(x="day", y="total_bill", hue="smoker",
-        ...                    data=tips, palette="Set2", size=20, marker="D",
-        ...                    edgecolor="gray", alpha=.25)
-
-    Draw strips of observations on top of a box plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> import numpy as np
-        >>> ax = sns.boxplot(x="tip", y="day", data=tips, whis=np.inf)
-        >>> ax = sns.stripplot(x="tip", y="day", data=tips, color=".3")
-
-    Draw strips of observations on top of a violin plot:
-
-    .. plot::
-        :context: close-figs
-
-        >>> ax = sns.violinplot(x="day", y="total_bill", data=tips,
-        ...                     inner=None, color=".8")
-        >>> ax = sns.stripplot(x="day", y="total_bill", data=tips)
-
-    Use :func:`catplot` to combine a :func:`stripplot` and a
-    :class:`FacetGrid`. This allows grouping within additional categorical
-    variables. Using :func:`catplot` is safer than using :class:`FacetGrid`
-    directly, as it ensures synchronization of variable order across facets:
-
-    .. plot::
-        :context: close-figs
-
-        >>> g = sns.catplot(x="sex", y="total_bill",
-        ...                 hue="smoker", col="time",
-        ...                 data=tips, kind="strip",
-        ...                 height=4, aspect=.7);
+    .. include:: ../docstrings/stripplot.rst
 
     """).format(**_categorical_docs)
 
@@ -3737,6 +3867,7 @@ def catplot(
     orient=None, color=None, palette=None,
     legend=True, legend_out=True, sharex=True, sharey=True,
     margin_titles=False, facet_kws=None,
+    hue_norm=None, fixed_scale=True, formatter=None,
     **kwargs
 ):
 
@@ -3754,6 +3885,108 @@ def catplot(
         err = "Plot kind '{}' is not recognized".format(kind)
         raise ValueError(err)
 
+    # Check for attempt to plot onto specific axes and warn
+    if "ax" in kwargs:
+        msg = ("catplot is a figure-level function and does not accept "
+               f"target axes. You may wish to try {kind}plot")
+        warnings.warn(msg, UserWarning)
+        kwargs.pop("ax")
+
+    if kind == "strip":  # XXX gradually incorporate the refactored functions
+
+        p = _CategoricalFacetPlotter(
+            data=data,
+            variables=_CategoricalFacetPlotter.get_semantics(locals()),
+            order=order,
+            orient=orient,
+            require_numeric=False,
+            fixed_scale=fixed_scale,
+        )
+
+        # XXX Copying a fair amount from displot, which is not ideal
+
+        for var in ["row", "col"]:
+            # Handle faceting variables that lack name information
+            if var in p.variables and p.variables[var] is None:
+                p.variables[var] = f"_{var}_"
+
+        # Adapt the plot_data dataframe for use with FacetGrid
+        data = p.plot_data.rename(columns=p.variables)
+        data = data.loc[:, ~data.columns.duplicated()]
+
+        col_name = p.variables.get("col", None)
+        row_name = p.variables.get("row", None)
+
+        if facet_kws is None:
+            facet_kws = {}
+
+        g = FacetGrid(
+            data=data, row=row_name, col=col_name,
+            col_wrap=col_wrap, row_order=row_order,
+            col_order=col_order, height=height,
+            sharex=sharex, sharey=sharey,
+            aspect=aspect,
+            **facet_kws,
+        )
+
+        if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+            p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+
+        p._attach(g)
+
+        if not p.has_xy_data:
+            return g
+
+        palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+        p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+        if kind == "strip":
+
+            # TODO get these defaults programatically?
+            jitter = kwargs.pop("jitter", True)
+            dodge = kwargs.pop("dodge", False)
+            edgecolor = kwargs.pop("edgecolor", "gray")
+
+            strip_kws = kwargs.copy()
+
+            # XXX Copying possibly bad default decisions from original code for now
+            strip_kws.setdefault("zorder", 3)
+            strip_kws.setdefault("s", 25)
+
+            if edgecolor == "gray":
+                edgecolor = p._get_gray("C0" if color is None else color)
+            strip_kws["edgecolor"] = edgecolor
+
+            strip_kws.setdefault("linewidth", 0)
+
+            p.plot_strips(
+                jitter=jitter,
+                dodge=dodge,
+                color=color,
+                plot_kws=strip_kws,
+            )
+
+        # XXX best way to do this housekeeping?
+        for ax in g.axes.flat:
+            p._adjust_cat_axis(ax, axis=p.cat_axis)
+
+        g.set_axis_labels(
+            p.variables.get("x", None),
+            p.variables.get("y", None),
+        )
+        g.set_titles()
+        g.tight_layout()
+
+        # XXX Hack to get the legend data in the right place
+        for ax in g.axes.flat:
+            g._update_legend_data(ax)
+            ax.legend_ = None
+
+        if legend and (hue is not None) and (hue not in [x, row, col]):
+            g.add_legend(title=hue, label_order=hue_order)
+
+        return g
+
     # Alias the input variables to determine categorical order and palette
     # correctly in the case of a count plot
     if kind == "count":
@@ -3766,13 +3999,6 @@ def catplot(
     else:
         x_, y_ = x, y
 
-    # Check for attempt to plot onto specific axes and warn
-    if "ax" in kwargs:
-        msg = ("catplot is a figure-level function and does not accept "
-               "target axes. You may wish to try {}".format(kind + "plot"))
-        warnings.warn(msg, UserWarning)
-        kwargs.pop("ax")
-
     # Determine the order for the whole dataset, which will be used in all
     # facets to ensure representation of all data in the final plot
     plotter_class = {
@@ -3781,7 +4007,6 @@ def catplot(
         "boxen": _LVPlotter,
         "bar": _BarPlotter,
         "point": _PointPlotter,
-        "strip": _StripPlotter,
         "swarm": _SwarmPlotter,
         "count": _CountPlotter,
     }[kind]
@@ -3812,8 +4037,17 @@ def catplot(
     # so we need to define ``palette`` to get default behavior for the
     # categorical functions
     p.establish_colors(color, palette, 1)
-    if kind != "point" or hue is not None:
-        palette = p.colors
+    if (
+        (kind != "point" or hue is not None)
+        # XXX changing this to temporarily support bad sharex=False behavior where
+        # cat variables could take different colors, which we already warned
+        # about "breaking" (aka fixing) in the future
+        and ((sharex and p.orient == "v") or (sharey and p.orient == "h"))
+    ):
+        if p.hue_names is None:
+            palette = dict(zip(p.group_names, p.colors))
+        else:
+            palette = dict(zip(p.hue_names, p.colors))
 
     # Determine keyword arguments for the facets
     facet_kws = {} if facet_kws is None else facet_kws

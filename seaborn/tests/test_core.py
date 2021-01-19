@@ -1138,6 +1138,67 @@ class TestVectorPlotter:
         assert p.ax is None
         assert p.facets == g
 
+    def test_attach_shared_axes(self, long_df):
+
+        g = FacetGrid(long_df)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a")
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", sharex=False)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", sharex=False, col_wrap=2)
+        p = VectorPlotter(data=long_df, variables={"x": "x", "y": "y", "col": "a"})
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharex=False)
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == len(g.axes.flat)
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharex="col")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == p.plot_data["col"].nunique()
+        assert p.converters["x"].groupby(p.plot_data["col"]).nunique().max() == 1
+        assert p.converters["y"].nunique() == 1
+
+        g = FacetGrid(long_df, col="a", row="b", sharey="row")
+        p = VectorPlotter(
+            data=long_df, variables={"x": "x", "y": "y", "col": "a", "row": "b"},
+        )
+        p._attach(g)
+        assert p.converters["x"].nunique() == 1
+        assert p.converters["y"].nunique() == p.plot_data["row"].nunique()
+        assert p.converters["y"].groupby(p.plot_data["row"]).nunique().max() == 1
+
     def test_get_axes_single(self, long_df):
 
         ax = plt.figure().subplots()
@@ -1220,7 +1281,7 @@ class TestVectorPlotter:
     )
     def comp_data_missing_fixture(self, request):
 
-        # This fixture holds the logic for parametrizing
+        # This fixture holds the logic for parameterizing
         # the following test (test_comp_data_missing)
 
         NA, var_type = request.param
@@ -1263,6 +1324,61 @@ class TestVectorPlotter:
             mapper(order=order)
 
             assert p.var_levels[var] == order
+
+    def test_scale_native(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        with pytest.raises(NotImplementedError):
+            p.scale_native("x")
+
+    def test_scale_numeric(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"y": "y"})
+        with pytest.raises(NotImplementedError):
+            p.scale_numeric("y")
+
+    def test_scale_datetime(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "t"})
+        with pytest.raises(NotImplementedError):
+            p.scale_datetime("x")
+
+    def test_scale_categorical(self, long_df):
+
+        p = VectorPlotter(data=long_df, variables={"x": "x"})
+        p.scale_categorical("y")
+        assert p.variables["y"] is None
+        assert p.var_types["y"] == "categorical"
+        assert (p.plot_data["y"] == "").all()
+
+        p = VectorPlotter(data=long_df, variables={"x": "s"})
+        p.scale_categorical("x")
+        assert p.var_types["x"] == "categorical"
+        assert hasattr(p.plot_data["x"], "str")
+        assert not p._var_ordered["x"]
+        assert p.plot_data["x"].is_monotonic_increasing
+        assert_array_equal(p.var_levels["x"], p.plot_data["x"].unique())
+
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+        p.scale_categorical("x")
+        assert not p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], categorical_order(long_df["a"]))
+
+        p = VectorPlotter(data=long_df, variables={"x": "a_cat"})
+        p.scale_categorical("x")
+        assert p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], categorical_order(long_df["a_cat"]))
+
+        p = VectorPlotter(data=long_df, variables={"x": "a"})
+        order = np.roll(long_df["a"].unique(), 1)
+        p.scale_categorical("x", order=order)
+        assert p._var_ordered["x"]
+        assert_array_equal(p.var_levels["x"], order)
+
+        p = VectorPlotter(data=long_df, variables={"x": "s"})
+        p.scale_categorical("x", formatter=lambda x: f"{x:%}")
+        assert p.plot_data["x"].str.endswith("%").all()
+        assert all(s.endswith("%") for s in p.var_levels["x"])
 
 
 class TestCoreFunc:
@@ -1327,9 +1443,13 @@ class TestCoreFunc:
 
         nums = pd.Series(np.arange(6))
         cats = pd.Series(["a", "b"] * 3)
+        dates = pd.date_range("1999-09-22", "2006-05-14", 6)
 
         assert infer_orient(cats, nums) == "v"
         assert infer_orient(nums, cats) == "h"
+
+        assert infer_orient(cats, dates, require_numeric=False) == "v"
+        assert infer_orient(dates, cats, require_numeric=False) == "h"
 
         assert infer_orient(nums, None) == "h"
         with pytest.warns(UserWarning, match="Vertical .+ `x`"):
@@ -1360,6 +1480,9 @@ class TestCoreFunc:
             infer_orient(cats, cats, "h")
         with pytest.raises(TypeError, match="Neither"):
             infer_orient(cats, cats)
+
+        with pytest.raises(ValueError, match="`orient` must start with"):
+            infer_orient(cats, nums, orient="bad value")
 
     def test_categorical_order(self):
 
