@@ -12,6 +12,7 @@ from distutils.version import LooseVersion
 from numpy.testing import (
     assert_array_equal,
     assert_array_almost_equal,
+    assert_array_less,
 )
 
 from .. import categorical as cat
@@ -20,6 +21,7 @@ from .. import palettes
 from .._core import categorical_order
 from ..categorical import (
     _CategoricalPlotterNew,
+    Beeswarm,
     catplot,
     stripplot,
 )
@@ -2099,59 +2101,6 @@ class TestSwarmPlotter(CategoricalFixture):
                        order=None, hue_order=None, dodge=False,
                        orient=None, color=None, palette=None)
 
-    def test_could_overlap(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-        neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
-        npt.assert_array_equal(neighbors, [(1, .5), (.5, .5)])
-
-    def test_position_candidates(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-        xy_i = (0, 1)
-        neighbors = [(0, 1), (0, 1.5)]
-        candidates = p.position_candidates(xy_i, neighbors, 1)
-        dx1 = 1.05
-        dx2 = np.sqrt(1 - .5 ** 2) * 1.05
-        npt.assert_array_equal(candidates,
-                               [(0, 1), (-dx1, 1), (dx1, 1),
-                                (dx2, 1), (-dx2, 1)])
-
-    def test_find_first_non_overlapping_candidate(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-        candidates = [(.5, 1), (1, 1), (1.5, 1)]
-        neighbors = np.array([(0, 1)])
-
-        first = p.first_non_overlapping_candidate(candidates, neighbors, 1)
-        npt.assert_array_equal(first, (1, 1))
-
-    def test_beeswarm(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-        d = self.y.diff().mean() * 1.5
-        x = np.zeros(self.y.size)
-        y = np.sort(self.y)
-        orig_xy = np.c_[x, y]
-        swarm = p.beeswarm(orig_xy, d)
-        dmat = np.sqrt(np.sum(np.square(swarm[:, np.newaxis] - swarm), axis=-1))
-        triu = dmat[np.triu_indices_from(dmat, 1)]
-        npt.assert_array_less(d, triu)
-        npt.assert_array_equal(y, swarm[:, 1])
-
-    def test_add_gutters(self):
-
-        p = cat._SwarmPlotter(**self.default_kws)
-
-        points = np.zeros(10)
-        assert np.array_equal(points, p.add_gutters(points, 0, 1))
-
-        points = np.array([0, -1, .4, .8])
-        msg = r"50.0% of the points cannot be placed.+$"
-        with pytest.warns(UserWarning, match=msg):
-            new_points = p.add_gutters(points, 0, 1)
-        assert np.array_equal(new_points, np.array([0, -.5, .4, .5]))
-
     def test_swarmplot_vertical(self):
 
         pal = palettes.color_palette()
@@ -2160,7 +2109,7 @@ class TestSwarmPlotter(CategoricalFixture):
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
-            npt.assert_array_almost_equal(y, np.sort(vals))
+            npt.assert_array_almost_equal(y, vals)
 
             fc = ax.collections[i].get_facecolors()[0, :3]
             npt.assert_equal(fc, pal[i])
@@ -2173,7 +2122,7 @@ class TestSwarmPlotter(CategoricalFixture):
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
-            npt.assert_array_almost_equal(x, np.sort(vals))
+            npt.assert_array_almost_equal(x, vals)
 
             fc = ax.collections[i].get_facecolors()[0, :3]
             npt.assert_equal(fc, pal[i])
@@ -2187,7 +2136,7 @@ class TestSwarmPlotter(CategoricalFixture):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
                 x, y = ax.collections[i * 2 + j].get_offsets().T
-                npt.assert_array_almost_equal(y, np.sort(vals))
+                npt.assert_array_almost_equal(y, vals)
 
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 assert tuple(fc) == pal[j]
@@ -2202,7 +2151,7 @@ class TestSwarmPlotter(CategoricalFixture):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
                 x, y = ax.collections[i * 2 + j].get_offsets().T
-                npt.assert_array_almost_equal(x, np.sort(vals))
+                npt.assert_array_almost_equal(x, vals)
 
                 fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
                 assert tuple(fc) == pal[j]
@@ -2219,12 +2168,10 @@ class TestSwarmPlotter(CategoricalFixture):
 
             points = ax.collections[i]
             x, y = points.get_offsets().T
-            sorter = np.argsort(vals)
-            npt.assert_array_almost_equal(y, vals.iloc[sorter])
+            npt.assert_array_almost_equal(y, vals)
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter.values],
-                               points.get_facecolors()):
+            for hue, fc in zip(hue_vals, points.get_facecolors()):
 
                 assert tuple(fc[:3]) == pal[hue_names.index(hue)]
 
@@ -2240,49 +2187,12 @@ class TestSwarmPlotter(CategoricalFixture):
 
             points = ax.collections[i]
             x, y = points.get_offsets().T
-            sorter = np.argsort(vals)
-            npt.assert_array_almost_equal(x, vals.iloc[sorter])
+            npt.assert_array_almost_equal(x, vals)
 
             _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals.values[sorter.values],
-                               points.get_facecolors()):
+            for hue, fc in zip(hue_vals, points.get_facecolors()):
 
                 assert tuple(fc[:3]) == pal[hue_names.index(hue)]
-
-    def test_unaligned_index(self):
-
-        f, (ax1, ax2) = plt.subplots(2)
-        cat.swarmplot(x=self.g, y=self.y, ax=ax1)
-        cat.swarmplot(x=self.g, y=self.y_perm, ax=ax2)
-        for p1, p2 in zip(ax1.collections, ax2.collections):
-            assert np.allclose(p1.get_offsets()[:, 1],
-                               p2.get_offsets()[:, 1])
-            assert np.array_equal(p1.get_facecolors(),
-                                  p2.get_facecolors())
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.swarmplot(x=self.g, y=self.y, hue=self.h,
-                      hue_order=hue_order, ax=ax1)
-        cat.swarmplot(x=self.g, y=self.y_perm, hue=self.h,
-                      hue_order=hue_order, ax=ax2)
-        for p1, p2 in zip(ax1.collections, ax2.collections):
-            assert np.allclose(p1.get_offsets()[:, 1],
-                               p2.get_offsets()[:, 1])
-            assert np.array_equal(p1.get_facecolors(),
-                                  p2.get_facecolors())
-
-        f, (ax1, ax2) = plt.subplots(2)
-        hue_order = self.h.unique()
-        cat.swarmplot(x=self.g, y=self.y, hue=self.h,
-                      dodge=True, hue_order=hue_order, ax=ax1)
-        cat.swarmplot(x=self.g, y=self.y_perm, hue=self.h,
-                      dodge=True, hue_order=hue_order, ax=ax2)
-        for p1, p2 in zip(ax1.collections, ax2.collections):
-            assert np.allclose(p1.get_offsets()[:, 1],
-                               p2.get_offsets()[:, 1])
-            assert np.array_equal(p1.get_facecolors(),
-                                  p2.get_facecolors())
 
 
 class TestBarPlotter(CategoricalFixture):
@@ -3418,3 +3328,61 @@ class TestBoxenPlotter(CategoricalFixture):
         _ = cat.boxenplot(x="x", y="y", data=data)
 
         plt.close("all")
+
+
+class TestBeeswarm:
+
+    def test_could_overlap(self):
+
+        p = Beeswarm()
+        neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
+        assert_array_equal(neighbors, [(1, .5), (.5, .5)])
+
+    def test_position_candidates(self):
+
+        p = Beeswarm()
+        xy_i = (0, 1)
+        neighbors = [(0, 1), (0, 1.5)]
+        candidates = p.position_candidates(xy_i, neighbors, 1)
+        dx1 = 1.05
+        dx2 = np.sqrt(1 - .5 ** 2) * 1.05
+        assert_array_equal(
+            candidates,
+            [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)]
+        )
+
+    def test_find_first_non_overlapping_candidate(self):
+
+        p = Beeswarm()
+        candidates = [(.5, 1), (1, 1), (1.5, 1)]
+        neighbors = np.array([(0, 1)])
+
+        first = p.first_non_overlapping_candidate(candidates, neighbors, 1)
+        assert_array_equal(first, (1, 1))
+
+    def test_beeswarm(self, long_df):
+
+        p = Beeswarm()
+        data = long_df["y"]
+        d = data.diff().mean() * 1.5
+        x = np.zeros(data.size)
+        y = np.sort(data)
+        orig_xy = np.c_[x, y]
+        swarm = p.beeswarm(orig_xy, d)
+        dmat = np.sqrt(np.sum(np.square(swarm[:, np.newaxis] - swarm), axis=-1))
+        triu = dmat[np.triu_indices_from(dmat, 1)]
+        assert_array_less(d, triu)
+        assert_array_equal(y, swarm[:, 1])
+
+    def test_add_gutters(self):
+
+        p = Beeswarm(width=1)
+
+        points = np.zeros(10)
+        assert_array_equal(points, p.add_gutters(points, 0))
+
+        points = np.array([0, -1, .4, .8])
+        msg = r"50.0% of the points cannot be placed.+$"
+        with pytest.warns(UserWarning, match=msg):
+            new_points = p.add_gutters(points, 0)
+        assert_array_equal(new_points, np.array([0, -.5, .4, .5]))
