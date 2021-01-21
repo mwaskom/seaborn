@@ -188,43 +188,19 @@ class _CategoricalPlotterNew(VectorPlotter):
             # Note limits that correspond to previously-inverted y axis
             ax.set_ylim(len(order) - .5, -.5, auto=None)
 
-    def plot_strips(
-        self,
-        jitter,
-        dodge,
-        color,
-        plot_kws,
-    ):
-
-        # XXX 2021 refactor notes
-        # note, original categorical plots do not follow the cycle!
-        # They probably should ... but no changes in this first round of refactoring
-        # if self.ax is None:
-        #     default_color = "C0"
-        # else:
-        #     scout = self.ax.scatter([], [], color=color, **plot_kws)
-        #     default_color = scout.get_facecolors()
-        #     scout.remove()
-        default_color = "C0" if color is None else color
-
-        # TODO this should be centralized
+    @property
+    def _native_width(self):
+        """Return unit of width separating categories on native numeric scale."""
         unique_values = np.unique(self.comp_data[self.cat_axis])
         if len(unique_values) > 1:
             native_width = np.nanmin(np.diff(unique_values))
         else:
             native_width = 1
-        width = .8 * native_width
+        return native_width
 
-        if jitter is True:
-            jlim = 0.1
-        else:
-            jlim = float(jitter)
-        if "hue" in self.variables and dodge:
-            jlim /= len(self._hue_map.levels)
-        jlim *= native_width
-        jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
-
-        # XXX this is a property on the original class and probably broadly useful
+    def _nested_offsets(self, width, dodge):
+        """Return offsets for each hue level for dodged plots."""
+        offsets = None
         if "hue" in self.variables:
             n_levels = len(self._hue_map.levels)
             if dodge:
@@ -233,44 +209,56 @@ class _CategoricalPlotterNew(VectorPlotter):
                 offsets -= offsets.mean()
             else:
                 offsets = np.zeros(n_levels)
-        else:
-            dodge = False
+        return offsets
 
-        # Note that stripplot iterates over categorical positions (and hue levels only
-        # in the case of dodged strips) to match the original way artists were added.
+    # Note that the plotting methods here aim (in most cases) to produce the exact same
+    # artists as the original version of the code, so there is some weirdness that might
+    # not otherwise be clean or make sense in this context, such as adding empty arists
+    # for combinations of variables with no observations
+
+    def plot_strips(
+        self,
+        jitter,
+        dodge,
+        color,
+        plot_kws,
+    ):
+
+        default_color = "C0" if color is None else color
+        width = .8 * self._native_width
+        offsets = self._nested_offsets(width, dodge)
+
+        if jitter is True:
+            jlim = 0.1
+        else:
+            jlim = float(jitter)
+        if "hue" in self.variables and dodge:
+            jlim /= len(self._hue_map.levels)
+        jlim *= self._native_width
+        jitterer = partial(np.random.uniform, low=-jlim, high=+jlim)
+
         iter_vars = [self.cat_axis]
         if dodge:
             iter_vars.append("hue")
 
-        # Note further that, unlike most modern functions, stripplot adds empty
-        # artists for combinations of variables that have no observations, hence the
-        # addition/use of allow_empty in iter_data during the 2021 refactor.
-
-        # Initialize ax as otherwise we won't get it when not looping over hue.
-        # If we are in a faceted context, this will be None, but _get_axes will
-        # return an Axes later. Perhaps _get_axes should have some awareness of
-        # cases when x/y are part of the iter_data grouper?
         ax = self.ax
+        dodge_move = jitter_move = 0
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            sub_data = sub_data.dropna()
+            sub_data = sub_data.dropna().copy()
 
-            if dodge:
+            if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
-            else:
-                dodge_move = 0
 
             if jitter and len(sub_data) > 1:
                 jitter_move = jitterer(size=len(sub_data))
-            else:
-                jitter_move = 0
 
-            sub_data = sub_data.assign(**{
-                self.cat_axis: sub_data[self.cat_axis] + dodge_move + jitter_move
-            })
+            if not sub_data.empty:
+                adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
+                sub_data[self.cat_axis] = adjusted_data
 
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
@@ -284,13 +272,9 @@ class _CategoricalPlotterNew(VectorPlotter):
             ax = self._get_axes(sub_vars)
             ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
 
-        # TODO XXX remove redundant hue or always define and use when legend is "auto"
+        # TODO XXX fully impelement legend
         show_legend = not self._redundant_hue and self.input_format != "wide"
-        if "hue" in self.variables and show_legend:  # TODO and legend:
-            # XXX 2021 refactor notes
-            # As we know, legends are an ongoing challenge.
-            # I'm duplicating the old approach here, but I don't love it,
-            # and it doesn't handle numeric hue mapping properly
+        if "hue" in self.variables and show_legend:
             for level in self._hue_map.levels:
                 color = self._hue_map(level)
                 ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
@@ -303,70 +287,30 @@ class _CategoricalPlotterNew(VectorPlotter):
         plot_kws,
     ):
 
-        # XXX 2021 refactor notes
-        # note, original categorical plots do not follow the cycle!
-        # They probably should ... but no changes in this first round of refactoring
-        # if self.ax is None:
-        #     default_color = "C0"
-        # else:
-        #     scout = self.ax.scatter([], [], color=color, **plot_kws)
-        #     default_color = scout.get_facecolors()
-        #     scout.remove()
         default_color = "C0" if color is None else color
+        width = .8 * self._native_width
+        offsets = self._nested_offsets(width, dodge)
 
-        # TODO this should be centralized
-        unique_values = np.unique(self.comp_data[self.cat_axis])
-        if len(unique_values) > 1:
-            native_width = np.nanmin(np.diff(unique_values))
-        else:
-            native_width = 1
-        width = .8 * native_width
-
-        # XXX this is a property on the original class and probably broadly useful
-        if "hue" in self.variables:
-            n_levels = len(self._hue_map.levels)
-            if dodge:
-                each_width = width / n_levels
-                offsets = np.linspace(0, width - each_width, n_levels)
-                offsets -= offsets.mean()
-            else:
-                offsets = np.zeros(n_levels)
-        else:
-            dodge = False
-
-        # Note that swarmplot iterates over categorical positions (and hue levels only
-        # in the case of dodged strips) to match the original way artists were added.
         iter_vars = [self.cat_axis]
         if dodge:
             iter_vars.append("hue")
 
-        # Note further that, unlike most modern functions, swarmplot adds empty
-        # artists for combinations of variables that have no observations, hence the
-        # addition/use of allow_empty in iter_data during the 2021 refactor.
-
-        # Initialize ax as otherwise we won't get it when not looping over hue.
-        # If we are in a faceted context, this will be None, but _get_axes will
-        # return an Axes later. Perhaps _get_axes should have some awareness of
-        # cases when x/y are part of the iter_data grouper?
         ax = self.ax
-
         centers = []
         swarms = []
+        dodge_move = 0
 
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            sub_data = sub_data.dropna()
+            sub_data = sub_data.dropna().copy()
 
-            if dodge:
+            if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
-            else:
-                dodge_move = 0
 
-            sub_data = sub_data.assign(**{
-                self.cat_axis: sub_data[self.cat_axis] + dodge_move
-            })
+            if not sub_data.empty:
+                sub_data[self.cat_axis] = sub_data[self.cat_axis] + dodge_move
 
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
@@ -391,13 +335,9 @@ class _CategoricalPlotterNew(VectorPlotter):
                     super(points.__class__, points).draw(renderer)
                 swarm.draw = draw.__get__(swarm)
 
-        # TODO XXX remove redundant hue or always define and use when legend is "auto"
+        # TODO XXX fully impelment legend
         show_legend = not self._redundant_hue and self.input_format != "wide"
         if "hue" in self.variables and show_legend:  # TODO and legend:
-            # XXX 2021 refactor notes
-            # As we know, legends are an ongoing challenge.
-            # I'm duplicating the old approach here, but I don't love it,
-            # and it doesn't handle numeric hue mapping properly
             for level in self._hue_map.levels:
                 color = self._hue_map(level)
                 ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
@@ -2929,7 +2869,7 @@ def stripplot(
 
     # XXX we need to add a legend= param!!!
 
-    p = _CategoricalPlotterNew(  # TODO update name on switchover
+    p = _CategoricalPlotterNew(
         data=data,
         variables=_CategoricalPlotterNew.get_semantics(locals()),
         order=order,
@@ -3060,7 +3000,7 @@ def swarmplot(
     **kwargs
 ):
 
-    p = _CategoricalPlotterNew(  # TODO update name on switchover
+    p = _CategoricalPlotterNew(
         data=data,
         variables=_CategoricalPlotterNew.get_semantics(locals()),
         order=order,
