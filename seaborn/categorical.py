@@ -296,6 +296,113 @@ class _CategoricalPlotterNew(VectorPlotter):
                 ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
             ax.legend(loc="best", title=self.variables["hue"])
 
+    def plot_swarms(
+        self,
+        dodge,
+        color,
+        plot_kws,
+    ):
+
+        # XXX 2021 refactor notes
+        # note, original categorical plots do not follow the cycle!
+        # They probably should ... but no changes in this first round of refactoring
+        # if self.ax is None:
+        #     default_color = "C0"
+        # else:
+        #     scout = self.ax.scatter([], [], color=color, **plot_kws)
+        #     default_color = scout.get_facecolors()
+        #     scout.remove()
+        default_color = "C0" if color is None else color
+
+        # TODO this should be centralized
+        unique_values = np.unique(self.comp_data[self.cat_axis])
+        if len(unique_values) > 1:
+            native_width = np.nanmin(np.diff(unique_values))
+        else:
+            native_width = 1
+        width = .8 * native_width
+
+        # XXX this is a property on the original class and probably broadly useful
+        if "hue" in self.variables:
+            n_levels = len(self._hue_map.levels)
+            if dodge:
+                each_width = width / n_levels
+                offsets = np.linspace(0, width - each_width, n_levels)
+                offsets -= offsets.mean()
+            else:
+                offsets = np.zeros(n_levels)
+        else:
+            dodge = False
+
+        # Note that swarmplot iterates over categorical positions (and hue levels only
+        # in the case of dodged strips) to match the original way artists were added.
+        iter_vars = [self.cat_axis]
+        if dodge:
+            iter_vars.append("hue")
+
+        # Note further that, unlike most modern functions, swarmplot adds empty
+        # artists for combinations of variables that have no observations, hence the
+        # addition/use of allow_empty in iter_data during the 2021 refactor.
+
+        # Initialize ax as otherwise we won't get it when not looping over hue.
+        # If we are in a faceted context, this will be None, but _get_axes will
+        # return an Axes later. Perhaps _get_axes should have some awareness of
+        # cases when x/y are part of the iter_data grouper?
+        ax = self.ax
+
+        centers = []
+        swarms = []
+
+        for sub_vars, sub_data in self.iter_data(iter_vars,
+                                                 from_comp_data=True,
+                                                 allow_empty=True):
+
+            sub_data = sub_data.dropna()
+
+            if dodge:
+                dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
+            else:
+                dodge_move = 0
+
+            sub_data = sub_data.assign(**{
+                self.cat_axis: sub_data[self.cat_axis] + dodge_move
+            })
+
+            if "hue" in self.variables:
+                c = self._hue_map(sub_data["hue"])
+            else:
+                c = mpl.colors.to_hex(default_color)
+
+            for var in "xy":
+                if self._log_scaled(var):
+                    sub_data[var] = np.power(10, sub_data[var])
+
+            ax = self._get_axes(sub_vars)
+            swarm = ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
+
+            centers.append(sub_data[self.cat_axis].iloc[0])
+            swarms.append(swarm)
+
+        beeswarm = Beeswarm(width=width, orient=self.orient)
+        for center, swarm in zip(centers, swarms):
+            if swarm.get_offsets().size:
+                def draw(points, renderer, *, center=center):
+                    beeswarm(points, center)
+                    super(points.__class__, points).draw(renderer)
+                swarm.draw = draw.__get__(swarm)
+
+        # TODO XXX remove redundant hue or always define and use when legend is "auto"
+        show_legend = not self._redundant_hue and self.input_format != "wide"
+        if "hue" in self.variables and show_legend:  # TODO and legend:
+            # XXX 2021 refactor notes
+            # As we know, legends are an ongoing challenge.
+            # I'm duplicating the old approach here, but I don't love it,
+            # and it doesn't handle numeric hue mapping properly
+            for level in self._hue_map.levels:
+                color = self._hue_map(level)
+                ax.scatter([], [], s=60, color=mpl.colors.rgb2hex(color), label=level)
+            ax.legend(loc="best", title=self.variables["hue"])
+
 
 class _CategoricalFacetPlotter(_CategoricalPlotterNew):
 
@@ -2941,8 +3048,80 @@ stripplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-@_deprecate_positional_args
+# @_deprecate_positional_args
 def swarmplot(
+    *,
+    x=None, y=None,
+    hue=None, data=None,
+    order=None, hue_order=None,
+    dodge=False, orient=None, color=None, palette=None,
+    size=5, edgecolor="gray", linewidth=0, ax=None,
+    hue_norm=None, fixed_scale=True, formatter=None,
+    **kwargs
+):
+
+    p = _CategoricalPlotterNew(  # TODO update name on switchover
+        data=data,
+        variables=_CategoricalPlotterNew.get_semantics(locals()),
+        order=order,
+        orient=orient,
+        require_numeric=False,
+        fixed_scale=fixed_scale,
+    )
+
+    if ax is None:
+        ax = plt.gca()
+
+    if fixed_scale or p.var_types[p.cat_axis] == "categorical":
+        p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
+
+    p._attach(ax)
+
+    if not p.has_xy_data:
+        return ax
+
+    palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+    p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
+
+    # XXX Copying possibly bad default decisions from original code for now
+    kwargs.setdefault("zorder", 3)
+    size = kwargs.get("s", size)
+
+    if linewidth is None:
+        linewidth = size / 10
+
+    # XXX Here especially is tricky. Old code didn't follow the color cycle.
+    # If new code does, then we won't know the default non-mapped color out here.
+    # But also I think in general that logic should move to the outer functions.
+    # XXX Wait how does this work with a custom palette?
+    # XXX Regardless of implementation, I think we should change this default
+    # name to "auto" or something similar that doesn't overlap with a real color name
+    if edgecolor == "gray":
+        edgecolor = p._get_gray("C0" if color is None else color)
+
+    kwargs.update(dict(
+        s=size ** 2,
+        edgecolor=edgecolor,
+        linewidth=linewidth,
+    ))
+
+    p.plot_swarms(
+        dodge=dodge,
+        color=color,
+        plot_kws=kwargs,
+    )
+
+    # XXX this happens inside a plotting method in the distribution plots
+    # but maybe it's better out here? Alternatively, we have an open issue
+    # suggesting that _attach could add default axes labels, which seems smart.
+    p._add_axis_labels(ax)
+    p._adjust_cat_axis(ax, axis=p.cat_axis)
+
+    return ax
+
+
+@_deprecate_positional_args
+def swarmplot_old(
     *,
     x=None, y=None,
     hue=None, data=None,
@@ -4094,6 +4273,7 @@ class Beeswarm:
     def __call__(self, points, center):
         """Swarm `points`, a PathCollection, around the `center` position."""
         # Convert from point size (area) to diameter
+
         ax = points.axes
         dpi = ax.figure.dpi
 

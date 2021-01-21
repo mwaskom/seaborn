@@ -2115,14 +2115,8 @@ class TestSwarmPlot:
             ({"val": "a", "cat": "b", "hue": None}, "h"),
             ({"cat": "a", "val": "t", "hue": None}, None),
             ({"val": "t", "cat": "a", "hue": None}, None),
-            pytest.param(
-                {"cat": "d", "val": "y", "hue": None}, None,
-                marks=pytest.mark.xfail(strict=True),
-            ),
-            pytest.param(
-                {"val": "y", "cat": "d", "hue": None}, None,
-                marks=pytest.mark.xfail(struct=True),
-            ),
+            ({"cat": "d", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "d", "hue": None}, None),
             ({"cat": "a_cat", "val": "y", "hue": None}, None),
             ({"val": "y", "cat": "s_cat", "hue": None}, None),
         ],
