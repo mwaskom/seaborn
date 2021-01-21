@@ -3335,30 +3335,35 @@ class TestBeeswarm:
     def test_could_overlap(self):
 
         p = Beeswarm()
-        neighbors = p.could_overlap((1, 1), [(0, 0), (1, .5), (.5, .5)], 1)
-        assert_array_equal(neighbors, [(1, .5), (.5, .5)])
+        neighbors = p.could_overlap(
+            (1, 1, .5),
+            [(0, 0, .5),
+             (1, .1, .2),
+             (.5, .5, .5)]
+        )
+        assert_array_equal(neighbors, [(.5, .5, .5)])
 
     def test_position_candidates(self):
 
         p = Beeswarm()
-        xy_i = (0, 1)
-        neighbors = [(0, 1), (0, 1.5)]
-        candidates = p.position_candidates(xy_i, neighbors, 1)
+        xy_i = (0, 1, .5)
+        neighbors = [(0, 1, .5), (0, 1.5, .5)]
+        candidates = p.position_candidates(xy_i, neighbors)
         dx1 = 1.05
         dx2 = np.sqrt(1 - .5 ** 2) * 1.05
         assert_array_equal(
             candidates,
-            [(0, 1), (-dx1, 1), (dx1, 1), (dx2, 1), (-dx2, 1)]
+            [(0, 1, .5), (-dx1, 1, .5), (dx1, 1, .5), (dx2, 1, .5), (-dx2, 1, .5)]
         )
 
     def test_find_first_non_overlapping_candidate(self):
 
         p = Beeswarm()
-        candidates = [(.5, 1), (1, 1), (1.5, 1)]
-        neighbors = np.array([(0, 1)])
+        candidates = [(.5, 1, .5), (1, 1, .5), (1.5, 1, .5)]
+        neighbors = np.array([(0, 1, .5)])
 
-        first = p.first_non_overlapping_candidate(candidates, neighbors, 1)
-        assert_array_equal(first, (1, 1))
+        first = p.first_non_overlapping_candidate(candidates, neighbors)
+        assert_array_equal(first, (1, 1, .5))
 
     def test_beeswarm(self, long_df):
 
@@ -3367,8 +3372,9 @@ class TestBeeswarm:
         d = data.diff().mean() * 1.5
         x = np.zeros(data.size)
         y = np.sort(data)
-        orig_xy = np.c_[x, y]
-        swarm = p.beeswarm(orig_xy, d)
+        r = np.full_like(y, d)
+        orig_xyr = np.c_[x, y, r]
+        swarm = p.beeswarm(orig_xyr)[:, :2]
         dmat = np.sqrt(np.sum(np.square(swarm[:, np.newaxis] - swarm), axis=-1))
         triu = dmat[np.triu_indices_from(dmat, 1)]
         assert_array_less(d, triu)

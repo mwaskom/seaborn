@@ -1387,10 +1387,7 @@ class _SwarmPlotter(_CategoricalScatterPlotter):
                 if self.hue_names is None:
                     hue_mask = np.ones(group_data.size, bool)
                 else:
-                    hue_mask = np.array([h in self.hue_names
-                                         for h in self.plot_hues[i]], bool)
-                    # Broken on older numpys
-                    # hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
+                    hue_mask = np.in1d(self.plot_hues[i], self.hue_names)
 
                 swarm_data = np.asarray(group_data[hue_mask])
                 point_colors = np.asarray(self.point_colors[i][hue_mask])
@@ -4100,11 +4097,6 @@ class Beeswarm:
         ax = points.axes
         dpi = ax.figure.dpi
 
-        # XXX TODO adapt so s (and lw?) can be vectors
-        s = points.get_sizes().item()
-        lw = points.get_linewidth().item()
-        d = (np.sqrt(s) + lw) * (dpi / 72)
-
         # Get the original positions of the points
         orig_xy_data = points.get_offsets()
 
@@ -4121,17 +4113,27 @@ class Beeswarm:
         if self.orient == "h":
             orig_xy = orig_xy[:, [1, 0]]
 
+        # Add a column with each point's radius
+        sizes = points.get_sizes()
+        if sizes.size == 1:
+            sizes = np.repeat(sizes, orig_xy.shape[0])
+        edge = points.get_linewidth().item()
+        radii = (np.sqrt(sizes) + edge) / 2 * (dpi / 72)
+        orig_xy = np.c_[orig_xy, radii]
+
         # Sort along the value axis to facilitate the beeswarm
         sorter = np.argsort(orig_xy[:, 1])
-        orig_xy = orig_xy[sorter]
+        orig_xyr = orig_xy[sorter]
 
         # Adjust points along the categorical axis to prevent overlaps
-        new_xy = np.empty_like(orig_xy)
-        new_xy[sorter] = self.beeswarm(orig_xy, d)
+        new_xyr = np.empty_like(orig_xyr)
+        new_xyr[sorter] = self.beeswarm(orig_xyr)
 
         # Transform the point coordinates back to data coordinates
         if self.orient == "h":
-            new_xy = new_xy[:, [1, 0]]
+            new_xy = new_xyr[:, [1, 0]]
+        else:
+            new_xy = new_xyr[:, :2]
         new_x, new_y = ax.transData.inverted().transform(new_xy).T
 
         # Add gutters
@@ -4143,62 +4145,61 @@ class Beeswarm:
         # Reposition the points so they do not overlap
         points.set_offsets(np.c_[new_x, new_y])
 
-    def beeswarm(self, orig_xy, d):
+    def beeswarm(self, orig_xyr):
         """Adjust x position of points to avoid overlaps."""
         # In this method, `x` is always the categorical axis
         # Center of the swarm, in point coordinates
-        midline = orig_xy[0, 0]
+        midline = orig_xyr[0, 0]
 
         # Start the swarm with the first point
-        swarm = [orig_xy[0]]
+        swarm = np.atleast_2d(orig_xyr[0])
 
         # Loop over the remaining points
-        for xy_i in orig_xy[1:]:
+        for xyr_i in orig_xyr[1:]:
 
             # Find the points in the swarm that could possibly
             # overlap with the point we are currently placing
-            neighbors = self.could_overlap(xy_i, swarm, d)
+            neighbors = self.could_overlap(xyr_i, swarm)
 
             # Find positions that would be valid individually
             # with respect to each of the swarm neighbors
-            candidates = self.position_candidates(xy_i, neighbors, d)
+            candidates = self.position_candidates(xyr_i, neighbors)
 
             # Sort candidates by their centrality
             offsets = np.abs(candidates[:, 0] - midline)
             candidates = candidates[np.argsort(offsets)]
 
             # Find the first candidate that does not overlap any neighbors
-            new_xy_i = self.first_non_overlapping_candidate(candidates, neighbors, d)
+            new_xyr_i = self.first_non_overlapping_candidate(candidates, neighbors)
 
             # Place it into the swarm
-            swarm.append(new_xy_i)
+            swarm = np.vstack([swarm, new_xyr_i])
 
-        return np.array(swarm)
+        return swarm
 
-    def could_overlap(self, xy_i, swarm, d):
-        """Return a list of all swarm points that could overlap with target.
-
-        Assumes that swarm is a sorted list of all points below xy_i.
-        """
-        _, y_i = xy_i
+    def could_overlap(self, xyr_i, swarm):
+        """Return a list of all swarm points that could overlap with target."""
+        # Because we work backwards through the swarm and can short-circuit,
+        # the for-loop is faster than vectorization
+        _, y_i, r_i = xyr_i
         neighbors = []
-        for xy_j in reversed(swarm):
-            _, y_j = xy_j
-            if (y_i - y_j) < d:
-                neighbors.append(xy_j)
+        for xyr_j in reversed(swarm):
+            _, y_j, r_j = xyr_j
+            if (y_i - y_j) < (r_i + r_j):
+                neighbors.append(xyr_j)
             else:
                 break
-        return np.array(list(reversed(neighbors)))
+        return np.array(neighbors)[::-1]
 
-    def position_candidates(self, xy_i, neighbors, d):
-        """Return a list of (x, y) coordinates that might be valid."""
-        candidates = [xy_i]
-        x_i, y_i = xy_i
+    def position_candidates(self, xyr_i, neighbors):
+        """Return a list of coordinates that might be valid by adjusting x."""
+        candidates = [xyr_i]
+        x_i, y_i, r_i = xyr_i
         left_first = True
-        for x_j, y_j in neighbors:
+        for x_j, y_j, r_j in neighbors:
             dy = y_i - y_j
-            dx = np.sqrt(max(d ** 2 - dy ** 2, 0)) * 1.05
-            cl, cr = (x_j - dx, y_i), (x_j + dx, y_i)
+            dx = np.sqrt(max((r_i + r_j) ** 2 - dy ** 2, 0)) * 1.05
+            cl, cr = (x_j - dx, y_i, r_i), (x_j + dx, y_i, r_i)
             if left_first:
                 new_candidates = [cl, cr]
             else:
@@ -4207,39 +4208,38 @@ class Beeswarm:
             left_first = not left_first
         return np.array(candidates)
 
-    def first_non_overlapping_candidate(self, candidates, neighbors, d):
-        """Remove candidates from the list if they overlap with the swarm."""
+    def first_non_overlapping_candidate(self, candidates, neighbors):
+        """Find the first candidate that does not overlap with the swarm."""
 
-        # IF we have no neighbors, all candidates are good.
+        # If we have no neighbors, all candidates are good.
         if len(neighbors) == 0:
             return candidates[0]
 
         neighbors_x = neighbors[:, 0]
         neighbors_y = neighbors[:, 1]
+        neighbors_r = neighbors[:, 2]
 
-        d_square = d ** 2
+        for xyr_i in candidates:
 
-        for xy_i in candidates:
-            x_i, y_i = xy_i
+            x_i, y_i, r_i = xyr_i
 
             dx = neighbors_x - x_i
             dy = neighbors_y - y_i
+            sq_distances = np.square(dx) + np.square(dy)
 
-            sq_distances = np.power(dx, 2.0) + np.power(dy, 2.0)
+            sep_needed = np.square(neighbors_r + r_i)
 
-            # Good candidate does not overlap any of neighbors
-            # which means that squared distance between candidate
-            # and any of the neighbors has to be at least
-            # square of the diameter
-            good_candidate = np.all(sq_distances >= d_square)
+            # Good candidate does not overlap any of neighbors which means that
+            # squared distance between candidate and any of the neighbors has
+            # to be at least square of the summed radii
+            good_candidate = np.all(sq_distances >= sep_needed)
 
             if good_candidate:
-                return xy_i
+                return xyr_i
 
-        # If `position_candidates` works well
-        # this should never happen
-        raise Exception('No non-overlapping candidates found. '
-                        'This should not happen.')
+        raise RuntimeError(
+            "No non-overlapping candidates found. This should not happen."
+        )
 
     def add_gutters(self, points, center):
         """Stop points from extending beyond their territory."""
