@@ -2106,6 +2106,8 @@ class TestSwarmPlotter(CategoricalFixture):
         pal = palettes.color_palette()
 
         ax = cat.swarmplot(x="g", y="y", data=self.df)
+        _draw_figure(ax.figure)
+
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -2119,6 +2121,8 @@ class TestSwarmPlotter(CategoricalFixture):
         pal = palettes.color_palette()
 
         ax = cat.swarmplot(x="y", y="g", data=self.df, orient="h")
+        _draw_figure(ax.figure)
+
         for i, (_, vals) in enumerate(self.y.groupby(self.g)):
 
             x, y = ax.collections[i].get_offsets().T
@@ -2132,6 +2136,8 @@ class TestSwarmPlotter(CategoricalFixture):
         pal = palettes.color_palette()
 
         ax = cat.swarmplot(x="g", y="y", hue="h", data=self.df, dodge=True)
+        _draw_figure(ax.figure)
+
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -2147,6 +2153,8 @@ class TestSwarmPlotter(CategoricalFixture):
 
         ax = cat.swarmplot(x="y", y="g", hue="h", data=self.df,
                            orient="h", dodge=True)
+        _draw_figure(ax.figure)
+
         for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
             for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
 
@@ -2159,6 +2167,7 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_nested_swarmplot_vertical(self):
 
         ax = cat.swarmplot(x="g", y="y", hue="h", data=self.df)
+        _draw_figure(ax.figure)
 
         pal = palettes.color_palette()
         hue_names = self.h.unique().tolist()
@@ -2178,6 +2187,7 @@ class TestSwarmPlotter(CategoricalFixture):
     def test_nested_swarmplot_horizontal(self):
 
         ax = cat.swarmplot(x="y", y="g", hue="h", data=self.df, orient="h")
+        _draw_figure(ax.figure)
 
         pal = palettes.color_palette()
         hue_names = self.h.unique().tolist()
