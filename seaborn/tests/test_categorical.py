@@ -1,4 +1,5 @@
 import itertools
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -18,12 +19,13 @@ from numpy.testing import (
 from .. import categorical as cat
 from .. import palettes
 
-from .._core import categorical_order
+from .._core import categorical_order, variable_type
 from ..categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
     catplot,
     stripplot,
+    swarmplot,
 )
 from ..palettes import color_palette
 from ..utils import _normal_quantile_func, _draw_figure
@@ -2095,114 +2097,124 @@ class TestStripPlot:
         assert_plots_equal(ax, g.ax)
 
 
-class TestSwarmPlotter(CategoricalFixture):
+class TestSwarmPlot:
 
-    default_kws = dict(x=None, y=None, hue=None, data=None,
-                       order=None, hue_order=None, dodge=False,
-                       orient=None, color=None, palette=None)
+    @pytest.mark.parametrize(
+        "variables,orient",
+        [
+            # Order matters for assigning to x/y
+            ({"cat": "a", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "a", "hue": None}, None),
+            ({"cat": "a", "val": "y", "hue": "a"}, None),
+            ({"val": "y", "cat": "a", "hue": "a"}, None),
+            ({"cat": "a", "val": "y", "hue": "b"}, None),
+            ({"val": "y", "cat": "a", "hue": "x"}, None),
+            ({"cat": "s", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "s", "hue": None}, "h"),
+            ({"cat": "a", "val": "b", "hue": None}, None),
+            ({"val": "a", "cat": "b", "hue": None}, "h"),
+            ({"cat": "a", "val": "t", "hue": None}, None),
+            ({"val": "t", "cat": "a", "hue": None}, None),
+            pytest.param(
+                {"cat": "d", "val": "y", "hue": None}, None,
+                marks=pytest.mark.xfail(strict=True),
+            ),
+            pytest.param(
+                {"val": "y", "cat": "d", "hue": None}, None,
+                marks=pytest.mark.xfail(struct=True),
+            ),
+            ({"cat": "a_cat", "val": "y", "hue": None}, None),
+            ({"val": "y", "cat": "s_cat", "hue": None}, None),
+        ],
+    )
+    def test_positions(self, long_df, variables, orient):
 
-    def test_swarmplot_vertical(self):
+        cat_var = variables["cat"]
+        val_var = variables["val"]
+        hue_var = variables["hue"]
+        var_names = list(variables.values())
+        x_var, y_var, *_ = var_names
 
-        pal = palettes.color_palette()
+        ax = swarmplot(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient,
+        )
 
-        ax = cat.swarmplot(x="g", y="y", data=self.df)
+        with warnings.catch_warnings():
+            if variable_type(long_df[val_var]) == "categorical":
+                warnings.simplefilter("ignore")
+            _draw_figure(ax.figure)
+
+        cat_idx = var_names.index(cat_var)
+        val_idx = var_names.index(val_var)
+
+        axis_objs = ax.xaxis, ax.yaxis
+        cat_axis = axis_objs[cat_idx]
+        val_axis = axis_objs[val_idx]
+
+        cat_data = long_df[cat_var]
+        cat_levels = categorical_order(cat_data)
+
+        for i, label in enumerate(cat_levels):
+
+            vals = long_df.loc[cat_data == label, val_var]
+
+            points = ax.collections[i].get_offsets().T
+            cat_points = points[var_names.index(cat_var)]
+            val_points = points[var_names.index(val_var)]
+
+            assert_array_equal(val_points, val_axis.convert_units(vals))
+            assert 0 < np.ptp(cat_points) < .8
+
+            label = pd.Index([label]).astype(str)[0]
+            assert cat_axis.get_majorticklabels()[i].get_text() == label
+
+    @pytest.mark.parametrize(
+        "variables",
+        [
+            # Order matters for assigning to x/y
+            {"cat": "a", "val": "y", "hue": "b"},
+            {"val": "y", "cat": "a", "hue": "c"},
+            {"cat": "a", "val": "y", "hue": "f"},
+        ],
+    )
+    def test_positions_dodged(self, long_df, variables):
+
+        cat_var = variables["cat"]
+        val_var = variables["val"]
+        hue_var = variables["hue"]
+        var_names = list(variables.values())
+        x_var, y_var, *_ = var_names
+
+        ax = swarmplot(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
+        )
+
         _draw_figure(ax.figure)
 
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
+        cat_vals = categorical_order(long_df[cat_var])
+        hue_vals = categorical_order(long_df[hue_var])
 
-            x, y = ax.collections[i].get_offsets().T
-            npt.assert_array_almost_equal(y, vals)
+        width = .8
+        n_hue = len(hue_vals)
+        offsets = np.linspace(0, width, n_hue + 1)[:-1]
+        offsets -= offsets.mean()
 
-            fc = ax.collections[i].get_facecolors()[0, :3]
-            npt.assert_equal(fc, pal[i])
+        for i, cat_val in enumerate(cat_vals):
+            for j, hue_val in enumerate(hue_vals):
+                rows = (long_df[cat_var] == cat_val) & (long_df[hue_var] == hue_val)
+                vals = long_df.loc[rows, val_var]
 
-    def test_swarmplot_horizontal(self):
+                points = ax.collections[n_hue * i + j].get_offsets().T
+                cat_points = np.asarray(points[var_names.index(cat_var)])
+                val_points = np.asarray(points[var_names.index(val_var)])
 
-        pal = palettes.color_palette()
+                if pd.api.types.is_datetime64_any_dtype(vals):
+                    vals = mpl.dates.date2num(vals)
 
-        ax = cat.swarmplot(x="y", y="g", data=self.df, orient="h")
-        _draw_figure(ax.figure)
+                assert_array_equal(val_points, vals)
 
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
-
-            x, y = ax.collections[i].get_offsets().T
-            npt.assert_array_almost_equal(x, vals)
-
-            fc = ax.collections[i].get_facecolors()[0, :3]
-            npt.assert_equal(fc, pal[i])
-
-    def test_dodge_nested_swarmplot_vertical(self):
-
-        pal = palettes.color_palette()
-
-        ax = cat.swarmplot(x="g", y="y", hue="h", data=self.df, dodge=True)
-        _draw_figure(ax.figure)
-
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
-
-                x, y = ax.collections[i * 2 + j].get_offsets().T
-                npt.assert_array_almost_equal(y, vals)
-
-                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                assert tuple(fc) == pal[j]
-
-    def test_dodge_nested_swarmplot_horizontal(self):
-
-        pal = palettes.color_palette()
-
-        ax = cat.swarmplot(x="y", y="g", hue="h", data=self.df,
-                           orient="h", dodge=True)
-        _draw_figure(ax.figure)
-
-        for i, (_, group_vals) in enumerate(self.y.groupby(self.g)):
-            for j, (_, vals) in enumerate(group_vals.groupby(self.h)):
-
-                x, y = ax.collections[i * 2 + j].get_offsets().T
-                npt.assert_array_almost_equal(x, vals)
-
-                fc = ax.collections[i * 2 + j].get_facecolors()[0, :3]
-                assert tuple(fc) == pal[j]
-
-    def test_nested_swarmplot_vertical(self):
-
-        ax = cat.swarmplot(x="g", y="y", hue="h", data=self.df)
-        _draw_figure(ax.figure)
-
-        pal = palettes.color_palette()
-        hue_names = self.h.unique().tolist()
-        grouped_hues = list(self.h.groupby(self.g))
-
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
-
-            points = ax.collections[i]
-            x, y = points.get_offsets().T
-            npt.assert_array_almost_equal(y, vals)
-
-            _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals, points.get_facecolors()):
-
-                assert tuple(fc[:3]) == pal[hue_names.index(hue)]
-
-    def test_nested_swarmplot_horizontal(self):
-
-        ax = cat.swarmplot(x="y", y="g", hue="h", data=self.df, orient="h")
-        _draw_figure(ax.figure)
-
-        pal = palettes.color_palette()
-        hue_names = self.h.unique().tolist()
-        grouped_hues = list(self.h.groupby(self.g))
-
-        for i, (_, vals) in enumerate(self.y.groupby(self.g)):
-
-            points = ax.collections[i]
-            x, y = points.get_offsets().T
-            npt.assert_array_almost_equal(x, vals)
-
-            _, hue_vals = grouped_hues[i]
-            for hue, fc in zip(hue_vals, points.get_facecolors()):
-
-                assert tuple(fc[:3]) == pal[hue_names.index(hue)]
+                assert 0 <= np.ptp(cat_points) <= (width / n_hue)
+                assert np.median(cat_points) == approx(i + offsets[j])
 
 
 class TestBarPlotter(CategoricalFixture):
