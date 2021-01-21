@@ -4107,6 +4107,7 @@ class Beeswarm:
         # Transform the data coordinates to point coordinates.
         # We'll figure out the swarm positions in the latter
         # and then convert back to data coordinates and replot
+        orig_x_data, orig_y_data = orig_xy_data.T
         orig_xy = ax.transData.transform(orig_xy_data)
 
         # Order the variables so that x is the categorical axis
@@ -4134,16 +4135,19 @@ class Beeswarm:
             new_xy = new_xyr[:, [1, 0]]
         else:
             new_xy = new_xyr[:, :2]
-        new_x, new_y = ax.transData.inverted().transform(new_xy).T
+        new_x_data, new_y_data = ax.transData.inverted().transform(new_xy).T
 
         # Add gutters
-        if self.orient == "v":
-            self.add_gutters(new_x, center)
+        if self.orient == "h":
+            self.add_gutters(new_y_data, center)
         else:
-            self.add_gutters(new_y, center)
+            self.add_gutters(new_x_data, center)
 
         # Reposition the points so they do not overlap
-        points.set_offsets(np.c_[new_x, new_y])
+        if self.orient == "h":
+            points.set_offsets(np.c_[orig_x_data, new_y_data])
+        else:
+            points.set_offsets(np.c_[new_x_data, orig_y_data])
 
     def beeswarm(self, orig_xyr):
         """Adjust x position of points to avoid overlaps."""
