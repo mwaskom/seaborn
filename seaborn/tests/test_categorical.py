@@ -19,7 +19,7 @@ from numpy.testing import (
 from .. import categorical as cat
 from .. import palettes
 
-from .._core import categorical_order, variable_type
+from .._core import categorical_order
 from ..categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
@@ -2140,8 +2140,7 @@ class TestSwarmPlot:
         )
 
         with warnings.catch_warnings():
-            if variable_type(long_df[val_var]) == "categorical":
-                warnings.simplefilter("ignore")
+            warnings.simplefilter("ignore")  # Ignore gutter warnings
             _draw_figure(ax.figure)
 
         cat_idx = var_names.index(cat_var)
@@ -2163,7 +2162,7 @@ class TestSwarmPlot:
             val_points = points[var_names.index(val_var)]
 
             assert_array_equal(val_points, val_axis.convert_units(vals))
-            assert 0 < np.ptp(cat_points) < .8
+            assert 0 <= np.ptp(cat_points) <= .8
 
             label = pd.Index([label]).astype(str)[0]
             assert cat_axis.get_majorticklabels()[i].get_text() == label
@@ -2189,7 +2188,9 @@ class TestSwarmPlot:
             data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
         )
 
-        _draw_figure(ax.figure)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")  # Ignore gutter warnings
+            _draw_figure(ax.figure)
 
         cat_vals = categorical_order(long_df[cat_var])
         hue_vals = categorical_order(long_df[hue_var])
