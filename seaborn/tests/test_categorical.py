@@ -35,6 +35,7 @@ from .._testing import assert_plots_equal
 PLOT_FUNCS = [
     catplot,
     stripplot,
+    swarmplot,
 ]
 
 
@@ -2040,6 +2041,8 @@ class TestStripPlot:
 
 class TestSwarmPlot:
 
+    # XXX There is a lot of overlap in the stripplot/swarmplot tests.
+
     @pytest.mark.parametrize(
         "variables,orient",
         [
@@ -2151,6 +2154,121 @@ class TestSwarmPlot:
 
                 assert 0 <= np.ptp(cat_points) <= (width / n_hue)
                 assert np.median(cat_points) == approx(i + offsets[j])
+
+    @pytest.mark.parametrize(
+        "val_var,val_col,hue_col",
+        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
+    )
+    def test_single(self, long_df, val_var, val_col, hue_col):
+
+        var_kws = {val_var: val_col, "hue": hue_col}
+        ax = swarmplot(data=long_df, **var_kws)
+        _draw_figure(ax.figure)
+
+        axis_vars = ["x", "y"]
+        val_idx = axis_vars.index(val_var)
+        cat_idx = int(not val_idx)
+        cat_var = axis_vars[cat_idx]
+
+        cat_axis = getattr(ax, f"{cat_var}axis")
+        val_axis = getattr(ax, f"{val_var}axis")
+
+        points = ax.collections[0]
+        point_pos = points.get_offsets().T
+        cat_pos = point_pos[cat_idx]
+        val_pos = point_pos[val_idx]
+
+        assert cat_pos.max() < .4
+        assert cat_pos.min() > -.4
+        num_vals = val_axis.convert_units(long_df[val_col])
+        assert_array_equal(val_pos, num_vals)
+
+        if hue_col is not None:
+            palette = dict(zip(
+                categorical_order(long_df[hue_col]), color_palette()
+            ))
+
+        facecolors = points.get_facecolors()
+        for i, color in enumerate(facecolors):
+            if hue_col is None:
+                assert tuple(color) == to_rgba("C0")
+            else:
+                hue_level = long_df.loc[i, hue_col]
+                expected_color = palette[hue_level]
+                assert tuple(color) == to_rgba(expected_color)
+
+        ticklabels = cat_axis.get_majorticklabels()
+        assert len(ticklabels) == 1
+        assert not ticklabels[0].get_text()
+
+    def test_attributes(self, long_df):
+
+        kwargs = dict(
+            size=2,
+            linewidth=1,
+            edgecolor="C2",
+        )
+
+        ax = swarmplot(x=long_df["y"], **kwargs)
+        points, = ax.collections
+
+        assert points.get_sizes().item() == kwargs["size"] ** 2
+        assert points.get_linewidths().item() == kwargs["linewidth"]
+        assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
+
+    def test_log_scale(self):
+
+        x = [1, 10, 100, 1000]
+
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        swarmplot(x=x)
+        vals = ax.collections[0].get_offsets()[:, 0]
+        assert_array_equal(x, vals)
+
+        y = [1, 2, 3, 4]
+
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        swarmplot(x=x, y=y, fixed_scale=False)
+        for i, point in enumerate(ax.collections):
+            val = point.get_offsets()[0, 0]
+            assert val == x[i]
+
+        x = y = np.ones(100)
+
+        ax = plt.figure().subplots()
+        ax.set_yscale("log")
+        with pytest.warns(UserWarning):
+            swarmplot(x=x, y=y, orient="h", fixed_scale=False)
+        cat_points = ax.collections[0].get_offsets()[:, 1]
+        assert np.ptp(np.log10(cat_points)) == .8
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="long", x="x", color="C3"),
+            dict(data="long", y="y", hue="a"),
+            # TODO XXX full numeric hue legend crashes pinned mpl, disabling for now
+            # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            # dict(data="long", x="a_cat", y="y", hue="z"),
+            dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
+            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
+        ]
+    )
+    def test_vs_catplot(self, long_df, wide_df, kwargs):
+
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+
+        ax = swarmplot(**kwargs)
+        g = catplot(**kwargs, kind="swarm")
+
+        assert_plots_equal(ax, g.ax)
 
 
 class TestBarPlotter(CategoricalFixture):

@@ -25,7 +25,7 @@ from ._core import (
     categorical_order,
 )
 from . import utils
-from .utils import remove_na, _normal_quantile_func
+from .utils import remove_na, _normal_quantile_func, _draw_figure
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -326,13 +326,18 @@ class _CategoricalPlotterNew(VectorPlotter):
                 centers.append(sub_data[self.cat_axis].iloc[0])
                 swarms.append(swarm)
 
-        beeswarm = Beeswarm(width=width, orient=self.orient)
+        # TODO beeswarm doesn't handle log non-fixed scale properly
+        beeswarm = Beeswarm(
+            width=width, orient=self.orient, log_scale=self._log_scaled(self.cat_axis),
+        )
         for center, swarm in zip(centers, swarms):
             if swarm.get_offsets().size:
                 def draw(points, renderer, *, center=center):
                     beeswarm(points, center)
                     super(points.__class__, points).draw(renderer)
                 swarm.draw = draw.__get__(swarm)
+
+        _draw_figure(ax.figure)
 
         # TODO XXX fully impelment legend
         show_legend = not self._redundant_hue and self.input_format != "wide"
@@ -4063,10 +4068,16 @@ catplot.__doc__ = dedent("""\
 
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
-    def __init__(self, orient="v", width=0.8, warn_gutter_prop=.05):
+    def __init__(self, orient="v", width=0.8, log_scale=False, warn_gutter_prop=.05):
+
+        # XXX should we keep the orient parameterization or specify the swarm axis?
+
+        # XXX alternately, get log scaling from the axes object when called,
+        # as it only needs to be passed to the gutter function.
 
         self.orient = orient
         self.width = width
+        self.log_scale = log_scale
         self.warn_gutter_prop = warn_gutter_prop
 
     def __call__(self, points, center):
@@ -4227,11 +4238,17 @@ class Beeswarm:
     def add_gutters(self, points, center):
         """Stop points from extending beyond their territory."""
         half_width = self.width / 2
-        low_gutter = center - half_width
+        if self.log_scale:
+            low_gutter = 10 ** (np.log10(center) - half_width)
+        else:
+            low_gutter = center - half_width
         off_low = points < low_gutter
         if off_low.any():
             points[off_low] = low_gutter
-        high_gutter = center + half_width
+        if self.log_scale:
+            high_gutter = 10 ** (np.log10(center) + half_width)
+        else:
+            high_gutter = center + half_width
         off_high = points > high_gutter
         if off_high.any():
             points[off_high] = high_gutter
