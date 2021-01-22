@@ -331,7 +331,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             width=width, orient=self.orient, log_scale=self._log_scaled(self.cat_axis),
         )
         for center, swarm in zip(centers, swarms):
-            if swarm.get_offsets().size:
+            if swarm.get_offsets().size > 1:
                 def draw(points, renderer, *, center=center):
                     beeswarm(points, center)
                     super(points.__class__, points).draw(renderer)

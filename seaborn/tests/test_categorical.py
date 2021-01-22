@@ -2178,8 +2178,8 @@ class TestSwarmPlot:
         cat_pos = point_pos[cat_idx]
         val_pos = point_pos[val_idx]
 
-        assert cat_pos.max() < .4
-        assert cat_pos.min() > -.4
+        assert cat_pos.max() <= .4
+        assert cat_pos.min() >= -.4
         num_vals = val_axis.convert_units(long_df[val_col])
         assert_array_equal(val_pos, num_vals)
 
@@ -2233,15 +2233,14 @@ class TestSwarmPlot:
         swarmplot(x=x, y=y, fixed_scale=False)
         for i, point in enumerate(ax.collections):
             val = point.get_offsets()[0, 0]
-            assert val == x[i]
+            assert val == pytest.approx(x[i])
 
         x = y = np.ones(100)
 
         ax = plt.figure().subplots()
         ax.set_yscale("log")
-        with pytest.warns(UserWarning):
-            swarmplot(x=x, y=y, orient="h", fixed_scale=False)
-        cat_points = ax.collections[0].get_offsets()[:, 1]
+        swarmplot(x=x, y=y, orient="h", fixed_scale=False)
+        cat_points = ax.collections[0].get_offsets().copy()[:, 1]
         assert np.ptp(np.log10(cat_points)) == .8
 
     @pytest.mark.parametrize(
