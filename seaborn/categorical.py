@@ -213,7 +213,7 @@ class _CategoricalPlotterNew(VectorPlotter):
 
     # Note that the plotting methods here aim (in most cases) to produce the exact same
     # artists as the original version of the code, so there is some weirdness that might
-    # not otherwise be clean or make sense in this context, such as adding empty arists
+    # not otherwise be clean or make sense in this context, such as adding empty artists
     # for combinations of variables with no observations
 
     def plot_strips(
@@ -251,14 +251,10 @@ class _CategoricalPlotterNew(VectorPlotter):
             if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
-            if jitter and len(sub_data) > 1:
-                jitter_move = jitterer(size=len(sub_data))
-            else:
-                jitter_move = 0
+            jitter_move = jitterer(size=len(sub_data))
 
-            if not sub_data.empty:
-                adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
-                sub_data.loc[:, self.cat_axis] = adjusted_data
+            adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
+            sub_data.loc[:, self.cat_axis] = adjusted_data
 
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
@@ -328,7 +324,7 @@ class _CategoricalPlotterNew(VectorPlotter):
 
         # TODO beeswarm doesn't handle log non-fixed scale properly
         beeswarm = Beeswarm(
-            width=width, orient=self.orient, log_scale=self._log_scaled(self.cat_axis),
+            width=width, orient=self.orient,
         )
         for center, swarm in zip(centers, swarms):
             if swarm.get_offsets().size > 1:
@@ -4068,16 +4064,12 @@ catplot.__doc__ = dedent("""\
 
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
-    def __init__(self, orient="v", width=0.8, log_scale=False, warn_gutter_prop=.05):
+    def __init__(self, orient="v", width=0.8, warn_gutter_prop=.05):
 
         # XXX should we keep the orient parameterization or specify the swarm axis?
 
-        # XXX alternately, get log scaling from the axes object when called,
-        # as it only needs to be passed to the gutter function.
-
         self.orient = orient
         self.width = width
-        self.log_scale = log_scale
         self.warn_gutter_prop = warn_gutter_prop
 
     def __call__(self, points, center):
@@ -4127,11 +4119,14 @@ class Beeswarm:
             new_xy = new_xyr[:, :2]
         new_x_data, new_y_data = ax.transData.inverted().transform(new_xy).T
 
+        swarm_axis = {"h": "y", "v": "x"}[self.orient]
+        log_scale = getattr(ax, f"get_{swarm_axis}scale")() == "log"
+
         # Add gutters
         if self.orient == "h":
-            self.add_gutters(new_y_data, center)
+            self.add_gutters(new_y_data, center, log_scale=log_scale)
         else:
-            self.add_gutters(new_x_data, center)
+            self.add_gutters(new_x_data, center, log_scale=log_scale)
 
         # Reposition the points so they do not overlap
         if self.orient == "h":
@@ -4235,17 +4230,17 @@ class Beeswarm:
             "No non-overlapping candidates found. This should not happen."
         )
 
-    def add_gutters(self, points, center):
+    def add_gutters(self, points, center, log_scale=False):
         """Stop points from extending beyond their territory."""
         half_width = self.width / 2
-        if self.log_scale:
+        if log_scale:
             low_gutter = 10 ** (np.log10(center) - half_width)
         else:
             low_gutter = center - half_width
         off_low = points < low_gutter
         if off_low.any():
             points[off_low] = low_gutter
-        if self.log_scale:
+        if log_scale:
             high_gutter = 10 ** (np.log10(center) + half_width)
         else:
             high_gutter = center + half_width
