@@ -1007,6 +1007,9 @@ class VectorPlotter:
         else:
             data = self.plot_data
 
+        if dropna:
+            data = data.dropna()
+
         levels = self.var_levels.copy()
         if from_comp_data:
             for axis in {"x", "y"} & set(grouping_vars):
@@ -1053,21 +1056,18 @@ class VectorPlotter:
                     # with the empty artists that old categorical plots would
                     # add (before 0.12), which we may decide to break, in which
                     # case this option could be removed
-                    data_subset = pd.DataFrame(columns=data.columns)
-
-                if dropna:
-                    data_subset = data_subset.dropna()
+                    data_subset = data.loc[[]]
 
                 if data_subset.empty and not allow_empty:
                     continue
 
                 sub_vars = dict(zip(grouping_vars, key))
 
-                yield sub_vars, data_subset
+                yield sub_vars, data_subset.copy()
 
         else:
 
-            yield {}, data
+            yield {}, data.copy()
 
     @property
     def comp_data(self):

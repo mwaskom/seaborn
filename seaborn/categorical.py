@@ -256,7 +256,7 @@ class _CategoricalPlotterNew(VectorPlotter):
 
             if not sub_data.empty:
                 adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
-                sub_data[self.cat_axis] = adjusted_data
+                sub_data.loc[:, self.cat_axis] = adjusted_data
 
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
@@ -306,7 +306,7 @@ class _CategoricalPlotterNew(VectorPlotter):
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
             if not sub_data.empty:
-                sub_data[self.cat_axis] = sub_data[self.cat_axis] + dodge_move
+                sub_data.loc[:, self.cat_axis] = sub_data[self.cat_axis] + dodge_move
 
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
