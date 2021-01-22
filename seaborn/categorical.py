@@ -3670,7 +3670,11 @@ def catplot(
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
 
-    if kind == "strip":  # XXX gradually incorporate the refactored functions
+    refactored_kinds = [
+        "strip", "swarm",
+    ]
+
+    if kind in refactored_kinds:
 
         p = _CategoricalFacetPlotter(
             data=data,
@@ -3725,23 +3729,48 @@ def catplot(
             dodge = kwargs.pop("dodge", False)
             edgecolor = kwargs.pop("edgecolor", "gray")
 
-            strip_kws = kwargs.copy()
+            plot_kws = kwargs.copy()
 
             # XXX Copying possibly bad default decisions from original code for now
-            strip_kws.setdefault("zorder", 3)
-            strip_kws.setdefault("s", 25)
+            plot_kws.setdefault("zorder", 3)
+            plot_kws.setdefault("s", 25)
 
             if edgecolor == "gray":
                 edgecolor = p._get_gray("C0" if color is None else color)
-            strip_kws["edgecolor"] = edgecolor
+            plot_kws["edgecolor"] = edgecolor
 
-            strip_kws.setdefault("linewidth", 0)
+            plot_kws.setdefault("linewidth", 0)
 
             p.plot_strips(
                 jitter=jitter,
                 dodge=dodge,
                 color=color,
-                plot_kws=strip_kws,
+                plot_kws=plot_kws,
+            )
+
+        elif kind == "swarm":
+
+            # TODO get these defaults programatically?
+            dodge = kwargs.pop("dodge", False)
+            edgecolor = kwargs.pop("edgecolor", "gray")
+
+            plot_kws = kwargs.copy()
+
+            # XXX Copying possibly bad default decisions from original code for now
+            plot_kws.setdefault("zorder", 3)
+            plot_kws.setdefault("s", 25)
+
+            if edgecolor == "gray":
+                edgecolor = p._get_gray("C0" if color is None else color)
+            plot_kws["edgecolor"] = edgecolor
+
+            if plot_kws.setdefault("linewidth", 0) is None:
+                plot_kws["linewidth"] = np.sqrt(plot_kws["s"]) / 10
+
+            p.plot_swarms(
+                dodge=dodge,
+                color=color,
+                plot_kws=plot_kws,
             )
 
         # XXX best way to do this housekeeping?
@@ -3785,7 +3814,6 @@ def catplot(
         "boxen": _LVPlotter,
         "bar": _BarPlotter,
         "point": _PointPlotter,
-        "swarm": _SwarmPlotter,
         "count": _CountPlotter,
     }[kind]
     p = _CategoricalPlotter()
