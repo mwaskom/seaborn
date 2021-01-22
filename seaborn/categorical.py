@@ -253,6 +253,8 @@ class _CategoricalPlotterNew(VectorPlotter):
 
             if jitter and len(sub_data) > 1:
                 jitter_move = jitterer(size=len(sub_data))
+            else:
+                jitter_move = 0
 
             if not sub_data.empty:
                 adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
