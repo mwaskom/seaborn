@@ -251,7 +251,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
-            jitter_move = jitterer(size=len(sub_data))
+            jitter_move = jitterer(size=len(sub_data)) if len(sub_data) > 1 else 0
 
             adjusted_data = sub_data[self.cat_axis] + dodge_move + jitter_move
             sub_data.loc[:, self.cat_axis] = adjusted_data
