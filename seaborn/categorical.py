@@ -320,8 +320,9 @@ class _CategoricalPlotterNew(VectorPlotter):
             ax = self._get_axes(sub_vars)
             swarm = ax.scatter(sub_data["x"], sub_data["y"], c=c, **plot_kws)
 
-            centers.append(sub_data[self.cat_axis].iloc[0])
-            swarms.append(swarm)
+            if not sub_data.empty:
+                centers.append(sub_data[self.cat_axis].iloc[0])
+                swarms.append(swarm)
 
         beeswarm = Beeswarm(width=width, orient=self.orient)
         for center, swarm in zip(centers, swarms):
