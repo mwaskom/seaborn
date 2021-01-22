@@ -4,7 +4,7 @@ v0.12.0 (Unreleased)
 
 - |API| |Feature| |Enhancement| TODO (Flesh this out further). Increased flexibility of what can be shown by the internally-calculated errorbars (:pr:2407).
 
-- |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417).
+- |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417`).
 
 - TODO function specific categorical enhancements, including:
 
