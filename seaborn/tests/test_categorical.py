@@ -1578,65 +1578,6 @@ class TestViolinPlotter(CategoricalFixture):
             plt.close("all")
 
 
-class TestCategoricalScatterPlotter(CategoricalFixture):
-
-    def test_group_point_colors(self):
-
-        p = cat._CategoricalScatterPlotter()
-
-        p.establish_variables(x="g", y="y", data=self.df)
-        p.establish_colors(None, "deep", 1)
-
-        point_colors = p.point_colors
-        n_colors = self.g.unique().size
-        assert len(point_colors) == n_colors
-
-        for i, group_colors in enumerate(point_colors):
-            for color in group_colors:
-                assert color == i
-
-    def test_hue_point_colors(self):
-
-        p = cat._CategoricalScatterPlotter()
-
-        hue_order = self.h.unique().tolist()
-        p.establish_variables(x="g", y="y", hue="h",
-                              hue_order=hue_order, data=self.df)
-        p.establish_colors(None, "deep", 1)
-
-        point_colors = p.point_colors
-        assert len(point_colors) == self.g.unique().size
-
-        for i, group_colors in enumerate(point_colors):
-            group_hues = np.asarray(p.plot_hues[i])
-            for point_hue, point_color in zip(group_hues, group_colors):
-                assert point_color == p.hue_names.index(point_hue)
-                # hue_level = np.asarray(p.plot_hues[i])[j]
-                # palette_color = deep_colors[hue_order.index(hue_level)]
-                # assert tuple(point_color) == palette_color
-
-    def test_scatterplot_legend(self):
-
-        p = cat._CategoricalScatterPlotter()
-
-        hue_order = ["m", "n"]
-        p.establish_variables(x="g", y="y", hue="h",
-                              hue_order=hue_order, data=self.df)
-        p.establish_colors(None, "deep", 1)
-        deep_colors = palettes.color_palette("deep", self.h.unique().size)
-
-        f, ax = plt.subplots()
-        p.add_legend_data(ax)
-        leg = ax.legend()
-
-        for i, t in enumerate(leg.get_texts()):
-            assert t.get_text() == hue_order[i]
-
-        for i, h in enumerate(leg.legendHandles):
-            rgb = h.get_facecolor()[0, :3]
-            assert tuple(rgb) == tuple(deep_colors[i])
-
-
 class TestStripPlot:
 
     @pytest.mark.parametrize(
