@@ -2237,6 +2237,12 @@ class TestSwarmPlot:
 
         x = y = np.ones(100)
 
+        # Following test fails on pinned (but not latest) matplotlib.
+        # I'm not exactly sure why so this version check is approximate
+        # and should be revisited on a version bump.
+        if LooseVersion(mpl.__version__) < "3.1":
+            pytest.xfail()
+
         ax = plt.figure().subplots()
         ax.set_yscale("log")
         swarmplot(x=x, y=y, orient="h", fixed_scale=False)
