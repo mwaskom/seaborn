@@ -248,8 +248,6 @@ class _CategoricalPlotterNew(VectorPlotter):
                                                  from_comp_data=True,
                                                  allow_empty=True):
 
-            sub_data = sub_data.dropna().copy()
-
             if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]
 
@@ -303,8 +301,6 @@ class _CategoricalPlotterNew(VectorPlotter):
         for sub_vars, sub_data in self.iter_data(iter_vars,
                                                  from_comp_data=True,
                                                  allow_empty=True):
-
-            sub_data = sub_data.dropna().copy()
 
             if offsets is not None:
                 dodge_move = offsets[sub_data["hue"].map(self._hue_map.levels.index)]

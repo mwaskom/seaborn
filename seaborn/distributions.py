@@ -297,7 +297,6 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data.dropna()
             observations = sub_data[data_variable]
 
             observation_variance = observations.var()
@@ -425,7 +424,6 @@ class _DistributionPlotter(VectorPlotter):
 
             # Prepare the relevant data
             key = tuple(sub_vars.items())
-            sub_data = sub_data.dropna()
             observations = sub_data[self.data_variable]
 
             if "weights" in self.variables:
@@ -746,7 +744,6 @@ class _DistributionPlotter(VectorPlotter):
 
         full_heights = []
         for _, sub_data in self.iter_data(from_comp_data=True):
-            sub_data = sub_data.dropna()
             sub_heights, _ = estimator(
                 sub_data["x"], sub_data["y"], sub_data.get("weights", None)
             )
@@ -773,8 +770,6 @@ class _DistributionPlotter(VectorPlotter):
 
         # --- Loop over data (subsets) and draw the histograms
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
-
-            sub_data = sub_data.dropna()
 
             if sub_data.empty:
                 continue
@@ -1062,7 +1057,6 @@ class _DistributionPlotter(VectorPlotter):
         for sub_vars, sub_data in self.iter_data("hue", from_comp_data=True):
 
             # Extract the data points from this sub set and remove nulls
-            sub_data = sub_data.dropna()
             observations = sub_data[["x", "y"]]
 
             # Extract the weights for this subset of observations
@@ -1230,7 +1224,6 @@ class _DistributionPlotter(VectorPlotter):
         ):
 
             # Compute the ECDF
-            sub_data = sub_data.dropna()
             if sub_data.empty:
                 continue
 
