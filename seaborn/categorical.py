@@ -328,9 +328,31 @@ class _CategoricalPlotterNew(VectorPlotter):
         )
         for center, swarm in zip(centers, swarms):
             if swarm.get_offsets().size > 1:
+
                 def draw(points, renderer, *, center=center):
+
                     beeswarm(points, center)
+
+                    ax = points.axes
+                    if self.orient == "h":
+                        scalex = False
+                        scaley = ax.get_autoscaley_on()
+                    else:
+                        scalex = ax.get_autoscalex_on()
+                        scaley = False
+
+                    # This prevents us from undoing the nice categorical axis limits
+                    # set in _adjust_cat_axis, because that method currently leave
+                    # the autoscale flag in its original setting. It may be better
+                    # to disable autoscaling there to avoid needing to do this.
+                    fixed_scale = self.var_types[self.cat_axis] == "categorical"
+
+                    if not fixed_scale and (scalex or scaley):
+                        ax.update_datalim(points.get_datalim(ax.transData))
+                        ax.autoscale_view(scalex=scalex, scaley=scaley)
+
                     super(points.__class__, points).draw(renderer)
+
                 swarm.draw = draw.__get__(swarm)
 
         _draw_figure(ax.figure)
