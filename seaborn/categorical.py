@@ -280,6 +280,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         self,
         dodge,
         color,
+        warn_thresh,
         plot_kws,
     ):
 
@@ -322,9 +323,8 @@ class _CategoricalPlotterNew(VectorPlotter):
                 centers.append(sub_data[self.cat_axis].iloc[0])
                 swarms.append(swarm)
 
-        # TODO beeswarm doesn't handle log non-fixed scale properly
         beeswarm = Beeswarm(
-            width=width, orient=self.orient,
+            width=width, orient=self.orient, warn_thresh=warn_thresh,
         )
         for center, swarm in zip(centers, swarms):
             if swarm.get_offsets().size > 1:
@@ -2863,7 +2863,7 @@ def swarmplot(
     order=None, hue_order=None,
     dodge=False, orient=None, color=None, palette=None,
     size=5, edgecolor="gray", linewidth=0, ax=None,
-    hue_norm=None, fixed_scale=True, formatter=None,
+    hue_norm=None, fixed_scale=True, formatter=None, warn_thresh=.05,
     **kwargs
 ):
 
@@ -2915,6 +2915,7 @@ def swarmplot(
     p.plot_swarms(
         dodge=dodge,
         color=color,
+        warn_thresh=warn_thresh,
         plot_kws=kwargs,
     )
 
@@ -3754,6 +3755,7 @@ def catplot(
             # TODO get these defaults programatically?
             dodge = kwargs.pop("dodge", False)
             edgecolor = kwargs.pop("edgecolor", "gray")
+            warn_thresh = kwargs.pop("warn_thresh", .05)
 
             plot_kws = kwargs.copy()
 
@@ -3771,6 +3773,7 @@ def catplot(
             p.plot_swarms(
                 dodge=dodge,
                 color=color,
+                warn_thresh=warn_thresh,
                 plot_kws=plot_kws,
             )
 
@@ -4064,13 +4067,13 @@ catplot.__doc__ = dedent("""\
 
 class Beeswarm:
     """Modifies a scatterplot artist to show a beeswarm plot."""
-    def __init__(self, orient="v", width=0.8, warn_gutter_prop=.05):
+    def __init__(self, orient="v", width=0.8, warn_thresh=.05):
 
         # XXX should we keep the orient parameterization or specify the swarm axis?
 
         self.orient = orient
         self.width = width
-        self.warn_gutter_prop = warn_gutter_prop
+        self.warn_thresh = warn_thresh
 
     def __call__(self, points, center):
         """Swarm `points`, a PathCollection, around the `center` position."""
@@ -4249,7 +4252,7 @@ class Beeswarm:
             points[off_high] = high_gutter
 
         gutter_prop = (off_high + off_low).sum() / len(points)
-        if gutter_prop > self.warn_gutter_prop:
+        if gutter_prop > self.warn_thresh:
             msg = (
                 "{:.1%} of the points cannot be placed; you may want "
                 "to decrease the size of the markers or use stripplot."

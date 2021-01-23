@@ -14,6 +14,8 @@ v0.12.0 (Unreleased)
 
   - In :func:`swarmplot`, the order of the points in each swarm now matches the order in the original dataset; previously they were sorted. This affects only the underlying data stored in the matplotlib artist, not the visual representation (:pr:`2443`).
 
+  - In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
+
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 

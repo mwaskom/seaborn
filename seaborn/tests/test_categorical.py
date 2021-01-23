@@ -2074,7 +2074,8 @@ class TestSwarmPlot:
         x_var, y_var, *_ = var_names
 
         ax = swarmplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient,
+            data=long_df, x=x_var, y=y_var, hue=hue_var,
+            orient=orient, warn_thresh=1,
         )
 
         with warnings.catch_warnings():
@@ -2245,7 +2246,7 @@ class TestSwarmPlot:
 
         ax = plt.figure().subplots()
         ax.set_yscale("log")
-        swarmplot(x=x, y=y, orient="h", fixed_scale=False)
+        swarmplot(x=x, y=y, orient="h", fixed_scale=False, warn_thresh=1)
         cat_points = ax.collections[0].get_offsets().copy()[:, 1]
         assert np.ptp(np.log10(cat_points)) == .8
 
