@@ -1,7 +1,7 @@
 from textwrap import dedent
 from numbers import Number
 import warnings
-import colorsys
+from colorsys import rgb_to_hls
 from functools import partial
 
 import numpy as np
@@ -16,6 +16,7 @@ except ImportError:
 import matplotlib as mpl
 from matplotlib.collections import PatchCollection
 import matplotlib.patches as Patches
+from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 
 from ._core import (
@@ -144,14 +145,14 @@ class _CategoricalPlotterNew(VectorPlotter):
     def cat_axis(self):
         return {"v": "x", "h": "y"}[self.orient]
 
-    def _get_gray(self, color="C0"):
+    def _get_gray(self, color):
         """Get a grayscale value that looks good with color."""
         if "hue" in self.variables:
-            rgb_colors = list(self._hue_map.lookup_table.values())
+            rgb_colors = [to_rgb(c) for c in self._hue_map.lookup_table.values()]
         else:
-            rgb_colors = [mpl.colors.to_rgb(color)]
+            rgb_colors = [to_rgb(color)]
 
-        light_vals = [colorsys.rgb_to_hls(*mpl.colors.to_rgb(c))[1] for c in rgb_colors]
+        light_vals = [rgb_to_hls(*rgb)[1] for rgb in rgb_colors]
         lum = min(light_vals) * .6
         gray = mpl.colors.rgb2hex((lum, lum, lum))
         return gray
@@ -658,7 +659,7 @@ class _CategoricalPlotter(object):
         rgb_colors = color_palette(colors)
 
         # Determine the gray color to use for the lines framing the plot
-        light_vals = [colorsys.rgb_to_hls(*c)[1] for c in rgb_colors]
+        light_vals = [rgb_to_hls(*c)[1] for c in rgb_colors]
         lum = min(light_vals) * .6
         gray = mpl.colors.rgb2hex((lum, lum, lum))
 
@@ -2919,14 +2920,8 @@ def swarmplot(
     if linewidth is None:
         linewidth = size / 10
 
-    # XXX Here especially is tricky. Old code didn't follow the color cycle.
-    # If new code does, then we won't know the default non-mapped color out here.
-    # But also I think in general that logic should move to the outer functions.
-    # XXX Wait how does this work with a custom palette?
-    # XXX Regardless of implementation, I think we should change this default
-    # name to "auto" or something similar that doesn't overlap with a real color name
-    if edgecolor == "gray":
-        edgecolor = p._get_gray("C0" if color is None else color)
+    if edgecolor == "gray":  # XXX change to "auto"
+        edgecolor = p._get_gray(color)
 
     kwargs.update(dict(
         s=size ** 2,

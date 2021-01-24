@@ -9,7 +9,7 @@ from urllib.request import urlopen, urlretrieve
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
-import matplotlib.colors as mplcol
+from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
@@ -103,7 +103,7 @@ def desaturate(color, prop):
         raise ValueError("prop must be between 0 and 1")
 
     # Get rgb tuple rep
-    rgb = mplcol.colorConverter.to_rgb(color)
+    rgb = to_rgb(color)
 
     # Convert to hls
     h, l, s = colorsys.rgb_to_hls(*rgb)
@@ -151,7 +151,7 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
 
     """
     # Get an RGB tuple representation
-    rgb = mplcol.colorConverter.to_rgb(color)
+    rgb = to_rgb(color)
     vals = list(colorsys.rgb_to_hls(*rgb))
     for i, val in enumerate([h, l, s]):
         if val is not None:
