@@ -95,6 +95,8 @@ def _default_color(method, hue, color, kws):
 
     if method.__name__ == "scatter":
 
+        # Matplotlib will raise if the size of x/y don't match s/c,
+        # and the latter might be in the kws dict
         scout_size = max(
             np.atleast_1d(kws.get("s", [])).shape[0],
             np.atleast_1d(kws.get("c", [])).shape[0],
@@ -104,6 +106,8 @@ def _default_color(method, hue, color, kws):
         scout = method(scout_x, scout_y, **kws)
         facecolors = scout.get_facecolors()
 
+        # This should allow the user to specify an array of colors
+        # through c or facecolor/edgecolor
         if np.unique(facecolors, axis=0).shape[0] == 1:
             color = to_rgb(facecolors[0])
 

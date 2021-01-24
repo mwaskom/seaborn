@@ -2877,7 +2877,7 @@ stripplot.__doc__ = dedent("""\
     """).format(**_categorical_docs)
 
 
-# @_deprecate_positional_args
+@_deprecate_positional_args
 def swarmplot(
     *,
     x=None, y=None,
