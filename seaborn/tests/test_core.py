@@ -976,6 +976,20 @@ class TestVectorPlotter:
         for i, (sub_vars, _) in enumerate(iterator):
             assert sub_vars["hue"] == reversed_order[i]
 
+    def test_iter_data_dropna(self, missing_df):
+
+        p = VectorPlotter(
+            data=missing_df,
+            variables=dict(x="x", y="y", hue="a")
+        )
+        for _, sub_df in p.iter_data("hue"):
+            assert not sub_df.isna().any().any()
+
+        some_missing = False
+        for _, sub_df in p.iter_data("hue", dropna=False):
+            some_missing |= sub_df.isna().any().any()
+        assert some_missing
+
     def test_axis_labels(self, long_df):
 
         f, ax = plt.subplots()

@@ -951,7 +951,7 @@ class VectorPlotter:
     def iter_data(
         self, grouping_vars=None, *,
         reverse=False, from_comp_data=False,
-        by_facet=True, allow_empty=False,
+        by_facet=True, allow_empty=False, dropna=True,
     ):
         """Generator for getting subsets of data defined by semantic variables.
 
@@ -970,6 +970,8 @@ class VectorPlotter:
         allow_empty : bool
             If True, yield an empty dataframe when no observations exist for
             combinations of grouping variables.
+        dropna : bool
+            If True, remove rows with missing data.
 
         Yields
         ------
@@ -1004,6 +1006,9 @@ class VectorPlotter:
             data = self.comp_data
         else:
             data = self.plot_data
+
+        if dropna:
+            data = data.dropna()
 
         levels = self.var_levels.copy()
         if from_comp_data:
@@ -1047,22 +1052,22 @@ class VectorPlotter:
                 try:
                     data_subset = grouped_data.get_group(pd_key)
                 except KeyError:
-                    if allow_empty:
-                        # XXX we are adding this to allow backwards compatability
-                        # with the empty artists that old categorical plots would
-                        # add (before 0.12), which we may decide to break, in which
-                        # case this option could be removed
-                        data_subset = pd.DataFrame(columns=data.columns)
-                    else:
-                        continue
+                    # XXX we are adding this to allow backwards compatability
+                    # with the empty artists that old categorical plots would
+                    # add (before 0.12), which we may decide to break, in which
+                    # case this option could be removed
+                    data_subset = data.loc[[]]
+
+                if data_subset.empty and not allow_empty:
+                    continue
 
                 sub_vars = dict(zip(grouping_vars, key))
 
-                yield sub_vars, data_subset
+                yield sub_vars, data_subset.copy()
 
         else:
 
-            yield {}, data
+            yield {}, data.copy()
 
     @property
     def comp_data(self):

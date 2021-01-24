@@ -4,7 +4,7 @@ v0.12.0 (Unreleased)
 
 - |API| |Feature| |Enhancement| TODO (Flesh this out further). Increased flexibility of what can be shown by the internally-calculated errorbars (:pr:2407).
 
-- |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417).
+- |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417`).
 
 - TODO function specific categorical enhancements, including:
 
@@ -13,6 +13,8 @@ v0.12.0 (Unreleased)
   - In :func:`swarmplot`, the points are now swarmed at draw time, meaning that the plot will adapt to further changes in axes scaling or tweaks to the plot layout (:pr:`2443`).
 
   - In :func:`swarmplot`, the order of the points in each swarm now matches the order in the original dataset; previously they were sorted. This affects only the underlying data stored in the matplotlib artist, not the visual representation (:pr:`2443`).
+
+  - In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
 
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).

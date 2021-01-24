@@ -433,6 +433,12 @@ class _LinePlotter(_RelationalPlotter):
         agg_var = "y"
         grouper = ["x"]
 
+        # TODO How to handle NA? We don't want NA to propagate through to the
+        # estimate/CI when some values are present, but we would also like
+        # matplotlib to show "gaps" in the line when all values are missing.
+        # This is straightforward absent aggregation, but complicated with it.
+        # If we want to use nas, we need to conditionalize dropna in iter_data.
+
         # Loop over the semantic subsets and add to the plot
         grouping_vars = "hue", "size", "style"
         for sub_vars, sub_data in self.iter_data(grouping_vars, from_comp_data=True):
@@ -441,13 +447,6 @@ class _LinePlotter(_RelationalPlotter):
                 sort_vars = ["units", "x", "y"]
                 sort_cols = [var for var in sort_vars if var in self.variables]
                 sub_data = sub_data.sort_values(sort_cols)
-
-            # TODO
-            # How to handle NA? We don't want NA to propagate through to the
-            # estimate/CI when some values are present, but we would also like
-            # matplotlib to show "gaps" in the line when all values are missing.
-            # This is straightforward absent aggregation, but complicated with it.
-            sub_data = sub_data.dropna()
 
             if self.estimator is not None:
                 if "units" in self.variables:
@@ -581,7 +580,7 @@ class _ScatterPlotter(_RelationalPlotter):
 
         # --- Determine the visual attributes of the plot
 
-        data = self.plot_data[list(self.variables)].dropna()
+        data = self.plot_data.dropna()
         if not data.size:
             return
 
