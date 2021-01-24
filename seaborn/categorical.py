@@ -327,7 +327,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             width=width, orient=self.orient, warn_thresh=warn_thresh,
         )
         for center, swarm in zip(centers, swarms):
-            if swarm.get_offsets().size > 1:
+            if swarm.get_offsets().shape[0] > 1:
 
                 def draw(points, renderer, *, center=center):
 

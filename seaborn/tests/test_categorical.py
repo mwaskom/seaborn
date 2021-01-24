@@ -1,5 +1,6 @@
 import itertools
-import warnings
+from functools import partial
+
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -12,7 +13,6 @@ import numpy.testing as npt
 from distutils.version import LooseVersion
 from numpy.testing import (
     assert_array_equal,
-    assert_array_almost_equal,
     assert_array_less,
 )
 
@@ -1579,18 +1579,31 @@ class TestViolinPlotter(CategoricalFixture):
             plt.close("all")
 
 
-class TestStripPlot:
+class TestScatterPlots:
+    """Tests functionality common to stripplot and swarmplot."""
+
+    @pytest.fixture(params=["strip", "swarm"])
+    def func(self, request):
+
+        func = {"strip": stripplot, "swarm": swarmplot}[request.param]
+
+        kwargs = {
+            "strip": {},
+            "swarm": {"warn_thresh": 1},
+        }[request.param]
+
+        return partial(func, **kwargs)
 
     @pytest.mark.parametrize(
         "orient,data_type",
         itertools.product(["h", "v"], ["dataframe", "dict"]),
     )
-    def test_wide(self, wide_df, orient, data_type):
+    def test_wide(self, func, wide_df, orient, data_type):
 
         if data_type == "dict":
             wide_df = {k: v.to_numpy() for k, v in wide_df.items()}
 
-        ax = stripplot(data=wide_df, orient=orient, jitter=False)
+        ax = func(data=wide_df, orient=orient)
         _draw_figure(ax.figure)
         palette = color_palette()
 
@@ -1601,22 +1614,23 @@ class TestStripPlot:
         cat_axis = axis_objs[cat_idx]
 
         for i, label in enumerate(cat_axis.get_majorticklabels()):
+
             key = label.get_text()
             points = ax.collections[i]
             point_pos = points.get_offsets().T
             val_pos = point_pos[val_idx]
             cat_pos = point_pos[cat_idx]
 
-            assert (cat_pos == i).all()
+            assert_array_equal(cat_pos.round(), i)
             assert_array_equal(val_pos, wide_df[key])
 
             for point_color in points.get_facecolors():
                 assert tuple(point_color) == to_rgba(palette[i])
 
     @pytest.mark.parametrize("orient", ["h", "v"])
-    def test_flat(self, flat_series, orient):
+    def test_flat(self, func, flat_series, orient):
 
-        ax = stripplot(data=flat_series, orient=orient, jitter=False)
+        ax = func(data=flat_series, orient=orient)
         _draw_figure(ax.figure)
 
         cat_idx = 0 if orient == "v" else 1
@@ -1632,10 +1646,9 @@ class TestStripPlot:
             val_pos = point_pos[val_idx]
             cat_pos = point_pos[cat_idx]
 
-            assert (cat_pos == i).all()
-
             key = int(label.get_text())  # because fixture has integer index
             assert_array_equal(val_pos, flat_series[key])
+            assert_array_equal(cat_pos, i)
 
     @pytest.mark.parametrize(
         "variables,orient",
@@ -1659,7 +1672,7 @@ class TestStripPlot:
             ({"val": "y", "cat": "s_cat", "hue": None}, None),
         ],
     )
-    def test_positions(self, long_df, variables, orient):
+    def test_positions(self, long_df, func, variables, orient):
 
         cat_var = variables["cat"]
         val_var = variables["val"]
@@ -1667,12 +1680,12 @@ class TestStripPlot:
         var_names = list(variables.values())
         x_var, y_var, *_ = var_names
 
-        ax = stripplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var,
-            orient=orient, jitter=False,
+        ax = func(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, orient=orient,
         )
 
         _draw_figure(ax.figure)
+
         cat_idx = var_names.index(cat_var)
         val_idx = var_names.index(val_var)
 
@@ -1688,11 +1701,12 @@ class TestStripPlot:
             vals = long_df.loc[cat_data == label, val_var]
 
             points = ax.collections[i].get_offsets().T
-            cat_points = points[var_names.index(cat_var)]
-            val_points = points[var_names.index(val_var)]
+            cat_pos = points[var_names.index(cat_var)]
+            val_pos = points[var_names.index(val_var)]
 
-            assert_array_equal(val_points, val_axis.convert_units(vals))
-            assert_array_equal(cat_points, np.full(len(cat_points), i))
+            assert_array_equal(val_pos, val_axis.convert_units(vals))
+            assert_array_equal(cat_pos.round(), i)
+            assert 0 <= np.ptp(cat_pos) <= .8
 
             label = pd.Index([label]).astype(str)[0]
             assert cat_axis.get_majorticklabels()[i].get_text() == label
@@ -1706,7 +1720,7 @@ class TestStripPlot:
             {"cat": "a", "val": "y", "hue": "f"},
         ],
     )
-    def test_positions_dodged(self, long_df, variables):
+    def test_positions_dodged(self, func, long_df, variables):
 
         cat_var = variables["cat"]
         val_var = variables["val"]
@@ -1714,8 +1728,8 @@ class TestStripPlot:
         var_names = list(variables.values())
         x_var, y_var, *_ = var_names
 
-        ax = stripplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True, jitter=False,
+        ax = func(
+            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
         )
 
         cat_vals = categorical_order(long_df[cat_var])
@@ -1724,6 +1738,7 @@ class TestStripPlot:
         n_hue = len(hue_vals)
         offsets = np.linspace(0, .8, n_hue + 1)[:-1]
         offsets -= offsets.mean()
+        nest_width = .8 / n_hue
 
         for i, cat_val in enumerate(cat_vals):
             for j, hue_val in enumerate(hue_vals):
@@ -1731,33 +1746,293 @@ class TestStripPlot:
                 vals = long_df.loc[rows, val_var]
 
                 points = ax.collections[n_hue * i + j].get_offsets().T
-                cat_points = points[var_names.index(cat_var)]
-                val_points = points[var_names.index(val_var)]
+                cat_pos = points[var_names.index(cat_var)]
+                val_pos = points[var_names.index(val_var)]
 
                 if pd.api.types.is_datetime64_any_dtype(vals):
                     vals = mpl.dates.date2num(vals)
 
-                assert_array_equal(val_points, vals)
+                assert_array_equal(val_pos, vals)
 
-                expected = np.full(len(cat_points), i + offsets[j])
-                assert_array_almost_equal(cat_points, expected)
+                assert_array_equal(cat_pos.round(), i)
+                assert_array_equal((cat_pos - (i + offsets[j])).round() / nest_width, 0)
+                assert 0 <= np.ptp(cat_pos) <= nest_width
 
     @pytest.mark.parametrize("cat_var", ["a", "s", "d"])
-    def test_positions_unfixed(self, long_df, cat_var):
+    def test_positions_unfixed(self, func, long_df, cat_var):
 
         long_df = long_df.sort_values(cat_var)
-        ax = stripplot(data=long_df, x=cat_var, y="y", jitter=False, fixed_scale=False)
+
+        kws = dict(size=.001)
+        if func.func.__name__.startswith("strip"):
+            kws["jitter"] = False
+
+        ax = func(data=long_df, x=cat_var, y="y", fixed_scale=False, **kws)
 
         for i, (cat_level, cat_data) in enumerate(long_df.groupby(cat_var)):
 
             points = ax.collections[i].get_offsets().T
-            cat_points = points[0]
-            val_points = points[1]
+            cat_pos = points[0]
+            val_pos = points[1]
 
-            comp_level = ax.xaxis.convert_units(cat_level)
+            assert_array_equal(val_pos, cat_data["y"])
 
-            assert_array_equal(cat_points, np.full_like(cat_points, comp_level))
-            assert_array_equal(val_points, cat_data["y"])
+            comp_level = np.squeeze(ax.xaxis.convert_units(cat_level)).item()
+            assert_array_equal(cat_pos.round(), comp_level)
+
+    @pytest.mark.parametrize(
+        "x_type,order",
+        [
+            (str, None),
+            (str, ["a", "b", "c"]),
+            (str, ["c", "a"]),
+            (str, ["a", "b", "c", "d"]),
+            (int, None),
+            (int, [3, 1, 2]),
+            (int, [3, 1]),
+            (int, [1, 2, 3, 4]),
+            (int, ["3", "1", "2"]),
+        ]
+    )
+    def test_order(self, func, x_type, order):
+
+        if x_type is str:
+            x = ["b", "a", "c"]
+        else:
+            x = [2, 1, 3]
+        y = [1, 2, 3]
+
+        ax = func(x=x, y=y, order=order)
+        _draw_figure(ax.figure)
+
+        if order is None:
+            order = x
+            if x_type is int:
+                order = np.sort(order)
+
+        assert len(ax.collections) == len(order)
+        tick_labels = ax.xaxis.get_majorticklabels()
+
+        assert ax.get_xlim()[1] == (len(order) - .5)
+
+        for i, points in enumerate(ax.collections):
+            cat = order[i]
+            assert tick_labels[i].get_text() == str(cat)
+
+            positions = points.get_offsets()
+            if x_type(cat) in x:
+                val = y[x.index(x_type(cat))]
+                assert positions[0, 1] == val
+            else:
+                assert not positions.size
+
+    @pytest.mark.parametrize("color", [None, "C1"])
+    def test_color(self, func, long_df, color):
+
+        ax = func(data=long_df, x="a", y="y", color=color)
+
+        expected = to_rgba("C0" if color is None else color)
+        for points in ax.collections:
+            for face_color in points.get_facecolors():
+                assert tuple(face_color) == expected
+
+    @pytest.mark.parametrize("hue_var", ["a", "b"])
+    def test_hue_categorical(self, func, long_df, hue_var):
+
+        cat_var = "b"
+
+        hue_levels = categorical_order(long_df[hue_var])
+        cat_levels = categorical_order(long_df[cat_var])
+
+        pal_name = "muted"
+        palette = dict(zip(hue_levels, color_palette(pal_name)))
+        ax = func(data=long_df, x=cat_var, y="y", hue=hue_var, palette=pal_name)
+
+        for i, level in enumerate(cat_levels):
+
+            sub_df = long_df[long_df[cat_var] == level]
+            point_hues = sub_df[hue_var]
+
+            points = ax.collections[i]
+            point_colors = points.get_facecolors()
+
+            assert len(point_hues) == len(point_colors)
+
+            for hue, color in zip(point_hues, point_colors):
+                assert tuple(color) == to_rgba(palette[hue])
+
+    @pytest.mark.parametrize("hue_var", ["a", "b"])
+    def test_hue_dodged(self, func, long_df, hue_var):
+
+        ax = func(data=long_df, x="y", y="a", hue=hue_var, dodge=True)
+        colors = color_palette(n_colors=long_df[hue_var].nunique())
+        collections = iter(ax.collections)
+
+        # Slightly awkward logic to handle challenges of how the artists work.
+        # e.g. there are empty scatter collections but the because facecolors
+        # for the empty collections will return the default scatter color
+        while colors:
+            points = next(collections)
+            if points.get_offsets().any():
+                face_color = tuple(points.get_facecolors()[0])
+                expected_color = to_rgba(colors.pop(0))
+                assert face_color == expected_color
+
+    @pytest.mark.parametrize(
+        "val_var,val_col,hue_col",
+        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
+    )
+    def test_single(self, func, long_df, val_var, val_col, hue_col):
+
+        var_kws = {val_var: val_col, "hue": hue_col}
+        ax = func(data=long_df, **var_kws)
+        _draw_figure(ax.figure)
+
+        axis_vars = ["x", "y"]
+        val_idx = axis_vars.index(val_var)
+        cat_idx = int(not val_idx)
+        cat_var = axis_vars[cat_idx]
+
+        cat_axis = getattr(ax, f"{cat_var}axis")
+        val_axis = getattr(ax, f"{val_var}axis")
+
+        points = ax.collections[0]
+        point_pos = points.get_offsets().T
+        cat_pos = point_pos[cat_idx]
+        val_pos = point_pos[val_idx]
+
+        assert_array_equal(cat_pos.round(), 0)
+        assert cat_pos.max() <= .4
+        assert cat_pos.min() >= -.4
+
+        num_vals = val_axis.convert_units(long_df[val_col])
+        assert_array_equal(val_pos, num_vals)
+
+        if hue_col is not None:
+            palette = dict(zip(
+                categorical_order(long_df[hue_col]), color_palette()
+            ))
+
+        facecolors = points.get_facecolors()
+        for i, color in enumerate(facecolors):
+            if hue_col is None:
+                assert tuple(color) == to_rgba("C0")
+            else:
+                hue_level = long_df.loc[i, hue_col]
+                expected_color = palette[hue_level]
+                assert tuple(color) == to_rgba(expected_color)
+
+        ticklabels = cat_axis.get_majorticklabels()
+        assert len(ticklabels) == 1
+        assert not ticklabels[0].get_text()
+
+    def test_attributes(self, func, long_df):
+
+        kwargs = dict(
+            size=2,
+            linewidth=1,
+            edgecolor="C2",
+        )
+
+        ax = func(x=long_df["y"], **kwargs)
+        points, = ax.collections
+
+        assert points.get_sizes().item() == kwargs["size"] ** 2
+        assert points.get_linewidths().item() == kwargs["linewidth"]
+        assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
+
+    def test_three_points(self, func):
+
+        x = np.arange(3)
+        ax = func(x=x)
+        for point_color in ax.collections[0].get_facecolor():
+            assert tuple(point_color) == to_rgba("C0")
+
+    def test_palette_from_color_deprecation(self, func, long_df):
+
+        color = (.9, .4, .5)
+        hex_color = mpl.colors.to_hex(color)
+
+        hue_var = "a"
+        n_hue = long_df[hue_var].nunique()
+        palette = color_palette(f"dark:{hex_color}", n_hue)
+
+        with pytest.warns(FutureWarning, match="Setting a gradient palette"):
+            ax = func(data=long_df, x="z", hue=hue_var, color=color)
+
+        points = ax.collections[0]
+        for point_color in points.get_facecolors():
+            assert to_rgb(point_color) in palette
+
+    def test_log_scale(self, func):
+
+        x = [1, 10, 100, 1000]
+
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        func(x=x)
+        vals = ax.collections[0].get_offsets()[:, 0]
+        assert_array_equal(x, vals)
+
+        y = [1, 2, 3, 4]
+
+        ax = plt.figure().subplots()
+        ax.set_xscale("log")
+        func(x=x, y=y, fixed_scale=False)
+        for i, point in enumerate(ax.collections):
+            val = point.get_offsets()[0, 0]
+            assert val == pytest.approx(x[i])
+
+        x = y = np.ones(100)
+
+        # Following test fails on pinned (but not latest) matplotlib.
+        # I'm not exactly sure why so this version check is approximate
+        # and should be revisited on a version bump.
+        if LooseVersion(mpl.__version__) < "3.1":
+            pytest.xfail()
+
+        ax = plt.figure().subplots()
+        ax.set_yscale("log")
+        func(x=x, y=y, orient="h", fixed_scale=False)
+        cat_points = ax.collections[0].get_offsets().copy()[:, 1]
+        assert np.ptp(np.log10(cat_points)) <= .8
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            dict(data="wide"),
+            dict(data="wide", orient="h"),
+            dict(data="long", x="x", color="C3"),
+            dict(data="long", y="y", hue="a", jitter=False),
+            # TODO XXX full numeric hue legend crashes pinned mpl, disabling for now
+            # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
+            # dict(data="long", x="a_cat", y="y", hue="z"),
+            dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
+            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
+        ]
+    )
+    def test_vs_catplot(self, func, long_df, wide_df, kwargs):
+
+        kwargs = kwargs.copy()
+        if kwargs["data"] == "long":
+            kwargs["data"] = long_df
+        elif kwargs["data"] == "wide":
+            kwargs["data"] = wide_df
+
+        name = func.func.__name__[:-4]
+        if name == "swarm":
+            kwargs.pop("jitter", None)
+
+        np.random.seed(0)  # for jitter
+        ax = func(**kwargs)
+
+        np.random.seed(0)
+        g = catplot(**kwargs, kind=name)
+
+        assert_plots_equal(ax, g.ax)
+
+
+class TestStripPlot:
 
     def test_jitter_unfixed(self, long_df):
 
@@ -1774,51 +2049,6 @@ class TestStripPlot:
         p2 = ax2.collections[0].get_offsets()[1]
 
         assert p2.std() > p1.std()
-
-    @pytest.mark.parametrize(
-        "x_type,order",
-        [
-            (str, None),
-            (str, ["a", "b", "c"]),
-            (str, ["c", "a"]),
-            (str, ["a", "b", "c", "d"]),
-            (int, None),
-            (int, [3, 1, 2]),
-            (int, [3, 1]),
-            (int, [1, 2, 3, 4]),
-            (int, ["3", "1", "2"]),
-        ]
-    )
-    def test_order(self, x_type, order):
-
-        if x_type is str:
-            x = ["b", "a", "c"]
-        else:
-            x = [2, 1, 3]
-        y = [1, 2, 3]
-
-        ax = stripplot(x=x, y=y, order=order)
-        _draw_figure(ax.figure)
-
-        if order is None:
-            order = x
-            if x_type is int:
-                order = np.sort(order)
-
-        assert len(ax.collections) == len(order)
-        tick_labels = ax.xaxis.get_majorticklabels()
-
-        assert ax.get_xlim()[1] == (len(order) - .5)
-
-        for i, points in enumerate(ax.collections):
-            cat = order[i]
-            assert tick_labels[i].get_text() == str(cat)
-            positions = points.get_offsets()
-            if x_type(cat) in x:
-                val = y[x.index(x_type(cat))]
-                assert positions[0, 1] == val
-            else:
-                assert not positions.size
 
     @pytest.mark.parametrize(
         "orient,jitter",
@@ -1856,425 +2086,10 @@ class TestStripPlot:
             assert np.std(cat_points) > 0
             assert np.ptp(cat_points) <= jitter_range
 
-    @pytest.mark.parametrize("color", [None, "C1"])
-    def test_color(self, long_df, color):
-
-        ax = stripplot(data=long_df, x="a", y="y", color=color)
-
-        expected = to_rgba("C0" if color is None else color)
-        for points in ax.collections:
-            for face_color in points.get_facecolors():
-                assert tuple(face_color) == expected
-
-    @pytest.mark.parametrize("hue_var", ["a", "b"])
-    def test_hue(self, long_df, hue_var):
-
-        cat_var = "b"
-
-        hue_levels = categorical_order(long_df[hue_var])
-        cat_levels = categorical_order(long_df[cat_var])
-
-        pal_name = "muted"
-        palette = dict(zip(hue_levels, color_palette(pal_name)))
-        ax = stripplot(data=long_df, x=cat_var, y="y", hue=hue_var, palette=pal_name)
-
-        for i, level in enumerate(cat_levels):
-
-            sub_df = long_df[long_df[cat_var] == level]
-            point_hues = sub_df[hue_var]
-
-            points = ax.collections[i]
-            point_colors = points.get_facecolors()
-
-            assert len(point_hues) == len(point_colors)
-
-            for hue, color in zip(point_hues, point_colors):
-                assert tuple(color) == to_rgba(palette[hue])
-
-    @pytest.mark.parametrize("hue_var", ["a", "b"])
-    def test_hue_dodged(self, long_df, hue_var):
-
-        ax = stripplot(data=long_df, x="y", y="a", hue=hue_var, dodge=True)
-        colors = color_palette(n_colors=long_df[hue_var].nunique())
-        collections = iter(ax.collections)
-
-        # Slightly awkward logic to handle challenges of how the artists work.
-        # e.g. there are empty scatter collections but the because facecolors
-        # for the empty collections will return the default scatter color
-        while colors:
-            points = next(collections)
-            if points.get_offsets().any():
-                face_color = tuple(points.get_facecolors()[0])
-                expected_color = to_rgba(colors.pop(0))
-                assert face_color == expected_color
-
-    @pytest.mark.parametrize(
-        "val_var,val_col,hue_col",
-        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
-    )
-    def test_single(self, long_df, val_var, val_col, hue_col):
-
-        var_kws = {val_var: val_col, "hue": hue_col}
-        ax = stripplot(data=long_df, **var_kws, jitter=False)
-        _draw_figure(ax.figure)
-
-        axis_vars = ["x", "y"]
-        val_idx = axis_vars.index(val_var)
-        cat_idx = int(not val_idx)
-        cat_var = axis_vars[cat_idx]
-
-        cat_axis = getattr(ax, f"{cat_var}axis")
-        val_axis = getattr(ax, f"{val_var}axis")
-
-        points = ax.collections[0]
-        point_pos = points.get_offsets().T
-        cat_pos = point_pos[cat_idx]
-        val_pos = point_pos[val_idx]
-
-        assert (cat_pos == 0).all()
-        num_vals = val_axis.convert_units(long_df[val_col])
-        assert_array_equal(val_pos, num_vals)
-
-        if hue_col is not None:
-            palette = dict(zip(
-                categorical_order(long_df[hue_col]), color_palette()
-            ))
-
-        facecolors = points.get_facecolors()
-        for i, color in enumerate(facecolors):
-            if hue_col is None:
-                assert tuple(color) == to_rgba("C0")
-            else:
-                hue_level = long_df.loc[i, hue_col]
-                expected_color = palette[hue_level]
-                assert tuple(color) == to_rgba(expected_color)
-
-        ticklabels = cat_axis.get_majorticklabels()
-        assert len(ticklabels) == 1
-        assert not ticklabels[0].get_text()
-
-    def test_attributes(self, long_df):
-
-        kwargs = dict(
-            size=2,
-            linewidth=1,
-            edgecolor="C2",
-        )
-
-        ax = stripplot(x=long_df["y"], **kwargs)
-        points, = ax.collections
-
-        assert points.get_sizes().item() == kwargs["size"] ** 2
-        assert points.get_linewidths().item() == kwargs["linewidth"]
-        assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
-
-    def test_three_strip_points(self):
-
-        x = np.arange(3)
-        ax = stripplot(x=x)
-        for point_color in ax.collections[0].get_facecolor():
-            assert tuple(point_color) == to_rgba("C0")
-
-    def test_log_scale(self):
-
-        x = [1, 10, 100, 1000]
-
-        ax = plt.figure().subplots()
-        ax.set_xscale("log")
-        stripplot(x=x)
-        vals = ax.collections[0].get_offsets()[:, 0]
-        assert_array_equal(x, vals)
-
-        y = [1, 2, 3, 4]
-
-        ax = plt.figure().subplots()
-        ax.set_xscale("log")
-        stripplot(x=x, y=y, fixed_scale=False)
-        for i, point in enumerate(ax.collections):
-            val = point.get_offsets()[0, 0]
-            assert val == x[i]
-
-    def test_palette_from_color_deprecation(self, long_df):
-
-        color = (.9, .4, .5)
-        hex_color = mpl.colors.to_hex(color)
-
-        hue_var = "a"
-        n_hue = long_df[hue_var].nunique()
-        palette = color_palette(f"dark:{hex_color}", n_hue)
-
-        with pytest.warns(FutureWarning, match="Setting a gradient palette"):
-            ax = stripplot(data=long_df, x="z", hue=hue_var, color=color)
-
-        points = ax.collections[0]
-        for point_color in points.get_facecolors():
-            assert to_rgb(point_color) in palette
-
-    @pytest.mark.parametrize(
-        "kwargs",
-        [
-            dict(data="wide"),
-            dict(data="wide", orient="h"),
-            dict(data="long", x="x", color="C3"),
-            dict(data="long", y="y", hue="a", jitter=False),
-            # TODO XXX full numeric hue legend crashes pinned mpl, disabling for now
-            # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
-            # dict(data="long", x="a_cat", y="y", hue="z"),
-            dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
-            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
-        ]
-    )
-    def test_vs_catplot(self, long_df, wide_df, kwargs):
-
-        if kwargs["data"] == "long":
-            kwargs["data"] = long_df
-        elif kwargs["data"] == "wide":
-            kwargs["data"] = wide_df
-
-        np.random.seed(0)  # for jitter
-        ax = stripplot(**kwargs)
-        np.random.seed(0)
-        g = catplot(**kwargs)
-
-        assert_plots_equal(ax, g.ax)
-
 
 class TestSwarmPlot:
 
-    # XXX There is a lot of overlap in the stripplot/swarmplot tests.
-
-    @pytest.mark.parametrize(
-        "variables,orient",
-        [
-            # Order matters for assigning to x/y
-            ({"cat": "a", "val": "y", "hue": None}, None),
-            ({"val": "y", "cat": "a", "hue": None}, None),
-            ({"cat": "a", "val": "y", "hue": "a"}, None),
-            ({"val": "y", "cat": "a", "hue": "a"}, None),
-            ({"cat": "a", "val": "y", "hue": "b"}, None),
-            ({"val": "y", "cat": "a", "hue": "x"}, None),
-            ({"cat": "s", "val": "y", "hue": None}, None),
-            ({"val": "y", "cat": "s", "hue": None}, "h"),
-            ({"cat": "a", "val": "b", "hue": None}, None),
-            ({"val": "a", "cat": "b", "hue": None}, "h"),
-            ({"cat": "a", "val": "t", "hue": None}, None),
-            ({"val": "t", "cat": "a", "hue": None}, None),
-            ({"cat": "d", "val": "y", "hue": None}, None),
-            ({"val": "y", "cat": "d", "hue": None}, None),
-            ({"cat": "a_cat", "val": "y", "hue": None}, None),
-            ({"val": "y", "cat": "s_cat", "hue": None}, None),
-        ],
-    )
-    def test_positions(self, long_df, variables, orient):
-
-        cat_var = variables["cat"]
-        val_var = variables["val"]
-        hue_var = variables["hue"]
-        var_names = list(variables.values())
-        x_var, y_var, *_ = var_names
-
-        ax = swarmplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var,
-            orient=orient, warn_thresh=1,
-        )
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")  # Ignore gutter warnings
-            _draw_figure(ax.figure)
-
-        cat_idx = var_names.index(cat_var)
-        val_idx = var_names.index(val_var)
-
-        axis_objs = ax.xaxis, ax.yaxis
-        cat_axis = axis_objs[cat_idx]
-        val_axis = axis_objs[val_idx]
-
-        cat_data = long_df[cat_var]
-        cat_levels = categorical_order(cat_data)
-
-        for i, label in enumerate(cat_levels):
-
-            vals = long_df.loc[cat_data == label, val_var]
-
-            points = ax.collections[i].get_offsets().T
-            cat_points = points[var_names.index(cat_var)]
-            val_points = points[var_names.index(val_var)]
-
-            assert_array_equal(val_points, val_axis.convert_units(vals))
-            assert 0 <= np.ptp(cat_points) <= .8
-
-            label = pd.Index([label]).astype(str)[0]
-            assert cat_axis.get_majorticklabels()[i].get_text() == label
-
-    @pytest.mark.parametrize(
-        "variables",
-        [
-            # Order matters for assigning to x/y
-            {"cat": "a", "val": "y", "hue": "b"},
-            {"val": "y", "cat": "a", "hue": "c"},
-            {"cat": "a", "val": "y", "hue": "f"},
-        ],
-    )
-    def test_positions_dodged(self, long_df, variables):
-
-        cat_var = variables["cat"]
-        val_var = variables["val"]
-        hue_var = variables["hue"]
-        var_names = list(variables.values())
-        x_var, y_var, *_ = var_names
-
-        ax = swarmplot(
-            data=long_df, x=x_var, y=y_var, hue=hue_var, dodge=True,
-        )
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")  # Ignore gutter warnings
-            _draw_figure(ax.figure)
-
-        cat_vals = categorical_order(long_df[cat_var])
-        hue_vals = categorical_order(long_df[hue_var])
-
-        width = .8
-        n_hue = len(hue_vals)
-        offsets = np.linspace(0, width, n_hue + 1)[:-1]
-        offsets -= offsets.mean()
-
-        for i, cat_val in enumerate(cat_vals):
-            for j, hue_val in enumerate(hue_vals):
-                rows = (long_df[cat_var] == cat_val) & (long_df[hue_var] == hue_val)
-                vals = long_df.loc[rows, val_var]
-
-                points = ax.collections[n_hue * i + j].get_offsets().T
-                cat_points = np.asarray(points[var_names.index(cat_var)])
-                val_points = np.asarray(points[var_names.index(val_var)])
-
-                if pd.api.types.is_datetime64_any_dtype(vals):
-                    vals = mpl.dates.date2num(vals)
-
-                assert_array_equal(val_points, vals)
-
-                assert 0 <= np.ptp(cat_points) <= (width / n_hue)
-                assert np.median(cat_points) == approx(i + offsets[j])
-
-    @pytest.mark.parametrize(
-        "val_var,val_col,hue_col",
-        itertools.product(["x", "y"], ["b", "y", "t"], [None, "a"]),
-    )
-    def test_single(self, long_df, val_var, val_col, hue_col):
-
-        var_kws = {val_var: val_col, "hue": hue_col}
-        ax = swarmplot(data=long_df, **var_kws)
-        _draw_figure(ax.figure)
-
-        axis_vars = ["x", "y"]
-        val_idx = axis_vars.index(val_var)
-        cat_idx = int(not val_idx)
-        cat_var = axis_vars[cat_idx]
-
-        cat_axis = getattr(ax, f"{cat_var}axis")
-        val_axis = getattr(ax, f"{val_var}axis")
-
-        points = ax.collections[0]
-        point_pos = points.get_offsets().T
-        cat_pos = point_pos[cat_idx]
-        val_pos = point_pos[val_idx]
-
-        assert cat_pos.max() <= .4
-        assert cat_pos.min() >= -.4
-        num_vals = val_axis.convert_units(long_df[val_col])
-        assert_array_equal(val_pos, num_vals)
-
-        if hue_col is not None:
-            palette = dict(zip(
-                categorical_order(long_df[hue_col]), color_palette()
-            ))
-
-        facecolors = points.get_facecolors()
-        for i, color in enumerate(facecolors):
-            if hue_col is None:
-                assert tuple(color) == to_rgba("C0")
-            else:
-                hue_level = long_df.loc[i, hue_col]
-                expected_color = palette[hue_level]
-                assert tuple(color) == to_rgba(expected_color)
-
-        ticklabels = cat_axis.get_majorticklabels()
-        assert len(ticklabels) == 1
-        assert not ticklabels[0].get_text()
-
-    def test_attributes(self, long_df):
-
-        kwargs = dict(
-            size=2,
-            linewidth=1,
-            edgecolor="C2",
-        )
-
-        ax = swarmplot(x=long_df["y"], **kwargs)
-        points, = ax.collections
-
-        assert points.get_sizes().item() == kwargs["size"] ** 2
-        assert points.get_linewidths().item() == kwargs["linewidth"]
-        assert tuple(points.get_edgecolors().squeeze()) == to_rgba(kwargs["edgecolor"])
-
-    def test_log_scale(self):
-
-        x = [1, 10, 100, 1000]
-
-        ax = plt.figure().subplots()
-        ax.set_xscale("log")
-        swarmplot(x=x)
-        vals = ax.collections[0].get_offsets()[:, 0]
-        assert_array_equal(x, vals)
-
-        y = [1, 2, 3, 4]
-
-        ax = plt.figure().subplots()
-        ax.set_xscale("log")
-        swarmplot(x=x, y=y, fixed_scale=False)
-        for i, point in enumerate(ax.collections):
-            val = point.get_offsets()[0, 0]
-            assert val == pytest.approx(x[i])
-
-        x = y = np.ones(100)
-
-        # Following test fails on pinned (but not latest) matplotlib.
-        # I'm not exactly sure why so this version check is approximate
-        # and should be revisited on a version bump.
-        if LooseVersion(mpl.__version__) < "3.1":
-            pytest.xfail()
-
-        ax = plt.figure().subplots()
-        ax.set_yscale("log")
-        swarmplot(x=x, y=y, orient="h", fixed_scale=False, warn_thresh=1)
-        cat_points = ax.collections[0].get_offsets().copy()[:, 1]
-        assert np.ptp(np.log10(cat_points)) == .8
-
-    @pytest.mark.parametrize(
-        "kwargs",
-        [
-            dict(data="wide"),
-            dict(data="wide", orient="h"),
-            dict(data="long", x="x", color="C3"),
-            dict(data="long", y="y", hue="a"),
-            # TODO XXX full numeric hue legend crashes pinned mpl, disabling for now
-            # dict(data="long", x="a", y="y", hue="z", edgecolor="w", linewidth=.5),
-            # dict(data="long", x="a_cat", y="y", hue="z"),
-            dict(data="long", x="y", y="s", hue="c", orient="h", dodge=True),
-            dict(data="long", x="s", y="y", hue="c", fixed_scale=False),
-        ]
-    )
-    def test_vs_catplot(self, long_df, wide_df, kwargs):
-
-        if kwargs["data"] == "long":
-            kwargs["data"] = long_df
-        elif kwargs["data"] == "wide":
-            kwargs["data"] = wide_df
-
-        ax = swarmplot(**kwargs)
-        g = catplot(**kwargs, kind="swarm")
-
-        assert_plots_equal(ax, g.ax)
+    pass
 
 
 class TestBarPlotter(CategoricalFixture):
