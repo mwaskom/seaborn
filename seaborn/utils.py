@@ -82,6 +82,36 @@ def _draw_figure(fig):
             pass
 
 
+def _default_color(method, hue, color, kws):
+    """If needed, get a default color by using the matplotlib property cycle."""
+    if hue is not None:
+        if color is not None:
+            msg = "`color` is ignored when `hue` is assigned."
+            warnings.warn(msg)
+        return None
+
+    if color is not None:
+        return color
+
+    if method.__name__ == "scatter":
+
+        scout_size = max(
+            np.atleast_1d(kws.get("s", [])).shape[0],
+            np.atleast_1d(kws.get("c", [])).shape[0],
+        )
+        scout_x = scout_y = np.full(scout_size, np.nan)
+
+        scout = method(scout_x, scout_y, **kws)
+        facecolors = scout.get_facecolors()
+
+        if np.unique(facecolors, axis=0).shape[0] == 1:
+            color = to_rgb(facecolors[0])
+
+        scout.remove()
+
+    return color
+
+
 def desaturate(color, prop):
     """Decrease the saturation channel of a color by some percent.
 

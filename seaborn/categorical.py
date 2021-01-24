@@ -26,7 +26,7 @@ from ._core import (
     categorical_order,
 )
 from . import utils
-from .utils import remove_na, _normal_quantile_func, _draw_figure
+from .utils import remove_na, _normal_quantile_func, _draw_figure, _default_color
 from .algorithms import bootstrap
 from .palettes import color_palette, husl_palette, light_palette, dark_palette
 from .axisgrid import FacetGrid, _facet_docs
@@ -285,7 +285,6 @@ class _CategoricalPlotterNew(VectorPlotter):
         plot_kws,
     ):
 
-        default_color = "C0" if color is None else color
         width = .8 * self._native_width
         offsets = self._nested_offsets(width, dodge)
 
@@ -311,7 +310,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             if "hue" in self.variables:
                 c = self._hue_map(sub_data["hue"])
             else:
-                c = mpl.colors.to_hex(default_color)
+                c = None if color is None else mpl.colors.to_hex(color)
 
             for var in "xy":
                 if self._log_scaled(var):
@@ -2911,6 +2910,9 @@ def swarmplot(
         return ax
 
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
+
+    color = _default_color(ax.scatter, hue, color, kwargs)
+
     p.map_hue(palette=palette, order=hue_order, norm=hue_norm)
 
     # XXX Copying possibly bad default decisions from original code for now
