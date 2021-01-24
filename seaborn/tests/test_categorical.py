@@ -1986,7 +1986,8 @@ class TestScatterPlots:
         x = y = np.ones(100)
 
         # Following test fails on pinned (but not latest) matplotlib.
-        # I'm not exactly sure why so this version check is approximate
+        # (Even though visual output is ok -- so it's not an actual bug).
+        # I'm not exactly sure why, so this version check is approximate
         # and should be revisited on a version bump.
         if LooseVersion(mpl.__version__) < "3.1":
             pytest.xfail()

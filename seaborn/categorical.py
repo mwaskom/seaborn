@@ -347,8 +347,8 @@ class _CategoricalPlotterNew(VectorPlotter):
                     # to disable autoscaling there to avoid needing to do this.
                     fixed_scale = self.var_types[self.cat_axis] == "categorical"
 
+                    ax.update_datalim(points.get_datalim(ax.transData))
                     if not fixed_scale and (scalex or scaley):
-                        ax.update_datalim(points.get_datalim(ax.transData))
                         ax.autoscale_view(scalex=scalex, scaley=scaley)
 
                     super(points.__class__, points).draw(renderer)
