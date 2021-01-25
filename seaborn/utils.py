@@ -98,8 +98,8 @@ def _default_color(method, hue, color, kws):
         # Matplotlib will raise if the size of x/y don't match s/c,
         # and the latter might be in the kws dict
         scout_size = max(
-            np.atleast_1d(kws.get("s", [])).shape[0],
-            np.atleast_1d(kws.get("c", [])).shape[0],
+            np.atleast_1d(kws.get(key, [])).shape[0]
+            for key in ["s", "c", "fc", "facecolor", "facecolors"]
         )
         scout_x = scout_y = np.full(scout_size, np.nan)
 
