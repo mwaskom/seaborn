@@ -106,9 +106,8 @@ def _default_color(method, hue, color, kws):
         scout = method(scout_x, scout_y, **kws)
         facecolors = scout.get_facecolors()
 
-        # This should allow the user to specify an array of colors
-        # through c or facecolor/edgecolor
-        if np.unique(facecolors, axis=0).shape[0] == 1:
+        # Allow the user to specify an array of colors through various kwargs
+        if "c" not in kws and np.unique(facecolors, axis=0).shape[0] == 1:
             color = to_rgb(facecolors[0])
 
         scout.remove()

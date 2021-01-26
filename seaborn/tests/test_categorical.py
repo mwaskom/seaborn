@@ -1631,6 +1631,24 @@ class SharedScatterTests(SharedTests):
         self.func(data=long_df, x="a", y="y", fc="C7", ax=ax)
         assert self.get_single_color(ax) == to_rgba("C7")
 
+    def test_supplied_color_array(self, long_df):
+
+        cmap = mpl.cm.get_cmap("Blues")
+        norm = mpl.colors.Normalize()
+        colors = cmap(norm(long_df["y"]))
+
+        for key in ["c", "fc", "facecolor", "facecolors"]:
+
+            ax = plt.figure().subplots()
+            self.func(x=long_df["y"], **{key: colors})
+            _draw_figure(ax.figure)
+            assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+        ax = plt.figure().subplots()
+        self.func(x=long_df["y"], c=long_df["y"], cmap=cmap)
+        _draw_figure(ax.figure)
+        assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
     @pytest.mark.parametrize(
         "orient,data_type",
         itertools.product(["h", "v"], ["dataframe", "dict"]),
