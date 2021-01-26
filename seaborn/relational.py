@@ -392,20 +392,8 @@ class _LinePlotter(_RelationalPlotter):
         # gotten from the corresponding matplotlib function, and calling the
         # function will advance the axes property cycle.
 
-        scout, = ax.plot([], [], **kws)
-
-        orig_color = kws.pop("color", scout.get_color())
-        orig_marker = kws.pop("marker", scout.get_marker())
-        orig_linewidth = kws.pop("linewidth",
-                                 kws.pop("lw", scout.get_linewidth()))
-
-        # Note that scout.get_linestyle() is` not correct as of mpl 3.2
-        orig_linestyle = kws.pop("linestyle", kws.pop("ls", None))
-
         kws.setdefault("markeredgewidth", kws.pop("mew", .75))
         kws.setdefault("markeredgecolor", kws.pop("mec", "w"))
-
-        scout.remove()
 
         # Set default error kwargs
         err_kws = self.err_kws.copy()
@@ -416,14 +404,6 @@ class _LinePlotter(_RelationalPlotter):
         elif self.err_style is not None:
             err = "`err_style` must be 'band' or 'bars', not {}"
             raise ValueError(err.format(self.err_style))
-
-        # Set the default artist keywords
-        kws.update(dict(
-            color=orig_color,
-            marker=orig_marker,
-            linewidth=orig_linewidth,
-            linestyle=orig_linestyle,
-        ))
 
         # Initialize the aggregation object
         agg = EstimateAggregator(
@@ -465,30 +445,33 @@ class _LinePlotter(_RelationalPlotter):
                     for col in sub_data.filter(regex=f"^{var}"):
                         sub_data[col] = np.power(10, sub_data[col])
 
-            if "hue" in sub_vars:
-                kws["color"] = self._hue_map(sub_vars["hue"])
-            if "size" in sub_vars:
-                kws["linewidth"] = self._size_map(sub_vars["size"])
-            if "style" in sub_vars:
-                attributes = self._style_map(sub_vars["style"])
-                if "dashes" in attributes:
-                    kws["dashes"] = attributes["dashes"]
-                if "marker" in attributes:
-                    kws["marker"] = attributes["marker"]
+            # --- Draw the main line(s)
 
-            line, = ax.plot([], [], **kws)
+            if "units" in self.variables:   # XXX why not add to grouping variables?
+                lines = []
+                for _, unit_data in sub_data.groupby("units"):
+                    lines.extend(ax.plot(unit_data["x"], unit_data["y"], **kws))
+            else:
+                lines = ax.plot(sub_data["x"], sub_data["y"], **kws)
+
+            for line in lines:
+
+                if "hue" in sub_vars:
+                    line.set_color(self._hue_map(sub_vars["hue"]))
+
+                if "size" in sub_vars:
+                    line.set_linewidth(self._size_map(sub_vars["size"]))
+
+                if "style" in sub_vars:
+                    attributes = self._style_map(sub_vars["style"])
+                    if "dashes" in attributes:
+                        line.set_dashes(attributes["dashes"])
+                    if "marker" in attributes:
+                        line.set_marker(attributes["marker"])
+
             line_color = line.get_color()
             line_alpha = line.get_alpha()
             line_capstyle = line.get_solid_capstyle()
-            line.remove()
-
-            # --- Draw the main line
-
-            if "units" in self.variables:
-                for _, unit_data in sub_data.groupby("units"):
-                    ax.plot(unit_data["x"], unit_data["y"], **kws)
-            else:
-                line, = ax.plot(sub_data["x"], sub_data["y"], **kws)
 
             # --- Draw the confidence intervals
 
@@ -648,6 +631,15 @@ def lineplot(
 
     if ax is None:
         ax = plt.gca()
+
+    if style is None and not {"ls", "linestyle"} & set(kwargs):  # XXX
+        kwargs["dashes"] = "" if dashes is None or isinstance(dashes, bool) else dashes
+
+    # Other functions have color as an explicit param,
+    # and we should probably do that here too
+    kwargs["color"] = _default_color(
+        ax.plot, hue, kwargs.pop("color", kwargs.pop("c", None)), kwargs
+    )
 
     if not p.has_xy_data:
         return ax

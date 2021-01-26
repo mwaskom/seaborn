@@ -93,7 +93,13 @@ def _default_color(method, hue, color, kws):
     if color is not None:
         return color
 
-    if method.__name__ == "scatter":
+    elif method.__name__ == "plot":
+
+        scout, = method([], [], color=color, **kws)
+        color = scout.get_color()
+        scout.remove()
+
+    elif method.__name__ == "scatter":
 
         # Matplotlib will raise if the size of x/y don't match s/c,
         # and the latter might be in the kws dict

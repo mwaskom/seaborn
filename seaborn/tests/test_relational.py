@@ -62,6 +62,27 @@ class Helpers:
         return equal
 
 
+class SharedAxesLevelTests:
+
+    def test_default_color(self, long_df):
+
+        # Note, copied from categorical module.
+        # Should have some root-level shared tests for common behavior
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C0")
+
+        ax = plt.figure().subplots()
+        self.func()
+        self.func(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C1")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", color="C4", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C4")
+
+
 class TestRelationalPlotter(Helpers):
 
     def test_wide_df_variables(self, wide_df):
@@ -604,7 +625,24 @@ class TestRelationalPlotter(Helpers):
         assert len(g.ax.collections) > 0
 
 
-class TestLinePlotter(Helpers):
+class TestLinePlotter(SharedAxesLevelTests, Helpers):
+
+    func = staticmethod(lineplot)
+
+    def get_single_color(self, ax):
+
+        colors = [to_rgba(line.get_color()) for line in ax.lines]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return tuple(unique_colors.squeeze())
+
+    def test_default_color(self, long_df):
+
+        super().test_default_color(long_df)
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", c="C5", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C5")
 
     def test_legend_data(self, long_df):
 
@@ -1071,6 +1109,13 @@ class TestLinePlotter(Helpers):
             plot_val = getattr(line, f"get_{key}")()
             assert plot_val == val
 
+    def test_nonmapped_dashes(self):
+
+        ax = lineplot(x=[1, 2], y=[1, 2], dashes=(2, 1))
+        line = ax.lines[0]
+        # Not a great test, but lines don't expose the dash style publically
+        assert line.get_linestyle() == "--"
+
     def test_lineplot_axes(self, wide_df):
 
         f1, ax1 = plt.subplots()
@@ -1199,7 +1244,9 @@ class TestLinePlotter(Helpers):
         assert_plots_equal(*axs)
 
 
-class TestScatterPlotter(Helpers):
+class TestScatterPlotter(SharedAxesLevelTests, Helpers):
+
+    func = staticmethod(scatterplot)
 
     def get_single_color(self, ax):
 
@@ -1516,21 +1563,6 @@ class TestScatterPlotter(Helpers):
 
         assert_array_equal(points.get_sizes().squeeze(), s)
         assert_array_equal(points.get_facecolors(), c)
-
-    def test_default_color(self, long_df):
-
-        ax = plt.figure().subplots()
-        scatterplot(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C0")
-
-        ax = plt.figure().subplots()
-        scatterplot()
-        scatterplot(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C1")
-
-        ax = plt.figure().subplots()
-        scatterplot(data=long_df, x="a", y="y", color="C4", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C4")
 
     def test_supplied_color_array(self, long_df):
 
