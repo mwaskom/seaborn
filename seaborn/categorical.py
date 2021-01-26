@@ -177,13 +177,15 @@ class _CategoricalPlotterNew(VectorPlotter):
         else:
             order = categorical_order(data)
 
+        n = max(len(order), 1)
+
         if axis == "x":
             ax.xaxis.grid(False)
-            ax.set_xlim(-.5, len(order) - .5, auto=None)
+            ax.set_xlim(-.5, n - .5, auto=None)
         else:
             ax.yaxis.grid(False)
             # Note limits that correspond to previously-inverted y axis
-            ax.set_ylim(len(order) - .5, -.5, auto=None)
+            ax.set_ylim(n - .5, -.5, auto=None)
 
     @property
     def _native_width(self):
@@ -2775,9 +2777,6 @@ def stripplot(
         p.scale_categorical(p.cat_axis, order=order, formatter=formatter)
 
     p._attach(ax)
-
-    if not p.has_xy_data:
-        return ax
 
     palette, hue_order = p._hue_backcompat(color, palette, hue_order)
 

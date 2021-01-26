@@ -72,6 +72,12 @@ class TestCategoricalPlotterNew:
         assert not ax.patches
         assert not ax.lines
 
+        func(x=[], y=[])
+        ax = plt.gca()
+        assert not ax.collections
+        assert not ax.patches
+        assert not ax.lines
+
     def test_redundant_hue_backcompat(self, long_df):
 
         p = _CategoricalPlotterNew(
@@ -1579,9 +1585,26 @@ class TestViolinPlotter(CategoricalFixture):
             plt.close("all")
 
 
+class SharedTests:
+
+    def test_default_color(self, long_df):
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C0")
+
+        ax = plt.figure().subplots()
+        self.func()
+        self.func(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C1")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", color="C4", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C4")
+
+
 class TestScatterPlots:
     """Tests functionality common to stripplot and swarmplot."""
-
     @pytest.fixture(params=["strip", "swarm"])
     def func(self, request):
 
@@ -2033,7 +2056,18 @@ class TestScatterPlots:
         assert_plots_equal(ax, g.ax)
 
 
-class TestStripPlot:
+class TestStripPlot(SharedTests):
+
+    func = staticmethod(stripplot)
+
+    def get_single_color(self, ax):
+
+        colors = [points.get_facecolors() for points in ax.collections]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return tuple(unique_colors.squeeze())
+
+    # ----------------------------------------------------------------------------- #
 
     def test_jitter_unfixed(self, long_df):
 
@@ -2088,9 +2122,16 @@ class TestStripPlot:
             assert np.ptp(cat_points) <= jitter_range
 
 
-class TestSwarmPlot:
+class TestSwarmPlot(SharedTests):
 
-    pass
+    func = staticmethod(partial(swarmplot, warn_thresh=1))
+
+    def get_single_color(self, ax):
+
+        colors = [points.get_facecolors() for points in ax.collections]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return tuple(unique_colors.squeeze())
 
 
 class TestBarPlotter(CategoricalFixture):
