@@ -106,8 +106,18 @@ def _default_color(method, hue, color, kws):
         scout = method(scout_x, scout_y, **kws)
         facecolors = scout.get_facecolors()
 
+        if not len(facecolors):
+            # Handle bug in matplotlib <= 3.2 (I think)
+            # This will limit the ability to use non color= kwargs to specify
+            # a color in versions of matplotlib with the bug, but trying to
+            # work out what they wanted by re-implementing the broken logic
+            # of inspecting the kwargs is probably too brittle.
+            single_color = False
+        else:
+            single_color = np.unique(facecolors, axis=0).shape[0] == 1
+
         # Allow the user to specify an array of colors through various kwargs
-        if "c" not in kws and np.unique(facecolors, axis=0).shape[0] == 1:
+        if "c" not in kws and single_color:
             color = to_rgb(facecolors[0])
 
         scout.remove()

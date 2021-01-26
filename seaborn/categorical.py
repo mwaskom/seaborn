@@ -146,9 +146,9 @@ class _CategoricalPlotterNew(VectorPlotter):
 
     def _get_gray(self, colors):
         """Get a grayscale value that looks good with color."""
-        unique_colors = np.unique(colors, axis=0)
-        if not len(unique_colors):
+        if not len(colors):
             return None
+        unique_colors = np.unique(colors, axis=0)
         light_vals = [rgb_to_hls(*rgb[:3])[1] for rgb in unique_colors]
         lum = min(light_vals) * .6
         return (lum, lum, lum)

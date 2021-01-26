@@ -1627,17 +1627,26 @@ class SharedScatterTests(SharedTests):
         self.func(data=long_df, x="a", y="y", facecolor="C5", ax=ax)
         assert self.get_single_color(ax) == to_rgba("C5")
 
-        ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", fc="C7", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C7")
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+
+            ax = plt.figure().subplots()
+            self.func(data=long_df, x="a", y="y", fc="C7", ax=ax)
+            assert self.get_single_color(ax) == to_rgba("C7")
 
     def test_supplied_color_array(self, long_df):
 
         cmap = mpl.cm.get_cmap("Blues")
         norm = mpl.colors.Normalize()
-        colors = cmap(norm(long_df["y"]))
+        colors = cmap(norm(long_df["y"].to_numpy()))
 
-        for key in ["c", "fc", "facecolor", "facecolors"]:
+        keys = ["c", "facecolor", "facecolors"]
+
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+            keys.append("fc")
+
+        for key in keys:
 
             ax = plt.figure().subplots()
             self.func(x=long_df["y"], **{key: colors})
