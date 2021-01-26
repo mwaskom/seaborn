@@ -10,6 +10,7 @@ from ._core import (
 from .utils import (
     locator_to_legend_entries,
     adjust_legend_subtitles,
+    _default_color,
     _deprecate_ci,
 )
 from ._statistics import EstimateAggregator
@@ -557,31 +558,10 @@ class _ScatterPlotter(_RelationalPlotter):
 
     def plot(self, ax, kws):
 
-        # Draw a test plot, using the passed in kwargs. The goal here is to
-        # honor both (a) the current state of the plot cycler and (b) the
-        # specified kwargs on all the lines we will draw, overriding when
-        # relevant with the data semantics. Note that we won't cycle
-        # internally; in other words, if ``hue`` is not used, all elements will
-        # have the same color, but they will have the color that you would have
-        # gotten from the corresponding matplotlib function, and calling the
-        # function will advance the axes property cycle.
-
-        scout_size = max(
-            np.atleast_1d(kws.get("s", [])).shape[0],
-            np.atleast_1d(kws.get("c", [])).shape[0],
-        )
-        scout_x = scout_y = np.full(scout_size, np.nan)
-        scout = ax.scatter(scout_x, scout_y, **kws)
-        s = kws.pop("s", scout.get_sizes())
-        c = kws.pop("c", scout.get_facecolors())
-        scout.remove()
-
-        kws.pop("color", None)  # TODO is this optimal?
-
         # --- Determine the visual attributes of the plot
 
         data = self.plot_data.dropna()
-        if not data.size:
+        if data.empty:
             return
 
         # Define the vectors of x and y positions
@@ -589,15 +569,7 @@ class _ScatterPlotter(_RelationalPlotter):
         x = data.get("x", empty)
         y = data.get("y", empty)
 
-        # Apply the mapping from semantic variables to artist attributes
-        if "hue" in self.variables:
-            c = self._hue_map(data["hue"])
-
-        if "size" in self.variables:
-            s = self._size_map(data["size"])
-
         # Set defaults for other visual attributes
-        kws.setdefault("linewidth", .08 * np.sqrt(np.percentile(s, 10)))
         kws.setdefault("edgecolor", "w")
 
         if "style" in self.variables:
@@ -613,15 +585,25 @@ class _ScatterPlotter(_RelationalPlotter):
         kws["alpha"] = 1 if self.alpha == "auto" else self.alpha
 
         # Draw the scatter plot
-        args = np.asarray(x), np.asarray(y), np.asarray(s), np.asarray(c)
-        points = ax.scatter(*args, **kws)
+        points = ax.scatter(x=x, y=y, **kws)
 
-        # Update the paths to get different marker shapes.
-        # This has to be done here because ax.scatter allows varying sizes
-        # and colors but only a single marker shape per call.
+        # Apply the mapping from semantic variables to artist attributes
+
+        if "hue" in self.variables:
+            points.set_facecolors(self._hue_map(data["hue"]))
+
+        if "size" in self.variables:
+            points.set_sizes(self._size_map(data["size"]))
+
         if "style" in self.variables:
             p = [self._style_map(val, "path") for val in data["style"]]
             points.set_paths(p)
+
+        # Apply dependant default attributes
+
+        if "linewidth" not in kws:
+            sizes = points.get_sizes()
+            points.set_linewidths(.08 * np.sqrt(np.percentile(sizes, 10)))
 
         # Finalize the axes details
         self._add_axis_labels(ax)
@@ -767,7 +749,8 @@ def scatterplot(
     x_bins=None, y_bins=None,
     units=None, estimator=None, ci=95, n_boot=1000,
     alpha=None, x_jitter=None, y_jitter=None,
-    legend="auto", ax=None, **kwargs
+    legend="auto", ax=None,
+    **kwargs
 ):
 
     variables = _ScatterPlotter.get_semantics(locals())
@@ -784,6 +767,12 @@ def scatterplot(
 
     if ax is None:
         ax = plt.gca()
+
+    # Other functions have color as an explicit param,
+    # and we should probably do that here too
+    kwargs["color"] = _default_color(
+        ax.scatter, hue, kwargs.pop("color", None), kwargs
+    )
 
     if not p.has_xy_data:
         return ax

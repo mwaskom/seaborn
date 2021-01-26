@@ -1,8 +1,9 @@
+from distutils.version import LooseVersion
 from itertools import product
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import same_color
+from matplotlib.colors import same_color, to_rgba
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -18,6 +19,7 @@ from ..relational import (
     scatterplot
 )
 
+from ..utils import _draw_figure
 from .._testing import assert_plots_equal
 
 
@@ -1199,6 +1201,16 @@ class TestLinePlotter(Helpers):
 
 class TestScatterPlotter(Helpers):
 
+    def get_single_color(self, ax):
+
+        # Note, copying from categorical tests, could probably stand to do some
+        # refactoring to share test utils for similar artists across modules
+
+        colors = [points.get_facecolors() for points in ax.collections]
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return tuple(unique_colors.squeeze())
+
     def test_legend_data(self, long_df):
 
         m = mpl.markers.MarkerStyle("o")
@@ -1504,6 +1516,45 @@ class TestScatterPlotter(Helpers):
 
         assert_array_equal(points.get_sizes().squeeze(), s)
         assert_array_equal(points.get_facecolors(), c)
+
+    def test_default_color(self, long_df):
+
+        ax = plt.figure().subplots()
+        scatterplot(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C0")
+
+        ax = plt.figure().subplots()
+        scatterplot()
+        scatterplot(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C1")
+
+        ax = plt.figure().subplots()
+        scatterplot(data=long_df, x="a", y="y", color="C4", ax=ax)
+        assert self.get_single_color(ax) == to_rgba("C4")
+
+    def test_supplied_color_array(self, long_df):
+
+        cmap = mpl.cm.get_cmap("Blues")
+        norm = mpl.colors.Normalize()
+        colors = cmap(norm(long_df["y"].to_numpy()))
+
+        keys = ["c", "facecolor", "facecolors"]
+
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+            keys.append("fc")
+
+        for key in keys:
+
+            ax = plt.figure().subplots()
+            scatterplot(data=long_df, x="x", y="y", **{key: colors})
+            _draw_figure(ax.figure)
+            assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+        ax = plt.figure().subplots()
+        scatterplot(data=long_df, x="x", y="y", c=long_df["y"], cmap=cmap)
+        _draw_figure(ax.figure)
+        assert_array_equal(ax.collections[0].get_facecolors(), colors)
 
     def test_linewidths(self, long_df):
 
