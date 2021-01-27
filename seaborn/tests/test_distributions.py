@@ -491,7 +491,7 @@ class TestKDEPlotUnivariate:
         )
         plt.close(f)
 
-    def test_color(self, long_df):
+    def test_color_fill(self, long_df):
 
         color = (.2, 1, .6)
         alpha = .5

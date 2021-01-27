@@ -64,23 +64,24 @@ class Helpers:
 
 class SharedAxesLevelTests:
 
-    def test_default_color(self, long_df):
-
-        # Note, copied from categorical module.
-        # Should have some root-level shared tests for common behavior
+    def test_color(self, long_df):
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C0")
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C0")
 
         ax = plt.figure().subplots()
-        self.func()
-        self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C1")
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C1")
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", color="C4", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C4")
+        self.func(data=long_df, x="x", y="y", color="C2", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C2")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", c="C2", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C2")
 
 
 class TestRelationalPlotter(Helpers):
@@ -629,20 +630,9 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
     func = staticmethod(lineplot)
 
-    def get_single_color(self, ax):
+    def get_last_color(self, ax):
 
-        colors = [to_rgba(line.get_color()) for line in ax.lines]
-        unique_colors = np.unique(colors, axis=0)
-        assert len(unique_colors) == 1
-        return tuple(unique_colors.squeeze())
-
-    def test_default_color(self, long_df):
-
-        super().test_default_color(long_df)
-
-        ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", c="C5", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C5")
+        return to_rgba(ax.lines[-1].get_color())
 
     def test_legend_data(self, long_df):
 
@@ -1248,15 +1238,31 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
     func = staticmethod(scatterplot)
 
-    def get_single_color(self, ax):
+    def get_last_color(self, ax):
 
-        # Note, copying from categorical tests, could probably stand to do some
-        # refactoring to share test utils for similar artists across modules
-
-        colors = [points.get_facecolors() for points in ax.collections]
+        colors = ax.collections[-1].get_facecolors()
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
-        return tuple(unique_colors.squeeze())
+        return to_rgba(unique_colors.squeeze())
+
+    def test_color(self, long_df):
+
+        super().test_color(long_df)
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", facecolor="C5", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C5")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C6")
+
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+
+            ax = plt.figure().subplots()
+            self.func(data=long_df, x="x", y="y", fc="C4", ax=ax)
+            assert self.get_last_color(ax) == to_rgba("C4")
 
     def test_legend_data(self, long_df):
 

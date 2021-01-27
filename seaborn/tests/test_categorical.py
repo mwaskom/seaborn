@@ -1589,50 +1589,54 @@ class TestViolinPlotter(CategoricalFixture):
 # ====================================================================================
 
 
-class SharedTests:
+class SharedAxesLevelTests:
 
-    def test_default_color(self, long_df):
+    def test_color(self, long_df):
 
         ax = plt.figure().subplots()
         self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C0")
+        assert self.get_last_color(ax) == to_rgba("C0")
 
         ax = plt.figure().subplots()
-        self.func()
         self.func(data=long_df, x="a", y="y", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C1")
+        self.func(data=long_df, x="a", y="y", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C1")
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", color="C4", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C4")
+        self.func(data=long_df, x="a", y="y", color="C2", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C2")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="a", y="y", color="C3", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C3")
 
 
-class SharedScatterTests(SharedTests):
+class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""
 
-    def get_single_color(self, ax):
+    def get_last_color(self, ax):
 
-        colors = [points.get_facecolors() for points in ax.collections]
+        colors = ax.collections[-1].get_facecolors()
         unique_colors = np.unique(colors, axis=0)
         assert len(unique_colors) == 1
-        return tuple(unique_colors.squeeze())
+        return to_rgba(unique_colors.squeeze())
 
     # ------------------------------------------------------------------------------
 
-    def test_default_color(self, long_df):
+    def test_color(self, long_df):
 
-        super().test_default_color(long_df)
+        super().test_color(long_df)
 
         ax = plt.figure().subplots()
-        self.func(data=long_df, x="a", y="y", facecolor="C5", ax=ax)
-        assert self.get_single_color(ax) == to_rgba("C5")
+        self.func(data=long_df, x="a", y="y", facecolor="C4", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C4")
 
         if LooseVersion(mpl.__version__) >= "3.1.0":
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
-            self.func(data=long_df, x="a", y="y", fc="C7", ax=ax)
-            assert self.get_single_color(ax) == to_rgba("C7")
+            self.func(data=long_df, x="a", y="y", fc="C5", ax=ax)
+            assert self.get_last_color(ax) == to_rgba("C5")
 
     def test_supplied_color_array(self, long_df):
 
@@ -1889,16 +1893,6 @@ class SharedScatterTests(SharedTests):
                 assert positions[0, 1] == val
             else:
                 assert not positions.size
-
-    @pytest.mark.parametrize("color", [None, "C1"])
-    def test_color(self, long_df, color):
-
-        ax = self.func(data=long_df, x="a", y="y", color=color)
-
-        expected = to_rgba("C0" if color is None else color)
-        for points in ax.collections:
-            for face_color in points.get_facecolors():
-                assert tuple(face_color) == expected
 
     @pytest.mark.parametrize("hue_var", ["a", "b"])
     def test_hue_categorical(self, long_df, hue_var):
