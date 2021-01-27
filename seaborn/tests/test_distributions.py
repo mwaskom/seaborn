@@ -512,9 +512,9 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, alpha)
         )
 
-    @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
-        reason="Histogram over datetime64 requires numpy >= 1.17",
+    @pytest.mark.xfail(
+        LooseVersion(mpl.__version__) < "3.3",
+        reason="https://github.com/matplotlib/matplotlib/issues/17586",
     )
     def test_datetime_scale(self, long_df):
 
