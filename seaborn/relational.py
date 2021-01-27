@@ -635,15 +635,15 @@ def lineplot(
     if style is None and not {"ls", "linestyle"} & set(kwargs):  # XXX
         kwargs["dashes"] = "" if dashes is None or isinstance(dashes, bool) else dashes
 
-    # Other functions have color as an explicit param,
-    # and we should probably do that here too
-    color = kwargs.pop("color", kwargs.pop("c", None))
-    kwargs["color"] = _default_color(ax.plot, hue, color, kwargs)
-
     if not p.has_xy_data:
         return ax
 
     p._attach(ax)
+
+    # Other functions have color as an explicit param,
+    # and we should probably do that here too
+    color = kwargs.pop("color", kwargs.pop("c", None))
+    kwargs["color"] = _default_color(ax.plot, hue, color, kwargs)
 
     p.plot(ax, kwargs)
     return ax
@@ -759,15 +759,15 @@ def scatterplot(
     if ax is None:
         ax = plt.gca()
 
-    # Other functions have color as an explicit param,
-    # and we should probably do that here too
-    color = kwargs.pop("color", None)
-    kwargs["color"] = _default_color(ax.scatter, hue, color, kwargs)
-
     if not p.has_xy_data:
         return ax
 
     p._attach(ax)
+
+    # Other functions have color as an explicit param,
+    # and we should probably do that here too
+    color = kwargs.pop("color", None)
+    kwargs["color"] = _default_color(ax.scatter, hue, color, kwargs)
 
     p.plot(ax, kwargs)
 
