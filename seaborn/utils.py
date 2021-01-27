@@ -95,7 +95,7 @@ def _default_color(method, hue, color, kws):
 
     elif method.__name__ == "plot":
 
-        scout, = method([], [], color=color, **kws)
+        scout, = method([], [], **kws)
         color = scout.get_color()
         scout.remove()
 
@@ -126,6 +126,13 @@ def _default_color(method, hue, color, kws):
         if "c" not in kws and single_color:
             color = to_rgb(facecolors[0])
 
+        scout.remove()
+
+    elif method.__name__ == "fill_between":
+
+        scout = method([], [], **kws)
+        facecolor = scout.get_facecolor()
+        color = to_rgb(facecolor[0])
         scout.remove()
 
     return color

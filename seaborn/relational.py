@@ -637,9 +637,8 @@ def lineplot(
 
     # Other functions have color as an explicit param,
     # and we should probably do that here too
-    kwargs["color"] = _default_color(
-        ax.plot, hue, kwargs.pop("color", kwargs.pop("c", None)), kwargs
-    )
+    color = kwargs.pop("color", kwargs.pop("c", None))
+    kwargs["color"] = _default_color(ax.plot, hue, color, kwargs)
 
     if not p.has_xy_data:
         return ax
@@ -762,9 +761,8 @@ def scatterplot(
 
     # Other functions have color as an explicit param,
     # and we should probably do that here too
-    kwargs["color"] = _default_color(
-        ax.scatter, hue, kwargs.pop("color", None), kwargs
-    )
+    color = kwargs.pop("color", None)
+    kwargs["color"] = _default_color(ax.scatter, hue, color, kwargs)
 
     if not p.has_xy_data:
         return ax
