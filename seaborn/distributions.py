@@ -165,7 +165,14 @@ class _DistributionPlotter(VectorPlotter):
         kws = kws.copy()
         if fill:
             kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
+
             kws.setdefault("facecolor", to_rgba(color, alpha))
+
+            if element == "bars":
+                # Make bar() interface with property cycle correctly
+                # https://github.com/matplotlib/matplotlib/issues/19385
+                kws["color"] = "none"
+
             if multiple in ["stack", "fill"] or element == "bars":
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
             else:
@@ -400,7 +407,7 @@ class _DistributionPlotter(VectorPlotter):
         else:
             common_norm = False
 
-        # Turn multiple off if no hue or if hue exists but is redundent with faceting
+        # Turn multiple off if no hue or if hue exists but is redundant with faceting
         facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
         if "hue" not in self.variables:
             multiple = None
@@ -532,6 +539,7 @@ class _DistributionPlotter(VectorPlotter):
                     align="edge",
                     **artist_kws,
                 )
+
                 for bar in artists:
                     if self.data_variable == "x":
                         bar.sticky_edges.x[:] = sticky_data
@@ -1329,7 +1337,10 @@ def histplot(
     p._attach(ax, log_scale=log_scale)
 
     if p.univariate:  # Note, bivariate plots won't cycle
-        method = ax.fill_between if fill else ax.plot
+        if fill:
+            method = ax.bar if element == "bars" else ax.fill_between
+        else:
+            method = ax.plot
         color = _default_color(method, hue, color, kwargs)
 
     if not p.has_xy_data:

@@ -129,6 +129,13 @@ def _default_color(method, hue, color, kws):
 
         scout.remove()
 
+    elif method.__name__ == "bar":
+
+        # bar() needs masked, not empty data, to generate a patch
+        scout, = method([np.nan], [np.nan], **kws)
+        color = to_rgb(scout.get_facecolor())
+        scout.remove()
+
     elif method.__name__ == "fill_between":
 
         # There is a bug on matplotlib < 3.3 where fill_between with
@@ -142,6 +149,8 @@ def _default_color(method, hue, color, kws):
         ])
         if LooseVersion(mpl.__version__) < "3.3" and datetime_axis:
             return "C0"
+
+        kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
 
         scout = method([], [], **kws)
         facecolor = scout.get_facecolor()
