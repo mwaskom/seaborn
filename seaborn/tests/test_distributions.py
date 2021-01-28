@@ -512,10 +512,6 @@ class TestKDEPlotUnivariate:
             == to_rgba(color, alpha)
         )
 
-    @pytest.mark.xfail(
-        LooseVersion(mpl.__version__) < "3.3",
-        reason="https://github.com/matplotlib/matplotlib/issues/17586",
-    )
     def test_datetime_scale(self, long_df):
 
         f, (ax1, ax2) = plt.subplots(2)

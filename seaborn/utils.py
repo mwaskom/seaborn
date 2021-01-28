@@ -5,6 +5,7 @@ import inspect
 import warnings
 import colorsys
 from urllib.request import urlopen, urlretrieve
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -116,7 +117,7 @@ def _default_color(method, hue, color, kws):
             # Handle bug in matplotlib <= 3.2 (I think)
             # This will limit the ability to use non color= kwargs to specify
             # a color in versions of matplotlib with the bug, but trying to
-            # work out what they wanted by re-implementing the broken logic
+            # work out what the user wanted by re-implementing the broken logic
             # of inspecting the kwargs is probably too brittle.
             single_color = False
         else:
@@ -129,6 +130,18 @@ def _default_color(method, hue, color, kws):
         scout.remove()
 
     elif method.__name__ == "fill_between":
+
+        # There is a bug on matplotlib < 3.3 where fill_between with
+        # datetime units and empty data will set incorrect autoscale limits
+        # To workaround it, we'll always return the first color in the cycle.
+        # https://github.com/matplotlib/matplotlib/issues/17586
+        ax = method.__self__
+        datetime_axis = any([
+            isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
+            isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
+        ])
+        if LooseVersion(mpl.__version__) < "3.3" and datetime_axis:
+            return "C0"
 
         scout = method([], [], **kws)
         facecolor = scout.get_facecolor()
