@@ -117,7 +117,31 @@ class TestDistPlot(object):
             assert bar1.get_height() == bar2.get_height()
 
 
-class TestRugPlot:
+class SharedAxesLevelTests:
+
+    def test_color(self, long_df, **kwargs):
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="y", ax=ax, **kwargs)
+        assert self.get_last_color(ax, **kwargs) == to_rgb("C0")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="y", ax=ax, **kwargs)
+        self.func(data=long_df, x="y", ax=ax, **kwargs)
+        assert self.get_last_color(ax, **kwargs) == to_rgb("C1")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="y", color="C2", ax=ax, **kwargs)
+        assert self.get_last_color(ax, **kwargs) == to_rgb("C2")
+
+
+class TestRugPlot(SharedAxesLevelTests):
+
+    func = staticmethod(rugplot)
+
+    def get_last_color(self, ax, **kwargs):
+
+        return to_rgb(ax.collections[-1].get_color()[0])
 
     def assert_rug_equal(self, a, b):
 
@@ -265,7 +289,31 @@ class TestRugPlot:
         assert not ax.get_ylabel()
 
 
-class TestKDEPlotUnivariate:
+class TestKDEPlotUnivariate(SharedAxesLevelTests):
+
+    func = staticmethod(kdeplot)
+
+    def get_last_color(self, ax, fill=True):
+
+        if fill:
+            return to_rgb(ax.collections[-1].get_facecolor()[0])
+        else:
+            return to_rgb(ax.lines[-1].get_color())
+
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_color(self, long_df, fill):
+
+        super().test_color(long_df, fill=fill)
+
+        if fill:
+
+            ax = plt.figure().subplots()
+            self.func(data=long_df, x="y", facecolor="C3", fill=True, ax=ax)
+            assert self.get_last_color(ax) == to_rgb("C3")
+
+            ax = plt.figure().subplots()
+            self.func(data=long_df, x="y", fc="C4", fill=True, ax=ax)
+            assert self.get_last_color(ax) == to_rgb("C4")
 
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
@@ -990,7 +1038,33 @@ class TestKDEPlotBivariate:
             kdeplot(data=long_df, x="a", y="y")
 
 
-class TestHistPlotUnivariate:
+class TestHistPlotUnivariate(SharedAxesLevelTests):
+
+    func = staticmethod(histplot)
+
+    def get_last_color(self, ax, element="bars", fill=True):
+
+        if element == "bars":
+            if fill:
+                return to_rgb(ax.patches[-1].get_facecolor())
+            else:
+                return to_rgb(ax.patches[-1].get_edgecolor())
+        else:
+            if fill:
+                facecolor = to_rgb(ax.collections[-1].get_facecolor()[0])
+                edgecolor = to_rgb(ax.collections[-1].get_edgecolor()[0])
+                assert facecolor == edgecolor
+                return facecolor
+            else:
+                return to_rgb(ax.lines[-1].get_color())
+
+    @pytest.mark.parametrize(
+        "element,fill",
+        itertools.product(["bars", "step", "poly"], [True, False]),
+    )
+    def test_color(self, long_df, element, fill):
+
+        super().test_color(long_df, element=element, fill=fill)
 
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
@@ -1835,7 +1909,13 @@ class TestHistPlotBivariate:
         assert len(ax.figure.axes) == 2
 
 
-class TestECDFPlotUnivariate:
+class TestECDFPlotUnivariate(SharedAxesLevelTests):
+
+    func = staticmethod(ecdfplot)
+
+    def get_last_color(self, ax):
+
+        return to_rgb(ax.lines[-1].get_color())
 
     @pytest.mark.parametrize("variable", ["x", "y"])
     def test_long_vectors(self, long_df, variable):
