@@ -142,11 +142,18 @@ class _DistributionPlotter(VectorPlotter):
         labels = []
         for level in self._hue_map.levels:
             color = self._hue_map(level)
-            handles.append(artist(
-                **self._artist_kws(
-                    artist_kws, fill, element, multiple, color, alpha
-                )
-            ))
+
+            kws = self._artist_kws(
+                artist_kws, fill, element, multiple, color, alpha
+            )
+
+            # color gets added to the kws to workaround an issue with barplot's color
+            # cycle integration but it causes problems in this context where we are
+            # setting artist properties directly, so pop it off here
+            if "facecolor" in kws:
+                kws.pop("color", None)
+
+            handles.append(artist(**kws))
             labels.append(level)
 
         if isinstance(ax_obj, mpl.axes.Axes):
@@ -165,7 +172,6 @@ class _DistributionPlotter(VectorPlotter):
         kws = kws.copy()
         if fill:
             kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
-
             kws.setdefault("facecolor", to_rgba(color, alpha))
 
             if element == "bars":
