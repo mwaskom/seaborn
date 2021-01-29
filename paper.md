@@ -41,6 +41,6 @@ Several `seaborn` functions also apply statistical transformations to the input 
 
 # Acknowledgements
 
-M.L.W. has been supported by the National Science Foundation IGERT program (0801700) and by the Simons Foundation as a Junior Fellow in the Simons Society of Fellows (527794).
+M.L.W. has been supported by the National Science Foundation IGERT program (0801700) and by the Simons Foundation as a Junior Fellow in the Simons Society of Fellows (527794). Many others have helped improve `seaborn` by asking questions, reporting bugs, and contributing code; thank you to this community.
 
 # References
