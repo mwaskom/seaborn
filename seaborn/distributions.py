@@ -1233,7 +1233,7 @@ class _DistributionPlotter(VectorPlotter):
 
     def plot_rug(self, height, expand_margins, legend, **kws):
 
-        for sub_vars, sub_data, in self.iter_data():
+        for sub_vars, sub_data, in self.iter_data(from_comp_data=True):
 
             ax = self._get_axes(sub_vars)
 

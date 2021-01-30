@@ -196,6 +196,12 @@ class TestRugPlot(SharedAxesLevelTests):
         rugplot(x=long_df["x"])
         self.assert_rug_equal(*ax.collections)
 
+    def test_datetime_data(self, long_df):
+
+        ax = rugplot(data=long_df["t"])
+        vals = np.stack(ax.collections[0].get_segments())[:, 0, 0]
+        assert_array_equal(vals, mpl.dates.date2num(long_df["t"]))
+
     def test_empty_data(self):
 
         ax = rugplot(x=[])
