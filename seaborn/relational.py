@@ -607,7 +607,7 @@ def lineplot(
     palette=None, hue_order=None, hue_norm=None,
     sizes=None, size_order=None, size_norm=None,
     dashes=True, markers=None, style_order=None,
-    units=None, estimator="mean", ci=None, n_boot=1000, seed=None,
+    units=None, estimator="mean", ci="deprecated", n_boot=1000, seed=None,
     sort=True, err_style="band", err_kws=None,
     legend="auto",
     errorbar=("ci", 95),

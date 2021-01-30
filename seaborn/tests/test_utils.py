@@ -28,6 +28,7 @@ from ..utils import (
     load_dataset,
     _assign_default_kwargs,
     _draw_figure,
+    _deprecate_ci,
 )
 
 
@@ -458,3 +459,20 @@ def test_draw_figure():
     assert not f.stale
     # ticklabels are not populated until a draw, but this may change
     assert ax.get_xticklabels()[0].get_text() == "a"
+
+
+def test_deprecate_ci():
+
+    msg = "The `ci` parameter is deprecated; use `errorbar="
+
+    with pytest.warns(UserWarning, match=msg + "None"):
+        out = _deprecate_ci(None, None)
+    assert out is None
+
+    with pytest.warns(UserWarning, match=msg + "'sd'"):
+        out = _deprecate_ci(None, "sd")
+    assert out == "sd"
+
+    with pytest.warns(UserWarning, match=msg + r"\('ci', 68\)"):
+        out = _deprecate_ci(None, 68)
+    assert out == ("ci", 68)
