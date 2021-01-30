@@ -5,11 +5,12 @@ import inspect
 import warnings
 import colorsys
 from urllib.request import urlopen, urlretrieve
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
-import matplotlib.colors as mplcol
+from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
@@ -82,6 +83,85 @@ def _draw_figure(fig):
             pass
 
 
+def _default_color(method, hue, color, kws):
+    """If needed, get a default color by using the matplotlib property cycle."""
+    if hue is not None:
+        # This warning is probably user-friendly, but it's currently triggered
+        # in a FacetGrid context and I don't want to mess with that logic right now
+        #  if color is not None:
+        #      msg = "`color` is ignored when `hue` is assigned."
+        #      warnings.warn(msg)
+        return None
+
+    if color is not None:
+        return color
+
+    elif method.__name__ == "plot":
+
+        scout, = method([], [], **kws)
+        color = scout.get_color()
+        scout.remove()
+
+    elif method.__name__ == "scatter":
+
+        # Matplotlib will raise if the size of x/y don't match s/c,
+        # and the latter might be in the kws dict
+        scout_size = max(
+            np.atleast_1d(kws.get(key, [])).shape[0]
+            for key in ["s", "c", "fc", "facecolor", "facecolors"]
+        )
+        scout_x = scout_y = np.full(scout_size, np.nan)
+
+        scout = method(scout_x, scout_y, **kws)
+        facecolors = scout.get_facecolors()
+
+        if not len(facecolors):
+            # Handle bug in matplotlib <= 3.2 (I think)
+            # This will limit the ability to use non color= kwargs to specify
+            # a color in versions of matplotlib with the bug, but trying to
+            # work out what the user wanted by re-implementing the broken logic
+            # of inspecting the kwargs is probably too brittle.
+            single_color = False
+        else:
+            single_color = np.unique(facecolors, axis=0).shape[0] == 1
+
+        # Allow the user to specify an array of colors through various kwargs
+        if "c" not in kws and single_color:
+            color = to_rgb(facecolors[0])
+
+        scout.remove()
+
+    elif method.__name__ == "bar":
+
+        # bar() needs masked, not empty data, to generate a patch
+        scout, = method([np.nan], [np.nan], **kws)
+        color = to_rgb(scout.get_facecolor())
+        scout.remove()
+
+    elif method.__name__ == "fill_between":
+
+        # There is a bug on matplotlib < 3.3 where fill_between with
+        # datetime units and empty data will set incorrect autoscale limits
+        # To workaround it, we'll always return the first color in the cycle.
+        # https://github.com/matplotlib/matplotlib/issues/17586
+        ax = method.__self__
+        datetime_axis = any([
+            isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
+            isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
+        ])
+        if LooseVersion(mpl.__version__) < "3.3" and datetime_axis:
+            return "C0"
+
+        kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
+
+        scout = method([], [], **kws)
+        facecolor = scout.get_facecolor()
+        color = to_rgb(facecolor[0])
+        scout.remove()
+
+    return color
+
+
 def desaturate(color, prop):
     """Decrease the saturation channel of a color by some percent.
 
@@ -103,7 +183,7 @@ def desaturate(color, prop):
         raise ValueError("prop must be between 0 and 1")
 
     # Get rgb tuple rep
-    rgb = mplcol.colorConverter.to_rgb(color)
+    rgb = to_rgb(color)
 
     # Convert to hls
     h, l, s = colorsys.rgb_to_hls(*rgb)
@@ -151,7 +231,7 @@ def set_hls_values(color, h=None, l=None, s=None):  # noqa
 
     """
     # Get an RGB tuple representation
-    rgb = mplcol.colorConverter.to_rgb(color)
+    rgb = to_rgb(color)
     vals = list(colorsys.rgb_to_hls(*rgb))
     for i, val in enumerate([h, l, s]):
         if val is not None:

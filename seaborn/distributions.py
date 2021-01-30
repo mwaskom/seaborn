@@ -30,6 +30,7 @@ from .utils import (
     _normalize_kwargs,
     _check_argument,
     _assign_default_kwargs,
+    _default_color,
 )
 from .palettes import color_palette
 from .external import husl
@@ -141,11 +142,18 @@ class _DistributionPlotter(VectorPlotter):
         labels = []
         for level in self._hue_map.levels:
             color = self._hue_map(level)
-            handles.append(artist(
-                **self._artist_kws(
-                    artist_kws, fill, element, multiple, color, alpha
-                )
-            ))
+
+            kws = self._artist_kws(
+                artist_kws, fill, element, multiple, color, alpha
+            )
+
+            # color gets added to the kws to workaround an issue with barplot's color
+            # cycle integration but it causes problems in this context where we are
+            # setting artist properties directly, so pop it off here
+            if "facecolor" in kws:
+                kws.pop("color", None)
+
+            handles.append(artist(**kws))
             labels.append(level)
 
         if isinstance(ax_obj, mpl.axes.Axes):
@@ -163,7 +171,14 @@ class _DistributionPlotter(VectorPlotter):
         """Handle differences between artists in filled/unfilled plots."""
         kws = kws.copy()
         if fill:
+            kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)
             kws.setdefault("facecolor", to_rgba(color, alpha))
+
+            if element == "bars":
+                # Make bar() interface with property cycle correctly
+                # https://github.com/matplotlib/matplotlib/issues/19385
+                kws["color"] = "none"
+
             if multiple in ["stack", "fill"] or element == "bars":
                 kws.setdefault("edgecolor", mpl.rcParams["patch.edgecolor"])
             else:
@@ -398,7 +413,7 @@ class _DistributionPlotter(VectorPlotter):
         else:
             common_norm = False
 
-        # Turn multiple off if no hue or if hue exists but is redundent with faceting
+        # Turn multiple off if no hue or if hue exists but is redundant with faceting
         facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
         if "hue" not in self.variables:
             multiple = None
@@ -486,34 +501,6 @@ class _DistributionPlotter(VectorPlotter):
 
         # Note: default linewidth is determined after plotting
 
-        # Default color without a hue semantic should follow the color cycle
-        # Note, this is fairly complicated and awkward, I'd like a better way
-        # TODO and now with the ax business, this is just super annoying FIX!!
-        if "hue" not in self.variables:
-            if self.ax is None:
-                default_color = "C0" if color is None else color
-            else:
-                if fill:
-                    if self.var_types[self.data_variable] == "datetime":
-                        # Avoid drawing empty fill_between on date axis
-                        # https://github.com/matplotlib/matplotlib/issues/17586
-                        scout = None
-                        default_color = plot_kws.pop("facecolor", color)
-                        if default_color is None:
-                            default_color = "C0"
-                    else:
-                        artist = mpl.patches.Rectangle
-                        plot_kws = _normalize_kwargs(plot_kws, artist)
-                        scout = self.ax.fill_between([], [], color=color, **plot_kws)
-                        default_color = tuple(scout.get_facecolor().squeeze())
-                else:
-                    artist = mpl.lines.Line2D
-                    plot_kws = _normalize_kwargs(plot_kws, artist)
-                    scout, = self.ax.plot([], [], color=color, **plot_kws)
-                    default_color = scout.get_color()
-                if scout is not None:
-                    scout.remove()
-
         # Default alpha should depend on other parameters
         if multiple == "layer":
             default_alpha = .5 if element == "bars" else .25
@@ -536,12 +523,12 @@ class _DistributionPlotter(VectorPlotter):
 
             # Define the matplotlib attributes that depend on semantic mapping
             if "hue" in self.variables:
-                color = self._hue_map(sub_vars["hue"])
+                sub_color = self._hue_map(sub_vars["hue"])
             else:
-                color = default_color
+                sub_color = color
 
             artist_kws = self._artist_kws(
-                plot_kws, fill, element, multiple, color, alpha
+                plot_kws, fill, element, multiple, sub_color, alpha
             )
 
             if element == "bars":
@@ -558,6 +545,7 @@ class _DistributionPlotter(VectorPlotter):
                     align="edge",
                     **artist_kws,
                 )
+
                 for bar in artists:
                     if self.data_variable == "x":
                         bar.sticky_edges.x[:] = sticky_data
@@ -628,7 +616,7 @@ class _DistributionPlotter(VectorPlotter):
                     line_args = density, support
                     sticky_x, sticky_y = (0, np.inf), None
 
-                line_kws["color"] = to_rgba(color, 1)
+                line_kws["color"] = to_rgba(sub_color, 1)
                 line, = ax.plot(
                     *line_args, **line_kws,
                 )
@@ -657,7 +645,7 @@ class _DistributionPlotter(VectorPlotter):
                     h["widths"].min() for h in hist_metadata
                 ])
 
-                # Convert binwidtj from data coordinates to pixels
+                # Convert binwidth from data coordinates to pixels
                 pts_x, pts_y = 72 / ax.figure.dpi * (
                     ax.transData.transform([binwidth, binwidth])
                     - ax.transData.transform([0, 0])
@@ -875,6 +863,7 @@ class _DistributionPlotter(VectorPlotter):
         common_norm,
         common_grid,
         fill,
+        color,
         legend,
         estimate_kws,
         **plot_kws,
@@ -924,34 +913,7 @@ class _DistributionPlotter(VectorPlotter):
         else:
             sticky_support = []
 
-        # Handle default visual attributes
-        if "hue" not in self.variables:
-            if self.ax is None:
-                color = plot_kws.pop("color", None)
-                default_color = "C0" if color is None else color
-            else:
-                if fill:
-                    if self.var_types[self.data_variable] == "datetime":
-                        # Avoid drawing empty fill_between on date axis
-                        # https://github.com/matplotlib/matplotlib/issues/17586
-                        scout = None
-                        default_color = plot_kws.pop(
-                            "color", plot_kws.pop("facecolor", None)
-                        )
-                        if default_color is None:
-                            default_color = "C0"
-                    else:
-                        scout = self.ax.fill_between([], [], **plot_kws)
-                        default_color = tuple(scout.get_facecolor().squeeze())
-                    plot_kws.pop("color", None)
-                else:
-                    scout, = self.ax.plot([], [], **plot_kws)
-                    default_color = scout.get_color()
-                if scout is not None:
-                    scout.remove()
-
-        plot_kws.pop("color", None)
-
+        # XXX unfilled kdeplot is ignoring
         default_alpha = .25 if multiple == "layer" else .75
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
@@ -970,23 +932,21 @@ class _DistributionPlotter(VectorPlotter):
 
             ax = self._get_axes(sub_vars)
 
-            # Modify the matplotlib attributes from semantic mapping
             if "hue" in self.variables:
-                color = self._hue_map(sub_vars["hue"])
+                sub_color = self._hue_map(sub_vars["hue"])
             else:
-                color = default_color
+                sub_color = color
 
             artist_kws = self._artist_kws(
-                plot_kws, fill, False, multiple, color, alpha
+                plot_kws, fill, False, multiple, sub_color, alpha
             )
 
             # Either plot a curve with observation values on the x axis
             if "x" in self.variables:
 
                 if fill:
-                    artist = ax.fill_between(
-                        support, fill_from, density, **artist_kws
-                    )
+                    artist = ax.fill_between(support, fill_from, density, **artist_kws)
+
                 else:
                     artist, = ax.plot(support, density, **artist_kws)
 
@@ -996,9 +956,7 @@ class _DistributionPlotter(VectorPlotter):
             # Or plot a curve with observation values on the y axis
             else:
                 if fill:
-                    artist = ax.fill_betweenx(
-                        support, fill_from, density, **artist_kws
-                    )
+                    artist = ax.fill_betweenx(support, fill_from, density, **artist_kws)
                 else:
                     artist, = ax.plot(density, support, **artist_kws)
 
@@ -1214,7 +1172,7 @@ class _DistributionPlotter(VectorPlotter):
 
         estimator = ECDF(**estimate_kws)
 
-        # Set the draw style to step the right way for the data varible
+        # Set the draw style to step the right way for the data variable
         drawstyles = dict(x="steps-post", y="steps-pre")
         plot_kws["drawstyle"] = drawstyles[self.data_variable]
 
@@ -1274,15 +1232,6 @@ class _DistributionPlotter(VectorPlotter):
             )
 
     def plot_rug(self, height, expand_margins, legend, **kws):
-
-        kws = _normalize_kwargs(kws, mpl.lines.Line2D)
-
-        if self.ax is None:
-            kws["color"] = kws.pop("color", "C0")
-        else:
-            scout, = self.ax.plot([], [], **kws)
-            kws["color"] = kws.pop("color", scout.get_color())
-            scout.remove()
 
         for sub_vars, sub_data, in self.iter_data():
 
@@ -1391,12 +1340,17 @@ def histplot(
     if ax is None:
         ax = plt.gca()
 
-    # Check for a specification that lacks x/y data and return early
+    p._attach(ax, log_scale=log_scale)
+
+    if p.univariate:  # Note, bivariate plots won't cycle
+        if fill:
+            method = ax.bar if element == "bars" else ax.fill_between
+        else:
+            method = ax.plot
+        color = _default_color(method, hue, color, kwargs)
+
     if not p.has_xy_data:
         return ax
-
-    # Attach the axes to the plotter, setting up unit conversions
-    p._attach(ax, log_scale=log_scale)
 
     # Default to discrete bins for categorical variables
     if discrete is None:
@@ -1696,7 +1650,11 @@ def kdeplot(
     if ax is None:
         ax = plt.gca()
 
-    # Check for a specification that lacks x/y data and return early
+    p._attach(ax, allowed_types=["numeric", "datetime"], log_scale=log_scale)
+
+    method = ax.fill_between if fill else ax.plot
+    color = _default_color(method, hue, color, kwargs)
+
     if not p.has_xy_data:
         return ax
 
@@ -1710,19 +1668,16 @@ def kdeplot(
         cumulative=cumulative,
     )
 
-    p._attach(ax, allowed_types=["numeric", "datetime"], log_scale=log_scale)
-
     if p.univariate:
 
         plot_kws = kwargs.copy()
-        if color is not None:
-            plot_kws["color"] = color
 
         p.plot_univariate_density(
             multiple=multiple,
             common_norm=common_norm,
             common_grid=common_grid,
             fill=fill,
+            color=color,
             legend=legend,
             estimate_kws=estimate_kws,
             **plot_kws,
@@ -1928,12 +1883,17 @@ def ecdfplot(
     if ax is None:
         ax = plt.gca()
 
+    p._attach(ax, log_scale=log_scale)
+
+    color = kwargs.pop("color", kwargs.pop("c", None))
+    kwargs["color"] = _default_color(ax.plot, hue, color, kwargs)
+
+    if not p.has_xy_data:
+        return ax
+
     # We could add this one day, but it's of dubious value
     if not p.univariate:
         raise NotImplementedError("Bivariate ECDF plots are not implemented")
-
-    # Attach the axes to the plotter, setting up unit conversions
-    p._attach(ax, log_scale=log_scale)
 
     estimate_kws = dict(
         stat=stat,
@@ -2068,7 +2028,14 @@ def rugplot(
 
     if ax is None:
         ax = plt.gca()
+
     p._attach(ax)
+
+    color = kwargs.pop("color", kwargs.pop("c", None))
+    kwargs["color"] = _default_color(ax.plot, hue, color, kwargs)
+
+    if not p.has_xy_data:
+        return ax
 
     p.plot_rug(height, expand_margins, legend, **kwargs)
 
@@ -2191,6 +2158,10 @@ def displot(
     if not p.has_xy_data:
         return g
 
+    if color is None and hue is None:
+        color = "C0"
+    # XXX else warn if hue is not None?
+
     kwargs["legend"] = legend
 
     # --- Draw the plots
@@ -2212,6 +2183,7 @@ def displot(
             estimate_kws["discrete"] = p._default_discrete()
 
         hist_kws["estimate_kws"] = estimate_kws
+
         hist_kws.setdefault("color", color)
 
         if p.univariate:

@@ -1,8 +1,9 @@
+from distutils.version import LooseVersion
 from itertools import product
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import same_color
+from matplotlib.colors import same_color, to_rgba
 
 import pytest
 from numpy.testing import assert_array_equal
@@ -18,6 +19,7 @@ from ..relational import (
     scatterplot
 )
 
+from ..utils import _draw_figure
 from .._testing import assert_plots_equal
 
 
@@ -58,6 +60,28 @@ class Helpers:
             equal &= np.array_equal(p1.vertices, p2.vertices)
             equal &= np.array_equal(p1.codes, p2.codes)
         return equal
+
+
+class SharedAxesLevelTests:
+
+    def test_color(self, long_df):
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C0")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        self.func(data=long_df, x="x", y="y", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C1")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", color="C2", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C2")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", c="C2", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C2")
 
 
 class TestRelationalPlotter(Helpers):
@@ -602,7 +626,13 @@ class TestRelationalPlotter(Helpers):
         assert len(g.ax.collections) > 0
 
 
-class TestLinePlotter(Helpers):
+class TestLinePlotter(SharedAxesLevelTests, Helpers):
+
+    func = staticmethod(lineplot)
+
+    def get_last_color(self, ax):
+
+        return to_rgba(ax.lines[-1].get_color())
 
     def test_legend_data(self, long_df):
 
@@ -1069,6 +1099,13 @@ class TestLinePlotter(Helpers):
             plot_val = getattr(line, f"get_{key}")()
             assert plot_val == val
 
+    def test_nonmapped_dashes(self):
+
+        ax = lineplot(x=[1, 2], y=[1, 2], dashes=(2, 1))
+        line = ax.lines[0]
+        # Not a great test, but lines don't expose the dash style publically
+        assert line.get_linestyle() == "--"
+
     def test_lineplot_axes(self, wide_df):
 
         f1, ax1 = plt.subplots()
@@ -1197,7 +1234,35 @@ class TestLinePlotter(Helpers):
         assert_plots_equal(*axs)
 
 
-class TestScatterPlotter(Helpers):
+class TestScatterPlotter(SharedAxesLevelTests, Helpers):
+
+    func = staticmethod(scatterplot)
+
+    def get_last_color(self, ax):
+
+        colors = ax.collections[-1].get_facecolors()
+        unique_colors = np.unique(colors, axis=0)
+        assert len(unique_colors) == 1
+        return to_rgba(unique_colors.squeeze())
+
+    def test_color(self, long_df):
+
+        super().test_color(long_df)
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", facecolor="C5", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C5")
+
+        ax = plt.figure().subplots()
+        self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
+        assert self.get_last_color(ax) == to_rgba("C6")
+
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+
+            ax = plt.figure().subplots()
+            self.func(data=long_df, x="x", y="y", fc="C4", ax=ax)
+            assert self.get_last_color(ax) == to_rgba("C4")
 
     def test_legend_data(self, long_df):
 
@@ -1504,6 +1569,30 @@ class TestScatterPlotter(Helpers):
 
         assert_array_equal(points.get_sizes().squeeze(), s)
         assert_array_equal(points.get_facecolors(), c)
+
+    def test_supplied_color_array(self, long_df):
+
+        cmap = mpl.cm.get_cmap("Blues")
+        norm = mpl.colors.Normalize()
+        colors = cmap(norm(long_df["y"].to_numpy()))
+
+        keys = ["c", "facecolor", "facecolors"]
+
+        if LooseVersion(mpl.__version__) >= "3.1.0":
+            # https://github.com/matplotlib/matplotlib/pull/12851
+            keys.append("fc")
+
+        for key in keys:
+
+            ax = plt.figure().subplots()
+            scatterplot(data=long_df, x="x", y="y", **{key: colors})
+            _draw_figure(ax.figure)
+            assert_array_equal(ax.collections[0].get_facecolors(), colors)
+
+        ax = plt.figure().subplots()
+        scatterplot(data=long_df, x="x", y="y", c=long_df["y"], cmap=cmap)
+        _draw_figure(ax.figure)
+        assert_array_equal(ax.collections[0].get_facecolors(), colors)
 
     def test_linewidths(self, long_df):
 
