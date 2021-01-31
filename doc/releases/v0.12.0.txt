@@ -37,33 +37,7 @@ v0.12.0 (Unreleased)
 
 - |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
 
-- |Fix| In :func:`lmplot`, fixed a bug where the x axis was clamped to the data limits with `truncate=True` (:pr:`2576`).
-
-- |Fix| In :func:`lmplot`, fixed a bug where `sharey=False` did not always work as expected (:pr:`2576`).
-
-- |Fix| In the relational plots, fixed a bug where legend entries for the `size` semantic were incorrect when `size_norm` extrapolated beyond the range of the data (:pr:`2580`).
-
-- |Fix| In :func:`relplot` and :func:`displot`, fixed a bug where the dataframe attached to the returned `FacetGrid` object dropped columns that were not used in the plot (:pr:`2623`).
-
-- |Fix| In :func:`relplot`, fixed an error that would be raised when a column used to facet shared a name with one of the plot variables (:pr:`2581`).
-
-- |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `alpha` parameter was ignored when `fill=False` (:pr:`2460`).
-
-- |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `multiple` was ignored when `hue` was provided as a vector without a name (:pr:`2462`).
-
- - |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
- 
-- |Fix| In :func:`histplot`, fixed a bug where using `shrink` with non-discrete bins shifted bar positions inaccurately (:pr:`2477`).
-
-- |Fix| In :func:`histplot`, fixed two bugs where automatically computed edge widths were too thick for log-scaled histograms and categorical histograms on the y axis (:pr:`2522`).
-
-- |Fix| In :func:`displot`, fixed a bug where `common_norm` was ignored when `kind="hist"` and faceting was used without assigning `hue` (:pr:`2468`).
-
-- |Fix| In :func:`heatmap`, fixed a bug where vertically-rotated y-axis tick labels would be misaligned with their rows (:pr:`2574`).
-
-- |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
-
-- |Docs| Improved the API documentation for theme-related functions (:pr:`2573`).
+- |Fix| |Enhancement| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
