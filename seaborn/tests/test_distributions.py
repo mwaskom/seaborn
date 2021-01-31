@@ -35,6 +35,7 @@ from ..axisgrid import FacetGrid
 from .._testing import (
     assert_plots_equal,
     assert_legends_equal,
+    assert_colors_equal,
 )
 
 
@@ -123,16 +124,16 @@ class SharedAxesLevelTests:
 
         ax = plt.figure().subplots()
         self.func(data=long_df, x="y", ax=ax, **kwargs)
-        assert self.get_last_color(ax, **kwargs) == to_rgb("C0")
+        assert_colors_equal(self.get_last_color(ax, **kwargs), "C0", check_alpha=False)
 
         ax = plt.figure().subplots()
         self.func(data=long_df, x="y", ax=ax, **kwargs)
         self.func(data=long_df, x="y", ax=ax, **kwargs)
-        assert self.get_last_color(ax, **kwargs) == to_rgb("C1")
+        assert_colors_equal(self.get_last_color(ax, **kwargs), "C1", check_alpha=False)
 
         ax = plt.figure().subplots()
         self.func(data=long_df, x="y", color="C2", ax=ax, **kwargs)
-        assert self.get_last_color(ax, **kwargs) == to_rgb("C2")
+        assert_colors_equal(self.get_last_color(ax, **kwargs), "C2", check_alpha=False)
 
 
 class TestRugPlot(SharedAxesLevelTests):
@@ -141,7 +142,7 @@ class TestRugPlot(SharedAxesLevelTests):
 
     def get_last_color(self, ax, **kwargs):
 
-        return to_rgb(ax.collections[-1].get_color()[0])
+        return ax.collections[-1].get_color()
 
     def assert_rug_equal(self, a, b):
 
@@ -302,9 +303,9 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
     def get_last_color(self, ax, fill=True):
 
         if fill:
-            return to_rgb(ax.collections[-1].get_facecolor()[0])
+            return ax.collections[-1].get_facecolor()
         else:
-            return to_rgb(ax.lines[-1].get_color())
+            return ax.lines[-1].get_color()
 
     @pytest.mark.parametrize("fill", [True, False])
     def test_color(self, long_df, fill):
@@ -315,11 +316,11 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
 
             ax = plt.figure().subplots()
             self.func(data=long_df, x="y", facecolor="C3", fill=True, ax=ax)
-            assert self.get_last_color(ax) == to_rgb("C3")
+            assert_colors_equal(self.get_last_color(ax), "C3", check_alpha=False)
 
             ax = plt.figure().subplots()
             self.func(data=long_df, x="y", fc="C4", fill=True, ax=ax)
-            assert self.get_last_color(ax) == to_rgb("C4")
+            assert_colors_equal(self.get_last_color(ax), "C4", check_alpha=False)
 
     @pytest.mark.parametrize(
         "variable", ["x", "y"],
@@ -442,8 +443,8 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         palette = color_palette()
 
         for line, fill, color in zip(lines, fills, palette):
-            assert line.get_color() == color
-            assert tuple(fill.get_facecolor().squeeze()) == color + (.25,)
+            assert_colors_equal(line.get_color(), color)
+            assert_colors_equal(fill.get_facecolor(), to_rgba(color, .25))
 
     def test_hue_stacking(self, long_df):
 
@@ -516,55 +517,50 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
     def test_color_cycle_interaction(self, flat_series):
 
         color = (.2, 1, .6)
-        C0, C1 = to_rgb("C0"), to_rgb("C1")
 
         f, ax = plt.subplots()
         kdeplot(flat_series)
         kdeplot(flat_series)
-        assert to_rgb(ax.lines[0].get_color()) == C0
-        assert to_rgb(ax.lines[1].get_color()) == C1
+        assert_colors_equal(ax.lines[0].get_color(), "C0")
+        assert_colors_equal(ax.lines[1].get_color(), "C1")
         plt.close(f)
 
         f, ax = plt.subplots()
         kdeplot(flat_series, color=color)
         kdeplot(flat_series)
-        assert ax.lines[0].get_color() == color
-        assert to_rgb(ax.lines[1].get_color()) == C0
+        assert_colors_equal(ax.lines[0].get_color(), color)
+        assert_colors_equal(ax.lines[1].get_color(), "C0")
         plt.close(f)
 
         f, ax = plt.subplots()
         kdeplot(flat_series, fill=True)
         kdeplot(flat_series, fill=True)
-        assert (
-            to_rgba(ax.collections[0].get_facecolor().squeeze())
-            == to_rgba(C0, .25)
-        )
-        assert (
-            to_rgba(ax.collections[1].get_facecolor().squeeze())
-            == to_rgba(C1, .25)
-        )
+        assert_colors_equal(ax.collections[0].get_facecolor(), to_rgba("C0", .25))
+        assert_colors_equal(ax.collections[1].get_facecolor(), to_rgba("C1", .25))
         plt.close(f)
 
-    def test_color_fill(self, long_df):
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_artist_color(self, long_df, fill):
 
         color = (.2, 1, .6)
         alpha = .5
 
         f, ax = plt.subplots()
 
-        kdeplot(long_df["x"], fill=True, color=color)
-        c = ax.collections[-1]
-        assert (
-            to_rgba(c.get_facecolor().squeeze())
-            == to_rgba(color, .25)
-        )
+        kdeplot(long_df["x"], fill=fill, color=color)
+        if fill:
+            artist_color = ax.collections[-1].get_facecolor().squeeze()
+        else:
+            artist_color = ax.lines[-1].get_color()
+        default_alpha = .25 if fill else 1
+        assert_colors_equal(artist_color, to_rgba(color, default_alpha))
 
-        kdeplot(long_df["x"], fill=True, color=color, alpha=alpha)
-        c = ax.collections[-1]
-        assert (
-            to_rgba(c.get_facecolor().squeeze())
-            == to_rgba(color, alpha)
-        )
+        kdeplot(long_df["x"], fill=fill, color=color, alpha=alpha)
+        if fill:
+            artist_color = ax.collections[-1].get_facecolor().squeeze()
+        else:
+            artist_color = ax.lines[-1].get_color()
+        assert_colors_equal(artist_color, to_rgba(color, alpha))
 
     def test_datetime_scale(self, long_df):
 
@@ -806,7 +802,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         ax = kdeplot(x=flat_array, linewidth=lw, color=color)
         line, = ax.lines
         assert line.get_linewidth() == lw
-        assert line.get_color() == color
+        assert_colors_equal(line.get_color(), color)
 
     def test_input_checking(self, long_df):
 
@@ -840,7 +836,7 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
         legend_artists = ax.legend_.findobj(mpl.lines.Line2D)[::2]
         palette = color_palette()
         for artist, color in zip(legend_artists, palette):
-            assert artist.get_color() == color
+            assert_colors_equal(artist.get_color(), color)
 
         ax.clear()
 
@@ -972,8 +968,7 @@ class TestKDEPlotBivariate:
         with pytest.warns(UserWarning, match="cmap parameter ignored"):
             ax = kdeplot(data=long_df, x="x", y="y", hue="c", cmap="viridis")
 
-        color = tuple(ax.collections[0].get_color().squeeze())
-        assert color == mpl.colors.colorConverter.to_rgba("C0")
+        assert_colors_equal(ax.collections[0].get_color(), "C0")
 
     def test_contour_line_colors(self, long_df):
 
@@ -981,7 +976,7 @@ class TestKDEPlotBivariate:
         ax = kdeplot(data=long_df, x="x", y="y", color=color)
 
         for c in ax.collections:
-            assert tuple(c.get_color().squeeze()) == color
+            assert_colors_equal(c.get_color(), color)
 
     def test_contour_fill_colors(self, long_df):
 
@@ -1052,17 +1047,18 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
         if element == "bars":
             if fill:
-                return to_rgb(ax.patches[-1].get_facecolor())
+                return ax.patches[-1].get_facecolor()
             else:
-                return to_rgb(ax.patches[-1].get_edgecolor())
+                return ax.patches[-1].get_edgecolor()
         else:
             if fill:
-                facecolor = to_rgb(ax.collections[-1].get_facecolor()[0])
-                edgecolor = to_rgb(ax.collections[-1].get_edgecolor()[0])
-                assert facecolor == edgecolor
+                artist = ax.collections[-1]
+                facecolor = artist.get_facecolor()
+                edgecolor = artist.get_edgecolor()
+                assert_colors_equal(facecolor, edgecolor, check_alpha=False)
                 return facecolor
             else:
-                return to_rgb(ax.lines[-1].get_color())
+                return ax.lines[-1].get_color()
 
     @pytest.mark.parametrize(
         "element,fill",
@@ -1152,10 +1148,10 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             a = .75
 
         for bar, color in zip(ax.patches[::-1], palette):
-            assert bar.get_facecolor() == to_rgba(color, a)
+            assert_colors_equal(bar.get_facecolor(), to_rgba(color, a))
 
         for poly, color in zip(ax.collections[::-1], palette):
-            assert tuple(poly.get_facecolor().squeeze()) == to_rgba(color, a)
+            assert_colors_equal(poly.get_facecolor(), to_rgba(color, a))
 
     def test_hue_stack(self, long_df):
 
@@ -1428,7 +1424,9 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ax = histplot(data=long_df, x="x", hue="a", kde=True, bins=n)
 
         for bar, line in zip(ax.patches[::n], ax.lines):
-            assert to_rgba(bar.get_facecolor(), 1) == line.get_color()
+            assert_colors_equal(
+                bar.get_facecolor(), line.get_color(), check_alpha=False
+            )
 
     def test_kde_yaxis(self, flat_series):
 
@@ -1470,9 +1468,11 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
     def test_bars_no_fill(self, flat_series):
 
-        ax = histplot(flat_series, element="bars", fill=False)
+        alpha = .5
+        ax = histplot(flat_series, element="bars", fill=False, alpha=alpha)
         for bar in ax.patches:
             assert bar.get_facecolor() == (0, 0, 0, 0)
+            assert bar.get_edgecolor()[-1] == alpha
 
     def test_step_fill(self, flat_series):
 
@@ -1639,7 +1639,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ec = (1, .2, .9, .5)
         ax = histplot(flat_series, binwidth=1, ec=ec, lw=lw)
         for bar in ax.patches:
-            assert bar.get_edgecolor() == ec
+            assert_colors_equal(bar.get_edgecolor(), ec)
             assert bar.get_linewidth() == lw
 
     def test_step_fill_kwargs(self, flat_series):
@@ -1648,7 +1648,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         ec = (1, .2, .9, .5)
         ax = histplot(flat_series, element="step", ec=ec, lw=lw)
         poly = ax.collections[0]
-        assert tuple(poly.get_edgecolor().squeeze()) == ec
+        assert_colors_equal(poly.get_edgecolor(), ec)
         assert poly.get_linewidth() == lw
 
     def test_step_line_kwargs(self, flat_series):
@@ -1948,7 +1948,7 @@ class TestECDFPlotUnivariate(SharedAxesLevelTests):
         ax = ecdfplot(long_df, x="x", hue="a")
 
         for line, color in zip(ax.lines[::-1], color_palette()):
-            assert line.get_color() == color
+            assert_colors_equal(line.get_color(), color)
 
     def test_line_kwargs(self, long_df):
 
@@ -1958,7 +1958,7 @@ class TestECDFPlotUnivariate(SharedAxesLevelTests):
         ax = ecdfplot(long_df, x="x", color=color, ls=ls, lw=lw)
 
         for line in ax.lines:
-            assert to_rgb(line.get_color()) == to_rgb(color)
+            assert_colors_equal(line.get_color(), color)
             assert line.get_linestyle() == ls
             assert line.get_linewidth() == lw
 

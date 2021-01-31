@@ -65,7 +65,7 @@ class KDE:
             Factor, multiplied by the smoothing bandwidth, that determines how
             far the evaluation grid extends past the extreme datapoints. When
             set to 0, truncate the curve at the data limits.
-        clip : pair of numbers None, or a pair of such pairs
+        clip : pair of numbers or None, or a pair of such pairs
             Do not evaluate the density outside of these limits.
         cumulative : bool, optional
             If True, estimate a cumulative distribution function. Requires scipy.

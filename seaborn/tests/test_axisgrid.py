@@ -20,6 +20,7 @@ from ..categorical import pointplot
 from .. import axisgrid as ag
 from .._testing import (
     assert_plots_equal,
+    assert_colors_equal,
 )
 
 rs = np.random.RandomState(0)
@@ -224,7 +225,7 @@ class TestFacetGrid:
         assert len(lines) == len(a_levels)
 
         for line, hue in zip(lines, palette):
-            assert line.get_color() == hue
+            assert_colors_equal(line.get_color(), hue)
 
         labels = g._legend.get_texts()
         assert len(labels) == len(a_levels)
@@ -249,7 +250,7 @@ class TestFacetGrid:
         assert len(lines) == len(a_levels)
 
         for line, hue in zip(lines, palette):
-            assert line.get_color() == hue
+            assert_colors_equal(line.get_color(), hue)
 
         labels = g._legend.get_texts()
         assert len(labels) == 4
@@ -273,7 +274,7 @@ class TestFacetGrid:
         assert len(lines) == len(b_levels)
 
         for line, hue in zip(lines, palette):
-            assert line.get_color() == hue
+            assert_colors_equal(line.get_color(), hue)
 
         labels = g._legend.get_texts()
         assert len(labels) == len(b_levels)
@@ -941,21 +942,20 @@ class TestPairGrid:
     def test_map_diag_color(self):
 
         color = "red"
-        rgb_color = mpl.colors.colorConverter.to_rgba(color)
 
         g1 = ag.PairGrid(self.df)
         g1.map_diag(plt.hist, color=color)
 
         for ax in g1.diag_axes:
             for patch in ax.patches:
-                assert patch.get_facecolor() == rgb_color
+                assert_colors_equal(patch.get_facecolor(), color)
 
         g2 = ag.PairGrid(self.df)
         g2.map_diag(kdeplot, color='red')
 
         for ax in g2.diag_axes:
             for line in ax.lines:
-                assert line.get_color() == color
+                assert_colors_equal(line.get_color(), color)
 
     def test_map_diag_palette(self):
 
@@ -966,7 +966,7 @@ class TestPairGrid:
 
         for ax in g.diag_axes:
             for line, color in zip(ax.lines[::-1], pal):
-                assert line.get_color() == color
+                assert_colors_equal(line.get_color(), color)
 
     def test_map_diag_and_offdiag(self):
 
@@ -1656,12 +1656,11 @@ class TestJointPlot:
 
         g = ag.jointplot(x="x", y="y", data=self.data, color="purple")
 
-        purple = mpl.colors.colorConverter.to_rgb("purple")
-        scatter_color = g.ax_joint.collections[0].get_facecolor()[0, :3]
-        assert tuple(scatter_color) == purple
+        scatter_color = g.ax_joint.collections[0].get_facecolor()
+        assert_colors_equal(scatter_color, "purple")
 
         hist_color = g.ax_marg_x.patches[0].get_facecolor()[:3]
-        assert hist_color == purple
+        assert_colors_equal(hist_color, "purple")
 
     def test_palette(self, long_df):
 
