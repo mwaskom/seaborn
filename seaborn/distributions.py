@@ -185,9 +185,9 @@ class _DistributionPlotter(VectorPlotter):
                 kws.setdefault("edgecolor", to_rgba(color, 1))
         elif element == "bars":
             kws["facecolor"] = "none"
-            kws["edgecolor"] = to_rgba(color, 1)
+            kws["edgecolor"] = to_rgba(color, alpha)
         else:
-            kws["color"] = color
+            kws["color"] = to_rgba(color, alpha)
         return kws
 
     def _quantile_to_level(self, data, quantile):
@@ -502,12 +502,15 @@ class _DistributionPlotter(VectorPlotter):
         # Note: default linewidth is determined after plotting
 
         # Default alpha should depend on other parameters
-        if multiple == "layer":
-            default_alpha = .5 if element == "bars" else .25
-        elif kde:
-            default_alpha = .5
+        if fill:
+            if multiple == "layer":
+                default_alpha = .5 if element == "bars" else .25
+            elif kde:
+                default_alpha = .5
+            else:
+                default_alpha = .75
         else:
-            default_alpha = .75
+            default_alpha = 1
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
         hist_artists = []
@@ -914,7 +917,10 @@ class _DistributionPlotter(VectorPlotter):
             sticky_support = []
 
         # XXX unfilled kdeplot is ignoring
-        default_alpha = .25 if multiple == "layer" else .75
+        if fill:
+            default_alpha = .25 if multiple == "layer" else .75
+        else:
+            default_alpha = 1
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
 
         # Now iterate through the subsets and draw the densities
