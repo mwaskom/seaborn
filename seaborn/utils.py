@@ -715,14 +715,17 @@ def _deprecate_ci(errorbar, ci):
     (and extracted from kwargs) after one cycle.
 
     """
-    if ci is not None:
-        if ci == "sd":
+    if ci != "deprecated":
+        if ci is None:
+            errorbar = None
+        elif ci == "sd":
             errorbar = "sd"
-            msg = "use `errorbar='sd'` for same effect."
         else:
             errorbar = ("ci", ci)
-            msg = f"use `errorbar=('ci', {ci})` for same effect."
-        msg = f"The `ci` parameter is deprecated; {msg}"
+        msg = (
+            "The `ci` parameter is deprecated; "
+            f"use `errorbar={repr(errorbar)}` for same effect."
+        )
         warnings.warn(msg, UserWarning)
 
     return errorbar
