@@ -209,7 +209,7 @@ class Histogram:
 
         Parameters
         ----------
-        stat : {"count", "frequency", "density", "probability"}
+        stat : {"count", "frequency", "density", "probability", "percent"}
             Aggregate statistic to compute in each bin.
 
             - ``count`` shows the number of observations
@@ -234,7 +234,8 @@ class Histogram:
             If True, return the cumulative statistic.
 
         """
-        _check_argument("stat", ["count", "density", "probability", "frequency"], stat)
+        stat_choices = ["count", "frequency", "density", "probability", "percent"]
+        _check_argument("stat", stat_choices, stat)
 
         self.stat = stat
         self.bins = bins
@@ -335,6 +336,8 @@ class Histogram:
 
         if self.stat == "probability":
             hist = hist.astype(float) / hist.sum()
+        elif self.stat == "percent":
+            hist = hist.astype(float) / hist.sum() * 100
         elif self.stat == "frequency":
             hist = hist.astype(float) / area
 
@@ -359,6 +362,8 @@ class Histogram:
 
         if self.stat == "probability":
             hist = hist.astype(float) / hist.sum()
+        elif self.stat == "percent":
+            hist = hist.astype(float) / hist.sum() * 100
         elif self.stat == "frequency":
             hist = hist.astype(float) / np.diff(bin_edges)
 
