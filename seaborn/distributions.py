@@ -234,8 +234,16 @@ class _DistributionPlotter(VectorPlotter):
         return discrete
 
     def _resolve_multiple(self, curves, multiple):
+        """Modify the density data structure to handle multiple densities."""
 
-        # Modify the density data structure to handle multiple densities
+        # Default baselines have all densities starting at 0
+        baselines = {k: np.zeros_like(v) for k, v in curves.items()}
+
+        # TODO we should have some central clearinghouse for checking if any
+        # "grouping" (terminnology?) semantics have been assigned
+        if "hue" not in self.variables:
+            return curves, baselines
+
         if multiple in ("stack", "fill"):
 
             # Setting stack or fill means that the curves share a
@@ -269,11 +277,6 @@ class _DistributionPlotter(VectorPlotter):
                                            .iloc[:, cols]
                                            .shift(1, axis=1)
                                            .fillna(0))
-
-        else:
-
-            # All densities will start at 0
-            baselines = {k: np.zeros_like(v) for k, v in curves.items()}
 
         if multiple == "dodge":
 
@@ -916,7 +919,7 @@ class _DistributionPlotter(VectorPlotter):
             log_scale,
         )
 
-        # Note: raises when no hue and multiple != layer. A problem?
+        # Adjust densities based on the `multiple` rule
         densities, baselines = self._resolve_multiple(densities, multiple)
 
         # Control the interaction with autoscaling by defining sticky_edges
@@ -930,7 +933,7 @@ class _DistributionPlotter(VectorPlotter):
             sticky_support = []
 
         if fill:
-            default_alpha = .25 if multiple in "layer" else .75
+            default_alpha = .25 if multiple == "layer" else .75
         else:
             default_alpha = 1
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
