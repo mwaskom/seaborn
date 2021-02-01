@@ -132,6 +132,15 @@ class _DistributionPlotter(VectorPlotter):
         # TODO see above points about where this should go
         return bool({"x", "y"} & set(self.variables))
 
+    def _redundant_with_facets(self, var):
+        """Return True if var is assigned and is redundant with faceting variables."""
+        # TODO likely generally useful but only used in this module for now.
+        return any(
+            self.plot_data[var].equals(self.plot_data[facet_var])
+            for facet_var in ["row", "col"]
+            if var in self.plot_data and facet_var in self.plot_data
+        )
+
     def _add_legend(
         self,
         ax_obj, artist, fill, element, multiple, alpha, artist_kws, legend_kws,
@@ -413,11 +422,8 @@ class _DistributionPlotter(VectorPlotter):
         else:
             common_norm = False
 
-        # Turn multiple off if no hue or if hue exists but is redundant with faceting
-        facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
-        if "hue" not in self.variables:
-            multiple = None
-        elif self.variables["hue"] in facet_vars:
+        # Let default alpha look like single histogram if hue is redundant
+        if self._redundant_with_facets("hue"):
             multiple = None
 
         # Estimate the smoothed kernel densities, for use later
@@ -886,6 +892,13 @@ class _DistributionPlotter(VectorPlotter):
         # Input checking
         _check_argument("multiple", ["layer", "stack", "fill"], multiple)
 
+        # Let default alpha look like single density with redundant hue
+        if self._redundant_with_facets("hue"):
+            # Note unlike histplot, we set this to layer rather than None because
+            # default alpha for layer matches default alpha for a single density.
+            # But that's kind of messy and we should rethink.
+            multiple = "layer"
+
         # Always share the evaluation grid when stacking
         subsets = bool(set(self.variables) - {"x", "y"})
         if subsets and multiple in ("stack", "fill"):
@@ -916,9 +929,8 @@ class _DistributionPlotter(VectorPlotter):
         else:
             sticky_support = []
 
-        # XXX unfilled kdeplot is ignoring
         if fill:
-            default_alpha = .25 if multiple == "layer" else .75
+            default_alpha = .25 if multiple in "layer" else .75
         else:
             default_alpha = 1
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?

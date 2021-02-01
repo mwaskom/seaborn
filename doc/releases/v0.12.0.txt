@@ -18,13 +18,15 @@ v0.12.0 (Unreleased)
 
 - |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 (:pr:`2461`).
 
+- |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
+
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
 - |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
 
 - |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `alpha` parameter was ignored when `fill=False` (:pr:`2460`).
 
-- |Fix| |Enhancement| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
+- |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `multiple` was ignored when `hue` was provided a vector without a name (:pr:`2462`).
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
