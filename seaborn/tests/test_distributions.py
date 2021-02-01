@@ -1295,6 +1295,12 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             bar_heights = [b.get_height() for b in bars]
             assert sum(bar_heights) == pytest.approx(1)
 
+    def test_percent_stat(self, flat_series):
+
+        ax = histplot(flat_series, stat="percent")
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert sum(bar_heights) == 100
+
     def test_common_bins(self, long_df):
 
         n = 10
