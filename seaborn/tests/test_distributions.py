@@ -1258,6 +1258,12 @@ class TestHistPlotUnivariate:
             bar_heights = [b.get_height() for b in bars]
             assert sum(bar_heights) == pytest.approx(1)
 
+    def test_percent_stat(self, flat_series):
+
+        ax = histplot(flat_series, stat="percent")
+        bar_heights = [b.get_height() for b in ax.patches]
+        assert sum(bar_heights) == 100
+
     def test_common_bins(self, long_df):
 
         n = 10
@@ -1795,6 +1801,17 @@ class TestHistPlotBivariate:
 
             density, (x_edges, y_edges) = sub_hist(sub_df["x"], sub_df["y"])
             assert_array_equal(mesh_data.data, density.T.flat)
+
+    @pytest.mark.parametrize("stat", ["probability", "percent"])
+    def test_mesh_normalization(self, long_df, stat):
+
+        ax = histplot(
+            long_df, x="x", y="y", stat=stat,
+        )
+
+        mesh_data = ax.collections[0].get_array()
+        expected_sum = {"probability": 1, "percent": 100}[stat]
+        assert mesh_data.data.sum() == expected_sum
 
     def test_mesh_colors(self, long_df):
 

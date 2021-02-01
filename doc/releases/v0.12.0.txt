@@ -19,20 +19,6 @@ v0.12.0 (Unreleased)
 
 - |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 (:pr:`2461`).
 
-- |Enhancement| In :func:`histplot`, improved performance with large datasets and many groupings/facets (:pr:`2559`, :pr:`2570`).
-
-- |Enhancement| In :func:`kdeplot`, added the `warn_singular` parameter to allow silencing of the warning about data with zero variance (:pr:`2566`).
-
-- |Enhancement| In :class:`FacetGrid`, :class:`PairGrid`, and functions that use them, the matplotlib `figure.autolayout` parameter is disabled to avoid having the legend overlap the plot (:pr:`2571`).
-
-- |Enhancement| In :class:`FacetGrid` and functions that use it, the visibility of interior axis labels is now disabled, and exterior axis labels are no longer erased when adding additional layers (:pr:`2583`).
-
-- |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
-
-- |Feature| Added a ``refline`` method to :class:`FacetGrid` and :class:`JointGrid` for including horizontal and/or vertical reference lines using :meth:`matplotlib.axes.Axes.axhline`/:meth:`matplotlib.axes.Axes.axvline` (:pr:`2620`).
-
-- |API| |Enhancement| In :func:`lmplot`, added a new `facet_kws` parameter and deprecated the `sharex`, `sharey`, and `legend_out` parameters from the function signature; pass them in the `facet_kws` dictionary (:pr:`2576`).
-
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
 - |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
