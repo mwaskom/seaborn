@@ -1217,6 +1217,17 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         assert_array_almost_equal(layer_xs[1], dodge_xs[1])
         assert_array_almost_equal(layer_xs[0], dodge_xs[0] - bw / 2)
 
+    def test_hue_as_numpy_dodged(self, long_df):
+        # https://github.com/mwaskom/seaborn/issues/2452
+
+        ax = histplot(
+            long_df,
+            x="y", hue=long_df["a"].to_numpy(),
+            multiple="dodge", bins=1,
+        )
+        # Note hue order reversal
+        assert ax.patches[1].get_x() < ax.patches[0].get_x()
+
     def test_multiple_input_check(self, flat_series):
 
         with pytest.raises(ValueError, match="`multiple` must be"):

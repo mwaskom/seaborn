@@ -225,8 +225,16 @@ class _DistributionPlotter(VectorPlotter):
         return discrete
 
     def _resolve_multiple(self, curves, multiple):
+        """Modify the density data structure to handle multiple densities."""
 
-        # Modify the density data structure to handle multiple densities
+        # Default baselines have all densities starting at 0
+        baselines = {k: np.zeros_like(v) for k, v in curves.items()}
+
+        # TODO we should have some central clearinghouse for checking if any
+        # "grouping" (terminnology?) semantics have been assigned
+        if "hue" not in self.variables:
+            return curves, baselines
+
         if multiple in ("stack", "fill"):
 
             # Setting stack or fill means that the curves share a
@@ -260,11 +268,6 @@ class _DistributionPlotter(VectorPlotter):
                                            .iloc[:, cols]
                                            .shift(1, axis=1)
                                            .fillna(0))
-
-        else:
-
-            # All densities will start at 0
-            baselines = {k: np.zeros_like(v) for k, v in curves.items()}
 
         if multiple == "dodge":
 
@@ -413,13 +416,6 @@ class _DistributionPlotter(VectorPlotter):
         else:
             common_norm = False
 
-        # Turn multiple off if no hue or if hue exists but is redundant with faceting
-        facet_vars = [self.variables.get(var, None) for var in ["row", "col"]]
-        if "hue" not in self.variables:
-            multiple = None
-        elif self.variables["hue"] in facet_vars:
-            multiple = None
-
         # Estimate the smoothed kernel densities, for use later
         if kde:
             # TODO alternatively, clip at min/max bins?
@@ -503,7 +499,8 @@ class _DistributionPlotter(VectorPlotter):
 
         # Default alpha should depend on other parameters
         if fill:
-            if multiple == "layer":
+            # Note: will need to account for other grouping semantics if added
+            if "hue" in self.variables and multiple == "layer":
                 default_alpha = .5 if element == "bars" else .25
             elif kde:
                 default_alpha = .5
@@ -903,7 +900,7 @@ class _DistributionPlotter(VectorPlotter):
             log_scale,
         )
 
-        # Note: raises when no hue and multiple != layer. A problem?
+        # Adjust densities based on the `multiple` rule
         densities, baselines = self._resolve_multiple(densities, multiple)
 
         # Control the interaction with autoscaling by defining sticky_edges
@@ -916,9 +913,11 @@ class _DistributionPlotter(VectorPlotter):
         else:
             sticky_support = []
 
-        # XXX unfilled kdeplot is ignoring
         if fill:
-            default_alpha = .25 if multiple == "layer" else .75
+            if multiple == "layer":
+                default_alpha = .25
+            else:
+                default_alpha = .75
         else:
             default_alpha = 1
         alpha = plot_kws.pop("alpha", default_alpha)  # TODO make parameter?
