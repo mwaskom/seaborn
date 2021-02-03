@@ -914,7 +914,6 @@ class _DistributionPlotter(VectorPlotter):
             sticky_support = []
 
         if fill:
-            # Note: will need to account for other grouping semantics if added
             if multiple == "layer":
                 default_alpha = .25
             else:
