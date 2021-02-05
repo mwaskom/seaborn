@@ -2245,6 +2245,21 @@ class TestDisPlot:
         l2 = sum(bool(c.get_segments()) for c in g.axes.flat[1].collections)
         assert l1 == l2
 
+    def test_bivariate_hist_norm(self, rng):
+
+        x, y = rng.normal(0, 1, (2, 100))
+        z = [0] * 80 + [1] * 20
+
+        g = displot(x=x, y=y, col=z, kind="hist")
+        clim1 = g.axes.flat[0].collections[0].get_clim()
+        clim2 = g.axes.flat[1].collections[0].get_clim()
+        assert clim1 == clim2
+
+        g = displot(x=x, y=y, col=z, kind="hist", common_norm=False)
+        clim1 = g.axes.flat[0].collections[0].get_clim()
+        clim2 = g.axes.flat[1].collections[0].get_clim()
+        assert clim1[1] > clim2[1]
+
 
 def integrate(y, x):
     """"Simple numerical integration for testing KDE code."""

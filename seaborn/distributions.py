@@ -737,7 +737,7 @@ class _DistributionPlotter(VectorPlotter):
             )
             full_heights.append(sub_heights)
 
-        common_color_norm = "hue" not in self.variables or common_norm
+        common_color_norm = not set(self.variables) - {"x", "y"} or common_norm
 
         if pthresh is not None and common_color_norm:
             thresh = self._quantile_to_level(full_heights, pthresh)
