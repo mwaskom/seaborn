@@ -27,7 +27,18 @@ class DocstringComponents:
         if attr in self.entries:
             return self.entries[attr]
         else:
-            return self.__getattribute__(attr)
+            try:
+                return self.__getattribute__(attr)
+            except AttributeError as err:
+                # If Python is run with -OO, it will strip docstrings and our lookup
+                # from self.entries will fail. We check for __debug__, which is actually
+                # set to False by -O (it is True for normal execution).
+                # But we only really want to see an error when building the docs,  it's
+                # not an error so this slight inconsistency is fine.
+                if __debug__:
+                    raise err
+                else:
+                    pass
 
     @classmethod
     def from_nested_components(cls, **kwargs):
