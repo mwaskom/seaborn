@@ -58,7 +58,7 @@ Testing
 
 Testing seaborn requires installing additional packages listed in `ci/utils.txt`.
 
-To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)) and generate a coverate report.
+To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
 
 The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`.
 
