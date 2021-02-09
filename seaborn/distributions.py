@@ -459,9 +459,12 @@ class _DistributionPlotter(VectorPlotter):
                 edges = np.power(10, edges)
 
             # Pack the histogram data and metadata together
+            orig_widths = np.diff(edges)
+            widths = shrink * orig_widths
+            edges = edges[:-1] + (1 - shrink) / 2 * orig_widths
             index = pd.MultiIndex.from_arrays([
-                pd.Index(edges[:-1], name="edges"),
-                pd.Index(np.diff(edges) * shrink, name="widths"),
+                pd.Index(edges, name="edges"),
+                pd.Index(widths, name="widths"),
             ])
             hist = pd.Series(heights, index=index, name="heights")
 
@@ -536,9 +539,8 @@ class _DistributionPlotter(VectorPlotter):
                 # Use matplotlib bar plotting
 
                 plot_func = ax.bar if self.data_variable == "x" else ax.barh
-                move = .5 * (1 - shrink)
                 artists = plot_func(
-                    hist["edges"] + move,
+                    hist["edges"],
                     hist["heights"] - bottom,
                     hist["widths"],
                     bottom,
