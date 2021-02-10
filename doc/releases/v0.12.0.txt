@@ -29,6 +29,11 @@ v0.12.0 (Unreleased)
 - |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `multiple` was ignored when `hue` was provided as a vector without a name (:pr:`2462`).
 
  - |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
+- |Fix| In :func:`histplot`, fixed a bug where using `shrink` with non-discrete bins shifted bar positions inaccurately (:pr:`2477`).
+
+- |Fix| In :func:`displot`, fixed a bug where `common_norm` was ignored when `kind="hist"` and faceting was used without assigning `hue` (:pr:`2468`).
+
+- |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 

@@ -1520,10 +1520,21 @@ class TestHistPlotUnivariate:
 
     def test_shrink(self, long_df):
 
+        f, (ax1, ax2) = plt.subplots(2)
+
         bw = 2
-        shrink = .5
-        ax = histplot(long_df, x="x", binwidth=bw, shrink=shrink)
-        assert ax.patches[0].get_width() == bw * shrink
+        shrink = .4
+
+        histplot(long_df, x="x", binwidth=bw, ax=ax1)
+        histplot(long_df, x="x", binwidth=bw, shrink=shrink, ax=ax2)
+
+        for p1, p2 in zip(ax1.patches, ax2.patches):
+
+            w1, w2 = p1.get_width(), p2.get_width()
+            assert w2 == pytest.approx(shrink * w1)
+
+            x1, x2 = p1.get_x(), p2.get_x()
+            assert (x2 + w2 / 2) == pytest.approx(x1 + w1 / 2)
 
     def test_log_scale_explicit(self, rng):
 
