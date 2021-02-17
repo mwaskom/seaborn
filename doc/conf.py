@@ -296,7 +296,7 @@ def setup(app):
 intersphinx_mapping = {
     'numpy': ('https://numpy.org/doc/stable/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
-    'matplotlib': ('https://matplotlib.org/', None),
+    'matplotlib': ('https://matplotlib.org/stable', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'statsmodels': ('https://www.statsmodels.org/stable/', None)
 }
