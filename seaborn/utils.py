@@ -5,7 +5,7 @@ import inspect
 import warnings
 import colorsys
 from urllib.request import urlopen, urlretrieve
-from distutils.version import LooseVersion
+from packaging import version
 
 import numpy as np
 import pandas as pd
@@ -149,7 +149,7 @@ def _default_color(method, hue, color, kws):
             isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
             isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
         ])
-        if LooseVersion(mpl.__version__) < "3.3" and datetime_axis:
+        if version.parse(mpl.__version__) < version.parse("3.3") and datetime_axis:
             return "C0"
 
         kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)

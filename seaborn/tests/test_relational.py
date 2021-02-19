@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging import version
 from itertools import product
 import numpy as np
 import matplotlib as mpl
@@ -1257,7 +1257,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C6")
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if version.parse(mpl.__version__) >= version.parse("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
@@ -1578,7 +1578,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         keys = ["c", "facecolor", "facecolors"]
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if version.parse(mpl.__version__) >= version.parse("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
             keys.append("fc")
 

@@ -3,7 +3,7 @@ import numpy.random as npr
 
 import pytest
 from numpy.testing import assert_array_equal
-from distutils.version import LooseVersion
+from packaging import version
 
 from .. import algorithms as algo
 
@@ -151,7 +151,7 @@ def test_bootstrap_reproducibility(random):
         assert_array_equal(boots1, boots2)
 
 
-@pytest.mark.skipif(LooseVersion(np.__version__) < "1.17",
+@pytest.mark.skipif(version.parse(np.__version__) < version.parse("1.17"),
                     reason="Tests new numpy random functionality")
 def test_seed_new():
 
@@ -177,7 +177,7 @@ def test_seed_new():
         assert (rng1.uniform() == rng2.uniform()) == match
 
 
-@pytest.mark.skipif(LooseVersion(np.__version__) >= "1.17",
+@pytest.mark.skipif(version.parse(np.__version__) >= version.parse("1.17"),
                     reason="Tests old numpy random functionality")
 @pytest.mark.parametrize("seed1, seed2, match", [
     (None, None, False),
@@ -194,7 +194,7 @@ def test_seed_old(seed1, seed2, match):
     assert (rng1.uniform() == rng2.uniform()) == match
 
 
-@pytest.mark.skipif(LooseVersion(np.__version__) >= "1.17",
+@pytest.mark.skipif(version.parse(np.__version__) >= version.parse("1.17"),
                     reason="Tests old numpy random functionality")
 def test_bad_seed_old():
 
