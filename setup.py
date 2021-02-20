@@ -33,6 +33,7 @@ INSTALL_REQUIRES = [
     'numpy>=1.16',
     'pandas>=0.24',
     'matplotlib>=3.0',
+    'packaging>=29.0',
 ]
 
 EXTRAS_REQUIRE = {
