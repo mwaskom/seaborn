@@ -1,5 +1,4 @@
 """Functions to visualize matrices of data."""
-import itertools
 import warnings
 
 import matplotlib as mpl
@@ -1037,35 +1036,36 @@ class ClusterGrid(Grid):
         Returns
         -------
         matrix : numpy.array
-            A numpy array of integer values, where each corresponds to a color
-            from the originally provided list of colors
+            A numpy array of integer values, where each indexes into the cmap
         cmap : matplotlib.colors.ListedColormap
 
         """
-        # check for nested lists/color palettes.
-        # Will fail if matplotlib color is list not tuple
-        if any(issubclass(type(x), list) for x in colors):
-            all_colors = set(itertools.chain(*colors))
-            n = len(colors)
-            m = len(colors[0])
+        try:
+            mpl.colors.to_rgb(colors[0])
+        except ValueError:
+            # We have a 2D color structure
+            m, n = len(colors), len(colors[0])
+            if not all(len(c) == n for c in colors[1:]):
+                raise ValueError("Multiple side color vectors must have same size")
         else:
-            all_colors = set(colors)
-            n = 1
-            m = len(colors)
+            # We have one vector of colors
+            m, n = 1, len(colors)
             colors = [colors]
-        color_to_value = dict((col, i) for i, col in enumerate(all_colors))
 
-        matrix = np.array([color_to_value[c]
-                           for color in colors for c in color])
+        # Map from unique colors to colormap index value
+        unique_colors = {}
+        matrix = np.zeros((m, n), int)
+        for i, inner in enumerate(colors):
+            for j, color in enumerate(inner):
+                idx = unique_colors.setdefault(color, len(unique_colors))
+                matrix[i, j] = idx
 
-        shape = (n, m)
-        matrix = matrix.reshape(shape)
+        # Reorder for clustering and transpose for axis
         matrix = matrix[:, ind]
         if axis == 0:
-            # row-side:
             matrix = matrix.T
 
-        cmap = mpl.colors.ListedColormap(all_colors)
+        cmap = mpl.colors.ListedColormap(list(unique_colors))
         return matrix, cmap
 
     def savefig(self, *args, **kwargs):
