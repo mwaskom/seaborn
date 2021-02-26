@@ -912,6 +912,12 @@ class TestClustermap:
             color = self.col_colors[leaf]
             assert_colors_equal(cmap(matrix[0, j]), color)
 
+    def test_color_list_to_matrix_and_cmap_different_sizes(self):
+        colors = [self.col_colors, self.col_colors * 2]
+        with pytest.raises(ValueError):
+            matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
+                colors, self.x_norm_leaves, axis=1)
+
     def test_savefig(self):
         # Not sure if this is the right way to test....
         cg = mat.ClusterGrid(self.df_norm, **self.default_kws)
