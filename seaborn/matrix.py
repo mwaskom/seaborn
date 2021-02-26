@@ -690,7 +690,7 @@ class _DendrogramPlotter(object):
         """
         tree_kws = {} if tree_kws is None else tree_kws.copy()
         tree_kws.setdefault("linewidths", .5)
-        tree_kws.setdefault("colors", ".2")
+        tree_kws.setdefault("colors", tree_kws.pop("color", (.2, .2, .2)))
 
         if self.rotate and self.axis == 0:
             coords = zip(self.dependent_coord, self.independent_coord)
