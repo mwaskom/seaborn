@@ -1,4 +1,3 @@
-import itertools
 import tempfile
 import copy
 
@@ -30,6 +29,7 @@ import pytest
 
 from .. import matrix as mat
 from .. import color_palette
+from .._testing import assert_colors_equal
 
 
 class TestHeatmap:
@@ -885,50 +885,38 @@ class TestClustermap:
             mat.ClusterGrid(self.df_norm, **kws)
 
     def test_color_list_to_matrix_and_cmap(self):
+        # Note this uses the attribute named col_colors but tests row colors
         matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
-            self.col_colors, self.x_norm_leaves)
+            self.col_colors, self.x_norm_leaves, axis=0)
 
-        colors_set = set(self.col_colors)
-        col_to_value = dict((col, i) for i, col in enumerate(colors_set))
-        matrix_test = np.array([col_to_value[col] for col in
-                                self.col_colors])[self.x_norm_leaves]
-        shape = len(self.col_colors), 1
-        matrix_test = matrix_test.reshape(shape)
-        cmap_test = mpl.colors.ListedColormap(colors_set)
-        npt.assert_array_equal(matrix, matrix_test)
-        npt.assert_array_equal(cmap.colors, cmap_test.colors)
+        for i, leaf in enumerate(self.x_norm_leaves):
+            color = self.col_colors[leaf]
+            assert_colors_equal(cmap(matrix[i, 0]), color)
 
     def test_nested_color_list_to_matrix_and_cmap(self):
-        colors = [self.col_colors, self.col_colors]
+        # Note this uses the attribute named col_colors but tests row colors
+        colors = [self.col_colors, self.col_colors[::-1]]
         matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
-            colors, self.x_norm_leaves)
+            colors, self.x_norm_leaves, axis=0)
 
-        all_colors = set(itertools.chain(*colors))
-        color_to_value = dict((col, i) for i, col in enumerate(all_colors))
-        matrix_test = np.array(
-            [color_to_value[c] for color in colors for c in color])
-        shape = len(colors), len(colors[0])
-        matrix_test = matrix_test.reshape(shape)
-        matrix_test = matrix_test[:, self.x_norm_leaves]
-        matrix_test = matrix_test.T
-
-        cmap_test = mpl.colors.ListedColormap(all_colors)
-        npt.assert_array_equal(matrix, matrix_test)
-        npt.assert_array_equal(cmap.colors, cmap_test.colors)
+        for i, leaf in enumerate(self.x_norm_leaves):
+            for j, color_row in enumerate(colors):
+                color = color_row[leaf]
+                assert_colors_equal(cmap(matrix[i, j]), color)
 
     def test_color_list_to_matrix_and_cmap_axis1(self):
         matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
             self.col_colors, self.x_norm_leaves, axis=1)
 
-        colors_set = set(self.col_colors)
-        col_to_value = dict((col, i) for i, col in enumerate(colors_set))
-        matrix_test = np.array([col_to_value[col] for col in
-                                self.col_colors])[self.x_norm_leaves]
-        shape = 1, len(self.col_colors)
-        matrix_test = matrix_test.reshape(shape)
-        cmap_test = mpl.colors.ListedColormap(colors_set)
-        npt.assert_array_equal(matrix, matrix_test)
-        npt.assert_array_equal(cmap.colors, cmap_test.colors)
+        for j, leaf in enumerate(self.x_norm_leaves):
+            color = self.col_colors[leaf]
+            assert_colors_equal(cmap(matrix[0, j]), color)
+
+    def test_color_list_to_matrix_and_cmap_different_sizes(self):
+        colors = [self.col_colors, self.col_colors * 2]
+        with pytest.raises(ValueError):
+            matrix, cmap = mat.ClusterGrid.color_list_to_matrix_and_cmap(
+                colors, self.x_norm_leaves, axis=1)
 
     def test_savefig(self):
         # Not sure if this is the right way to test....
