@@ -57,8 +57,10 @@ multiple : {{"layer", "stack", "fill"}}
     """,
     log_scale="""
 log_scale : bool or number, or pair of bools or numbers
-    Set a log scale on the data axis (or axes, with bivariate data) with the
-    given base (default 10), and evaluate the KDE in log space.
+    Set axis scale(s) to log. A single value sets the data axis for univariate
+    distributions and both axes for bivariate distributions. A pair of values
+    sets each axis independently. Numeric values are interpreted as the desired
+    base (default 10). If `False`, defer to the existing Axes scale.
     """,
     legend="""
 legend : bool
