@@ -1203,6 +1203,12 @@ class _DistributionPlotter(VectorPlotter):
             if "hue" in self.variables:
                 artist_kws["color"] = self._hue_map(sub_vars["hue"])
 
+            # Return the data variable to the linear domain
+            # This needs an automatic solution; see GH2409
+            if self._log_scaled(self.data_variable):
+                vals = 10 ** vals
+                vals[0] = -np.inf
+
             # Work out the orientation of the plot
             if self.data_variable == "x":
                 plot_args = vals, stat

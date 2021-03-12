@@ -2056,6 +2056,19 @@ class TestECDFPlotUnivariate(SharedAxesLevelTests):
         with pytest.raises(NotImplementedError, match="Bivariate ECDF plots"):
             ecdfplot(data=long_df, x="x", y="y")
 
+    def test_log_scale(self, long_df):
+
+        ax1, ax2 = plt.figure().subplots(2)
+
+        ecdfplot(data=long_df, x="z", ax=ax1)
+        ecdfplot(data=long_df, x="z", log_scale=True, ax=ax2)
+
+        # Ignore first point, which either -inf (in linear) or 0 (in log)
+        line1 = ax1.lines[0].get_xydata()[1:]
+        line2 = ax2.lines[0].get_xydata()[1:]
+
+        assert_array_almost_equal(line1, line2)
+
 
 class TestDisPlot:
 
