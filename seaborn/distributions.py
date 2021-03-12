@@ -1206,7 +1206,7 @@ class _DistributionPlotter(VectorPlotter):
             # Return the data variable to the linear domain
             # This needs an automatic solution; see GH2409
             if self._log_scaled(self.data_variable):
-                vals = 10 ** vals
+                vals = np.power(10, vals)
                 vals[0] = -np.inf
 
             # Work out the orientation of the plot
@@ -1284,6 +1284,11 @@ class _DistributionPlotter(VectorPlotter):
         """Draw a rugplot along one axis of the plot."""
         vector = sub_data[var]
         n = len(vector)
+
+        # Return data to linear domain
+        # This needs an automatic solution; see GH2409
+        if self._log_scaled(var):
+            vector = np.power(10, vector)
 
         # We'll always add a single collection with varying colors
         if "hue" in self.variables:

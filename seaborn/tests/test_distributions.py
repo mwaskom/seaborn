@@ -295,6 +295,20 @@ class TestRugPlot(SharedAxesLevelTests):
         assert ax.get_xlabel() == flat_series.name
         assert not ax.get_ylabel()
 
+    def test_log_scale(self, long_df):
+
+        ax1, ax2 = plt.figure().subplots(2)
+
+        ax2.set_xscale("log")
+
+        rugplot(data=long_df, x="z", ax=ax1)
+        rugplot(data=long_df, x="z", ax=ax2)
+
+        rug1 = np.stack(ax1.collections[0].get_segments())
+        rug2 = np.stack(ax2.collections[0].get_segments())
+
+        assert_array_almost_equal(rug1, rug2)
+
 
 class TestKDEPlotUnivariate(SharedAxesLevelTests):
 
