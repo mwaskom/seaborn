@@ -25,6 +25,25 @@ Data visualization is an indispensible part of the scientific process. Effective
 
 The `seaborn` library offers an interface to `matplotlib` that permits rapid data exploration and prototyping of visualizations while retaining much of the flexibility and stability that are necessary to produce publication-quality graphics. It is domain-general and can be used to visualize a wide range of datasets that are well-represented within a tabular format.
 
+# Example
+
+The following example demonstrates the creation of a figure with `seaborn`. The example makes use of one of the built-in datasets that are provided for documentation and generation of reproducible bug reports. It illustrates several of the features described in the Overview section, including the declarative API, semantic mappings, faceting across subplots, aggregation with error bars, and visual theme control.
+
+```python
+import seaborn as sns 
+sns.set_theme(context="paper")
+fmri = sns.load_dataset("fmri")
+g = sns.relplot(
+    data=fmri, kind="line",
+    x="timepoint", y="signal",
+    hue="event", style="event", col="region",
+    height=3.5, aspect=.8,
+)
+g.savefig("paper_demo.pdf")
+```
+
+![An example seaborn figure demonstrating some of its key features.](paper_demo.pdf)
+
 # Overview
 
 Users interface with `seaborn` through a collection of plotting functions that share a common API for plot specification and offer many more specific options for customization. These functions range from basic plot types such as scatter and line plots to functions that apply various transformations and abstractions, such as histogram binning, kernel density estimation, and regression model fitting. Functions in `seaborn` are classified as either "axes-level" or "figure-level". Axes-level functions behave like most plotting functions in the `matplotlib.pyplot` namespace. By default, they hook into the state machine that tracks a "current" figure and add a layer to it, but they can also accept a matplotlib axes object to control where the plot is drawn, similar to using the `matplotlib` "object-oriented" interface. Figure-level functions create their own figure when invoked, allowing them to "facet" the dataset by creating multiple conditional subplots, along with adding conveniences such as putting the legend outside the space of the plot by default. Each figure-level function corresponds to several axes-level functions that serve similar purposes, with a single parameter selecting the kind of plot to make. For example, the `displot` function can produce several different representations of a distribution, including a histogram, kernel density estimate, or empirical cumulative distribution function. The figure-level functions make use of a `seaborn` class that controls the layout of the figure, mediating between the axes-level functions and matplotlib. These classes are part of the public API and can be used directly for advanced applications.
