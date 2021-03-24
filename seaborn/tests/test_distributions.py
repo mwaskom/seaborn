@@ -940,7 +940,7 @@ class TestKDEPlotBivariate:
         for c1, c2 in zip(ax1.collections, ax2.collections):
             assert_array_equal(c1.get_segments(), c2.get_segments())
 
-    def test_bandwiddth(self, rng):
+    def test_bandwidth(self, rng):
 
         n = 100
         x, y = rng.multivariate_normal([0, 0], [(.2, .5), (.5, 2)], n).T
@@ -1674,6 +1674,12 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         histplot(flat_series, **kws, bins=30, ax=ax1)
         histplot(flat_series, **kws, bins=30, ax=ax2)
         assert get_lw(ax1) > get_lw(ax2)
+
+        f, ax1 = plt.subplots(figsize=(4, 5))
+        f, ax2 = plt.subplots(figsize=(4, 5))
+        histplot(flat_series, **kws, bins=30, ax=ax1)
+        histplot(10 ** flat_series, **kws, bins=30, log_scale=True, ax=ax2)
+        assert get_lw(ax1) == pytest.approx(get_lw(ax2))
 
     def test_bar_kwargs(self, flat_series):
 

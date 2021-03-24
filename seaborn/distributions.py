@@ -644,15 +644,18 @@ class _DistributionPlotter(VectorPlotter):
                 ax.autoscale_view()
 
                 # We will base everything on the minimum bin width
-                hist_metadata = [h.index.to_frame() for _, h in histograms.items()]
-                binwidth = min([
-                    h["widths"].min() for h in hist_metadata
-                ])
+                hist_metadata = pd.concat([
+                    # Use .items for generality over dict or df
+                    h.index.to_frame() for _, h in histograms.items()
+                ]).reset_index(drop=True)
+                thin_bar_idx = hist_metadata["widths"].idxmin()
+                binwidth = hist_metadata.loc[thin_bar_idx, "widths"]
+                left_edge = hist_metadata.loc[thin_bar_idx, "edges"]
 
                 # Convert binwidth from data coordinates to pixels
                 pts_x, pts_y = 72 / ax.figure.dpi * (
-                    ax.transData.transform([binwidth, binwidth])
-                    - ax.transData.transform([0, 0])
+                    ax.transData.transform([left_edge + binwidth] * 2)
+                    - ax.transData.transform([left_edge] * 2)
                 )
                 if self.data_variable == "x":
                     binwidth_points = pts_x
