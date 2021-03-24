@@ -56,8 +56,10 @@ multiple : {{"layer", "stack", "fill"}}
     """,
     log_scale="""
 log_scale : bool or number, or pair of bools or numbers
-    Set a log scale on the data axis (or axes, with bivariate data) with the
-    given base (default 10), and evaluate the KDE in log space.
+    Set axis scale(s) to log. A single value sets the data axis for univariate
+    distributions and both axes for bivariate distributions. A pair of values
+    sets each axis independently. Numeric values are interpreted as the desired
+    base (default 10). If `False`, defer to the existing Axes scale.
     """,
     legend="""
 legend : bool
@@ -1250,6 +1252,12 @@ class _DistributionPlotter(VectorPlotter):
             if "hue" in self.variables:
                 artist_kws["color"] = self._hue_map(sub_vars["hue"])
 
+            # Return the data variable to the linear domain
+            # This needs an automatic solution; see GH2409
+            if self._log_scaled(self.data_variable):
+                vals = np.power(10, vals)
+                vals[0] = -np.inf
+
             # Work out the orientation of the plot
             if self.data_variable == "x":
                 plot_args = vals, stat
@@ -1334,6 +1342,11 @@ class _DistributionPlotter(VectorPlotter):
         """Draw a rugplot along one axis of the plot."""
         vector = sub_data[var]
         n = len(vector)
+
+        # Return data to linear domain
+        # This needs an automatic solution; see GH2409
+        if self._log_scaled(var):
+            vector = np.power(10, vector)
 
         # We'll always add a single collection with varying colors
         if "hue" in self.variables:
