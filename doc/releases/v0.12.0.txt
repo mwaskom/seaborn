@@ -30,6 +30,8 @@ v0.12.0 (Unreleased)
 
 - |Fix| In :func:`histplot`, fixed a bug where using `shrink` with non-discrete bins shifted bar positions inaccurately (:pr:`2477`).
 
+- |Fix| In :func:`histplot`, fixed two bugs where automatically computed edge widths were too thick for log-scaled histograms and categorical histograms on the y axis (:pr:2522`).
+
 - |Fix| In :func:`displot`, fixed a bug where `common_norm` was ignored when `kind="hist"` and faceting was used without assigning `hue` (:pr:`2468`).
 
 - |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
