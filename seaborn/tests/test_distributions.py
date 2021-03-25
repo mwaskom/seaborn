@@ -1681,6 +1681,12 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
         histplot(10 ** flat_series, **kws, bins=30, log_scale=True, ax=ax2)
         assert get_lw(ax1) == pytest.approx(get_lw(ax2))
 
+        f, ax1 = plt.subplots(figsize=(4, 5))
+        f, ax2 = plt.subplots(figsize=(4, 5))
+        histplot(y=[0, 1, 1], **kws, discrete=True, ax=ax1)
+        histplot(y=["a", "b", "b"], **kws, ax=ax2)
+        assert get_lw(ax1) == pytest.approx(get_lw(ax2))
+
     def test_bar_kwargs(self, flat_series):
 
         lw = 2

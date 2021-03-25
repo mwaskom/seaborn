@@ -653,7 +653,7 @@ class _DistributionPlotter(VectorPlotter):
                 left_edge = hist_metadata.loc[thin_bar_idx, "edges"]
 
                 # Convert binwidth from data coordinates to pixels
-                pts_x, pts_y = 72 / ax.figure.dpi * (
+                pts_x, pts_y = 72 / ax.figure.dpi * abs(
                     ax.transData.transform([left_edge + binwidth] * 2)
                     - ax.transData.transform([left_edge] * 2)
                 )
