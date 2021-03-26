@@ -42,7 +42,7 @@ g = sns.relplot(
 g.savefig("paper_demo.pdf")
 ```
 
-![An example seaborn figure demonstrating some of its key features.](paper_demo.pdf)
+![An example `seaborn` figure demonstrating some of its key features. The image was generated using seaborn v0.11.1.](paper_demo.pdf)
 
 # Overview
 
