@@ -303,3 +303,13 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'statsmodels': ('https://www.statsmodels.org/stable/', None)
 }
+
+# Build notebooks if on Read the Docs
+import subprocess
+if os.getenv("READTHEDOCS") == "True":
+    print("Processing notebooks, please wait...")
+    nb_output = subprocess.check_output(
+        ["make", "notebooks"],
+        env={"NB_KERNEL": "python3", "PATH": os.environ["PATH"]},
+    )
+    print(nb_output.decode(errors="ignore"))
