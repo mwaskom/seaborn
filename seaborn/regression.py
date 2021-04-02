@@ -397,6 +397,8 @@ class _RegressionPlotter(_LinearPlotter):
         else:
             # TODO abstraction
             ci_kws = {"color": kws["color"]}
+            if "alpha" in kws:
+                ci_kws["alpha"] = kws["alpha"]
             ci_kws["linewidth"] = mpl.rcParams["lines.linewidth"] * 1.75
             kws.setdefault("s", 50)
 
