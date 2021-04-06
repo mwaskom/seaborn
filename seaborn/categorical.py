@@ -1440,6 +1440,10 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                         sd = np.std(stat_data)
                         confint.append((estimate - sd, estimate + sd))
 
+                    if ci == "iqr":
+                        q25, q75 = np.percentile(stat_data, [25 ,75])
+                        confint.append((q25, q75))
+
                     else:
 
                         boots = bootstrap(stat_data, func=estimator,
@@ -1490,6 +1494,10 @@ class _CategoricalStatPlotter(_CategoricalPlotter):
                             estimate = estimator(stat_data)
                             sd = np.std(stat_data)
                             confint[i].append((estimate - sd, estimate + sd))
+
+                        if ci == "iqr":
+                            q25, q75 = np.percentile(stat_data, [25 ,75])
+                            confint[i].append((q25, q75))
 
                         else:
 
