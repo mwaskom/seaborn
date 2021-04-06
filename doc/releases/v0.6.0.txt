@@ -2,9 +2,6 @@
 v0.6.0 (June 2015)
 ------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.19108.svg
-   :target: https://doi.org/10.5281/zenodo.19108
-
 This is a major release from 0.5. The main objective of this release was to unify the API for categorical plots, which means that there are some relatively large API changes in some of the older functions. See below for details of those changes, which may break code written for older versions of seaborn. There are also some new functions (:func:`stripplot`,  and :func:`countplot`), numerous enhancements to existing functions, and bug fixes.
 
 Additionally, the documentation has been completely revamped and expanded for the 0.6 release. Now, the API docs page for each function has multiple examples with embedded plots showing how to use the various options. These pages should be considered the most comprehensive resource for examples, and the tutorial pages are now streamlined and oriented towards a higher-level overview of the various features.
