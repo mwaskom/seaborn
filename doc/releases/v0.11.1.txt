@@ -2,9 +2,6 @@
 v0.11.1 (December 2020)
 -----------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4379347.svg
-   :target: https://doi.org/10.5281/zenodo.4379347
-
 This a bug fix release and is a recommended upgrade for all users on v0.11.0.
 
 - |Enhancement| Reduced the use of matplotlib global state in the :ref:`multi-grid classes <grid_api>` (:pr:`2388`).

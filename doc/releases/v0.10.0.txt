@@ -2,11 +2,6 @@
 v0.10.0 (January 2020)
 ----------------------
 
-
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3629446.svg
-   :target: https://doi.org/10.5281/zenodo.3629446
-
-
 This is a major update that is being released simultaneously with version 0.9.1. It has all of the same features (and bugs!) as 0.9.1, but there are important changes to the dependencies.
 
 Most notably, all support for Python 2 has now been dropped. Support for Python 3.5 has also been dropped. Seaborn is now strictly compatible with Python 3.6+.
