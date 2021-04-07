@@ -2,9 +2,6 @@
 v0.8.1 (September 2017)
 -----------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.883859.svg
-   :target: https://doi.org/10.5281/zenodo.883859
-
 - Added a warning in :class:`FacetGrid` when passing a categorical plot function without specifying ``order`` (or ``hue_order`` when ``hue`` is used), which is likely to produce a plot that is incorrect.
 
 - Improved compatibility between :class:`FacetGrid` or :class:`PairGrid` and interactive matplotlib backends so that the legend no longer remains inside the figure when using ``legend_out=True``.

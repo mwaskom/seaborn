@@ -2,9 +2,6 @@
 v0.9.0 (July 2018)
 ------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1313201.svg
-   :target: https://doi.org/10.5281/zenodo.1313201
-
 This is a major release with several substantial and long-desired new features. There are also updates/modifications to the themes and color palettes that give better consistency with matplotlib 2.0 and some notable API changes.
 
 New relational plots

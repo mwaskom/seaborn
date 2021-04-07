@@ -2,9 +2,6 @@
 v0.10.1 (April 2020)
 --------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3767070.svg
-   :target: https://doi.org/10.5281/zenodo.3767070
-
 This is minor release with bug fixes for issues identified since 0.10.0.
 
 - Fixed a bug that appeared within the bootstrapping algorithm on 32-bit systems.

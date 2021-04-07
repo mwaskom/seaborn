@@ -4,6 +4,8 @@ v0.11.2 (August 2021)
 
 This is primarily a bug fix release that addresses issues in the v0.11 series, although there are also a small number of targeted (and backwards-compatible) enhancements.
 
+A paper describing seaborn has been published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_. The paper serves as an introduction to the library and can be used to cite seaborn if it has been integral to a scientific publication.
+
 - |API| |Enhancement| In :func:`lmplot`, added a new `facet_kws` parameter and deprecated the `sharex`, `sharey`, and `legend_out` parameters from the function signature; pass them in a `facet_kws` dictionary instead (:pr:`2576`).
 
 - |Enhancement| In :class:`FacetGrid` and functions that use it, visibility of the interior axis labels is now disabled, and exterior axis labels are no longer erased when adding additional layers. This produces the same results for plots made by seaborn functions, but it may produce different (better, in most cases) results for customized facet plots (:pr:`2583`).

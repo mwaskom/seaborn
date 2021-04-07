@@ -18,7 +18,7 @@
 What's new in each version
 ==========================
 
-This page contains information about what has changed in each new version of ``seaborn``. Each release is also marked with a DOI from `Zenodo <https://doi.org/10.5281/zenodo.592845>`_, which can be used to cite the library.
+This page contains information about what has changed in each new version of ``seaborn``.
 
 .. raw:: html
 

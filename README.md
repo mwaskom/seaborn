@@ -7,8 +7,8 @@ seaborn: statistical data visualization
 
 [![PyPI Version](https://img.shields.io/pypi/v/seaborn.svg)](https://pypi.org/project/seaborn/)
 [![License](https://img.shields.io/pypi/l/seaborn.svg)](https://github.com/mwaskom/seaborn/blob/master/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.592845.svg)](https://doi.org/10.5281/zenodo.592845)
-[![Build Status](https://travis-ci.org/mwaskom/seaborn.svg?branch=master)](https://travis-ci.org/mwaskom/seaborn)
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.03021/status.svg)](https://doi.org/10.21105/joss.03021)
+![Tests](https://github.com/mwaskom/seaborn/workflows/CI/badge.svg)
 [![Code Coverage](https://codecov.io/gh/mwaskom/seaborn/branch/master/graph/badge.svg)](https://codecov.io/gh/mwaskom/seaborn)
 
 Seaborn is a Python visualization library based on matplotlib. It provides a high-level interface for drawing attractive statistical graphics.
@@ -22,7 +22,6 @@ Online documentation is available at [seaborn.pydata.org](https://seaborn.pydata
 The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [example gallery](https://seaborn.pydata.org/examples/index.html), [API reference](https://seaborn.pydata.org/api.html), and other useful information.
 
 To build the documentation locally, please refer to [`doc/README.md`](doc/README.md).
-
 
 Dependencies
 ------------
@@ -43,6 +42,11 @@ You may instead want to use the development version from Github:
 
     pip install git+https://github.com/mwaskom/seaborn.git#egg=seaborn
 
+
+Citing
+------
+
+A paper describing seaborn has been published in the [Journal of Open Source Software](https://joss.theoj.org/papers/10.21105/joss.03021). The paper provides an introduction to the key features of the library, and it can be used as a citation if seaborn proves integral to a scientific publication.
 
 Testing
 -------

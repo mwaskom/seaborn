@@ -2,10 +2,6 @@
 v0.9.1 (January 2020)
 ---------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3629445.svg
-   :target: https://doi.org/10.5281/zenodo.3629445
-
-
 This is a minor release with a number of bug fixes and adaptations to changes in seaborn's dependencies. There are also several new features.
 
 This is the final version of seaborn that will support Python 2.7 or 3.5.

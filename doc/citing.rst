@@ -6,27 +6,28 @@ Citing and logo
 Citing seaborn
 --------------
 
-If seaborn is integral to a scientific publication, we would appreciate a citation.
-While there is not currently a paper describing seaborn, the library can be cited
-using the following DOI:
+If seaborn is integral to a scientific publication, please cite it.
+A paper describing seaborn has been published in the `Journal of Open Source Software <https://joss.theoj.org/papers/10.21105/joss.03021>`_.
+Here is a ready-made BibTeX entry:
 
 .. highlight:: none
 
 ::
 
-    @software{waskom2020seaborn,
-        author       = {Michael Waskom and the seaborn development team},
-        title        = {mwaskom/seaborn},
-        month        = sep,
-        year         = 2020,
-        publisher    = {Zenodo},
-        version      = {latest},
-        doi          = {10.5281/zenodo.592845},
-        url          = {https://doi.org/10.5281/zenodo.592845},
-    }
+  @article{Waskom2021,
+      doi = {10.21105/joss.03021},
+      url = {https://doi.org/10.21105/joss.03021},
+      year = {2021},
+      publisher = {The Open Journal},
+      volume = {6},
+      number = {60},
+      pages = {3021},
+      author = {Michael L. Waskom},
+      title = {seaborn: statistical data visualization},
+      journal = {Journal of Open Source Software}
+   }
 
-Visit the `Zenodo page <https://zenodo.org/record/592845/>`_ for
-version-specific DOIs and contributor lists.
+In most situations where seaborn is cited, a citation to `matplotlib <https://matplotlib.org/stable/citing.html>`_ would also be appropriate.
 
 Logo files
 ----------

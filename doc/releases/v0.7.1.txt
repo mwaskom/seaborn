@@ -2,9 +2,6 @@
 v0.7.1 (June 2016)
 -------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.54844.svg
-   :target: https://doi.org/10.5281/zenodo.54844
-
 - Added the ability to put "caps" on the error bars that are drawn by :func:`barplot` or :func:`pointplot` (and, by extension, ``factorplot``). Additionally, the line width of the error bars can now be controlled. These changes involve the new parameters ``capsize`` and ``errwidth``. See the `github pull request (#898) <https://github.com/mwaskom/seaborn/pull/898>`_ for examples of usage.
 
 - Improved the row and column colors display in :func:`clustermap`. It is now possible to pass Pandas objects for these elements and, when possible, the semantic information in the Pandas objects will be used to add labels to the plot. When Pandas objects are used, the color data is matched against the main heatmap based on the index, not on position. This is more accurate, but it may lead to different results if current code assumed positional matching.

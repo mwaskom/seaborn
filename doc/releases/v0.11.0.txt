@@ -2,9 +2,6 @@
 v0.11.0 (September 2020)
 ------------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4019146.svg
-   :target: https://doi.org/10.5281/zenodo.4019146
-
 This is a major release with several important new features, enhancements to existing functions, and changes to the library. Highlights include an overhaul and modernization of the distributions plotting functions, more flexible data specification, new colormaps, and better narrative documentation.
 
 For an overview of the new features and a guide to updating, see `this Medium post <https://medium.com/@michaelwaskom/announcing-the-release-of-seaborn-0-11-3df0341af042?source=friends_link&sk=85146c0b2f01d2b41d214f8c3835b697>`_.

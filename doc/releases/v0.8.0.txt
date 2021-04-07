@@ -2,9 +2,6 @@
 v0.8.0 (July 2017)
 ------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.824567.svg
-   :target: https://doi.org/10.5281/zenodo.824567
-
 - The default style is no longer applied when seaborn is imported. It is now necessary to explicitly call :func:`set` or one or more of :func:`set_style`, :func:`set_context`, and :func:`set_palette`. Correspondingly, the ``seaborn.apionly`` module has been deprecated.
 
 - Changed the behavior of :func:`heatmap` (and by extension :func:`clustermap`) when plotting divergent dataesets (i.e. when the ``center`` parameter is used). Instead of extending the lower and upper limits of the colormap to be symmetrical around the ``center`` value, the colormap is modified so that its middle color corresponds to ``center``. This means that the full range of the colormap will not be used (unless the data or specified ``vmin`` and ``vmax`` are symmetric), but the upper and lower limits of the colorbar will correspond to the range of the data. See the Github pull request `(#1184) <https://github.com/mwaskom/seaborn/pull/1184>`_ for examples of the behavior.

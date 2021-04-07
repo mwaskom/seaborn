@@ -2,9 +2,6 @@
 v0.7.0 (January 2016)
 ---------------------
 
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.45133.svg
-   :target: https://doi.org/10.5281/zenodo.45133
-
 This is a major release from 0.6. The main new feature is :func:`swarmplot` which implements the beeswarm approach for drawing categorical scatterplots. There are also some performance improvements, bug fixes, and updates for compatibility with new versions of dependencies.
 
 - Added the :func:`swarmplot` function, which draws beeswarm plots. These are categorical scatterplots, similar to those produced by :func:`stripplot`, but position of the points on the categorical axis is chosen to avoid overlapping points. See the :ref:`categorical plot tutorial <categorical_tutorial>` for more information.
