@@ -14,4 +14,4 @@ If you have encountered a bug in seaborn, please report it on the [Github issue 
 New features
 ------------
 
-If you think there is a new feature that should be added to seaborn, you can open an issue to discuss it. However, seaborn's development has become increasingly conservative, and the answer to most feature requests or proposed additions is "no". Polite requests with an explanation of the proposed feature's virtues will usually get an explanation; feature requests that say "I would like feature X, you need to add it" typically won't.
+If you think there is a new feature that should be added to seaborn, you can open an issue to discuss it. But please be aware that current development efforts are mostly focused on standardizing the API and internals, and there may be relatively low enthusiasm for novel features that do not fit well into short- and medium-term development plans.

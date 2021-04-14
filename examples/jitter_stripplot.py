@@ -21,12 +21,15 @@ sns.despine(bottom=True, left=True)
 sns.stripplot(x="value", y="measurement", hue="species",
               data=iris, dodge=True, alpha=.25, zorder=1)
 
-# Show the conditional means
+# Show the conditional means, aligning each pointplot in the
+# center of the strips by adjusting the width allotted to each
+# category (.8 by default) by the number of hue levels
 sns.pointplot(x="value", y="measurement", hue="species",
-              data=iris, dodge=.532, join=False, palette="dark",
+              data=iris, dodge=.8 - .8 / 3,
+              join=False, palette="dark",
               markers="d", scale=.75, ci=None)
 
-# Improve the legend 
+# Improve the legend
 handles, labels = ax.get_legend_handles_labels()
 ax.legend(handles[3:], labels[3:], title="species",
           handletextpad=0, columnspacing=1,
