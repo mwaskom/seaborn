@@ -111,7 +111,7 @@ def color_palette(palette=None, n_colors=None, desat=None, as_cmap=False):
 
     Parameters
     ----------
-    palette: None, string, or sequence, optional
+    palette : None, string, or sequence, optional
         Name of palette or None to return current palette. If a sequence, input
         colors are used but possibly cycled and desaturated.
     n_colors : int, optional

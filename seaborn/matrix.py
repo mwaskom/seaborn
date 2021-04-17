@@ -972,9 +972,6 @@ class ClusterGrid(Grid):
         axis : int
             Which axis to normalize across. If 0, normalize across rows, if 1,
             normalize across columns.
-        vmin : int
-            If 0, then subtract the minimum of the data before dividing by
-            the range.
 
         Returns
         -------
