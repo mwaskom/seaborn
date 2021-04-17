@@ -1677,7 +1677,7 @@ class JointGrid(object):
 
         Parameters
         ----------
-        joint_func, marginal_func: callables
+        joint_func, marginal_func : callables
             Functions to draw the bivariate and univariate plots. See methods
             referenced above for information about the required characteristics
             of these functions.
