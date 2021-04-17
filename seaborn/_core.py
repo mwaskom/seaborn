@@ -1287,8 +1287,8 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     variable. Practically, this is used when determining the axis for
     numerical aggregation.
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     x, y : Vector data or None
         Positional data vectors for the plot.
     orient : string or None
