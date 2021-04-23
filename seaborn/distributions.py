@@ -634,6 +634,18 @@ class _DistributionPlotter(VectorPlotter):
 
             # Now we handle linewidth, which depends on the scaling of the plot
 
+            # We will base everything on the minimum bin width
+            hist_metadata = pd.concat([
+                # Use .items for generality over dict or df
+                h.index.to_frame() for _, h in histograms.items()
+            ]).reset_index(drop=True)
+            thin_bar_idx = hist_metadata["widths"].idxmin()
+            binwidth = hist_metadata.loc[thin_bar_idx, "widths"]
+            left_edge = hist_metadata.loc[thin_bar_idx, "edges"]
+
+            # Set initial value
+            default_linewidth = math.inf
+
             # Loop through subsets based only on facet variables
             for sub_vars, _ in self.iter_data():
 
@@ -642,15 +654,6 @@ class _DistributionPlotter(VectorPlotter):
                 # Needed in some cases to get valid transforms.
                 # Innocuous in other cases?
                 ax.autoscale_view()
-
-                # We will base everything on the minimum bin width
-                hist_metadata = pd.concat([
-                    # Use .items for generality over dict or df
-                    h.index.to_frame() for _, h in histograms.items()
-                ]).reset_index(drop=True)
-                thin_bar_idx = hist_metadata["widths"].idxmin()
-                binwidth = hist_metadata.loc[thin_bar_idx, "widths"]
-                left_edge = hist_metadata.loc[thin_bar_idx, "edges"]
 
                 # Convert binwidth from data coordinates to pixels
                 pts_x, pts_y = 72 / ax.figure.dpi * abs(
@@ -664,24 +667,24 @@ class _DistributionPlotter(VectorPlotter):
 
                 # The relative size of the lines depends on the appearance
                 # This is a provisional value and may need more tweaking
-                default_linewidth = .1 * binwidth_points
+                default_linewidth = min(.1 * binwidth_points, default_linewidth)
 
-                # Set the attributes
-                for bar in hist_artists:
+            # Set the attributes
+            for bar in hist_artists:
 
-                    # Don't let the lines get too thick
-                    max_linewidth = bar.get_linewidth()
-                    if not fill:
-                        max_linewidth *= 1.5
+                # Don't let the lines get too thick
+                max_linewidth = bar.get_linewidth()
+                if not fill:
+                    max_linewidth *= 1.5
 
-                    linewidth = min(default_linewidth, max_linewidth)
+                linewidth = min(default_linewidth, max_linewidth)
 
-                    # If not filling, don't let lines dissapear
-                    if not fill:
-                        min_linewidth = .5
-                        linewidth = max(linewidth, min_linewidth)
+                # If not filling, don't let lines dissapear
+                if not fill:
+                    min_linewidth = .5
+                    linewidth = max(linewidth, min_linewidth)
 
-                    bar.set_linewidth(linewidth)
+                bar.set_linewidth(linewidth)
 
         # --- Finalize the plot ----
 
