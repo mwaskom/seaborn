@@ -1314,7 +1314,7 @@ class TestClustermap:
     def test_tree_kws(self):
 
         rgb = (1, .5, .2)
-        g = mat.clustermap(self.df_norm, tree_kws=dict(color=rgb))
+        g = mat.clustermap(self.df_norm, tree_kws=dict(colors=rgb))
         for ax in [g.ax_col_dendrogram, g.ax_row_dendrogram]:
             tree, = ax.collections
             assert tuple(tree.get_color().squeeze())[:3] == rgb
