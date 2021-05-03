@@ -324,7 +324,7 @@ class _DistributionPlotter(VectorPlotter):
             if math.isclose(observation_variance, 0) or np.isnan(observation_variance):
                 msg = (
                     "Dataset has 0 variance; skipping density estimate. "
-                    "Pass `warn_singular=False` in `kdeplot` to disable this warning."
+                    "Pass `warn_singular=False` to disable this warning."
                 )
                 if warn_singular:
                     warnings.warn(msg, UserWarning)
@@ -435,6 +435,7 @@ class _DistributionPlotter(VectorPlotter):
                 common_bins,
                 kde_kws,
                 log_scale,
+                warn_singular=False,
             )
 
         # First pass through the data to compute the histograms
@@ -1051,7 +1052,7 @@ class _DistributionPlotter(VectorPlotter):
             if any(math.isclose(x, 0) for x in variance) or variance.isna().any():
                 msg = (
                     "Dataset has 0 variance; skipping density estimate. "
-                    "Pass `warn_singular=False` in `kdeplot` to disable this warning."
+                    "Pass `warn_singular=False` to disable this warning."
                 )
                 if warn_singular:
                     warnings.warn(msg, UserWarning)
