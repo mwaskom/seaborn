@@ -1485,12 +1485,14 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
     def test_kde_singular_data(self):
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(None) as record:
             ax = histplot(x=np.ones(10), kde=True)
+        assert not record
         assert not ax.lines
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(None) as record:
             ax = histplot(x=[5], kde=True)
+        assert not record
         assert not ax.lines
 
     def test_element_default(self, long_df):
