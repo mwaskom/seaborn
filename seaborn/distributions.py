@@ -283,6 +283,7 @@ class _DistributionPlotter(VectorPlotter):
         common_grid,
         estimate_kws,
         log_scale,
+        warn_singular=True,
     ):
 
         # Initialize the estimator object
@@ -307,8 +308,12 @@ class _DistributionPlotter(VectorPlotter):
 
             observation_variance = observations.var()
             if math.isclose(observation_variance, 0) or np.isnan(observation_variance):
-                msg = "Dataset has 0 variance; skipping density estimate."
-                warnings.warn(msg, UserWarning)
+                msg = (
+                    "Dataset has 0 variance; skipping density estimate. "
+                    "Pass `warn_singular=False` to disable this warning."
+                )
+                if warn_singular:
+                    warnings.warn(msg, UserWarning)
                 continue
 
             # Extract the weights for this subset of observations
@@ -416,6 +421,7 @@ class _DistributionPlotter(VectorPlotter):
                 common_bins,
                 kde_kws,
                 log_scale,
+                warn_singular=False,
             )
 
         # First pass through the data to compute the histograms
@@ -886,6 +892,7 @@ class _DistributionPlotter(VectorPlotter):
         multiple,
         common_norm,
         common_grid,
+        warn_singular,
         fill,
         legend,
         estimate_kws,
@@ -921,6 +928,7 @@ class _DistributionPlotter(VectorPlotter):
             common_grid,
             estimate_kws,
             log_scale,
+            warn_singular,
         )
 
         # Adjust densities based on the `multiple` rule
@@ -1053,6 +1061,7 @@ class _DistributionPlotter(VectorPlotter):
         color,
         legend,
         cbar,
+        warn_singular,
         cbar_ax,
         cbar_kws,
         estimate_kws,
@@ -1086,8 +1095,12 @@ class _DistributionPlotter(VectorPlotter):
             # Check that KDE will not error out
             variance = observations[["x", "y"]].var()
             if any(math.isclose(x, 0) for x in variance) or variance.isna().any():
-                msg = "Dataset has 0 variance; skipping density estimate."
-                warnings.warn(msg, UserWarning)
+                msg = (
+                    "Dataset has 0 variance; skipping density estimate. "
+                    "Pass `warn_singular=False` to disable this warning."
+                )
+                if warn_singular:
+                    warnings.warn(msg, UserWarning)
                 continue
 
             # Estimate the density of observations at this level
@@ -1634,6 +1647,9 @@ def kdeplot(
     # Renamed params
     data=None, data2=None,
 
+    # New in v0.12
+    warn_singular=True,
+
     **kwargs,
 ):
 
@@ -1754,6 +1770,7 @@ def kdeplot(
             common_grid=common_grid,
             fill=fill,
             legend=legend,
+            warn_singular=warn_singular,
             estimate_kws=estimate_kws,
             **plot_kws,
         )
@@ -1767,6 +1784,7 @@ def kdeplot(
             thresh=thresh,
             legend=legend,
             color=color,
+            warn_singular=warn_singular,
             cbar=cbar,
             cbar_ax=cbar_ax,
             cbar_kws=cbar_kws,
@@ -1862,6 +1880,9 @@ fill : bool or None
     If True, fill in the area under univariate density curves or between
     bivariate contours. If None, the default depends on ``multiple``.
 {params.core.data}
+warn_singular : bool
+    If True, issue a warning when trying to estimate the density of data
+    with zero variance.
 kwargs
     Other keyword arguments are passed to one of the following matplotlib
     functions:
