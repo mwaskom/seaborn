@@ -264,7 +264,7 @@ class Histogram:
             )
         return bin_edges
 
-    def define_bin_edges(self, x1, x2=None, weights=None, cache=True):
+    def define_bin_params(self, x1, x2=None, weights=None, cache=True):
         """Given data, return numpy.histogram parameters to define bins."""
         if x2 is None:
 
@@ -328,7 +328,7 @@ class Histogram:
         """Inner function for histogram of two variables."""
         bin_kws = self.bin_kws
         if bin_kws is None:
-            bin_kws = self.define_bin_edges(x1, x2, cache=False)
+            bin_kws = self.define_bin_params(x1, x2, cache=False)
 
         density = self.stat == "density"
 
@@ -360,7 +360,7 @@ class Histogram:
         """Inner function for histogram of one variable."""
         bin_kws = self.bin_kws
         if bin_kws is None:
-            bin_kws = self.define_bin_edges(x, weights=weights, cache=False)
+            bin_kws = self.define_bin_params(x, weights=weights, cache=False)
 
         density = self.stat == "density"
         hist, bin_edges = np.histogram(
