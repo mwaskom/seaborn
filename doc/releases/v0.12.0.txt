@@ -20,6 +20,8 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 (:pr:`2461`).
 
+- |Enhancement| In :func:`kdeplot`, added the `warn_singular` parameter to allow silencing of the warning about data with zero variance (:pr:`2566`).
+
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).

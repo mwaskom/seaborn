@@ -390,6 +390,10 @@ class TestKDEPlotUnivariate(SharedAxesLevelTests):
             ax = kdeplot(x=[5])
         assert not ax.lines
 
+        with pytest.warns(None) as record:
+            ax = kdeplot(x=[5], warn_singular=False)
+        assert not record
+
     def test_variable_assignment(self, long_df):
 
         f, ax = plt.subplots()
@@ -887,6 +891,10 @@ class TestKDEPlotBivariate:
         with pytest.warns(UserWarning):
             ax = dist.kdeplot(x=[5], y=[6])
         assert not ax.lines
+
+        with pytest.warns(None) as record:
+            ax = kdeplot(x=[5], y=[7], warn_singular=False)
+        assert not record
 
     def test_fill_artists(self, long_df):
 
@@ -1477,12 +1485,14 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
 
     def test_kde_singular_data(self):
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(None) as record:
             ax = histplot(x=np.ones(10), kde=True)
+        assert not record
         assert not ax.lines
 
-        with pytest.warns(UserWarning):
+        with pytest.warns(None) as record:
             ax = histplot(x=[5], kde=True)
+        assert not record
         assert not ax.lines
 
     def test_element_default(self, long_df):

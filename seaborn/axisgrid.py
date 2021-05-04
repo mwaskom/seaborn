@@ -2012,6 +2012,7 @@ def pairplot(
         grid.map_diag(histplot, **diag_kws)
     elif diag_kind == "kde":
         diag_kws.setdefault("fill", True)
+        diag_kws.setdefault("warn_singular", False)
         grid.map_diag(kdeplot, **diag_kws)
 
     # Maybe plot on the off-diagonals
@@ -2028,6 +2029,7 @@ def pairplot(
         plotter(regplot, **plot_kws)
     elif kind == "kde":
         from .distributions import kdeplot  # Avoid circular import
+        plot_kws.setdefault("warn_singular", False)
         plotter(kdeplot, **plot_kws)
     elif kind == "hist":
         from .distributions import histplot  # Avoid circular import
@@ -2131,6 +2133,7 @@ def jointplot(
             marg_func = histplot
         else:
             marg_func = kdeplot
+            marginal_kws.setdefault("warn_singular", False)
             marginal_kws.setdefault("fill", True)
 
         marginal_kws.setdefault("color", color)
@@ -2163,6 +2166,7 @@ def jointplot(
     elif kind.startswith("kde"):
 
         joint_kws.setdefault("color", color)
+        joint_kws.setdefault("warn_singular", False)
         grid.plot_joint(kdeplot, **joint_kws)
 
         marginal_kws.setdefault("color", color)
