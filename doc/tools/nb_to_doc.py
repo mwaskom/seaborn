@@ -128,6 +128,8 @@ if __name__ == "__main__":
 
     # Remove plain text execution result outputs
     for cell in nb.get("cells", {}):
+        if "show-output" in cell["metadata"].get("tags", []):
+            continue
         fields = cell.get("outputs", [])
         for field in fields:
             if field["output_type"] == "execute_result":
