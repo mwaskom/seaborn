@@ -401,7 +401,7 @@ class _DistributionPlotter(VectorPlotter):
 
             if common_bins:
                 all_observations = all_data[self.data_variable]
-                estimator.define_bin_edges(
+                estimator.define_bin_params(
                     all_observations,
                     weights=all_data.get("weights", None),
                 )
@@ -747,7 +747,7 @@ class _DistributionPlotter(VectorPlotter):
         if set(self.variables) - {"x", "y"}:
             all_data = self.comp_data.dropna()
             if common_bins:
-                estimator.define_bin_edges(
+                estimator.define_bin_params(
                     all_data["x"],
                     all_data["y"],
                     all_data.get("weights", None),
