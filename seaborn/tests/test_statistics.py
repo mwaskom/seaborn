@@ -164,34 +164,36 @@ class TestHistogram(DistributionFixtures):
     def test_string_bins(self, x):
 
         h = Histogram(bins="sqrt")
-        edges = h.define_bin_edges(x)
-        assert_array_equal(edges, np.histogram_bin_edges(x, "sqrt"))
+        bin_kws = h.define_bin_params(x)
+        assert bin_kws["range"] == (x.min(), x.max())
+        assert bin_kws["bins"] == int(np.sqrt(len(x)))
 
     def test_int_bins(self, x):
 
         n = 24
         h = Histogram(bins=n)
-        edges = h.define_bin_edges(x)
-        assert len(edges) == n + 1
+        bin_kws = h.define_bin_params(x)
+        assert bin_kws["range"] == (x.min(), x.max())
+        assert bin_kws["bins"] == n
 
     def test_array_bins(self, x):
 
         bins = [-3, -2, 1, 2, 3]
         h = Histogram(bins=bins)
-        edges = h.define_bin_edges(x)
-        assert_array_equal(edges, bins)
+        bin_kws = h.define_bin_params(x)
+        assert_array_equal(bin_kws["bins"], bins)
 
     def test_bivariate_string_bins(self, x, y):
 
         s1, s2 = "sqrt", "fd"
 
         h = Histogram(bins=s1)
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert_array_equal(e1, np.histogram_bin_edges(x, s1))
         assert_array_equal(e2, np.histogram_bin_edges(y, s1))
 
         h = Histogram(bins=(s1, s2))
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert_array_equal(e1, np.histogram_bin_edges(x, s1))
         assert_array_equal(e2, np.histogram_bin_edges(y, s2))
 
@@ -200,12 +202,12 @@ class TestHistogram(DistributionFixtures):
         b1, b2 = 5, 10
 
         h = Histogram(bins=b1)
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert len(e1) == b1 + 1
         assert len(e2) == b1 + 1
 
         h = Histogram(bins=(b1, b2))
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert len(e1) == b1 + 1
         assert len(e2) == b2 + 1
 
@@ -215,12 +217,12 @@ class TestHistogram(DistributionFixtures):
         b2 = [-5, -2, 3, 6]
 
         h = Histogram(bins=b1)
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert_array_equal(e1, b1)
         assert_array_equal(e2, b1)
 
         h = Histogram(bins=(b1, b2))
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert_array_equal(e1, b1)
         assert_array_equal(e2, b2)
 
@@ -228,20 +230,22 @@ class TestHistogram(DistributionFixtures):
 
         binwidth = .5
         h = Histogram(binwidth=binwidth)
-        edges = h.define_bin_edges(x)
-        assert np.all(np.diff(edges) == binwidth)
+        bin_kws = h.define_bin_params(x)
+        n_bins = bin_kws["bins"]
+        left, right = bin_kws["range"]
+        assert (right - left) / n_bins == pytest.approx(binwidth)
 
     def test_bivariate_binwidth(self, x, y):
 
         w1, w2 = .5, 1
 
         h = Histogram(binwidth=w1)
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert np.all(np.diff(e1) == w1)
         assert np.all(np.diff(e2) == w1)
 
         h = Histogram(binwidth=(w1, w2))
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert np.all(np.diff(e1) == w1)
         assert np.all(np.diff(e2) == w2)
 
@@ -249,23 +253,22 @@ class TestHistogram(DistributionFixtures):
 
         binrange = (-4, 4)
         h = Histogram(binrange=binrange)
-        edges = h.define_bin_edges(x)
-        assert edges.min() == binrange[0]
-        assert edges.max() == binrange[1]
+        bin_kws = h.define_bin_params(x)
+        assert bin_kws["range"] == binrange
 
     def test_bivariate_binrange(self, x, y):
 
         r1, r2 = (-4, 4), (-10, 10)
 
         h = Histogram(binrange=r1)
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert e1.min() == r1[0]
         assert e1.max() == r1[1]
         assert e2.min() == r1[0]
         assert e2.max() == r1[1]
 
         h = Histogram(binrange=(r1, r2))
-        e1, e2 = h.define_bin_edges(x, y)
+        e1, e2 = h.define_bin_params(x, y)["bins"]
         assert e1.min() == r1[0]
         assert e1.max() == r1[1]
         assert e2.min() == r2[0]
@@ -275,9 +278,9 @@ class TestHistogram(DistributionFixtures):
 
         x = rng.binomial(20, .5, 100)
         h = Histogram(discrete=True)
-        edges = h.define_bin_edges(x)
-        expected_edges = np.arange(x.min(), x.max() + 2) - .5
-        assert_array_equal(edges, expected_edges)
+        bin_kws = h.define_bin_params(x)
+        assert bin_kws["range"] == (x.min() - .5, x.max() + .5)
+        assert bin_kws["bins"] == (x.max() - x.min() + 1)
 
     def test_histogram(self, x):
 

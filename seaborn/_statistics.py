@@ -244,7 +244,7 @@ class Histogram:
         self.discrete = discrete
         self.cumulative = cumulative
 
-        self.bin_edges = None
+        self.bin_kws = None
 
     def _define_bin_edges(self, x, weights, bins, binwidth, binrange, discrete):
         """Inner function that takes bin parameters as arguments."""
@@ -264,13 +264,20 @@ class Histogram:
             )
         return bin_edges
 
-    def define_bin_edges(self, x1, x2=None, weights=None, cache=True):
-        """Given data, return the edges of the histogram bins."""
+    def define_bin_params(self, x1, x2=None, weights=None, cache=True):
+        """Given data, return numpy.histogram parameters to define bins."""
         if x2 is None:
 
             bin_edges = self._define_bin_edges(
                 x1, weights, self.bins, self.binwidth, self.binrange, self.discrete,
             )
+
+            if isinstance(self.bins, (str, Number)):
+                n_bins = len(bin_edges) - 1
+                bin_range = bin_edges.min(), bin_edges.max()
+                bin_kws = dict(bins=n_bins, range=bin_range)
+            else:
+                bin_kws = dict(bins=bin_edges)
 
         else:
 
@@ -310,23 +317,23 @@ class Histogram:
                     x, weights, bins, binwidth, binrange, discrete,
                 ))
 
-            bin_edges = tuple(bin_edges)
+            bin_kws = dict(bins=tuple(bin_edges))
 
         if cache:
-            self.bin_edges = bin_edges
+            self.bin_kws = bin_kws
 
-        return bin_edges
+        return bin_kws
 
     def _eval_bivariate(self, x1, x2, weights):
         """Inner function for histogram of two variables."""
-        bin_edges = self.bin_edges
-        if bin_edges is None:
-            bin_edges = self.define_bin_edges(x1, x2, cache=False)
+        bin_kws = self.bin_kws
+        if bin_kws is None:
+            bin_kws = self.define_bin_params(x1, x2, cache=False)
 
         density = self.stat == "density"
 
-        hist, _, _ = np.histogram2d(
-            x1, x2, bin_edges, weights=weights, density=density
+        hist, *bin_edges = np.histogram2d(
+            x1, x2, **bin_kws, weights=weights, density=density
         )
 
         area = np.outer(
@@ -351,13 +358,13 @@ class Histogram:
 
     def _eval_univariate(self, x, weights):
         """Inner function for histogram of one variable."""
-        bin_edges = self.bin_edges
-        if bin_edges is None:
-            bin_edges = self.define_bin_edges(x, weights=weights, cache=False)
+        bin_kws = self.bin_kws
+        if bin_kws is None:
+            bin_kws = self.define_bin_params(x, weights=weights, cache=False)
 
         density = self.stat == "density"
-        hist, _ = np.histogram(
-            x, bin_edges, weights=weights, density=density,
+        hist, bin_edges = np.histogram(
+            x, **bin_kws, weights=weights, density=density,
         )
 
         if self.stat == "probability":
@@ -376,7 +383,7 @@ class Histogram:
         return hist, bin_edges
 
     def __call__(self, x1, x2=None, weights=None):
-        """Count the occurrances in each bin, maybe normalize."""
+        """Count the occurrences in each bin, maybe normalize."""
         if x2 is None:
             return self._eval_univariate(x1, weights)
         else:

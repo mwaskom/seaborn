@@ -1750,7 +1750,7 @@ class TestHistPlotBivariate:
         ax = histplot(long_df, x="x", y="y", hue="c")
 
         hist = Histogram()
-        hist.define_bin_edges(long_df["x"], long_df["y"])
+        hist.define_bin_params(long_df["x"], long_df["y"])
 
         for i, sub_df in long_df.groupby("c"):
 
@@ -1842,7 +1842,7 @@ class TestHistPlotBivariate:
         )
 
         hist = Histogram(stat="density")
-        hist.define_bin_edges(long_df["x"], long_df["y"])
+        hist.define_bin_params(long_df["x"], long_df["y"])
 
         for i, sub_df in long_df.groupby("c"):
 
@@ -1862,11 +1862,11 @@ class TestHistPlotBivariate:
         )
 
         hist = Histogram()
-        hist.define_bin_edges(long_df["x"], long_df["y"])
+        bin_kws = hist.define_bin_params(long_df["x"], long_df["y"])
 
         for i, sub_df in long_df.groupby("c"):
 
-            sub_hist = Histogram(bins=hist.bin_edges, stat=stat)
+            sub_hist = Histogram(bins=bin_kws["bins"], stat=stat)
 
             mesh = ax.collections[i]
             mesh_data = mesh.get_array()
@@ -1943,7 +1943,7 @@ class TestHistPlotBivariate:
         kws = dict(data=long_df, x="x", y="y", hue="c", bins=4)
 
         hist = Histogram(bins=kws["bins"])
-        hist.define_bin_edges(long_df["x"], long_df["y"])
+        hist.define_bin_params(long_df["x"], long_df["y"])
         full_counts, _ = hist(long_df["x"], long_df["y"])
 
         sub_counts = []
