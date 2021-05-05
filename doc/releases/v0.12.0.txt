@@ -24,6 +24,8 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |Enhancement| In :func:`kdeplot`, added the `warn_singular` parameter to allow silencing of the warning about data with zero variance (:pr:`2566`).
 
+- |Enhancement| In :class:`FacetGrid`, :class:`PairGrid`, and functions that use them, the matplotlib `figure.autolayout` parameter is disabled to avoid having the legend overlap the plot (:pr:`2571`).
+
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
