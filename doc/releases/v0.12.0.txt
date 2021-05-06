@@ -43,6 +43,8 @@ v0.12.0 (Unreleased)
 
 - |Fix| In :func:`displot`, fixed a bug where `common_norm` was ignored when `kind="hist"` and faceting was used without assigning `hue` (:pr:`2468`).
 
+- |Fix| In :func:`heatmap`, fixed a bug where vertically-rotated y-axis tick labels would be misaligned with their rows (:pr:`2574`).
+
 - |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
 
 - |Docs| Improved the API documentation for theme-related functions (:pr:`2573`).
