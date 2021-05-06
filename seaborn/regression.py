@@ -569,7 +569,7 @@ def lmplot(
     units=None, seed=None, order=1, logistic=False, lowess=False,
     robust=False, logx=False, x_partial=None, y_partial=None,
     truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
-    line_kws=None, size=None
+    line_kws=None, size=None, facet_kws=None,
 ):
 
     # Handle deprecations
@@ -587,13 +587,19 @@ def lmplot(
     cols = np.unique([a for a in need_cols if a is not None]).tolist()
     data = data[cols]
 
+    if facet_kws is None:
+        # TODO deprecate some parameters (sharex, sharey?) from the lmplot
+        # signature and require them to be passed as part of facet_kws?
+        facet_kws = {}
+
     # Initialize the grid
     facets = FacetGrid(
         data, row=row, col=col, hue=hue,
         palette=palette,
         row_order=row_order, col_order=col_order, hue_order=hue_order,
         height=height, aspect=aspect, col_wrap=col_wrap,
-        sharex=sharex, sharey=sharey, legend_out=legend_out
+        sharex=sharex, sharey=sharey, legend_out=legend_out,
+        **facet_kws,
     )
 
     # Add the markers here as FacetGrid has figured out how many levels of the
@@ -695,6 +701,8 @@ lmplot.__doc__ = dedent("""\
     {truncate}
     {xy_jitter}
     {scatter_line_kws}
+    facet_kws : dict
+        Dictionary of keyword arguments for :class:`FacetGrid`.
 
     See Also
     --------

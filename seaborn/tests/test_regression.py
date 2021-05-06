@@ -622,6 +622,15 @@ class TestRegressionPlots:
         assert ax1.get_ylim()[0] > ax2.get_ylim()[0]
         assert ax1.get_ylim()[1] < ax2.get_ylim()[1]
 
+    def test_lmplot_facet_kws(self):
+
+        xlim = -4, 20
+        g = lm.lmplot(
+            data=self.df, x="y", y="y", col="h", facet_kws={"xlim": xlim}
+        )
+        for ax in g.axes.flat:
+            assert ax.get_xlim() == xlim
+
     def test_residplot(self):
 
         x, y = self.df.x, self.df.y
