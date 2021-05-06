@@ -604,7 +604,7 @@ class TestRegressionPlots:
 
         g = lm.lmplot(
             data=self.df, x="x", y="y", hue="g", col="h",
-            sharex=sharex, truncate=False
+            truncate=False, facet_kws=dict(sharex=sharex),
         )
 
         for ax in g.axes.flat:
@@ -620,7 +620,8 @@ class TestRegressionPlots:
             z=["a", "a", "a", "b", "b", "b"],
         ))
 
-        g = lm.lmplot(data=df, x="x", y="y", col="z", sharey=False)
+        with pytest.warns(UserWarning):
+            g = lm.lmplot(data=df, x="x", y="y", col="z", sharey=False)
         ax1, ax2 = g.axes.flat
         assert ax1.get_ylim()[0] > ax2.get_ylim()[0]
         assert ax1.get_ylim()[1] < ax2.get_ylim()[1]
