@@ -419,7 +419,8 @@ class _RegressionPlotter(_LinearPlotter):
 
         # Draw the regression line and confidence interval
         line, = ax.plot(grid, yhat, **kws)
-        line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
+        if not self.truncate:
+            line.sticky_edges.x[:] = edges  # Prevent mpl from adding margin
         if err_bands is not None:
             ax.fill_between(grid, *err_bands, facecolor=fill_color, alpha=.15)
 
@@ -562,13 +563,13 @@ def lmplot(
     data=None,
     hue=None, col=None, row=None,  # TODO move before data once * is enforced
     palette=None, col_wrap=None, height=5, aspect=1, markers="o",
-    sharex=True, sharey=True, hue_order=None, col_order=None, row_order=None,
-    legend=True, legend_out=True, x_estimator=None, x_bins=None,
+    sharex=None, sharey=None, hue_order=None, col_order=None, row_order=None,
+    legend=True, legend_out=None, x_estimator=None, x_bins=None,
     x_ci="ci", scatter=True, fit_reg=True, ci=95, n_boot=1000,
     units=None, seed=None, order=1, logistic=False, lowess=False,
     robust=False, logx=False, x_partial=None, y_partial=None,
     truncate=True, x_jitter=None, y_jitter=None, scatter_kws=None,
-    line_kws=None, size=None
+    line_kws=None, facet_kws=None, size=None,
 ):
 
     # Handle deprecations
@@ -577,6 +578,22 @@ def lmplot(
         msg = ("The `size` parameter has been renamed to `height`; "
                "please update your code.")
         warnings.warn(msg, UserWarning)
+
+    if facet_kws is None:
+        facet_kws = {}
+
+    def facet_kw_deprecation(key, val):
+        msg = (
+            f"{key} is deprecated from the `lmplot` function signature. "
+            "Please update your code to pass it using `facet_kws`."
+        )
+        if val is not None:
+            warnings.warn(msg, UserWarning)
+            facet_kws[key] = val
+
+    facet_kw_deprecation("sharex", sharex)
+    facet_kw_deprecation("sharey", sharey)
+    facet_kw_deprecation("legend_out", legend_out)
 
     if data is None:
         raise TypeError("Missing required keyword argument `data`.")
@@ -592,7 +609,7 @@ def lmplot(
         palette=palette,
         row_order=row_order, col_order=col_order, hue_order=hue_order,
         height=height, aspect=aspect, col_wrap=col_wrap,
-        sharex=sharex, sharey=sharey, legend_out=legend_out
+        **facet_kws,
     )
 
     # Add the markers here as FacetGrid has figured out how many levels of the
@@ -608,12 +625,12 @@ def lmplot(
                           "for each level of the hue variable"))
     facets.hue_kws = {"marker": markers}
 
-    # Hack to set the x limits properly, which needs to happen here
-    # because the extent of the regression estimate is determined
-    # by the limits of the plot
-    if sharex:
-        for ax in facets.axes.flat:
-            ax.scatter(data[x], np.ones(len(data)) * data[y].mean()).remove()
+    def update_datalim(data, x, y, ax, **kws):
+        xys = data[[x, y]].to_numpy().astype(float)
+        ax.update_datalim(xys, updatey=False)
+        ax.autoscale_view(scaley=False)
+
+    facets.map_dataframe(update_datalim, x=x, y=y)
 
     # Draw the regression plot on each facet
     regplot_kws = dict(
@@ -625,8 +642,6 @@ def lmplot(
         scatter_kws=scatter_kws, line_kws=line_kws,
     )
     facets.map_dataframe(regplot, x=x, y=y, **regplot_kws)
-
-    # TODO this will need to change when we relax string requirement
     facets.set_axis_labels(x, y)
 
     # Add a legend
@@ -671,6 +686,10 @@ lmplot.__doc__ = dedent("""\
         Markers for the scatterplot. If a list, each marker in the list will be
         used for each level of the ``hue`` variable.
     {share_xy}
+
+        .. deprecated:: 0.12.0
+            Pass using the `facet_kws` dictionary.
+
     {{hue,col,row}}_order : lists, optional
         Order for the levels of the faceting variables. By default, this will
         be the order that the levels appear in ``data`` or, if the variables
@@ -678,6 +697,10 @@ lmplot.__doc__ = dedent("""\
     legend : bool, optional
         If ``True`` and there is a ``hue`` variable, add a legend.
     {legend_out}
+
+        .. deprecated:: 0.12.0
+            Pass using the `facet_kws` dictionary.
+
     {x_estimator}
     {x_bins}
     {x_ci}
@@ -696,6 +719,8 @@ lmplot.__doc__ = dedent("""\
     {truncate}
     {xy_jitter}
     {scatter_line_kws}
+    facet_kws : dict
+        Dictionary of keyword arguments for :class:`FacetGrid`.
 
     See Also
     --------
