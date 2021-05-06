@@ -334,6 +334,7 @@ class _HeatMapper:
         ax.set(xticks=xticks, yticks=yticks)
         xtl = ax.set_xticklabels(xticklabels)
         ytl = ax.set_yticklabels(yticklabels, rotation="vertical")
+        plt.setp(ytl, va="center")  # GH2484
 
         # Possibly rotate them if they overlap
         _draw_figure(ax.figure)
