@@ -28,7 +28,7 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
-- |API| In :func:`lmplot`, the `sharex`, `sharey`, and `legend_out` parameters have been deprecated from the function signature, but they can be passed using `facet_kws` (:pr:`2576`).
+- |API| In :func:`lmplot`, the `sharex`, `sharey`, and `legend_out` parameters have been deprecated from the function signature, but they can be passed using the new `facet_kws` parameter (:pr:`2576`).
 
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
