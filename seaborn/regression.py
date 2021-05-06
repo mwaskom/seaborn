@@ -609,12 +609,12 @@ def lmplot(
                           "for each level of the hue variable"))
     facets.hue_kws = {"marker": markers}
 
-    # Hack to set the x limits properly, which needs to happen here
-    # because the extent of the regression estimate is determined
-    # by the limits of the plot
-    if sharex:
-        for ax in facets.axes.flat:
-            ax.scatter(data[x], np.ones(len(data)) * data[y].mean()).remove()
+    def update_datalim(data, x, y, ax, **kws):
+        xys = data[[x, y]]
+        ax.update_datalim(xys, updatey=False)
+        ax.autoscale_view(scaley=False)
+
+    facets.map_dataframe(update_datalim, x=x, y=y)
 
     # Draw the regression plot on each facet
     regplot_kws = dict(
@@ -626,8 +626,6 @@ def lmplot(
         scatter_kws=scatter_kws, line_kws=line_kws,
     )
     facets.map_dataframe(regplot, x=x, y=y, **regplot_kws)
-
-    # TODO this will need to change when we relax string requirement
     facets.set_axis_labels(x, y)
 
     # Add a legend
