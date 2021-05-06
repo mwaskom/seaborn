@@ -26,11 +26,17 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |Enhancement| In :class:`FacetGrid`, :class:`PairGrid`, and functions that use them, the matplotlib `figure.autolayout` parameter is disabled to avoid having the legend overlap the plot (:pr:`2571`).
 
+- |Enhancement| In :func:`lmplot`, added `facet_kws` for additional customization of the underlying grid at setup time.
+
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
 - |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
+
+- |Fix| In :func:`lmplot`, fixed a bug where the x axis was clamped to the data limits with `truncate=True` (:pr:`2576`).
+
+- |Fix| In :func:`lmplot`, fixed a bug where `sharey=False` did not always work as expected (:pr:`2576`).
 
 - |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `alpha` parameter was ignored when `fill=False` (:pr:`2460`).
 
