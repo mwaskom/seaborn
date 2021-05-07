@@ -98,7 +98,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.var_types[self.cat_axis] = "categorical"
             self.plot_data[self.cat_axis] = ""
 
-        # Use order to restrict the possible levels of the categorical variable
+        # Categorical variables have discrete levels that we need to track
         cat_levels = categorical_order(self.plot_data[self.cat_axis], order)
         self.var_levels[self.cat_axis] = cat_levels
 
