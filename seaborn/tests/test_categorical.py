@@ -1610,6 +1610,13 @@ class SharedAxesLevelTests:
         self.func(data=long_df, x="a", y="y", color="C3", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C3")
 
+    def test_two_calls(self):
+
+        ax = plt.figure().subplots()
+        self.func(x=["a", "b", "c"], y=[1, 2, 3], ax=ax)
+        self.func(x=["e", "f"], y=[4, 5], ax=ax)
+        assert ax.get_xlim() == (-.5, 4.5)
+
 
 class SharedScatterTests(SharedAxesLevelTests):
     """Tests functionality common to stripplot and swarmplot."""

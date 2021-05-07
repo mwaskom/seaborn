@@ -1086,6 +1086,7 @@ class VectorPlotter:
                 .copy(deep=False)
                 .drop(["x", "y"], axis=1, errors="ignore")
             )
+
             for var in "yx":
                 if var not in self.variables:
                     continue
@@ -1095,6 +1096,11 @@ class VectorPlotter:
                 for converter, orig in grouped:
                     with pd.option_context('mode.use_inf_as_null', True):
                         orig = orig.dropna()
+                        if var in self.var_levels:
+                            # TODO this should happen in some centralized location
+                            # it is similar to GH2419, but more complicated because
+                            # supporting `order` in categorical plots is tricky
+                            orig = orig[orig.isin(self.var_levels[var])]
                     comp = pd.to_numeric(converter.convert_units(orig))
                     if converter.get_scale() == "log":
                         comp = np.log10(comp)
@@ -1161,7 +1167,7 @@ class VectorPlotter:
 
         # -- Verify the types of our x and y variables here.
         # This doesn't really make complete sense being here here, but it's a fine
-        # place for it, given  the current sytstem.
+        # place for it, given  the current system.
         # (Note that for some plots, there might be more complicated restrictions)
         # e.g. the categorical plots have their own check that as specific to the
         # non-categorical axis.

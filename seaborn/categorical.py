@@ -86,10 +86,17 @@ class _CategoricalPlotterNew(VectorPlotter):
         # _core variable assignment, we'll want to figure out how to express that.
         if self.input_format == "wide" and self.orient == "h":
             self.plot_data = self.plot_data.rename(columns={"x": "y", "y": "x"})
-            orig_x, orig_x_type = self.variables["x"], self.var_types["x"]
-            orig_y, orig_y_type = self.variables["y"], self.var_types["y"]
+            orig_x, orig_y = self.variables["x"], self.variables["y"]
             self.variables.update({"x": orig_y, "y": orig_x})
+            orig_x_type, orig_y_type = self.var_types["x"], self.var_types["y"]
             self.var_types.update({"x": orig_y_type, "y": orig_x_type})
+            orig_x_levels, orig_y_levels = self.var_levels["x"], self.var_levels["y"]
+            self.var_levels.update({"x": orig_y_levels, "y": orig_x_levels})
+
+        # Use order to restrict the possible levels of the categorical variable
+        if order is not None:
+            orig_levels = self.var_levels[self.cat_axis]
+            self.var_levels[self.cat_axis] = [x for x in orig_levels if x in order]
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
@@ -162,22 +169,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         if self.var_types[axis] != "categorical":
             return
 
-        data = self.plot_data[axis]
-        if self.facets is not None:
-            share_group = getattr(ax, f"get_shared_{axis}_axes")()
-            shared_axes = [getattr(ax, f"{axis}axis")] + [
-                getattr(other_ax, f"{axis}axis")
-                for other_ax in self.facets.axes.flat
-                if share_group.joined(ax, other_ax)
-            ]
-            data = data[self.converters[axis].isin(shared_axes)]
-
-        if self._var_ordered[axis]:
-            order = categorical_order(data, self.var_levels[axis])
-        else:
-            order = categorical_order(data)
-
-        n = max(len(order), 1)
+        n = len(getattr(ax, f"get_{axis}ticks")())
 
         if axis == "x":
             ax.xaxis.grid(False)
@@ -210,10 +202,11 @@ class _CategoricalPlotterNew(VectorPlotter):
                 offsets = np.zeros(n_levels)
         return offsets
 
-    # Note that the plotting methods here aim (in most cases) to produce the exact same
-    # artists as the original version of the code, so there is some weirdness that might
-    # not otherwise be clean or make sense in this context, such as adding empty artists
-    # for combinations of variables with no observations
+    # Note that the plotting methods here aim (in most cases) to produce the
+    # exact same artists as the original (pre 0.12) version of the code, so
+    # there is some weirdness that might not otherwise be clean or make sense in
+    # this context, such as adding empty artists for combinations of variables
+    # with no observations
 
     def plot_strips(
         self,
