@@ -169,6 +169,12 @@ class _CategoricalPlotterNew(VectorPlotter):
         if self.var_types[axis] != "categorical":
             return
 
+        # We can infer the total number of categories (including those from previous
+        # plots that are not part of the plot we are currently making) from the number
+        # of ticks, which matplotlib sets up while doing unit conversion. This feels
+        # slightly risky, as if we are relying on something that may be a matplotlib
+        # implementation detail. But I cannot think of a better way to keep track of
+        # the state from previous categorical calls (see GH2516 for context)
         n = len(getattr(ax, f"get_{axis}ticks")())
 
         if axis == "x":
