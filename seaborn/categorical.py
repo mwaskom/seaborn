@@ -54,7 +54,6 @@ class _CategoricalPlotterNew(VectorPlotter):
         order=None,
         orient=None,
         require_numeric=False,
-        fixed_scale=True,
     ):
 
         super().__init__(data=data, variables=variables)
@@ -90,13 +89,18 @@ class _CategoricalPlotterNew(VectorPlotter):
             self.variables.update({"x": orig_y, "y": orig_x})
             orig_x_type, orig_y_type = self.var_types["x"], self.var_types["y"]
             self.var_types.update({"x": orig_y_type, "y": orig_x_type})
-            orig_x_levels, orig_y_levels = self.var_levels["x"], self.var_levels["y"]
-            self.var_levels.update({"x": orig_y_levels, "y": orig_x_levels})
+
+        # Categorical plots can be "univariate" in which case they get an anonymous
+        # category label on the opposite axis. Note: this duplicates code in the core
+        # scale_categorical function. We need to do it here because of the next line.
+        if self.cat_axis not in self.variables:
+            self.variables[self.cat_axis] = None
+            self.var_types[self.cat_axis] = "categorical"
+            self.plot_data[self.cat_axis] = ""
 
         # Use order to restrict the possible levels of the categorical variable
-        if order is not None:
-            orig_levels = self.var_levels[self.cat_axis]
-            self.var_levels[self.cat_axis] = [x for x in orig_levels if x in order]
+        cat_levels = categorical_order(self.plot_data[self.cat_axis], order)
+        self.var_levels[self.cat_axis] = cat_levels
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
         """Implement backwards compatability for hue parametrization.
@@ -2766,7 +2770,6 @@ def stripplot(
         order=order,
         orient=orient,
         require_numeric=False,
-        fixed_scale=fixed_scale,
     )
 
     if ax is None:
@@ -2889,7 +2892,6 @@ def swarmplot(
         order=order,
         orient=orient,
         require_numeric=False,
-        fixed_scale=fixed_scale,
     )
 
     if ax is None:
@@ -3612,7 +3614,6 @@ def catplot(
             order=order,
             orient=orient,
             require_numeric=False,
-            fixed_scale=fixed_scale,
         )
 
         # XXX Copying a fair amount from displot, which is not ideal

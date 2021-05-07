@@ -684,12 +684,6 @@ class VectorPlotter:
             for v in variables
         }
 
-        # XXX does this make sense here?
-        for axis in "xy":
-            if axis not in variables:
-                continue
-            self.var_levels[axis] = categorical_order(self.plot_data[axis])
-
         return self
 
     def _assign_variables_wideform(self, data=None, **kwargs):
