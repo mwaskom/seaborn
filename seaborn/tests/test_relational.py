@@ -617,6 +617,18 @@ class TestRelationalPlotter(Helpers):
         for line, color in zip(lines, palette):
             assert line.get_color() == color
 
+    def test_facet_variable_collision(self, long_df):
+
+        # https://github.com/mwaskom/seaborn/issues/2488
+        col_data = long_df["c"]
+        long_df = long_df.assign(size=col_data)
+
+        g = relplot(
+            data=long_df,
+            x="x", y="y", col="size",
+        )
+        assert g.axes.shape == (1, len(col_data.unique()))
+
     def test_ax_kwarg_removal(self, long_df):
 
         f, ax = plt.subplots()
