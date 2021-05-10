@@ -334,6 +334,8 @@ class SizeMapping(SemanticMapping):
             normed = self.norm(key)
             if np.ma.is_masked(normed):
                 normed = np.nan
+            if self.sizes is None:
+                self.sizes = self.plotter._default_size_range
             value = self.sizes[0] + normed * np.ptp(self.sizes)
         return value
 
