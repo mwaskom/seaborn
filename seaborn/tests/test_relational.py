@@ -1652,6 +1652,12 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         ]
 
         for key in set(legend_data[0]) & set(legend_data[1]):
+            if key == "y":
+                # At some point (circa 3.0) matplotlib auto-added pandas series
+                # with a valid name into the legend, which messes up this test.
+                # I can't track down when that was added (or removed), so let's
+                # just anticipate and ignore it here.
+                continue
             assert legend_data[0][key] == legend_data[1][key]
 
     def test_datetime_scale(self, long_df):
