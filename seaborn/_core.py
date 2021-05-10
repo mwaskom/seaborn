@@ -284,7 +284,7 @@ class SizeMapping(SemanticMapping):
 
             if map_type == "numeric":
 
-                levels, lookup_table, norm = self.numeric_mapping(
+                levels, lookup_table, norm, size_range = self.numeric_mapping(
                     data, sizes, norm,
                 )
 
@@ -295,6 +295,7 @@ class SizeMapping(SemanticMapping):
                 levels, lookup_table = self.categorical_mapping(
                     data, sizes, order,
                 )
+                size_range = None
 
             # --- Option 3: datetime mapping
 
@@ -306,11 +307,13 @@ class SizeMapping(SemanticMapping):
                     # pandas and numpy represent datetime64 data
                     list(data), sizes, order,
                 )
+                size_range = None
 
             self.map_type = map_type
             self.levels = levels
             self.norm = norm
             self.sizes = sizes
+            self.size_range = size_range
             self.lookup_table = lookup_table
 
     def infer_map_type(self, norm, sizes, var_type):
@@ -332,9 +335,7 @@ class SizeMapping(SemanticMapping):
             normed = self.norm(key)
             if np.ma.is_masked(normed):
                 normed = np.nan
-            size_values = self.lookup_table.values()
-            size_range = min(size_values), max(size_values)
-            value = size_range[0] + normed * np.ptp(size_range)
+            value = self.size_range[0] + normed * np.ptp(self.size_range)
         return value
 
     def categorical_mapping(self, data, sizes, order):
@@ -383,7 +384,7 @@ class SizeMapping(SemanticMapping):
                 # across the visual representation of the data. But at this
                 # point, we don't know the visual representation. Likely we
                 # want to change the logic of this Mapping so that it gives
-                # points on a nornalized range that then gets unnormalized
+                # points on a normalized range that then gets un-normalized
                 # when we know what we're drawing. But given the way the
                 # package works now, this way is cleanest.
                 sizes = self.plotter._default_size_range
@@ -391,7 +392,7 @@ class SizeMapping(SemanticMapping):
             # For categorical sizes, use regularly-spaced linear steps
             # between the minimum and maximum sizes. Then reverse the
             # ramp so that the largest value is used for the first entry
-            # in size_order, etc. This is because "ordered" categoricals
+            # in size_order, etc. This is because "ordered" categories
             # are often though to go in decreasing priority.
             sizes = np.linspace(*sizes, len(levels))[::-1]
             lookup_table = dict(zip(levels, sizes))
@@ -435,7 +436,7 @@ class SizeMapping(SemanticMapping):
 
                 # When not provided, we get the size range from the plotter
                 # object we are attached to. See the note in the categorical
-                # method about how this is suboptimal for future development.:
+                # method about how this is suboptimal for future development.
                 size_range = self.plotter._default_size_range
 
         # Now that we know the minimum and maximum sizes that will get drawn,
@@ -475,7 +476,7 @@ class SizeMapping(SemanticMapping):
             sizes = lo + sizes_scaled * (hi - lo)
             lookup_table = dict(zip(levels, sizes))
 
-        return levels, lookup_table, norm
+        return levels, lookup_table, norm, size_range
 
 
 @share_init_params_with_map

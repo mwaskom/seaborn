@@ -1688,6 +1688,40 @@ class TestScatterPlotter(Helpers):
         scatterplot(data=long_df, x="x", y="y", linewidth=lw)
         assert ax.collections[0].get_linewidths().item() == lw
 
+    def test_size_norm_extrapolation(self):
+
+        # https://github.com/mwaskom/seaborn/issues/2539
+        x = np.arange(0, 20, 2)
+        f, axs = plt.subplots(1, 2, sharex=True, sharey=True)
+
+        slc = 5
+        kws = dict(sizes=(50, 200), size_norm=(0, x.max()), legend="brief")
+
+        scatterplot(x=x, y=x, size=x, ax=axs[0], **kws)
+        scatterplot(x=x[:slc], y=x[:slc], size=x[:slc], ax=axs[1], **kws)
+
+        assert np.allclose(
+            axs[0].collections[0].get_sizes()[:slc],
+            axs[1].collections[0].get_sizes()
+        )
+
+        legends = [ax.legend_ for ax in axs]
+        legend_data = [
+            {
+                label.get_text(): handle.get_sizes().item()
+                for label, handle in zip(legend.get_texts(), legend.legendHandles)
+            } for legend in legends
+        ]
+
+        for key in set(legend_data[0]) & set(legend_data[1]):
+            if key == "y":
+                # At some point (circa 3.0) matplotlib auto-added pandas series
+                # with a valid name into the legend, which messes up this test.
+                # I can't track down when that was added (or removed), so let's
+                # just anticipate and ignore it here.
+                continue
+            assert legend_data[0][key] == legend_data[1][key]
+
     def test_datetime_scale(self, long_df):
 
         ax = scatterplot(data=long_df, x="t", y="y")
