@@ -883,7 +883,7 @@ def relplot(
     if "ax" in kwargs:
         msg = (
             "relplot is a figure-level function and does not accept "
-            "the ax= paramter. You may wish to try {}".format(kind + "plot")
+            "the `ax` parameter. You may wish to try {}".format(kind + "plot")
         )
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
@@ -940,10 +940,6 @@ def relplot(
     if kind == "scatter":
         plot_kws.pop("dashes")
 
-    # Define the named variables for plotting on each facet
-    plot_variables = {key: key for key in p.variables}
-    plot_kws.update(plot_variables)
-
     # Add the grid semantics onto the plotter
     grid_semantics = "row", "col"
     p.semantics = plot_semantics + grid_semantics
@@ -956,16 +952,26 @@ def relplot(
         ),
     )
 
+    # Define the named variables for plotting on each facet
+    # Rename the variables with a leading underscore to avoid
+    # collisions with faceting variable names
+    plot_variables = {v: f"_{v}" for v in variables}
+    plot_kws.update(plot_variables)
+
     # Pass the row/col variables to FacetGrid with their original
     # names so that the axes titles render correctly
     grid_kws = {v: p.variables.get(v, None) for v in grid_semantics}
-    full_data = p.plot_data.rename(columns=grid_kws)
+
+    # Rename the columns of the plot_data structure appropriately
+    new_cols = plot_variables.copy()
+    new_cols.update(grid_kws)
+    full_data = p.plot_data.rename(columns=new_cols)
 
     # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws.copy()
-    facet_kws.update(grid_kws)
     g = FacetGrid(
-        data=full_data,
+        data=full_data.dropna(axis=1, how="all"),
+        **grid_kws,
         col_wrap=col_wrap, row_order=row_order, col_order=col_order,
         height=height, aspect=aspect, dropna=False,
         **facet_kws
@@ -990,6 +996,13 @@ def relplot(
                          label_order=p.legend_order,
                          title=p.legend_title,
                          adjust_subtitles=True)
+
+    # Rename the columns of the FacetGrid's `data` attribute
+    # to match the original column names
+    orig_cols = {
+        f"_{k}": f"_{k}_" if v is None else v for k, v in variables.items()
+    }
+    g.data = g.data.rename(columns=orig_cols)
 
     return g
 
