@@ -883,7 +883,7 @@ def relplot(
     if "ax" in kwargs:
         msg = (
             "relplot is a figure-level function and does not accept "
-            "the ax= paramter. You may wish to try {}".format(kind + "plot")
+            "the `ax` parameter. You may wish to try {}".format(kind + "plot")
         )
         warnings.warn(msg, UserWarning)
         kwargs.pop("ax")
@@ -965,12 +965,12 @@ def relplot(
     # Rename the columns of the plot_data structure appropriately
     new_cols = plot_variables.copy()
     new_cols.update(grid_kws)
-    full_data = p.plot_data.dropna(axis=1, how="all").rename(columns=new_cols)
+    full_data = p.plot_data.rename(columns=new_cols)
 
     # Set up the FacetGrid object
     facet_kws = {} if facet_kws is None else facet_kws.copy()
     g = FacetGrid(
-        data=full_data,
+        data=full_data.dropna(axis=1, how="all"),
         **grid_kws,
         col_wrap=col_wrap, row_order=row_order, col_order=col_order,
         height=height, aspect=aspect, dropna=False,
@@ -996,6 +996,13 @@ def relplot(
                          label_order=p.legend_order,
                          title=p.legend_title,
                          adjust_subtitles=True)
+
+    # Rename the columns of the FacetGrid's `data` attribute
+    # to match the original column names
+    orig_cols = {
+        f"_{k}": f"_{k}_" if v is None else v for k, v in variables.items()
+    }
+    g.data = g.data.rename(columns=orig_cols)
 
     return g
 
