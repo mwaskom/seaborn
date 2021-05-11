@@ -746,8 +746,12 @@ class FacetGrid(Grid):
             # Draw the plot
             self._facet_plot(func, ax, args, kwargs)
 
-        # Finalize the annotations and layout
-        self._finalize_grid(args[:2])
+        # For axis labels, prefer to use positional args for backcompat
+        # but also extract the x/y kwargs and use if no corresponding arg
+        axis_labels = [kwargs.get("x", None), kwargs.get("y", None)]
+        for i, val in enumerate(args[:2]):
+            axis_labels[i] = val
+        self._finalize_grid(axis_labels)
 
         return self
 
