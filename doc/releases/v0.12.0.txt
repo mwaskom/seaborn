@@ -26,6 +26,8 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |Enhancement| In :class:`FacetGrid`, :class:`PairGrid`, and functions that use them, the matplotlib `figure.autolayout` parameter is disabled to avoid having the legend overlap the plot (:pr:`2571`).
 
+- |Enhancement| In :class:`FacetGrid` and functions that use it, the visibility of interior axis labels is now disabled, and exterior axis labels are no longer erased when adding additional layers (:pr:`2583`).
+
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
 - |API| In :func:`lmplot`, the `sharex`, `sharey`, and `legend_out` parameters have been deprecated from the function signature, but they can be passed using the new `facet_kws` parameter (:pr:`2576`).

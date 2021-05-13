@@ -166,16 +166,12 @@ class Grid:
 
         return self
 
-    def _clean_axis(self, ax):
-        """Turn off axis labels and legend."""
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-        ax.legend_ = None
-        return self
-
     def _update_legend_data(self, ax):
         """Extract the legend data from an axes object and save it."""
         data = {}
+
+        # Get data directly from the legend, which is necessary
+        # for newer functions that don't add labeled proxy artists
         if ax.legend_ is not None and self._extract_legend_handles:
             handles = ax.legend_.legendHandles
             labels = [t.get_text() for t in ax.legend_.texts]
@@ -185,6 +181,9 @@ class Grid:
         data.update({l: h for h, l in zip(handles, labels)})
 
         self._legend_data.update(data)
+
+        # Now clear the legend
+        ax.legend_ = None
 
     def _get_palette(self, data, hue, hue_order, palette):
         """Get a list of colors for the hue variable."""
@@ -463,12 +462,14 @@ class FacetGrid(Grid):
                 for label in ax.get_xticklabels():
                     label.set_visible(False)
                 ax.xaxis.offsetText.set_visible(False)
+                ax.xaxis.label.set_visible(False)
 
         if sharey in [True, 'row']:
             for ax in self._not_left_axes:
                 for label in ax.get_yticklabels():
                     label.set_visible(False)
                 ax.yaxis.offsetText.set_visible(False)
+                ax.yaxis.label.set_visible(False)
 
     __init__.__doc__ = dedent("""\
         Initialize the matplotlib figure and FacetGrid object.
@@ -746,8 +747,12 @@ class FacetGrid(Grid):
             # Draw the plot
             self._facet_plot(func, ax, args, kwargs)
 
-        # Finalize the annotations and layout
-        self._finalize_grid(args[:2])
+        # For axis labels, prefer to use positional args for backcompat
+        # but also extract the x/y kwargs and use if no corresponding arg
+        axis_labels = [kwargs.get("x", None), kwargs.get("y", None)]
+        for i, val in enumerate(args[:2]):
+            axis_labels[i] = val
+        self._finalize_grid(axis_labels)
 
         return self
 
@@ -773,7 +778,6 @@ class FacetGrid(Grid):
 
         # Sort out the supporting information
         self._update_legend_data(ax)
-        self._clean_axis(ax)
 
     def _finalize_grid(self, axlabels):
         """Finalize the annotations and layout."""
@@ -1400,7 +1404,6 @@ class PairGrid(Grid):
             plot_kwargs.setdefault("hue_order", self._hue_order)
             plot_kwargs.setdefault("palette", self._orig_palette)
             func(x=vector, **plot_kwargs)
-            self._clean_axis(ax)
 
         self._add_axis_labels()
         return self
@@ -1439,8 +1442,6 @@ class PairGrid(Grid):
                     func(x=data_k, label=label_k, color=color, **plot_kwargs)
                 else:
                     func(data_k, label=label_k, color=color, **plot_kwargs)
-
-            self._clean_axis(ax)
 
         self._add_axis_labels()
 
@@ -1505,7 +1506,6 @@ class PairGrid(Grid):
         func(x=x, y=y, **kwargs)
 
         self._update_legend_data(ax)
-        self._clean_axis(ax)
 
     def _plot_bivariate_iter_hue(self, x_var, y_var, ax, func, **kwargs):
         """Draw a bivariate plot while iterating over hue subsets."""
@@ -1550,7 +1550,6 @@ class PairGrid(Grid):
                 func(x, y, **kws)
 
         self._update_legend_data(ax)
-        self._clean_axis(ax)
 
     def _add_axis_labels(self):
         """Add labels to the left and bottom Axes."""
