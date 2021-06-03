@@ -317,7 +317,7 @@ class FacetGrid(Grid):
         row_order=None, col_order=None, hue_order=None, hue_kws=None,
         dropna=False, legend_out=True, despine=True,
         margin_titles=False, xlim=None, ylim=None, subplot_kws=None,
-        gridspec_kws=None, size=None
+        gridspec_kws=None, size=None, pyplot=True,
     ):
 
         super(FacetGrid, self).__init__()
@@ -399,7 +399,10 @@ class FacetGrid(Grid):
 
         # Disable autolayout so legend_out works properly
         with mpl.rc_context({"figure.autolayout": False}):
-            fig = plt.figure(figsize=figsize)
+            if pyplot:
+                fig = plt.figure(figsize=figsize)
+            else:
+                fig = mpl.figure.Figure(figsize=figsize)
 
         if col_wrap is None:
 

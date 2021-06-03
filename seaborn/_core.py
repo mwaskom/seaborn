@@ -1428,6 +1428,7 @@ class VariableType(UserString):
     them. If that changes, they should be more verbose.
 
     """
+    # TODO we can replace this with typing.Literal on Python 3.8+
     allowed = "numeric", "datetime", "categorical"
 
     def __init__(self, data):
