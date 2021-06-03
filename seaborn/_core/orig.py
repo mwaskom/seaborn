@@ -12,14 +12,14 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-from ._decorators import (
+from .._decorators import (
     share_init_params_with_map,
 )
-from .palettes import (
+from ..palettes import (
     QUAL_PALETTES,
     color_palette,
 )
-from .utils import (
+from ..utils import (
     _check_argument,
     get_color_cycle,
     remove_na,
@@ -1143,7 +1143,7 @@ class VectorPlotter:
             arguments for the x and y axes.
 
         """
-        from .axisgrid import FacetGrid
+        from ..axisgrid import FacetGrid
         if isinstance(obj, FacetGrid):
             self.ax = None
             self.facets = obj
