@@ -1,32 +1,18 @@
 from __future__ import annotations
 
+from collections import abc
 import pandas as pd
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Optional, Any
-    from collections.abc import Hashable, Mapping, Sized
+    from collections.abc import Hashable, Mapping
     from pandas import DataFrame
     from .typing import Vector
 
 
-class PlotData:  # TODO better name?
-
-    # How to handle wide-form data here, when the dimensional semantics are defined by
-    # the mark? (I guess? that will be most consistent with how it currently works.)
-    # I think we want to avoid too much deferred execution or else tracebacks are going
-    # to be confusing to follow...
-
-    # With wide-form data, should we allow marks with distinct wide_form semantics?
-    # I think in most cases that will not make sense? When to check?
-
-    # I guess more generally, what to do when different variables are assigned in
-    # different calls to Plot.add()? This has to be possible (otherwise why allow it)?
-    # ggplot allows you to do this but only uses the first layer for labels, and only
-    # if the scales are compatible.
-
-    # Who owns the existing VectorPlotter.variables, VectorPlotter.var_levels, etc.?
-
+class PlotData:
+    """Data table with plot variable schema and mapping to original names."""
     frame: DataFrame
     names: dict[str, Optional[str]]
     _source: Optional[DataFrame | Mapping]
@@ -35,14 +21,12 @@ class PlotData:  # TODO better name?
         self,
         data: Optional[DataFrame | Mapping],
         variables: Optional[dict[str, Hashable | Vector]],
-        # TODO pass in wide semantics?
     ):
 
         if variables is None:
             variables = {}
 
-        # TODO only specing out with long-form data for now...
-        frame, names = self._assign_variables_longform(data, variables)
+        frame, names = self._assign_variables(data, variables)
 
         self.frame = frame
         self.names = names
@@ -51,6 +35,7 @@ class PlotData:  # TODO better name?
         self._source_vars = variables
 
     def __contains__(self, key: Hashable) -> bool:
+        """Boolean check on whether a variable is defined in this dataset."""
         return key in self.frame
 
     def concat(
@@ -58,13 +43,13 @@ class PlotData:  # TODO better name?
         data: Optional[DataFrame | Mapping],
         variables: Optional[dict[str, Optional[Hashable | Vector]]],
     ) -> PlotData:
-
-        # TODO Note a tricky thing here which is that often x/y will be inherited
-        # meaning that the variable specification here will look like "wide-form"
+        """Add, replace, or drop variables and return as a new dataset."""
 
         # Inherit the original source of the upsteam data by default
         if data is None:
             data = self._source_data
+
+        # TODO allow `data` to be a function (that is called on the source data?)
 
         if variables is None:
             variables = self._source_vars
@@ -88,7 +73,7 @@ class PlotData:  # TODO better name?
 
         return new
 
-    def _assign_variables_longform(
+    def _assign_variables(
         self,
         data: Optional[DataFrame | Mapping],
         variables: dict[str, Optional[Hashable | Vector]]
@@ -108,8 +93,7 @@ class PlotData:  # TODO better name?
         Returns
         -------
         frame
-            Long-form data object mapping seaborn variables (x, y, hue, ...)
-            to data vectors.
+            Dataframe mapping seaborn variables (x, y, hue, ...) to data vectors.
         names
             Keys are defined seaborn variables; values are names inferred from
             the inputs (or None when no name can be determined).
@@ -181,7 +165,7 @@ class PlotData:  # TODO better name?
 
                 # Raise when data object is present and a vector can't matched
                 if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
-                    if isinstance(val, Sized) and len(data) != len(val):
+                    if isinstance(val, abc.Sized) and len(data) != len(val):
                         val_cls = val.__class__.__name__
                         err = (
                             f"Length of {val_cls} vectors must match length of `data`"
