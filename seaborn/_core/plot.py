@@ -9,19 +9,19 @@ import matplotlib as mpl
 from ..axisgrid import FacetGrid
 from .rules import categorical_order
 from .data import PlotData
-from .mappings import HueMapping
+from .mappings import GroupMapping, HueMapping
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional, Literal, Any
-    from collections.abc import Hashable, Mapping, Generator
+    from typing import Optional, Literal
+    from collections.abc import Callable, Generator
     from pandas import DataFrame
     from matplotlib.figure import Figure
     from matplotlib.axes import Axes
     from matplotlib.scale import ScaleBase as Scale
     from matplotlib.colors import Normalize
     from .mappings import SemanticMapping
-    from .typing import Vector, PaletteSpec
+    from .typing import DataSource, Vector, PaletteSpec, VariableSpec
     from .._marks.base import Mark
     from .._stats.base import Stat
 
@@ -35,27 +35,24 @@ class Plot:
 
     _figure: Figure
     _ax: Optional[Axes]
-    # _facets: Optional[FacetGrid]  # TODO would have a circular import?
+    _facets: Optional[FacetGrid]  # TODO would have a circular import?
 
     def __init__(
         self,
-        data: Optional[DataFrame | Mapping] = None,
-        **variables: Optional[Hashable | Vector],
+        data: Optional[DataSource] = None,
+        **variables: Optional[VariableSpec],
     ):
-
-        # Note that we can't assume wide-form here if variables does not contain x or y
-        # because those might get assigned in long-form fashion per layer.
-        # TODO I am thinking about just not supporting wide-form data in this interface
-        # and handling the reshaping in the functional interface externally
 
         self._data = PlotData(data, variables)
         self._layers = []
-        self._mappings = {}  # TODO initialize with defaults?
+        self._mappings = {
+            "group": GroupMapping(),
+            "hue": HueMapping(),
+        }
 
-        # TODO right place for defaults? (Best to be consistent with mappings)
         self._scales = {
             "x": mpl.scale.LinearScale("x"),
-            "y": mpl.scale.LinearScale("y")
+            "y": mpl.scale.LinearScale("y"),
         }
 
     def on(self) -> Plot:
@@ -68,14 +65,15 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        stat: Stat = None,
-        data: Optional[DataFrame | Mapping] = None,
-        variables: Optional[dict[str, Optional[Hashable | Vector]]] = None,
+        stat: Optional[Stat] = None,
         orient: Literal["x", "y", "v", "h"] = "x",
+        data: Optional[DataSource] = None,
+        **variables: Optional[VariableSpec],
     ) -> Plot:
 
-        # TODO what if in wide-form mode, we convert to long-form
-        # based on the transform that mark defines?
+        if not variables:
+            variables = None
+
         layer_data = self._data.concat(data, variables)
 
         if stat is None:
@@ -90,14 +88,15 @@ class Plot:
 
         return self
 
+    # TODO should we have facet_col(var, order, wrap)/facet_row(...)?
     def facet(
         self,
-        col: Optional[Hashable | Vector] = None,
-        row: Optional[Hashable | Vector] = None,
-        col_order: Optional[list] = None,
-        row_order: Optional[list] = None,
+        col: Optional[VariableSpec] = None,
+        row: Optional[VariableSpec] = None,
+        col_order: Optional[Vector] = None,
+        row_order: Optional[Vector] = None,
         col_wrap: Optional[int] = None,
-        data: Optional[DataFrame | Mapping] = None,
+        data: Optional[DataSource] = None,
         # TODO what other parameters? sharex/y?
     ) -> Plot:
 
@@ -171,35 +170,22 @@ class Plot:
 
     def plot(self) -> Plot:
 
-        # TODO a rough sketch ...
-
-        # TODO one option is to loop over the layers here and use them to
-        # initialize and scaling/mapping we need to do (using parameters)
-        # possibly previously set and stored through calls to map_hue etc.
-        # Alternately (and probably a better idea), we could concatenate
-        # the layer data and then pass that to the Mapping objects to
-        # set them up. Note that if strings are passed in one layer and
-        # floats in another, this will turn the whole variable into a
-        # categorical. That might make sense but it's different from if you
-        # plot twice once with strings and then once with numbers.
-        # Another option would be to raise if layers have different variable
-        # types (this is basically what ggplot does), but that adds complexity.
-
         # === TODO clean series of setup functions (TODO bikeshed names)
         self._setup_figure()
 
         # ===
 
-        # TODO we need to be able to show a blank figure
+        # Abort early if we've just set up a blank figure
         if not self._layers:
             return self
 
         mappings = self._setup_mappings()
 
+        # scales = self._setup_scales()  TODO?
+
         for layer in self._layers:
 
-            # TODO alt. assign as attribute on Layer?
-            layer_mappings = {k: v for k, v in mappings.items() if k in layer}
+            layer.mappings = {k: v for k, v in mappings.items() if k in layer}
 
             # TODO very messy but needed to concat with variables added in .facet()
             # Demands serious rethinking!
@@ -209,7 +195,7 @@ class Plot:
                     {v: v for v in ["col", "row"] if v in self._facetdata}
                 )
 
-            self._plot_layer(layer, layer_mappings)
+            self._plot_layer(layer)
 
         return self
 
@@ -265,76 +251,69 @@ class Plot:
         # TODO in current _attach, we initialize the units at this point
         # TODO we will also need to incorporate the scaling that (could) be set
 
-    def _setup_mappings(self) -> dict[str, SemanticMapping]:  # TODO literal key
+    def _setup_mappings(self) -> dict[str, SemanticMapping]:
 
         all_data = pd.concat([layer.data.frame for layer in self._layers])
-
-        # TODO should mappings hold *all* mappings, and generalize to, e.g.
-        # AxisMapping, FacetMapping?
-        # One reason this might not work: FacetMapping would need to map
-        # col *and* row to get the axes it is looking for.
-
-        # TODO this is a real hack
-        class GroupMapping:
-            def train(self, vector):
-                self.levels = categorical_order(vector)
-
-        # TODO defaults can probably be set up elsewhere
-        default_mappings = {  # TODO central source for this!
-            "hue": HueMapping,
-            "group": GroupMapping,
-        }
-        for var, mapping in default_mappings.items():
-            if var in all_data and var not in self._mappings:
-                self._mappings[var] = mapping()  # TODO refactor w/above
+        layers = self._layers
 
         mappings = {}
         for var, mapping in self._mappings.items():
-            if var in all_data:
-                mapping.train(all_data[var])  # TODO return self?
-                mappings[var] = mapping
+            if any(var in layer.data for layer in layers):
+                all_data = pd.concat(
+                    [layer.data.frame.get(var, None) for layer in layers]
+                ).reset_index(drop=True)
+                mappings[var] = mapping.setup(all_data)
 
         return mappings
 
-    def _plot_layer(self, layer, mappings):
+    def _plot_layer(self, layer):
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
         grouping_vars = layer.mark.grouping_vars + default_grouping_vars
 
         data = layer.data
         stat = layer.stat
+        mappings = layer.mappings
 
         df = self._scale_coords(data.frame)
 
-        # TODO how to we handle orientation?
-        # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
-        # TODO should we pass the grouping variables to the Stat and let it handle that?
-        if stat is not None:  # TODO or default to Identity, but we'll have groupby cost
-            stat_grouping_vars = [var for var in grouping_vars if var in data]
-            if stat.orient not in stat_grouping_vars:
-                stat_grouping_vars.append(stat.orient)
-            df = (
-                df
-                .groupby(stat_grouping_vars)
-                .apply(stat)
-                # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
-                .drop(stat_grouping_vars, axis=1, errors="ignore")
-                .reset_index(stat_grouping_vars)
-                .reset_index(drop=True)  # TODO not always needed, can we limit?
-            )
+        if stat is not None:
+            df = self._apply_stat(df, grouping_vars, stat)
 
         # Our statistics happen on the scale we want, but then matplotlib is going
         # to re-handle the scaling, so we need to invert before handing off
         # Note: we don't need to convert back to strings for categories (but we could?)
         df = self._unscale_coords(df)
 
-        # TODO this might make debugging annoying ... should we create new layer object?
+        # TODO this might make debugging annoying ... should we create new data object?
         data.frame = df
 
-        # TODO the layer.data somehow needs to pick up variables added in Plot.facet()
-        splitgen = self._make_splitgen(grouping_vars, data, mappings)
+        generate_splits = self._setup_split_generator(grouping_vars, data, mappings)
 
-        layer.mark._plot(splitgen, mappings)
+        layer.mark._plot(generate_splits, mappings)
+
+    def _apply_stat(
+        self, df: DataFrame, grouping_vars: list[str], stat: Stat
+    ) -> DataFrame:
+
+        # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
+        # IDEA: have Stat identify as an aggregator? (Through Mixin or attribute)
+        # e.g. if stat.aggregates ...
+        stat_grouping_vars = [var for var in grouping_vars if var in df]
+        # TODO I don't think we always want to group by the default orient axis?
+        # Better to have the Stat declare when it wants that to happen
+        if stat.orient not in stat_grouping_vars:
+            stat_grouping_vars.append(stat.orient)
+        df = (
+            df
+            .groupby(stat_grouping_vars)
+            .apply(stat)
+            # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
+            .drop(stat_grouping_vars, axis=1, errors="ignore")
+            .reset_index(stat_grouping_vars)
+            .reset_index(drop=True)  # TODO not always needed, can we limit?
+        )
+        return df
 
     def _assign_axes(self, df: DataFrame) -> Axes:
         """Given a faceted DataFrame, find the Axes object for each entry."""
@@ -348,12 +327,9 @@ class Plot:
 
         return facet_keys.map(self._facets.axes_dict)
 
-    def _scale_coords(self, df):
+    def _scale_coords(self, df: DataFrame) -> DataFrame:
 
-        # TODO we will want to scale/unscale xmin, xmax, which i *think* this catches?
         coord_df = df.filter(regex="x|y")
-
-        # TODO any reason to scale the semantics here?
         out_df = df.drop(coord_df.columns, axis=1).copy(deep=False)
 
         with pd.option_context("mode.use_inf_as_null", True):
@@ -373,7 +349,9 @@ class Plot:
 
         return out_df
 
-    def _scale_coords_single(self, coord_df, out_df, ax):
+    def _scale_coords_single(
+        self, coord_df: DataFrame, out_df: DataFrame, ax: Axes
+    ) -> None:
 
         # TODO modify out_df in place or return and handle externally?
 
@@ -397,48 +375,24 @@ class Plot:
             scaled = transform(axis_obj.convert_units(col))
             out_df.loc[col.index, var] = scaled
 
-    def _unscale_coords(self, df):
+    def _unscale_coords(self, df: DataFrame) -> DataFrame:
 
-        # TODO copied from _scale function; refactor!
-        # TODO we will want to scale/unscale xmin, xmax, which i *think* this catches?
         coord_df = df.filter(regex="x|y")
         out_df = df.drop(coord_df.columns, axis=1).copy(deep=False)
+
         for var, col in coord_df.items():
             axis = var[0]
             invert_scale = self._scales[axis].get_transform().inverted().transform
             out_df[var] = invert_scale(coord_df[var])
 
-        if self._ax is not None:
-            self._unscale_coords_single(coord_df, out_df, self._ax)
-        else:
-            # TODO the only reason this structure exists in the forward scale func
-            # is to support unshared categorical axes. I don't think there is any
-            # situation where numeric axes would have different *transforms*.
-            # So we should be able to do this in one step in all cases, once
-            # we are storing information about the scaling centrally.
-            axes_map = self._assign_axes(df)
-            grouped = coord_df.groupby(axes_map, sort=False)
-            for ax, ax_df in grouped:
-                self._unscale_coords_single(ax_df, out_df, ax)
-
         return out_df
 
-    def _unscale_coords_single(self, coord_df, out_df, ax):
-
-        for var, col in coord_df.items():
-
-            axis = var[0]
-            axis_obj = getattr(ax, f"{axis}axis")
-            inverse_transform = axis_obj.get_transform().inverted().transform
-            unscaled = inverse_transform(col)
-            out_df.loc[col.index, var] = unscaled
-
-    def _make_splitgen(
+    def _setup_split_generator(
         self,
-        grouping_vars,
-        data,
-        mappings,
-    ):  # TODO typing
+        grouping_vars: list[str],
+        data: PlotData,
+        mappings: dict[str, SemanticMapping],
+    ) -> Callable[[], Generator]:
 
         allow_empty = False  # TODO
 
@@ -464,7 +418,7 @@ class Plot:
 
         iter_keys = itertools.product(*grouping_keys)
 
-        def splitgen() -> Generator[dict[str, Any], DataFrame, Axes]:
+        def generate_splits() -> Generator:
 
             if not grouping_vars:
                 yield {}, df.copy(), ax
@@ -492,6 +446,7 @@ class Plot:
                 # TODO can we use axes_map here?
                 row = sub_vars.get("row", None)
                 col = sub_vars.get("col", None)
+                use_ax: Axes
                 if row is not None and col is not None:
                     use_ax = facets.axes_dict[(row, col)]
                 elif row is not None:
@@ -500,9 +455,10 @@ class Plot:
                     use_ax = facets.axes_dict[col]
                 else:
                     use_ax = ax
-                yield sub_vars, df_subset.copy(), use_ax
+                out = sub_vars, df_subset.copy(), use_ax
+                yield out
 
-        return splitgen
+        return generate_splits
 
     def show(self) -> Plot:
 
@@ -552,5 +508,5 @@ class Layer:
         self.mark = mark
         self.stat = stat
 
-    def __contains__(self, key: Hashable) -> bool:
+    def __contains__(self, key: str) -> bool:
         return key in self.data

@@ -17,6 +17,9 @@ if TYPE_CHECKING:
 
 
 class SemanticMapping:
+    """Base class for mappings between data and visual attributes."""
+    def setup(self, data: Series) -> SemanticMapping:
+        raise NotImplementedError()
 
     def __call__(self, x):  # TODO types; will need to overload (wheee)
         # TODO this is a hack to get things working
@@ -49,6 +52,13 @@ class SemanticMapping:
 # that it makes sense to determine that information at different points in time.
 
 
+class GroupMapping(SemanticMapping):
+    """Mapping that does not alter any visual properties of the artists."""
+    def setup(self, data: Series) -> GroupMapping:
+        self.levels = categorical_order(data)
+        return self
+
+
 class HueMapping(SemanticMapping):
     """Mapping that sets artist colors according to data values."""
 
@@ -65,18 +75,20 @@ class HueMapping(SemanticMapping):
         self._input_order = order
         self._input_norm = norm
 
-    def train(  # TODO ggplot name; let's come up with something better
+    def setup(
         self,
         data: Series,  # TODO generally rename Series arguments to distinguish from DF?
-    ) -> None:
-
+    ) -> HueMapping:
+        """Infer the type of mapping to use and define it using this vector of data."""
         palette: Optional[PaletteSpec] = self._input_palette
         order: Optional[list] = self._input_order
         norm: Optional[Normalize] = self._input_norm
         cmap: Optional[Colormap] = None
 
-        # TODO these are currently extracted from a passed in plotter instance
-        # TODO can just remove if we excise wide-data handling from core
+        # TODO We are not going to have the concept of wide-form data within PlotData
+        # but we will still support it. I think seaborn functions that accept wide-form
+        # data can explicitly set the hue mapping to be categorical.
+        # Then we can drop this.
         input_format: Literal["long", "wide"] = "long"
 
         map_type = self._infer_map_type(data, palette, norm, input_format)
@@ -127,6 +139,8 @@ class HueMapping(SemanticMapping):
         self.levels = levels
         self.norm = norm
         self.cmap = cmap
+
+        return self
 
     def _infer_map_type(
         self,
