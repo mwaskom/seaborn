@@ -7,9 +7,10 @@ import pandas as pd
 import matplotlib as mpl
 
 from ..axisgrid import FacetGrid
-from .rules import categorical_order
+from .rules import categorical_order, variable_type
 from .data import PlotData
 from .mappings import GroupMapping, HueMapping
+from .scales import ScaleWrapper, CategoricalScale, DatetimeScale, norm_from_scale
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     from pandas import DataFrame
     from matplotlib.figure import Figure
     from matplotlib.axes import Axes
-    from matplotlib.scale import ScaleBase as Scale
+    from matplotlib.scale import ScaleBase
     from matplotlib.colors import Normalize
     from .mappings import SemanticMapping
     from .typing import DataSource, Vector, PaletteSpec, VariableSpec
@@ -31,7 +32,7 @@ class Plot:
     _data: PlotData
     _layers: list[Layer]
     _mappings: dict[str, SemanticMapping]  # TODO keys as Literal, or use TypedDict?
-    _scales: dict[str, Scale]
+    _scales: dict[str, ScaleBase]
 
     _figure: Figure
     _ax: Optional[Axes]
@@ -45,14 +46,18 @@ class Plot:
 
         self._data = PlotData(data, variables)
         self._layers = []
+
+        # TODO see notes in _setup_mappings I think we're going to start with this
+        # empty and define the defaults elsewhere
         self._mappings = {
             "group": GroupMapping(),
             "hue": HueMapping(),
         }
 
+        # TODO is using "unknown" here the best approach?
         self._scales = {
-            "x": mpl.scale.LinearScale("x"),
-            "y": mpl.scale.LinearScale("y"),
+            "x": ScaleWrapper(mpl.scale.LinearScale("x"), "unknown"),
+            "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
         }
 
     def on(self) -> Plot:
@@ -76,7 +81,7 @@ class Plot:
 
         layer_data = self._data.concat(data, variables)
 
-        if stat is None:
+        if stat is None:  # TODO do we need some way to say "do no stat transformation"?
             stat = mark.default_stat
 
         orient = {"v": "x", "h": "y"}.get(orient, orient)
@@ -97,7 +102,7 @@ class Plot:
         row_order: Optional[Vector] = None,
         col_wrap: Optional[int] = None,
         data: Optional[DataSource] = None,
-        # TODO what other parameters? sharex/y?
+        **grid_kwargs,  # possibly/probably expose relevant ones
     ) -> Plot:
 
         # Note: can't pass `None` here or it will undo the `Plot()` def
@@ -136,28 +141,66 @@ class Plot:
         if "col" in facetspec:
             facetspec["col"]["wrap"] = col_wrap
 
+        facetspec["grid_kwargs"] = grid_kwargs
+
         self._facetspec = facetspec
         self._facetdata = data  # TODO messy, but needed if variables are added here
 
         return self
 
+    # TODO map_hue or map_color/map_facecolor/map_edgecolor (or ... all of the above?)
     def map_hue(
         self,
         palette: Optional[PaletteSpec] = None,
-        order: Optional[list] = None,
-        norm: Optional[Normalize] = None,
     ) -> Plot:
 
         # TODO we do some fancy business currently to avoid having to
         # write these ... do we want that to persist or is it too confusing?
         # ALSO TODO should these be initialized with defaults?
-        self._mappings["hue"] = HueMapping(palette, order, norm)
+        self._mappings["hue"] = HueMapping(palette)
         return self
 
-    def scale_numeric(self, axis, scale="linear", **kwargs) -> Plot:
+    def scale_numeric(
+        self,
+        var: str,
+        scale: str | ScaleBase = "linear",
+        norm: Optional[tuple[Optional[float], Optional[float]] | Normalize] = None,
+        **kwargs
+    ) -> Plot:
 
-        scale = mpl.scale.scale_factory(scale, axis, **kwargs)
-        self._scales[axis] = scale
+        # TODO use norm for setting axis limits? Or otherwise share an interface?
+
+        scale = mpl.scale.scale_factory(scale, var, **kwargs)
+        norm = norm_from_scale(scale, norm)
+        self._scales[var] = ScaleWrapper(scale, "numeric", norm=norm)
+        return self
+
+    def scale_categorical(
+        self,
+        var: str,
+        order: Optional[Vector] = None,  # this will pick up scalars?
+        formatter: Optional[Callable] = None,
+    ) -> Plot:
+
+        # TODO how to set limits/margins "nicely"?
+        # TODO similarly, should this modify grid state like current categorical plots?
+
+        scale = CategoricalScale(var, order, formatter)
+        self._scales[var] = ScaleWrapper(scale, "categorical")
+        return self
+
+    def scale_datetime(self, var) -> Plot:
+
+        scale = DatetimeScale(var)
+        self._scales[var] = ScaleWrapper(scale, "datetime")
+
+        # TODO what else should this do?
+        # We should pass kwargs to the Datetime case probably.
+        # It will be nice to have more control over the formatting of the ticks
+        # which is pretty annoying in standard matplotlib.
+        # Should datetime data ever have anything other than a linear scale?
+        # The only thing I can really think of are geologic/astro plots that
+        # use a reverse log scale.
 
         return self
 
@@ -169,6 +212,10 @@ class Plot:
         return self
 
     def plot(self) -> Plot:
+
+        # TODO note that as currently written this doesn't need to come before
+        # _setup_figure, but _setup_figure does use self._scales
+        self._setup_scales()
 
         # === TODO clean series of setup functions (TODO bikeshed names)
         self._setup_figure()
@@ -194,10 +241,26 @@ class Plot:
                     self._facetdata.frame,
                     {v: v for v in ["col", "row"] if v in self._facetdata}
                 )
-
             self._plot_layer(layer)
 
         return self
+
+    def _setup_scales(self):
+
+        # TODO one issue here is that we are going to assume all subplots of a
+        # figure have the same type of scale. This is potentially problematic if
+        # we are not sharing axes ... e.g. we currently can't use displot to
+        # show all histograms if some of those histograms need to be categorical.
+        # We can decide how much of a problem we are going to consider that to be...
+
+        layers = self._layers
+        for var, scale in self._scales.items():
+            if scale.type == "unknown" and any(var in layer.data for layer in layers):
+                # TODO this is copied from _setup_mappings ... ripe for abstraction!
+                all_data = pd.concat(
+                    [layer.data.frame.get(var, None) for layer in layers]
+                ).reset_index(drop=True)
+                scale.type = variable_type(all_data)
 
     def _setup_figure(self):
 
@@ -212,7 +275,7 @@ class Plot:
         # TODO use context manager with theme that has been set
         # TODO (or maybe wrap THIS function with context manager; would be cleaner)
 
-        if self._facetspec:
+        if "row" in self._facetspec or "col" in self._facetspec:
 
             facet_data = pd.DataFrame()
             facet_vars = {}
@@ -220,11 +283,14 @@ class Plot:
                 if dim in self._facetspec:
                     name = self._facetspec[dim]["name"]
                     facet_data[name] = self._facetspec[dim]["data"]
+                    # TODO FIXME this fails if faceting variables don't have a name
+                    # note current relplot also fails, but catplot works...
                     facet_vars[dim] = name
-                if dim == "col":
-                    facet_vars["col_wrap"] = self._facetspec[dim]["wrap"]
-            grid = FacetGrid(facet_data, **facet_vars, pyplot=False)
-            grid.set_titles()
+                    if dim == "col":
+                        facet_vars["col_wrap"] = self._facetspec[dim]["wrap"]
+            kwargs = self._facetspec["grid_kwargs"]
+            grid = FacetGrid(facet_data, **facet_vars, pyplot=False, **kwargs)
+            grid.set_titles()  # TODO use our own titleing interface?
 
             self._figure = grid.fig
             self._ax = None
@@ -238,8 +304,8 @@ class Plot:
 
         axes_list = list(self._facets.axes.flat) if self._ax is None else [self._ax]
         for ax in axes_list:
-            ax.set_xscale(self._scales["x"])
-            ax.set_yscale(self._scales["y"])
+            ax.set_xscale(self._scales["x"]._scale)
+            ax.set_yscale(self._scales["y"]._scale)
 
         # TODO good place to do this? (needs to handle FacetGrid)
         obj = self._ax if self._facets is None else self._facets
@@ -253,8 +319,11 @@ class Plot:
 
     def _setup_mappings(self) -> dict[str, SemanticMapping]:
 
-        all_data = pd.concat([layer.data.frame for layer in self._layers])
         layers = self._layers
+
+        # TODO we should setup default mappings here based on whether a mapping
+        # variable appears in at least one of the layer data but isn't in self._mappings
+        # Source of what mappings to check can be some dictionary of default mappings?
 
         mappings = {}
         for var, mapping in self._mappings.items():
@@ -262,7 +331,8 @@ class Plot:
                 all_data = pd.concat(
                     [layer.data.frame.get(var, None) for layer in layers]
                 ).reset_index(drop=True)
-                mappings[var] = mapping.setup(all_data)
+                scale = self._scales.get(var, None)
+                mappings[var] = mapping.setup(all_data, scale)
 
         return mappings
 
@@ -359,21 +429,23 @@ class Plot:
         # for var in "yx":
         #     if var not in coord_df:
         #        continue
-        for var, col in coord_df.items():
+        for var, data in coord_df.items():
+
+            # TODO Explain the logic of this method thoroughly
+            # It is clever, but a bit confusing!
 
             axis = var[0]
             axis_obj = getattr(ax, f"{axis}axis")
+            scale = self._scales[axis]
 
-            # TODO should happen upstream, in setup_figure(?), but here for now
-            # will need to account for order; we don't have that yet
-            axis_obj.update_units(col)
+            if scale.order is not None:
+                data = data[data.isin(scale.order)]
 
-            # TODO subset categories based on whether specified in order
-            ...
+            data = scale.cast(data)
+            axis_obj.update_units(categorical_order(data))
 
-            transform = self._scales[axis].get_transform().transform
-            scaled = transform(axis_obj.convert_units(col))
-            out_df.loc[col.index, var] = scaled
+            scaled = self._scales[axis].forward(axis_obj.convert_units(data))
+            out_df.loc[data.index, var] = scaled
 
     def _unscale_coords(self, df: DataFrame) -> DataFrame:
 
@@ -382,8 +454,7 @@ class Plot:
 
         for var, col in coord_df.items():
             axis = var[0]
-            invert_scale = self._scales[axis].get_transform().inverted().transform
-            out_df[var] = invert_scale(coord_df[var])
+            out_df[var] = self._scales[axis].reverse(coord_df[var])
 
         return out_df
 
@@ -493,6 +564,8 @@ class Plot:
 
         # TODO use bbox_inches="tight" like the inline backend?
         # pro: better results,  con: (sometimes) confusing results
+        # Better solution would be to default (with option to change)
+        # to using constrained/tight layout.
         self._figure.savefig(buffer, format="png", bbox_inches="tight")
         return buffer.getvalue()
 

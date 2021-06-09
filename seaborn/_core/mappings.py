@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections import abc
+
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -13,12 +15,15 @@ if TYPE_CHECKING:
     from typing import Optional, Literal
     from pandas import Series
     from matplotlib.colors import Colormap, Normalize
+    from matplotlib.scale import Scale  # TODO or our own ScaleWrapper
     from .typing import PaletteSpec
 
 
 class SemanticMapping:
     """Base class for mappings between data and visual attributes."""
-    def setup(self, data: Series) -> SemanticMapping:
+
+    def setup(self, data: Series, scale: Optional[Scale]) -> SemanticMapping:
+        # TODO why not just implement the GroupMapping setup() here?
         raise NotImplementedError()
 
     def __call__(self, x):  # TODO types; will need to overload (wheee)
@@ -54,7 +59,7 @@ class SemanticMapping:
 
 class GroupMapping(SemanticMapping):
     """Mapping that does not alter any visual properties of the artists."""
-    def setup(self, data: Series) -> GroupMapping:
+    def setup(self, data: Series, scale: Optional[Scale]) -> GroupMapping:
         self.levels = categorical_order(data)
         return self
 
@@ -64,34 +69,26 @@ class HueMapping(SemanticMapping):
 
     # TODO type the important class attributes here
 
-    def __init__(
-        self,
-        palette: Optional[PaletteSpec] = None,
-        order: Optional[list] = None,
-        norm: Optional[Normalize] = None,
-    ):
+    def __init__(self, palette: Optional[PaletteSpec] = None):
 
         self._input_palette = palette
-        self._input_order = order
-        self._input_norm = norm
 
     def setup(
         self,
         data: Series,  # TODO generally rename Series arguments to distinguish from DF?
+        scale: Optional[Scale],
     ) -> HueMapping:
         """Infer the type of mapping to use and define it using this vector of data."""
         palette: Optional[PaletteSpec] = self._input_palette
-        order: Optional[list] = self._input_order
-        norm: Optional[Normalize] = self._input_norm
         cmap: Optional[Colormap] = None
 
-        # TODO We are not going to have the concept of wide-form data within PlotData
-        # but we will still support it. I think seaborn functions that accept wide-form
-        # data can explicitly set the hue mapping to be categorical.
-        # Then we can drop this.
-        input_format: Literal["long", "wide"] = "long"
+        norm = None if scale is None else scale.norm
+        order = None if scale is None else scale.order
 
-        map_type = self._infer_map_type(data, palette, norm, input_format)
+        # TODO We need to add some input checks ...
+        # e.g. specifying a numeric scale and a qualitative colormap should fail nicely.
+
+        map_type = self._infer_map_type(scale, palette, data)
 
         # Our goal is to end up with a dictionary mapping every unique
         # value in `data` to a color. We will also keep track of the
@@ -133,7 +130,6 @@ class HueMapping(SemanticMapping):
 
         # TODO I don't love how this is kind of a mish-mash of attributes
         # Can we be more consistent across SemanticMapping subclasses?
-        self.map_type = map_type
         self.lookup_table = lookup_table
         self.palette = palette
         self.levels = levels
@@ -144,20 +140,17 @@ class HueMapping(SemanticMapping):
 
     def _infer_map_type(
         self,
-        data: Series,
+        scale: Scale,
         palette: Optional[PaletteSpec],
-        norm: Optional[Normalize],
-        input_format: Literal["long", "wide"],
-    ) -> Optional[Literal["numeric", "categorical", "datetime"]]:
+        data: Series,
+    ) -> Literal["numeric", "categorical", "datetime"]:
         """Determine how to implement the mapping."""
         map_type: Optional[Literal["numeric", "categorical", "datetime"]]
-        if palette in QUAL_PALETTES:
+        if scale is not None:
+            return scale.type
+        elif palette in QUAL_PALETTES:
             map_type = "categorical"
-        elif norm is not None:
-            map_type = "numeric"
-        elif isinstance(palette, (dict, list)):  # TODO mapping/sequence?
-            map_type = "categorical"
-        elif input_format == "wide":
+        elif isinstance(palette, (abc.Mapping, abc.Sequence)):
             map_type = "categorical"
         else:
             map_type = variable_type(data)
@@ -240,16 +233,15 @@ class HueMapping(SemanticMapping):
                 cmap = color_palette(palette, as_cmap=True)
 
             # Now sort out the data normalization
+            # TODO consolidate in ScaleWrapper so we always have a norm here?
             if norm is None:
                 norm = mpl.colors.Normalize()
             elif isinstance(norm, tuple):
                 norm = mpl.colors.Normalize(*norm)
             elif not isinstance(norm, mpl.colors.Normalize):
-                err = "``hue_norm`` must be None, tuple, or Normalize object."
+                err = "`hue_norm` must be None, tuple, or Normalize object."
                 raise ValueError(err)
-
-            if not norm.scaled():
-                norm(np.asarray(data.dropna()))
+            norm.autoscale_None(data.dropna())
 
             lookup_table = dict(zip(levels, cmap(norm(levels))))
 
