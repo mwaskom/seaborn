@@ -24,6 +24,10 @@ class Mark:
 
         self._kwargs = kwargs
 
+    def _adjust(self, df: DataFrame) -> DataFrame:
+
+        return df
+
     def _plot(
         self, generate_splits: Generator, mappings: MappingDict,
     ) -> None:

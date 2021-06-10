@@ -1,4 +1,5 @@
 from __future__ import annotations
+import numpy as np
 from .base import Mark
 
 
@@ -7,6 +8,35 @@ class Point(Mark):
     grouping_vars = []
     requires = []
     supports = ["hue"]
+
+    def __init__(self, jitter=None, **kwargs):
+
+        super().__init__(**kwargs)
+        self.jitter = jitter  # TODO decide on form of jitter and add type hinting
+
+    def _adjust(self, df):
+
+        if self.jitter is None:
+            return df
+
+        x, y = self.jitter  # TODO maybe not format, and do better error handling
+
+        # TODO maybe accept a Jitter class so we can control things like distribution?
+        # If we do that, should we allow convenient flexibility (i.e. (x, y) tuple)
+        # in the object interface, or be simpler but more verbose?
+
+        # TODO note that some marks will have multiple adjustments
+        # (e.g. strip plot has both dodging and jittering)
+
+        # TODO native scale of jitter? maybe just for a Strip subclass?
+
+        rng = np.random.default_rng()  # TODO seed?
+
+        n = len(df)
+        x_jitter = 0 if not x else rng.uniform(-x, +x, n)
+        y_jitter = 0 if not y else rng.uniform(-y, +y, n)
+
+        return df.assign(x=df["x"] + x_jitter, y=df["y"] + y_jitter)
 
     def _plot_split(self, keys, data, ax, mappings, kws):
 
