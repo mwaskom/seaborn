@@ -232,6 +232,8 @@ class Plot:
 
         for layer in self._layers:
 
+            # TODO don't need to add this onto the layer object, it just gets
+            # extracted as the first step in _plot_layer
             layer.mappings = {k: v for k, v in mappings.items() if k in layer}
 
             # TODO very messy but needed to concat with variables added in .facet()
@@ -342,6 +344,7 @@ class Plot:
         grouping_vars = layer.mark.grouping_vars + default_grouping_vars
 
         data = layer.data
+        mark = layer.mark
         stat = layer.stat
         mappings = layer.mappings
 
@@ -349,6 +352,8 @@ class Plot:
 
         if stat is not None:
             df = self._apply_stat(df, grouping_vars, stat)
+
+        df = mark._adjust(df)
 
         # Our statistics happen on the scale we want, but then matplotlib is going
         # to re-handle the scaling, so we need to invert before handing off
