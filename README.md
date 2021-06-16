@@ -76,3 +76,9 @@ Seaborn development takes place on Github: https://github.com/mwaskom/seaborn
 
 Please submit bugs that you encounter to the [issue tracker](https://github.com/mwaskom/seaborn/issues) with a reproducible example demonstrating the problem. Questions about usage are more at home on StackOverflow, where there is a [seaborn tag](https://stackoverflow.com/questions/tagged/seaborn).
 
+
+License
+-------
+
+[BSD 3-Clause](https://github.com/mwaskom/seaborn/blob/master/LICENSE)
+
