@@ -2,7 +2,7 @@
 _build/
 generated/
 examples/
-example_thumbs/
+example_thumbs/*.png
 introduction.rst
 tutorial/*.rst
 docstrings/*.rst
