@@ -1,3 +1,6 @@
+"""
+Components for parsing variable assignments and internally representing plot data.
+"""
 from __future__ import annotations
 
 from collections import abc
@@ -5,26 +8,46 @@ import pandas as pd
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional, Any
-    from collections.abc import Hashable, Mapping
     from pandas import DataFrame
-    from .typing import Vector
+    from seaborn._core.typing import DataSource, VariableSpec
 
+
+# TODO Repetition in the docstrings should be reduced with interpolation tools
 
 class PlotData:
-    """Data table with plot variable schema and mapping to original names."""
+    """
+    Data table with plot variable schema and mapping to original names.
+
+    Contains logic for parsing variable specification arguments and updating
+    the table with layer-specific data and/or mappings.
+
+    Parameters
+    ----------
+    data
+        Input data where variable names map to vector values.
+    variables
+        Keys are names of plot variables (x, y, ...) each value is one of:
+
+        - name of a column (or index level, or dictionary entry) in `data`
+        - vector in any format that can construct a :class:`pandas.DataFrame`
+
+    Attributes
+    ----------
+    frame
+        Data table with column names having defined plot variables.
+    names
+        Dictionary mapping plot variable names to names in source data structure(s).
+
+    """
     frame: DataFrame
-    names: dict[str, Optional[str]]
-    _source: Optional[DataFrame | Mapping]
+    names: dict[str, str | None]
+    _source: DataSource
 
     def __init__(
         self,
-        data: Optional[DataFrame | Mapping],
-        variables: Optional[dict[str, Hashable | Vector]],
+        data: DataSource,
+        variables: dict[str, VariableSpec],
     ):
-
-        if variables is None:
-            variables = {}
 
         frame, names = self._assign_variables(data, variables)
 
@@ -34,17 +57,16 @@ class PlotData:
         self._source_data = data
         self._source_vars = variables
 
-    def __contains__(self, key: Hashable) -> bool:
+    def __contains__(self, key: str) -> bool:
         """Boolean check on whether a variable is defined in this dataset."""
         return key in self.frame
 
     def concat(
         self,
-        data: Optional[DataFrame | Mapping],
-        variables: Optional[dict[str, Optional[Hashable | Vector]]],
+        data: DataSource,
+        variables: dict[str, VariableSpec] | None,
     ) -> PlotData:
         """Add, replace, or drop variables and return as a new dataset."""
-
         # Inherit the original source of the upsteam data by default
         if data is None:
             data = self._source_data
@@ -75,25 +97,26 @@ class PlotData:
 
     def _assign_variables(
         self,
-        data: Optional[DataFrame | Mapping],
-        variables: dict[str, Optional[Hashable | Vector]]
-    ) -> tuple[DataFrame, dict[str, Optional[str]]]:
+        data: DataSource,
+        variables: dict[str, VariableSpec],
+    ) -> tuple[DataFrame, dict[str, str | None]]:
         """
-        Define plot variables given long-form data and/or vector inputs.
+        Assign values for plot variables given long-form data and/or vector inputs.
 
         Parameters
         ----------
         data
             Input data where variable names map to vector values.
         variables
-            Keys are seaborn variables (x, y, hue, ...) and values are vectors
-            in any format that can construct a :class:`pandas.DataFrame` or
-            names of columns or index levels in ``data``.
+            Keys are names of plot variables (x, y, ...) each value is one of:
+
+            - name of a column (or index level, or dictionary entry) in `data`
+            - vector in any format that can construct a :class:`pandas.DataFrame`
 
         Returns
         -------
         frame
-            Dataframe mapping seaborn variables (x, y, hue, ...) to data vectors.
+            Table mapping seaborn variables (x, y, hue, ...) to data vectors.
         names
             Keys are defined seaborn variables; values are names inferred from
             the inputs (or None when no name can be determined).
@@ -101,24 +124,31 @@ class PlotData:
         Raises
         ------
         ValueError
-            When variables are strings that don't appear in ``data``.
+            When variables are strings that don't appear in `data`, or when they are
+            non-indexed vector datatypes that have a different length from `data`.
 
         """
-        plot_data: dict[str, Vector] = {}
-        var_names: dict[str, Optional[str]] = {}
+        source_data: dict | DataFrame
+        frame: DataFrame
+        names: dict[str, str | None]
 
-        # Data is optional; all variables can be defined as vectors
-        if data is None:
-            data = {}
+        plot_data = {}
+        names = {}
+
+        given_data = data is not None
+        if given_data:
+            source_data = data
+        else:
+            # Data is optional; all variables can be defined as vectors
+            # But simplify downstream code by always having a usable source data object
+            source_data = {}
 
         # TODO Generally interested in accepting a generic DataFrame interface
         # Track https://data-apis.org/ for development
 
         # Variables can also be extracted from the index of a DataFrame
-        index: dict[str, Any]
-        if isinstance(data, pd.DataFrame):
-            index = data.index.to_frame().to_dict(
-                "series")  # type: ignore  # data-sci-types wrong about to_dict return
+        if isinstance(source_data, pd.DataFrame):
+            index = source_data.index.to_frame().to_dict("series")
         else:
             index = {}
 
@@ -133,37 +163,50 @@ class PlotData:
             # Usually it will be a string, but allow other hashables when
             # taking from the main data object. Allow only strings to reference
             # fields in the index, because otherwise there is too much ambiguity.
+
+            # TODO this will be rendered unnecessary by the following pandas fix:
+            # https://github.com/pandas-dev/pandas/pull/41283
             try:
-                val_as_data_key = (
-                    val in data
-                    or (isinstance(val, str) and val in index)
-                )
-            except (KeyError, TypeError):
-                val_as_data_key = False
+                hash(val)
+                val_is_hashable = True
+            except TypeError:
+                val_is_hashable = False
+
+            val_as_data_key = (
+                # See https://github.com/pandas-dev/pandas/pull/41283
+                # (isinstance(val, abc.Hashable) and val in source_data)
+                (val_is_hashable and val in source_data)
+                or (isinstance(val, str) and val in index)
+            )
 
             if val_as_data_key:
 
-                if val in data:
-                    plot_data[key] = data[val]  # type: ignore # fails on key: Hashable
+                if val in source_data:
+                    plot_data[key] = source_data[val]
                 elif val in index:
-                    plot_data[key] = index[val]  # type: ignore # fails on key: Hashable
-                var_names[key] = str(val)
+                    plot_data[key] = index[val]
+                names[key] = str(val)
 
             elif isinstance(val, str):
 
-                # This looks like a column name but we don't know what it means!
-                # TODO improve this feedback to distinguish between
-                # - "you passed a string, but did not pass data"
-                # - "you passed a string, it was not found in data"
+                # This looks like a column name but, lookup failed.
 
-                err = f"Could not interpret value `{val}` for parameter `{key}`"
+                err = f"Could not interpret value `{val}` for `{key}`. "
+                if not given_data:
+                    err += "Value is a string, but `data` was not passed."
+                else:
+                    err += "An entry with this name does not appear in `data`."
                 raise ValueError(err)
 
             else:
 
-                # Otherwise, assume the value is itself data
+                # Otherwise, assume the value somehow represents data
 
-                # Raise when data object is present and a vector can't matched
+                # Ignore empty data structures
+                if isinstance(val, abc.Sized) and len(val) == 0:
+                    continue
+
+                # If vector has no index, it must match length of data table
                 if isinstance(data, pd.DataFrame) and not isinstance(val, pd.Series):
                     if isinstance(val, abc.Sized) and len(data) != len(val):
                         val_cls = val.__class__.__name__
@@ -174,21 +217,16 @@ class PlotData:
                         )
                         raise ValueError(err)
 
-                plot_data[key] = val  # type: ignore # fails on key: Hashable
+                plot_data[key] = val
 
-                # Try to infer the name of the variable
-                var_names[key] = getattr(val, "name", None)
+                # Try to infer the original name using pandas-like metadata
+                if hasattr(val, "name"):
+                    names[key] = str(val.name)  # type: ignore  # mypy/1424
+                else:
+                    names[key] = None
 
         # Construct a tidy plot DataFrame. This will convert a number of
         # types automatically, aligning on index in case of pandas objects
         frame = pd.DataFrame(plot_data)
-
-        # Reduce the variables dictionary to fields with valid data
-        names: dict[str, Optional[str]] = {
-            var: name
-            for var, name in var_names.items()
-            # TODO I am not sure that this is necessary any more
-            if frame[var].notnull().any()
-        }
 
         return frame, names

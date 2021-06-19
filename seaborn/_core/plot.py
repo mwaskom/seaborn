@@ -6,25 +6,30 @@ import itertools
 import pandas as pd
 import matplotlib as mpl
 
-from ..axisgrid import FacetGrid
-from .rules import categorical_order, variable_type
-from .data import PlotData
-from .mappings import GroupMapping, HueMapping
-from .scales import ScaleWrapper, CategoricalScale, DatetimeScale, norm_from_scale
+from seaborn.axisgrid import FacetGrid
+from seaborn._core.rules import categorical_order, variable_type
+from seaborn._core.data import PlotData
+from seaborn._core.mappings import GroupMapping, HueMapping
+from seaborn._core.scales import (
+    ScaleWrapper,
+    CategoricalScale,
+    DatetimeScale,
+    norm_from_scale
+)
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional, Literal
-    from collections.abc import Callable, Generator
-    from pandas import DataFrame
+    from typing import Literal
+    from collections.abc import Callable, Generator, Iterable
+    from pandas import DataFrame, Series, Index
     from matplotlib.figure import Figure
     from matplotlib.axes import Axes
     from matplotlib.scale import ScaleBase
     from matplotlib.colors import Normalize
-    from .mappings import SemanticMapping
-    from .typing import DataSource, Vector, PaletteSpec, VariableSpec
-    from .._marks.base import Mark
-    from .._stats.base import Stat
+    from seaborn._core.mappings import SemanticMapping
+    from seaborn._marks.base import Mark
+    from seaborn._stats.base import Stat
+    from seaborn._core.typing import DataSource, PaletteSpec, VariableSpec
 
 
 class Plot:
@@ -35,13 +40,13 @@ class Plot:
     _scales: dict[str, ScaleBase]
 
     _figure: Figure
-    _ax: Optional[Axes]
-    _facets: Optional[FacetGrid]  # TODO would have a circular import?
+    _ax: Axes | None
+    _facets: FacetGrid | None
 
     def __init__(
         self,
-        data: Optional[DataSource] = None,
-        **variables: Optional[VariableSpec],
+        data: DataSource = None,
+        **variables: VariableSpec,
     ):
 
         self._data = PlotData(data, variables)
@@ -70,38 +75,47 @@ class Plot:
     def add(
         self,
         mark: Mark,
-        stat: Optional[Stat] = None,
+        stat: Stat | None = None,
         orient: Literal["x", "y", "v", "h"] = "x",
-        data: Optional[DataSource] = None,
-        **variables: Optional[VariableSpec],
+        data: DataSource = None,
+        **variables: VariableSpec,
     ) -> Plot:
 
-        if not variables:
-            variables = None
+        # TODO we currently need to distinguish between no variables defined for
+        # this layer (in which case we inherit the variable specifications from
+        # the Plot() constructor) and an empty dictionary of variables, because
+        # the latter appears in the faceting context when we join the facet data
+        # with each layer's data. That is more evidence that the current way
+        # we're handling the facet datajoin is a mess and needs to be reevaluated.
+        # Once it is, we can simplify this to just pass the empty dictionary.
 
-        layer_data = self._data.concat(data, variables)
+        layer_variables = None if not variables else variables
+        layer_data = self._data.concat(data, layer_variables)
 
         if stat is None:  # TODO do we need some way to say "do no stat transformation"?
             stat = mark.default_stat
 
-        orient = {"v": "x", "h": "y"}.get(orient, orient)
-        mark.orient = orient
+        orient_map = {"v": "x", "h": "y"}
+        orient = orient_map.get(orient, orient)  # type: ignore  # mypy false positive?
+        mark.orient = orient  # type: ignore  # mypy false positive?
         if stat is not None:
-            stat.orient = orient
+            stat.orient = orient  # type: ignore  # mypy false positive?
 
         self._layers.append(Layer(layer_data, mark, stat))
 
         return self
 
     # TODO should we have facet_col(var, order, wrap)/facet_row(...)?
+    # TODO or facet(dim, var, ...)
     def facet(
         self,
-        col: Optional[VariableSpec] = None,
-        row: Optional[VariableSpec] = None,
-        col_order: Optional[Vector] = None,
-        row_order: Optional[Vector] = None,
-        col_wrap: Optional[int] = None,
-        data: Optional[DataSource] = None,
+        col: VariableSpec = None,
+        row: VariableSpec = None,
+        # TODO define our own type alias for order= arguments?
+        col_order: Series | Index | Iterable | None = None,
+        row_order: Series | Index | Iterable | None = None,
+        col_wrap: int | None = None,
+        data: DataSource = None,
         **grid_kwargs,  # possibly/probably expose relevant ones
     ) -> Plot:
 
@@ -125,7 +139,10 @@ class Plot:
 
         # TODO what should this data structure be?
         # We can't initialize a FacetGrid here because that will open a figure
-        orders = {"col": col_order, "row": row_order}
+        orders = {
+            "col": None if col_order is None else list(col_order),
+            "row": None if row_order is None else list(row_order),
+        }
 
         facetspec = {}
         for dim in ["col", "row"]:
@@ -151,7 +168,7 @@ class Plot:
     # TODO map_hue or map_color/map_facecolor/map_edgecolor (or ... all of the above?)
     def map_hue(
         self,
-        palette: Optional[PaletteSpec] = None,
+        palette: PaletteSpec = None,
     ) -> Plot:
 
         # TODO we do some fancy business currently to avoid having to
@@ -164,26 +181,36 @@ class Plot:
         self,
         var: str,
         scale: str | ScaleBase = "linear",
-        norm: Optional[tuple[Optional[float], Optional[float]] | Normalize] = None,
+        norm: tuple[float | None, float | None] | Normalize | None = None,
         **kwargs
     ) -> Plot:
 
         # TODO use norm for setting axis limits? Or otherwise share an interface?
 
+        # TODO or separate norm as a Normalize object and limits as a tuple?
+        # (If we have one we can create the other)
+
         scale = mpl.scale.scale_factory(scale, var, **kwargs)
-        norm = norm_from_scale(scale, norm)
+        if norm is None:
+            # TODO what about when we want to infer the scale from the norm?
+            # e.g. currently you pass LogNorm to get a log normalization...
+            norm = norm_from_scale(scale, norm)
         self._scales[var] = ScaleWrapper(scale, "numeric", norm=norm)
         return self
 
     def scale_categorical(
         self,
         var: str,
-        order: Optional[Vector] = None,  # this will pick up scalars?
-        formatter: Optional[Callable] = None,
+        order: Series | Index | Iterable | None = None,
+        formatter: Callable | None = None,
     ) -> Plot:
 
         # TODO how to set limits/margins "nicely"?
         # TODO similarly, should this modify grid state like current categorical plots?
+        # TODO "smart"/data-dependant ordering (e.g. order by median of y variable)
+
+        if order is not None:
+            order = list(order)
 
         scale = CategoricalScale(var, order, formatter)
         self._scales[var] = ScaleWrapper(scale, "categorical")
@@ -232,9 +259,7 @@ class Plot:
 
         for layer in self._layers:
 
-            # TODO don't need to add this onto the layer object, it just gets
-            # extracted as the first step in _plot_layer
-            layer.mappings = {k: v for k, v in mappings.items() if k in layer}
+            mappings = {k: v for k, v in mappings.items() if k in layer}
 
             # TODO very messy but needed to concat with variables added in .facet()
             # Demands serious rethinking!
@@ -243,7 +268,7 @@ class Plot:
                     self._facetdata.frame,
                     {v: v for v in ["col", "row"] if v in self._facetdata}
                 )
-            self._plot_layer(layer)
+            self._plot_layer(layer, mappings)
 
         return self
 
@@ -338,7 +363,7 @@ class Plot:
 
         return mappings
 
-    def _plot_layer(self, layer):
+    def _plot_layer(self, layer, mappings):
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
         grouping_vars = layer.mark.grouping_vars + default_grouping_vars
@@ -346,7 +371,6 @@ class Plot:
         data = layer.data
         mark = layer.mark
         stat = layer.stat
-        mappings = layer.mappings
 
         df = self._scale_coords(data.frame)
 
@@ -392,6 +416,11 @@ class Plot:
 
     def _assign_axes(self, df: DataFrame) -> Axes:
         """Given a faceted DataFrame, find the Axes object for each entry."""
+        # TODO the redundancy of self._facets and self._ax screws up type checking
+        if self._facets is None:
+            assert self._ax is not None  # help mypy
+            return self._ax
+
         df = df.filter(regex="row|col")
 
         if len(df.columns) > 1:
@@ -410,7 +439,8 @@ class Plot:
         with pd.option_context("mode.use_inf_as_null", True):
             coord_df = coord_df.dropna()
 
-        if self._ax is not None:
+        if self._facets is None:
+            assert self._ax is not None  # help mypy
             self._scale_coords_single(coord_df, out_df, self._ax)
         else:
             axes_map = self._assign_axes(df)
@@ -520,17 +550,19 @@ class Plot:
                 sub_vars = dict(zip(grouping_vars, key))
 
                 # TODO can we use axes_map here?
-                row = sub_vars.get("row", None)
-                col = sub_vars.get("col", None)
                 use_ax: Axes
-                if row is not None and col is not None:
-                    use_ax = facets.axes_dict[(row, col)]
-                elif row is not None:
-                    use_ax = facets.axes_dict[row]
-                elif col is not None:
-                    use_ax = facets.axes_dict[col]
-                else:
+                if facets is None:
+                    assert ax is not None  # help mypy
                     use_ax = ax
+                else:
+                    row = sub_vars.get("row", None)
+                    col = sub_vars.get("col", None)
+                    if row is not None and col is not None:
+                        use_ax = facets.axes_dict[(row, col)]
+                    elif row is not None:
+                        use_ax = facets.axes_dict[row]
+                    elif col is not None:
+                        use_ax = facets.axes_dict[col]
                 out = sub_vars, df_subset.copy(), use_ax
                 yield out
 
@@ -544,7 +576,7 @@ class Plot:
         # make sense to specify whether or not to use pyplot at the initial Plot().
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
-        import matplotlib.pyplot as plt  # type: ignore
+        import matplotlib.pyplot as plt
         self.plot()
         plt.show()
 

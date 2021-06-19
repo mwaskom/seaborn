@@ -40,7 +40,7 @@ class Mark:
 
     def _plot_split(
         self,
-        keys: dict[str: Any],
+        keys: dict[str, Any],
         data: DataFrame,
         ax: Axes,
         mappings: MappingDict,

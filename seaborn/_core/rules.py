@@ -8,12 +8,10 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from pandas.api.types import is_categorical_dtype, is_numeric_dtype, is_datetime64_dtype
-
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Optional, Literal
-    from .typing import Vector
+    from typing import Literal
+    from pandas import Series
 
 
 class VarType(UserString):
@@ -25,7 +23,8 @@ class VarType(UserString):
 
     """
     # TODO VarType is an awfully overloaded name, but so is DataType ...
-    allowed = "numeric", "datetime", "categorical"
+    # TODO adding unknown because we are using this in for scales, is that right?
+    allowed = "numeric", "datetime", "categorical", "unknown"
 
     def __init__(self, data):
         assert data in self.allowed, data
@@ -37,7 +36,7 @@ class VarType(UserString):
 
 
 def variable_type(
-    vector: Vector,
+    vector: Series,
     boolean_type: Literal["numeric", "categorical"] = "numeric",
 ) -> VarType:
     """
@@ -64,7 +63,7 @@ def variable_type(
     """
 
     # If a categorical dtype is set, infer categorical
-    if is_categorical_dtype(vector):
+    if pd.api.types.is_categorical_dtype(vector):
         return VarType("categorical")
 
     # Special-case all-na data, which is always "numeric"
@@ -88,10 +87,10 @@ def variable_type(
             return VarType(boolean_type)
 
     # Defer to positive pandas tests
-    if is_numeric_dtype(vector):
+    if pd.api.types.is_numeric_dtype(vector):
         return VarType("numeric")
 
-    if is_datetime64_dtype(vector):
+    if pd.api.types.is_datetime64_dtype(vector):
         return VarType("datetime")
 
     # --- If we get to here, we need to check the entries
@@ -123,20 +122,17 @@ def variable_type(
     return VarType("categorical")
 
 
-# TODO do modern functions ever pass a type other than Series into this?
-def categorical_order(vector: Vector, order: Optional[Vector] = None) -> list:
+def categorical_order(vector: Series, order: list | None = None) -> list:
     """
     Return a list of unique data values using seaborn's ordering rules.
 
-    Determine an ordered list of levels in ``values``.
-
     Parameters
     ----------
-    vector : list, array, Categorical, or Series
+    vector : Series
         Vector of "categorical" values
-    order : list-like, optional
+    order : list
         Desired order of category levels to override the order determined
-        from the ``values`` object.
+        from the `data` object.
 
     Returns
     -------
@@ -144,24 +140,14 @@ def categorical_order(vector: Vector, order: Optional[Vector] = None) -> list:
         Ordered list of category levels not including null values.
 
     """
-    if order is None:
+    if order is not None:
+        return order
 
-        # TODO We don't have Categorical as part of our Vector type
-        # Do we really accept it? Is there a situation where we want to?
+    if vector.dtype.name == "category":
+        order = list(vector.cat.categories)
+    else:
+        order = list(filter(pd.notnull, vector.unique()))
+        if variable_type(order) == "numeric":
+            order.sort()
 
-        # if isinstance(vector, pd.Categorical):
-        #     order = vector.categories
-
-        if isinstance(vector, pd.Series):
-            if vector.dtype.name == "category":
-                order = vector.cat.categories
-            else:
-                order = vector.unique()
-        else:
-            order = pd.unique(vector)
-
-        if variable_type(vector) == "numeric":
-            order = np.sort(order)
-
-        order = filter(pd.notnull, order)
-    return list(order)
+    return order

@@ -8,3 +8,6 @@ unittests:
 
 lint:
 	flake8 seaborn
+
+typecheck:
+	mypy -p seaborn._core --exclude seaborn._core.orig.py
