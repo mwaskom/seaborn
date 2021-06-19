@@ -97,3 +97,23 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v1
         if: ${{ success() }}
+
+lint:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+
+      - name: Install tools
+        run: pip install mypy flake8
+
+      - name: Flake8
+        run: make lint
+
+      - name: Type checking
+        run: make typecheck

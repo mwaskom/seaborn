@@ -149,11 +149,6 @@ class TestHueMapping:
         with pytest.raises(ValueError):
             HueMapping(p, palette=palette)
 
-        # Test dict with missing keys
-        palette = dict(zip(wide_df.columns[:-1], colors))
-        with pytest.raises(ValueError):
-            HueMapping(p, palette=palette)
-
         # Test list with wrong number of colors
         palette = colors[:-1]
         with pytest.raises(ValueError):

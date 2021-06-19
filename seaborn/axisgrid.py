@@ -1,3 +1,4 @@
+from __future__ import annotations
 from itertools import product
 from inspect import signature
 import warnings
@@ -18,6 +19,9 @@ from ._docstrings import (
     _core_docs,
 )
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 __all__ = ["FacetGrid", "PairGrid", "JointGrid", "pairplot", "jointplot"]
 
@@ -309,6 +313,9 @@ _facet_docs = dict(
 
 class FacetGrid(Grid):
     """Multi-plot grid for plotting conditional relationships."""
+
+    axes_dict: dict[tuple | str, Axes]
+
     @_deprecate_positional_args
     def __init__(
         self, data, *,
