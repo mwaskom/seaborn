@@ -371,12 +371,20 @@ def test_load_datasets():
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
-def test_load_dataset_error():
+def test_load_dataset_string_error():
 
     name = "bad_name"
     err = f"'{name}' is not one of the example datasets."
     with pytest.raises(ValueError, match=err):
         load_dataset(name)
+
+
+def test_load_dataset_passed_data_error():
+
+    df = pd.DataFrame()
+    err = "This function accepts only strings"
+    with pytest.raises(TypeError, match=err):
+        load_dataset(df)
 
 
 @_network(url="https://github.com/mwaskom/seaborn-data")
