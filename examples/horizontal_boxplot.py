@@ -28,3 +28,5 @@ sns.stripplot(x="distance", y="method", data=planets,
 ax.xaxis.grid(True)
 ax.set(ylabel="")
 sns.despine(trim=True, left=True)
+
+
