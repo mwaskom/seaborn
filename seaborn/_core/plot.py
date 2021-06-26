@@ -60,6 +60,9 @@ class Plot:
         }
 
         # TODO is using "unknown" here the best approach?
+        # Other options would be:
+        # - None as the value for type
+        # - some sort of uninitialized singleton for the object,
         self._scales = {
             "x": ScaleWrapper(mpl.scale.LinearScale("x"), "unknown"),
             "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
@@ -69,6 +72,14 @@ class Plot:
 
         # TODO  Provisional name for a method that accepts an existing Axes object,
         # and possibly one that does all of the figure/subplot configuration
+
+        # We should also accept an existing figure object. This will be most useful
+        # in cases where users have created a *sub*figure ... it will let them facet
+        # etc. within an existing, larger figure. We still have the issue with putting
+        # the legend outside of the plot and that potentially causing problems for that
+        # larger figure. Not sure what to do about that. I suppose existing figure could
+        # disabling legend_out.
+
         raise NotImplementedError()
         return self
 
@@ -76,7 +87,7 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
-        orient: Literal["x", "y", "v", "h"] = "x",
+        orient: Literal["x", "y", "v", "h"] = "x",  # TODO "auto" as defined by Mark?
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
@@ -92,8 +103,14 @@ class Plot:
         layer_variables = None if not variables else variables
         layer_data = self._data.concat(data, layer_variables)
 
-        if stat is None:  # TODO do we need some way to say "do no stat transformation"?
-            stat = mark.default_stat
+        if stat is None and mark.default_stat is not None:
+            # TODO We need some way to say "do no stat transformation" that is different
+            # from "use the default". That's basically an IdentityStat.
+
+            # Default stat needs to be initialized here so that its state is
+            # not modified across multiple plots. If a Mark wants to define a default
+            # stat with non-default params, it should use functools.partial
+            stat = mark.default_stat()
 
         orient_map = {"v": "x", "h": "y"}
         orient = orient_map.get(orient, orient)  # type: ignore  # mypy false positive?
@@ -104,6 +121,32 @@ class Plot:
         self._layers.append(Layer(layer_data, mark, stat))
 
         return self
+
+    def _facet(
+        self,
+        dim: Literal["row", "col"],
+        var: VariableSpec = None,
+        order: Series | Index | Iterable | None = None,  # TODO alias?
+        wrap: int | None = None,
+        share: bool | Literal["row", "col"] = True,
+        data: DataSource = None,
+    ):
+
+        # TODO how to encode the data for this variable?
+
+        # TODO: an issue: `share` is ambiguous because you could configure
+        # sharing of both axes for a single dimensional facet. But if we
+        # have sharex/sharey in both facet_rows and facet_cols, we will have
+        # to handle potentially conflicting specifications. We could also put
+        # sharex/sharey in the figure configuration function defaulting to True
+        # since without facets, that has no real effect, except we need to
+        # sort out how to combine that with the pairgrid functionality.
+
+        self._facetspec[dim] = {
+            "order": order,
+            "wrap": wrap,
+            "share": share,
+        }
 
     # TODO should we have facet_col(var, order, wrap)/facet_row(...)?
     # TODO or facet(dim, var, ...)
@@ -177,6 +220,10 @@ class Plot:
         self._mappings["hue"] = HueMapping(palette)
         return self
 
+    # TODO originally we had planned to have a scale_native option that would default
+    # to matplotlib. Is this still something we need? It is maybe related to the idea
+    # of having an identity mapping for semantic variables.
+
     def scale_numeric(
         self,
         var: str,
@@ -185,12 +232,26 @@ class Plot:
         **kwargs
     ) -> Plot:
 
+        # TODO XXX FIXME matplotlib scales sometimes default to
+        # filling invalid outputs with large out of scale numbers
+        # (e.g. default behavior for LogScale is 0 -> -10000)
+        # This will cause MAJOR PROBLEMS for statistical transformations
+        # Solution? I think it's fine to special-case scale="log" in
+        # Plot.scale_numeric and force `nonpositive="mask"` and remove
+        # NAs after scaling (cf GH2454).
+        # And then add a warning in the docstring that the users must
+        # ensure that ScaleBase derivatives mask out of bounds data
+
         # TODO use norm for setting axis limits? Or otherwise share an interface?
 
         # TODO or separate norm as a Normalize object and limits as a tuple?
         # (If we have one we can create the other)
 
-        scale = mpl.scale.scale_factory(scale, var, **kwargs)
+        # TODO expose parameter for internal dtype achieved during scale.cast?
+
+        if isinstance(scale, str):
+            scale = mpl.scale.scale_factory(scale, var, **kwargs)
+
         if norm is None:
             # TODO what about when we want to infer the scale from the norm?
             # e.g. currently you pass LogNorm to get a log normalization...
@@ -279,6 +340,8 @@ class Plot:
         # we are not sharing axes ... e.g. we currently can't use displot to
         # show all histograms if some of those histograms need to be categorical.
         # We can decide how much of a problem we are going to consider that to be...
+        # It may be better to implement to PairGrid like functionality within Plot
+        # and then that can be the "correct" way to mix scales across a figure.
 
         layers = self._layers
         for var, scale in self._scales.items():
@@ -328,6 +391,24 @@ class Plot:
             self._figure = mpl.figure.Figure()
             self._ax = self._figure.add_subplot()
             self._facets = None
+
+        # TODO we need a new approach here. I think that a flat list of axes
+        # objects should be the primary (and possibly only) interface between
+        # Plot and the matplotlib Axes it's using. (Possibly the data structure
+        # can be list-like with some useful embellishments). We'll handle all
+        # the complicated business of setting up a potentially faceted / wrapped
+        # / paired figure upstream of that, and downstream will just have the
+        # list of Axes.
+        #
+        # That means we will need some way to map between axes and views on the
+        # data (rows for facets and columns for pairs). Then when we are
+        # plotting, we will first loop over the axes list, then select the data
+        # for each axes, rather than looping over data subsets and finding the
+        # corresponding axes. This will let us solve the problem of showing the
+        # same plot on all facets. It will also be cleaner.
+        #
+        # I don't know if we want to package all of the figure setup and mapping
+        # between data and axes logic in Plot or if that deserves a separate classs.
 
         axes_list = list(self._facets.axes.flat) if self._ax is None else [self._ax]
         for ax in axes_list:
@@ -395,6 +476,8 @@ class Plot:
         self, df: DataFrame, grouping_vars: list[str], stat: Stat
     ) -> DataFrame:
 
+        stat.setup(df)
+
         # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
         # IDEA: have Stat identify as an aggregator? (Through Mixin or attribute)
         # e.g. if stat.aggregates ...
@@ -403,15 +486,22 @@ class Plot:
         # Better to have the Stat declare when it wants that to happen
         if stat.orient not in stat_grouping_vars:
             stat_grouping_vars.append(stat.orient)
+
+        # TODO rewrite this whole thing, I think we just need to avoid groupby/apply
         df = (
             df
             .groupby(stat_grouping_vars)
             .apply(stat)
-            # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
-            .drop(stat_grouping_vars, axis=1, errors="ignore")
-            .reset_index(stat_grouping_vars)
-            .reset_index(drop=True)  # TODO not always needed, can we limit?
         )
+        # TODO next because of https://github.com/pandas-dev/pandas/issues/34809
+        for var in stat_grouping_vars:
+            if var in df.index.names:
+                df = (
+                    df
+                    .drop(var, axis=1, errors="ignore")
+                    .reset_index(var)
+                    .reset_index(drop=True)  # TODO not always needed, can we limit?
+                )
         return df
 
     def _assign_axes(self, df: DataFrame) -> Axes:
@@ -434,7 +524,12 @@ class Plot:
     def _scale_coords(self, df: DataFrame) -> DataFrame:
 
         coord_df = df.filter(regex="x|y")
-        out_df = df.drop(coord_df.columns, axis=1).copy(deep=False)
+        out_df = (
+            df
+            .drop(coord_df.columns, axis=1)
+            .copy(deep=False)
+            .reindex(df.columns, axis=1)  # So unscaled columns retain their place
+        )
 
         with pd.option_context("mode.use_inf_as_null", True):
             coord_df = coord_df.dropna()
@@ -447,11 +542,6 @@ class Plot:
             grouped = coord_df.groupby(axes_map, sort=False)
             for ax, ax_df in grouped:
                 self._scale_coords_single(ax_df, out_df, ax)
-
-        # TODO do we need to handle nas again, e.g. if negative values
-        # went into a log transform?
-        # cf GH2454
-
         return out_df
 
     def _scale_coords_single(
@@ -476,6 +566,8 @@ class Plot:
             if scale.order is not None:
                 data = data[data.isin(scale.order)]
 
+            # TODO wrap this in a try/except and reraise with more information
+            # about what variable caused the problem (and input / desired types)
             data = scale.cast(data)
             axis_obj.update_units(categorical_order(data))
 
@@ -484,8 +576,14 @@ class Plot:
 
     def _unscale_coords(self, df: DataFrame) -> DataFrame:
 
+        # TODO copied from _scale_coords
         coord_df = df.filter(regex="x|y")
-        out_df = df.drop(coord_df.columns, axis=1).copy(deep=False)
+        out_df = (
+            df
+            .drop(coord_df.columns, axis=1)
+            .copy(deep=False)
+            .reindex(df.columns, axis=1)  # So unscaled columns retain their place
+        )
 
         for var, col in coord_df.items():
             axis = var[0]
@@ -538,7 +636,8 @@ class Plot:
                 try:
                     df_subset = grouped_df.get_group(pd_key)
                 except KeyError:
-                    # XXX we are adding this to allow backwards compatability
+                    # TODO (from initial work on categorical plots refactor)
+                    # we are adding this to allow backwards compatability
                     # with the empty artists that old categorical plots would
                     # add (before 0.12), which we may decide to break, in which
                     # case this option could be removed
@@ -548,6 +647,12 @@ class Plot:
                     continue
 
                 sub_vars = dict(zip(grouping_vars, key))
+
+                # TODO I think we need to be able to drop the faceting vars
+                # from a layer and get the same plot on each axes. This is
+                # currently not possible. It's going to be tricky because it
+                # will require decoupling the iteration over subsets from iteration
+                # over facets.
 
                 # TODO can we use axes_map here?
                 use_ax: Axes
@@ -576,6 +681,7 @@ class Plot:
         # make sense to specify whether or not to use pyplot at the initial Plot().
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
+        # TODO pass kwargs (block, etc.)
         import matplotlib.pyplot as plt
         self.plot()
         plt.show()

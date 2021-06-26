@@ -9,7 +9,7 @@ from pandas.testing import assert_series_equal
 from seaborn._core.data import PlotData
 
 
-assert_series_equal = functools.partial(assert_series_equal, check_names=False)
+assert_vector_equal = functools.partial(assert_series_equal, check_names=False)
 
 
 class TestPlotData:
@@ -26,7 +26,7 @@ class TestPlotData:
         assert p._source_vars is long_variables
         for key, val in long_variables.items():
             assert p.names[key] == val
-            assert_series_equal(p.frame[key], long_df[val])
+            assert_vector_equal(p.frame[key], long_df[val])
 
     def test_named_and_given_vectors(self, long_df, long_variables):
 
@@ -35,9 +35,9 @@ class TestPlotData:
 
         p = PlotData(long_df, long_variables)
 
-        assert_series_equal(p.frame["hue"], long_df[long_variables["hue"]])
-        assert_series_equal(p.frame["y"], long_df["b"])
-        assert_series_equal(p.frame["size"], long_df["z"])
+        assert_vector_equal(p.frame["hue"], long_df[long_variables["hue"]])
+        assert_vector_equal(p.frame["y"], long_df["b"])
+        assert_vector_equal(p.frame["size"], long_df["z"])
 
         assert p.names["hue"] == long_variables["hue"]
         assert p.names["y"] == "b"
@@ -50,7 +50,7 @@ class TestPlotData:
         p = PlotData(long_df.set_index(index), long_variables)
 
         assert p.names["x"] == "i"
-        assert_series_equal(p.frame["x"], pd.Series(index, index))
+        assert_vector_equal(p.frame["x"], pd.Series(index, index))
 
     def test_multiindex_as_variables(self, long_df, long_variables):
 
@@ -60,8 +60,8 @@ class TestPlotData:
         long_variables.update({"x": "i", "y": "j"})
 
         p = PlotData(long_df.set_index(index), long_variables)
-        assert_series_equal(p.frame["x"], pd.Series(index_i, index))
-        assert_series_equal(p.frame["y"], pd.Series(index_j, index))
+        assert_vector_equal(p.frame["x"], pd.Series(index_i, index))
+        assert_vector_equal(p.frame["y"], pd.Series(index_j, index))
 
     def test_int_as_variable_key(self):
 
@@ -71,7 +71,7 @@ class TestPlotData:
         key = 2
 
         p = PlotData(df, {var: key})
-        assert_series_equal(p.frame[var], df[key])
+        assert_vector_equal(p.frame[var], df[key])
         assert p.names[var] == str(key)
 
     def test_int_as_variable_value(self, long_df):
@@ -88,7 +88,7 @@ class TestPlotData:
         var = "hue"
         key = ("b", "y")
         p = PlotData(df, {var: key})
-        assert_series_equal(p.frame[var], df[key])
+        assert_vector_equal(p.frame[var], df[key])
         assert p.names[var] == str(key)
 
     def test_dict_as_data(self, long_dict, long_variables):
@@ -96,7 +96,7 @@ class TestPlotData:
         p = PlotData(long_dict, long_variables)
         assert p._source_data is long_dict
         for key, val in long_variables.items():
-            assert_series_equal(p.frame[key], pd.Series(long_dict[val]))
+            assert_vector_equal(p.frame[key], pd.Series(long_dict[val]))
 
     @pytest.mark.parametrize(
         "vector_type",
@@ -121,7 +121,7 @@ class TestPlotData:
 
         for key, val in long_variables.items():
             if vector_type == "series":
-                assert_series_equal(p.frame[key], long_df[val])
+                assert_vector_equal(p.frame[key], long_df[val])
             else:
                 assert_array_equal(p.frame[key], long_df[val])
 
@@ -166,8 +166,8 @@ class TestPlotData:
 
         x_col_expected = pd.Series([1, 2, 3, np.nan, np.nan], np.arange(1, 6))
         y_col_expected = pd.Series([np.nan, np.nan, 3, 4, 5], np.arange(1, 6))
-        assert_series_equal(p.frame["x"], x_col_expected)
-        assert_series_equal(p.frame["y"], y_col_expected)
+        assert_vector_equal(p.frame["x"], x_col_expected)
+        assert_vector_equal(p.frame["y"], y_col_expected)
 
     def test_index_alignment_between_series(self):
 
@@ -183,8 +183,8 @@ class TestPlotData:
 
         x_col_expected = pd.Series([10, 20, 30, np.nan, np.nan], np.arange(1, 6))
         y_col_expected = pd.Series([np.nan, np.nan, 300, 400, 500], np.arange(1, 6))
-        assert_series_equal(p.frame["x"], x_col_expected)
-        assert_series_equal(p.frame["y"], y_col_expected)
+        assert_vector_equal(p.frame["x"], x_col_expected)
+        assert_vector_equal(p.frame["y"], y_col_expected)
 
     def test_key_not_in_data_raises(self, long_df):
 
@@ -238,7 +238,7 @@ class TestPlotData:
         for var, key in dict(**v1, **v2).items():
             assert var in p2
             assert p2.names[var] == key
-            assert_series_equal(p2.frame[var], long_df[key])
+            assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_replace_variable(self, long_df):
 
@@ -254,7 +254,7 @@ class TestPlotData:
         for var, key in variables.items():
             assert var in p2
             assert p2.names[var] == key
-            assert_series_equal(p2.frame[var], long_df[key])
+            assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_remove_variable(self, long_df):
 
@@ -282,7 +282,7 @@ class TestPlotData:
                 assert var not in p2
             else:
                 assert p2.names[var] == key
-                assert_series_equal(p2.frame[var], long_df[key])
+                assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_all_operations_same_data(self, long_df):
 
@@ -297,7 +297,7 @@ class TestPlotData:
                 assert var not in p2
             else:
                 assert p2.names[var] == key
-                assert_series_equal(p2.frame[var], long_df[key])
+                assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_add_variable_new_data(self, long_df):
 
@@ -312,7 +312,7 @@ class TestPlotData:
 
         for var, key in dict(**v1, **v2).items():
             assert p2.names[var] == key
-            assert_series_equal(p2.frame[var], long_df[key])
+            assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_replace_variable_new_data(self, long_df):
 
@@ -330,7 +330,7 @@ class TestPlotData:
 
         for var, key in variables.items():
             assert p2.names[var] == key
-            assert_series_equal(p2.frame[var], long_df[key])
+            assert_vector_equal(p2.frame[var], long_df[key])
 
     def test_concat_add_variable_different_index(self, long_df):
 
@@ -346,8 +346,8 @@ class TestPlotData:
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
 
-        assert_series_equal(p2.frame.loc[d1.index, var1], d1[key1])
-        assert_series_equal(p2.frame.loc[d2.index, var2], d2[key2])
+        assert_vector_equal(p2.frame.loc[d1.index, var1], d1[key1])
+        assert_vector_equal(p2.frame.loc[d2.index, var2], d2[key2])
 
         assert p2.frame.loc[d2.index.difference(d1.index), var1].isna().all()
         assert p2.frame.loc[d1.index.difference(d2.index), var2].isna().all()
@@ -368,5 +368,16 @@ class TestPlotData:
         (var1, key1), = v1.items()
         (var2, key2), = v2.items()
 
-        assert_series_equal(p2.frame.loc[d2.index, var], d2[k2])
+        assert_vector_equal(p2.frame.loc[d2.index, var], d2[k2])
         assert p2.frame.loc[d1.index.difference(d2.index), var].isna().all()
+
+    def test_concat_subset_data_inherit_variables(self, long_df):
+
+        sub_df = long_df[long_df["a"] == "b"]
+
+        var = "y"
+        p1 = PlotData(long_df, {var: var})
+        p2 = p1.concat(sub_df, None)
+
+        assert_vector_equal(p2.frame.loc[sub_df.index, var], sub_df[var])
+        assert p2.frame.loc[long_df.index.difference(sub_df.index), var].isna().all()
