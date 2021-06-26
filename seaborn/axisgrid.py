@@ -1807,7 +1807,7 @@ class JointGrid(object):
         orient : "v" | "h"
             Orientation for reference line.
         joint, marginal : bools
-            Whether to add the reference line to the joint and/or marginal axes.
+            Whether to add the reference line to the joint/marginal axes.
         kwargs : key, value mappings
             Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axhline`
             or :meth:`matplotlib.axes.Axes.axvline` depending on ``orient``.
