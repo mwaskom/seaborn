@@ -1827,6 +1827,8 @@ class JointGrid(object):
         else:
             raise ValueError(f'"{orient}" is not a supported value for ``orient``')
 
+        if not any((joint, marginal)):
+            raise ValueError('At least one of ``joint`` and ``marginal`` must be True')
         if joint:
             getattr(self.ax_joint, func)(value, **kwargs)
         if marginal:
