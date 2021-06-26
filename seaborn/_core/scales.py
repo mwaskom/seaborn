@@ -44,6 +44,18 @@ class ScaleWrapper:
         return None
 
     def cast(self, data):
+
+        # TODO should the numeric/categorical/datetime cast logic happen here?
+        # Currently scale_numeric_ with string-typed data won't work because the
+        # matplotlib scales don't have casting logic, but I think people would execpt
+        # that to work.
+
+        # Perhaps we should defer to the scale if it has the argument but have fallback
+        # type-dependent casts here?
+
+        # But ... what about when we need metadata for the cast?
+        # (i.e. formatter for categorical or dtype for numeric?)
+
         if hasattr(self._scale, "cast"):
             return self._scale.cast(data)
         return data
@@ -57,7 +69,9 @@ class CategoricalScale(LinearScale):
         order: list | None = None,
         formatter: Any = None
     ):
-        # TODO what type is formatter?
+        # TODO what type is formatter? Just callable[Any, str]?
+        # One kind of annoying thing is that we'd like to have acccess to
+        # methods on the Series object, I guess lambdas will suffice...
 
         super().__init__(axis)
         self.order = order
