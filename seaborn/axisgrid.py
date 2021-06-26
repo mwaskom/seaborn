@@ -1797,6 +1797,42 @@ class JointGrid(object):
 
         return self
 
+    def plot_refline(self, *, value, orient, joint=True, marginal=True, **kwargs):
+        """Add a reference line to joint and/or marginal axes.
+
+        Parameters
+        ----------
+        value : numeric
+            Value to draw the line at.
+        orient : "v" | "h"
+            Orientation for reference line.
+        joint, marginal : bools
+            Whether to add the reference line to the joint and/or marginal axes.
+        kwargs : key, value mappings
+            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axhline`
+            or :meth:`matplotlib.axes.Axes.axvline` depending on ``orient``.
+
+        Returns
+        -------
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
+
+        """
+        if orient == 'h':
+            func = 'axhline'
+            ax_marg = self.ax_marg_y
+        elif orient == 'v':
+            func = 'axvline'
+            ax_marg = self.ax_marg_x
+        else:
+            raise ValueError(f'"{orient}" is not a supported value for ``orient``')
+
+        if joint:
+            getattr(self.ax_joint, func)(value, **kwargs)
+        if marginal:
+            getattr(ax_marg, func)(value, **kwargs)
+        return self
+
     def set_axis_labels(self, xlabel="", ylabel="", **kwargs):
         """Set axis labels on the bivariate axes.
 
