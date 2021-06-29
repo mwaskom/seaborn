@@ -1797,20 +1797,19 @@ class JointGrid(object):
 
         return self
 
-    def plot_refline(self, *, value, orient, joint=True, marginal=True, **kwargs):
+    def refline(self, *, x=None, y=None, joint=True, marginal=True, **line_kws):
         """Add a reference line to joint and/or marginal axes.
 
         Parameters
         ----------
-        value : numeric
+        x, y : numeric
             Value to draw the line at.
-        orient : "v" | "h"
-            Orientation for reference line.
         joint, marginal : bools
             Whether to add the reference line to the joint/marginal axes.
-        kwargs : key, value mappings
-            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axhline`
-            or :meth:`matplotlib.axes.Axes.axvline` depending on ``orient``.
+        line_kws : key, value mappings
+            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
+            when ``x`` is not None or :meth:`matplotlib.axes.Axes.axhline` when ``y``
+            is not None.
 
         Returns
         -------
@@ -1818,21 +1817,23 @@ class JointGrid(object):
             Returns ``self`` for easy method chaining.
 
         """
-        if orient == 'h':
-            func = 'axhline'
-            ax_marg = self.ax_marg_y
-        elif orient == 'v':
+        if x is None and y is None:
+            raise ValueError('Must provide ``x`` or ``y``')
+        elif x is not None:
             func = 'axvline'
             ax_marg = self.ax_marg_x
-        else:
-            raise ValueError(f'"{orient}" is not a supported value for ``orient``')
+            value = x
+        elif y is not None:
+            func = 'axhline'
+            ax_marg = self.ax_marg_y
+            value = y
 
         if not any((joint, marginal)):
             raise ValueError('At least one of ``joint`` and ``marginal`` must be True')
         if joint:
-            getattr(self.ax_joint, func)(value, **kwargs)
+            getattr(self.ax_joint, func)(value, **line_kws)
         if marginal:
-            getattr(ax_marg, func)(value, **kwargs)
+            getattr(ax_marg, func)(value, **line_kws)
         return self
 
     def set_axis_labels(self, xlabel="", ylabel="", **kwargs):
