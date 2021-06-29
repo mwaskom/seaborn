@@ -63,9 +63,9 @@ class TestPlotData:
         assert_vector_equal(p.frame["x"], pd.Series(index_i, index))
         assert_vector_equal(p.frame["y"], pd.Series(index_j, index))
 
-    def test_int_as_variable_key(self):
+    def test_int_as_variable_key(self, rng):
 
-        df = pd.DataFrame(np.random.uniform(size=(10, 3)))
+        df = pd.DataFrame(rng.uniform(size=(10, 3)))
 
         var = "x"
         key = 2
@@ -80,10 +80,10 @@ class TestPlotData:
         assert (p.frame["x"] == 0).all()
         assert p.names["x"] is None
 
-    def test_tuple_as_variable_key(self):
+    def test_tuple_as_variable_key(self, rng):
 
         cols = pd.MultiIndex.from_product([("a", "b", "c"), ("x", "y")])
-        df = pd.DataFrame(np.random.uniform(size=(10, 6)), columns=cols)
+        df = pd.DataFrame(rng.uniform(size=(10, 6)), columns=cols)
 
         var = "hue"
         key = ("b", "y")
@@ -381,3 +381,12 @@ class TestPlotData:
 
         assert_vector_equal(p2.frame.loc[sub_df.index, var], sub_df[var])
         assert p2.frame.loc[long_df.index.difference(sub_df.index), var].isna().all()
+
+    def test_concat_multiple_inherits_from_orig(self, rng):
+
+        d1 = pd.DataFrame(dict(a=rng.normal(0, 1, 100), b=rng.normal(0, 1, 100)))
+        d2 = pd.DataFrame(dict(a=rng.normal(0, 1, 100)))
+
+        p = PlotData(d1, {"x": "a"}).concat(d2, {"y": "a"}).concat(None, {"y": "a"})
+        assert_vector_equal(p.frame["x"], d1["a"])
+        assert_vector_equal(p.frame["y"], d1["a"])
