@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import itertools
 
+import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
@@ -20,7 +21,7 @@ from seaborn._core.scales import (
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal
-    from collections.abc import Callable, Generator, Iterable
+    from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.figure import Figure
     from matplotlib.axes import Axes
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
     from seaborn._core.mappings import SemanticMapping
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
-    from seaborn._core.typing import DataSource, PaletteSpec, VariableSpec
+    from seaborn._core.typing import DataSource, PaletteSpec, VariableSpec, OrderSpec
 
 
 class Plot:
@@ -68,6 +69,8 @@ class Plot:
             "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
         }
 
+        self._facetspec = {}
+
     def on(self) -> Plot:
 
         # TODO  Provisional name for a method that accepts an existing Axes object,
@@ -92,17 +95,6 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
 
-        # TODO we currently need to distinguish between no variables defined for
-        # this layer (in which case we inherit the variable specifications from
-        # the Plot() constructor) and an empty dictionary of variables, because
-        # the latter appears in the faceting context when we join the facet data
-        # with each layer's data. That is more evidence that the current way
-        # we're handling the facet datajoin is a mess and needs to be reevaluated.
-        # Once it is, we can simplify this to just pass the empty dictionary.
-
-        layer_variables = None if not variables else variables
-        layer_data = self._data.concat(data, layer_variables)
-
         if stat is None and mark.default_stat is not None:
             # TODO We need some way to say "do no stat transformation" that is different
             # from "use the default". That's basically an IdentityStat.
@@ -118,97 +110,84 @@ class Plot:
         if stat is not None:
             stat.orient = orient  # type: ignore  # mypy false positive?
 
-        self._layers.append(Layer(layer_data, mark, stat))
+        self._layers.append(Layer(mark, stat, data, variables))
 
         return self
 
-    def _facet(
+    def pair(
         self,
-        dim: Literal["row", "col"],
-        var: VariableSpec = None,
-        order: Series | Index | Iterable | None = None,  # TODO alias?
-        wrap: int | None = None,
-        share: bool | Literal["row", "col"] = True,
-        data: DataSource = None,
-    ):
+        x: list[Hashable] | None = None,  # TODO or xs or x_vars
+        y: list[Hashable] | None = None,
+        # TODO paramaeter for "non-product" versions
+        # TODO figure parameterization (sharex/sharey, etc.)
+        # TODO other existing PairGrid things like corner?
+    ) -> Plot:
 
-        # TODO how to encode the data for this variable?
+        # TODO Basic idea is to implement PairGrid functionality within this interface
+        # But want to be even more powerful in a few ways:
+        # - combined pairing and faceting
+        #   - need to decide whether rows/cols are either facets OR pairs,
+        #     or if they can be composed (feasible, but more complicated)
+        # - "non-product" (need a name) pairing, i.e. for len(x) == len(y) == n,
+        #   make n subplots with x[0] v y[0], x[1] v y[1], etc.
+        # - uni-dimensional pairing
+        #   - i.e. if only x or y is assigned, to support a grid of histograms, etc.
 
-        # TODO: an issue: `share` is ambiguous because you could configure
-        # sharing of both axes for a single dimensional facet. But if we
-        # have sharex/sharey in both facet_rows and facet_cols, we will have
-        # to handle potentially conflicting specifications. We could also put
-        # sharex/sharey in the figure configuration function defaulting to True
-        # since without facets, that has no real effect, except we need to
-        # sort out how to combine that with the pairgrid functionality.
+        # Problems to solve:
+        # - How to get a default square grid of all x vs all y? If x and y are None,
+        #   use all variables in self._data (dropping those used for semantic mapping?)
+        #   What if we want to specify the subset of variables to use for a square grid,
+        #   is it necessary to specify `x=cols, y=cols`?
+        # - Unclear is how to handle the diagonal plots that PairGrid offers
+        # - Implementing this will require lots of downscale changes in figure setup,
+        #   and especially the axis scaling, which will need to be pair specific
+        # - How to resolve sharex/sharey between facet() and pair()?
 
-        self._facetspec[dim] = {
-            "order": order,
-            "wrap": wrap,
-            "share": share,
-        }
+        raise NotImplementedError()
+        return self
 
-    # TODO should we have facet_col(var, order, wrap)/facet_row(...)?
-    # TODO or facet(dim, var, ...)
     def facet(
         self,
         col: VariableSpec = None,
         row: VariableSpec = None,
-        # TODO define our own type alias for order= arguments?
-        col_order: Series | Index | Iterable | None = None,
-        row_order: Series | Index | Iterable | None = None,
-        col_wrap: int | None = None,
+        col_order: OrderSpec = None,
+        row_order: OrderSpec = None,
+        wrap: int | None = None,
         data: DataSource = None,
-        **grid_kwargs,  # possibly/probably expose relevant ones
+        sharex: bool | Literal["row", "col"] = True,
+        sharey: bool | Literal["row", "col"] = True,
+        # TODO or sharexy: bool | Literal | tuple[bool | Literal]?
     ) -> Plot:
 
-        # Note: can't pass `None` here or it will undo the `Plot()` def
+        # Note: can't pass `None` here or it will uninherit the `Plot()` def
         variables = {}
         if col is not None:
             variables["col"] = col
         if row is not None:
             variables["row"] = row
-        data = self._data.concat(data, variables)
 
-        # TODO raise here if neither col nor row are defined?
+        # TODO raise here if col/row not defined here or in self._data?
 
-        # TODO do we want to allow this method to be optional and create
-        # facets if col or row are defined in Plot()? More convenient...
+        # TODO Alternately use the following parameterization for order
+        # `order: list[Hashable] | dict[Literal['col', 'row'], list[Hashable]]
+        # this is more convenient for the (dominant?) case where there is one
+        # faceting variable
 
-        # TODO another option would be to have this signature be like
-        # facet(dim, order, wrap, share)
-        # and expect to call it twice for column and row faceting
-        # (or have facet_col, facet_row)?
+        # TODO Basic faceting functionality is tested, but there aren't tests
+        # for all the permutations of this interface
 
-        # TODO what should this data structure be?
-        # We can't initialize a FacetGrid here because that will open a figure
-        orders = {
-            "col": None if col_order is None else list(col_order),
-            "row": None if row_order is None else list(row_order),
-        }
-
-        facetspec = {}
-        for dim in ["col", "row"]:
-            if dim in data:
-                facetspec[dim] = {
-                    "data": data.frame[dim],
-                    "order": categorical_order(data.frame[dim], orders[dim]),
-                    "name": data.names[dim],
-                }
-
-        # TODO accept row_wrap too? If so, move into above logic
-        # TODO alternately, change to wrap?
-        if "col" in facetspec:
-            facetspec["col"]["wrap"] = col_wrap
-
-        facetspec["grid_kwargs"] = grid_kwargs
-
-        self._facetspec = facetspec
-        self._facetdata = data  # TODO messy, but needed if variables are added here
+        self._facetspec.update({
+            "source": data,
+            "variables": variables,
+            "col_order": None if col_order is None else list(col_order),
+            "row_order": None if row_order is None else list(row_order),
+            "wrap": wrap,
+            "sharex": sharex,
+            "sharey": sharey
+        })
 
         return self
 
-    # TODO map_hue or map_color/map_facecolor/map_edgecolor (or ... all of the above?)
     def map_hue(
         self,
         palette: PaletteSpec = None,
@@ -221,8 +200,9 @@ class Plot:
         return self
 
     # TODO originally we had planned to have a scale_native option that would default
-    # to matplotlib. Is this still something we need? It is maybe related to the idea
-    # of having an identity mapping for semantic variables.
+    # to matplotlib. I don't fully remember why. Is this still something we need?
+
+    # TODO related, scale_identity which uses the data as literal attribute values
 
     def scale_numeric(
         self,
@@ -249,6 +229,9 @@ class Plot:
 
         # TODO expose parameter for internal dtype achieved during scale.cast?
 
+        # TODO we want to be able to call this on numbers-as-strings data and
+        # have it work the way you would expect.
+
         if isinstance(scale, str):
             scale = mpl.scale.scale_factory(scale, var, **kwargs)
 
@@ -266,7 +249,7 @@ class Plot:
         formatter: Callable | None = None,
     ) -> Plot:
 
-        # TODO how to set limits/margins "nicely"?
+        # TODO how to set limits/margins "nicely"? (i.e. 0.5 data units, past extremes)
         # TODO similarly, should this modify grid state like current categorical plots?
         # TODO "smart"/data-dependant ordering (e.g. order by median of y variable)
 
@@ -283,7 +266,7 @@ class Plot:
         self._scales[var] = ScaleWrapper(scale, "datetime")
 
         # TODO what else should this do?
-        # We should pass kwargs to the Datetime case probably.
+        # We should pass kwargs to the DateTime cast probably.
         # It will be nice to have more control over the formatting of the ticks
         # which is pretty annoying in standard matplotlib.
         # Should datetime data ever have anything other than a linear scale?
@@ -294,58 +277,69 @@ class Plot:
 
     def theme(self) -> Plot:
 
-        # TODO We want to be able to use the existing seaborn themeing system
-        # to do plot-specific theming
+        # TODO Plot-specific themes using the seaborn theming system
+        # TODO should this also be where custom figure size goes?
         raise NotImplementedError()
+        return self
+
+    def resize(self, val):
+
+        # TODO I don't think this is the interface we ultimately want to use, but
+        # I want to be able to do this for demonstration now. If we do want this
+        # could think about how to have "auto" sizing based on number of subplots
+        self._figsize = val
         return self
 
     def plot(self) -> Plot:
 
-        # TODO note that as currently written this doesn't need to come before
-        # _setup_figure, but _setup_figure does use self._scales
+        # TODO clone self here, so plot() doesn't modify the original objects?
+        # (Do the clone here, or do it in show/_repr_png_?)
+
+        self._setup_layers()
         self._setup_scales()
-
-        # === TODO clean series of setup functions (TODO bikeshed names)
         self._setup_figure()
-
-        # ===
+        self._setup_mappings()
 
         # Abort early if we've just set up a blank figure
         if not self._layers:
             return self
 
-        mappings = self._setup_mappings()
-
-        # scales = self._setup_scales()  TODO?
-
         for layer in self._layers:
 
-            mappings = {k: v for k, v in mappings.items() if k in layer}
+            layer_mappings = {k: v for k, v in self._mappings.items() if k in layer}
+            self._plot_layer(layer, layer_mappings)
 
-            # TODO very messy but needed to concat with variables added in .facet()
-            # Demands serious rethinking!
-            if hasattr(self, "_facetdata"):
-                layer.data = layer.data.concat(
-                    self._facetdata.frame,
-                    {v: v for v in ["col", "row"] if v in self._facetdata}
-                )
-            self._plot_layer(layer, mappings)
+        # TODO this should be configurable
+        self._figure.tight_layout()
 
         return self
 
+    def _setup_layers(self):
+
+        common_data = (
+            self._data
+            .concat(
+                self._facetspec.get("source", None),
+                self._facetspec.get("variables", None),
+            )
+        )
+
+        # TODO concat with pairing spec
+
+        # TODO concat with mapping spec
+
+        for layer in self._layers:
+            layer.data = common_data.concat(layer.source, layer.variables)
+
     def _setup_scales(self):
 
-        # TODO one issue here is that we are going to assume all subplots of a
-        # figure have the same type of scale. This is potentially problematic if
-        # we are not sharing axes ... e.g. we currently can't use displot to
-        # show all histograms if some of those histograms need to be categorical.
-        # We can decide how much of a problem we are going to consider that to be...
-        # It may be better to implement to PairGrid like functionality within Plot
-        # and then that can be the "correct" way to mix scales across a figure.
+        # TODO We need to make sure that when using the "pair" functionality, the
+        # scaling is pair-variable dependent. We can continue to use the same scale
+        # (though not necessarily the same limits, or the same categories) for faceting
 
         layers = self._layers
         for var, scale in self._scales.items():
-            if scale.type == "unknown" and any(var in layer.data for layer in layers):
+            if scale.type == "unknown" and any(var in layer for layer in layers):
                 # TODO this is copied from _setup_mappings ... ripe for abstraction!
                 all_data = pd.concat(
                     [layer.data.frame.get(var, None) for layer in layers]
@@ -354,76 +348,67 @@ class Plot:
 
     def _setup_figure(self):
 
-        # TODO add external API for parameterizing figure, etc.
-        # TODO add external API for parameterizing FacetGrid if using
-        # TODO add external API for passing existing ax (maybe in same method)
-        # TODO add object that handles the "FacetGrid or single Axes?" abstractions
-
-        if not hasattr(self, "_facetspec"):
-            self.facet()  # TODO a good way to activate defaults?
-
+        # TODO add external API for parameterizing figure, (size , autolayout, etc.)
         # TODO use context manager with theme that has been set
-        # TODO (or maybe wrap THIS function with context manager; would be cleaner)
+        # TODO (maybe wrap THIS function with context manager; would be cleaner)
 
-        if "row" in self._facetspec or "col" in self._facetspec:
+        facet_data = self._data.concat(
+            self._facetspec.get("source", None),
+            self._facetspec.get("variables", None),
+        )
 
-            facet_data = pd.DataFrame()
-            facet_vars = {}
-            for dim in ["row", "col"]:
-                if dim in self._facetspec:
-                    name = self._facetspec[dim]["name"]
-                    facet_data[name] = self._facetspec[dim]["data"]
-                    # TODO FIXME this fails if faceting variables don't have a name
-                    # note current relplot also fails, but catplot works...
-                    facet_vars[dim] = name
-                    if dim == "col":
-                        facet_vars["col_wrap"] = self._facetspec[dim]["wrap"]
-            kwargs = self._facetspec["grid_kwargs"]
-            grid = FacetGrid(facet_data, **facet_vars, pyplot=False, **kwargs)
-            grid.set_titles()  # TODO use our own titleing interface?
+        # TODO I am ignoring pairing for now. It will make things more complicated!
+        # TODO also ignoring col/row wrapping, but we need to deal with that
 
-            self._figure = grid.fig
-            self._ax = None
-            self._facets = grid
+        facet_orders = {}
+        subplot_spec = {}
+        for dim in ["col", "row"]:
+            if dim in facet_data:
+                data = facet_data.frame[dim]
+                facet_orders[dim] = order = categorical_order(
+                    data, self._facetspec.get(f"{dim}_order", None),
+                )
+                subplot_spec[f"n{dim}s"] = len(order)
+            else:
+                facet_orders[dim] = [None]
+                subplot_spec[f"n{dim}s"] = 1
 
-        else:
-
-            self._figure = mpl.figure.Figure()
-            self._ax = self._figure.add_subplot()
-            self._facets = None
-
-        # TODO we need a new approach here. I think that a flat list of axes
-        # objects should be the primary (and possibly only) interface between
-        # Plot and the matplotlib Axes it's using. (Possibly the data structure
-        # can be list-like with some useful embellishments). We'll handle all
-        # the complicated business of setting up a potentially faceted / wrapped
-        # / paired figure upstream of that, and downstream will just have the
-        # list of Axes.
-        #
-        # That means we will need some way to map between axes and views on the
-        # data (rows for facets and columns for pairs). Then when we are
-        # plotting, we will first loop over the axes list, then select the data
-        # for each axes, rather than looping over data subsets and finding the
-        # corresponding axes. This will let us solve the problem of showing the
-        # same plot on all facets. It will also be cleaner.
-        #
-        # I don't know if we want to package all of the figure setup and mapping
-        # between data and axes logic in Plot or if that deserves a separate classs.
-
-        axes_list = list(self._facets.axes.flat) if self._ax is None else [self._ax]
-        for ax in axes_list:
-            ax.set_xscale(self._scales["x"]._scale)
-            ax.set_yscale(self._scales["y"]._scale)
-
-        # TODO good place to do this? (needs to handle FacetGrid)
-        obj = self._ax if self._facets is None else self._facets
         for axis in "xy":
-            name = self._data.names.get(axis, None)
-            if name is not None:
-                obj.set(**{f"{axis}label": name})
+            # TODO Defaults for sharex/y should be defined in one place
+            subplot_spec[f"share{axis}"] = self._facetspec.get(f"share{axis}", True)
 
-        # TODO in current _attach, we initialize the units at this point
-        # TODO we will also need to incorporate the scaling that (could) be set
+        figsize = getattr(self, "_figsize", None)
+        self._figure = mpl.figure.Figure(figsize=figsize)
+        subplots = self._figure.subplots(**subplot_spec, squeeze=False)
+
+        self._subplot_list = []
+        for (i, j), axes in np.ndenumerate(subplots):
+
+            self._subplot_list.append({
+                "axes": axes,
+                "row": facet_orders["row"][i],
+                "col": facet_orders["col"][j],
+            })
+
+            for axis in "xy":
+                axes.set(**{
+                    f"{axis}scale": self._scales[axis]._scale,
+                    f"{axis}label": self._data.names.get(axis, None),
+                })
+
+            if subplot_spec["sharex"] in (True, "col") and subplots.shape[0] - i > 1:
+                axes.xaxis.label.set_visible(False)
+            if subplot_spec["sharey"] in (True, "row") and j > 0:
+                axes.yaxis.label.set_visible(False)
+
+            title_parts = []
+            for idx, dim in zip([i, j], ["row", "col"]):
+                if dim in facet_data:
+                    name = facet_data.names.get(dim, f"_{dim}_")
+                    level = facet_orders[dim][idx]
+                    title_parts.append(f"{name} = {level}")
+            title = " | ".join(title_parts)
+            axes.set_title(title)
 
     def _setup_mappings(self) -> dict[str, SemanticMapping]:
 
@@ -433,21 +418,17 @@ class Plot:
         # variable appears in at least one of the layer data but isn't in self._mappings
         # Source of what mappings to check can be some dictionary of default mappings?
 
-        mappings = {}
         for var, mapping in self._mappings.items():
-            if any(var in layer.data for layer in layers):
+            if any(var in layer for layer in layers):
                 all_data = pd.concat(
                     [layer.data.frame.get(var, None) for layer in layers]
                 ).reset_index(drop=True)
                 scale = self._scales.get(var, None)
-                mappings[var] = mapping.setup(all_data, scale)
-
-        return mappings
+                mapping.setup(all_data, scale)
 
     def _plot_layer(self, layer, mappings):
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
-        grouping_vars = layer.mark.grouping_vars + default_grouping_vars
 
         data = layer.data
         mark = layer.mark
@@ -456,6 +437,7 @@ class Plot:
         df = self._scale_coords(data.frame)
 
         if stat is not None:
+            grouping_vars = layer.stat.grouping_vars + default_grouping_vars
             df = self._apply_stat(df, grouping_vars, stat)
 
         df = mark._adjust(df)
@@ -468,6 +450,7 @@ class Plot:
         # TODO this might make debugging annoying ... should we create new data object?
         data.frame = df
 
+        grouping_vars = layer.mark.grouping_vars + default_grouping_vars
         generate_splits = self._setup_split_generator(grouping_vars, data, mappings)
 
         layer.mark._plot(generate_splits, mappings)
@@ -500,67 +483,52 @@ class Plot:
                     df
                     .drop(var, axis=1, errors="ignore")
                     .reset_index(var)
-                    .reset_index(drop=True)  # TODO not always needed, can we limit?
                 )
+        df = df.reset_index(drop=True)  # TODO not always needed, can we limit?
         return df
 
-    def _assign_axes(self, df: DataFrame) -> Axes:
-        """Given a faceted DataFrame, find the Axes object for each entry."""
-        # TODO the redundancy of self._facets and self._ax screws up type checking
-        if self._facets is None:
-            assert self._ax is not None  # help mypy
-            return self._ax
+    def _get_data_for_axes(self, df: DataFrame, subplot: dict) -> DataFrame:
 
-        df = df.filter(regex="row|col")
-
-        if len(df.columns) > 1:
-            zipped = zip(df["row"], df["col"])
-            facet_keys = pd.Series(zipped, index=df.index)
-        else:
-            facet_keys = df.squeeze().astype("category")
-
-        return facet_keys.map(self._facets.axes_dict)
+        # TODO should handle pair logic here too, possibly assignment of x{n} -> x, etc
+        keep = pd.Series(True, df.index)
+        for dim in ["col", "row"]:
+            if dim in df:
+                keep &= df[dim] == subplot[dim]
+        return df[keep]
 
     def _scale_coords(self, df: DataFrame) -> DataFrame:
 
-        coord_df = df.filter(regex="x|y")
+        # TODO the regex in filter is handy but we don't actually use the DataFrame
+        # we may want to explore a way of doing this that doesn't allocate a new df
+        # TODO note that this will beed to be variable-specific for pairing
+        coord_cols = df.filter(regex="(^x)|(^y)").columns
         out_df = (
             df
-            .drop(coord_df.columns, axis=1)
+            .drop(coord_cols, axis=1)
             .copy(deep=False)
             .reindex(df.columns, axis=1)  # So unscaled columns retain their place
         )
 
-        with pd.option_context("mode.use_inf_as_null", True):
-            coord_df = coord_df.dropna()
-
-        if self._facets is None:
-            assert self._ax is not None  # help mypy
-            self._scale_coords_single(coord_df, out_df, self._ax)
-        else:
-            axes_map = self._assign_axes(df)
-            grouped = coord_df.groupby(axes_map, sort=False)
-            for ax, ax_df in grouped:
-                self._scale_coords_single(ax_df, out_df, ax)
+        for subplot in self._subplot_list:
+            axes_df = self._get_data_for_axes(df, subplot)[coord_cols]
+            with pd.option_context("mode.use_inf_as_null", True):
+                axes_df = axes_df.dropna()
+            self._scale_coords_single(axes_df, out_df, subplot["axes"])
         return out_df
 
     def _scale_coords_single(
-        self, coord_df: DataFrame, out_df: DataFrame, ax: Axes
+        self, coord_df: DataFrame, out_df: DataFrame, axes: Axes
     ) -> None:
 
         # TODO modify out_df in place or return and handle externally?
 
-        # TODO this looped through "yx" in original core ... why?
-        # for var in "yx":
-        #     if var not in coord_df:
-        #        continue
         for var, data in coord_df.items():
 
             # TODO Explain the logic of this method thoroughly
             # It is clever, but a bit confusing!
 
             axis = var[0]
-            axis_obj = getattr(ax, f"{axis}axis")
+            axis_obj = getattr(axes, f"{axis}axis")
             scale = self._scales[axis]
 
             if scale.order is not None:
@@ -577,7 +545,7 @@ class Plot:
     def _unscale_coords(self, df: DataFrame) -> DataFrame:
 
         # TODO copied from _scale_coords
-        coord_df = df.filter(regex="x|y")
+        coord_df = df.filter(regex="(^x)|(^y)")
         out_df = (
             df
             .drop(coord_df.columns, axis=1)
@@ -598,78 +566,53 @@ class Plot:
         mappings: dict[str, SemanticMapping],
     ) -> Callable[[], Generator]:
 
-        allow_empty = False  # TODO
-
-        df = data.frame
-        # TODO join with axes_map to simplify logic below?
-
-        ax = self._ax
-        facets = self._facets
-
-        grouping_vars = [var for var in grouping_vars if var in data]
-        if grouping_vars:
-            grouped_df = df.groupby(grouping_vars, sort=False, as_index=False)
+        allow_empty = False  # TODO will need to recreate previous categorical plots
 
         levels = {v: m.levels for v, m in mappings.items()}
-        if facets is not None:
-            for dim in ["col", "row"]:
-                if dim in grouping_vars:
-                    levels[dim] = getattr(facets, f"{dim}_names")
-
-        grouping_keys = []
-        for var in grouping_vars:
-            grouping_keys.append(levels.get(var, []))
-
-        iter_keys = itertools.product(*grouping_keys)
+        grouping_vars = [
+            var for var in grouping_vars if var in data and var not in ["col", "row"]
+        ]
+        grouping_keys = [levels.get(var, []) for var in grouping_vars]
 
         def generate_splits() -> Generator:
 
-            if not grouping_vars:
-                yield {}, df.copy(), ax
-                return
+            for subplot in self._subplot_list:
 
-            for key in iter_keys:
+                axes_df = self._get_data_for_axes(data.frame, subplot)
 
-                # Pandas fails with singleton tuple inputs
-                pd_key = key[0] if len(key) == 1 else key
+                subplot_keys = {}
+                for dim in ["col", "row"]:
+                    if subplot[dim] is not None:
+                        subplot_keys[dim] = subplot[dim]
 
-                try:
-                    df_subset = grouped_df.get_group(pd_key)
-                except KeyError:
-                    # TODO (from initial work on categorical plots refactor)
-                    # we are adding this to allow backwards compatability
-                    # with the empty artists that old categorical plots would
-                    # add (before 0.12), which we may decide to break, in which
-                    # case this option could be removed
-                    df_subset = df.loc[[]]
-
-                if df_subset.empty and not allow_empty:
+                if not grouping_vars or not any(grouping_keys):
+                    yield subplot_keys, axes_df.copy(), subplot["axes"]
                     continue
 
-                sub_vars = dict(zip(grouping_vars, key))
+                grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
 
-                # TODO I think we need to be able to drop the faceting vars
-                # from a layer and get the same plot on each axes. This is
-                # currently not possible. It's going to be tricky because it
-                # will require decoupling the iteration over subsets from iteration
-                # over facets.
+                for key in itertools.product(*grouping_keys):
 
-                # TODO can we use axes_map here?
-                use_ax: Axes
-                if facets is None:
-                    assert ax is not None  # help mypy
-                    use_ax = ax
-                else:
-                    row = sub_vars.get("row", None)
-                    col = sub_vars.get("col", None)
-                    if row is not None and col is not None:
-                        use_ax = facets.axes_dict[(row, col)]
-                    elif row is not None:
-                        use_ax = facets.axes_dict[row]
-                    elif col is not None:
-                        use_ax = facets.axes_dict[col]
-                out = sub_vars, df_subset.copy(), use_ax
-                yield out
+                    # Pandas fails with singleton tuple inputs
+                    pd_key = key[0] if len(key) == 1 else key
+
+                    try:
+                        df_subset = grouped_df.get_group(pd_key)
+                    except KeyError:
+                        # TODO (from initial work on categorical plots refactor)
+                        # We are adding this to allow backwards compatability
+                        # with the empty artists that old categorical plots would
+                        # add (before 0.12), which we may decide to break, in which
+                        # case this option could be removed
+                        df_subset = axes_df.loc[[]]
+
+                    if df_subset.empty and not allow_empty:
+                        continue
+
+                    sub_vars = dict(zip(grouping_vars, key))
+                    sub_vars.update(subplot_keys)
+
+                    yield sub_vars, df_subset.copy(), subplot["axes"]
 
         return generate_splits
 
@@ -717,12 +660,25 @@ class Layer:
 
     # Does this need to be anything other than a simple container for these attributes?
     # Could use a Dataclass I guess?
+    data: PlotData | None
 
-    def __init__(self, data: PlotData, mark: Mark, stat: Stat = None):
+    def __init__(
+        self,
+        mark: Mark,
+        stat: Stat | None,
+        source: DataSource | None,
+        variables: VariableSpec | None,
+    ):
 
-        self.data = data
         self.mark = mark
         self.stat = stat
+        self.source = source
+        self.variables = variables
+
+        self.data = None
 
     def __contains__(self, key: str) -> bool:
+
+        if self.data is None:
+            return False
         return key in self.data

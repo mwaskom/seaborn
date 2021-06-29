@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 class Stat:
 
     orient: Literal["x", "y"]
-    grouping_vars: list[str]
+    grouping_vars: list[str] = []
 
     def setup(self, data: DataFrame):
         """The default setup operation is to store a reference to the full data."""

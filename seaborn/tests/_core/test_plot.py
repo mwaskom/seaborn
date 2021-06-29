@@ -1,4 +1,5 @@
 import functools
+import itertools
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
@@ -107,12 +108,14 @@ class TestPlot:
     def test_add_without_data(self, long_df):
 
         p = Plot(long_df, x="x", y="y").add(MockMark())
+        p._setup_layers()
         layer, = p._layers
         assert_frame_equal(p._data.frame, layer.data.frame)
 
     def test_add_with_new_variable_by_name(self, long_df):
 
         p = Plot(long_df, x="x").add(MockMark(), y="y")
+        p._setup_layers()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -122,6 +125,7 @@ class TestPlot:
     def test_add_with_new_variable_by_vector(self, long_df):
 
         p = Plot(long_df, x="x").add(MockMark(), y=long_df["y"])
+        p._setup_layers()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -131,6 +135,7 @@ class TestPlot:
     def test_add_with_late_data_definition(self, long_df):
 
         p = Plot().add(MockMark(), data=long_df, x="x", y="y")
+        p._setup_layers()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -142,6 +147,7 @@ class TestPlot:
         long_df_sub = long_df.sample(frac=.5)
 
         p = Plot(long_df, x="x", y="y").add(MockMark(), data=long_df_sub)
+        p._setup_layers()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -153,6 +159,7 @@ class TestPlot:
     def test_add_drop_variable(self, long_df):
 
         p = Plot(long_df, x="x", y="y").add(MockMark(), y=None)
+        p._setup_layers()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x"]
         assert "y" not in layer
@@ -185,6 +192,7 @@ class TestPlot:
             p = Plot(long_df, x=col, y=col).add(MockMark())
             for var in "xy":
                 assert p._scales[var].type == "unknown"
+            p._setup_layers()
             p._setup_scales()
             for var in "xy":
                 assert p._scales[var].type == scale_type
@@ -192,6 +200,7 @@ class TestPlot:
     def test_axis_scale_inference_concatenates(self):
 
         p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"])
+        p._setup_layers()
         p._setup_scales()
         assert p._scales["x"].type == "categorical"
 
@@ -311,7 +320,8 @@ class TestPlot:
         p = Plot()
         p._setup_figure()
         assert isinstance(p._figure, mpl.figure.Figure)
-        assert isinstance(p._ax, mpl.axes.Axes)
+        for sub in p._subplot_list:
+            assert isinstance(sub["axes"], mpl.axes.Axes)
 
     @pytest.mark.parametrize(
         "arg,expected",
@@ -345,15 +355,29 @@ class TestPlot:
         Plot().plot()
         assert m.n_splits == 0
 
-    def test_plot_split_single(self, long_df):
+    def test_plot_single_split_single_layer(self, long_df):
 
         m = MockMark()
         p = Plot(long_df, x="f", y="z").add(m).plot()
         assert m.n_splits == 1
 
         assert m.passed_keys[0] == {}
-        assert m.passed_axes[0] is p._ax
+        assert m.passed_axes[0] is p._subplot_list[0]["axes"]
         assert_frame_equal(m.passed_data[0], p._data.frame)
+
+    def test_plot_single_split_multi_layer(self, long_df):
+
+        vs = [{"hue": "a", "size": "z"}, {"hue": "b", "style": "c"}]
+
+        class NoGroupingMark(MockMark):
+            grouping_vars = []
+
+        ms = [NoGroupingMark(), NoGroupingMark()]
+        Plot(long_df).add(ms[0], **vs[0]).add(ms[1], **vs[1]).plot()
+
+        for m, v in zip(ms, vs):
+            for var, col in v.items():
+                assert_vector_equal(m.passed_data[0][var], long_df[col])
 
     def check_splits_single_var(self, plot, mark, split_var, split_keys):
 
@@ -366,12 +390,31 @@ class TestPlot:
             split_data = full_data[full_data[split_var] == key]
             assert_frame_equal(mark.passed_data[i], split_data)
 
+    def check_splits_multi_vars(self, plot, mark, split_vars, split_keys):
+
+        assert mark.n_splits == np.prod([len(ks) for ks in split_keys])
+
+        expected_keys = [
+            dict(zip(split_vars, level_keys))
+            for level_keys in itertools.product(*split_keys)
+        ]
+        assert mark.passed_keys == expected_keys
+
+        full_data = plot._data.frame
+        for i, keys in enumerate(itertools.product(*split_keys)):
+
+            use_rows = pd.Series(True, full_data.index)
+            for var, key in zip(split_vars, keys):
+                use_rows &= full_data[var] == key
+            split_data = full_data[use_rows]
+            assert_frame_equal(mark.passed_data[i], split_data)
+
     @pytest.mark.parametrize(
         "split_var", [
             "hue",  # explicitly declared on the Mark
             "group",  # implicitly used for all Mark classes
         ])
-    def test_plot_split_one_grouping_variable(self, long_df, split_var):
+    def test_plot_one_grouping_variable(self, long_df, split_var):
 
         split_col = "a"
 
@@ -379,10 +422,25 @@ class TestPlot:
         p = Plot(long_df, x="f", y="z", **{split_var: split_col}).add(m).plot()
 
         split_keys = categorical_order(long_df[split_col])
-        assert m.passed_axes == [p._ax for _ in split_keys]
+        assert m.passed_axes == [p._subplot_list[0]["axes"] for _ in split_keys]
         self.check_splits_single_var(p, m, split_var, split_keys)
 
-    def test_plot_split_across_facets_no_subgroups(self, long_df):
+    def test_plot_two_grouping_variables(self, long_df):
+
+        split_vars = ["hue", "group"]
+        split_cols = ["a", "b"]
+        variables = {var: col for var, col in zip(split_vars, split_cols)}
+
+        m = MockMark()
+        p = Plot(long_df, y="z", **variables).add(m).plot()
+
+        split_keys = [categorical_order(long_df[col]) for col in split_cols]
+        assert m.passed_axes == [
+            p._subplot_list[0]["axes"] for _ in itertools.product(*split_keys)
+        ]
+        self.check_splits_multi_vars(p, m, split_vars, split_keys)
+
+    def test_plot_across_facets_no_subgroups(self, long_df):
 
         split_var = "col"
         split_col = "b"
@@ -393,6 +451,41 @@ class TestPlot:
         split_keys = categorical_order(long_df[split_col])
         assert m.passed_axes == list(p._figure.axes)
         self.check_splits_single_var(p, m, split_var, split_keys)
+
+    def test_plot_across_facets_one_subgroup(self, long_df):
+
+        facet_var, facet_col = "col", "a"
+        group_var, group_col = "group", "b"
+
+        m = MockMark()
+        p = (
+            Plot(long_df, x="f", y="z", **{group_var: group_col, facet_var: facet_col})
+            .add(m)
+            .plot()
+        )
+
+        split_keys = [categorical_order(long_df[col]) for col in [facet_col, group_col]]
+        assert m.passed_axes == [
+            ax
+            for ax in list(p._figure.axes)
+            for _ in categorical_order(long_df[group_col])
+        ]
+        self.check_splits_multi_vars(p, m, [facet_var, group_var], split_keys)
+
+    def test_plot_layer_specific_facet_disabling(self, long_df):
+
+        axis_vars = {"x": "y", "y": "z"}
+        row_var = "a"
+
+        m = MockMark()
+        p = Plot(long_df, **axis_vars, row=row_var).add(m, row=None).plot()
+
+        col_levels = categorical_order(long_df[row_var])
+        assert len(p._figure.axes) == len(col_levels)
+
+        for data in m.passed_data:
+            for var, col in axis_vars.items():
+                assert_vector_equal(data[var], long_df[col])
 
     def test_plot_adjustments(self, long_df):
 
@@ -423,6 +516,6 @@ class TestPlot:
 
     # TODO Current untested includes:
     # - anything having to do with semantic mapping
-    # - much having to do with faceting
+    # - faceting parameterization beyond basics
     # - interaction with existing matplotlib objects
     # - any important corner cases in the original test_core suite

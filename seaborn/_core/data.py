@@ -73,7 +73,7 @@ class PlotData:
 
         # TODO allow `data` to be a function (that is called on the source data?)
 
-        if variables is None:
+        if not variables:
             variables = self._source_vars
 
         # Passing var=None implies that we do not want that variable in this layer
@@ -92,6 +92,10 @@ class PlotData:
 
         new.frame = frame
         new.names = names
+
+        # Multiple chained operations should always inherit from the original object
+        new._source_data = self._source_data
+        new._source_vars = self._source_vars
 
         return new
 
