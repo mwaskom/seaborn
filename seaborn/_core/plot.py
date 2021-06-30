@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import itertools
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -644,7 +645,8 @@ class Plot:
 
         # TODO we need some way of not plotting multiple times
         if not hasattr(self, "_figure"):
-            self.plot()
+            plot = deepcopy(self)
+            plot.plot()
 
         buffer = io.BytesIO()
 
@@ -652,7 +654,7 @@ class Plot:
         # pro: better results,  con: (sometimes) confusing results
         # Better solution would be to default (with option to change)
         # to using constrained/tight layout.
-        self._figure.savefig(buffer, format="png", bbox_inches="tight")
+        plot._figure.savefig(buffer, format="png", bbox_inches="tight")
         return buffer.getvalue()
 
 
