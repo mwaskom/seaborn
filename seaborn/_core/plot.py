@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 
-from seaborn.axisgrid import FacetGrid
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._core.data import PlotData
 from seaborn._core.mappings import GroupMapping, HueMapping
@@ -21,7 +20,7 @@ from seaborn._core.scales import (
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal
+    from typing import Literal, Any
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.figure import Figure
@@ -42,8 +41,7 @@ class Plot:
     _scales: dict[str, ScaleBase]
 
     _figure: Figure
-    _ax: Axes | None
-    _facets: FacetGrid | None
+    _facetspec: dict[str, Any]  # TODO any need to be more strict on values?
 
     def __init__(
         self,
@@ -291,15 +289,15 @@ class Plot:
         self._figsize = val
         return self
 
-    def plot(self) -> Plot:
+    def plot(self, pyplot=False) -> Plot:
 
         # TODO clone self here, so plot() doesn't modify the original objects?
         # (Do the clone here, or do it in show/_repr_png_?)
 
         self._setup_layers()
         self._setup_scales()
-        self._setup_figure()
         self._setup_mappings()
+        self._setup_figure(pyplot)
 
         # Abort early if we've just set up a blank figure
         if not self._layers:
@@ -332,7 +330,27 @@ class Plot:
         for layer in self._layers:
             layer.data = common_data.concat(layer.source, layer.variables)
 
-    def _setup_scales(self):
+    def clone(self) -> Plot:
+
+        if hasattr(self, "_figure"):
+            raise RuntimeError("Cannot clone object after calling Plot.plot")
+        return deepcopy(self)
+
+    def show(self, **kwargs) -> None:
+
+        # Keep an eye on whether matplotlib implements "attaching" an existing
+        # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
+        self.clone().plot(pyplot=True)
+
+        import matplotlib.pyplot as plt
+        plt.show(**kwargs)
+
+    def save(self) -> Plot:  # TODO perhaps this should not return self?
+
+        raise NotImplementedError()
+        return self
+
+    def _setup_scales(self) -> None:
 
         # TODO We need to make sure that when using the "pair" functionality, the
         # scaling is pair-variable dependent. We can continue to use the same scale
@@ -347,7 +365,7 @@ class Plot:
                 ).reset_index(drop=True)
                 scale.type = variable_type(all_data)
 
-    def _setup_figure(self):
+    def _setup_figure(self, pyplot: bool = False) -> None:
 
         # TODO add external API for parameterizing figure, (size , autolayout, etc.)
         # TODO use context manager with theme that has been set
@@ -379,7 +397,12 @@ class Plot:
             subplot_spec[f"share{axis}"] = self._facetspec.get(f"share{axis}", True)
 
         figsize = getattr(self, "_figsize", None)
-        self._figure = mpl.figure.Figure(figsize=figsize)
+
+        if pyplot:
+            import matplotlib.pyplot as plt
+            self._figure = plt.figure(figsize=figsize)
+        else:
+            self._figure = mpl.figure.Figure(figsize=figsize)
         subplots = self._figure.subplots(**subplot_spec, squeeze=False)
 
         self._subplot_list = []
@@ -411,7 +434,7 @@ class Plot:
             title = " | ".join(title_parts)
             axes.set_title(title)
 
-    def _setup_mappings(self) -> dict[str, SemanticMapping]:
+    def _setup_mappings(self) -> None:
 
         layers = self._layers
 
@@ -427,7 +450,7 @@ class Plot:
                 scale = self._scales.get(var, None)
                 mapping.setup(all_data, scale)
 
-    def _plot_layer(self, layer, mappings):
+    def _plot_layer(self, layer: Layer, mappings: dict[str, SemanticMapping]) -> None:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
 
@@ -438,7 +461,7 @@ class Plot:
         df = self._scale_coords(data.frame)
 
         if stat is not None:
-            grouping_vars = layer.stat.grouping_vars + default_grouping_vars
+            grouping_vars = stat.grouping_vars + default_grouping_vars
             df = self._apply_stat(df, grouping_vars, stat)
 
         df = mark._adjust(df)
@@ -451,7 +474,7 @@ class Plot:
         # TODO this might make debugging annoying ... should we create new data object?
         data.frame = df
 
-        grouping_vars = layer.mark.grouping_vars + default_grouping_vars
+        grouping_vars = mark.grouping_vars + default_grouping_vars
         generate_splits = self._setup_split_generator(grouping_vars, data, mappings)
 
         layer.mark._plot(generate_splits, mappings)
@@ -617,36 +640,21 @@ class Plot:
 
         return generate_splits
 
-    def show(self) -> Plot:
-
-        # TODO guard this here?
-        # We could have the option to be totally pyplot free
-        # in which case this method would raise. In this vision, it would
-        # make sense to specify whether or not to use pyplot at the initial Plot().
-        # Keep an eye on whether matplotlib implements "attaching" an existing
-        # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
-        # TODO pass kwargs (block, etc.)
-        import matplotlib.pyplot as plt
-        self.plot()
-        plt.show()
-
-        return self
-
-    def save(self) -> Plot:  # or to_file or similar to match pandas?
-
-        raise NotImplementedError()
-        return self
-
     def _repr_png_(self) -> bytes:
 
         # TODO better to do this through a Jupyter hook?
         # TODO Would like to allow for svg too ... how to configure?
-        # TODO We want to skip if the plot has otherwise been shown, but tricky...
 
-        # TODO we need some way of not plotting multiple times
-        if not hasattr(self, "_figure"):
-            plot = deepcopy(self)
-            plot.plot()
+        # TODO perhaps have self.show() flip a switch to disable this, so that
+        # user does not end up with two versions of the figure in the output
+
+        # Preferred behavior is to clone self so that showing a Plot in the REPL
+        # does not interfere with adding further layers onto it in the next cell.
+        # But we can still show a Plot where the user has manually invoked .plot()
+        if hasattr(self, "_figure"):
+            figure = self._figure
+        else:
+            figure = self.clone().plot()._figure
 
         buffer = io.BytesIO()
 
@@ -654,15 +662,13 @@ class Plot:
         # pro: better results,  con: (sometimes) confusing results
         # Better solution would be to default (with option to change)
         # to using constrained/tight layout.
-        plot._figure.savefig(buffer, format="png", bbox_inches="tight")
+        figure.savefig(buffer, format="png", bbox_inches="tight")
         return buffer.getvalue()
 
 
 class Layer:
 
-    # Does this need to be anything other than a simple container for these attributes?
-    # Could use a Dataclass I guess?
-    data: PlotData | None
+    data: PlotData  # TODO added externally (bad design?)
 
     def __init__(
         self,
@@ -676,8 +682,6 @@ class Layer:
         self.stat = stat
         self.source = source
         self.variables = variables
-
-        self.data = None
 
     def __contains__(self, key: str) -> bool:
 
