@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Literal, Any, Type
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
     from pandas import DataFrame
     from matplotlib.axes import Axes
     from .._core.mappings import SemanticMapping
@@ -29,7 +29,7 @@ class Mark:
         return df
 
     def _plot(
-        self, generate_splits: Generator, mappings: MappingDict,
+        self, generate_splits: Callable[[], Generator], mappings: MappingDict,
     ) -> None:
         """Main interface for creating a plot."""
         for keys, data, ax in generate_splits():
