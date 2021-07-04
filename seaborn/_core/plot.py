@@ -313,23 +313,6 @@ class Plot:
 
         return self
 
-    def _setup_layers(self):
-
-        common_data = (
-            self._data
-            .concat(
-                self._facetspec.get("source", None),
-                self._facetspec.get("variables", None),
-            )
-        )
-
-        # TODO concat with pairing spec
-
-        # TODO concat with mapping spec
-
-        for layer in self._layers:
-            layer.data = common_data.concat(layer.source, layer.variables)
-
     def clone(self) -> Plot:
 
         if hasattr(self, "_figure"):
@@ -349,6 +332,27 @@ class Plot:
 
         raise NotImplementedError()
         return self
+
+    # ================================================================================ #
+    # End of public API
+    # ================================================================================ #
+
+    def _setup_layers(self):
+
+        common_data = (
+            self._data
+            .concat(
+                self._facetspec.get("source", None),
+                self._facetspec.get("variables", None),
+            )
+        )
+
+        # TODO concat with pairing spec
+
+        # TODO concat with mapping spec
+
+        for layer in self._layers:
+            layer.data = common_data.concat(layer.source, layer.variables)
 
     def _setup_scales(self) -> None:
 
