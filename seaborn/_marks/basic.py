@@ -36,6 +36,7 @@ class Point(Mark):
         x_jitter = 0 if not x else rng.uniform(-x, +x, n)
         y_jitter = 0 if not y else rng.uniform(-y, +y, n)
 
+        # TODO: this fails if x or y are paired. Apply to all columns that start with y?
         return df.assign(x=df["x"] + x_jitter, y=df["y"] + y_jitter)
 
     def _plot_split(self, keys, data, ax, mappings, kws):

@@ -360,7 +360,7 @@ class TestPlotting:
         p._setup_figure()
         assert isinstance(p._figure, mpl.figure.Figure)
         for sub in p._subplot_list:
-            assert isinstance(sub["axes"], mpl.axes.Axes)
+            assert isinstance(sub["ax"], mpl.axes.Axes)
 
     def test_empty(self):
 
@@ -375,7 +375,7 @@ class TestPlotting:
         assert m.n_splits == 1
 
         assert m.passed_keys[0] == {}
-        assert m.passed_axes[0] is p._subplot_list[0]["axes"]
+        assert m.passed_axes[0] is p._subplot_list[0]["ax"]
         assert_frame_equal(m.passed_data[0], p._data.frame)
 
     def test_single_split_multi_layer(self, long_df):
@@ -435,7 +435,7 @@ class TestPlotting:
         p = Plot(long_df, x="f", y="z", **{split_var: split_col}).add(m).plot()
 
         split_keys = categorical_order(long_df[split_col])
-        assert m.passed_axes == [p._subplot_list[0]["axes"] for _ in split_keys]
+        assert m.passed_axes == [p._subplot_list[0]["ax"] for _ in split_keys]
         self.check_splits_single_var(p, m, split_var, split_keys)
 
     def test_two_grouping_variables(self, long_df):
@@ -449,7 +449,7 @@ class TestPlotting:
 
         split_keys = [categorical_order(long_df[col]) for col in split_cols]
         assert m.passed_axes == [
-            p._subplot_list[0]["axes"] for _ in itertools.product(*split_keys)
+            p._subplot_list[0]["ax"] for _ in itertools.product(*split_keys)
         ]
         self.check_splits_multi_vars(p, m, split_vars, split_keys)
 
@@ -499,6 +499,66 @@ class TestPlotting:
         for data in m.passed_data:
             for var, col in axis_vars.items():
                 assert_vector_equal(data[var], long_df[col])
+
+    def test_paired_variables(self, long_df):
+
+        x = ["x", "y"]
+        y = ["f", "z"]
+
+        m = MockMark()
+        Plot(long_df).pair(x, y).add(m).plot()
+
+        var_product = itertools.product(x, y)
+
+        for data, (x_i, y_i) in zip(m.passed_data, var_product):
+            assert_vector_equal(data["x"], long_df[x_i].astype(float))
+            assert_vector_equal(data["y"], long_df[y_i].astype(float))
+
+    def test_paired_one_dimension(self, long_df):
+
+        x = ["y", "z"]
+
+        m = MockMark()
+        Plot(long_df).pair(x).add(m).plot()
+
+        for data, x_i in zip(m.passed_data, x):
+            assert_vector_equal(data["x"], long_df[x_i].astype(float))
+
+    def test_paired_variables_one_subset(self, long_df):
+
+        x = ["x", "y"]
+        y = ["f", "z"]
+        group = "a"
+
+        long_df["x"] = long_df["x"].astype(float)  # simplify vector comparison
+
+        m = MockMark()
+        Plot(long_df, group=group).pair(x, y).add(m).plot()
+
+        groups = categorical_order(long_df[group])
+        var_product = itertools.product(x, y, groups)
+
+        for data, (x_i, y_i, g_i) in zip(m.passed_data, var_product):
+            rows = long_df[group] == g_i
+            assert_vector_equal(data["x"], long_df.loc[rows, x_i])
+            assert_vector_equal(data["y"], long_df.loc[rows, y_i])
+
+    def test_paired_and_faceted(self, long_df):
+
+        x = ["y", "z"]
+        y = "f"
+        row = "c"
+
+        m = MockMark()
+        Plot(long_df, y=y, row=row).pair(x).add(m).plot()
+
+        facets = categorical_order(long_df[row])
+        var_product = itertools.product(x, facets)
+
+        for data, (x_i, f_i) in zip(m.passed_data, var_product):
+            rows = long_df[row] == f_i
+            assert_vector_equal(data["x"], long_df.loc[rows, x_i])
+            assert_vector_equal(data["y"], long_df.loc[rows, y])
 
     def test_adjustments(self, long_df):
 
@@ -613,8 +673,8 @@ class TestFacetInterface:
         for subplot, level in zip(p._subplot_list, order):
             assert subplot[dim] == level
             assert subplot[other_dim] is None
-            assert subplot["axes"].get_title() == f"{key} = {level}"
-            assert getattr(subplot["axes"].get_gridspec(), f"n{dim}s") == len(order)
+            assert subplot["ax"].get_title() == f"{key} = {level}"
+            assert getattr(subplot["ax"].get_gridspec(), f"n{dim}s") == len(order)
 
     def test_1d_from_init(self, long_df, dim):
 
@@ -714,25 +774,26 @@ class TestFacetInterface:
 
         variables = {"row": "a", "col": "c"}
 
-        p = Plot(long_df).facet(**variables).plot()
-        root, *other = p._figure.axes
+        p = Plot(long_df).facet(**variables)
+
+        p1 = p.clone().plot()
+        root, *other = p1._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert all(shareset.joined(root, ax) for ax in other)
 
-        p = Plot(long_df).facet(**variables, sharex=False, sharey=False).plot()
-        root, *other = p._figure.axes
+        p2 = p.clone().configure(sharex=False, sharey=False).plot()
+        root, *other = p2._figure.axes
         for axis in "xy":
             shareset = getattr(root, f"get_shared_{axis}_axes")()
             assert not any(shareset.joined(root, ax) for ax in other)
 
-        p = Plot(long_df).facet(**variables, sharex="col", sharey="row").plot()
-
+        p3 = p.clone().configure(sharex="col", sharey="row").plot()
         shape = (
             len(categorical_order(long_df[variables["row"]])),
             len(categorical_order(long_df[variables["col"]])),
         )
-        axes_matrix = np.reshape(p._figure.axes, shape)
+        axes_matrix = np.reshape(p3._figure.axes, shape)
 
         for (shared, unshared), vectors in zip(
             ["yx", "xy"], [axes_matrix, axes_matrix.T]
@@ -743,6 +804,246 @@ class TestFacetInterface:
                 }
                 assert all(shareset[shared].joined(root, ax) for ax in other)
                 assert not any(shareset[unshared].joined(root, ax) for ax in other)
+
+    def test_col_wrapping(self):
+
+        cols = list("abcd")
+        wrap = 3
+        p = Plot().facet(col=cols, wrap=wrap).plot()
+
+        gridspec = p._figure.axes[0].get_gridspec()
+        assert len(p._figure.axes) == 4
+        assert gridspec.ncols == 3
+        assert gridspec.nrows == 2
+
+        # TODO test axis labels and titles
+
+    def test_row_wrapping(self):
+
+        rows = list("abcd")
+        wrap = 3
+        p = Plot().facet(rows=rows, wrap=wrap).plot()
+
+        gridspec = p._figure.axes[0].get_gridspec()
+        assert len(p._figure.axes) == 4
+        assert gridspec.ncols == 2
+        assert gridspec.nrows == 3
+
+        # TODO test axis labels and titles
+
+
+class TestPairInterface:
+
+    def check_pair_grid(self, p, x, y):
+
+        xys = itertools.product(y, x)
+
+        for (y_i, x_j), subplot in zip(xys, p._subplot_list):
+
+            ax = subplot["ax"]
+            assert ax.get_xlabel() == "" if x_j is None else x_j
+            assert ax.get_ylabel() == "" if y_i is None else y_i
+
+            gs = subplot["ax"].get_gridspec()
+            assert gs.ncols == len(x)
+            assert gs.nrows == len(y)
+
+    @pytest.mark.parametrize(
+        "vector_type", [list, np.array, pd.Series, pd.Index]
+    )
+    def test_all_numeric(self, long_df, vector_type):
+
+        x, y = ["x", "y", "z"], ["s", "f"]
+        p = Plot(long_df).pair(vector_type(x), vector_type(y)).plot()
+        self.check_pair_grid(p, x, y)
+
+    def test_single_variable_key_raises(self, long_df):
+
+        p = Plot(long_df)
+        err = "You must pass a sequence of variable keys to `y`"
+        with pytest.raises(TypeError, match=err):
+            p.pair(x=["x", "y"], y="z")
+
+    @pytest.mark.parametrize("dim", ["x", "y"])
+    def test_single_dimension(self, long_df, dim):
+
+        variables = {"x": None, "y": None}
+        variables[dim] = ["x", "y", "z"]
+        p = Plot(long_df).pair(**variables).plot()
+        variables = {k: [v] if v is None else v for k, v in variables.items()}
+        self.check_pair_grid(p, **variables)
+
+    def test_non_cartesian(self, long_df):
+
+        x = ["x", "y"]
+        y = ["f", "z"]
+
+        p = Plot(long_df).pair(x, y, cartesian=False).plot()
+
+        for i, subplot in enumerate(p._subplot_list):
+            ax = subplot["ax"]
+            assert ax.get_xlabel() == x[i]
+            assert ax.get_ylabel() == y[i]
+            assert ax.get_gridspec().nrows == 1
+            assert ax.get_gridspec().ncols == len(x) == len(y)
+
+        root, *other = p._figure.axes
+        for axis in "xy":
+            shareset = getattr(root, f"get_shared_{axis}_axes")()
+            assert not any(shareset.joined(root, ax) for ax in other)
+
+    def test_with_no_variables(self, long_df):
+
+        all_cols = long_df.columns
+
+        p1 = Plot(long_df).pair()
+        for axis in "xy":
+            assert p1._pairspec[axis] == all_cols.to_list()
+
+        p2 = Plot(long_df, y="y").pair()
+        assert all_cols.difference(p2._pairspec["x"]).item() == "y"
+        assert "y" not in p2._pairspec
+
+        p3 = Plot(long_df, hue="a").pair()
+        for axis in "xy":
+            assert all_cols.difference(p3._pairspec[axis]).item() == "a"
+
+        with pytest.raises(RuntimeError, match="You must pass `data`"):
+            Plot().pair()
+
+    def test_with_facets(self, long_df):
+
+        x = "x"
+        y = ["y", "z"]
+        col = "a"
+
+        p = Plot(long_df, x=x).facet(col).pair(y=y).plot()
+
+        facet_levels = categorical_order(long_df[col])
+        dims = itertools.product(y, facet_levels)
+
+        for (y_i, col_i), subplot in zip(dims, p._subplot_list):
+
+            ax = subplot["ax"]
+            assert ax.get_xlabel() == x
+            assert ax.get_ylabel() == y_i
+            assert ax.get_title() == f"{col} = {col_i}"
+
+            gs = subplot["ax"].get_gridspec()
+            assert gs.ncols == len(facet_levels)
+            assert gs.nrows == len(y)
+
+    @pytest.mark.parametrize("variables", [("rows", "y"), ("columns", "x")])
+    def test_error_on_facet_overlap(self, long_df, variables):
+
+        facet_dim, pair_axis = variables
+        p = Plot(long_df, **{facet_dim[:3]: "a"}).pair(**{pair_axis: ["x", "y"]})
+        expected = f"Cannot facet on the {facet_dim} while pairing on {pair_axis}."
+        with pytest.raises(RuntimeError, match=expected):
+            p.plot()
+
+    @pytest.mark.parametrize("variables", [("columns", "y"), ("rows", "x")])
+    def test_error_on_wrap_overlap(self, long_df, variables):
+
+        facet_dim, pair_axis = variables
+        p = (
+            Plot(long_df, **{facet_dim[:3]: "a"})
+            .facet(wrap=2)
+            .pair(**{pair_axis: ["x", "y"]})
+        )
+        expected = f"Cannot wrap the {facet_dim} while pairing on {pair_axis}."
+        with pytest.raises(RuntimeError, match=expected):
+            p.plot()
+
+    def test_axis_sharing(self, long_df):
+
+        p = Plot(long_df).pair(x=["a", "b"], y=["y", "z"])
+        shape = 2, 2
+
+        p1 = p.clone().plot()
+        axes_matrix = np.reshape(p1._figure.axes, shape)
+
+        for root, *other in axes_matrix:  # Test row-wise sharing
+            x_shareset = getattr(root, "get_shared_x_axes")()
+            assert not any(x_shareset.joined(root, ax) for ax in other)
+            y_shareset = getattr(root, "get_shared_y_axes")()
+            assert all(y_shareset.joined(root, ax) for ax in other)
+
+        for root, *other in axes_matrix.T:  # Test col-wise sharing
+            x_shareset = getattr(root, "get_shared_x_axes")()
+            assert all(x_shareset.joined(root, ax) for ax in other)
+            y_shareset = getattr(root, "get_shared_y_axes")()
+            assert not any(y_shareset.joined(root, ax) for ax in other)
+
+        p2 = p.clone().configure(sharex=False, sharey=False).plot()
+        root, *other = p2._figure.axes
+        for axis in "xy":
+            shareset = getattr(root, f"get_shared_{axis}_axes")()
+            assert not any(shareset.joined(root, ax) for ax in other)
+
+    def test_axis_sharing_with_facets(self, long_df):
+
+        p = Plot(long_df, y="y").pair(x=["a", "b"]).facet(row="c").plot()
+        shape = 2, 2
+
+        axes_matrix = np.reshape(p._figure.axes, shape)
+
+        for root, *other in axes_matrix:  # Test row-wise sharing
+            x_shareset = getattr(root, "get_shared_x_axes")()
+            assert not any(x_shareset.joined(root, ax) for ax in other)
+            y_shareset = getattr(root, "get_shared_y_axes")()
+            assert all(y_shareset.joined(root, ax) for ax in other)
+
+        for root, *other in axes_matrix.T:  # Test col-wise sharing
+            x_shareset = getattr(root, "get_shared_x_axes")()
+            assert all(x_shareset.joined(root, ax) for ax in other)
+            y_shareset = getattr(root, "get_shared_y_axes")()
+            assert all(y_shareset.joined(root, ax) for ax in other)
+
+    def test_x_wrapping(self, long_df):
+
+        x_vars = ["f", "x", "y", "z"]
+        p = Plot(long_df, y="y").pair(x=x_vars, wrap=3).plot()
+
+        gridspec = p._figure.axes[0].get_gridspec()
+        assert len(p._figure.axes) == 4
+        assert gridspec.ncols == 3
+        assert gridspec.nrows == 2
+
+        # TODO test axis labels and visibility
+
+    def test_y_wrapping(self, long_df):
+
+        y_vars = ["f", "x", "y", "z"]
+        p = Plot(long_df, x="x").pair(y=y_vars, wrap=3).plot()
+
+        gridspec = p._figure.axes[0].get_gridspec()
+        assert len(p._figure.axes) == 4
+        assert gridspec.nrows == 3
+        assert gridspec.ncols == 2
+
+        # TODO test axis labels and visibility
+
+    def test_noncartesian_wrapping(self, long_df):
+
+        x_vars = ["a", "b", "c", "t"]
+        y_vars = ["f", "x", "y", "z"]
+
+        p = (
+            Plot(long_df, x="x")
+            .pair(x=x_vars, y=y_vars, wrap=3, cartesian=False)
+            .plot()
+        )
+
+        gridspec = p._figure.axes[0].get_gridspec()
+        assert len(p._figure.axes) == 4
+        assert gridspec.nrows == 2
+        assert gridspec.ncols == 3
+
+        # TODO test axis labels and visibility
+
+    # TODO test validation of wrap kwarg vs 2D pairing and faceting
+
 
 # TODO Current untested includes:
 # - anything having to do with semantic mapping
