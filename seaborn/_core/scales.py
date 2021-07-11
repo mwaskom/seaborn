@@ -37,6 +37,8 @@ class ScaleWrapper:
 
         self._scale = scale
 
+    # TODO add a repr with useful information about what is wrapped and metadata
+
     @property
     def order(self):
         if hasattr(self._scale, "order"):

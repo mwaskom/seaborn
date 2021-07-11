@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import io
 import itertools
 from copy import deepcopy
@@ -7,6 +8,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._core.data import PlotData
@@ -20,7 +22,7 @@ from seaborn._core.scales import (
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any
+    from typing import Literal, Any, Final
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.figure import Figure
@@ -40,8 +42,12 @@ class Plot:
     _mappings: dict[str, SemanticMapping]  # TODO keys as Literal, or use TypedDict?
     _scales: dict[str, ScaleBase]
 
+    # TODO use TypedDict here
+    _subplotspec: dict[str, Any]
+    _facetspec: dict[str, Any]
+    _pairspec: dict[str, Any]
+
     _figure: Figure
-    _facetspec: dict[str, Any]  # TODO any need to be more strict on values?
 
     def __init__(
         self,
@@ -68,7 +74,9 @@ class Plot:
             "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
         }
 
+        self._subplotspec = {}
         self._facetspec = {}
+        self._pairspec = {}
 
     def on(self) -> Plot:
 
@@ -115,34 +123,84 @@ class Plot:
 
     def pair(
         self,
-        x: list[Hashable] | None = None,  # TODO or xs or x_vars
-        y: list[Hashable] | None = None,
-        # TODO paramaeter for "non-product" versions
-        # TODO figure parameterization (sharex/sharey, etc.)
+        x: list[Hashable] | Index[Hashable] | None = None,
+        y: list[Hashable] | Index[Hashable] | None = None,
+        wrap: int | None = None,
+        cartesian: bool = True,  # TODO bikeshed name, maybe cross?
         # TODO other existing PairGrid things like corner?
     ) -> Plot:
 
-        # TODO Basic idea is to implement PairGrid functionality within this interface
-        # But want to be even more powerful in a few ways:
-        # - combined pairing and faceting
-        #   - need to decide whether rows/cols are either facets OR pairs,
-        #     or if they can be composed (feasible, but more complicated)
-        # - "non-product" (need a name) pairing, i.e. for len(x) == len(y) == n,
-        #   make n subplots with x[0] v y[0], x[1] v y[1], etc.
-        # - uni-dimensional pairing
-        #   - i.e. if only x or y is assigned, to support a grid of histograms, etc.
-
-        # Problems to solve:
-        # - How to get a default square grid of all x vs all y? If x and y are None,
-        #   use all variables in self._data (dropping those used for semantic mapping?)
-        #   What if we want to specify the subset of variables to use for a square grid,
-        #   is it necessary to specify `x=cols, y=cols`?
+        # TODO Problems to solve:
+        #
         # - Unclear is how to handle the diagonal plots that PairGrid offers
+        #
         # - Implementing this will require lots of downscale changes in figure setup,
         #   and especially the axis scaling, which will need to be pair specific
-        # - How to resolve sharex/sharey between facet() and pair()?
+        #
+        # - Do we want to allow lists of vectors to define the pairing? Everywhere
+        #   else we have a variable specification, we accept Hashable | Vector
+        #   - Ideally this SHOULD work without special handling now. But it does not
+        #     because things downstream are not thought out clearly.
 
-        raise NotImplementedError()
+        # TODO add data kwarg here? (it's everywhere else...)
+
+        # TODO is is weird to call .pair() to create univariate plots?
+        # i.e. Plot(data).pair(x=[...]). The basic logic is fine.
+        # But maybe a different verb (e.g. Plot.spread) would be more clear?
+        # Then Plot(data).pair(x=[...]) would show the given x vars vs all.
+
+        pairspec: dict[str, Any] = {}
+
+        if x is None and y is None:
+
+            # Default to using all columns in the input source data, aside from
+            # those that were assigned to a variable in the constructor
+            # TODO Do we want to allow additional filtering by variable type?
+            # (Possibly even default to using only numeric columns)
+
+            if self._data._source_data is None:
+                err = "You must pass `data` in the constructor to use default pairing."
+                raise RuntimeError(err)
+
+            all_unused_columns = [
+                key for key in self._data._source_data
+                if key not in self._data.names.values()
+            ]
+            for axis in "xy":
+                if axis not in self._data:
+                    pairspec[axis] = all_unused_columns
+        else:
+
+            axes = {"x": x, "y": y}
+            for axis, arg in axes.items():
+                if arg is not None:
+                    if isinstance(arg, (str, int)):
+                        err = f"You must pass a sequence of variable keys to `{axis}`"
+                        raise TypeError(err)
+                    pairspec[axis] = list(arg)
+
+        pairspec["variables"] = {}
+        pairspec["structure"] = {}
+        for axis in "xy":
+            keys = []
+            for i, col in enumerate(pairspec.get(axis, [])):
+
+                key = f"{axis}{i}"
+                keys.append(key)
+                pairspec["variables"][key] = col
+
+                # TODO how much type inference to do here?
+                # (i.e., should we force .scale_categorical, etc.?)
+                # We could also accept a scales keyword? Or document that calling, e.g.
+                # p.scale_categorical("x4") is the right approach
+                self._scales[key] = ScaleWrapper(mpl.scale.LinearScale(key), "unknown")
+            if keys:
+                pairspec["structure"][axis] = keys
+
+        pairspec["cartesian"] = cartesian
+        pairspec["wrap"] = wrap
+
+        self._pairspec.update(pairspec)
         return self
 
     def facet(
@@ -153,27 +211,19 @@ class Plot:
         row_order: OrderSpec = None,
         wrap: int | None = None,
         data: DataSource = None,
-        sharex: bool | Literal["row", "col"] = True,
-        sharey: bool | Literal["row", "col"] = True,
-        # TODO or sharexy: bool | Literal | tuple[bool | Literal]?
     ) -> Plot:
 
-        # Note: can't pass `None` here or it will uninherit the `Plot()` def
+        # Can't pass `None` here or it will disinherit the `Plot()` def
         variables = {}
         if col is not None:
             variables["col"] = col
         if row is not None:
             variables["row"] = row
 
-        # TODO raise here if col/row not defined here or in self._data?
-
         # TODO Alternately use the following parameterization for order
         # `order: list[Hashable] | dict[Literal['col', 'row'], list[Hashable]]
         # this is more convenient for the (dominant?) case where there is one
         # faceting variable
-
-        # TODO Basic faceting functionality is tested, but there aren't tests
-        # for all the permutations of this interface
 
         self._facetspec.update({
             "source": data,
@@ -181,8 +231,6 @@ class Plot:
             "col_order": None if col_order is None else list(col_order),
             "row_order": None if row_order is None else list(row_order),
             "wrap": wrap,
-            "sharex": sharex,
-            "sharey": sharey
         })
 
         return self
@@ -270,7 +318,7 @@ class Plot:
         # which is pretty annoying in standard matplotlib.
         # Should datetime data ever have anything other than a linear scale?
         # The only thing I can really think of are geologic/astro plots that
-        # use a reverse log scale.
+        # use a reverse log scale, (but those are usually in units of years).
 
         return self
 
@@ -278,7 +326,27 @@ class Plot:
 
         # TODO Plot-specific themes using the seaborn theming system
         # TODO should this also be where custom figure size goes?
-        raise NotImplementedError()
+        raise NotImplementedError
+        return self
+
+    def configure(
+        self,
+        figsize: tuple[float, float] | None = None,
+        sharex: bool | Literal["row", "col"] | None = None,
+        sharey: bool | Literal["row", "col"] | None = None,
+    ) -> Plot:
+
+        # TODO add an "auto" mode for figsize that roughly scales with the rcParams
+        # figsize (so that works), but expands to prevent subplots from being squished
+        # Also should we have height=, aspect=, exclusive with figsize? Or working
+        # with figsize when only one is defined?
+
+        subplot_keys = ["sharex", "sharey"]
+        for key in subplot_keys:
+            val = locals()[key]
+            if val is not None:
+                self._subplotspec[key] = val
+
         return self
 
     def resize(self, val):
@@ -291,20 +359,12 @@ class Plot:
 
     def plot(self, pyplot=False) -> Plot:
 
-        # TODO clone self here, so plot() doesn't modify the original objects?
-        # (Do the clone here, or do it in show/_repr_png_?)
-
         self._setup_layers()
         self._setup_scales()
         self._setup_mappings()
         self._setup_figure(pyplot)
 
-        # Abort early if we've just set up a blank figure
-        if not self._layers:
-            return self
-
         for layer in self._layers:
-
             layer_mappings = {k: v for k, v in self._mappings.items() if k in layer}
             self._plot_layer(layer, layer_mappings)
 
@@ -324,8 +384,6 @@ class Plot:
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
         self.clone().plot(pyplot=True)
-
-        import matplotlib.pyplot as plt
         plt.show(**kwargs)
 
     def save(self) -> Plot:  # TODO perhaps this should not return self?
@@ -337,17 +395,21 @@ class Plot:
     # End of public API
     # ================================================================================ #
 
+    # TODO order these methods to match the order they get called in
+
     def _setup_layers(self):
 
         common_data = (
             self._data
             .concat(
-                self._facetspec.get("source", None),
-                self._facetspec.get("variables", None),
+                self._facetspec.get("source"),
+                self._facetspec.get("variables"),
+            )
+            .concat(
+                self._pairspec.get("source"),
+                self._pairspec.get("variables"),
             )
         )
-
-        # TODO concat with pairing spec
 
         # TODO concat with mapping spec
 
@@ -365,78 +427,176 @@ class Plot:
             if scale.type == "unknown" and any(var in layer for layer in layers):
                 # TODO this is copied from _setup_mappings ... ripe for abstraction!
                 all_data = pd.concat(
-                    [layer.data.frame.get(var, None) for layer in layers]
+                    [layer.data.frame.get(var) for layer in layers]
                 ).reset_index(drop=True)
                 scale.type = variable_type(all_data)
 
     def _setup_figure(self, pyplot: bool = False) -> None:
 
-        # TODO add external API for parameterizing figure, (size , autolayout, etc.)
+        # --- Parsing the faceting/pairing parameterization to specify figure grid
+
         # TODO use context manager with theme that has been set
         # TODO (maybe wrap THIS function with context manager; would be cleaner)
 
-        facet_data = self._data.concat(
-            self._facetspec.get("source", None),
-            self._facetspec.get("variables", None),
+        # Get the full set of assigned variables, whether from constructor or methods
+        setup_data = (
+            self._data
+            .concat(
+                self._facetspec.get("source"),
+                self._facetspec.get("variables"),
+            ).concat(
+                self._pairspec.get("source"),  # Currently always None
+                self._pairspec.get("variables"),
+            )
         )
 
-        # TODO I am ignoring pairing for now. It will make things more complicated!
-        # TODO also ignoring col/row wrapping, but we need to deal with that
+        # Reject specs that pair and facet on (or wrap to) the same figure dimension
+        overlaps = {"x": ["columns", "rows"], "y": ["rows", "columns"]}
+        for pair_axis, (facet_dim, wrap_dim) in overlaps.items():
 
-        facet_orders = {}
-        subplot_spec = {}
-        for dim in ["col", "row"]:
-            if dim in facet_data:
-                data = facet_data.frame[dim]
-                facet_orders[dim] = order = categorical_order(
-                    data, self._facetspec.get(f"{dim}_order", None),
-                )
-                subplot_spec[f"n{dim}s"] = len(order)
+            if pair_axis not in self._pairspec:
+                continue
+            elif facet_dim[:3] in setup_data:
+                err = f"Cannot facet on the {facet_dim} while pairing on {pair_axis}."
+            elif wrap_dim[:3] in setup_data and self._facetspec.get("wrap"):
+                err = f"Cannot wrap the {wrap_dim} while pairing on {pair_axis}."
             else:
-                facet_orders[dim] = [None]
-                subplot_spec[f"n{dim}s"] = 1
+                continue
+            raise RuntimeError(err)  # TODO what err class? Define PlotSpecError?
 
+        # --- Subplot grid parameterization
+
+        # TODO this method is getting quite long and complicated.
+        # I'd like to break it up, although adding a bunch more methods
+        # on Plot will make it hard to navigate. Should there be some sort of
+        # container class for the figure/subplots where that logic lives?
+
+        # TODO build this from self._subplotspec?
+        subplot_spec = {}
+
+        figure_dimensions = {}
+        for dim, axis in zip(["col", "row"], ["x", "y"]):
+
+            if dim in setup_data:
+                figure_dimensions[dim] = categorical_order(
+                    setup_data.frame[dim], self._facetspec.get(f"{dim}_order"),
+                )
+            elif axis in self._pairspec:
+                figure_dimensions[dim] = self._pairspec[axis]
+            else:
+                figure_dimensions[dim] = [None]
+
+            subplot_spec[f"n{dim}s"] = len(figure_dimensions[dim])
+
+        if not self._pairspec.get("cartesian", True):
+            # TODO we need to re-enable axis/tick labels even when sharing
+            subplot_spec["nrows"] = 1
+
+        wrap = self._facetspec.get("wrap", self._pairspec.get("wrap"))
+        if wrap is not None:
+            wrap_dim = "row" if subplot_spec["nrows"] > 1 else "col"
+            flow_dim = {"row": "col", "col": "row"}[wrap_dim]
+            n_subplots = subplot_spec[f"n{wrap_dim}s"]
+            flow = int(np.ceil(n_subplots / wrap))
+            subplot_spec[f"n{wrap_dim}s"] = wrap
+            subplot_spec[f"n{flow_dim}s"] = flow
+        else:
+            n_subplots = subplot_spec["ncols"] * subplot_spec["nrows"]
+
+        # Work out the defaults for sharex/sharey
+        axis_to_dim = {"x": "col", "y": "row"}
         for axis in "xy":
-            # TODO Defaults for sharex/y should be defined in one place
-            subplot_spec[f"share{axis}"] = self._facetspec.get(f"share{axis}", True)
+            key = f"share{axis}"
+            if key in self._subplotspec:  # Should we just be updating this?
+                val = self._subplotspec[key]
+            else:
+                if axis in self._pairspec:
+                    if wrap in [None, 1] and self._pairspec.get("cartesian", True):
+                        val = axis_to_dim[axis]
+                    else:
+                        val = False
+                else:
+                    val = True
+            subplot_spec[key] = val
+
+        # --- Figure initialization
 
         figsize = getattr(self, "_figsize", None)
 
         if pyplot:
-            import matplotlib.pyplot as plt
             self._figure = plt.figure(figsize=figsize)
         else:
             self._figure = mpl.figure.Figure(figsize=figsize)
+
         subplots = self._figure.subplots(**subplot_spec, squeeze=False)
 
-        self._subplot_list = []
-        for (i, j), axes in np.ndenumerate(subplots):
+        # --- Building the internal subplot list and add default decorations
 
-            self._subplot_list.append({
-                "axes": axes,
-                "row": facet_orders["row"][i],
-                "col": facet_orders["col"][j],
-            })
+        self._subplot_list = []
+
+        if wrap is not None:
+            ravel_order = {"col": "C", "row": "F"}[wrap_dim]
+            subplots_flat = subplots.ravel(ravel_order)
+            subplots, extra = np.split(subplots_flat, [n_subplots])
+            for ax in extra:
+                ax.remove()
+            if wrap_dim == "col":
+                subplots = subplots[np.newaxis, :]
+            else:
+                subplots = subplots[:, np.newaxis]
+        if not self._pairspec or self._pairspec["cartesian"]:
+            iterplots = np.ndenumerate(subplots)
+        else:
+            indices = np.arange(n_subplots)
+            iterplots = zip(zip(indices, indices), subplots.flat)
+
+        for (i, j), ax in iterplots:
+
+            info = {"ax": ax}
+
+            for dim in ["row", "col"]:
+                idx = {"row": i, "col": j}[dim]
+                if dim in setup_data:
+                    info[dim] = figure_dimensions[dim][idx]
+                else:
+                    info[dim] = None
 
             for axis in "xy":
-                axes.set(**{
-                    f"{axis}scale": self._scales[axis]._scale,
-                    f"{axis}label": self._data.names.get(axis, None),
+
+                idx = {"x": j, "y": i}[axis]
+                if axis in self._pairspec:
+                    key = f"{axis}{idx}"
+                else:
+                    key = axis
+                info[axis] = key
+
+                label = setup_data.names.get(key)
+                ax.set(**{
+                    f"{axis}scale": self._scales[key]._scale,
+                    f"{axis}label": label,  # TODO we should do this elsewhere
                 })
 
-            if subplot_spec["sharex"] in (True, "col") and subplots.shape[0] - i > 1:
-                axes.xaxis.label.set_visible(False)
-            if subplot_spec["sharey"] in (True, "row") and j > 0:
-                axes.yaxis.label.set_visible(False)
+            self._subplot_list.append(info)
 
+            # Now do some individual subplot configuration
+            # TODO this could be moved to a different loop, here or in a subroutine
+
+            # TODO need to account for wrap, non-cartesian
+            if subplot_spec["sharex"] in (True, "col") and subplots.shape[0] - i > 1:
+                ax.xaxis.label.set_visible(False)
+            if subplot_spec["sharey"] in (True, "row") and j > 0:
+                ax.yaxis.label.set_visible(False)
+
+            # TODO should titles be set for each position along the pair dimension?
+            # (e.g., pair on y, facet on cols, should facet titles only go on top row?)
             title_parts = []
             for idx, dim in zip([i, j], ["row", "col"]):
-                if dim in facet_data:
-                    name = facet_data.names.get(dim, f"_{dim}_")
-                    level = facet_orders[dim][idx]
+                if dim in setup_data:
+                    name = setup_data.names.get(dim, f"_{dim}_")
+                    level = figure_dimensions[dim][idx]
                     title_parts.append(f"{name} = {level}")
             title = " | ".join(title_parts)
-            axes.set_title(title)
+            ax.set_title(title)
 
     def _setup_mappings(self) -> None:
 
@@ -449,9 +609,9 @@ class Plot:
         for var, mapping in self._mappings.items():
             if any(var in layer for layer in layers):
                 all_data = pd.concat(
-                    [layer.data.frame.get(var, None) for layer in layers]
+                    [layer.data.frame.get(var) for layer in layers]
                 ).reset_index(drop=True)
-                scale = self._scales.get(var, None)
+                scale = self._scales.get(var)
                 mapping.setup(all_data, scale)
 
     def _plot_layer(self, layer: Layer, mappings: dict[str, SemanticMapping]) -> None:
@@ -462,32 +622,33 @@ class Plot:
         mark = layer.mark
         stat = layer.stat
 
-        df = self._scale_coords(data.frame)
+        full_df = data.frame
+        for subplots, df in self._generate_pairings(full_df):
 
-        if stat is not None:
-            grouping_vars = stat.grouping_vars + default_grouping_vars
-            df = self._apply_stat(df, grouping_vars, stat)
+            df = self._scale_coords(subplots, df)
 
-        df = mark._adjust(df)
+            if stat is not None:
+                grouping_vars = stat.grouping_vars + default_grouping_vars
+                df = self._apply_stat(df, grouping_vars, stat)
 
-        # Our statistics happen on the scale we want, but then matplotlib is going
-        # to re-handle the scaling, so we need to invert before handing off
-        # Note: we don't need to convert back to strings for categories (but we could?)
-        df = self._unscale_coords(df)
+            df = mark._adjust(df)
 
-        # TODO this might make debugging annoying ... should we create new data object?
-        data.frame = df
+            # Our statistics happen on the scale we want, but then matplotlib is going
+            # to re-handle the scaling, so we need to invert before handing off
+            df = self._unscale_coords(df)
 
-        grouping_vars = mark.grouping_vars + default_grouping_vars
-        generate_splits = self._setup_split_generator(grouping_vars, data, mappings)
+            grouping_vars = mark.grouping_vars + default_grouping_vars
+            generate_splits = self._setup_split_generator(
+                grouping_vars, df, mappings, subplots
+            )
 
-        layer.mark._plot(generate_splits, mappings)
+            layer.mark._plot(generate_splits, mappings)
 
     def _apply_stat(
         self, df: DataFrame, grouping_vars: list[str], stat: Stat
     ) -> DataFrame:
 
-        stat.setup(df)
+        stat.setup(df)  # TODO pass scales here?
 
         # TODO how can we special-case fast aggregations? (i.e. mean, std, etc.)
         # IDEA: have Stat identify as an aggregator? (Through Mixin or attribute)
@@ -515,64 +676,64 @@ class Plot:
         df = df.reset_index(drop=True)  # TODO not always needed, can we limit?
         return df
 
-    def _get_data_for_axes(self, df: DataFrame, subplot: dict) -> DataFrame:
+    def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
+        # TODO retype with a SubplotSpec or similar
 
-        # TODO should handle pair logic here too, possibly assignment of x{n} -> x, etc
-        keep = pd.Series(True, df.index)
-        for dim in ["col", "row"]:
-            if dim in df:
-                keep &= df[dim] == subplot[dim]
-        return df[keep]
+        # TODO note that this assumes no variables are defined as {axis}{digit}
+        # This could be a slight problem as matplotlib occasionally uses that
+        # format for artists that take multiple parameters on each axis.
+        # Perhaps we should set the internal pair variables to "_{axis}{index}"?
+        coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
+        drop_cols = [c for c in df if re.match(r"^[xy]\d", c)]
 
-    def _scale_coords(self, df: DataFrame) -> DataFrame:
-
-        # TODO the regex in filter is handy but we don't actually use the DataFrame
-        # we may want to explore a way of doing this that doesn't allocate a new df
-        # TODO note that this will beed to be variable-specific for pairing
-        coord_cols = df.filter(regex="(^x)|(^y)").columns
         out_df = (
             df
-            .drop(coord_cols, axis=1)
             .copy(deep=False)
+            .drop(coord_cols + drop_cols, axis=1)
             .reindex(df.columns, axis=1)  # So unscaled columns retain their place
         )
 
-        for subplot in self._subplot_list:
-            axes_df = self._get_data_for_axes(df, subplot)[coord_cols]
+        for subplot in subplots:
+            axes_df = self._get_subplot_data(df, subplot)[coord_cols]
             with pd.option_context("mode.use_inf_as_null", True):
                 axes_df = axes_df.dropna()
-            self._scale_coords_single(axes_df, out_df, subplot["axes"])
+            self._scale_coords_single(axes_df, out_df, subplot["ax"])
+
         return out_df
 
     def _scale_coords_single(
-        self, coord_df: DataFrame, out_df: DataFrame, axes: Axes
+        self, coord_df: DataFrame, out_df: DataFrame, ax: Axes
     ) -> None:
 
         # TODO modify out_df in place or return and handle externally?
-
-        for var, data in coord_df.items():
+        for var, values in coord_df.items():
 
             # TODO Explain the logic of this method thoroughly
             # It is clever, but a bit confusing!
 
             axis = var[0]
-            axis_obj = getattr(axes, f"{axis}axis")
-            scale = self._scales[axis]
+            m = re.match(r"^([xy]\d*).*$", var)
+            assert m is not None
+            prefix = m.group(1)
+
+            scale = self._scales.get(prefix, self._scales.get(axis))
+            axis_obj = getattr(ax, f"{axis}axis")
 
             if scale.order is not None:
-                data = data[data.isin(scale.order)]
+                values = values[values.isin(scale.order)]
 
             # TODO wrap this in a try/except and reraise with more information
             # about what variable caused the problem (and input / desired types)
-            data = scale.cast(data)
-            axis_obj.update_units(categorical_order(data))
+            values = scale.cast(values)
+            axis_obj.update_units(categorical_order(values))
 
-            scaled = self._scales[axis].forward(axis_obj.convert_units(data))
-            out_df.loc[data.index, var] = scaled
+            scaled = self._scales[axis].forward(axis_obj.convert_units(values))
+            out_df.loc[values.index, var] = scaled
 
     def _unscale_coords(self, df: DataFrame) -> DataFrame:
 
-        # TODO copied from _scale_coords
+        # Note this is now different from what's in scale_coords as the dataframe
+        # that comes into this method will have pair columns reassigned to x/y
         coord_df = df.filter(regex="(^x)|(^y)")
         out_df = (
             df
@@ -587,26 +748,73 @@ class Plot:
 
         return out_df
 
+    def _generate_pairings(
+        self,
+        df: DataFrame
+    ) -> Generator[tuple[list[dict], DataFrame], None, None]:
+        # TODO retype return with SubplotSpec or similar
+
+        pair_variables = self._pairspec.get("structure", {})
+
+        if not pair_variables:
+            yield self._subplot_list, df
+            return
+
+        iter_axes = itertools.product(*[
+            pair_variables.get(axis, [None]) for axis in "xy"
+        ])
+
+        for x, y in iter_axes:
+
+            reassignments = {}
+            for axis, prefix in zip("xy", [x, y]):
+                if prefix is not None:
+                    reassignments.update({
+                        # Complex regex business to support e.g. x0max
+                        re.sub(rf"^{prefix}(.*)$", rf"{axis}\1", col): df[col]
+                        for col in df if col.startswith(prefix)
+                    })
+
+            subplots = []
+            for s in self._subplot_list:
+                if (x is None or s["x"] == x) and (y is None or s["y"] == y):
+                    subplots.append(s)
+
+            yield subplots, df.assign(**reassignments)
+
+    def _get_subplot_data(  # TODO maybe _filter_subplot_data?
+        self,
+        df: DataFrame,
+        subplot: dict,
+    ) -> DataFrame:
+
+        keep_rows = pd.Series(True, df.index, dtype=bool)
+        for dim in ["col", "row"]:
+            if dim in df is not None:
+                keep_rows &= df[dim] == subplot[dim]
+        return df[keep_rows]
+
     def _setup_split_generator(
         self,
         grouping_vars: list[str],
-        data: PlotData,
+        df: DataFrame,
         mappings: dict[str, SemanticMapping],
+        subplots: list[dict[str, Any]],
     ) -> Callable[[], Generator]:
 
         allow_empty = False  # TODO will need to recreate previous categorical plots
 
         levels = {v: m.levels for v, m in mappings.items()}
         grouping_vars = [
-            var for var in grouping_vars if var in data and var not in ["col", "row"]
+            var for var in grouping_vars if var in df and var not in ["col", "row"]
         ]
         grouping_keys = [levels.get(var, []) for var in grouping_vars]
 
         def generate_splits() -> Generator:
 
-            for subplot in self._subplot_list:
+            for subplot in subplots:
 
-                axes_df = self._get_data_for_axes(data.frame, subplot)
+                axes_df = self._get_subplot_data(df, subplot)
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:
@@ -614,7 +822,7 @@ class Plot:
                         subplot_keys[dim] = subplot[dim]
 
                 if not grouping_vars or not any(grouping_keys):
-                    yield subplot_keys, axes_df.copy(), subplot["axes"]
+                    yield subplot_keys, axes_df.copy(), subplot["ax"]
                     continue
 
                 grouped_df = axes_df.groupby(grouping_vars, sort=False, as_index=False)
@@ -640,7 +848,7 @@ class Plot:
                     sub_vars = dict(zip(grouping_vars, key))
                     sub_vars.update(subplot_keys)
 
-                    yield sub_vars, df_subset.copy(), subplot["axes"]
+                    yield sub_vars, df_subset.copy(), subplot["ax"]
 
         return generate_splits
 
