@@ -1229,7 +1229,7 @@ class TestViolinPlotter(CategoricalFixture):
         # p.dwidth will be 1 for easier testing
         p.width = 2
 
-        # Test verical plots
+        # Test vertical plots
         support = np.array([.2, .6])
         density = np.array([.1, .4])
 

@@ -12,7 +12,7 @@ have a simple and pure Python implementation. These include:
 - logpdf
 - resample
 
-Additionally, the numpy.linalg module was subsituted for scipy.linalg,
+Additionally, the numpy.linalg module was substituted for scipy.linalg,
 and the examples section (with doctests) was removed from the docstring
 
 The original scipy license is copied below:

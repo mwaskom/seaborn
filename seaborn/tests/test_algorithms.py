@@ -35,7 +35,7 @@ def test_bootstrap_length(random):
 
 
 def test_bootstrap_range(random):
-    """Test that boostrapping a random array stays within the right range."""
+    """Test that bootstrapping a random array stays within the right range."""
     a_norm = np.random.randn(1000)
     amin, amax = a_norm.min(), a_norm.max()
     out = algo.bootstrap(a_norm)

@@ -869,7 +869,7 @@ class VectorPlotter:
         # want, whereas DataFrame.to_dict() gives a nested dict instead of
         # a dict of series.
 
-        # Variables can also be extraced from the index attribute
+        # Variables can also be extracted from the index attribute
         # TODO is this the most general way to enable it?
         # There is no index.to_dict on multiindex, unfortunately
         try:
@@ -977,7 +977,7 @@ class VectorPlotter:
 
         """
         # TODO should this default to using all (non x/y?) semantics?
-        # or define groupping vars somewhere?
+        # or define grouping vars somewhere?
         if grouping_vars is None:
             grouping_vars = []
         elif isinstance(grouping_vars, str):
@@ -1047,7 +1047,7 @@ class VectorPlotter:
                 try:
                     data_subset = grouped_data.get_group(pd_key)
                 except KeyError:
-                    # XXX we are adding this to allow backwards compatability
+                    # XXX we are adding this to allow backwards compatibility
                     # with the empty artists that old categorical plots would
                     # add (before 0.12), which we may decide to break, in which
                     # case this option could be removed
@@ -1546,7 +1546,7 @@ def infer_orient(x=None, y=None, orient=None, require_numeric=True):
     Raises
     ------
     ValueError: When `orient` is not None and does not start with "h" or "v"
-    TypeError: When dependant variable is not numeric, with `require_numeric`
+    TypeError: When dependent variable is not numeric, with `require_numeric`
 
     """
 
@@ -1630,7 +1630,7 @@ def unique_dashes(n):
         (5, 1, 1, 1),
     ]
 
-    # Now programatically build as many as we need
+    # Now programmatically build as many as we need
     p = 3
     while len(dashes) < n:
 

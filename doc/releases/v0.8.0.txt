@@ -14,7 +14,7 @@ v0.8.0 (July 2017)
 
 - Added ``"auto"`` as a (default) option for tick labels in :func:`heatmap` and :func:`clustermap`. This will try to estimate how many ticks can be labeled without the text objects overlapping, which should improve performance for larger matrices.
 
-- Added the ``dodge`` parameter to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` varible is not nested within the main categorical variable.
+- Added the ``dodge`` parameter to :func:`boxplot`, :func:`violinplot`, and :func:`barplot` to allow use of ``hue`` without changing the position or width of the plot elements, as when the ``hue`` variable is not nested within the main categorical variable.
 
 - Correspondingly, the ``split`` parameter for :func:`stripplot` and :func:`swarmplot` has been renamed to ``dodge`` for consistency with the other categorical functions (and for differentiation from the meaning of ``split`` in :func:`violinplot`).
 

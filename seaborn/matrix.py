@@ -109,7 +109,7 @@ class _HeatMapper:
             plot_data = np.asarray(data)
             data = pd.DataFrame(plot_data)
 
-        # Validate the mask and convet to DataFrame
+        # Validate the mask and convert to DataFrame
         mask = _matrix_mask(data, mask)
 
         plot_data = np.ma.masked_where(np.asarray(mask), plot_data)
@@ -434,7 +434,7 @@ def heatmap(
 
     See Also
     --------
-    clustermap : Plot a matrix using hierachical clustering to arrange the
+    clustermap : Plot a matrix using hierarchical clustering to arrange the
                  rows and columns.
 
     Examples
@@ -864,7 +864,7 @@ class ClusterGrid(Grid):
             # Initialize the colorbar axes in the gridspec so that tight_layout
             # works. We will move it where it belongs later. This is a hack.
             self.ax_cbar = self.fig.add_subplot(self.gs[0, 0])
-            self.cax = self.ax_cbar  # Backwards compatability
+            self.cax = self.ax_cbar  # Backwards compatibility
         self.cbar_pos = cbar_pos
 
         self.dendrogram_row = None
@@ -1001,7 +1001,7 @@ class ClusterGrid(Grid):
         ratios = [dendrogram_ratio]
 
         if colors is not None:
-            # Colors are encoded as rgb, so ther is an extra dimention
+            # Colors are encoded as rgb, so there is an extra dimension
             if np.ndim(colors) > 2:
                 n_colors = len(colors)
             else:

@@ -103,7 +103,7 @@ class _CategoricalPlotterNew(VectorPlotter):
         self.var_levels[self.cat_axis] = cat_levels
 
     def _hue_backcompat(self, color, palette, hue_order, force_hue=False):
-        """Implement backwards compatability for hue parametrization.
+        """Implement backwards compatibility for hue parametrization.
 
         Note: the force_hue parameter is used so that functions can be shown to
         pass existing tests during refactoring and then tested for new behavior.
@@ -273,7 +273,7 @@ class _CategoricalPlotterNew(VectorPlotter):
             else:
                 points.set_edgecolors(edgecolor)
 
-        # TODO XXX fully impelement legend
+        # TODO XXX fully implement legend
         show_legend = not self._redundant_hue and self.input_format != "wide"
         if "hue" in self.variables and show_legend:
             for level in self._hue_map.levels:
@@ -363,7 +363,7 @@ class _CategoricalPlotterNew(VectorPlotter):
 
         _draw_figure(ax.figure)
 
-        # TODO XXX fully impelment legend
+        # TODO XXX fully implement legend
         show_legend = not self._redundant_hue and self.input_format != "wide"
         if "hue" in self.variables and show_legend:  # TODO and legend:
             for level in self._hue_map.levels:
@@ -3655,7 +3655,7 @@ def catplot(
 
         if kind == "strip":
 
-            # TODO get these defaults programatically?
+            # TODO get these defaults programmatically?
             jitter = kwargs.pop("jitter", True)
             dodge = kwargs.pop("dodge", False)
             edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
@@ -3677,7 +3677,7 @@ def catplot(
 
         elif kind == "swarm":
 
-            # TODO get these defaults programatically?
+            # TODO get these defaults programmatically?
             dodge = kwargs.pop("dodge", False)
             edgecolor = kwargs.pop("edgecolor", "gray")  # XXX TODO default
             warn_thresh = kwargs.pop("warn_thresh", .05)

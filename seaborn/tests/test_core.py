@@ -212,7 +212,7 @@ class TestHueMapping:
         assert m.levels == [pd.Timestamp(t) for t in long_df["t"].unique()]
         assert m.map_type == "datetime"
 
-        # Test excplicit categories
+        # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", hue="a_cat"))
         m = HueMapping(p)
         assert m.levels == long_df["a_cat"].cat.categories.to_list()
@@ -560,7 +560,7 @@ class TestStyleMapping:
             assert m(key, "marker") == markers[key]
             assert m(key, "dashes") == dashes[key]
 
-        # Test excplicit categories
+        # Test explicit categories
         p = VectorPlotter(data=long_df, variables=dict(x="x", style="a_cat"))
         m = StyleMapping(p)
         assert m.levels == long_df["a_cat"].cat.categories.to_list()

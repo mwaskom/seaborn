@@ -582,7 +582,7 @@ class _ScatterPlotter(_RelationalPlotter):
             p = [self._style_map(val, "path") for val in data["style"]]
             points.set_paths(p)
 
-        # Apply dependant default attributes
+        # Apply dependent default attributes
 
         if "linewidth" not in kws:
             sizes = points.get_sizes()
@@ -697,7 +697,7 @@ err_style : "band" or "bars"
     Whether to draw the confidence intervals with translucent error bands
     or discrete error bars.
 err_kws : dict of keyword arguments
-    Additional paramters to control the aesthetics of the error bars. The
+    Additional parameters to control the aesthetics of the error bars. The
     kwargs are passed either to :meth:`matplotlib.axes.Axes.fill_between`
     or :meth:`matplotlib.axes.Axes.errorbar`, depending on ``err_style``.
 {params.rel.legend}
