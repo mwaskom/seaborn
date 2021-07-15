@@ -342,7 +342,7 @@ def check_load_dataset(name):
 
 
 def check_load_cached_dataset(name):
-    # Test the cacheing using a temporary file.
+    # Test the caching using a temporary file.
     with tempfile.TemporaryDirectory() as tmpdir:
         # download and cache
         ds = load_dataset(name, cache=True, data_home=tmpdir)

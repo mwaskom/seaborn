@@ -393,7 +393,7 @@ class Histogram:
 class ECDF:
     """Univariate empirical cumulative distribution estimator."""
     def __init__(self, stat="proportion", complementary=False):
-        """Initialize the class with its paramters
+        """Initialize the class with its parameters
 
         Parameters
         ----------

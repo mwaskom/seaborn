@@ -685,7 +685,7 @@ class _DistributionPlotter(VectorPlotter):
 
                 linewidth = min(default_linewidth, max_linewidth)
 
-                # If not filling, don't let lines dissapear
+                # If not filling, don't let lines disappear
                 if not fill:
                     min_linewidth = .5
                     linewidth = max(linewidth, min_linewidth)
@@ -1447,7 +1447,7 @@ Plot univariate or bivariate histograms to show distributions of datasets.
 
 A histogram is a classic visualization tool that represents the distribution
 of one or more variables by counting the number of observations that fall within
-disrete bins.
+discrete bins.
 
 This function can normalize the statistic computed within each bin to estimate
 frequency, density or probability mass, and it can add a smooth curve obtained
@@ -1750,7 +1750,7 @@ kdeplot.__doc__ = """\
 Plot univariate or bivariate distributions using kernel density estimation.
 
 A kernel density estimate (KDE) plot is a method for visualizing the
-distribution of observations in a dataset, analagous to a histogram. KDE
+distribution of observations in a dataset, analogous to a histogram. KDE
 represents the data using a continuous probability density curve in one or
 more dimensions.
 
@@ -2093,7 +2093,7 @@ rugplot.__doc__ = """\
 Plot marginal distributions by drawing ticks along the x and y axes.
 
 This function is intended to complement other plots by showing the location
-of individual observations in an unobstrusive way.
+of individual observations in an unobtrusive way.
 
 Parameters
 ----------

@@ -1125,7 +1125,7 @@ class TestLinePlotter(SharedAxesLevelTests, Helpers):
 
         ax = lineplot(x=[1, 2], y=[1, 2], dashes=(2, 1))
         line = ax.lines[0]
-        # Not a great test, but lines don't expose the dash style publically
+        # Not a great test, but lines don't expose the dash style publicly
         assert line.get_linestyle() == "--"
 
     def test_lineplot_axes(self, wide_df):

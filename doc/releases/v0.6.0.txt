@@ -13,7 +13,7 @@ In version 0.6, the "categorical" plots have been unified with a common API. Thi
 
 The categorical functions now each accept the same formats of input data and can be invoked in the same way. They can plot using long- or wide-form data, and can be drawn vertically or horizontally. When long-form data is used, the orientation of the plots is inferred from the types of the input data. Additionally, all functions natively take a ``hue`` variable to add a second layer of categorization.
 
-With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, ``factorplot`` can also now create faceted verisons of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly. By default, ``factorplot`` draws a point plot, but this is controlled by the ``kind`` parameter.
+With the (in some cases new) API, these functions can all be drawn correctly by :class:`FacetGrid`. However, ``factorplot`` can also now create faceted versions of any of these kinds of plots, so in most cases it will be unnecessary to use :class:`FacetGrid` directly. By default, ``factorplot`` draws a point plot, but this is controlled by the ``kind`` parameter.
 
 Here are details on what has changed in the process of unifying these APIs:
 
