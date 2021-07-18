@@ -1819,6 +1819,8 @@ class JointGrid(object):
         """
         if x is None and y is None:
             raise ValueError('Must provide ``x`` or ``y``')
+        elif x is not None and y is not None:
+            raise ValueError('Provide either ``x`` or ``y``, not both')
         elif x is not None:
             func = 'axvline'
             ax_marg = self.ax_marg_x
