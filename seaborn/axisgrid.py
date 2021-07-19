@@ -1797,7 +1797,10 @@ class JointGrid(object):
 
         return self
 
-    def refline(self, *, x=None, y=None, joint=True, marginal=True, **line_kws):
+    def refline(
+        self, *, x=None, y=None, joint=True, marginal=True,
+        color='.5', linestyle='--', **line_kws
+    ):
         """Add a reference line(s) to joint and/or marginal axes.
 
         Parameters
@@ -1806,6 +1809,10 @@ class JointGrid(object):
             Value(s) to draw the line(s) at.
         joint, marginal : bools
             Whether to add the reference line(s) to the joint/marginal axes.
+        color : str or RGB tuple
+            Specifies the color of the reference line(s).
+        linestyle : str
+            Specifies the style of the reference line(s). Defaults to dashed.
         line_kws : key, value mappings
             Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
             when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``
@@ -1817,6 +1824,9 @@ class JointGrid(object):
             Returns ``self`` for easy method chaining.
 
         """
+        line_kws['color'] = color
+        line_kws['linestyle'] = linestyle
+
         if x is not None:
             if joint:
                 self.ax_joint.axvline(x, **line_kws)
