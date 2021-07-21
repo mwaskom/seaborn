@@ -1809,7 +1809,7 @@ class JointGrid(object):
             Value(s) to draw the line(s) at.
         joint, marginal : bools
             Whether to add the reference line(s) to the joint/marginal axes.
-        color : str or RGB tuple
+        color : :mod:`matplotlib color <matplotlib.colors>`
             Specifies the color of the reference line(s).
         linestyle : str
             Specifies the style of the reference line(s). Defaults to dashed.
