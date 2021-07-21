@@ -957,6 +957,37 @@ class FacetGrid(Grid):
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
 
+    def refline(self, *, x=None, y=None, color='.5', linestyle='--', **line_kws):
+        """Add a reference line(s) to each facet.
+
+        Parameters
+        ----------
+        x, y : numeric
+            Value(s) to draw the line(s) at.
+        color : :mod:`matplotlib color <matplotlib.colors>`
+            Specifies the color of the reference line(s).
+        linestyle : str
+            Specifies the style of the reference line(s). Defaults to dashed.
+        line_kws : key, value mappings
+            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
+            when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``
+            is not None.
+
+        Returns
+        -------
+        :class:`FacetGrid` instance
+            Returns ``self`` for easy method chaining.
+
+        """
+        line_kws['color'] = color
+        line_kws['linestyle'] = linestyle
+
+        if x is not None:
+            self.map(plt.axvline, x=x, **line_kws)
+
+        if y is not None:
+            self.map(plt.axhline, y=y, **line_kws)
+
     # ------ Properties that are part of the public API and documented by Sphinx
 
     @property
