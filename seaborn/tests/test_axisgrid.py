@@ -648,6 +648,30 @@ class TestFacetGrid:
         with pytest.warns(UserWarning):
             g.map(pointplot, "b", "x")
 
+    def test_refline(self):
+
+        g = ag.FacetGrid(self.df, row="a", col="b")
+        g.refline()
+        for ax in g.axes.ravel():
+            assert not ax.lines
+
+        refx = refy = 0.5
+        hline = np.array([[0, refy], [1, refy]])
+        vline = np.array([[refx, 0], [refx, 1]])
+        g.refline(x=refx, y=refy)
+        for ax in g.axes.ravel():
+            assert ax.lines[0].get_color() == '.5'
+            assert ax.lines[0].get_linestyle() == '--'
+            assert len(ax.lines) == 2
+            npt.assert_array_equal(ax.lines[0].get_xydata(), vline)
+            npt.assert_array_equal(ax.lines[1].get_xydata(), hline)
+
+        color, linestyle = 'red', '-'
+        g.refline(x=refx, color=color, linestyle=linestyle)
+        npt.assert_array_equal(g.axes[0, 0].lines[-1].get_xydata(), vline)
+        assert g.axes[0, 0].lines[-1].get_color() == color
+        assert g.axes[0, 0].lines[-1].get_linestyle() == linestyle
+
 
 class TestPairGrid:
 
