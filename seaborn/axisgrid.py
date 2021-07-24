@@ -957,6 +957,38 @@ class FacetGrid(Grid):
                 self.axes.flat[i].set_title(title, **kwargs)
         return self
 
+    def refline(self, *, x=None, y=None, color='.5', linestyle='--', **line_kws):
+        """Add a reference line(s) to each facet.
+
+        Parameters
+        ----------
+        x, y : numeric
+            Value(s) to draw the line(s) at.
+        color : :mod:`matplotlib color <matplotlib.colors>`
+            Specifies the color of the reference line(s). Pass ``color=None`` to
+            use ``hue`` mapping.
+        linestyle : str
+            Specifies the style of the reference line(s).
+        line_kws : key, value mappings
+            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
+            when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``
+            is not None.
+
+        Returns
+        -------
+        :class:`FacetGrid` instance
+            Returns ``self`` for easy method chaining.
+
+        """
+        line_kws['color'] = color
+        line_kws['linestyle'] = linestyle
+
+        if x is not None:
+            self.map(plt.axvline, x=x, **line_kws)
+
+        if y is not None:
+            self.map(plt.axhline, y=y, **line_kws)
+
     # ------ Properties that are part of the public API and documented by Sphinx
 
     @property
@@ -1794,6 +1826,50 @@ class JointGrid(object):
 
         self.ax_marg_x.yaxis.get_label().set_visible(False)
         self.ax_marg_y.xaxis.get_label().set_visible(False)
+
+        return self
+
+    def refline(
+        self, *, x=None, y=None, joint=True, marginal=True,
+        color='.5', linestyle='--', **line_kws
+    ):
+        """Add a reference line(s) to joint and/or marginal axes.
+
+        Parameters
+        ----------
+        x, y : numeric
+            Value(s) to draw the line(s) at.
+        joint, marginal : bools
+            Whether to add the reference line(s) to the joint/marginal axes.
+        color : :mod:`matplotlib color <matplotlib.colors>`
+            Specifies the color of the reference line(s).
+        linestyle : str
+            Specifies the style of the reference line(s).
+        line_kws : key, value mappings
+            Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
+            when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``
+            is not None.
+
+        Returns
+        -------
+        :class:`JointGrid` instance
+            Returns ``self`` for easy method chaining.
+
+        """
+        line_kws['color'] = color
+        line_kws['linestyle'] = linestyle
+
+        if x is not None:
+            if joint:
+                self.ax_joint.axvline(x, **line_kws)
+            if marginal:
+                self.ax_marg_x.axvline(x, **line_kws)
+
+        if y is not None:
+            if joint:
+                self.ax_joint.axhline(y, **line_kws)
+            if marginal:
+                self.ax_marg_y.axhline(y, **line_kws)
 
         return self
 

@@ -648,6 +648,30 @@ class TestFacetGrid:
         with pytest.warns(UserWarning):
             g.map(pointplot, "b", "x")
 
+    def test_refline(self):
+
+        g = ag.FacetGrid(self.df, row="a", col="b")
+        g.refline()
+        for ax in g.axes.ravel():
+            assert not ax.lines
+
+        refx = refy = 0.5
+        hline = np.array([[0, refy], [1, refy]])
+        vline = np.array([[refx, 0], [refx, 1]])
+        g.refline(x=refx, y=refy)
+        for ax in g.axes.ravel():
+            assert ax.lines[0].get_color() == '.5'
+            assert ax.lines[0].get_linestyle() == '--'
+            assert len(ax.lines) == 2
+            npt.assert_array_equal(ax.lines[0].get_xydata(), vline)
+            npt.assert_array_equal(ax.lines[1].get_xydata(), hline)
+
+        color, linestyle = 'red', '-'
+        g.refline(x=refx, color=color, linestyle=linestyle)
+        npt.assert_array_equal(g.axes[0, 0].lines[-1].get_xydata(), vline)
+        assert g.axes[0, 0].lines[-1].get_color() == color
+        assert g.axes[0, 0].lines[-1].get_linestyle() == linestyle
+
 
 class TestPairGrid:
 
@@ -1542,6 +1566,48 @@ class TestJointGrid:
         assert_plots_equal(g.ax_marg_x, g2.ax_marg_x, labels=False)
         assert_plots_equal(g.ax_marg_y, g2.ax_marg_y, labels=False)
 
+    def test_refline(self):
+
+        g = ag.JointGrid(x="x", y="y", data=self.data)
+        g.plot(scatterplot, histplot)
+        g.refline()
+        assert not g.ax_joint.lines and not g.ax_marg_x.lines and not g.ax_marg_y.lines
+
+        refx = refy = 0.5
+        hline = np.array([[0, refy], [1, refy]])
+        vline = np.array([[refx, 0], [refx, 1]])
+        g.refline(x=refx, y=refy, joint=False, marginal=False)
+        assert not g.ax_joint.lines and not g.ax_marg_x.lines and not g.ax_marg_y.lines
+
+        g.refline(x=refx, y=refy)
+        assert g.ax_joint.lines[0].get_color() == '.5'
+        assert g.ax_joint.lines[0].get_linestyle() == '--'
+        assert len(g.ax_joint.lines) == 2
+        assert len(g.ax_marg_x.lines) == 1
+        assert len(g.ax_marg_y.lines) == 1
+        npt.assert_array_equal(g.ax_joint.lines[0].get_xydata(), vline)
+        npt.assert_array_equal(g.ax_joint.lines[1].get_xydata(), hline)
+        npt.assert_array_equal(g.ax_marg_x.lines[0].get_xydata(), vline)
+        npt.assert_array_equal(g.ax_marg_y.lines[0].get_xydata(), hline)
+
+        color, linestyle = 'red', '-'
+        g.refline(x=refx, marginal=False, color=color, linestyle=linestyle)
+        npt.assert_array_equal(g.ax_joint.lines[-1].get_xydata(), vline)
+        assert g.ax_joint.lines[-1].get_color() == color
+        assert g.ax_joint.lines[-1].get_linestyle() == linestyle
+        assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines)
+
+        g.refline(x=refx, joint=False)
+        npt.assert_array_equal(g.ax_marg_x.lines[-1].get_xydata(), vline)
+        assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines) + 1
+
+        g.refline(y=refy, joint=False)
+        npt.assert_array_equal(g.ax_marg_y.lines[-1].get_xydata(), hline)
+        assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines)
+
+        g.refline(y=refy, marginal=False)
+        npt.assert_array_equal(g.ax_joint.lines[-1].get_xydata(), hline)
+        assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines)
 
 class TestJointPlot:
 

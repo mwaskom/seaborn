@@ -27,7 +27,9 @@ g.map(sns.kdeplot, "x",
       bw_adjust=.5, clip_on=False,
       fill=True, alpha=1, linewidth=1.5)
 g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
-g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
+# passing color=None to refline() uses the hue mapping
+g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
 
 
 # Define and use a simple function to label the plot in axes coordinates
@@ -44,5 +46,5 @@ g.fig.subplots_adjust(hspace=-.25)
 
 # Remove axes details that don't play well with overlap
 g.set_titles("")
-g.set(yticks=[])
+g.set(yticks=[], ylabel="")
 g.despine(bottom=True, left=True)
