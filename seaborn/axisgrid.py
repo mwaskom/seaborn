@@ -965,9 +965,10 @@ class FacetGrid(Grid):
         x, y : numeric
             Value(s) to draw the line(s) at.
         color : :mod:`matplotlib color <matplotlib.colors>`
-            Specifies the color of the reference line(s).
+            Specifies the color of the reference line(s). Pass ``color=None`` to
+            use ``hue`` mapping.
         linestyle : str
-            Specifies the style of the reference line(s). Defaults to dashed.
+            Specifies the style of the reference line(s).
         line_kws : key, value mappings
             Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
             when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``
@@ -1843,7 +1844,7 @@ class JointGrid(object):
         color : :mod:`matplotlib color <matplotlib.colors>`
             Specifies the color of the reference line(s).
         linestyle : str
-            Specifies the style of the reference line(s). Defaults to dashed.
+            Specifies the style of the reference line(s).
         line_kws : key, value mappings
             Other keyword arguments are passed to :meth:`matplotlib.axes.Axes.axvline`
             when ``x`` is not None and :meth:`matplotlib.axes.Axes.axhline` when ``y``

@@ -27,6 +27,8 @@ g.map(sns.kdeplot, "x",
       bw_adjust=.5, clip_on=False,
       fill=True, alpha=1, linewidth=1.5)
 g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw_adjust=.5)
+
+# passing color=None to refline() uses the hue mapping
 g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
 
 
