@@ -470,18 +470,28 @@ def load_dataset(name, cache=True, data_home=None, **kws):
         Tabular data, possibly with some preprocessing applied.
 
     """
-    path = ("https://raw.githubusercontent.com/"
-            "mwaskom/seaborn-data/master/{}.csv")
-    full_path = path.format(name)
+    # A common beginner mistake is to assume that one's personal data needs
+    # to be passed through this function to be usable with seaborn.
+    # Let's provide a more helpful error than you would otherwise get.
+    if isinstance(name, pd.DataFrame):
+        err = (
+            "This function accepts only strings (the name of an example dataset). "
+            "You passed a pandas DataFrame. If you have your own dataset, "
+            "it is not necessary to use this function before plotting."
+        )
+        raise TypeError(err)
+
+    url = f"https://raw.githubusercontent.com/mwaskom/seaborn-data/master/{name}.csv"
 
     if cache:
-        cache_path = os.path.join(get_data_home(data_home),
-                                  os.path.basename(full_path))
+        cache_path = os.path.join(get_data_home(data_home), os.path.basename(url))
         if not os.path.exists(cache_path):
             if name not in get_dataset_names():
                 raise ValueError(f"'{name}' is not one of the example datasets.")
-            urlretrieve(full_path, cache_path)
+            urlretrieve(url, cache_path)
         full_path = cache_path
+    else:
+        full_path = url
 
     df = pd.read_csv(full_path, **kws)
 
