@@ -26,7 +26,7 @@ grid = sns.FacetGrid(df, col="walk", hue="walk", palette="tab20c",
                      col_wrap=4, height=1.5)
 
 # Draw a horizontal line to show the starting point
-grid.map(plt.axhline, y=0, ls=":", c=".5")
+grid.refline(y=0, linestyle=":")
 
 # Draw a line plot to show the trajectory of each random walk
 grid.map(plt.plot, "step", "position", marker="o")
