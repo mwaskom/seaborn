@@ -620,7 +620,7 @@ class TestRelationalPlotter(Helpers):
     def test_relplot_data(self, long_df):
 
         g = relplot(
-            data=long_df,
+            data=long_df.to_dict(),
             x="x", y=long_df["y"].rename("y_var"),
             hue=long_df["a"].to_numpy(), col="c"
         )

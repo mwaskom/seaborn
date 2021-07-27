@@ -2323,7 +2323,7 @@ class TestDisPlot:
     def test_facetgrid_data(self, long_df):
 
         g = displot(
-            data=long_df,
+            data=long_df.to_dict(),
             x="z",
             hue=long_df["a"].rename("hue_var"),
             col=long_df["c"].to_numpy(),

@@ -1005,6 +1005,8 @@ def relplot(
     }
     grid_data = g.data.rename(columns=orig_cols)
     if data is not None and (x is not None or y is not None):
+        if not isinstance(data, pd.DataFrame):
+            data = pd.DataFrame(data)
         g.data = pd.merge(
             data,
             grid_data[grid_data.columns.difference(data.columns)],

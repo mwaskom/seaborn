@@ -2312,6 +2312,8 @@ def displot(
     g.tight_layout()
 
     if data is not None and (x is not None or y is not None):
+        if not isinstance(data, pd.DataFrame):
+            data = pd.DataFrame(data)
         g.data = pd.merge(
             data,
             g.data[g.data.columns.difference(data.columns)],
