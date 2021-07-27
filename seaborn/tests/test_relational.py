@@ -620,9 +620,11 @@ class TestRelationalPlotter(Helpers):
     def test_relplot_data(self, long_df):
 
         g = relplot(
-            data=long_df.to_dict(),
-            x="x", y=long_df["y"].rename("y_var"),
-            hue=long_df["a"].to_numpy(), col="c"
+            data=long_df.to_dict(orient="list"),
+            x="x",
+            y=long_df["y"].rename("y_var"),
+            hue=long_df["a"].to_numpy(),
+            col="c",
         )
         expected_cols = set(long_df.columns.to_list() + ["_hue_", "y_var"])
         assert set(g.data.columns) == expected_cols
