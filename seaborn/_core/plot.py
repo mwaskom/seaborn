@@ -5,13 +5,13 @@ import io
 import itertools
 from copy import deepcopy
 
-import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._core.data import PlotData
+from seaborn._core.subplots import Subplots
 from seaborn._core.mappings import GroupMapping, HueMapping
 from seaborn._core.scales import (
     ScaleWrapper,
@@ -22,7 +22,7 @@ from seaborn._core.scales import (
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any, Final
+    from typing import Literal, Any
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.figure import Figure
@@ -102,6 +102,9 @@ class Plot:
         **variables: VariableSpec,
     ) -> Plot:
 
+        # TODO do a check here that mark has been initialized,
+        # otherwise errors will be inscrutable
+
         if stat is None and mark.default_stat is not None:
             # TODO We need some way to say "do no stat transformation" that is different
             # from "use the default". That's basically an IdentityStat.
@@ -136,11 +139,8 @@ class Plot:
         #
         # - Implementing this will require lots of downscale changes in figure setup,
         #   and especially the axis scaling, which will need to be pair specific
-        #
-        # - Do we want to allow lists of vectors to define the pairing? Everywhere
-        #   else we have a variable specification, we accept Hashable | Vector
-        #   - Ideally this SHOULD work without special handling now. But it does not
-        #     because things downstream are not thought out clearly.
+
+        # TODO lists of vectors currently work, but I'm not sure where best to test
 
         # TODO add data kwarg here? (it's everywhere else...)
 
@@ -197,6 +197,7 @@ class Plot:
             if keys:
                 pairspec["structure"][axis] = keys
 
+        # TODO raise here if cartesian is False and len(x) != len(y)?
         pairspec["cartesian"] = cartesian
         pairspec["wrap"] = wrap
 
@@ -207,7 +208,7 @@ class Plot:
         self,
         col: VariableSpec = None,
         row: VariableSpec = None,
-        col_order: OrderSpec = None,
+        col_order: OrderSpec = None,  # TODO single order param
         row_order: OrderSpec = None,
         wrap: int | None = None,
         data: DataSource = None,
@@ -418,10 +419,6 @@ class Plot:
 
     def _setup_scales(self) -> None:
 
-        # TODO We need to make sure that when using the "pair" functionality, the
-        # scaling is pair-variable dependent. We can continue to use the same scale
-        # (though not necessarily the same limits, or the same categories) for faceting
-
         layers = self._layers
         for var, scale in self._scales.items():
             if scale.type == "unknown" and any(var in layer for layer in layers):
@@ -450,153 +447,73 @@ class Plot:
             )
         )
 
-        # Reject specs that pair and facet on (or wrap to) the same figure dimension
-        overlaps = {"x": ["columns", "rows"], "y": ["rows", "columns"]}
-        for pair_axis, (facet_dim, wrap_dim) in overlaps.items():
-
-            if pair_axis not in self._pairspec:
-                continue
-            elif facet_dim[:3] in setup_data:
-                err = f"Cannot facet on the {facet_dim} while pairing on {pair_axis}."
-            elif wrap_dim[:3] in setup_data and self._facetspec.get("wrap"):
-                err = f"Cannot wrap the {wrap_dim} while pairing on {pair_axis}."
-            else:
-                continue
-            raise RuntimeError(err)  # TODO what err class? Define PlotSpecError?
-
-        # --- Subplot grid parameterization
-
-        # TODO this method is getting quite long and complicated.
-        # I'd like to break it up, although adding a bunch more methods
-        # on Plot will make it hard to navigate. Should there be some sort of
-        # container class for the figure/subplots where that logic lives?
-
-        # TODO build this from self._subplotspec?
-        subplot_spec = {}
-
-        figure_dimensions = {}
-        for dim, axis in zip(["col", "row"], ["x", "y"]):
-
-            if dim in setup_data:
-                figure_dimensions[dim] = categorical_order(
-                    setup_data.frame[dim], self._facetspec.get(f"{dim}_order"),
-                )
-            elif axis in self._pairspec:
-                figure_dimensions[dim] = self._pairspec[axis]
-            else:
-                figure_dimensions[dim] = [None]
-
-            subplot_spec[f"n{dim}s"] = len(figure_dimensions[dim])
-
-        if not self._pairspec.get("cartesian", True):
-            # TODO we need to re-enable axis/tick labels even when sharing
-            subplot_spec["nrows"] = 1
-
-        wrap = self._facetspec.get("wrap", self._pairspec.get("wrap"))
-        if wrap is not None:
-            wrap_dim = "row" if subplot_spec["nrows"] > 1 else "col"
-            flow_dim = {"row": "col", "col": "row"}[wrap_dim]
-            n_subplots = subplot_spec[f"n{wrap_dim}s"]
-            flow = int(np.ceil(n_subplots / wrap))
-            subplot_spec[f"n{wrap_dim}s"] = wrap
-            subplot_spec[f"n{flow_dim}s"] = flow
-        else:
-            n_subplots = subplot_spec["ncols"] * subplot_spec["nrows"]
-
-        # Work out the defaults for sharex/sharey
-        axis_to_dim = {"x": "col", "y": "row"}
-        for axis in "xy":
-            key = f"share{axis}"
-            if key in self._subplotspec:  # Should we just be updating this?
-                val = self._subplotspec[key]
-            else:
-                if axis in self._pairspec:
-                    if wrap in [None, 1] and self._pairspec.get("cartesian", True):
-                        val = axis_to_dim[axis]
-                    else:
-                        val = False
-                else:
-                    val = True
-            subplot_spec[key] = val
+        self._subplots = subplots = Subplots(
+            self._subplotspec, self._facetspec, self._pairspec, setup_data
+        )
 
         # --- Figure initialization
+        figure_kws = {"figsize": getattr(self, "_figsize", None)}  # TODO
+        self._figure = subplots.init_figure(pyplot, figure_kws)
 
-        figsize = getattr(self, "_figsize", None)
-
-        if pyplot:
-            self._figure = plt.figure(figsize=figsize)
-        else:
-            self._figure = mpl.figure.Figure(figsize=figsize)
-
-        subplots = self._figure.subplots(**subplot_spec, squeeze=False)
-
-        # --- Building the internal subplot list and add default decorations
-
-        self._subplot_list = []
-
-        if wrap is not None:
-            ravel_order = {"col": "C", "row": "F"}[wrap_dim]
-            subplots_flat = subplots.ravel(ravel_order)
-            subplots, extra = np.split(subplots_flat, [n_subplots])
-            for ax in extra:
-                ax.remove()
-            if wrap_dim == "col":
-                subplots = subplots[np.newaxis, :]
-            else:
-                subplots = subplots[:, np.newaxis]
-        if not self._pairspec or self._pairspec["cartesian"]:
-            iterplots = np.ndenumerate(subplots)
-        else:
-            indices = np.arange(n_subplots)
-            iterplots = zip(zip(indices, indices), subplots.flat)
-
-        for (i, j), ax in iterplots:
-
-            info = {"ax": ax}
-
-            for dim in ["row", "col"]:
-                idx = {"row": i, "col": j}[dim]
-                if dim in setup_data:
-                    info[dim] = figure_dimensions[dim][idx]
-                else:
-                    info[dim] = None
-
+        # --- Figure annotation
+        for sub in subplots:
+            ax = sub["ax"]
             for axis in "xy":
-
-                idx = {"x": j, "y": i}[axis]
-                if axis in self._pairspec:
-                    key = f"{axis}{idx}"
-                else:
-                    key = axis
-                info[axis] = key
-
-                label = setup_data.names.get(key)
+                axis_key = sub[axis]
                 ax.set(**{
-                    f"{axis}scale": self._scales[key]._scale,
-                    f"{axis}label": label,  # TODO we should do this elsewhere
+                    # Note: this is the only non "annotation" part of this code
+                    # everything else can happen after .plot(), but we need this first
+                    # Should perhaps separate it out to make that more clear
+                    # (or pass scales into Subplots)
+                    f"{axis}scale": self._scales[axis_key]._scale,
+                    # TODO Should we make it possible to use only one x/y label for
+                    # all rows/columns in a faceted plot? Maybe using sub{axis}label,
+                    # although the alignments of the labels from taht method leaves
+                    # something to be desired.
+                    f"{axis}label": setup_data.names.get(axis_key)
                 })
 
-            self._subplot_list.append(info)
+                axis_obj = getattr(ax, f"{axis}axis")
+                visible_side = {"x": "bottom", "y": "left"}.get(axis)
+                show_axis_label = (
+                    sub[visible_side]
+                    or axis in self._pairspec and bool(self._pairspec.get("wrap"))
+                    or not self._pairspec.get("cartesian", True)
+                )
+                axis_obj.get_label().set_visible(show_axis_label)
+                show_tick_labels = (
+                    show_axis_label
+                    or self._subplotspec.get(f"share{axis}") not in (
+                        True, "all", {"x": "col", "y": "row"}[axis]
+                    )
+                )
+                plt.setp(axis_obj.get_majorticklabels(), visible=show_tick_labels)
+                plt.setp(axis_obj.get_minorticklabels(), visible=show_tick_labels)
 
-            # Now do some individual subplot configuration
-            # TODO this could be moved to a different loop, here or in a subroutine
-
-            # TODO need to account for wrap, non-cartesian
-            if subplot_spec["sharex"] in (True, "col") and subplots.shape[0] - i > 1:
-                ax.xaxis.label.set_visible(False)
-            if subplot_spec["sharey"] in (True, "row") and j > 0:
-                ax.yaxis.label.set_visible(False)
-
-            # TODO should titles be set for each position along the pair dimension?
-            # (e.g., pair on y, facet on cols, should facet titles only go on top row?)
+            # TODO title template should be configurable
+            # TODO Also we want right-side titles for row facets in most cases
+            # TODO should configure() accept a title= kwarg (for single subplot plots)?
+            # Let's have what we currently call "margin titles" but properly using the
+            # ax.set_title interface (see my gist)
             title_parts = []
-            for idx, dim in zip([i, j], ["row", "col"]):
-                if dim in setup_data:
+            for dim in ["row", "col"]:
+                if sub[dim] is not None:
                     name = setup_data.names.get(dim, f"_{dim}_")
-                    level = figure_dimensions[dim][idx]
-                    title_parts.append(f"{name} = {level}")
-            title = " | ".join(title_parts)
-            ax.set_title(title)
+                    title_parts.append(f"{name} = {sub[dim]}")
+
+            has_col = sub["col"] is not None
+            has_row = sub["row"] is not None
+            show_title = (
+                has_col and has_row
+                or (has_col or has_row) and self._facetspec.get("wrap")
+                or (has_col and sub["top"])
+                # TODO or has_row and sub["right"] and <right titles>
+                or has_row  # TODO and not <right titles>
+            )
+            if title_parts:
+                title = " | ".join(title_parts)
+                title_text = ax.set_title(title)
+                title_text.set_visible(show_title)
 
     def _setup_mappings(self) -> None:
 
@@ -757,7 +674,7 @@ class Plot:
         pair_variables = self._pairspec.get("structure", {})
 
         if not pair_variables:
-            yield self._subplot_list, df
+            yield list(self._subplots), df
             return
 
         iter_axes = itertools.product(*[
@@ -776,9 +693,9 @@ class Plot:
                     })
 
             subplots = []
-            for s in self._subplot_list:
-                if (x is None or s["x"] == x) and (y is None or s["y"] == y):
-                    subplots.append(s)
+            for sub in self._subplots:
+                if (x is None or sub["x"] == x) and (y is None or sub["y"] == y):
+                    subplots.append(sub)
 
             yield subplots, df.assign(**reassignments)
 
