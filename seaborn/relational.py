@@ -1050,7 +1050,18 @@ def relplot(
     orig_cols = {
         f"_{k}": f"_{k}_" if v is None else v for k, v in variables.items()
     }
-    g.data = g.data.rename(columns=orig_cols)
+    grid_data = g.data.rename(columns=orig_cols)
+    if data is not None and (x is not None or y is not None):
+        if not isinstance(data, pd.DataFrame):
+            data = pd.DataFrame(data)
+        g.data = pd.merge(
+            data,
+            grid_data[grid_data.columns.difference(data.columns)],
+            left_index=True,
+            right_index=True,
+        )
+    else:
+        g.data = grid_data
 
     return g
 

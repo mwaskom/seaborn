@@ -31,7 +31,7 @@ v0.12.0 (Unreleased)
 
 - |Feature| Added a ``refline`` method to :class:`FacetGrid` and :class:`JointGrid` for including horizontal and/or vertical reference lines using :meth:`matplotlib.axes.Axes.axhline`/:meth:`matplotlib.axes.Axes.axvline` (:pr:`2620`).
 
-- |API| In :func:`lmplot`, the `sharex`, `sharey`, and `legend_out` parameters have been deprecated from the function signature, but they can be passed using the new `facet_kws` parameter (:pr:`2576`).
+- |API| |Enhancement| In :func:`lmplot`, added a new `facet_kws` parameter and deprecated the `sharex`, `sharey`, and `legend_out` parameters from the function signature; pass them in the `facet_kws` dictionary (:pr:`2576`).
 
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
 
@@ -42,6 +42,8 @@ v0.12.0 (Unreleased)
 - |Fix| In :func:`lmplot`, fixed a bug where `sharey=False` did not always work as expected (:pr:`2576`).
 
 - |Fix| In the relational plots, fixed a bug where legend entries for the `size` semantic were incorrect when `size_norm` extrapolated beyond the range of the data (:pr:`2580`).
+
+- |Fix| In :func:`relplot` and :func:`displot`, fixed a bug where the dataframe attached to the returned `FacetGrid` object dropped columns that were not used in the plot (:pr:`2623`).
 
 - |Fix| In :func:`relplot`, fixed an error that would be raised when a column used to facet shared a name with one of the plot variables (:pr:`2581`).
 
