@@ -617,15 +617,19 @@ class TestRelationalPlotter(Helpers):
         for line, color in zip(lines, palette):
             assert line.get_color() == color
 
-    def test_relplot_data_columns(self, long_df):
+    def test_relplot_data(self, long_df):
 
-        long_df = long_df.assign(x_var=long_df["x"], y_var=long_df["y"])
         g = relplot(
-            data=long_df,
-            x="x_var", y="y_var",
-            hue=long_df["a"].to_numpy(), col="c"
+            data=long_df.to_dict(orient="list"),
+            x="x",
+            y=long_df["y"].rename("y_var"),
+            hue=long_df["a"].to_numpy(),
+            col="c",
         )
-        assert g.data.columns.to_list() == ["x_var", "y_var", "_hue_", "c"]
+        expected_cols = set(long_df.columns.to_list() + ["_hue_", "y_var"])
+        assert set(g.data.columns) == expected_cols
+        assert_array_equal(g.data["y_var"], long_df["y"])
+        assert_array_equal(g.data["_hue_"], long_df["a"])
 
     def test_facet_variable_collision(self, long_df):
 

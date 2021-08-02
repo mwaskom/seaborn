@@ -2177,8 +2177,8 @@ def displot(
             p.variables[var] = f"_{var}_"
 
     # Adapt the plot_data dataframe for use with FacetGrid
-    data = p.plot_data.rename(columns=p.variables)
-    data = data.loc[:, ~data.columns.duplicated()]
+    grid_data = p.plot_data.rename(columns=p.variables)
+    grid_data = grid_data.loc[:, ~grid_data.columns.duplicated()]
 
     col_name = p.variables.get("col", None)
     row_name = p.variables.get("row", None)
@@ -2187,7 +2187,7 @@ def displot(
         facet_kws = {}
 
     g = FacetGrid(
-        data=data, row=row_name, col=col_name,
+        data=grid_data, row=row_name, col=col_name,
         col_wrap=col_wrap, row_order=row_order,
         col_order=col_order, height=height,
         aspect=aspect,
@@ -2310,6 +2310,21 @@ def displot(
     )
     g.set_titles()
     g.tight_layout()
+
+    if data is not None and (x is not None or y is not None):
+        if not isinstance(data, pd.DataFrame):
+            data = pd.DataFrame(data)
+        g.data = pd.merge(
+            data,
+            g.data[g.data.columns.difference(data.columns)],
+            left_index=True,
+            right_index=True,
+        )
+    else:
+        wide_cols = {
+            k: f"_{k}_" if v is None else v for k, v in p.variables.items()
+        }
+        g.data = p.plot_data.rename(columns=wide_cols)
 
     return g
 

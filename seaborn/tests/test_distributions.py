@@ -2320,6 +2320,19 @@ class TestDisPlot:
         clim2 = g.axes.flat[1].collections[0].get_clim()
         assert clim1[1] > clim2[1]
 
+    def test_facetgrid_data(self, long_df):
+
+        g = displot(
+            data=long_df.to_dict(orient="list"),
+            x="z",
+            hue=long_df["a"].rename("hue_var"),
+            col=long_df["c"].to_numpy(),
+        )
+        expected_cols = set(long_df.columns.to_list() + ["hue_var", "_col_"])
+        assert set(g.data.columns) == expected_cols
+        assert_array_equal(g.data["hue_var"], long_df["a"])
+        assert_array_equal(g.data["_col_"], long_df["c"])
+
 
 def integrate(y, x):
     """"Simple numerical integration for testing KDE code."""
