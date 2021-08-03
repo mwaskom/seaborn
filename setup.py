@@ -22,7 +22,7 @@ Seaborn aims to make visualization a central part of exploring and understanding
 
 DISTNAME = 'seaborn'
 MAINTAINER = 'Michael Waskom'
-MAINTAINER_EMAIL = 'mwaskom@nyu.edu'
+MAINTAINER_EMAIL = 'mwaskom@gmail.com'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
