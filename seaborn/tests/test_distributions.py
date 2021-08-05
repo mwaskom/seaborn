@@ -467,7 +467,7 @@ class TestKDEPlotUnivariate:
         f, ax = plt.subplots()
         kdeplot(flat_series, color=color)
         kdeplot(flat_series)
-        assert ax.lines[0].get_color() == color
+        assert to_rgb(ax.lines[0].get_color()) == color
         assert to_rgb(ax.lines[1].get_color()) == C0
         plt.close(f)
 
@@ -484,26 +484,28 @@ class TestKDEPlotUnivariate:
         )
         plt.close(f)
 
-    def test_color(self, long_df):
+    @pytest.mark.parametrize("fill", [True, False])
+    def test_color(self, long_df, fill):
 
         color = (.2, 1, .6)
         alpha = .5
 
         f, ax = plt.subplots()
 
-        kdeplot(long_df["x"], fill=True, color=color)
-        c = ax.collections[-1]
-        assert (
-            to_rgba(c.get_facecolor().squeeze())
-            == to_rgba(color, .25)
-        )
+        kdeplot(long_df["x"], fill=fill, color=color)
+        if fill:
+            artist_color = ax.collections[-1].get_facecolor().squeeze()
+        else:
+            artist_color = ax.lines[-1].get_color()
+        default_alpha = .25 if fill else 1
+        assert to_rgba(artist_color) == to_rgba(color, default_alpha)
 
-        kdeplot(long_df["x"], fill=True, color=color, alpha=alpha)
-        c = ax.collections[-1]
-        assert (
-            to_rgba(c.get_facecolor().squeeze())
-            == to_rgba(color, alpha)
-        )
+        kdeplot(long_df["x"], fill=fill, color=color, alpha=alpha)
+        if fill:
+            artist_color = ax.collections[-1].get_facecolor().squeeze()
+        else:
+            artist_color = ax.lines[-1].get_color()
+        assert to_rgba(artist_color) == to_rgba(color, alpha)
 
     @pytest.mark.skipif(
         LooseVersion(np.__version__) < "1.17",
@@ -746,7 +748,7 @@ class TestKDEPlotUnivariate:
         ax = kdeplot(x=flat_array, linewidth=lw, color=color)
         line, = ax.lines
         assert line.get_linewidth() == lw
-        assert line.get_color() == color
+        assert to_rgb(line.get_color()) == color
 
     def test_input_checking(self, long_df):
 
@@ -780,7 +782,7 @@ class TestKDEPlotUnivariate:
         legend_artists = ax.legend_.findobj(mpl.lines.Line2D)[::2]
         palette = color_palette()
         for artist, color in zip(legend_artists, palette):
-            assert artist.get_color() == color
+            assert to_rgb(artist.get_color()) == to_rgb(color)
 
         ax.clear()
 
@@ -1388,9 +1390,11 @@ class TestHistPlotUnivariate:
 
     def test_bars_no_fill(self, flat_series):
 
-        ax = histplot(flat_series, element="bars", fill=False)
+        alpha = .5
+        ax = histplot(flat_series, element="bars", fill=False, alpha=alpha)
         for bar in ax.patches:
             assert bar.get_facecolor() == (0, 0, 0, 0)
+            assert bar.get_edgecolor()[-1] == alpha
 
     def test_step_fill(self, flat_series):
 
