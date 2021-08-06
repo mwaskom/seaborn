@@ -2171,11 +2171,3 @@ class TestDisPlot:
         clim1 = g.axes.flat[0].collections[0].get_clim()
         clim2 = g.axes.flat[1].collections[0].get_clim()
         assert clim1[1] > clim2[1]
-
-
-def integrate(y, x):
-    """"Simple numerical integration for testing KDE code."""
-    y = np.asarray(y)
-    x = np.asarray(x)
-    dx = np.diff(x)
-    return (dx * y[:-1] + dx * y[1:]).sum() / 2
