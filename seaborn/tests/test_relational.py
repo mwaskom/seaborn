@@ -713,10 +713,10 @@ class TestRelationalPlotter(Helpers):
             data=long_df.to_dict(orient="list"),
             x="x",
             y=long_df["y"].rename("y_var"),
-            hue=long_df["a"].to_numpy(),
+            hue=np.asarray(long_df["a"]),
             col="c",
         )
-        expected_cols = set(long_df.columns.to_list() + ["_hue_", "y_var"])
+        expected_cols = set(long_df.columns.tolist() + ["_hue_", "y_var"])
         assert set(g.data.columns) == expected_cols
         assert_array_equal(g.data["y_var"], long_df["y"])
         assert_array_equal(g.data["_hue_"], long_df["a"])

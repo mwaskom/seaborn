@@ -627,7 +627,7 @@ def lmplot(
     facets.hue_kws = {"marker": markers}
 
     def update_datalim(data, x, y, ax, **kws):
-        xys = data[[x, y]].to_numpy().astype(float)
+        xys = np.asarray(data[[x, y]]).astype(float)
         ax.update_datalim(xys, updatey=False)
         ax.autoscale_view(scaley=False)
 

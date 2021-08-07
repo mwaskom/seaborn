@@ -4,7 +4,6 @@ from scipy import stats, spatial
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import rgb2hex
-from distutils.version import LooseVersion
 
 import pytest
 from pytest import approx

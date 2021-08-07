@@ -1168,7 +1168,7 @@ class TestHistPlotUnivariate:
 
         ax = histplot(
             long_df,
-            x="y", hue=long_df["a"].to_numpy(),
+            x="y", hue=np.asarray(long_df["a"]),
             multiple="dodge", bins=1,
         )
         # Note hue order reversal
@@ -2227,9 +2227,9 @@ class TestDisPlot:
             data=long_df.to_dict(orient="list"),
             x="z",
             hue=long_df["a"].rename("hue_var"),
-            col=long_df["c"].to_numpy(),
+            col=np.asarray(long_df["c"]),
         )
-        expected_cols = set(long_df.columns.to_list() + ["hue_var", "_col_"])
+        expected_cols = set(long_df.columns.tolist() + ["hue_var", "_col_"])
         assert set(g.data.columns) == expected_cols
         assert_array_equal(g.data["hue_var"], long_df["a"])
         assert_array_equal(g.data["_col_"], long_df["c"])
