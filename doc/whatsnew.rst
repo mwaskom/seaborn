@@ -26,6 +26,8 @@ This page contains information about what has changed in each new version of ``s
 
 .. include:: releases/v0.12.0.txt
 
+.. include:: releases/v0.11.2.txt
+
 .. include:: releases/v0.11.1.txt
 
 .. include:: releases/v0.11.0.txt

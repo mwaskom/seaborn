@@ -6,8 +6,6 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
 - |API| |Feature| |Enhancement| TODO (Flesh this out further). Increased flexibility of what can be shown by the internally-calculated errorbars (:pr:2407).
 
-- |Fix| |Enhancement| Improved robustness to missing data, including additional support for the `pd.NA` type (:pr:`2417`).
-
 - TODO function specific categorical enhancements, including:
 
   - In :func:`stripplot`, a "strip" with a single observation will be plotted without jitter (:pr:`2413`)
@@ -18,51 +16,9 @@ A paper describing seaborn was published in the `Journal of Open Source Software
 
   - In :func:`swarmplot`, the proportion of points that must overlap before issuing a warning can now be controlled with the `warn_thresh` parameter (:pr:`2447`).
 
-- |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 (:pr:`2461`).
-
-- |Enhancement| In :func:`histplot`, improved performance with large datasets and many groupings/facets (:pr:`2559`, :pr:`2570`).
-
-- |Enhancement| In :func:`kdeplot`, added the `warn_singular` parameter to allow silencing of the warning about data with zero variance (:pr:`2566`).
-
-- |Enhancement| In :class:`FacetGrid`, :class:`PairGrid`, and functions that use them, the matplotlib `figure.autolayout` parameter is disabled to avoid having the legend overlap the plot (:pr:`2571`).
-
-- |Enhancement| In :class:`FacetGrid` and functions that use it, the visibility of interior axis labels is now disabled, and exterior axis labels are no longer erased when adding additional layers (:pr:`2583`).
-
 - |Enhancement| |Fix| Improved integration with the matplotlib color cycle in most axes-level functions (:pr:`2449`).
 
-- |Feature| Added a ``refline`` method to :class:`FacetGrid` and :class:`JointGrid` for including horizontal and/or vertical reference lines using :meth:`matplotlib.axes.Axes.axhline`/:meth:`matplotlib.axes.Axes.axvline` (:pr:`2620`).
-
-- |API| |Enhancement| In :func:`lmplot`, added a new `facet_kws` parameter and deprecated the `sharex`, `sharey`, and `legend_out` parameters from the function signature; pass them in the `facet_kws` dictionary (:pr:`2576`).
-
 - |Fix| In :func:`lineplot, allowed the `dashes` keyword to set the style of a line without mapping a `style` variable (:pr:`2449`).
-
-- |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
-
-- |Fix| In :func:`lmplot`, fixed a bug where the x axis was clamped to the data limits with `truncate=True` (:pr:`2576`).
-
-- |Fix| In :func:`lmplot`, fixed a bug where `sharey=False` did not always work as expected (:pr:`2576`).
-
-- |Fix| In the relational plots, fixed a bug where legend entries for the `size` semantic were incorrect when `size_norm` extrapolated beyond the range of the data (:pr:`2580`).
-
-- |Fix| In :func:`relplot` and :func:`displot`, fixed a bug where the dataframe attached to the returned `FacetGrid` object dropped columns that were not used in the plot (:pr:`2623`).
-
-- |Fix| In :func:`relplot`, fixed an error that would be raised when a column used to facet shared a name with one of the plot variables (:pr:`2581`).
-
-- |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `alpha` parameter was ignored when `fill=False` (:pr:`2460`).
-
-- |Fix| In :func:`histplot` and :func:`kdeplot`, fixed a bug where the `multiple` was ignored when `hue` was provided as a vector without a name (:pr:`2462`).
-
-- |Fix| In :func:`histplot`, fixed a bug where using `shrink` with non-discrete bins shifted bar positions inaccurately (:pr:`2477`).
-
-- |Fix| In :func:`histplot`, fixed two bugs where automatically computed edge widths were too thick for log-scaled histograms and categorical histograms on the y axis (:pr:`2522`).
-
-- |Fix| In :func:`displot`, fixed a bug where `common_norm` was ignored when `kind="hist"` and faceting was used without assigning `hue` (:pr:`2468`).
-
-- |Fix| In :func:`heatmap`, fixed a bug where vertically-rotated y-axis tick labels would be misaligned with their rows (:pr:`2574`).
-
-- |Defaults| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
-
-- |Docs| Improved the API documentation for theme-related functions (:pr:`2573`).
 
 - Made `scipy` an optional dependency and added `pip install seaborn[all]` as a method for ensuring the availability of compatible `scipy` and `statsmodels` libraries at install time. This has a few minor implications for existing code, which are explained in the Github pull request (:pr:`2398`).
 
