@@ -1322,7 +1322,7 @@ class _DistributionPlotter(VectorPlotter):
             kws["color"] = kws.pop("color", scout.get_color())
             scout.remove()
 
-        for sub_vars, sub_data, in self.iter_data():
+        for sub_vars, sub_data, in self.iter_data(from_comp_data=True):
 
             ax = self._get_axes(sub_vars)
 
