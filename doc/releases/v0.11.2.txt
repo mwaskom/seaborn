@@ -12,7 +12,7 @@ This is primarily a bug fix release that addresses issues in the v0.11 series, a
 
 - |Enhancement| In :func:`histplot`, improved performance with large datasets and many groupings/facets (:pr:`2559`, :pr:`2570`).
 
-- |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 (:pr:`2461`).
+- |Enhancement| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 and `stat="proportion"` as an alias for the existing `stat="probability"`: (:pr:`2461`, :pr:`2634`).
 
 - |Enhancement| In :func:`kdeplot`, added the `warn_singular` parameter to silence the warning about data with zero variance (:pr:`2566`).
 

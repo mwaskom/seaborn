@@ -204,13 +204,14 @@ class Histogram:
 
         Parameters
         ----------
-        stat : {"count", "frequency", "density", "probability", "percent"}
+        stat : str
             Aggregate statistic to compute in each bin.
 
-            - ``count`` shows the number of observations
-            - ``frequency`` shows the number of observations divided by the bin width
-            - ``density`` normalizes counts so that the area of the histogram is 1
-            - ``probability`` normalizes counts so that the sum of the bar heights is 1
+            - `count`: show the number of observations in each bin
+            - `frequency`: show the number of observations divided by the bin width
+            - `probability`: or `proportion`: normalize such that bar heights sum to 1
+            - `percent`: normalize such that bar heights sum to 100
+            - `density`: normalize such that the total area of the histogram equals 1
 
         bins : str, number, vector, or a pair of such values
             Generic bin parameter that can be the name of a reference rule,
@@ -229,7 +230,9 @@ class Histogram:
             If True, return the cumulative statistic.
 
         """
-        stat_choices = ["count", "frequency", "density", "probability", "percent"]
+        stat_choices = [
+            "count", "frequency", "density", "probability", "proportion", "percent",
+        ]
         _check_argument("stat", stat_choices, stat)
 
         self.stat = stat
@@ -336,7 +339,7 @@ class Histogram:
             np.diff(bin_edges[1]),
         )
 
-        if self.stat == "probability":
+        if self.stat == "probability" or self.stat == "proportion":
             hist = hist.astype(float) / hist.sum()
         elif self.stat == "percent":
             hist = hist.astype(float) / hist.sum() * 100
@@ -362,7 +365,7 @@ class Histogram:
             x, **bin_kws, weights=weights, density=density,
         )
 
-        if self.stat == "probability":
+        if self.stat == "probability" or self.stat == "proportion":
             hist = hist.astype(float) / hist.sum()
         elif self.stat == "percent":
             hist = hist.astype(float) / hist.sum() * 100

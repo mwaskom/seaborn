@@ -1229,27 +1229,31 @@ class TestHistPlotUnivariate:
             bar_areas = np.multiply(bar_heights, bar_widths)
             assert bar_areas.sum() == pytest.approx(1)
 
-    def test_probability_stat(self, flat_series):
+    @pytest.fixture(params=["probability", "proportion"])
+    def height_norm_arg(self, request):
+        return request.param
 
-        ax = histplot(flat_series, stat="probability")
+    def test_probability_stat(self, flat_series, height_norm_arg):
+
+        ax = histplot(flat_series, stat=height_norm_arg)
         bar_heights = [b.get_height() for b in ax.patches]
         assert sum(bar_heights) == pytest.approx(1)
 
-    def test_probability_stat_common_norm(self, long_df):
+    def test_probability_stat_common_norm(self, long_df, height_norm_arg):
 
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="probability", common_norm=True, element="bars",
+            stat=height_norm_arg, common_norm=True, element="bars",
         )
         bar_heights = [b.get_height() for b in ax.patches]
         assert sum(bar_heights) == pytest.approx(1)
 
-    def test_probability_stat_unique_norm(self, long_df):
+    def test_probability_stat_unique_norm(self, long_df, height_norm_arg):
 
         n = 10
         ax = histplot(
             data=long_df, x="x", hue="a",
-            stat="probability", bins=n, common_norm=False, element="bars",
+            stat=height_norm_arg, bins=n, common_norm=False, element="bars",
         )
 
         bar_groups = ax.patches[:n], ax.patches[-n:]
@@ -1802,7 +1806,7 @@ class TestHistPlotBivariate:
             density, (x_edges, y_edges) = sub_hist(sub_df["x"], sub_df["y"])
             assert_array_equal(mesh_data.data, density.T.flat)
 
-    @pytest.mark.parametrize("stat", ["probability", "percent"])
+    @pytest.mark.parametrize("stat", ["probability", "proportion", "percent"])
     def test_mesh_normalization(self, long_df, stat):
 
         ax = histplot(
@@ -1810,7 +1814,7 @@ class TestHistPlotBivariate:
         )
 
         mesh_data = ax.collections[0].get_array()
-        expected_sum = {"probability": 1, "percent": 100}[stat]
+        expected_sum = {"percent": 100}.get(stat, 1)
         assert mesh_data.data.sum() == expected_sum
 
     def test_mesh_colors(self, long_df):
