@@ -20,6 +20,7 @@ from ..categorical import pointplot
 from .. import axisgrid as ag
 from .._testing import (
     assert_plots_equal,
+    assert_colors_equal,
 )
 
 rs = np.random.RandomState(0)
@@ -965,21 +966,20 @@ class TestPairGrid:
     def test_map_diag_color(self):
 
         color = "red"
-        rgb_color = mpl.colors.colorConverter.to_rgba(color)
 
         g1 = ag.PairGrid(self.df)
         g1.map_diag(plt.hist, color=color)
 
         for ax in g1.diag_axes:
             for patch in ax.patches:
-                assert patch.get_facecolor() == rgb_color
+                assert_colors_equal(patch.get_facecolor(), color)
 
         g2 = ag.PairGrid(self.df)
         g2.map_diag(kdeplot, color='red')
 
         for ax in g2.diag_axes:
             for line in ax.lines:
-                assert line.get_color() == color
+                assert_colors_equal(line.get_color(), color)
 
     def test_map_diag_palette(self):
 
@@ -990,7 +990,7 @@ class TestPairGrid:
 
         for ax in g.diag_axes:
             for line, color in zip(ax.lines[::-1], pal):
-                assert line.get_color() == color
+                assert_colors_equal(line.get_color(), color)
 
     def test_map_diag_and_offdiag(self):
 
@@ -1608,6 +1608,7 @@ class TestJointGrid:
         g.refline(y=refy, marginal=False)
         npt.assert_array_equal(g.ax_joint.lines[-1].get_xydata(), hline)
         assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines)
+
 
 class TestJointPlot:
 

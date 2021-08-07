@@ -28,6 +28,9 @@ except ImportError:
     _no_fastcluster = True
 
 
+# Copied from master onto v0.11 here to fix break introduced by
+# cherry pick commit 49fbd353
+
 class TestHeatmap:
     rs = np.random.RandomState(sum(map(ord, "heatmap")))
 
