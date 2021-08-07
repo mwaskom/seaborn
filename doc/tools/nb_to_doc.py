@@ -68,7 +68,7 @@ def strip_output(nb):
     metadata from a notebook object, unless specified to keep either the
     outputs or counts.
     """
-    keys = {'metadata': [], 'cell': {'metadata': []}}
+    keys = {'metadata': [], 'cell': {'metadata': ["execution"]}}
 
     nb.metadata.pop('signature', None)
     nb.metadata.pop('widgets', None)
