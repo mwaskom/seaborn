@@ -1609,6 +1609,7 @@ class TestJointGrid:
         npt.assert_array_equal(g.ax_joint.lines[-1].get_xydata(), hline)
         assert len(g.ax_marg_x.lines) == len(g.ax_marg_y.lines)
 
+
 class TestJointPlot:
 
     rs = np.random.RandomState(sum(map(ord, "jointplot")))
