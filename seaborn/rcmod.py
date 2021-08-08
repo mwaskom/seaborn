@@ -89,8 +89,8 @@ def set_theme(context="notebook", style="darkgrid", palette="deep",
     :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
     The themeing is decomposed into several distinct sets of parameter values.
 
-    The options are illustrated in the :doc:`aesthetics <tutorial/aesthetics>`
-    and :doc:`color palette <tutorial/color_palettes>` tutorials.
+    The options are illustrated in the :doc:`aesthetics <../tutorial/aesthetics>`
+    and :doc:`color palette <../tutorial/color_palettes>` tutorials.
 
     Parameters
     ----------
@@ -155,7 +155,7 @@ def axes_style(style=None, rc=None):
     :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
 
     The options are illustrated in the
-    :doc:`aesthetics tutorial <tutorial/aesthetics>`.
+    :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
 
     This function can also be used as a context manager to temporarily
     alter the global defaults. See :func:`set_theme` or :func:`set_style`
@@ -312,7 +312,7 @@ def set_style(style=None, rc=None):
     :ref:`matplotlib rcParams system <matplotlib:matplotlib-rcparams>`.
 
     The options are illustrated in the
-    :doc:`aesthetics tutorial <tutorial/aesthetics>`.
+    :doc:`aesthetics tutorial <../tutorial/aesthetics>`.
 
     See :func:`axes_style` to get the parameter values.
 
