@@ -109,7 +109,7 @@ INDEX_TEMPLATE = """
     }}
 
     .caption {{
-        position: absolue;
+        position: absolute;
         width: 180px;
         top: 170px;
         text-align: center !important;
