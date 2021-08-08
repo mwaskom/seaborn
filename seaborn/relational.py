@@ -553,9 +553,6 @@ class _ScatterPlotter(_RelationalPlotter):
         x = data.get("x", empty)
         y = data.get("y", empty)
 
-        # Set defaults for other visual attributes
-        kws.setdefault("edgecolor", "w")
-
         if "style" in self.variables:
             # Use a representative marker so scatter sets the edgecolor
             # properly for line art markers. We currently enforce either
@@ -563,6 +560,14 @@ class _ScatterPlotter(_RelationalPlotter):
             example_level = self._style_map.levels[0]
             example_marker = self._style_map(example_level, "marker")
             kws.setdefault("marker", example_marker)
+
+        # Conditionally set the marker edgecolor based on whether the marker is "filled"
+        # See https://github.com/matplotlib/matplotlib/issues/17849 for context
+        m = kws.get("marker", mpl.rcParams.get("marker", "o"))
+        if not isinstance(m, mpl.markers.MarkerStyle):
+            m = mpl.markers.MarkerStyle(m)
+        if m.is_filled():
+            kws.setdefault("edgecolor", "w")
 
         # TODO this makes it impossible to vary alpha with hue which might
         # otherwise be useful? Should we just pass None?

@@ -1693,6 +1693,12 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         # https://github.com/matplotlib/matplotlib/issues/17586
         ax.get_xlim()[0] > ax.xaxis.convert_units(np.datetime64("2002-01-01"))
 
+    def test_unfilled_marker_edgecolor_warning(self, long_df):  # GH2636
+
+        with pytest.warns(None) as record:
+            scatterplot(data=long_df, x="x", y="y", marker="+")
+        assert not record
+
     def test_scatterplot_vs_relplot(self, long_df, long_semantics):
 
         ax = scatterplot(data=long_df, **long_semantics)
