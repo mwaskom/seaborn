@@ -1278,6 +1278,22 @@ class PairGrid(Grid):
         self._legend_data = {}
 
         # Make the plot look nice
+        for ax in axes[:-1, :].flat:
+            if ax is None:
+                continue
+            for label in ax.get_xticklabels():
+                label.set_visible(False)
+            ax.xaxis.offsetText.set_visible(False)
+            ax.xaxis.label.set_visible(False)
+
+        for ax in axes[:, 1:].flat:
+            if ax is None:
+                continue
+            for label in ax.get_yticklabels():
+                label.set_visible(False)
+            ax.yaxis.offsetText.set_visible(False)
+            ax.yaxis.label.set_visible(False)
+
         self._tight_layout_rect = [.01, .01, .99, .99]
         self._tight_layout_pad = layout_pad
         self._despine = despine
@@ -1436,6 +1452,7 @@ class PairGrid(Grid):
             plot_kwargs.setdefault("hue_order", self._hue_order)
             plot_kwargs.setdefault("palette", self._orig_palette)
             func(x=vector, **plot_kwargs)
+            ax.legend_ = None
 
         self._add_axis_labels()
         return self
