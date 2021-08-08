@@ -9,10 +9,10 @@ Seaborn is a library for making statistical graphics in Python. It is built on t
 Here is some of the functionality that seaborn offers:
 
 - A dataset-oriented API for examining relationships between multiple variables
+- Convenient views onto the overall structure of complex datasets
 - Specialized support for using categorical variables to show observations or aggregate statistics
 - Options for visualizing univariate or bivariate distributions and for comparing them between subsets of data
 - Automatic estimation and plotting of linear regression models for different kinds dependent variables
-- Convenient views onto the overall structure of complex datasets
 - High-level abstractions for structuring multi-plot grids that let you easily build complex visualizations
 - Concise control over matplotlib figure styling with several built-in themes
 - Tools for choosing color palettes that faithfully reveal patterns in your data
@@ -26,7 +26,7 @@ MAINTAINER_EMAIL = 'mwaskom@gmail.com'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.11.2.dev0'
+VERSION = '0.11.2.rc0'
 PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
