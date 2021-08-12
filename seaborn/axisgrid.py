@@ -27,8 +27,45 @@ _param_docs = DocstringComponents.from_nested_components(
 )
 
 
-class Grid:
+class _BaseGrid:
     """Base class for grids of subplots."""
+
+    def set(self, **kwargs):
+        """Set attributes on each subplot Axes."""
+        for ax in self.axes.flat:
+            if ax is not None:  # Handle removed axes
+                ax.set(**kwargs)
+        return self
+
+    @property
+    def fig(self):
+        """DEPRECATED: prefer the `figure` property."""
+        # Grid.figure is preferred because it matches the Axes attribute name.
+        # But as the maintanace burden on having this property is minimal,
+        # let's be slow about formally deprecating it. For now just note its deprecation
+        # in the docstring; add a warning in version 0.13, and eventually remove it.
+        return self._figure
+
+    @property
+    def figure(self):
+        """Access the :class:`matplotlib.figure.Figure` object underlying the grid."""
+        return self._figure
+
+    def savefig(self, *args, **kwargs):
+        """
+        Save an image of the plot.
+
+        This wraps :meth:`matplotlib.figure.Figure.savefig`, using bbox_inches="tight"
+        by default. Parameters are passed through to the matplotlib function.
+
+        """
+        kwargs = kwargs.copy()
+        kwargs.setdefault("bbox_inches", "tight")
+        self.figure.savefig(*args, **kwargs)
+
+
+class Grid(_BaseGrid):
+    """A grid that can have multiple subplots and an external legend."""
     _margin_titles = False
     _legend_out = True
 
@@ -41,26 +78,13 @@ class Grid:
         # don't add proxy artists onto the Axes. We need an overall cleaner approach.
         self._extract_legend_handles = False
 
-    def set(self, **kwargs):
-        """Set attributes on each subplot Axes."""
-        for ax in self.axes.flat:
-            if ax is not None:  # Handle removed axes
-                ax.set(**kwargs)
-        return self
-
-    def savefig(self, *args, **kwargs):
-        """Save the figure."""
-        kwargs = kwargs.copy()
-        kwargs.setdefault("bbox_inches", "tight")
-        self.fig.savefig(*args, **kwargs)
-
     def tight_layout(self, *args, **kwargs):
         """Call fig.tight_layout within rect that exclude the legend."""
         kwargs = kwargs.copy()
         kwargs.setdefault("rect", self._tight_layout_rect)
         if self._tight_layout_pad is not None:
             kwargs.setdefault("pad", self._tight_layout_pad)
-        self.fig.tight_layout(*args, **kwargs)
+        self._figure.tight_layout(*args, **kwargs)
 
     def add_legend(self, legend_data=None, title=None, label_order=None,
                    adjust_subtitles=False, **kwargs):
@@ -122,7 +146,7 @@ class Grid:
             kwargs.setdefault("loc", "center right")
 
             # Draw a full-figure legend outside the grid
-            figlegend = self.fig.legend(handles, labels, **kwargs)
+            figlegend = self._figure.legend(handles, labels, **kwargs)
 
             self._legend = figlegend
             figlegend.set_title(title, prop={"size": title_size})
@@ -131,25 +155,25 @@ class Grid:
                 adjust_legend_subtitles(figlegend)
 
             # Draw the plot to set the bounding boxes correctly
-            _draw_figure(self.fig)
+            _draw_figure(self._figure)
 
             # Calculate and set the new width of the figure so the legend fits
-            legend_width = figlegend.get_window_extent().width / self.fig.dpi
-            fig_width, fig_height = self.fig.get_size_inches()
-            self.fig.set_size_inches(fig_width + legend_width, fig_height)
+            legend_width = figlegend.get_window_extent().width / self._figure.dpi
+            fig_width, fig_height = self._figure.get_size_inches()
+            self._figure.set_size_inches(fig_width + legend_width, fig_height)
 
             # Draw the plot again to get the new transformations
-            _draw_figure(self.fig)
+            _draw_figure(self._figure)
 
             # Now calculate how much space we need on the right side
-            legend_width = figlegend.get_window_extent().width / self.fig.dpi
+            legend_width = figlegend.get_window_extent().width / self._figure.dpi
             space_needed = legend_width / (fig_width + legend_width)
             margin = .04 if self._margin_titles else .01
             self._space_needed = margin + space_needed
             right = 1 - self._space_needed
 
             # Place the subplot axes to give space for the legend
-            self.fig.subplots_adjust(right=right)
+            self._figure.subplots_adjust(right=right)
             self._tight_layout_rect[2] = right
 
         else:
@@ -418,7 +442,7 @@ class FacetGrid(Grid):
 
         # Attributes that are part of the public API but accessed through
         # a  property so that Sphinx adds them to the auto class doc
-        self._fig = fig
+        self._figure = fig
         self._axes = axes
         self._axes_dict = axes_dict
         self._legend = None
@@ -801,7 +825,7 @@ class FacetGrid(Grid):
 
     def despine(self, **kwargs):
         """Remove axis spines from the facets."""
-        utils.despine(self.fig, **kwargs)
+        utils.despine(self._figure, **kwargs)
         return self
 
     def set_axis_labels(self, x_var=None, y_var=None, clear_inner=True, **kwargs):
@@ -990,11 +1014,6 @@ class FacetGrid(Grid):
             self.map(plt.axhline, y=y, **line_kws)
 
     # ------ Properties that are part of the public API and documented by Sphinx
-
-    @property
-    def fig(self):
-        """The :class:`matplotlib.figure.Figure` with the plot."""
-        return self._fig
 
     @property
     def axes(self):
@@ -1233,7 +1252,7 @@ class PairGrid(Grid):
                 axes[i, j].remove()
                 axes[i, j] = None
 
-        self.fig = fig
+        self._figure = fig
         self.axes = axes
         self.data = data
 
@@ -1618,7 +1637,7 @@ class PairGrid(Grid):
         return numeric_cols
 
 
-class JointGrid(object):
+class JointGrid(_BaseGrid):
     """Grid for drawing a bivariate plot with marginal univariate plots.
 
     Many plots can be drawn by using the figure-level interface :func:`jointplot`.
@@ -1650,7 +1669,7 @@ class JointGrid(object):
         ax_marg_x = f.add_subplot(gs[0, :-1], sharex=ax_joint)
         ax_marg_y = f.add_subplot(gs[1:, -1], sharey=ax_joint)
 
-        self.fig = f
+        self._figure = f
         self.ax_joint = ax_joint
         self.ax_marg_x = ax_marg_x
         self.ax_marg_y = ax_marg_y
@@ -1912,15 +1931,6 @@ class JointGrid(object):
         self.ax_joint.set_xlabel(xlabel, **kwargs)
         self.ax_joint.set_ylabel(ylabel, **kwargs)
         return self
-
-    def savefig(self, *args, **kwargs):
-        """Save the figure using a "tight" bounding box by default.
-
-        Wraps :meth:`matplotlib.figure.Figure.savefig`.
-
-        """
-        kwargs.setdefault("bbox_inches", "tight")
-        self.fig.savefig(*args, **kwargs)
 
 
 JointGrid.__init__.__doc__ = """\

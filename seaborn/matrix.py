@@ -811,7 +811,7 @@ class ClusterGrid(Grid):
 
         self.mask = _matrix_mask(self.data2d, mask)
 
-        self.fig = plt.figure(figsize=figsize)
+        self._figure = plt.figure(figsize=figsize)
 
         self.row_colors, self.row_color_labels = \
             self._preprocess_colors(data, row_colors, axis=0)
@@ -842,8 +842,8 @@ class ClusterGrid(Grid):
                                     width_ratios=width_ratios,
                                     height_ratios=height_ratios)
 
-        self.ax_row_dendrogram = self.fig.add_subplot(self.gs[-1, 0])
-        self.ax_col_dendrogram = self.fig.add_subplot(self.gs[0, -1])
+        self.ax_row_dendrogram = self._figure.add_subplot(self.gs[-1, 0])
+        self.ax_col_dendrogram = self._figure.add_subplot(self.gs[0, -1])
         self.ax_row_dendrogram.set_axis_off()
         self.ax_col_dendrogram.set_axis_off()
 
@@ -851,19 +851,19 @@ class ClusterGrid(Grid):
         self.ax_col_colors = None
 
         if self.row_colors is not None:
-            self.ax_row_colors = self.fig.add_subplot(
+            self.ax_row_colors = self._figure.add_subplot(
                 self.gs[-1, 1])
         if self.col_colors is not None:
-            self.ax_col_colors = self.fig.add_subplot(
+            self.ax_col_colors = self._figure.add_subplot(
                 self.gs[1, -1])
 
-        self.ax_heatmap = self.fig.add_subplot(self.gs[-1, -1])
+        self.ax_heatmap = self._figure.add_subplot(self.gs[-1, -1])
         if cbar_pos is None:
             self.ax_cbar = self.cax = None
         else:
             # Initialize the colorbar axes in the gridspec so that tight_layout
             # works. We will move it where it belongs later. This is a hack.
-            self.ax_cbar = self.fig.add_subplot(self.gs[0, 0])
+            self.ax_cbar = self._figure.add_subplot(self.gs[0, 0])
             self.cax = self.ax_cbar  # Backwards compatibility
         self.cbar_pos = cbar_pos
 
@@ -1066,11 +1066,6 @@ class ClusterGrid(Grid):
         cmap = mpl.colors.ListedColormap(list(unique_colors))
         return matrix, cmap
 
-    def savefig(self, *args, **kwargs):
-        if 'bbox_inches' not in kwargs:
-            kwargs['bbox_inches'] = 'tight'
-        self.fig.savefig(*args, **kwargs)
-
     def plot_dendrograms(self, row_cluster, col_cluster, metric, method,
                          row_linkage, col_linkage, tree_kws):
         # Plot the row dendrogram
@@ -1208,13 +1203,13 @@ class ClusterGrid(Grid):
 
         tight_params = dict(h_pad=.02, w_pad=.02)
         if self.ax_cbar is None:
-            self.fig.tight_layout(**tight_params)
+            self._figure.tight_layout(**tight_params)
         else:
             # Turn the colorbar axes off for tight layout so that its
             # ticks don't interfere with the rest of the plot layout.
             # Then move it.
             self.ax_cbar.set_axis_off()
-            self.fig.tight_layout(**tight_params)
+            self._figure.tight_layout(**tight_params)
             self.ax_cbar.set_axis_on()
             self.ax_cbar.set_position(self.cbar_pos)
 

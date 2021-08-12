@@ -40,10 +40,11 @@ class TestFacetGrid:
         g = ag.FacetGrid(self.df)
         assert g.data is self.df
 
-    def test_self_fig(self):
+    def test_self_figure(self):
 
         g = ag.FacetGrid(self.df)
-        assert isinstance(g.fig, plt.Figure)
+        assert isinstance(g.figure, plt.Figure)
+        assert g.figure is g._figure
 
     def test_self_axes(self):
 
@@ -695,10 +696,11 @@ class TestPairGrid:
         expected = df.drop('date', axis=1)
         tm.assert_frame_equal(result, expected)
 
-    def test_self_fig(self):
+    def test_self_figure(self):
 
         g = ag.PairGrid(self.df)
-        assert isinstance(g.fig, plt.Figure)
+        assert isinstance(g.figure, plt.Figure)
+        assert g.figure is g._figure
 
     def test_self_axes(self):
 
