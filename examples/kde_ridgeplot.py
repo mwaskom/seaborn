@@ -42,7 +42,7 @@ def label(x, color, label):
 g.map(label, "x")
 
 # Set the subplots to overlap
-g.fig.subplots_adjust(hspace=-.25)
+g.figure.subplots_adjust(hspace=-.25)
 
 # Remove axes details that don't play well with overlap
 g.set_titles("")

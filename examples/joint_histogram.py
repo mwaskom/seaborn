@@ -16,7 +16,7 @@ g = sns.JointGrid(data=planets, x="year", y="distance", marginal_ticks=True)
 g.ax_joint.set(yscale="log")
 
 # Create an inset legend for the histogram colorbar
-cax = g.fig.add_axes([.15, .55, .02, .2])
+cax = g.figure.add_axes([.15, .55, .02, .2])
 
 # Add the joint and marginal histogram plots
 g.plot_joint(
