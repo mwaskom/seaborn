@@ -1794,6 +1794,28 @@ class TestHistPlotBivariate:
                 assert path.vertices[0, 0] == x
                 assert path.vertices[0, 1] == y
 
+    def test_mesh_with_col_unique_bins(self, long_df):
+
+        g = displot(long_df, x="x", y="y", col="c", common_bins=False)
+
+        for i, sub_df in long_df.groupby("c"):
+
+            hist = Histogram()
+
+            mesh = g.axes.flat[i].collections[0]
+            mesh_data = mesh.get_array()
+
+            counts, (x_edges, y_edges) = hist(sub_df["x"], sub_df["y"])
+
+            assert_array_equal(mesh_data.data, counts.T.flat)
+            assert_array_equal(mesh_data.mask, counts.T.flat == 0)
+
+            edges = itertools.product(y_edges[:-1], x_edges[:-1])
+            for i, (y, x) in enumerate(edges):
+                path = mesh.get_paths()[i]
+                assert path.vertices[0, 0] == x
+                assert path.vertices[0, 1] == y
+
     def test_mesh_log_scale(self, rng):
 
         x, y = rng.lognormal(0, 1, (2, 1000))
