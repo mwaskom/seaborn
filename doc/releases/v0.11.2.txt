@@ -14,7 +14,7 @@ This is a minor release that addresses issues in the v0.11 series and adds a sma
 
 - |Enhancement| In :func:`histplot`, improved performance with large datasets and many groupings/facets (:pr:`2559`, :pr:`2570`).
 
-- |Enhancement| The :class:`FacetGrid` and :class:`PairGrid` objects now reference the underlying matplotlib figure with a `.figure` attribute. The existing `.fig` attribute still exists but is discouraged and may eventually be deprecated. The effect is that you can now call `obj.figure` on the return value from any seaborn function (:pr:`2639`).
+- |Enhancement| The :class:`FacetGrid`, :class:`PairGrid`, and :class:`JointGrid` objects now reference the underlying matplotlib figure with a `.figure` attribute. The existing `.fig` attribute still exists but is discouraged and may eventually be deprecated. The effect is that you can now call `obj.figure` on the return value from any seaborn function to access the matplotlib object (:pr:`2639`).
 
 - |Enhancement| In :class:`FacetGrid` and functions that use it, visibility of the interior axis labels is now disabled, and exterior axis labels are no longer erased when adding additional layers. This produces the same results for plots made by seaborn functions, but it may produce different (better, in most cases) results for customized facet plots (:pr:`2583`).
 
