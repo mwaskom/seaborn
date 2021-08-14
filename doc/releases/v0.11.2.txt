@@ -36,6 +36,8 @@ This is a minor release that addresses issues in the v0.11 series and adds a sma
 
 - |Fix| In :func:`displot`, the default alpha value now adjusts to a provided `multiple` parameter even when `hue` is not assigned (:pr:`2462`).
 
+- |Fix| In :func:`displot`, fixed a bug that caused faceted 2D histograms to error out with `common_bins=False` (:pr:`2640`).
+
 - |Fix| In :func:`rugplot`, fixed a bug that prevented the use of datetime data (:pr:`2458`).
 
 - |Fix| In :func:`relplot` and :func:`displot`, fixed a bug where the dataframe attached to the returned `FacetGrid` object dropped columns that were not used in the plot (:pr:`2623`).

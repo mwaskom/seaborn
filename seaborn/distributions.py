@@ -763,7 +763,7 @@ class _DistributionPlotter(VectorPlotter):
             if pmax is not None:
                 vmax = self._quantile_to_level(full_heights, pmax)
             else:
-                vmax = plot_kws.pop("vmax", np.max(full_heights))
+                vmax = plot_kws.pop("vmax", max(map(np.max, full_heights)))
         else:
             vmax = None
 
