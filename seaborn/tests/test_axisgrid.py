@@ -40,10 +40,11 @@ class TestFacetGrid:
         g = ag.FacetGrid(self.df)
         assert g.data is self.df
 
-    def test_self_fig(self):
+    def test_self_figure(self):
 
         g = ag.FacetGrid(self.df)
-        assert isinstance(g.fig, plt.Figure)
+        assert isinstance(g.figure, plt.Figure)
+        assert g.figure is g._figure
 
     def test_self_axes(self):
 
@@ -189,26 +190,26 @@ class TestFacetGrid:
     def test_figure_size(self):
 
         g = ag.FacetGrid(self.df, row="a", col="b")
-        npt.assert_array_equal(g.fig.get_size_inches(), (6, 9))
+        npt.assert_array_equal(g.figure.get_size_inches(), (6, 9))
 
         g = ag.FacetGrid(self.df, row="a", col="b", height=6)
-        npt.assert_array_equal(g.fig.get_size_inches(), (12, 18))
+        npt.assert_array_equal(g.figure.get_size_inches(), (12, 18))
 
         g = ag.FacetGrid(self.df, col="c", height=4, aspect=.5)
-        npt.assert_array_equal(g.fig.get_size_inches(), (6, 4))
+        npt.assert_array_equal(g.figure.get_size_inches(), (6, 4))
 
     def test_figure_size_with_legend(self):
 
         g = ag.FacetGrid(self.df, col="a", hue="c", height=4, aspect=.5)
-        npt.assert_array_equal(g.fig.get_size_inches(), (6, 4))
+        npt.assert_array_equal(g.figure.get_size_inches(), (6, 4))
         g.add_legend()
-        assert g.fig.get_size_inches()[0] > 6
+        assert g.figure.get_size_inches()[0] > 6
 
         g = ag.FacetGrid(self.df, col="a", hue="c", height=4, aspect=.5,
                          legend_out=False)
-        npt.assert_array_equal(g.fig.get_size_inches(), (6, 4))
+        npt.assert_array_equal(g.figure.get_size_inches(), (6, 4))
         g.add_legend()
-        npt.assert_array_equal(g.fig.get_size_inches(), (6, 4))
+        npt.assert_array_equal(g.figure.get_size_inches(), (6, 4))
 
     def test_legend_data(self):
 
@@ -342,7 +343,7 @@ class TestFacetGrid:
             ax.set_xticks([])
             ax.set_yticks([])
 
-        g.fig.tight_layout()
+        g.figure.tight_layout()
 
         for (l, m, r) in g.axes:
             assert l.get_position().width > m.get_position().width
@@ -695,10 +696,11 @@ class TestPairGrid:
         expected = df.drop('date', axis=1)
         tm.assert_frame_equal(result, expected)
 
-    def test_self_fig(self):
+    def test_self_figure(self):
 
         g = ag.PairGrid(self.df)
-        assert isinstance(g.fig, plt.Figure)
+        assert isinstance(g.figure, plt.Figure)
+        assert g.figure is g._figure
 
     def test_self_axes(self):
 
@@ -756,10 +758,10 @@ class TestPairGrid:
         plot_vars = ["x", "y", "z"]
         g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
         corner_size = sum([i + 1 for i in range(len(plot_vars))])
-        assert len(g.fig.axes) == corner_size
+        assert len(g.figure.axes) == corner_size
 
         g.map_diag(plt.hist)
-        assert len(g.fig.axes) == (corner_size + len(plot_vars))
+        assert len(g.figure.axes) == (corner_size + len(plot_vars))
 
         for ax in np.diag(g.axes):
             assert not ax.yaxis.get_visible()
@@ -768,7 +770,7 @@ class TestPairGrid:
         plot_vars = ["x", "y", "z"]
         g = ag.PairGrid(self.df, vars=plot_vars, corner=True)
         g.map(scatterplot)
-        assert len(g.fig.axes) == corner_size
+        assert len(g.figure.axes) == corner_size
 
     def test_size(self):
 
