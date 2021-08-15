@@ -1,4 +1,7 @@
-body { color: #444444 !important; }
+body {
+    color: #444444 !important;
+    max-width: 100% !important;
+}
 
 h1 { font-size: 40px !important; }
 h2 { font-size: 32px !important; }
