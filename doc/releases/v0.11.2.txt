@@ -8,9 +8,9 @@ This is a minor release that addresses issues in the v0.11 series and adds a sma
 
 - |Feature| Added a :func:`move_legend` convenience function for repositioning the legend on an existing axes or figure, along with updating its properties. This function should be preferred over calling `ax.legend` with no legend data, which does not reliably work across seaborn plot types (:pr:`2643`).
 
-- |Feature| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 and `stat="proportion"` as an alias for the existing `stat="probability"`: (:pr:`2461`, :pr:`2634`).
+- |Feature| In :func:`histplot`, added `stat="percent"` as an option for normalization such that bar heights sum to 100 and `stat="proportion"` as an alias for the existing `stat="probability"` (:pr:`2461`, :pr:`2634`).
 
-- |Feature| Added :meth:`FacetGrid.refline` and :meth`JointGrid.refline` methods for plotting horizontal and/or vertical reference lines on every subplot in one step (:pr:`2620`).
+- |Feature| Added :meth:`FacetGrid.refline` and :meth:`JointGrid.refline` methods for plotting horizontal and/or vertical reference lines on every subplot in one step (:pr:`2620`).
 
 - |Feature| In :func:`kdeplot`, added a `warn_singular` parameter to silence the warning about data with zero variance (:pr:`2566`).
 
