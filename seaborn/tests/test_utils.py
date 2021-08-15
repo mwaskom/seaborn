@@ -336,6 +336,96 @@ def test_locator_to_legend_entries():
         assert str_levels == ['1e-04', '1e-03', '1e-02']
 
 
+def test_move_legend_matplotlib_objects():
+
+    fig, ax = plt.subplots()
+
+    colors = "C2", "C5"
+    labels = "first label", "second label"
+    title = "the legend"
+
+    for color, label in zip(colors, labels):
+        ax.plot([0, 1], color=color, label=label)
+    ax.legend(loc="upper right", title=title)
+    utils._draw_figure(fig)
+    xfm = ax.transAxes.inverted().transform
+
+    # --- Test axes legend
+
+    old_pos = xfm(ax.legend_.legendPatch.get_extents())
+
+    new_fontsize = 14
+    utils.move_legend(ax, "lower left", title_fontsize=new_fontsize)
+    utils._draw_figure(fig)
+    new_pos = xfm(ax.legend_.legendPatch.get_extents())
+
+    assert (new_pos < old_pos).all()
+    assert ax.legend_.get_title().get_text() == title
+    assert ax.legend_.get_title().get_size() == new_fontsize
+
+    # --- Test title replacement
+
+    new_title = "new title"
+    utils.move_legend(ax, "lower left", title=new_title)
+    utils._draw_figure(fig)
+    assert ax.legend_.get_title().get_text() == new_title
+
+    # --- Test figure legend
+
+    fig.legend(loc="upper right", title=title)
+    _draw_figure(fig)
+    xfm = fig.transFigure.inverted().transform
+    old_pos = xfm(fig.legends[0].legendPatch.get_extents())
+
+    utils.move_legend(fig, "lower left", title=new_title)
+    _draw_figure(fig)
+
+    new_pos = xfm(fig.legends[0].legendPatch.get_extents())
+    assert (new_pos < old_pos).all()
+    assert fig.legends[0].get_title().get_text() == new_title
+
+
+def test_move_legend_grid_object(long_df):
+
+    from seaborn.axisgrid import FacetGrid
+
+    hue_var = "a"
+    g = FacetGrid(long_df, hue=hue_var)
+    g.map(plt.plot, "x", "y")
+
+    g.add_legend()
+    _draw_figure(g.figure)
+
+    xfm = g.figure.transFigure.inverted().transform
+    old_pos = xfm(g.legend.legendPatch.get_extents())
+
+    fontsize = 20
+    utils.move_legend(g, "lower left", title_fontsize=fontsize)
+    _draw_figure(g.figure)
+
+    new_pos = xfm(g.legend.legendPatch.get_extents())
+    assert (new_pos < old_pos).all()
+    assert g.legend.get_title().get_text() == hue_var
+    assert g.legend.get_title().get_size() == fontsize
+
+    assert g.legend.legendHandles
+    for i, h in enumerate(g.legend.legendHandles):
+        assert mpl.colors.to_rgb(h.get_color()) == mpl.colors.to_rgb(f"C{i}")
+
+
+def test_move_legend_input_checks():
+
+    ax = plt.figure().subplots()
+    with pytest.raises(TypeError):
+        utils.move_legend(ax.xaxis, "best")
+
+    with pytest.raises(ValueError):
+        utils.move_legend(ax, "best")
+
+    with pytest.raises(ValueError):
+        utils.move_legend(ax.figure, "best")
+
+
 def check_load_dataset(name):
     ds = load_dataset(name, cache=False)
     assert(isinstance(ds, pd.DataFrame))
