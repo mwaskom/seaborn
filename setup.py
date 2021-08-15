@@ -12,12 +12,12 @@ Here is some of the functionality that seaborn offers:
 - Convenient views onto the overall structure of complex datasets
 - Specialized support for using categorical variables to show observations or aggregate statistics
 - Options for visualizing univariate or bivariate distributions and for comparing them between subsets of data
-- Automatic estimation and plotting of linear regression models for different kinds dependent variables
+- Automatic estimation and plotting of linear regression models for different kinds of dependent variables
 - High-level abstractions for structuring multi-plot grids that let you easily build complex visualizations
 - Concise control over matplotlib figure styling with several built-in themes
 - Tools for choosing color palettes that faithfully reveal patterns in your data
 
-Seaborn aims to make visualization a central part of exploring and understanding data. Its dataset-oriented plotting functions operate on dataframes and arrays containing whole datasets and internally perform the necessary semantic mapping and statistical aggregation to produce informative plots.
+Seaborn aims to make visualization a central part of exploring and understanding data. Its dataset-oriented plotting functions operate on dataframes and arrays containing whole datasets and internally perform the necessary semantic mappings and statistical aggregations to produce informative plots.
 """
 
 DISTNAME = 'seaborn'
@@ -26,7 +26,7 @@ MAINTAINER_EMAIL = 'mwaskom@gmail.com'
 URL = 'https://seaborn.pydata.org'
 LICENSE = 'BSD (3-clause)'
 DOWNLOAD_URL = 'https://github.com/mwaskom/seaborn/'
-VERSION = '0.11.2.rc0'
+VERSION = '0.11.2'
 PYTHON_REQUIRES = ">=3.6"
 
 INSTALL_REQUIRES = [
