@@ -4,6 +4,7 @@ import re
 import io
 import itertools
 from copy import deepcopy
+from distutils.version import LooseVersion
 
 import pandas as pd
 import matplotlib as mpl
@@ -281,7 +282,13 @@ class Plot:
         # have it work the way you would expect.
 
         if isinstance(scale, str):
-            scale = mpl.scale.scale_factory(scale, var, **kwargs)
+            # Matplotlib scales require an Axis object for backwards compatability,
+            # but it is not used, aside from extraction of the axis_name in LogScale.
+            # This can be removed when the minimum matplotlib is raised to 3.4,
+            # and a simple string (`var`) can be passed.
+            class Axis:
+                axis_name = var
+            scale = mpl.scale.scale_factory(scale, Axis(), **kwargs)
 
         if norm is None:
             # TODO what about when we want to infer the scale from the norm?
@@ -455,17 +462,33 @@ class Plot:
         figure_kws = {"figsize": getattr(self, "_figsize", None)}  # TODO
         self._figure = subplots.init_figure(pyplot, figure_kws)
 
+        # --- Assignment of scales
+        for sub in subplots:
+            ax = sub["ax"]
+            for axis in "xy":
+                axis_key = sub[axis]
+                scale = self._scales[axis_key]._scale
+                if LooseVersion(mpl.__version__) < "3.4":
+                    # The ability to pass a BaseScale instance to Axes.set_{axis}scale
+                    # was added to matplotlib in version 3.4.0:
+                    # https://github.com/matplotlib/matplotlib/pull/19089
+                    # Workaround: use the scale name, which is restrictive only
+                    # if the user wants to define a custom scale.
+                    # Additionally, setting the scale after updating the units breaks
+                    # in some cases on older versions of matplotlib (with older pandas?)
+                    # so only do it if necessary.
+                    axis_obj = getattr(ax, f"{axis}axis")
+                    if axis_obj.get_scale() != scale.name:
+                        ax.set(**{f"{axis}scale": scale.name})
+                else:
+                    ax.set(**{f"{axis}scale": scale})
+
         # --- Figure annotation
         for sub in subplots:
             ax = sub["ax"]
             for axis in "xy":
                 axis_key = sub[axis]
                 ax.set(**{
-                    # Note: this is the only non "annotation" part of this code
-                    # everything else can happen after .plot(), but we need this first
-                    # Should perhaps separate it out to make that more clear
-                    # (or pass scales into Subplots)
-                    f"{axis}scale": self._scales[axis_key]._scale,
                     # TODO Should we make it possible to use only one x/y label for
                     # all rows/columns in a faceted plot? Maybe using sub{axis}label,
                     # although the alignments of the labels from taht method leaves

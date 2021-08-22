@@ -2,6 +2,7 @@ import functools
 import itertools
 import warnings
 import imghdr
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,17 @@ from seaborn._marks.base import Mark
 from seaborn._stats.base import Stat
 
 assert_vector_equal = functools.partial(assert_series_equal, check_names=False)
+
+
+def assert_gridspec_shape(ax, nrows=1, ncols=1):
+
+    gs = ax.get_gridspec()
+    if LooseVersion(mpl.__version__) < "3.2":
+        assert gs._nrows == nrows
+        assert gs._ncols == ncols
+    else:
+        assert gs.nrows == nrows
+        assert gs.ncols == ncols
 
 
 class MockStat(Stat):
@@ -676,7 +688,7 @@ class TestFacetInterface:
             assert subplot[dim] == level
             assert subplot[other_dim] is None
             assert subplot["ax"].get_title() == f"{key} = {level}"
-            assert getattr(subplot["ax"].get_gridspec(), f"n{dim}s") == len(order)
+            assert_gridspec_shape(subplot["ax"], **{f"n{dim}s": len(order)})
 
     def test_1d_from_init(self, long_df, dim):
 
@@ -732,9 +744,9 @@ class TestFacetInterface:
             assert subplot["axes"].get_title() == (
                 f"{variables['row']} = {row_level} | {variables['col']} = {col_level}"
             )
-            gridspec = subplot["axes"].get_gridspec()
-            assert gridspec.nrows == len(levels["row"])
-            assert gridspec.ncols == len(levels["col"])
+            assert_gridspec_shape(
+                subplot["axes"], len(levels["row"]), len(levels["col"])
+            )
 
     def test_2d_from_init(self, long_df):
 
@@ -813,10 +825,8 @@ class TestFacetInterface:
         wrap = 3
         p = Plot().facet(col=cols, wrap=wrap).plot()
 
-        gridspec = p._figure.axes[0].get_gridspec()
         assert len(p._figure.axes) == 4
-        assert gridspec.ncols == 3
-        assert gridspec.nrows == 2
+        assert_gridspec_shape(p._figure.axes[0], len(cols) // wrap + 1, wrap)
 
         # TODO test axis labels and titles
 
@@ -826,10 +836,8 @@ class TestFacetInterface:
         wrap = 3
         p = Plot().facet(row=rows, wrap=wrap).plot()
 
-        gridspec = p._figure.axes[0].get_gridspec()
+        assert_gridspec_shape(p._figure.axes[0], wrap, len(rows) // wrap + 1)
         assert len(p._figure.axes) == 4
-        assert gridspec.ncols == 2
-        assert gridspec.nrows == 3
 
         # TODO test axis labels and titles
 
@@ -845,10 +853,7 @@ class TestPairInterface:
             ax = subplot["ax"]
             assert ax.get_xlabel() == "" if x_j is None else x_j
             assert ax.get_ylabel() == "" if y_i is None else y_i
-
-            gs = subplot["ax"].get_gridspec()
-            assert gs.ncols == len(x)
-            assert gs.nrows == len(y)
+            assert_gridspec_shape(subplot["ax"], len(y), len(x))
 
     @pytest.mark.parametrize(
         "vector_type", [list, np.array, pd.Series, pd.Index]
@@ -886,8 +891,7 @@ class TestPairInterface:
             ax = subplot["ax"]
             assert ax.get_xlabel() == x[i]
             assert ax.get_ylabel() == y[i]
-            assert ax.get_gridspec().nrows == 1
-            assert ax.get_gridspec().ncols == len(x) == len(y)
+            assert_gridspec_shape(ax, 1, len(x))
 
         root, *other = p._figure.axes
         for axis in "xy":
@@ -930,10 +934,7 @@ class TestPairInterface:
             assert ax.get_xlabel() == x
             assert ax.get_ylabel() == y_i
             assert ax.get_title() == f"{col} = {col_i}"
-
-            gs = subplot["ax"].get_gridspec()
-            assert gs.ncols == len(facet_levels)
-            assert gs.nrows == len(y)
+            assert_gridspec_shape(ax, len(y), len(facet_levels))
 
     @pytest.mark.parametrize("variables", [("rows", "y"), ("columns", "x")])
     def test_error_on_facet_overlap(self, long_df, variables):
@@ -1005,24 +1006,22 @@ class TestPairInterface:
     def test_x_wrapping(self, long_df):
 
         x_vars = ["f", "x", "y", "z"]
-        p = Plot(long_df, y="y").pair(x=x_vars, wrap=3).plot()
+        wrap = 3
+        p = Plot(long_df, y="y").pair(x=x_vars, wrap=wrap).plot()
 
-        gridspec = p._figure.axes[0].get_gridspec()
-        assert len(p._figure.axes) == 4
-        assert gridspec.ncols == 3
-        assert gridspec.nrows == 2
+        assert_gridspec_shape(p._figure.axes[0], len(x_vars) // wrap + 1, wrap)
+        assert len(p._figure.axes) == len(x_vars)
 
         # TODO test axis labels and visibility
 
     def test_y_wrapping(self, long_df):
 
         y_vars = ["f", "x", "y", "z"]
-        p = Plot(long_df, x="x").pair(y=y_vars, wrap=3).plot()
+        wrap = 3
+        p = Plot(long_df, x="x").pair(y=y_vars, wrap=wrap).plot()
 
-        gridspec = p._figure.axes[0].get_gridspec()
-        assert len(p._figure.axes) == 4
-        assert gridspec.nrows == 3
-        assert gridspec.ncols == 2
+        assert_gridspec_shape(p._figure.axes[0], wrap, len(y_vars) // wrap + 1)
+        assert len(p._figure.axes) == len(y_vars)
 
         # TODO test axis labels and visibility
 
@@ -1030,17 +1029,16 @@ class TestPairInterface:
 
         x_vars = ["a", "b", "c", "t"]
         y_vars = ["f", "x", "y", "z"]
+        wrap = 3
 
         p = (
             Plot(long_df, x="x")
-            .pair(x=x_vars, y=y_vars, wrap=3, cartesian=False)
+            .pair(x=x_vars, y=y_vars, wrap=wrap, cartesian=False)
             .plot()
         )
 
-        gridspec = p._figure.axes[0].get_gridspec()
-        assert len(p._figure.axes) == 4
-        assert gridspec.nrows == 2
-        assert gridspec.ncols == 3
+        assert_gridspec_shape(p._figure.axes[0], len(x_vars) // wrap + 1, wrap)
+        assert len(p._figure.axes) == len(x_vars)
 
 
 class TestLabelVisibility:
