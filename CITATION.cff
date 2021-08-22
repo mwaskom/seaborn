@@ -4,13 +4,11 @@ preferred-citation:
   type: article
   authors:
   - family-names: "Waskom"
-    given-names: "Michael"
+    given-names: "Michael Lawrence"
     orcid: "https://orcid.org/0000-0002-9817-6869"
   doi: "10.21105/joss.03021"
   journal: "Journal of Open Source Software"
   month: April
-  start: 1 # First page number
-  end: 4 # Last page number
   title: "seaborn: statistical data visualization"
   issue: 6
   volume: 60
