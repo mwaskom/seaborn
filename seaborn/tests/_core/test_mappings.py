@@ -296,7 +296,8 @@ class TestHueMapping:
 
         cmap = color_palette("mako", as_cmap=True)
         m = HueMapping(palette=cmap).setup(num_vector)
-        assert_array_equal(m(num_vector), cmap(num_norm(num_vector))[:, :3])
+        expected_colors = cmap(num_norm(num_vector.to_numpy()))[:, :3]
+        assert_array_equal(m(num_vector), expected_colors)
 
     def test_bad_palette(self, num_vector):
 

@@ -1,7 +1,10 @@
 from __future__ import annotations
+from copy import copy
+from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 from matplotlib.scale import LinearScale
 from matplotlib.colors import Normalize
 
@@ -38,6 +41,15 @@ class ScaleWrapper:
         self._scale = scale
 
     # TODO add a repr with useful information about what is wrapped and metadata
+
+    if LooseVersion(mpl.__version__) < "3.4":
+        # Until matplotlib 3.4, matplotlib transforms could not be deepcopied.
+        # Fixing PR: https://github.com/matplotlib/matplotlib/pull/19281
+        # That means that calling deepcopy() on a Plot object fails when the
+        # recursion gets down to the `ScaleWrapper` objects.
+        # As a workaround, stop the recursion at this level with older matplotlibs.
+        def __deepcopy__(self, memo=None):
+            return copy(self)
 
     @property
     def order(self):
