@@ -2,7 +2,7 @@ name : CI
 
 on:
   push:
-    branches: master
+    branches: [master, skunkworks]
   pull_request:
     branches: master
 
@@ -79,7 +79,7 @@ jobs:
 
       - name: Install seaborn
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip wheel
           if [[ ${{matrix.install}} == 'all' ]]; then EXTRAS='[all]'; fi
           if [[ ${{matrix.deps }} == 'pinned' ]]; then DEPS='-r ci/deps_pinned.txt'; fi
           pip install .$EXTRAS $DEPS -r ci/utils.txt
@@ -98,9 +98,10 @@ jobs:
         uses: codecov/codecov-action@v1
         if: ${{ success() }}
 
-lint:
+  lint:
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
     steps:
 
       - name: Checkout

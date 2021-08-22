@@ -10,4 +10,4 @@ lint:
 	flake8 seaborn
 
 typecheck:
-	mypy -p seaborn._core --exclude seaborn._core.orig.py
+	mypy seaborn/_core seaborn/_marks seaborn/_stats --exclude seaborn/_core/orig\.py
