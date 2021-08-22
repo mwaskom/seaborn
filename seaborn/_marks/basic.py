@@ -5,8 +5,6 @@ from .base import Mark
 
 class Point(Mark):
 
-    grouping_vars = []
-    requires = []
     supports = ["hue"]
 
     def __init__(self, jitter=None, **kwargs):
@@ -61,7 +59,6 @@ class Line(Mark):
     # also how will this get parametrized to support orient=?
     # TODO will this sort by the orient dimension like lineplot currently does?
     grouping_vars = ["hue", "size", "style"]
-    requires = []
     supports = ["hue"]
 
     def _plot_split(self, keys, data, ax, mappings, kws):
@@ -75,7 +72,6 @@ class Line(Mark):
 class Area(Mark):
 
     grouping_vars = ["hue"]
-    requires = []
     supports = ["hue"]
 
     def _plot_split(self, keys, data, ax, mappings, kws):

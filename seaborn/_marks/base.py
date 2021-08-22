@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import Literal, Any, Type
+    from typing import Literal, Any, Type, Dict
     from collections.abc import Callable, Generator
     from pandas import DataFrame
     from matplotlib.axes import Axes
     from .._core.mappings import SemanticMapping
     from .._stats.base import Stat
 
-    MappingDict = dict[str, SemanticMapping]
+    MappingDict = Dict[str, SemanticMapping]
 
 
 class Mark:
