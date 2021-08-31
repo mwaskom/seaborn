@@ -244,7 +244,7 @@ class HueMapping(SemanticMapping):
                 norm = mpl.colors.Normalize()
             elif isinstance(norm, tuple):
                 norm = mpl.colors.Normalize(*norm)
-            elif not issubclass(norm, mpl.colors.Normalize):
+            elif not issubclass(type(norm), mpl.colors.Normalize):
                 err = "``hue_norm`` must be None, tuple, or subclass of Normalize object."
                 raise ValueError(err)
 
