@@ -1,4 +1,5 @@
 import itertools
+
 import numpy as np
 import pytest
 
@@ -262,7 +263,7 @@ class TestSubplotElements:
 
         data = PlotData(long_df, {"x": "x", "y": "y"})
         s = Subplots({}, {}, {}, data)
-        f = s.init_figure(False)
+        f = s.init_figure()
 
         assert len(s) == 1
         for i, e in enumerate(s):
@@ -280,7 +281,7 @@ class TestSubplotElements:
         key = "a"
         data = PlotData(long_df, {"x": "x", "y": "y", dim: key})
         s = Subplots({}, {}, {}, data)
-        s.init_figure(False)
+        s.init_figure()
 
         levels = categorical_order(long_df[key])
         assert len(s) == len(levels)
@@ -302,7 +303,7 @@ class TestSubplotElements:
         wrap = len(levels) - 1
         data = PlotData(long_df, {"x": "x", "y": "y", dim: key})
         s = Subplots({}, {"wrap": wrap}, {}, data)
-        s.init_figure(False)
+        s.init_figure()
 
         assert len(s) == len(levels)
 
@@ -333,7 +334,7 @@ class TestSubplotElements:
         row = "b"
         data = PlotData(long_df, {"x": x, "y": y, "col": col, "row": row})
         s = Subplots({}, {}, {}, data)
-        s.init_figure(False)
+        s.init_figure()
 
         col_levels = categorical_order(long_df[col])
         row_levels = categorical_order(long_df[row])
@@ -368,7 +369,7 @@ class TestSubplotElements:
 
         data = PlotData(long_df, variables)
         s = Subplots({}, {}, pair_spec, data)
-        s.init_figure(False)
+        s.init_figure()
 
         assert len(s) == len(pair_spec[var])
 
@@ -396,7 +397,7 @@ class TestSubplotElements:
         pair_spec = {var: pairings, "wrap": wrap}
         data = PlotData(long_df, variables)
         s = Subplots({}, {}, pair_spec, data)
-        s.init_figure(False)
+        s.init_figure()
 
         assert len(s) == len(pairings)
 
@@ -424,7 +425,7 @@ class TestSubplotElements:
         y = ["x", "y", "z"]
         data = PlotData(long_df, {})
         s = Subplots({}, {}, {"x": x, "y": y}, data)
-        s.init_figure(False)
+        s.init_figure()
 
         n_cols = len(x)
         n_rows = len(y)
@@ -454,7 +455,7 @@ class TestSubplotElements:
         pair_spec = {"x": ["a", "b", "c"], "y": ["x", "y", "z"], "cartesian": False}
         data = PlotData(long_df, {})
         s = Subplots({}, {}, pair_spec, data)
-        s.init_figure(False)
+        s.init_figure()
 
         for i, e in enumerate(s):
             assert e["x"] == f"x{i}"
@@ -477,7 +478,7 @@ class TestSubplotElements:
 
         data = PlotData(long_df, variables)
         s = Subplots({}, {}, pair_spec, data)
-        s.init_figure(False)
+        s.init_figure()
 
         levels = categorical_order(long_df[variables[dim]])
         n_cols = len(levels) if dim == "col" else len(pairings)

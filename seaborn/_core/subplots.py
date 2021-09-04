@@ -9,7 +9,8 @@ from seaborn._core.rules import categorical_order
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from matplotlib.figure import Figure
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure, SubFigure
     from seaborn._core.data import PlotData
 
 
@@ -134,19 +135,59 @@ class Subplots:
                     val = True
                 self.subplot_spec[key] = val
 
-    def init_figure(self, pyplot: bool, figure_kws: dict | None = None) -> Figure:
+    def init_figure(
+        self,
+        pyplot: bool = False,
+        figure_kws: dict | None = None,
+        target: Axes | Figure | SubFigure = None,
+    ) -> Figure:
         """Initialize matplotlib objects and add seaborn-relevant metadata."""
-        # TODO other methods don't have defaults, maybe don't have one here either
         if figure_kws is None:
             figure_kws = {}
 
-        if pyplot:
-            figure = plt.figure(**figure_kws)
+        if isinstance(target, mpl.axes.Axes):
+
+            if max(self.subplot_spec["nrows"], self.subplot_spec["ncols"]) > 1:
+                err = " ".join([
+                    "Cannot create multiple subplots after calling `Plot.on` with",
+                    f"a {mpl.axes.Axes} object.",
+                ])
+                try:
+                    err += f" You may want to use a {mpl.figure.SubFigure} instead."
+                except AttributeError:  # SubFigure added in mpl 3.4
+                    pass
+                raise RuntimeError(err)
+
+            self._subplot_list = [{
+                "ax": target,
+                "left": True,
+                "right": True,
+                "top": True,
+                "bottom": True,
+                "col": None,
+                "row": None,
+                "x": "x",
+                "y": "y",
+            }]
+            self._figure = target.figure
+            return self._figure
+
+        elif (
+            hasattr(mpl.figure, "SubFigure")  # Added in mpl 3.4
+            and isinstance(target, mpl.figure.SubFigure)
+        ):
+            figure = target.figure
+        elif isinstance(target, mpl.figure.Figure):
+            figure = target
         else:
-            figure = mpl.figure.Figure(**figure_kws)
+            if pyplot:
+                figure = plt.figure(**figure_kws)
+            else:
+                figure = mpl.figure.Figure(**figure_kws)
+            target = figure
         self._figure = figure
 
-        axs = figure.subplots(**self.subplot_spec, squeeze=False)
+        axs = target.subplots(**self.subplot_spec, squeeze=False)
 
         if self.wrap:
             # Remove unused Axes and flatten the rest into a (2D) vector
@@ -162,6 +203,7 @@ class Subplots:
         # Get i, j coordinates for each Axes object
         # Note that i, j are with respect to faceting/pairing,
         # not the subplot grid itself, (which only matters in the case of wrapping).
+        iter_axs: np.ndenumerate | zip
         if not self.pair_spec.get("cartesian", True):
             indices = np.arange(self.n_subplots)
             iter_axs = zip(zip(indices, indices), axs.flat)
