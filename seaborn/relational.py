@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ._core import (
+from ._oldcore import (
     VectorPlotter,
 )
 from .utils import (

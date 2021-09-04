@@ -11,7 +11,7 @@ try:
 except ImportError:
     import pandas.util.testing as tm
 
-from .._core import categorical_order
+from .._oldcore import categorical_order
 from .. import rcmod
 from ..palettes import color_palette
 from ..relational import scatterplot

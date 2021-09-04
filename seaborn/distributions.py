@@ -13,7 +13,7 @@ import matplotlib.transforms as tx
 from matplotlib.colors import to_rgba
 from matplotlib.collections import LineCollection
 
-from ._core import (
+from ._oldcore import (
     VectorPlotter,
 )
 from ._statistics import (

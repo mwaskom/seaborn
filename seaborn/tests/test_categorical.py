@@ -18,8 +18,8 @@ from numpy.testing import (
 from .. import categorical as cat
 from .. import palettes
 
-from .._core import categorical_order
 from ..external.version import Version
+from .._oldcore import categorical_order
 from ..categorical import (
     _CategoricalPlotterNew,
     Beeswarm,

@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from ..axisgrid import FacetGrid
-from .._core import (
+from .._oldcore import (
     SemanticMapping,
     HueMapping,
     SizeMapping,

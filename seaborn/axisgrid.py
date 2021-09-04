@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from ._core import VectorPlotter, variable_type, categorical_order
+from ._oldcore import VectorPlotter, variable_type, categorical_order
 from . import utils
 from .utils import _check_argument, adjust_legend_subtitles, _draw_figure
 from .palettes import color_palette, blend_palette
