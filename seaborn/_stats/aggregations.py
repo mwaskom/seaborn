@@ -8,4 +8,4 @@ class Mean(Stat):
     grouping_vars = ["hue", "size", "style"]
 
     def __call__(self, data):
-        return data.mean()
+        return data.filter(regex="x|y").mean()

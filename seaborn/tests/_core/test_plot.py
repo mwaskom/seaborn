@@ -612,6 +612,20 @@ class TestPlotting:
         p2.add(MockMark())
         assert not p1._layers
 
+    def test_clone_raises_when_inappropriate(self, long_df):
+
+        p1 = Plot(long_df, x="x", y="y").plot()
+        with pytest.raises(
+            RuntimeError, match="Cannot clone after calling `Plot.plot`."
+        ):
+            p1.clone()
+
+        p2 = Plot(long_df, x="x", y="y").on(mpl.figure.Figure())
+        with pytest.raises(
+            RuntimeError, match="Cannot clone after calling `Plot.on`."
+        ):
+            p2.clone()
+
     def test_default_is_no_pyplot(self):
 
         p = Plot().plot()
@@ -659,6 +673,60 @@ class TestPlotting:
     def test_save(self):
 
         Plot().save()
+
+    def test_on_axes(self):
+
+        ax = mpl.figure.Figure().subplots()
+        m = MockMark()
+        p = Plot().on(ax).add(m).plot()
+        assert m.passed_axes == [ax]
+        assert p._figure is ax.figure
+
+    @pytest.mark.parametrize("facet", [True, False])
+    def test_on_figure(self, facet):
+
+        f = mpl.figure.Figure()
+        m = MockMark()
+        p = Plot().on(f).add(m)
+        if facet:
+            p = p.facet(["a", "b"])
+        p = p.plot()
+        assert m.passed_axes == f.axes
+        assert p._figure is f
+
+    @pytest.mark.skipif(
+        LooseVersion(mpl.__version__) < "3.4", reason="mpl<3.4 does not have SubFigure",
+    )
+    @pytest.mark.parametrize("facet", [True, False])
+    def test_on_subfigure(self, facet):
+
+        sf1, sf2 = mpl.figure.Figure().subfigures(2)
+        sf1.subplots()
+        m = MockMark()
+        p = Plot().on(sf2).add(m)
+        if facet:
+            p = p.facet(["a", "b"])
+        p = p.plot()
+        assert m.passed_axes == sf2.figure.axes[1:]
+        assert p._figure is sf2.figure
+
+    def test_on_type_check(self):
+
+        p = Plot()
+        with pytest.raises(TypeError, match="The `Plot.on`.+<class 'list'>"):
+            p.on([])
+
+    def test_on_axes_with_subplots_error(self):
+
+        ax = mpl.figure.Figure().subplots()
+
+        p1 = Plot().facet(["a", "b"]).on(ax)
+        with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
+            p1.plot()
+
+        p2 = Plot().pair([["a", "b"], ["x", "y"]]).on(ax)
+        with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
+            p2.plot()
 
 
 class TestFacetInterface:

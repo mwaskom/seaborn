@@ -8,7 +8,7 @@ from distutils.version import LooseVersion
 
 import pandas as pd
 import matplotlib as mpl
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 
 from seaborn._core.rules import categorical_order, variable_type
 from seaborn._core.data import PlotData
@@ -26,8 +26,8 @@ if TYPE_CHECKING:
     from typing import Literal, Any
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
-    from matplotlib.figure import Figure
     from matplotlib.axes import Axes
+    from matplotlib.figure import Figure, SubFigure
     from matplotlib.scale import ScaleBase
     from matplotlib.colors import Normalize
     from seaborn._core.mappings import SemanticMapping
@@ -75,23 +75,35 @@ class Plot:
             "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
         }
 
+        self._target = None
+
         self._subplotspec = {}
         self._facetspec = {}
         self._pairspec = {}
 
-    def on(self) -> Plot:
+    def on(self, target: Axes | SubFigure | Figure) -> Plot:
 
-        # TODO  Provisional name for a method that accepts an existing Axes object,
-        # and possibly one that does all of the figure/subplot configuration
+        accepted_types: tuple  # Allow tuple of various length
+        if hasattr(mpl.figure, "SubFigure"):  # Added in mpl 3.4
+            accepted_types = (
+                mpl.axes.Axes, mpl.figure.SubFigure, mpl.figure.Figure
+            )
+            accepted_types_str = (
+                f"{mpl.axes.Axes}, {mpl.figure.SubFigure}, or {mpl.figure.Figure}"
+            )
+        else:
+            accepted_types = mpl.axes.Axes, mpl.figure.Figure
+            accepted_types_str = f"{mpl.axes.Axes} or {mpl.figure.Figure}"
 
-        # We should also accept an existing figure object. This will be most useful
-        # in cases where users have created a *sub*figure ... it will let them facet
-        # etc. within an existing, larger figure. We still have the issue with putting
-        # the legend outside of the plot and that potentially causing problems for that
-        # larger figure. Not sure what to do about that. I suppose existing figure could
-        # disabling legend_out.
+        if not isinstance(target, accepted_types):
+            err = (
+                f"The `Plot.on` target must be an instance of {accepted_types_str}. "
+                f"You passed an object of class {target.__class__} instead."
+            )
+            raise TypeError(err)
 
-        raise NotImplementedError()
+        self._target = target
+
         return self
 
     def add(
@@ -377,21 +389,31 @@ class Plot:
             self._plot_layer(layer, layer_mappings)
 
         # TODO this should be configurable
-        self._figure.tight_layout()
+        if not self._figure.get_constrained_layout():
+            self._figure.tight_layout()
+
+        # TODO many methods will (confusingly) have no effect if invoked after
+        # Plot.plot is (manually) called. We should have some way of raising from
+        # within those methods to provide more useful feedback.
 
         return self
 
     def clone(self) -> Plot:
 
         if hasattr(self, "_figure"):
-            raise RuntimeError("Cannot clone object after calling Plot.plot")
+            raise RuntimeError("Cannot clone after calling `Plot.plot`.")
+        elif self._target is not None:
+            raise RuntimeError("Cannot clone after calling `Plot.on`.")
         return deepcopy(self)
 
     def show(self, **kwargs) -> None:
 
         # Keep an eye on whether matplotlib implements "attaching" an existing
         # figure to pyplot: https://github.com/matplotlib/matplotlib/pull/14024
-        self.clone().plot(pyplot=True)
+        if self._target is None:
+            self.clone().plot(pyplot=True)
+        else:
+            self.plot(pyplot=True)
         plt.show(**kwargs)
 
     def save(self) -> Plot:  # TODO perhaps this should not return self?
@@ -459,8 +481,8 @@ class Plot:
         )
 
         # --- Figure initialization
-        figure_kws = {"figsize": getattr(self, "_figsize", None)}  # TODO
-        self._figure = subplots.init_figure(pyplot, figure_kws)
+        figure_kws = {"figsize": getattr(self, "_figsize", None)}  # TODO fix
+        self._figure = subplots.init_figure(pyplot, figure_kws, self._target)
 
         # --- Assignment of scales
         for sub in subplots:
@@ -491,8 +513,8 @@ class Plot:
                 ax.set(**{
                     # TODO Should we make it possible to use only one x/y label for
                     # all rows/columns in a faceted plot? Maybe using sub{axis}label,
-                    # although the alignments of the labels from taht method leaves
-                    # something to be desired.
+                    # although the alignments of the labels from that method leaves
+                    # something to be desired (in terms of how it defines 'centered').
                     f"{axis}label": setup_data.names.get(axis_key)
                 })
 
@@ -794,7 +816,11 @@ class Plot:
 
     def _repr_png_(self) -> bytes:
 
-        # TODO better to do this through a Jupyter hook?
+        # TODO better to do this through a Jupyter hook? e.g.
+        # ipy = IPython.core.formatters.get_ipython()
+        # fmt = ipy.display_formatter.formatters["text/html"]
+        # fmt.for_type(Plot, ...)
+
         # TODO Would like to allow for svg too ... how to configure?
 
         # TODO perhaps have self.show() flip a switch to disable this, so that
@@ -805,8 +831,10 @@ class Plot:
         # But we can still show a Plot where the user has manually invoked .plot()
         if hasattr(self, "_figure"):
             figure = self._figure
-        else:
+        elif self._target is None:
             figure = self.clone().plot()._figure
+        else:
+            figure = self.plot()._figure
 
         buffer = io.BytesIO()
 
