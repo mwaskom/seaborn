@@ -10,4 +10,4 @@ lint:
 	flake8 seaborn
 
 typecheck:
-	mypy seaborn/_core seaborn/_marks seaborn/_stats
+	mypy --follow-imports=skip seaborn/_core seaborn/_marks seaborn/_stats

@@ -728,6 +728,41 @@ class TestPlotting:
         with pytest.raises(RuntimeError, match="Cannot create multiple subplots"):
             p2.plot()
 
+    def test_axis_labels_from_constructor(self, long_df):
+
+        ax, = Plot(long_df, x="a", y="b").plot()._figure.axes
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == "b"
+
+        ax, = Plot(x=long_df["a"], y=long_df["b"].to_numpy()).plot()._figure.axes
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == ""
+
+    def test_axis_labels_from_layer(self, long_df):
+
+        m = MockMark()
+
+        ax, = Plot(long_df).add(m, x="a", y="b").plot()._figure.axes
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == "b"
+
+        p = Plot().add(m, x=long_df["a"], y=long_df["b"].to_list())
+        ax, = p.plot()._figure.axes
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == ""
+
+    def test_axis_labels_are_first_name(self, long_df):
+
+        m = MockMark()
+        p = (
+            Plot(long_df, x=long_df["z"].to_list(), y="b")
+            .add(m, x="a")
+            .add(m, x="x", y="y")
+        )
+        ax, = p.plot()._figure.axes
+        assert ax.get_xlabel() == "a"
+        assert ax.get_ylabel() == "b"
+
 
 class TestFacetInterface:
 

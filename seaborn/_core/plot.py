@@ -510,13 +510,16 @@ class Plot:
             ax = sub["ax"]
             for axis in "xy":
                 axis_key = sub[axis]
-                ax.set(**{
-                    # TODO Should we make it possible to use only one x/y label for
-                    # all rows/columns in a faceted plot? Maybe using sub{axis}label,
-                    # although the alignments of the labels from that method leaves
-                    # something to be desired (in terms of how it defines 'centered').
-                    f"{axis}label": setup_data.names.get(axis_key)
-                })
+                # TODO Should we make it possible to use only one x/y label for
+                # all rows/columns in a faceted plot? Maybe using sub{axis}label,
+                # although the alignments of the labels from that method leaves
+                # something to be desired (in terms of how it defines 'centered').
+                names = [
+                    setup_data.names.get(axis_key),
+                    *[layer.data.names.get(axis_key) for layer in self._layers],
+                ]
+                label = next((name for name in names if name is not None), None)
+                ax.set(**{f"{axis}label": label})
 
                 axis_obj = getattr(ax, f"{axis}axis")
                 visible_side = {"x": "bottom", "y": "left"}.get(axis)
