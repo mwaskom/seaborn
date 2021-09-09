@@ -1,4 +1,3 @@
-from distutils.version import LooseVersion
 from itertools import product
 import numpy as np
 import matplotlib as mpl
@@ -8,6 +7,7 @@ from matplotlib.colors import same_color, to_rgba
 import pytest
 from numpy.testing import assert_array_equal
 
+from ..external.version import Version
 from ..palettes import color_palette
 
 from ..relational import (
@@ -1283,7 +1283,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
         self.func(data=long_df, x="x", y="y", facecolors="C6", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C6")
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if Version(mpl.__version__) >= Version("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
@@ -1604,7 +1604,7 @@ class TestScatterPlotter(SharedAxesLevelTests, Helpers):
 
         keys = ["c", "facecolor", "facecolors"]
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if Version(mpl.__version__) >= Version("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
             keys.append("fc")
 

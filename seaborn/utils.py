@@ -5,7 +5,6 @@ import inspect
 import warnings
 import colorsys
 from urllib.request import urlopen, urlretrieve
-from distutils.version import LooseVersion
 
 import numpy as np
 import pandas as pd
@@ -14,6 +13,7 @@ from matplotlib.colors import to_rgb
 import matplotlib.pyplot as plt
 from matplotlib.cbook import normalize_kwargs
 
+from .external.version import Version
 
 __all__ = ["desaturate", "saturate", "set_hls_values", "move_legend",
            "despine", "get_dataset_names", "get_data_home", "load_dataset"]
@@ -149,7 +149,7 @@ def _default_color(method, hue, color, kws):
             isinstance(ax.xaxis.converter, mpl.dates.DateConverter),
             isinstance(ax.yaxis.converter, mpl.dates.DateConverter),
         ])
-        if LooseVersion(mpl.__version__) < "3.3" and datetime_axis:
+        if Version(mpl.__version__) < Version("3.3") and datetime_axis:
             return "C0"
 
         kws = _normalize_kwargs(kws, mpl.collections.PolyCollection)

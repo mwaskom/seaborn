@@ -1,5 +1,4 @@
 import itertools
-from distutils.version import LooseVersion
 
 import numpy as np
 import matplotlib as mpl
@@ -31,6 +30,7 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
+from ..external.version import Version
 from ..axisgrid import FacetGrid
 from .._testing import (
     assert_plots_equal,
@@ -1402,7 +1402,7 @@ class TestHistPlotUnivariate(SharedAxesLevelTests):
             histplot(long_df, x="s", discrete=True, element="poly")
 
     @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
+        Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):
