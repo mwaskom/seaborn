@@ -8,10 +8,10 @@ from matplotlib.colors import rgb2hex
 import pytest
 from pytest import approx
 import numpy.testing as npt
-from distutils.version import LooseVersion
 
 from .. import categorical as cat
 from .. import palettes
+from ..external.version import Version
 
 
 class CategoricalFixture:
@@ -2996,7 +2996,7 @@ class TestBoxenPlotter(CategoricalFixture):
     @pytest.mark.parametrize("size", ["large", "medium", "small", 22, 12])
     def test_legend_titlesize(self, size):
 
-        if LooseVersion(mpl.__version__) >= LooseVersion("3.0"):
+        if Version(mpl.__version__) >= Version("3.0"):
             rc_ctx = {"legend.title_fontsize": size}
         else:  # Old matplotlib doesn't have legend.title_fontsize rcparam
             rc_ctx = {"axes.labelsize": size}
@@ -3012,7 +3012,7 @@ class TestBoxenPlotter(CategoricalFixture):
         plt.close("all")
 
     @pytest.mark.skipif(
-        LooseVersion(pd.__version__) < "1.2",
+        Version(pd.__version__) < Version("1.2"),
         reason="Test requires pandas>=1.2")
     def test_Float64_input(self):
         data = pd.DataFrame(

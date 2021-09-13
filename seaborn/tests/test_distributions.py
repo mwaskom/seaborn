@@ -1,5 +1,4 @@
 import itertools
-from distutils.version import LooseVersion
 
 import numpy as np
 import matplotlib as mpl
@@ -32,6 +31,7 @@ from ..distributions import (
     kdeplot,
     rugplot,
 )
+from ..external.version import Version
 from ..axisgrid import FacetGrid
 from .._testing import (
     assert_plots_equal,
@@ -532,7 +532,7 @@ class TestKDEPlotUnivariate:
         assert to_rgba(artist_color) == to_rgba(color, alpha)
 
     @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
+        Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):
@@ -736,7 +736,7 @@ class TestKDEPlotUnivariate:
         assert integral == pytest.approx(1)
 
     @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
+        Version(scipy.__version__) < Version("1.2.0"),
         reason="Weights require scipy >= 1.2.0"
     )
     def test_weights(self):
@@ -918,7 +918,7 @@ class TestKDEPlotBivariate:
                 assert np.abs(x2).max() > np.abs(x1).max()
 
     @pytest.mark.skipif(
-        LooseVersion(scipy.__version__) < "1.2.0",
+        Version(scipy.__version__) < Version("1.2.0"),
         reason="Weights require scipy >= 1.2.0"
     )
     def test_weights(self, rng):
@@ -1332,7 +1332,7 @@ class TestHistPlotUnivariate:
             histplot(long_df, x="s", discrete=True, element="poly")
 
     @pytest.mark.skipif(
-        LooseVersion(np.__version__) < "1.17",
+        Version(np.__version__) < Version("1.17"),
         reason="Histogram over datetime64 requires numpy >= 1.17",
     )
     def test_datetime_scale(self, long_df):
@@ -2109,7 +2109,7 @@ class TestDisPlot:
     )
     def test_versus_single_kdeplot(self, long_df, kwargs):
 
-        if "weights" in kwargs and LooseVersion(scipy.__version__) < "1.2":
+        if "weights" in kwargs and Version(scipy.__version__) < Version("1.2"):
             pytest.skip("Weights require scipy >= 1.2")
 
         ax = kdeplot(data=long_df, **kwargs)
