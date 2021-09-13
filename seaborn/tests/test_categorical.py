@@ -10,7 +10,6 @@ from matplotlib.colors import rgb2hex, to_rgb, to_rgba
 import pytest
 from pytest import approx
 import numpy.testing as npt
-from distutils.version import LooseVersion
 from numpy.testing import (
     assert_array_equal,
     assert_array_less,
@@ -20,6 +19,7 @@ from .. import categorical as cat
 from .. import palettes
 
 from .._core import categorical_order
+from ..external.version import Version
 from ..categorical import (
     _CategoricalPlotterNew,
     Beeswarm,
@@ -1638,7 +1638,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         self.func(data=long_df, x="a", y="y", facecolor="C4", ax=ax)
         assert self.get_last_color(ax) == to_rgba("C4")
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if Version(mpl.__version__) >= Version("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
 
             ax = plt.figure().subplots()
@@ -1653,7 +1653,7 @@ class SharedScatterTests(SharedAxesLevelTests):
 
         keys = ["c", "facecolor", "facecolors"]
 
-        if LooseVersion(mpl.__version__) >= "3.1.0":
+        if Version(mpl.__version__) >= Version("3.1.0"):
             # https://github.com/matplotlib/matplotlib/pull/12851
             keys.append("fc")
 
@@ -2054,7 +2054,7 @@ class SharedScatterTests(SharedAxesLevelTests):
         # (Even though visual output is ok -- so it's not an actual bug).
         # I'm not exactly sure why, so this version check is approximate
         # and should be revisited on a version bump.
-        if LooseVersion(mpl.__version__) < "3.1":
+        if Version(mpl.__version__) < Version("3.1"):
             pytest.xfail()
 
         ax = plt.figure().subplots()
@@ -3286,7 +3286,7 @@ class TestBoxenPlotter(CategoricalFixture):
         plt.close("all")
 
     @pytest.mark.skipif(
-        LooseVersion(pd.__version__) < "1.2",
+        Version(pd.__version__) < Version("1.2"),
         reason="Test requires pandas>=1.2")
     def test_Float64_input(self):
         data = pd.DataFrame(

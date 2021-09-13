@@ -1,4 +1,3 @@
-from distutils.version import LooseVersion
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -18,6 +17,7 @@ except ImportError:
     _no_statsmodels = True
 
 from .. import regression as lm
+from ..external.version import Version
 from ..palettes import color_palette
 
 rs = np.random.RandomState(0)
@@ -597,7 +597,7 @@ class TestRegressionPlots:
         npt.assert_array_equal(red, red_scatter.get_facecolors()[0, :3])
         npt.assert_array_equal(blue, blue_scatter.get_facecolors()[0, :3])
 
-    @pytest.mark.skipif(LooseVersion(mpl.__version__) < "3.4",
+    @pytest.mark.skipif(Version(mpl.__version__) < Version("3.4"),
                         reason="MPL bug #15967")
     @pytest.mark.parametrize("sharex", [True, False])
     def test_lmplot_facet_truncate(self, sharex):
