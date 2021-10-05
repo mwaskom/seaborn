@@ -23,6 +23,8 @@ The docs include a [tutorial](https://seaborn.pydata.org/tutorial.html), [exampl
 
 To build the documentation locally, please refer to [`doc/README.md`](doc/README.md).
 
+There is also a [FAQ](https://github.com/mwaskom/seaborn/wiki/Frequently-Asked-Questions-(FAQs)) page, currently hosted on GitHub.
+
 Dependencies
 ------------
 
@@ -38,19 +40,15 @@ The latest stable release (and required dependencies) can be installed from PyPI
 
     pip install seaborn
 
-It is also possible to include the optional dependencies:
+It is also possible to include optional dependencies (only relevant for v0.12+):
 
     pip install seaborn[all]
 
-You may instead want to use the development version from Github:
-
-    pip install git+https://github.com/mwaskom/seaborn.git
-
-Seaborn is also available from Anaconda and can be installed with conda:
+Seaborn can also be installed with conda:
 
     conda install seaborn
 
-Note that the main anaconda repository typically lags PyPI in adding new releases.
+Note that the main anaconda repository typically lags PyPI in adding new releases, but conda-forge (`-c conda-forge`) typically updates quickly.
 
 Citing
 ------
@@ -65,7 +63,6 @@ Testing seaborn requires installing additional packages listed in `ci/utils.txt`
 To test the code, run `make test` in the source directory. This will exercise both the unit tests and docstring examples (using [pytest](https://docs.pytest.org/)) and generate a coverage report.
 
 The doctests require a network connection (unless all example datasets are cached), but the unit tests can be run offline with `make unittests`.
-
 
 Code style is enforced with `flake8` using the settings in the [`setup.cfg`](./setup.cfg) file. Run `make lint` to check.
  
