@@ -561,7 +561,8 @@ def heatmap(
 class _DendrogramPlotter(object):
     """Object for drawing tree of similarities between data rows/columns"""
 
-    def __init__(self, data, linkage, metric, method, axis, label, rotate):
+    def __init__(self, data, linkage, metric, method, axis, label, rotate,
+                 dendrogram_kws):
         """Plot a dendrogram of the relationships between the columns of data
 
         Parameters
@@ -589,11 +590,13 @@ class _DendrogramPlotter(object):
         self.label = label
         self.rotate = rotate
 
+        dendrogram_kws = {} if dendrogram_kws is None else dendrogram_kws.copy()
+
         if linkage is None:
             self.linkage = self.calculated_linkage
         else:
             self.linkage = linkage
-        self.dendrogram = self.calculate_dendrogram()
+        self.dendrogram = self.calculate_dendrogram(**dendrogram_kws)
 
         # Dendrogram ends are always at multiples of 5, who knows why
         ticks = 10 * np.arange(self.data.shape[0]) + 5
@@ -659,7 +662,7 @@ class _DendrogramPlotter(object):
 
         return self._calculate_linkage_scipy()
 
-    def calculate_dendrogram(self):
+    def calculate_dendrogram(self,**kwargs):
         """Calculates a dendrogram based on the linkage matrix
 
         Made a separate function, not a property because don't want to
@@ -673,7 +676,8 @@ class _DendrogramPlotter(object):
             "reordered_ind" which indicates the re-ordering of the matrix
         """
         return hierarchy.dendrogram(self.linkage, no_plot=True,
-                                    color_threshold=-np.inf)
+                                    color_threshold=-np.inf,
+                                    **kwargs)
 
     @property
     def reordered_ind(self):
@@ -741,7 +745,8 @@ class _DendrogramPlotter(object):
 def dendrogram(
     data, *,
     linkage=None, axis=1, label=True, metric='euclidean',
-    method='average', rotate=False, tree_kws=None, ax=None
+    method='average', rotate=False, tree_kws=None, dendrogram_kws=None,
+    ax=None
 ):
     """Draw a tree diagram of relationships within a matrix
 
@@ -766,6 +771,8 @@ def dendrogram(
     tree_kws : dict, optional
         Keyword arguments for the ``matplotlib.collections.LineCollection``
         that is used for plotting the lines of the dendrogram tree.
+    dendrogram_kws : dict, optional
+        Keyword arguments for scipy.cluster.hierarchy.dendrogram
     ax : matplotlib axis, optional
         Axis to plot on, otherwise uses current axis
 
@@ -785,7 +792,8 @@ def dendrogram(
 
     plotter = _DendrogramPlotter(data, linkage=linkage, axis=axis,
                                  metric=metric, method=method,
-                                 label=label, rotate=rotate)
+                                 label=label, rotate=rotate,
+                                 dendrogram_kws=dendrogram_kws)
     if ax is None:
         ax = plt.gca()
 
@@ -1067,13 +1075,13 @@ class ClusterGrid(Grid):
         return matrix, cmap
 
     def plot_dendrograms(self, row_cluster, col_cluster, metric, method,
-                         row_linkage, col_linkage, tree_kws):
+                         row_linkage, col_linkage, tree_kws, dendrogram_kws):
         # Plot the row dendrogram
         if row_cluster:
             self.dendrogram_row = dendrogram(
                 self.data2d, metric=metric, method=method, label=False, axis=0,
                 ax=self.ax_row_dendrogram, rotate=True, linkage=row_linkage,
-                tree_kws=tree_kws
+                tree_kws=tree_kws, dendrogram_kws=dendrogram_kws
             )
         else:
             self.ax_row_dendrogram.set_xticks([])
@@ -1083,7 +1091,7 @@ class ClusterGrid(Grid):
             self.dendrogram_col = dendrogram(
                 self.data2d, metric=metric, method=method, label=False,
                 axis=1, ax=self.ax_col_dendrogram, linkage=col_linkage,
-                tree_kws=tree_kws
+                tree_kws=tree_kws, dendrogram_kws=dendrogram_kws
             )
         else:
             self.ax_col_dendrogram.set_xticks([])
@@ -1214,7 +1222,7 @@ class ClusterGrid(Grid):
             self.ax_cbar.set_position(self.cbar_pos)
 
     def plot(self, metric, method, colorbar_kws, row_cluster, col_cluster,
-             row_linkage, col_linkage, tree_kws, **kws):
+             row_linkage, col_linkage, tree_kws, dendrogram_kws, **kws):
 
         # heatmap square=True sets the aspect ratio on the axes, but that is
         # not compatible with the multi-axes layout of clustergrid
@@ -1227,7 +1235,7 @@ class ClusterGrid(Grid):
 
         self.plot_dendrograms(row_cluster, col_cluster, metric, method,
                               row_linkage=row_linkage, col_linkage=col_linkage,
-                              tree_kws=tree_kws)
+                              tree_kws=tree_kws, dendrogram_kws=dendrogram_kws)
         try:
             xind = self.dendrogram_col.reordered_ind
         except AttributeError:
@@ -1252,7 +1260,7 @@ def clustermap(
     row_colors=None, col_colors=None, mask=None,
     dendrogram_ratio=.2, colors_ratio=0.03,
     cbar_pos=(.02, .8, .05, .18), tree_kws=None,
-    **kwargs
+    dendrogram_kws=None, **kwargs
 ):
     """
     Plot a matrix dataset as a hierarchically-clustered heatmap.
@@ -1317,6 +1325,10 @@ def clustermap(
     tree_kws : dict, optional
         Parameters for the :class:`matplotlib.collections.LineCollection`
         that is used to plot the lines of the dendrogram tree.
+    dendrogram_kws : dict, optional
+        Parameters for the :func:`scipy.cluster.hierarchy.dendrogram`
+        that is used to control dendrogram properties, e.g., leaf
+        ordering via `distance_sort` and `count_sort` parameters.
     kwargs : other keyword arguments
         All other keyword arguments are passed to :func:`heatmap`.
 
@@ -1421,4 +1433,5 @@ def clustermap(
                         colorbar_kws=cbar_kws,
                         row_cluster=row_cluster, col_cluster=col_cluster,
                         row_linkage=row_linkage, col_linkage=col_linkage,
-                        tree_kws=tree_kws, **kwargs)
+                        tree_kws=tree_kws, dendrogram_kws=dendrogram_kws,
+                        **kwargs)
