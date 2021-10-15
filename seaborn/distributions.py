@@ -1013,6 +1013,7 @@ class _DistributionPlotter(VectorPlotter):
         common_norm,
         fill,
         levels,
+        levels_as_densities,
         thresh,
         color,
         legend,
@@ -1083,12 +1084,16 @@ class _DistributionPlotter(VectorPlotter):
             thresh = 0
         if isinstance(levels, Number):
             levels = np.linspace(thresh, 1, levels)
+            if levels_as_densities:
+                raise ValueError("provdide an array as levels when `levels_as_densities` = True")
         else:
-            if min(levels) < 0 or max(levels) > 1:
+            if not levels_as_densities and (min(levels) < 0 or max(levels) > 1):
                 raise ValueError("levels must be in [0, 1]")
 
         # Transform from iso-proportions to iso-densities
-        if common_norm:
+        if levels_as_densities:
+            draw_levels = levels
+        elif common_norm:
             common_levels = self._quantile_to_level(
                 list(densities.values()), levels,
             )
@@ -1098,6 +1103,7 @@ class _DistributionPlotter(VectorPlotter):
                 k: self._quantile_to_level(d, levels)
                 for k, d in densities.items()
             }
+
 
         # Get a default single color from the attribute cycle
         if self.ax is None:
@@ -1173,7 +1179,12 @@ class _DistributionPlotter(VectorPlotter):
             # See more notes in histplot about how this could be improved
             if cbar:
                 cbar_kws = {} if cbar_kws is None else cbar_kws
-                ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
+                cbar = ax.figure.colorbar(cset, cbar_ax, ax, **cbar_kws)
+                if "linestyles" in contour_kws:
+                    # see https://stackoverflow.com/questions/24704127/matplotlib-add-lines-to-colorbar-with-defined-properties-color-ok-dotted-no
+                    cbar.add_lines(cset)
+                    cbar.lines[-1].set_linestyles(cset.linestyles)
+
 
         # --- Finalize the plot
         ax = self.ax if self.ax is not None else self.facets.axes.flat[0]
@@ -1591,6 +1602,7 @@ def kdeplot(
     hue=None, palette=None, hue_order=None, hue_norm=None,
     multiple="layer", common_norm=True, common_grid=False,
     levels=10, thresh=.05,
+    levels_as_densities=False,
     bw_method="scott", bw_adjust=1, log_scale=None,
     color=None, fill=None,
 
@@ -1732,6 +1744,7 @@ def kdeplot(
             common_norm=common_norm,
             fill=fill,
             levels=levels,
+            levels_as_densities=levels_as_densities,
             thresh=thresh,
             legend=legend,
             color=color,

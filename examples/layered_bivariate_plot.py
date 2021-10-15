@@ -19,5 +19,8 @@ x, y = rng.multivariate_normal(mean, cov, n).T
 # Draw a combo histogram and scatterplot with density contours
 f, ax = plt.subplots(figsize=(6, 6))
 sns.scatterplot(x=x, y=y, s=5, color=".15")
-sns.histplot(x=x, y=y, bins=50, pthresh=.1, cmap="mako")
-sns.kdeplot(x=x, y=y, levels=5, color="w", linewidths=1)
+sns.histplot(x=x, y=y, bins=50, pthresh=.1, cmap="mako", cbar=True,
+    stat="density", vmin=0, vmax=0.40)
+sns.kdeplot(x=x, y=y,
+    levels=np.arange(0, 0.45, 0.05), levels_as_densities=True,
+    color="white", cbar=True, linestyles=['solid', 'dashed', 'dotted'])
