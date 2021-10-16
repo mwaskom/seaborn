@@ -42,7 +42,7 @@ class MockMark(Mark):
 
     # TODO we need to sort out the stat application, it is broken right now
     # default_stat = MockStat
-    grouping_vars = ["hue"]
+    grouping_vars = ["color"]
 
     def __init__(self, *args, **kwargs):
 
@@ -114,27 +114,18 @@ class TestInit:
         assert p._data._source_data is None
         assert p._data._source_vars.keys() == variables.keys()
 
-    def test_scales(self, long_df):
-
-        p = Plot(long_df, x="x", y="y")
-        for var in "xy":
-            assert var in p._scales
-            assert p._scales[var].type == "unknown"
-
 
 class TestLayerAddition:
 
     def test_without_data(self, long_df):
 
-        p = Plot(long_df, x="x", y="y").add(MockMark())
-        p._setup_layers()
+        p = Plot(long_df, x="x", y="y").add(MockMark()).plot()
         layer, = p._layers
         assert_frame_equal(p._data.frame, layer.data.frame)
 
     def test_with_new_variable_by_name(self, long_df):
 
-        p = Plot(long_df, x="x").add(MockMark(), y="y")
-        p._setup_layers()
+        p = Plot(long_df, x="x").add(MockMark(), y="y").plot()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -143,8 +134,7 @@ class TestLayerAddition:
 
     def test_with_new_variable_by_vector(self, long_df):
 
-        p = Plot(long_df, x="x").add(MockMark(), y=long_df["y"])
-        p._setup_layers()
+        p = Plot(long_df, x="x").add(MockMark(), y=long_df["y"]).plot()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -153,8 +143,7 @@ class TestLayerAddition:
 
     def test_with_late_data_definition(self, long_df):
 
-        p = Plot().add(MockMark(), data=long_df, x="x", y="y")
-        p._setup_layers()
+        p = Plot().add(MockMark(), data=long_df, x="x", y="y").plot()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -165,8 +154,7 @@ class TestLayerAddition:
 
         long_df_sub = long_df.sample(frac=.5)
 
-        p = Plot(long_df, x="x", y="y").add(MockMark(), data=long_df_sub)
-        p._setup_layers()
+        p = Plot(long_df, x="x", y="y").add(MockMark(), data=long_df_sub).plot()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x", "y"]
         for var in "xy":
@@ -177,8 +165,7 @@ class TestLayerAddition:
 
     def test_drop_variable(self, long_df):
 
-        p = Plot(long_df, x="x", y="y").add(MockMark(), y=None)
-        p._setup_layers()
+        p = Plot(long_df, x="x", y="y").add(MockMark(), y=None).plot()
         layer, = p._layers
         assert layer.data.frame.columns.to_list() == ["x"]
         assert "y" not in layer
@@ -237,25 +224,18 @@ class TestAxisScaling:
     def test_inference(self, long_df):
 
         for col, scale_type in zip("zat", ["numeric", "categorical", "datetime"]):
-            p = Plot(long_df, x=col, y=col).add(MockMark())
-            for var in "xy":
-                assert p._scales[var].type == "unknown"
-            p._setup_layers()
-            p._setup_scales()
+            p = Plot(long_df, x=col, y=col).add(MockMark()).plot()
             for var in "xy":
                 assert p._scales[var].type == scale_type
 
     def test_inference_concatenates(self):
 
-        p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"])
-        p._setup_layers()
-        p._setup_scales()
+        p = Plot(x=[1, 2, 3]).add(MockMark(), x=["a", "b", "c"]).plot()
         assert p._scales["x"].type == "categorical"
 
     def test_categorical_explicit_order(self):
 
         p = Plot(x=["b", "c", "a"]).scale_categorical("x", order=["c", "a", "b"])
-
         scl = p._scales["x"]
         assert scl.type == "categorical"
         assert scl.cast(pd.Series(["c", "a", "b"])).cat.codes.to_list() == [0, 1, 2]
@@ -263,7 +243,6 @@ class TestAxisScaling:
     def test_numeric_as_categorical(self):
 
         p = Plot(x=[2, 1, 3]).scale_categorical("x")
-
         scl = p._scales["x"]
         assert scl.type == "categorical"
         assert scl.cast(pd.Series([1, 2, 3])).cat.codes.to_list() == [0, 1, 2]
@@ -271,7 +250,6 @@ class TestAxisScaling:
     def test_numeric_as_categorical_explicit_order(self):
 
         p = Plot(x=[1, 2, 3]).scale_categorical("x", order=[2, 1, 3])
-
         scl = p._scales["x"]
         assert scl.type == "categorical"
         assert scl.cast(pd.Series([2, 1, 3])).cat.codes.to_list() == [0, 1, 2]
@@ -392,7 +370,7 @@ class TestPlotting:
 
     def test_single_split_multi_layer(self, long_df):
 
-        vs = [{"hue": "a", "size": "z"}, {"hue": "b", "style": "c"}]
+        vs = [{"color": "a", "width": "z"}, {"color": "b", "pattern": "c"}]
 
         class NoGroupingMark(MockMark):
             grouping_vars = []
@@ -436,7 +414,7 @@ class TestPlotting:
 
     @pytest.mark.parametrize(
         "split_var", [
-            "hue",  # explicitly declared on the Mark
+            "color",  # explicitly declared on the Mark
             "group",  # implicitly used for all Mark classes
         ])
     def test_one_grouping_variable(self, long_df, split_var):
@@ -453,7 +431,7 @@ class TestPlotting:
 
     def test_two_grouping_variables(self, long_df):
 
-        split_vars = ["hue", "group"]
+        split_vars = ["color", "group"]
         split_cols = ["a", "b"]
         variables = {var: col for var, col in zip(split_vars, split_cols)}
 
@@ -1013,7 +991,7 @@ class TestPairInterface:
         assert all_cols.difference(p2._pairspec["x"]).item() == "y"
         assert "y" not in p2._pairspec
 
-        p3 = Plot(long_df, hue="a").pair()
+        p3 = Plot(long_df, color="a").pair()
         for axis in "xy":
             assert all_cols.difference(p3._pairspec[axis]).item() == "a"
 

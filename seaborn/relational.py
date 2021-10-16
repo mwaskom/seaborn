@@ -561,6 +561,7 @@ class _ScatterPlotter(_RelationalPlotter):
         # See https://github.com/matplotlib/matplotlib/issues/17849 for context
         m = kws.get("marker", mpl.rcParams.get("marker", "o"))
         if not isinstance(m, mpl.markers.MarkerStyle):
+            # TODO in more recent matplotlib (which?) can pass a MarkerStyle here
             m = mpl.markers.MarkerStyle(m)
         if m.is_filled():
             kws.setdefault("edgecolor", "w")

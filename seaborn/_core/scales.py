@@ -18,23 +18,35 @@ if TYPE_CHECKING:
     from seaborn._core.typing import VariableType
 
 
+class NormWrapper:
+    pass
+
+
 class ScaleWrapper:
 
     def __init__(
         self,
         scale: ScaleBase,
-        type: VariableType,  # TODO don't use builtin name?
+        type: VarType | VariableType,  # TODO don't use builtin name?  TODO saner typing
         norm: tuple[float | None, float | None] | Normalize | None = None,
+        prenorm: Callable | None = None,
     ):
 
         transform = scale.get_transform()
         self.forward = transform.transform
         self.reverse = transform.inverted().transform
 
-        # TODO can't we get type from the scale object in most cases?
         self.type = VarType(type)
+        self.type_declared = True
 
         if norm is None:
+            # TODO customize norm_from_scale to return "datetime scale" etc.?
+            # TODO also we could use a pre-norm function for have a map_pointsize
+            # that has the option of squaring the sizes before normalizing.
+            # From the scale perspective it would be a general pre-norm function,
+            # but then map_pointsize could have a special param.
+            # TODO what else is this useful for? Maybe outlier removal?
+            # Maybe log norming for color?
             norm = norm_from_scale(scale, norm)
         self.norm = norm
 
@@ -50,6 +62,21 @@ class ScaleWrapper:
         # As a workaround, stop the recursion at this level with older matplotlibs.
         def __deepcopy__(self, memo=None):
             return copy(self)
+
+    @classmethod
+    def from_inferred_type(cls, data: Series) -> ScaleWrapper:
+
+        var_type = variable_type(data)
+        axis = data.name
+        if var_type == "numeric":
+            scale = cls(LinearScale(axis), "numeric", None)
+        elif var_type == "categorical":
+            scale = cls(CategoricalScale(axis), "categorical", None)
+        elif var_type == "datetime":
+            # TODO add DateTimeNorm that converts to numeric first
+            scale = cls(DatetimeScale(axis), "datetime", None)
+        scale.type_declared = False
+        return scale
 
     @property
     def order(self):
@@ -79,7 +106,7 @@ class CategoricalScale(LinearScale):
 
     def __init__(
         self,
-        axis: str | None = None,
+        axis: str,
         order: list | None = None,
         formatter: Any = None
     ):
@@ -121,6 +148,7 @@ class DatetimeScale(LinearScale):
             # Note that pandas ends up converting everything to ns internally afterwards
             return pd.to_datetime(data, unit="D")
         else:
+            # TODO should we accept a format string for handling ambiguous strings?
             return pd.to_datetime(data)
 
 
@@ -153,10 +181,10 @@ def norm_from_scale(
                 clip = self.clip
             if clip:
                 value = np.clip(value, self.vmin, self.vmax)
-            # Our changes start
+            # Seaborn changes start
             t_value = self.transform(value).reshape(np.shape(value))
             t_vmin, t_vmax = self.transform([self.vmin, self.vmax])
-            # Our changes end
+            # Seaborn changes end
             if not np.isfinite([t_vmin, t_vmax]).all():
                 raise ValueError("Invalid vmin or vmax")
             t_value -= t_vmin

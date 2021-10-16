@@ -10,10 +10,16 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt  # TODO defer import into Plot.show()
 
-from seaborn._core.rules import categorical_order, variable_type
+from seaborn._core.rules import categorical_order
 from seaborn._core.data import PlotData
 from seaborn._core.subplots import Subplots
-from seaborn._core.mappings import GroupMapping, HueMapping
+from seaborn._core.mappings import (
+    ColorSemantic,
+    BooleanSemantic,
+    MarkerSemantic,
+    LineStyleSemantic,
+    LineWidthSemantic,
+)
 from seaborn._core.scales import (
     ScaleWrapper,
     CategoricalScale,
@@ -27,21 +33,39 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Hashable
     from pandas import DataFrame, Series, Index
     from matplotlib.axes import Axes
+    from matplotlib.color import Normalize
     from matplotlib.figure import Figure, SubFigure
     from matplotlib.scale import ScaleBase
-    from matplotlib.colors import Normalize
-    from seaborn._core.mappings import SemanticMapping
+    from seaborn._core.mappings import Semantic, SemanticMapping
     from seaborn._marks.base import Mark
     from seaborn._stats.base import Stat
-    from seaborn._core.typing import DataSource, PaletteSpec, VariableSpec, OrderSpec
+    from seaborn._core.typing import (
+        DataSource,
+        PaletteSpec,
+        VariableSpec,
+        OrderSpec,
+        NormSpec,
+    )
+
+
+SEMANTICS = {  # TODO should this be pluggable?
+    "color": ColorSemantic(),
+    "facecolor": ColorSemantic(variable="facecolor"),
+    "edgecolor": ColorSemantic(variable="edgecolor"),
+    "marker": MarkerSemantic(),
+    "linestyle": LineStyleSemantic(),
+    "fill": BooleanSemantic(variable="fill"),
+    "linewidth": LineWidthSemantic(),
+}
 
 
 class Plot:
 
     _data: PlotData
     _layers: list[Layer]
+    _semantics: dict[str, Semantic]
     _mappings: dict[str, SemanticMapping]  # TODO keys as Literal, or use TypedDict?
-    _scales: dict[str, ScaleBase]
+    _scales: dict[str, ScaleWrapper]
 
     # TODO use TypedDict here
     _subplotspec: dict[str, Any]
@@ -59,27 +83,14 @@ class Plot:
         self._data = PlotData(data, variables)
         self._layers = []
 
-        # TODO see notes in _setup_mappings I think we're going to start with this
-        # empty and define the defaults elsewhere
-        self._mappings = {
-            "group": GroupMapping(),
-            "hue": HueMapping(),
-        }
-
-        # TODO is using "unknown" here the best approach?
-        # Other options would be:
-        # - None as the value for type
-        # - some sort of uninitialized singleton for the object,
-        self._scales = {
-            "x": ScaleWrapper(mpl.scale.LinearScale("x"), "unknown"),
-            "y": ScaleWrapper(mpl.scale.LinearScale("y"), "unknown"),
-        }
-
-        self._target = None
+        self._scales = {}
+        self._semantics = {}
 
         self._subplotspec = {}
         self._facetspec = {}
         self._pairspec = {}
+
+        self._target = None
 
     def on(self, target: Axes | SubFigure | Figure) -> Plot:
 
@@ -114,6 +125,9 @@ class Plot:
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
+
+        # TODO FIXME:layer change the layer object to a simple dictionary,
+        # there's almost no logic in the class and it will make copy/update less awkward
 
         # TODO do a check here that mark has been initialized,
         # otherwise errors will be inscrutable
@@ -197,16 +211,14 @@ class Plot:
         for axis in "xy":
             keys = []
             for i, col in enumerate(pairspec.get(axis, [])):
-
+                # TODO note that this assumes no variables are defined as {axis}{digit}
+                # This could be a slight problem as matplotlib occasionally uses that
+                # format for artists that take multiple parameters on each axis.
+                # Perhaps we should set the internal pair variables to "_{axis}{index}"?
                 key = f"{axis}{i}"
                 keys.append(key)
                 pairspec["variables"][key] = col
 
-                # TODO how much type inference to do here?
-                # (i.e., should we force .scale_categorical, etc.?)
-                # We could also accept a scales keyword? Or document that calling, e.g.
-                # p.scale_categorical("x4") is the right approach
-                self._scales[key] = ScaleWrapper(mpl.scale.LinearScale(key), "unknown")
             if keys:
                 pairspec["structure"][axis] = keys
 
@@ -219,6 +231,7 @@ class Plot:
 
     def facet(
         self,
+        # TODO require kwargs?
         col: VariableSpec = None,
         row: VariableSpec = None,
         col_order: OrderSpec = None,  # TODO single order param
@@ -249,27 +262,118 @@ class Plot:
 
         return self
 
-    def map_hue(
+    def map_color(
         self,
+        # TODO accept variable specification here?
         palette: PaletteSpec = None,
+        order: OrderSpec = None,
+        norm: NormSpec = None,
     ) -> Plot:
 
         # TODO we do some fancy business currently to avoid having to
         # write these ... do we want that to persist or is it too confusing?
+        # If we do ... maybe we don't even need to write these methods, but can
+        # instead programatically add them based on central dict of mapping objects.
         # ALSO TODO should these be initialized with defaults?
-        self._mappings["hue"] = HueMapping(palette)
+        # TODO if we define default semantics, we can use that
+        # for initialization and make this more abstract (assuming kwargs match?)
+        self._semantics["color"] = ColorSemantic(palette)
+        if order is not None:
+            self.scale_categorical("color", order=order)
+        elif norm is not None:
+            self.scale_numeric("color", norm=norm)
         return self
+
+    def map_facecolor(
+        self,
+        palette: PaletteSpec = None,
+        order: OrderSpec = None,
+        norm: NormSpec = None,
+    ) -> Plot:
+
+        self._semantics["facecolor"] = ColorSemantic(palette, variable="facecolor")
+        if order is not None:
+            self.scale_categorical("facecolor", order=order)
+        elif norm is not None:
+            self.scale_numeric("facecolor", norm=norm)
+        return self
+
+    def map_edgecolor(
+        self,
+        palette: PaletteSpec = None,
+        order: OrderSpec = None,
+        norm: NormSpec = None,
+    ) -> Plot:
+
+        self._semantics["edgecolor"] = ColorSemantic(palette, variable="edgecolor")
+        if order is not None:
+            self.scale_categorical("edgecolor", order=order)
+        elif norm is not None:
+            self.scale_numeric("edgecolor", norm=norm)
+        return self
+
+    def map_fill(
+        self,
+        values: list | dict | None = None,
+        order: OrderSpec = None,
+    ) -> Plot:
+
+        self._semantics["fill"] = BooleanSemantic(values, variable="fill")
+        if order is not None:
+            self.scale_categorical("fill", order=order)
+        return self
+
+    def map_marker(
+        self,
+        shapes: list | dict | None = None,
+        order: OrderSpec = None,
+    ) -> Plot:
+
+        self._semantics["marker"] = MarkerSemantic(shapes, variable="marker")
+        if order is not None:
+            self.scale_categorical("marker", order=order)
+        return self
+
+    def map_linestyle(
+        self,
+        styles: list | dict | None = None,
+        order: OrderSpec = None,
+    ) -> Plot:
+
+        self._semantics["linestyle"] = LineStyleSemantic(styles, variable="linestyle")
+        if order is not None:
+            self.scale_categorical("linestyle", order=order)
+        return self
+
+    def map_linewidth(
+        self,
+        values: tuple[float, float] | list[float] | dict[Any, float] | None = None,
+        norm: Normalize | None = None,
+        # TODO clip?
+        order: OrderSpec = None,
+    ) -> Plot:
+
+        self._semantics["linewidth"] = LineWidthSemantic(values, variable="linewidth")
+        if order is not None:
+            self.scale_categorical("linewidth", order=order)
+        elif norm is not None:
+            self.scale_numeric("linewidth", norm=norm)
+        return self
+
+    # TODO have map_gradient?
+    # This could be used to add another color-like dimension
+    # and also the basis for what mappings like stat.density -> rgba do
 
     # TODO originally we had planned to have a scale_native option that would default
     # to matplotlib. I don't fully remember why. Is this still something we need?
-
-    # TODO related, scale_identity which uses the data as literal attribute values
 
     def scale_numeric(
         self,
         var: str,
         scale: str | ScaleBase = "linear",
-        norm: tuple[float | None, float | None] | Normalize | None = None,
+        norm: NormSpec = None,
+        # TODO add clip? Useful for e.g., making sure lines don't get too thick.
+        # (If we add clip, should we make the legend say like ``> value`)?
         **kwargs
     ) -> Plot:
 
@@ -306,7 +410,7 @@ class Plot:
             # TODO what about when we want to infer the scale from the norm?
             # e.g. currently you pass LogNorm to get a log normalization...
             norm = norm_from_scale(scale, norm)
-        self._scales[var] = ScaleWrapper(scale, "numeric", norm=norm)
+        self._scales[var] = ScaleWrapper(scale, "numeric", norm)
         return self
 
     def scale_categorical(
@@ -334,13 +438,20 @@ class Plot:
 
         # TODO what else should this do?
         # We should pass kwargs to the DateTime cast probably.
+        # Should we also explicitly expose more of the pd.to_datetime interface?
+
         # It will be nice to have more control over the formatting of the ticks
         # which is pretty annoying in standard matplotlib.
+
         # Should datetime data ever have anything other than a linear scale?
         # The only thing I can really think of are geologic/astro plots that
         # use a reverse log scale, (but those are usually in units of years).
 
         return self
+
+    def scale_identity(self, var) -> Plot:
+
+        raise NotImplementedError("TODO")
 
     def theme(self) -> Plot:
 
@@ -361,6 +472,8 @@ class Plot:
         # Also should we have height=, aspect=, exclusive with figsize? Or working
         # with figsize when only one is defined?
 
+        # TODO figsize has no actual effect here
+
         subplot_keys = ["sharex", "sharey"]
         for key in subplot_keys:
             val = locals()[key]
@@ -379,7 +492,7 @@ class Plot:
 
     def plot(self, pyplot=False) -> Plot:
 
-        self._setup_layers()
+        self._setup_data()
         self._setup_scales()
         self._setup_mappings()
         self._setup_figure(pyplot)
@@ -390,7 +503,7 @@ class Plot:
 
         # TODO this should be configurable
         if not self._figure.get_constrained_layout():
-            self._figure.tight_layout()
+            self._figure.set_tight_layout(True)
 
         # TODO many methods will (confusingly) have no effect if invoked after
         # Plot.plot is (manually) called. We should have some way of raising from
@@ -425,11 +538,9 @@ class Plot:
     # End of public API
     # ================================================================================ #
 
-    # TODO order these methods to match the order they get called in
+    def _setup_data(self):
 
-    def _setup_layers(self):
-
-        common_data = (
+        self._data = (
             self._data
             .concat(
                 self._facetspec.get("source"),
@@ -444,18 +555,57 @@ class Plot:
         # TODO concat with mapping spec
 
         for layer in self._layers:
-            layer.data = common_data.concat(layer.source, layer.variables)
+            # TODO FIXME:mutable we need to make this not modify the existing object
+            # TODO one idea is add() inserts a dict into _layerspec or something
+            layer.data = self._data.concat(layer.source, layer.variables)
 
     def _setup_scales(self) -> None:
 
-        layers = self._layers
-        for var, scale in self._scales.items():
-            if scale.type == "unknown" and any(var in layer for layer in layers):
-                # TODO this is copied from _setup_mappings ... ripe for abstraction!
-                all_data = pd.concat(
-                    [layer.data.frame.get(var) for layer in layers]
-                ).reset_index(drop=True)
-                scale.type = variable_type(all_data)
+        # TODO currently typoing variable name in `scale_*`, or scaling a variable that
+        # isn't defined anywhere, silently does nothing. We should raise/warn on that.
+
+        variables = set(self._data.frame)
+        for layer in self._layers:
+            variables |= set(layer.data.frame)
+
+        for var in (var for var in variables if var not in self._scales):
+            all_values = pd.concat([
+                self._data.frame.get(var),
+                # TODO important to check for var in x.variables, not just in x
+                # Because we only want to concat if a variable was *added* here
+                *(y.data.frame.get(var) for y in self._layers if var in y.variables)
+            ], ignore_index=True)
+
+            # TODO eventually this will be updating a different dictionary
+            self._scales[var] = ScaleWrapper.from_inferred_type(all_values)
+
+        # TODO Think about how this is going to handle situations where we have
+        # e.g. ymin and ymax but no y specified. I think in that situation one
+        # would expect to control the y scale with scale_numeric("y").
+        # Actually, if one calls that explicitly, it works. But if they don't,
+        # then no scale gets created for y.
+
+    def _setup_mappings(self) -> None:
+
+        # TODO we should setup default mappings here based on whether a mapping
+        # variable appears in at least one of the layer data but isn't in self._mappings
+        # Source of what mappings to check can be some dictionary of default mappings?
+        defined = [v for v in SEMANTICS if any(v in y for y in self._layers)]
+
+        self._mappings = {}
+        for var in defined:
+
+            semantic = self._semantics.get(var) or SEMANTICS[var]
+
+            all_values = pd.concat([
+                self._data.frame.get(var),
+                # TODO important to check for var in x.variables, not just in x
+                # Because we only want to concat if a variable was *added* here
+                # TODO note copy=pasted from setup_scales code!
+                *(x.data.frame.get(var) for x in self._layers if var in x.variables)
+            ], ignore_index=True)
+            scale = self._scales.get(var)
+            self._mappings[var] = semantic.setup(all_values, scale)
 
     def _setup_figure(self, pyplot: bool = False) -> None:
 
@@ -489,21 +639,22 @@ class Plot:
             ax = sub["ax"]
             for axis in "xy":
                 axis_key = sub[axis]
-                scale = self._scales[axis_key]._scale
-                if LooseVersion(mpl.__version__) < "3.4":
-                    # The ability to pass a BaseScale instance to Axes.set_{axis}scale
-                    # was added to matplotlib in version 3.4.0:
-                    # https://github.com/matplotlib/matplotlib/pull/19089
-                    # Workaround: use the scale name, which is restrictive only
-                    # if the user wants to define a custom scale.
-                    # Additionally, setting the scale after updating the units breaks
-                    # in some cases on older versions of matplotlib (with older pandas?)
-                    # so only do it if necessary.
-                    axis_obj = getattr(ax, f"{axis}axis")
-                    if axis_obj.get_scale() != scale.name:
-                        ax.set(**{f"{axis}scale": scale.name})
-                else:
-                    ax.set(**{f"{axis}scale": scale})
+                if axis_key in self._scales:
+                    scale = self._scales[axis_key]._scale
+                    if LooseVersion(mpl.__version__) < "3.4":
+                        # The ability to pass a BaseScale instance to
+                        # Axes.set_{axis}scale was added to matplotlib in version 3.4.0:
+                        # https://github.com/matplotlib/matplotlib/pull/19089
+                        # Workaround: use the scale name, which is restrictive only
+                        # if the user wants to define a custom scale.
+                        # Additionally, setting the scale after updating units breaks in
+                        # some cases on older versions of matplotlib (/ older pandas?)
+                        # so only do it if necessary.
+                        axis_obj = getattr(ax, f"{axis}axis")
+                        if axis_obj.get_scale() != scale.name:
+                            ax.set(**{f"{axis}scale": scale.name})
+                    else:
+                        ax.set(**{f"{axis}scale": scale})
 
         # --- Figure annotation
         for sub in subplots:
@@ -563,22 +714,6 @@ class Plot:
                 title_text = ax.set_title(title)
                 title_text.set_visible(show_title)
 
-    def _setup_mappings(self) -> None:
-
-        layers = self._layers
-
-        # TODO we should setup default mappings here based on whether a mapping
-        # variable appears in at least one of the layer data but isn't in self._mappings
-        # Source of what mappings to check can be some dictionary of default mappings?
-
-        for var, mapping in self._mappings.items():
-            if any(var in layer for layer in layers):
-                all_data = pd.concat(
-                    [layer.data.frame.get(var) for layer in layers]
-                ).reset_index(drop=True)
-                scale = self._scales.get(var)
-                mapping.setup(all_data, scale)
-
     def _plot_layer(self, layer: Layer, mappings: dict[str, SemanticMapping]) -> None:
 
         default_grouping_vars = ["col", "row", "group"]  # TODO where best to define?
@@ -588,9 +723,9 @@ class Plot:
         stat = layer.stat
 
         full_df = data.frame
-        for subplots, df in self._generate_pairings(full_df):
+        for subplots, scales, df in self._generate_pairings(full_df):
 
-            df = self._scale_coords(subplots, df)
+            df = self._scale_coords(subplots, scales, df)
 
             if stat is not None:
                 grouping_vars = stat.grouping_vars + default_grouping_vars
@@ -600,7 +735,7 @@ class Plot:
 
             # Our statistics happen on the scale we want, but then matplotlib is going
             # to re-handle the scaling, so we need to invert before handing off
-            df = self._unscale_coords(df)
+            df = self._unscale_coords(scales, df)
 
             grouping_vars = mark.grouping_vars + default_grouping_vars
             generate_splits = self._setup_split_generator(
@@ -641,33 +776,36 @@ class Plot:
         df = df.reset_index(drop=True)  # TODO not always needed, can we limit?
         return df
 
-    def _scale_coords(self, subplots: list[dict], df: DataFrame) -> DataFrame:
-        # TODO retype with a SubplotSpec or similar
+    def _scale_coords(
+        self,
+        subplots: list[dict],  # TODO retype with a SubplotSpec or similar
+        scales: dict[str, ScaleWrapper],  # TODO same idea, but ScaleSpec
+        df: DataFrame,
+    ) -> DataFrame:
 
-        # TODO note that this assumes no variables are defined as {axis}{digit}
-        # This could be a slight problem as matplotlib occasionally uses that
-        # format for artists that take multiple parameters on each axis.
-        # Perhaps we should set the internal pair variables to "_{axis}{index}"?
         coord_cols = [c for c in df if re.match(r"^[xy]\D*$", c)]
-        drop_cols = [c for c in df if re.match(r"^[xy]\d", c)]
 
         out_df = (
             df
             .copy(deep=False)
-            .drop(coord_cols + drop_cols, axis=1)
+            .drop(coord_cols, axis=1)
             .reindex(df.columns, axis=1)  # So unscaled columns retain their place
         )
 
         for subplot in subplots:
-            axes_df = self._get_subplot_data(df, subplot)[coord_cols]
+            axes_df = self._filter_subplot_data(df, subplot)[coord_cols]
             with pd.option_context("mode.use_inf_as_null", True):
                 axes_df = axes_df.dropna()
-            self._scale_coords_single(axes_df, out_df, subplot["ax"])
+            self._scale_coords_single(axes_df, out_df, scales, subplot["ax"])
 
         return out_df
 
     def _scale_coords_single(
-        self, coord_df: DataFrame, out_df: DataFrame, ax: Axes
+        self,
+        coord_df: DataFrame,
+        out_df: DataFrame,
+        scales: dict[str, ScaleWrapper],
+        ax: Axes,
     ) -> None:
 
         # TODO modify out_df in place or return and handle externally?
@@ -676,26 +814,31 @@ class Plot:
             # TODO Explain the logic of this method thoroughly
             # It is clever, but a bit confusing!
 
-            axis = var[0]
-            m = re.match(r"^([xy]\d*).*$", var)
-            assert m is not None
-            prefix = m.group(1)
+            scale = scales[var]
+            axis_obj = getattr(ax, f"{var[0]}axis")
 
-            scale = self._scales.get(prefix, self._scales.get(axis))
-            axis_obj = getattr(ax, f"{axis}axis")
-
+            # TODO this is no longer valid with the way the semantic order overrides
+            # Perhaps better to have the scale always be the source of the order info
+            # but have a step where the order specified in the mapping overrides it?
+            # Alternately, use self._orderings here?
             if scale.order is not None:
                 values = values[values.isin(scale.order)]
 
-            # TODO wrap this in a try/except and reraise with more information
-            # about what variable caused the problem (and input / desired types)
+            # TODO FIXME:feedback wrap this in a try/except and reraise with
+            # more information about what variable caused the problem
             values = scale.cast(values)
-            axis_obj.update_units(categorical_order(values))
+            axis_obj.update_units(categorical_order(values))  # TODO think carefully
 
-            scaled = self._scales[axis].forward(axis_obj.convert_units(values))
+            # TODO it seems wrong that we need to cast to float here,
+            # but convert_units sometimes outputs an object array (e.g. w/Int64 values)
+            scaled = scale.forward(axis_obj.convert_units(values).astype(float))
             out_df.loc[values.index, var] = scaled
 
-    def _unscale_coords(self, df: DataFrame) -> DataFrame:
+    def _unscale_coords(
+        self,
+        scales: dict[str, ScaleWrapper],
+        df: DataFrame
+    ) -> DataFrame:
 
         # Note this is now different from what's in scale_coords as the dataframe
         # that comes into this method will have pair columns reassigned to x/y
@@ -708,21 +851,25 @@ class Plot:
         )
 
         for var, col in coord_df.items():
-            axis = var[0]
-            out_df[var] = self._scales[axis].reverse(coord_df[var])
+            axis = var[0]  # TODO check this logic
+            out_df[var] = scales[axis].reverse(coord_df[var])
 
         return out_df
 
     def _generate_pairings(
         self,
         df: DataFrame
-    ) -> Generator[tuple[list[dict], DataFrame], None, None]:
+    ) -> Generator[
+        tuple[list[dict], dict[str, ScaleWrapper], DataFrame], None, None
+    ]:
         # TODO retype return with SubplotSpec or similar
 
         pair_variables = self._pairspec.get("structure", {})
 
         if not pair_variables:
-            yield list(self._subplots), df
+            # TODO casting to list because subplots below is a list
+            # Maybe a cleaner way to do this?
+            yield list(self._subplots), self._scales, df
             return
 
         iter_axes = itertools.product(*[
@@ -730,6 +877,17 @@ class Plot:
         ])
 
         for x, y in iter_axes:
+
+            subplots = []
+            for sub in self._subplots:
+                if (x is None or sub["x"] == x) and (y is None or sub["y"] == y):
+                    subplots.append(sub)
+
+            scales = {}
+            for axis, prefix in zip("xy", [x, y]):
+                key = axis if prefix is None else prefix
+                if key in self._scales:
+                    scales[axis] = self._scales[key]
 
             reassignments = {}
             for axis, prefix in zip("xy", [x, y]):
@@ -740,14 +898,9 @@ class Plot:
                         for col in df if col.startswith(prefix)
                     })
 
-            subplots = []
-            for sub in self._subplots:
-                if (x is None or sub["x"] == x) and (y is None or sub["y"] == y):
-                    subplots.append(sub)
+            yield subplots, scales, df.assign(**reassignments)
 
-            yield subplots, df.assign(**reassignments)
-
-    def _get_subplot_data(  # TODO maybe _filter_subplot_data?
+    def _filter_subplot_data(
         self,
         df: DataFrame,
         subplot: dict,
@@ -755,7 +908,7 @@ class Plot:
 
         keep_rows = pd.Series(True, df.index, dtype=bool)
         for dim in ["col", "row"]:
-            if dim in df is not None:
+            if dim in df:
                 keep_rows &= df[dim] == subplot[dim]
         return df[keep_rows]
 
@@ -769,17 +922,21 @@ class Plot:
 
         allow_empty = False  # TODO will need to recreate previous categorical plots
 
-        levels = {v: m.levels for v, m in mappings.items()}
+        grouping_keys = []
         grouping_vars = [
-            var for var in grouping_vars if var in df and var not in ["col", "row"]
+            v for v in grouping_vars if v in df and v not in ["col", "row"]
         ]
-        grouping_keys = [levels.get(var, []) for var in grouping_vars]
+        for var in grouping_vars:
+            order = self._scales[var].order
+            if order is None:
+                order = categorical_order(df[var])
+            grouping_keys.append(order)
 
         def generate_splits() -> Generator:
 
             for subplot in subplots:
 
-                axes_df = self._get_subplot_data(df, subplot)
+                axes_df = self._filter_subplot_data(df, subplot)
 
                 subplot_keys = {}
                 for dim in ["col", "row"]:
@@ -851,14 +1008,14 @@ class Plot:
 
 class Layer:
 
-    data: PlotData  # TODO added externally (bad design?)
+    data: PlotData
 
     def __init__(
         self,
         mark: Mark,
         stat: Stat | None,
         source: DataSource | None,
-        variables: VariableSpec | None,
+        variables: dict[str, VariableSpec],
     ):
 
         self.mark = mark
@@ -867,7 +1024,6 @@ class Layer:
         self.variables = variables
 
     def __contains__(self, key: str) -> bool:
-
-        if self.data is None:
-            return False
-        return key in self.data
+        if hasattr(self, "data"):
+            return key in self.data
+        return False

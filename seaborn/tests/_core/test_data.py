@@ -16,7 +16,7 @@ class TestPlotData:
 
     @pytest.fixture
     def long_variables(self):
-        variables = dict(x="x", y="y", hue="a", size="z", style="s_cat")
+        variables = dict(x="x", y="y", color="a", size="z", style="s_cat")
         return variables
 
     def test_named_vectors(self, long_df, long_variables):
@@ -35,11 +35,11 @@ class TestPlotData:
 
         p = PlotData(long_df, long_variables)
 
-        assert_vector_equal(p.frame["hue"], long_df[long_variables["hue"]])
+        assert_vector_equal(p.frame["color"], long_df[long_variables["color"]])
         assert_vector_equal(p.frame["y"], long_df["b"])
         assert_vector_equal(p.frame["size"], long_df["z"])
 
-        assert p.names["hue"] == long_variables["hue"]
+        assert p.names["color"] == long_variables["color"]
         assert p.names["y"] == "b"
         assert p.names["size"] is None
 
@@ -85,7 +85,7 @@ class TestPlotData:
         cols = pd.MultiIndex.from_product([("a", "b", "c"), ("x", "y")])
         df = pd.DataFrame(rng.uniform(size=(10, 6)), columns=cols)
 
-        var = "hue"
+        var = "color"
         key = ("b", "y")
         p = PlotData(df, {var: key})
         assert_vector_equal(p.frame[var], df[key])
@@ -218,19 +218,19 @@ class TestPlotData:
             PlotData(long_df, dict(x="x", y="not_in_df"))
 
         with pytest.raises(ValueError):
-            PlotData(long_df, dict(x="x", y="y", hue="not_in_df"))
+            PlotData(long_df, dict(x="x", y="y", color="not_in_df"))
 
     def test_contains_operation(self, long_df):
 
-        p = PlotData(long_df, {"x": "y", "hue": long_df["a"]})
+        p = PlotData(long_df, {"x": "y", "color": long_df["a"]})
         assert "x" in p
         assert "y" not in p
-        assert "hue" in p
+        assert "color" in p
 
     def test_concat_add_variable(self, long_df):
 
         v1 = {"x": "x", "y": "f"}
-        v2 = {"hue": "a"}
+        v2 = {"color": "a"}
 
         p1 = PlotData(long_df, v1)
         p2 = p1.concat(None, v2)
@@ -271,8 +271,8 @@ class TestPlotData:
 
     def test_concat_all_operations(self, long_df):
 
-        v1 = {"x": "x", "y": "y", "hue": "a"}
-        v2 = {"y": "s", "size": "s", "hue": None}
+        v1 = {"x": "x", "y": "y", "color": "a"}
+        v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
         p2 = p1.concat(None, v2)
@@ -286,8 +286,8 @@ class TestPlotData:
 
     def test_concat_all_operations_same_data(self, long_df):
 
-        v1 = {"x": "x", "y": "y", "hue": "a"}
-        v2 = {"y": "s", "size": "s", "hue": None}
+        v1 = {"x": "x", "y": "y", "color": "a"}
+        v2 = {"y": "s", "size": "s", "color": None}
 
         p1 = PlotData(long_df, v1)
         p2 = p1.concat(long_df, v2)
@@ -305,7 +305,7 @@ class TestPlotData:
         d2 = long_df[["a", "s"]]
 
         v1 = {"x": "x", "y": "y"}
-        v2 = {"hue": "a"}
+        v2 = {"color": "a"}
 
         p1 = PlotData(d1, v1)
         p2 = p1.concat(d2, v2)

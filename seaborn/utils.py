@@ -624,6 +624,10 @@ def load_dataset(name, cache=True, data_home=None, **kws):
             df["cut"], ["Ideal", "Premium", "Very Good", "Good", "Fair"],
         )
 
+    elif name == "taxis":
+        df["pickup"] = pd.to_datetime(df["pickup"])
+        df["dropoff"] = pd.to_datetime(df["dropoff"])
+
     return df
 
 

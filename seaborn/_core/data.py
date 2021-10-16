@@ -120,7 +120,7 @@ class PlotData:
         Returns
         -------
         frame
-            Table mapping seaborn variables (x, y, hue, ...) to data vectors.
+            Table mapping seaborn variables (x, y, color, ...) to data vectors.
         names
             Keys are defined seaborn variables; values are names inferred from
             the inputs (or None when no name can be determined).
