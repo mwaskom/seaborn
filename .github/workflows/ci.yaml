@@ -21,6 +21,8 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.x'
 
       - name: Install seaborn
         run: |
@@ -44,24 +46,24 @@ jobs:
     strategy:
       matrix:
 
-        python: [3.7.x, 3.8.x, 3.9.x]
+        python: ['3.7.x', '3.8.x', '3.9.x']
         target: [test]
         install: [all]
         deps: [latest]
         backend: [agg]
 
         include:
-          - python: 3.7.x
+          - python: '3.7.x'
             target: unittests
             install: all
             deps: pinned
             backend: agg
-          - python: 3.9.x
+          - python: '3.9.x'
             target: unittests
             install: light
             deps: latest
             backend: agg
-          - python: 3.9.x
+          - python: '3.9.x'
             target: test
             install: all
             deps: latest
