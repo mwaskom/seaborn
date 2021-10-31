@@ -123,7 +123,7 @@ class Plot:
         self,
         mark: Mark,
         stat: Stat | None = None,
-        orient: Literal["x", "y", "v", "h"] = "x",  # TODO "auto" as defined by Mark?
+        orient: Literal["x", "y", "v", "h"] | None = None,
         data: DataSource = None,
         **variables: VariableSpec,
     ) -> Plot:
@@ -140,19 +140,17 @@ class Plot:
         if stat is None and mark.default_stat is not None:
             # TODO We need some way to say "do no stat transformation" that is different
             # from "use the default". That's basically an IdentityStat.
+            # TODO when fixed see FIXME:IdentityStat
 
             # Default stat needs to be initialized here so that its state is
             # not modified across multiple plots. If a Mark wants to define a default
             # stat with non-default params, it should use functools.partial
             stat = mark.default_stat()
 
-        orient_map = {"v": "x", "h": "y"}
-        orient = orient_map.get(orient, orient)  # type: ignore  # mypy false positive?
-        mark.orient = orient  # type: ignore  # mypy false positive?
-        if stat is not None:
-            stat.orient = orient  # type: ignore  # mypy false positive?
+        orient_norm: Literal["x", "y"] | None
+        orient_norm = {"v": "x", "h": "y"}.get(orient, orient)  # type: ignore
 
-        self._layers.append(Layer(mark, stat, data, variables))
+        self._layers.append(Layer(mark, stat, orient_norm, data, variables))
 
         return self
 
@@ -814,7 +812,12 @@ class Plot:
         stat = layer.stat
 
         full_df = data.frame
-        for subplots, df in self._generate_pairings(full_df):
+        for subplots, df, scales in self._generate_pairings(full_df):
+
+            orient = layer.orient or mark._infer_orient(scales)
+            mark.orient = orient  # type: ignore  # mypy false positive?
+            if stat is not None:  # FIXME:IdentityStat
+                stat.orient = orient  # type: ignore  # mypy false positive?
 
             df = self._scale_coords(subplots, df)
 
@@ -822,7 +825,7 @@ class Plot:
                 grouping_vars = stat.grouping_vars + default_grouping_vars
                 df = self._apply_stat(df, grouping_vars, stat)
 
-            df = mark._adjust(df)
+            df = mark._adjust(df, mappings)
 
             # Our statistics happen on the scale we want, but then matplotlib is going
             # to re-handle the scaling, so we need to invert before handing off
@@ -919,16 +922,17 @@ class Plot:
         self,
         df: DataFrame
     ) -> Generator[
-        tuple[list[dict], DataFrame], None, None
+        tuple[list[dict], DataFrame, dict[str, Scale]], None, None
     ]:
         # TODO retype return with SubplotSpec or similar
+        # TODO also maybe abstract the whole thing somewhere, it's way too verbose
 
         pair_variables = self._pairspec.get("structure", {})
 
         if not pair_variables:
             # TODO casting to list because subplots below is a list
             # Maybe a cleaner way to do this?
-            yield list(self._subplots), df
+            yield list(self._subplots), df, self._scales
             return
 
         iter_axes = itertools.product(*[
@@ -951,7 +955,9 @@ class Plot:
                         for col in df if col.startswith(prefix)
                     })
 
-            yield subplots, df.assign(**reassignments)
+            scales = {new: self._scales[old.name] for new, old in reassignments.items()}
+
+            yield subplots, df.assign(**reassignments), scales
 
     def _filter_subplot_data(
         self,
@@ -1069,12 +1075,14 @@ class Layer:
         self,
         mark: Mark,
         stat: Stat | None,
+        orient: Literal["x", "y"] | None,
         source: DataSource | None,
         variables: dict[str, VariableSpec],
     ):
 
         self.mark = mark
         self.stat = stat
+        self.orient = orient
         self.source = source
         self.variables = variables
 

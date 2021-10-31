@@ -231,6 +231,7 @@ class PlotData:
 
         # Construct a tidy plot DataFrame. This will convert a number of
         # types automatically, aligning on index in case of pandas objects
+        # TODO Note: this fails when variable specs *only* have scalars!
         frame = pd.DataFrame(plot_data)
 
         return frame, names

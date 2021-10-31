@@ -23,7 +23,7 @@ class Point(Mark):
         super().__init__(**kwargs)
         self.jitter = jitter  # TODO decide on form of jitter and add type hinting
 
-    def _adjust(self, df):
+    def _adjust(self, df, mappings):
 
         if self.jitter is None:
             return df
